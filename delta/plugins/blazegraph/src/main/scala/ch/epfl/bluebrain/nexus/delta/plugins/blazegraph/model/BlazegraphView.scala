@@ -1,12 +1,15 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model
 
 import cats.data.NonEmptySet
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.Metadata
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
+import ch.epfl.bluebrain.nexus.delta.sdk.ResourceShift
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
@@ -166,4 +169,14 @@ object BlazegraphView {
 
   implicit val blazegraphMetadataJsonLdEncoder: JsonLdEncoder[Metadata] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.blazegraphMetadata))
+
+  def shift(views: BlazegraphViews)(implicit
+      baseUri: BaseUri
+  ): ResourceShift[BlazegraphViewState, BlazegraphView, Metadata] =
+    ResourceShift.withMetadata[BlazegraphViewState, BlazegraphView, Metadata](
+      BlazegraphViews.entityType,
+      (ref, project) => views.fetch(IdSegmentRef(ref), project),
+      (context, state) => state.toResource(context.apiMappings, context.base),
+      value => JsonLdContent(value, value.value.source, Some(value.value.metadata))
+    )
 }

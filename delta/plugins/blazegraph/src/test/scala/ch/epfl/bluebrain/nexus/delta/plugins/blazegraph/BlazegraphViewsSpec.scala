@@ -41,8 +41,11 @@ class BlazegraphViewsSpec
     with Fixtures {
 
   "BlazegraphViews" when {
-    val uuid                    = UUID.randomUUID()
-    implicit val uuidF: UUIDF   = UUIDF.fixed(uuid)
+    val uuid                  = UUID.randomUUID()
+    implicit val uuidF: UUIDF = UUIDF.fixed(uuid)
+
+    val prefix = "prefix"
+
     implicit val sc: Scheduler  = Scheduler.global
     val realm                   = Label.unsafe("myrealm")
     val bob                     = User("Bob", realm)
@@ -96,6 +99,7 @@ class BlazegraphViewsSpec
       ),
       _ => UIO.unit,
       eventLogConfig,
+      prefix,
       xas
     ).accepted
 

@@ -13,6 +13,17 @@ import shapeless.Typeable
 
 import scala.concurrent.duration.FiniteDuration
 
+/**
+  * Sink that pushes json documents into an Elasticsearch index
+  * @param client
+  *   the ES client
+  * @param chunkSize
+  *   the maximum number of documents to be pushed at once
+  * @param maxWindow
+  *   the maximum window before a document is pushed
+  * @param index
+  *   the index to push into
+  */
 final class ElasticSearchSink(
     client: ElasticSearchClient,
     override val chunkSize: Int,

@@ -6,8 +6,9 @@ import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.config.BlazegraphViewsConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphCoordinator
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.ProjectContextRejection
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{contexts, schema => viewsSchemaId, BlazegraphViewEvent}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{contexts, schema => viewsSchemaId, BlazegraphView, BlazegraphViewEvent}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.BlazegraphViewsRoutes
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
@@ -25,7 +26,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{ReferenceRegistry, Supervisor}
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
 import monix.execution.Scheduler
@@ -95,6 +98,25 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
           xas
         )(api, clock, uuidF)
     }
+
+  make[BlazegraphCoordinator].fromEffect {
+    (
+        views: BlazegraphViews,
+        graphStream: GraphResourceStream,
+        registry: ReferenceRegistry,
+        supervisor: Supervisor,
+        client: BlazegraphClient @Id("blazegraph-indexing-client"),
+        config: BlazegraphViewsConfig
+    ) =>
+      BlazegraphCoordinator(
+        views,
+        graphStream,
+        registry,
+        supervisor,
+        client,
+        config.batch
+      )
+  }
 
   make[BlazegraphViewsQuery].fromEffect {
     (
@@ -177,6 +199,10 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
 
   many[IndexingAction].addValue {
     new BlazegraphIndexingAction()
+  }
+
+  many[ResourceShift[_, _, _]].add { (views: BlazegraphViews, base: BaseUri) =>
+    BlazegraphView.shift(views)(base)
   }
 
 }

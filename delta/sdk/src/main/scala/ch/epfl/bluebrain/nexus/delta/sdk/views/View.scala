@@ -19,7 +19,6 @@ object View {
     */
   final case class AggregateView(views: List[IndexingView]) extends View {
 
-    def +(view: IndexingView): AggregateView          = AggregateView(views :+ view)
     def ++(view: Option[IndexingView]): AggregateView = AggregateView(views ++ view)
 
   }

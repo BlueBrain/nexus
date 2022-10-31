@@ -1,13 +1,20 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model
 
-import cats.data.NonEmptySet
+import cats.data.{NonEmptyChain, NonEmptySet}
+import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.IndexingBlazegraphViewValue
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.configuration.semiauto.deriveConfigJsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.FilterBySchema.FilterBySchemaConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.FilterByType.FilterByTypeConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{DiscardMetadata, FilterBySchema, FilterByType, FilterDeprecated}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeChain, PipeRef}
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
@@ -26,6 +33,11 @@ sealed trait BlazegraphViewValue extends Product with Serializable {
   def tpe: BlazegraphViewType
 
   def toJson(iri: Iri): Json = this.asJsonObject.add(keywords.id, iri.asJson).asJson.dropNullValues
+
+  def asIndexingValue: Option[IndexingBlazegraphViewValue] = this match {
+    case v: IndexingBlazegraphViewValue => Some(v)
+    case _                              => None
+  }
 }
 
 @nowarn("cat=unused")
@@ -57,6 +69,20 @@ object BlazegraphViewValue {
       permission: Permission = permissions.query
   ) extends BlazegraphViewValue {
     override val tpe: BlazegraphViewType = BlazegraphViewType.IndexingBlazegraphView
+
+    def pipeChain: Option[PipeChain] =
+      NonEmptyChain
+        .fromSeq {
+          List(
+            resourceSchemas.nonEmpty -> (PipeRef(FilterBySchema.label)   -> FilterBySchemaConfig(
+              resourceSchemas
+            ).toJsonLd),
+            resourceTypes.nonEmpty   -> (PipeRef(FilterByType.label)     -> FilterByTypeConfig(resourceTypes).toJsonLd),
+            includeDeprecated        -> (PipeRef(FilterDeprecated.label) -> ExpandedJsonLd.empty),
+            includeMetadata          -> (PipeRef(DiscardMetadata.label)  -> ExpandedJsonLd.empty)
+          ).mapFilter { case (b, p) => Option.when(b)(p) }
+        }
+        .map(PipeChain(_))
   }
 
   /**

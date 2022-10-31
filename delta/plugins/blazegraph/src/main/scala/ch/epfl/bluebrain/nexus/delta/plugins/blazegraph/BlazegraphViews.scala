@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.IndexingViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.{AggregateBlazegraphView, IndexingBlazegraphView}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewCommand._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewEvent._
@@ -33,7 +34,9 @@ import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityDependency, EntityType, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, EntityDependency, EntityType, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import io.circe.Json
 import monix.bio.{IO, Task, UIO}
 
@@ -46,7 +49,8 @@ final class BlazegraphViews(
     log: BlazegraphLog,
     fetchContext: FetchContext[BlazegraphViewRejection],
     sourceDecoder: JsonLdSourceResolvingDecoder[BlazegraphViewRejection, BlazegraphViewValue],
-    createNamespace: ViewResource => IO[BlazegraphViewRejection, Unit]
+    createNamespace: ViewResource => IO[BlazegraphViewRejection, Unit],
+    prefix: String
 ) {
 
   implicit private val kamonComponent: KamonMetricComponent = KamonMetricComponent(entityType.value)
@@ -301,6 +305,23 @@ final class BlazegraphViews(
       .span("listBlazegraphViews")
   }
 
+  def indexingViews(start: Offset): ElemStream[IndexingViewDef] =
+    log.states(Predicate.Root, start).evalMapFilter { envelope =>
+      Task.pure(
+        IndexingViewDef(envelope.value, prefix).map { viewDef =>
+          SuccessElem(
+            tpe = envelope.tpe,
+            id = envelope.id,
+            project = Some(envelope.value.project),
+            instant = envelope.instant,
+            offset = envelope.offset,
+            value = viewDef,
+            revision = envelope.rev
+          )
+        }
+      )
+    }
+
   private def eval(cmd: BlazegraphViewCommand, pc: ProjectContext): IO[BlazegraphViewRejection, ViewResource] =
     log
       .evaluate(cmd.project, cmd.id, cmd)
@@ -324,14 +345,17 @@ object BlazegraphViews {
   /**
     * Constructs a projectionId for a blazegraph view
     */
-  def projectionId(view: IndexingViewResource): String =
-    projectionId(view.value.uuid, view.rev)
+  def projectionName(view: IndexingViewResource): String =
+    projectionName(view.value.project, view.id, view.rev)
+
+  def projectionName(state: BlazegraphViewState): String =
+    projectionName(state.project, state.id, state.rev)
 
   /**
     * Constructs a projectionId for a blazegraph view
     */
-  def projectionId(uuid: UUID, rev: Int): String =
-    s"blazegraph-${uuid}_$rev"
+  def projectionName(project: ProjectRef, id: Iri, rev: Int): String =
+    s"blazegraph-$project-$id-$rev"
 
   /**
     * Constructs the namespace for a Blazegraph view
@@ -522,7 +546,7 @@ object BlazegraphViews {
             .void
         case _                         => IO.unit
       }
-    apply(fetchContext, contextResolution, validate, createNameSpace, eventLogConfig, xas)
+    apply(fetchContext, contextResolution, validate, createNameSpace, eventLogConfig, prefix, xas)
   }
 
   private[blazegraph] def apply(
@@ -531,6 +555,7 @@ object BlazegraphViews {
       validate: ValidateBlazegraphView,
       createNamespace: ViewResource => IO[BlazegraphViewRejection, Unit],
       eventLogConfig: EventLogConfig,
+      prefix: String,
       xas: Transactors
   )(implicit
       api: JsonLdApi,
@@ -554,7 +579,8 @@ object BlazegraphViews {
           ),
           fetchContext,
           sourceDecoder,
-          createNamespace
+          createNamespace,
+          prefix
         )
       }
 }

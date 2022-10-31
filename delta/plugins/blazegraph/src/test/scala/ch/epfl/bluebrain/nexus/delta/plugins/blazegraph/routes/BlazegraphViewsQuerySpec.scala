@@ -230,10 +230,10 @@ class BlazegraphViewsQuerySpec(docker: BlazegraphDocker)
       result.value should equalLinesUnordered(createNTriples(view1Proj1, view2Proj1).value)
     }
 
-    val resource1Id = iri"http://example.com/resource1"
-    val resource2Id = iri"http://example.com/resource2"
-    val resource3Id = iri"http://example.com/resource3"
-    val resource4Id = iri"http://example.com/resource4"
+    val resource1Id = iri"https://bbp.epfl.ch/resource1"
+    val resource2Id = iri"https://bbp.epfl.ch/resource2"
+    val resource3Id = iri"https://bbp.epfl.ch/resource3"
+    val resource4Id = iri"https://bbp.epfl.ch/resource4"
 
     "query incoming links" in {
       val resource1Ntriples = NTriples(contentOf("sparql/resource1.ntriples"), resource1Id)
@@ -256,8 +256,8 @@ class BlazegraphViewsQuerySpec(docker: BlazegraphDocker)
         .accepted shouldEqual UnscoredSearchResults(
         2,
         Seq(
-          UnscoredResultEntry(sparqlResourceLinkFor(resource3Id, iri"http://example.com/incoming")),
-          UnscoredResultEntry(sparqlResourceLinkFor(resource2Id, iri"http://example.com/incoming"))
+          UnscoredResultEntry(sparqlResourceLinkFor(resource3Id, iri"https://bbp.epfl.ch/incoming")),
+          UnscoredResultEntry(sparqlResourceLinkFor(resource2Id, iri"https://bbp.epfl.ch/incoming"))
         )
       )
     }
@@ -268,9 +268,9 @@ class BlazegraphViewsQuerySpec(docker: BlazegraphDocker)
         .accepted shouldEqual UnscoredSearchResults[SparqlLink](
         3,
         Seq(
-          UnscoredResultEntry(sparqlResourceLinkFor(resource3Id, iri"http://example.com/outgoing")),
-          UnscoredResultEntry(sparqlResourceLinkFor(resource2Id, iri"http://example.com/outgoing")),
-          UnscoredResultEntry(SparqlExternalLink(resource4Id, List(iri"http://example.com/outgoing")))
+          UnscoredResultEntry(sparqlResourceLinkFor(resource3Id, iri"https://bbp.epfl.ch/outgoing")),
+          UnscoredResultEntry(sparqlResourceLinkFor(resource2Id, iri"https://bbp.epfl.ch/outgoing")),
+          UnscoredResultEntry(SparqlExternalLink(resource4Id, List(iri"https://bbp.epfl.ch/outgoing")))
         )
       )
     }
@@ -281,8 +281,8 @@ class BlazegraphViewsQuerySpec(docker: BlazegraphDocker)
         .accepted shouldEqual UnscoredSearchResults[SparqlLink](
         2,
         Seq(
-          UnscoredResultEntry(sparqlResourceLinkFor(resource3Id, iri"http://example.com/outgoing")),
-          UnscoredResultEntry(sparqlResourceLinkFor(resource2Id, iri"http://example.com/outgoing"))
+          UnscoredResultEntry(sparqlResourceLinkFor(resource3Id, iri"https://bbp.epfl.ch/outgoing")),
+          UnscoredResultEntry(sparqlResourceLinkFor(resource2Id, iri"https://bbp.epfl.ch/outgoing"))
         )
       )
     }

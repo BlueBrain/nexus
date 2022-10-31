@@ -6,7 +6,6 @@ import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax.kamonSyntax
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.ProjectionId.{CompositeViewProjectionId, SourceProjectionId, ViewProjectionId}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
@@ -650,9 +649,9 @@ object CompositeViews {
   ): CompositeViewProjectionId =
     projection match {
       case _: ElasticSearchProjection =>
-        CompositeViewProjectionId(sourceId, ViewProjectionId("TODO"))
-      case p: SparqlProjection        =>
-        CompositeViewProjectionId(sourceId, ViewProjectionId(BlazegraphViews.projectionId(p.uuid, rev)))
+        CompositeViewProjectionId(sourceId, ViewProjectionId(s"TODO_$rev"))
+      case _: SparqlProjection        =>
+        CompositeViewProjectionId(sourceId, ViewProjectionId(s"TODO_$rev"))
     }
 
   /**
