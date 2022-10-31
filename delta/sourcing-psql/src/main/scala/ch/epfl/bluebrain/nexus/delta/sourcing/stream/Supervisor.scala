@@ -75,6 +75,13 @@ trait Supervisor {
   def describe(name: String): Task[Option[SupervisedDescription]]
 
   /**
+    * Returns the list of all running projections under this supervisor.
+    * @return
+    *   a list of the currently running projections
+    */
+  def getRunningProjections: Task[List[SupervisedDescription]]
+
+  /**
     * Stops all running projections without removing them from supervision.
     */
   def stop(): Task[Unit]
@@ -275,6 +282,12 @@ object Supervisor {
       mapRef.get.flatMap {
         _.get(name).traverse(_.description)
       }
+
+    override def getRunningProjections: Task[List[SupervisedDescription]] =
+      for {
+        supervised  <- mapRef.get.map(_.values.toList)
+        description <- supervised.traverse(_.description)
+      } yield description
 
     override def stop(): Task[Unit] =
       for {
