@@ -1,0 +1,64 @@
+package ch.epfl.bluebrain.nexus.delta.routes
+
+import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server._
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.emit
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.UriDirectives.baseUriPrefix
+import ch.epfl.bluebrain.nexus.delta.sdk.directives._
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.supervision
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{SupervisedDescription, Supervisor}
+import kamon.instrumentation.akka.http.TracingDirectives.operationName
+import monix.bio.Task
+import monix.execution.Scheduler
+
+class SupervisionRoutes(
+    identities: Identities,
+    aclCheck: AclCheck,
+    supervised: Task[List[SupervisedDescription]]
+)(implicit
+    baseUri: BaseUri,
+    s: Scheduler,
+    cr: RemoteContextResolution,
+    ordering: JsonKeyOrdering
+) extends AuthDirectives(identities, aclCheck) {
+
+  import baseUri.prefixSegment
+
+  def routes: Route =
+    baseUriPrefix(baseUri.prefix) {
+      pathPrefix("supervision") {
+        extractCaller { implicit caller =>
+          (get & pathEndOrSingleSlash) {
+            operationName(s"$prefixSegment/supervision") {
+              authorizeFor(AclAddress.Root, supervision.read).apply {
+                emit(supervised.hideErrors)
+              }
+            }
+          }
+        }
+      }
+    }
+
+}
+
+object SupervisionRoutes {
+
+  final def apply(
+      identities: Identities,
+      aclCheck: AclCheck,
+      supervisor: Supervisor
+  )(implicit
+      baseUri: BaseUri,
+      s: Scheduler,
+      cr: RemoteContextResolution,
+      ordering: JsonKeyOrdering
+  ): SupervisionRoutes =
+    new SupervisionRoutes(identities, aclCheck, supervisor.getRunningProjections)
+
+}
