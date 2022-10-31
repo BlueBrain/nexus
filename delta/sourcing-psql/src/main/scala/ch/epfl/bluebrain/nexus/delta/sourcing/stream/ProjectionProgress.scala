@@ -5,6 +5,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.InstantInstances._
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset.Start
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
+import io.circe.Encoder
+import io.circe.generic.semiauto.deriveEncoder
 
 import java.time.Instant
 
@@ -40,5 +42,8 @@ object ProjectionProgress {
     * When no progress has been done yet
     */
   val NoProgress: ProjectionProgress = ProjectionProgress(Start, Instant.EPOCH, 0L, 0L, 0L)
+
+  implicit final val projectionProgressEncoder: Encoder[ProjectionProgress] =
+    deriveEncoder
 
 }

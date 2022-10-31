@@ -1,5 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
+import io.circe.{Encoder, Json}
+
 /**
   * Enumeration of projection execution statuses.
   */
@@ -68,4 +70,15 @@ object ExecutionStatus {
     *   the error that failed the projection
     */
   final case class Failed(th: Throwable) extends ExecutionStatus
+
+  implicit final val executionStatusEncoder: Encoder[ExecutionStatus] =
+    Encoder.instance[ExecutionStatus] {
+      case Ignored    => Json.fromString("Ignored")
+      case Pending    => Json.fromString("Pending")
+      case Running    => Json.fromString("Running")
+      case Stopped    => Json.fromString("Stopped")
+      case Passivated => Json.fromString("Passivated")
+      case Completed  => Json.fromString("Completed")
+      case Failed(_)  => Json.fromString("Failed")
+    }
 }
