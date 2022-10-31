@@ -40,9 +40,8 @@ object SupervisionModule extends ModuleDef {
     )
   )
 
-  // TODO: Add PriorityRoute?
   many[PriorityRoute].add { (route: SupervisionRoutes) =>
-    PriorityRoute(pluginsMaxPriority + 3, route.routes, requiresStrictEntity = true)
+    PriorityRoute(pluginsMaxPriority + 12, route.routes, requiresStrictEntity = true)
   }
 }
 // $COVERAGE-ON$
