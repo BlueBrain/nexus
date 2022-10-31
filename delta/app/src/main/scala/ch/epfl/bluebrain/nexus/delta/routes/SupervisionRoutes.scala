@@ -39,8 +39,8 @@ class SupervisionRoutes(
     baseUriPrefix(baseUri.prefix) {
       pathPrefix("supervision") {
         extractCaller { implicit caller =>
-          (get & pathEndOrSingleSlash) {
-            operationName(s"$prefixSegment/supervision") {
+          get {
+            operationName(s"$prefixSegment/supervision/projections") {
               authorizeFor(AclAddress.Root, supervision.read).apply {
                 emit(supervised.hideErrors.map(SupervisionBundle))
               }

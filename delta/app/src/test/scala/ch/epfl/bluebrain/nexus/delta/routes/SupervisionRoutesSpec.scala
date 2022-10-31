@@ -43,7 +43,7 @@ class SupervisionRoutesSpec extends BaseRouteSpec {
   "The supervision route" should {
 
     "be forbidden without supervision/read permission" in {
-      Get("/v1/supervision") ~> routes ~> check {
+      Get("/v1/supervision/projections") ~> routes ~> check {
         response.status shouldEqual StatusCodes.Forbidden
         response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
       }
@@ -51,13 +51,13 @@ class SupervisionRoutesSpec extends BaseRouteSpec {
 
     "be accessible with supervision/read permission" in {
       aclCheck.append(AclAddress.Root, Anonymous -> Set(supervision.read)).accepted
-      Get("/v1/supervision") ~> routes ~> check {
+      Get("/v1/supervision/projections") ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
       }
     }
 
     "return the correct running projections" in {
-      Get("/v1/supervision") ~> routes ~> check {
+      Get("/v1/supervision/projections") ~> routes ~> check {
         response.asJson shouldEqual jsonContentOf("supervision/supervision-running-proj-response.json")
       }
     }
