@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.routes.SupervisionRoutes.RunningProjections
+import ch.epfl.bluebrain.nexus.delta.routes.SupervisionRoutes.SupervisionBundle
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.emit
@@ -42,7 +42,7 @@ class SupervisionRoutes(
           (get & pathEndOrSingleSlash) {
             operationName(s"$prefixSegment/supervision") {
               authorizeFor(AclAddress.Root, supervision.read).apply {
-                emit(supervised.hideErrors.map(RunningProjections))
+                emit(supervised.hideErrors.map(SupervisionBundle))
               }
             }
           }
@@ -54,11 +54,11 @@ class SupervisionRoutes(
 
 object SupervisionRoutes {
 
-  case class RunningProjections(runningProjections: List[SupervisedDescription])
+  case class SupervisionBundle(runningProjections: List[SupervisedDescription])
 
-  implicit final val runningProjectionsEncoder: Encoder[RunningProjections] =
+  implicit final val runningProjectionsEncoder: Encoder[SupervisionBundle] =
     deriveEncoder
-  implicit val runningProjectionsJsonLdEncoder: JsonLdEncoder[RunningProjections] =
+  implicit val runningProjectionsJsonLdEncoder: JsonLdEncoder[SupervisionBundle] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.supervision))
 
   final def apply(
