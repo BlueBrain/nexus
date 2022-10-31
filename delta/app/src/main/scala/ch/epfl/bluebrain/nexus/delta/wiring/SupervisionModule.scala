@@ -14,8 +14,8 @@ import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.execution.Scheduler
 
 /**
- * Supervision module wiring config.
- */
+  * Supervision module wiring config.
+  */
 // $COVERAGE-OFF$
 object SupervisionModule extends ModuleDef {
   implicit private val classLoader = getClass.getClassLoader
@@ -36,7 +36,7 @@ object SupervisionModule extends ModuleDef {
     for {
       supervisionCtx <- ContextValue.fromFile("contexts/supervision.json")
     } yield RemoteContextResolution.fixed(
-      contexts.supervision -> supervisionCtx,
+      contexts.supervision -> supervisionCtx
     )
   )
 

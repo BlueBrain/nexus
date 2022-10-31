@@ -56,7 +56,7 @@ object SupervisionRoutes {
 
   case class SupervisionBundle(runningProjections: List[SupervisedDescription])
 
-  implicit final val runningProjectionsEncoder: Encoder[SupervisionBundle] =
+  implicit final val runningProjectionsEncoder: Encoder[SupervisionBundle]       =
     deriveEncoder
   implicit val runningProjectionsJsonLdEncoder: JsonLdEncoder[SupervisionBundle] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.supervision))

@@ -219,7 +219,7 @@ class SupervisionSuite extends BioSuite with SupervisorSetup.Fixture with Doobie
                          )
                        )
                      )
-      _ <- sv.destroy(projection1.name).assertSome(ExecutionStatus.Stopped)
+      _         <- sv.destroy(projection1.name).assertSome(ExecutionStatus.Stopped)
     } yield ()
   }
 
