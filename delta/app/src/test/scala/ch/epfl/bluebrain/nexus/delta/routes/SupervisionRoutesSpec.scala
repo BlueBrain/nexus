@@ -25,16 +25,18 @@ class SupervisionRoutesSpec extends BaseRouteSpec {
 
   private val projectRef = ProjectRef(Label.unsafe("myorg"), Label.unsafe("myproject"))
 
-  private val metadata    = ProjectionMetadata("module", "name", Some(projectRef), None)
-  private val progress    = ProjectionProgress(Offset.start, Instant.now, 1L, 1L, 1L)
-  private val description =
-    SupervisedDescription(metadata, ExecutionStrategy.EveryNode, 1, ExecutionStatus.Running, progress)
+  private val metadata     = ProjectionMetadata("module", "name", Some(projectRef), None)
+  private val progress     = ProjectionProgress(Offset.start, Instant.EPOCH, 1L, 1L, 1L)
+  private val description1 =
+    SupervisedDescription(metadata, ExecutionStrategy.PersistentSingleNode, 1, ExecutionStatus.Running, progress)
+  private val description2 =
+    SupervisedDescription(metadata, ExecutionStrategy.TransientSingleNode, 0, ExecutionStatus.Running, progress)
 
   private lazy val routes = Route.seal(
     new SupervisionRoutes(
       identities,
       aclCheck,
-      Task.delay { List(description) }
+      Task.delay { List(description1, description2) }
     ).routes
   )
 
@@ -51,7 +53,12 @@ class SupervisionRoutesSpec extends BaseRouteSpec {
       aclCheck.append(AclAddress.Root, Anonymous -> Set(supervision.read)).accepted
       Get("/v1/supervision") ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
-        println(response.asJson)
+      }
+    }
+
+    "return the correct running projections" in {
+      Get("/v1/supervision") ~> routes ~> check {
+        response.asJson shouldEqual jsonContentOf("supervision/supervision-running-proj-response.json")
       }
     }
 
