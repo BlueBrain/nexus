@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
-import monix.bio.Task
+import monix.bio.UIO
 
 import java.time.Instant
 
@@ -36,7 +36,7 @@ class SupervisionRoutesSpec extends BaseRouteSpec {
     new SupervisionRoutes(
       identities,
       aclCheck,
-      Task.delay { List(description1, description2) }
+      UIO.delay { List(description1, description2) }
     ).routes
   )
 
@@ -49,7 +49,7 @@ class SupervisionRoutesSpec extends BaseRouteSpec {
       }
     }
 
-    "be accessible with supervision/read permission" in {
+    "be accessible with supervision/read permission and return expected payload" in {
       aclCheck.append(AclAddress.Root, Anonymous -> Set(supervision.read)).accepted
       Get("/v1/supervision/projections") ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK

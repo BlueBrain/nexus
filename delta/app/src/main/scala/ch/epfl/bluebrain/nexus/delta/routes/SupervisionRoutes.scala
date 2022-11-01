@@ -19,13 +19,13 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{SupervisedDescription, Sup
 import io.circe.Encoder
 import io.circe.generic.semiauto.deriveEncoder
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
-import monix.bio.Task
+import monix.bio.UIO
 import monix.execution.Scheduler
 
 class SupervisionRoutes(
     identities: Identities,
     aclCheck: AclCheck,
-    supervised: Task[List[SupervisedDescription]]
+    supervised: UIO[List[SupervisedDescription]]
 )(implicit
     baseUri: BaseUri,
     s: Scheduler,

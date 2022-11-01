@@ -4,6 +4,7 @@ import cats.effect.concurrent.{Ref, Semaphore}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ProjectionConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ExecutionStatus.Ignored
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ExecutionStrategy.{EveryNode, PersistentSingleNode, TransientSingleNode}
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
@@ -76,12 +77,16 @@ trait Supervisor {
 
   /**
     * Returns the list of all running projections under this supervisor.
-    * @param filterIgnored
-    *   indicates whether "Ignored" projection should be filtered out
+    * @param descriptionFilter
+    *   function that indicates when a `SupervisedDescription` should be ignored. Defaults to filtering out
+    *   `SupervisedDescription`s with "Ignored" `ExecutionStatus`
     * @return
     *   a list of the currently running projections
     */
-  def getRunningProjections(filterIgnored: Boolean = true): Task[List[SupervisedDescription]]
+  def getRunningProjections(
+      descriptionFilter: SupervisedDescription => Option[SupervisedDescription] = desc =>
+        Option.when(desc.status equals Ignored)(desc)
+  ): UIO[List[SupervisedDescription]]
 
   /**
     * Stops all running projections without removing them from supervision.
@@ -285,14 +290,15 @@ object Supervisor {
         _.get(name).traverse(_.description)
       }
 
-    override def getRunningProjections(filterIgnored: Boolean = true): Task[List[SupervisedDescription]] =
+    override def getRunningProjections(
+        descriptionFilter: SupervisedDescription => Option[SupervisedDescription] = desc =>
+          Option.when(desc.status equals Ignored)(desc)
+    ): UIO[List[SupervisedDescription]] = {
       for {
-        supervised  <- mapRef.get.map(_.values.toList)
-        description <- supervised.traverse(_.description)
-      } yield {
-        if (filterIgnored) description.filterNot(_.status equals ExecutionStatus.Ignored)
-        else description
-      }
+        supervised   <- mapRef.get.map(_.values.toList)
+        descriptions <- supervised.traverseFilter { _.description.map(descriptionFilter) }
+      } yield descriptions
+    }.hideErrors
 
     override def stop(): Task[Unit] =
       for {
