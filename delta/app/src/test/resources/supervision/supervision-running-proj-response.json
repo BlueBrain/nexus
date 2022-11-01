@@ -1,43 +1,43 @@
 {
-  "@context" : "https://bluebrain.github.io/nexus/contexts/supervision.json",
-  "projections" : [
+  "@context": "https://bluebrain.github.io/nexus/contexts/supervision.json",
+  "projections": [
     {
-      "executionStrategy" : "PersistentSingleNode",
-      "metadata" : {
-        "module" : "module",
-        "name" : "name",
-        "project" : "myorg/myproject"
+      "executionStrategy": "PersistentSingleNode",
+      "metadata": {
+        "module": "module",
+        "name": "name",
+        "project": "myorg/myproject"
       },
-      "progress" : {
-        "discarded" : 1,
-        "failed" : 1,
-        "instant" : "1970-01-01T00:00:00Z",
-        "offset" : {
-          "@type" : "Start"
+      "progress": {
+        "discarded": 1,
+        "failed": 1,
+        "instant": "1970-01-01T00:00:00Z",
+        "offset": {
+          "@type": "Start"
         },
-        "processed" : 1
+        "processed": 1
       },
-      "restarts" : 1,
-      "status" : "Running"
+      "restarts": 1,
+      "status": "Running"
     },
     {
-      "executionStrategy" : "TransientSingleNode",
-      "metadata" : {
-        "module" : "module",
-        "name" : "name",
-        "project" : "myorg/myproject"
+      "executionStrategy": "TransientSingleNode",
+      "metadata": {
+        "module": "module",
+        "name": "name",
+        "project": "myorg/myproject"
       },
-      "progress" : {
-        "discarded" : 1,
-        "failed" : 1,
-        "instant" : "1970-01-01T00:00:00Z",
-        "offset" : {
-          "@type" : "Start"
+      "progress": {
+        "discarded": 1,
+        "failed": 1,
+        "instant": "1970-01-01T00:00:00Z",
+        "offset": {
+          "@type": "Start"
         },
-        "processed" : 1
+        "processed": 1
       },
-      "restarts" : 0,
-      "status" : "Running"
+      "restarts": 0,
+      "status": "Running"
     }
   ]
 }
