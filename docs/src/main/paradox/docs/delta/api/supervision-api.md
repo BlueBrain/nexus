@@ -1,6 +1,6 @@
 # Supervision
 
-This endpoint returns information about the projection supervisor.
+This endpoint returns information about the projections running on the current node.
 
 ## Fetch projections
 
