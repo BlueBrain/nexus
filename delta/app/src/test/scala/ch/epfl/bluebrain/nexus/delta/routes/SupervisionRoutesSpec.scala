@@ -53,11 +53,6 @@ class SupervisionRoutesSpec extends BaseRouteSpec {
       aclCheck.append(AclAddress.Root, Anonymous -> Set(supervision.read)).accepted
       Get("/v1/supervision/projections") ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
-      }
-    }
-
-    "return the correct running projections" in {
-      Get("/v1/supervision/projections") ~> routes ~> check {
         response.asJson shouldEqual jsonContentOf("supervision/supervision-running-proj-response.json")
       }
     }
