@@ -71,6 +71,6 @@ object SupervisionRoutes {
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering
   ): SupervisionRoutes =
-    new SupervisionRoutes(identities, aclCheck, supervisor.getRunningProjections)
+    new SupervisionRoutes(identities, aclCheck, supervisor.getRunningProjections())
 
 }

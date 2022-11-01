@@ -29,7 +29,7 @@ object SupervisionModule extends ModuleDef {
         s: Scheduler,
         rc: RemoteContextResolution @Id("aggregate"),
         jo: JsonKeyOrdering
-    ) => new SupervisionRoutes(identities, aclCheck, supervisor.getRunningProjections)(baseUri, s, rc, jo)
+    ) => new SupervisionRoutes(identities, aclCheck, supervisor.getRunningProjections())(baseUri, s, rc, jo)
   }
 
   many[RemoteContextResolution].addEffect(

@@ -76,10 +76,12 @@ trait Supervisor {
 
   /**
     * Returns the list of all running projections under this supervisor.
+    * @param filterIgnored
+    *   indicates whether "Ignored" projection should be filtered out
     * @return
     *   a list of the currently running projections
     */
-  def getRunningProjections: Task[List[SupervisedDescription]]
+  def getRunningProjections(filterIgnored: Boolean = true): Task[List[SupervisedDescription]]
 
   /**
     * Stops all running projections without removing them from supervision.
@@ -283,11 +285,14 @@ object Supervisor {
         _.get(name).traverse(_.description)
       }
 
-    override def getRunningProjections: Task[List[SupervisedDescription]] =
+    override def getRunningProjections(filterIgnored: Boolean = true): Task[List[SupervisedDescription]] =
       for {
         supervised  <- mapRef.get.map(_.values.toList)
         description <- supervised.traverse(_.description)
-      } yield description
+      } yield {
+        if (filterIgnored) description.filterNot(_.status equals ExecutionStatus.Ignored)
+        else description
+      }
 
     override def stop(): Task[Unit] =
       for {
