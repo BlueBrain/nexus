@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.config.BlazegraphViewsCo
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.{BatchConfig, EventLogConfig}
 import com.typesafe.config.Config
 import pureconfig.error.FailureReason
 import pureconfig.generic.auto._
@@ -47,6 +47,7 @@ final case class BlazegraphViewsConfig(
     queryTimeout: Duration,
     eventLog: EventLogConfig,
     pagination: PaginationConfig,
+    batch: BatchConfig,
     prefix: String,
     maxViewRefs: Int,
     idleTimeout: Duration

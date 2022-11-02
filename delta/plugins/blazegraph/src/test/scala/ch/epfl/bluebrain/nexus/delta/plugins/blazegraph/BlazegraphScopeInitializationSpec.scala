@@ -35,6 +35,8 @@ class BlazegraphScopeInitializationSpec
   implicit private val uuidF: UUIDF  = UUIDF.fixed(uuid)
   implicit private val sc: Scheduler = Scheduler.global
 
+  private val prefix = "prefix"
+
   private val saRealm: Label              = Label.unsafe("service-accounts")
   private val usersRealm: Label           = Label.unsafe("users")
   implicit private val sa: ServiceAccount = ServiceAccount(User("nexus-sa", saRealm))
@@ -56,6 +58,7 @@ class BlazegraphScopeInitializationSpec
     alwaysValidate,
     _ => UIO.unit,
     eventLogConfig,
+    prefix,
     xas
   ).accepted
 

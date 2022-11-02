@@ -17,7 +17,12 @@ import io.circe.syntax.EncoderOps
 import monix.bio.Task
 import shapeless.Typeable
 
-class GraphResourceToDocument(context: Option[ContextObject])(implicit cr: RemoteContextResolution) extends Pipe {
+/**
+  * Pipe that transforms a [[GraphResource]] into a Json document
+  * @param context
+  *   an optional context to compute the compacted JSON-LD for of the [[GraphResource]]
+  */
+final class GraphResourceToDocument(context: Option[ContextObject])(implicit cr: RemoteContextResolution) extends Pipe {
   override type In  = GraphResource
   override type Out = Json
   override def label: Label                    = GraphResourceToDocument.label

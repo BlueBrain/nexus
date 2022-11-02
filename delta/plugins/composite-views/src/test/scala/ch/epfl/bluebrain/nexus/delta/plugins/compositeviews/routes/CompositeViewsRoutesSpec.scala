@@ -6,7 +6,6 @@ import akka.http.scaladsl.model.{HttpEntity, StatusCodes, Uri}
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import akka.util.ByteString
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryClientDummy
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.ProjectionId.{CompositeViewProjectionId, SourceProjectionId, ViewProjectionId}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.DeltaClient
@@ -129,7 +128,7 @@ class CompositeViewsRoutesSpec
       ViewProjectionId(ElasticSearchViews.projectionName(projectRef, esId, 3))
     )
   private val blazeProjectionId    =
-    CompositeViewProjectionId(SourceProjectionId(s"${uuid}_3"), ViewProjectionId(BlazegraphViews.projectionId(uuid, 3)))
+    CompositeViewProjectionId(SourceProjectionId(s"${uuid}_3"), ViewProjectionId(s"${uuid}_3"))
   private val viewsProgressesCache = KeyValueStore.localLRU[String, ProjectionProgress](10L).accepted
 
   private val statisticsProgress = new ProgressesStatistics(

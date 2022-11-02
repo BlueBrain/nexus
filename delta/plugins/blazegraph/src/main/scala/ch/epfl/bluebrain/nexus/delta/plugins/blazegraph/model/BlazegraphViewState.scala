@@ -113,7 +113,7 @@ final case class BlazegraphViewState(
 object BlazegraphViewState {
 
   @nowarn("cat=unused")
-  val serializer: Serializer[Iri, BlazegraphViewState] = {
+  implicit val serializer: Serializer[Iri, BlazegraphViewState] = {
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
     implicit val configuration: Configuration               = Serializer.circeConfiguration
     implicit val valueEncoder: Encoder[BlazegraphViewValue] =
