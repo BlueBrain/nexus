@@ -156,6 +156,13 @@ object Permission {
     val list: List[Permission] = Read :: Nil
   }
 
+  object Supervision {
+    val name = "supervision"
+    val Read: Permission = Permission(name, "read")
+
+    val list: List[Permission] = Read :: Nil
+  }
+
   val minimalPermissions: Set[Permission] =
     (Version.list ++
       Acls.list ++
@@ -171,7 +178,8 @@ object Permission {
       Views.list ++
       Storages.list ++
       Archives.list ++
-      Quotas.list).toSet
+      Quotas.list ++
+      Supervision.list).toSet
 
   val adminPermissions: Set[Permission] =
     (Version.list ++
