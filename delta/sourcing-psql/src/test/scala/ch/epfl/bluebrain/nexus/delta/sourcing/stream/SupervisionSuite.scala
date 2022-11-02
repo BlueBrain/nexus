@@ -60,9 +60,7 @@ class SupervisionSuite extends BioSuite with SupervisorSetup.Fixture with Doobie
   }
 
   test("Cannot fetch ignored projection descriptions (by default)") {
-    for {
-      _ <- sv.getRunningProjections().assert(List.empty)
-    } ()
+    sv.getRunningProjections().assert(List.empty)
   }
 
   test("Destroy an ignored projection") {
@@ -230,9 +228,7 @@ class SupervisionSuite extends BioSuite with SupervisorSetup.Fixture with Doobie
   }
 
   test("No running projections are found when none are running") {
-    for {
-      _ <- sv.getRunningProjections().eventually(List.empty)
-    } yield ()
+    sv.getRunningProjections().eventually(List.empty)
   }
 
 }
