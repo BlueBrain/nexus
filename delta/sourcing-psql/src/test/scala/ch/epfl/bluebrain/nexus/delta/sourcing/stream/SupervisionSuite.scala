@@ -59,6 +59,10 @@ class SupervisionSuite extends BioSuite with SupervisorSetup.Fixture with Doobie
       )
   }
 
+  test("Cannot fetch ignored projection descriptions (by default)") {
+    sv.getRunningProjections().assert(List.empty)
+  }
+
   test("Destroy an ignored projection") {
     sv.destroy(projection2.name).assertSome(ExecutionStatus.Ignored)
   }
@@ -191,6 +195,40 @@ class SupervisionSuite extends BioSuite with SupervisorSetup.Fixture with Doobie
       _ <- sv.describe(projection1.name).eventuallyNone
       _ <- projectionStore.offset(projection1.name).assertNone
     } yield ()
+  }
+
+  test("Obtain the correct running projection") {
+    val expectedProgress = ProjectionProgress(
+      Offset.at(20L),
+      Instant.EPOCH,
+      20,
+      0,
+      0
+    )
+    for {
+      flag      <- Ref.of[Task, Boolean](false)
+      projection =
+        CompiledProjection.fromStream(projection1, PersistentSingleNode, evalStream(flag.set(true)))
+      _         <- sv.run(projection).eventually(ExecutionStatus.Running)
+      _         <- flag.get.eventually(true)
+      _         <- sv.getRunningProjections()
+                     .eventually(
+                       List(
+                         SupervisedDescription(
+                           projection1,
+                           PersistentSingleNode,
+                           0,
+                           ExecutionStatus.Completed,
+                           expectedProgress
+                         )
+                       )
+                     )
+      _         <- sv.destroy(projection1.name).assertSome(ExecutionStatus.Stopped)
+    } yield ()
+  }
+
+  test("No running projections are found when none are running") {
+    sv.getRunningProjections().eventually(List.empty)
   }
 
 }

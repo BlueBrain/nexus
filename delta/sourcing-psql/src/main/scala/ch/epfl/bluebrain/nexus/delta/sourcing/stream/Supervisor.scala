@@ -4,6 +4,7 @@ import cats.effect.concurrent.{Ref, Semaphore}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ProjectionConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ExecutionStatus.Ignored
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ExecutionStrategy.{EveryNode, PersistentSingleNode, TransientSingleNode}
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
@@ -73,6 +74,19 @@ trait Supervisor {
     *   the name of the projection
     */
   def describe(name: String): Task[Option[SupervisedDescription]]
+
+  /**
+    * Returns the list of all running projections under this supervisor.
+    * @param descriptionFilter
+    *   function that indicates when a `SupervisedDescription` should be ignored. Defaults to filtering out
+    *   `SupervisedDescription`s with "Ignored" `ExecutionStatus`
+    * @return
+    *   a list of the currently running projections
+    */
+  def getRunningProjections(
+      descriptionFilter: SupervisedDescription => Option[SupervisedDescription] = desc =>
+        Option.when(desc.status != Ignored)(desc)
+  ): UIO[List[SupervisedDescription]]
 
   /**
     * Stops all running projections without removing them from supervision.
@@ -275,6 +289,16 @@ object Supervisor {
       mapRef.get.flatMap {
         _.get(name).traverse(_.description)
       }
+
+    override def getRunningProjections(
+        descriptionFilter: SupervisedDescription => Option[SupervisedDescription] = desc =>
+          Option.when(desc.status != Ignored)(desc)
+    ): UIO[List[SupervisedDescription]] = {
+      for {
+        supervised   <- mapRef.get.map(_.values.toList)
+        descriptions <- supervised.traverseFilter { _.description.map(descriptionFilter) }
+      } yield descriptions
+    }.hideErrors
 
     override def stop(): Task[Unit] =
       for {

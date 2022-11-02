@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ProjectionConfig.ClusterConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ExecutionStrategy.{EveryNode, SingleNode}
+import io.circe.{Encoder, Json}
 
 /**
   * Determines how projections should be executed, namely if the current node must run this projection and if offsets
@@ -49,4 +50,11 @@ object ExecutionStrategy {
     */
   final case object EveryNode extends ExecutionStrategy
   type EveryNode = EveryNode.type
+
+  implicit final val executionStrategyEncoder: Encoder[ExecutionStrategy] =
+    Encoder.instance[ExecutionStrategy] {
+      case PersistentSingleNode => Json.fromString("PersistentSingleNode")
+      case TransientSingleNode  => Json.fromString("TransientSingleNode")
+      case EveryNode            => Json.fromString("EveryNode")
+    }
 }
