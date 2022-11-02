@@ -85,7 +85,7 @@ trait Supervisor {
     */
   def getRunningProjections(
       descriptionFilter: SupervisedDescription => Option[SupervisedDescription] = desc =>
-        Option.when(desc.status equals Ignored)(desc)
+        Option.when(desc.status != Ignored)(desc)
   ): UIO[List[SupervisedDescription]]
 
   /**
@@ -292,7 +292,7 @@ object Supervisor {
 
     override def getRunningProjections(
         descriptionFilter: SupervisedDescription => Option[SupervisedDescription] = desc =>
-          Option.when(desc.status equals Ignored)(desc)
+          Option.when(desc.status != Ignored)(desc)
     ): UIO[List[SupervisedDescription]] = {
       for {
         supervised   <- mapRef.get.map(_.values.toList)
