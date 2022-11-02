@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
+import ch.epfl.bluebrain.nexus.delta.sourcing.PurgeElemFailures
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
@@ -12,6 +13,7 @@ import ch.epfl.bluebrain.nexus.testkit.postgres.Doobie
 import munit.AnyFixture
 
 import java.time.Instant
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
 class ProjectionStoreSuite extends BioSuite with IOFixedClock with Doobie.Fixture with Doobie.Assertions {
 
@@ -143,6 +145,23 @@ class ProjectionStoreSuite extends BioSuite with IOFixedClock with Doobie.Fixtur
     for {
       entries <- store.failedElemEntries(project, iri"https://example.com", Offset.start).compile.toList
       _        = entries.assertEmpty()
+    } yield ()
+  }
+
+  // 14 days ttl for failed elems
+  private lazy val purgeElemFailures: FiniteDuration => PurgeElemFailures = timeTravel =>
+    new PurgeElemFailures(xas, 14.days)(
+      IOFixedClock.ioClock(Instant.now.plusMillis(timeTravel.toMillis))
+    )
+
+  test("Purge failed elements after predefined ttl") {
+    for {
+      _        <- purgeElemFailures(13.days)()
+      entries  <- store.failedElemEntries(project, resource, Offset.start).compile.toList
+      _         = entries.assertSize(3) // no elements are deleted after 13 days
+      _        <- purgeElemFailures(14.days)()
+      entries2 <- store.failedElemEntries(project, resource, Offset.start).compile.toList
+      _         = entries2.assertEmpty() // all elements were deleted after 14 days
     } yield ()
   }
 
