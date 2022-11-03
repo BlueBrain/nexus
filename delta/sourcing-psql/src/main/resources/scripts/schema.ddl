@@ -132,6 +132,18 @@ CREATE INDEX IF NOT EXISTS projection_offsets_project_idx ON public.projection_o
 CREATE INDEX IF NOT EXISTS projection_offsets_resource_id_idx ON public.projection_offsets(resource_id);
 
 --
+-- Table for projection offsets
+--
+CREATE TABLE IF NOT EXISTS public.projection_restarts(
+    ordering     bigserial,
+    name         text NOT NULL,
+    value        JSONB        NOT NULL,
+    instant      timestamptz  NOT NULL,
+    acknowledged boolean      NOT NULL,
+    PRIMARY KEY(ordering)
+);
+
+--
 -- Table for elem errors
 --
 CREATE TABLE IF NOT EXISTS public.failed_elem_logs(

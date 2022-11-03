@@ -1,10 +1,15 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
+import cats.effect.Resource
 import cats.effect.concurrent.{Ref, Semaphore}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ProjectionConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ExecutionStatus.Ignored
+import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projections
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.model.ProjectionRestart
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ExecutionStrategy.{EveryNode, PersistentSingleNode, TransientSingleNode}
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
@@ -47,6 +52,13 @@ trait Supervisor {
     *   [[Supervisor]]
     */
   def run(projection: CompiledProjection): Task[ExecutionStatus] = run(projection, Task.unit)
+
+  /**
+    * Restart the given projection from the beginning
+    * @param name
+    *   the name of the projection
+    */
+  def restart(name: String): Task[Option[ExecutionStatus]]
 
   /**
     * Stops the projection with the provided `name` and removes it from supervision. It performs a noop if the
@@ -105,23 +117,33 @@ object Supervisor {
     stop = Task.unit
   )
 
+  private[sourcing] val watchRestartMetadata = ProjectionMetadata("system", "watch-restarts", None, None)
+  private[sourcing] val purgeRestartMetadata = ProjectionMetadata("system", "purge-projection-restarts", None, None)
+
   /**
     * Constructs a new [[Supervisor]] instance using the provided `store` and `cfg`.
-    * @param store
-    *   the projection store for handling offsets
+    * @param projections
+    *   the projections module
     * @param cfg
     *   the projection configuration
     */
-  def apply(store: ProjectionStore, cfg: ProjectionConfig): Task[Supervisor] =
-    for {
-      _              <- Task.delay(log.info("Starting Delta supervisor"))
-      semaphore      <- Semaphore[Task](1L)
-      mapRef         <- Ref.of[Task, Map[String, Supervised]](Map.empty)
-      signal         <- SignallingRef[Task, Boolean](false)
-      supervision    <- supervisionTask(semaphore, mapRef, signal, cfg).start
-      supervisionRef <- Ref.of[Task, Fiber[Throwable, Unit]](supervision)
-      _              <- Task.delay(log.info("Delta supervisor is up"))
-    } yield new Impl(store, cfg, semaphore, mapRef, signal, supervisionRef)
+  def apply(projections: Projections, cfg: ProjectionConfig): Resource[Task, Supervisor] = {
+    def init: Task[Supervisor] =
+      for {
+        _              <- Task.delay(log.info("Starting Delta supervisor"))
+        semaphore      <- Semaphore[Task](1L)
+        mapRef         <- Ref.of[Task, Map[String, Supervised]](Map.empty)
+        signal         <- SignallingRef[Task, Boolean](false)
+        supervision    <- supervisionTask(semaphore, mapRef, signal, cfg).start
+        supervisionRef <- Ref.of[Task, Fiber[Throwable, Unit]](supervision)
+        supervisor      = new Impl(projections, cfg, semaphore, mapRef, signal, supervisionRef)
+        _              <- watchRestarts(supervisor, projections)
+        _              <- purgeRestarts(supervisor, projections, cfg.deleteExpiredEvery)
+        _              <- Task.delay(log.info("Delta supervisor is up"))
+      } yield supervisor
+
+    Resource.make[Task, Supervisor](init)(_.stop())
+  }
 
   private def supervisionTask(
       semaphore: Semaphore[Task],
@@ -149,22 +171,61 @@ object Supervisor {
               log,
               s"running projection ${metadata.name} from module ${metadata.module}"
             )
-
             semaphore
-              .withPermit {
-                supervised.task.flatMap { control =>
-                  Task.delay(log.info(s"Restarting projection '${metadata.module}/${metadata.name}'")) >>
-                    mapRef.update(
-                      _.updatedWith(metadata.name)(_.map(_.copy(restarts = supervised.restarts + 1, control = control)))
-                    )
-                }
-              }
+              .withPermit { restartProjection(supervised, mapRef) }
               .retryingOnSomeErrors(retryStrategy.retryWhen, retryStrategy.policy, retryStrategy.onError)
         }
       }
       .interruptWhen(signal)
       .compile
       .drain
+  }
+
+  protected def restartProjection(supervised: Supervised, mapRef: Ref[Task, Map[String, Supervised]]): Task[Unit] = {
+    val metadata = supervised.metadata
+    supervised.task.flatMap { control =>
+      Task.delay(log.info(s"Restarting projection '${metadata.module}/${metadata.name}'")) >>
+        mapRef.update(
+          _.updatedWith(metadata.name)(_.map(_.copy(restarts = supervised.restarts + 1, control = control)))
+        )
+    }
+  }
+
+  private def watchRestarts(supervisor: Supervisor, projections: Projections) = {
+    supervisor.run(
+      CompiledProjection.fromStream(
+        watchRestartMetadata,
+        ExecutionStrategy.EveryNode,
+        (offset: Offset) =>
+          projections
+            .restarts(offset)
+            .evalMap {
+              case s: SuccessElem[ProjectionRestart] =>
+                supervisor.restart(s.value.name).flatMap { status =>
+                  if (status.exists(_ != ExecutionStatus.Ignored))
+                    projections.acknowledgeRestart(s.offset).as(s.void)
+                  else
+                    Task.pure(s.dropped)
+                }
+              case other                             => Task.pure(other.void)
+            }
+      )
+    )
+  }
+
+  private def purgeRestarts(supervisor: Supervisor, projections: Projections, deleteExpiredEvery: FiniteDuration) = {
+    val stream = Stream
+      .awakeEvery[Task](deleteExpiredEvery)
+      .evalTap(_ => projections.deleteExpiredRestarts())
+      .drain
+    supervisor
+      .run(
+        CompiledProjection.fromStream(
+          purgeRestartMetadata,
+          ExecutionStrategy.TransientSingleNode,
+          _ => stream
+        )
+      )
   }
 
   final private case class Supervised(
@@ -194,7 +255,7 @@ object Supervisor {
   )
 
   private class Impl(
-      store: ProjectionStore,
+      projections: Projections,
       cfg: ProjectionConfig,
       semaphore: Semaphore[Task],
       mapRef: Ref[Task, Map[String, Supervised]],
@@ -244,15 +305,41 @@ object Supervisor {
       val (fetchProgress, saveProgress, saveFailedElems) = projection.executionStrategy match {
         case PersistentSingleNode            =>
           (
-            store.offset(projection.metadata.name),
-            store.save(projection.metadata, _),
-            store.saveFailedElems(projection.metadata, _)
+            projections.offset(projection.metadata.name),
+            projections.save(projection.metadata, _),
+            projections.saveFailedElems(projection.metadata, _)
           )
         case TransientSingleNode | EveryNode =>
-          (UIO.none, (_: ProjectionProgress) => UIO.unit, store.saveFailedElems(projection.metadata, _))
+          (UIO.none, (_: ProjectionProgress) => UIO.unit, projections.saveFailedElems(projection.metadata, _))
       }
       Projection(projection, fetchProgress, saveProgress, saveFailedElems)(cfg.batch)
     }
+
+    def restart(name: String): Task[Option[ExecutionStatus]] =
+      semaphore.withPermit {
+        for {
+          supervised <- mapRef.get.map(_.get(name))
+          status     <- supervised.traverse { s =>
+                          val metadata = s.metadata
+                          if (!s.executionStrategy.shouldRun(name, cfg.cluster))
+                            Task.delay(
+                              log.info(s"'${metadata.module}/${metadata.name}' is ignored. Skipping restart...")
+                            ) >>
+                              Task.pure(ExecutionStatus.Ignored)
+                          else {
+                            for {
+                              _      <- Task.delay(log.info(s"Restarting '${metadata.module}/${metadata.name}'..."))
+                              _      <- stopProjection(s)
+                              _      <- Task.when(s.executionStrategy == PersistentSingleNode)(
+                                          projections.save(metadata, ProjectionProgress.NoProgress)
+                                        )
+                              _      <- Supervisor.restartProjection(s, mapRef)
+                              status <- s.control.status
+                            } yield status
+                          }
+                        }
+        } yield status
+      }
 
     override def destroy(name: String, clear: Task[Unit]): Task[Option[ExecutionStatus]] = {
       semaphore.withPermit {
@@ -267,7 +354,7 @@ object Supervisor {
                             for {
                               _      <- Task.delay(log.info(s"Destroying '${metadata.module}/${metadata.name}'..."))
                               _      <- stopProjection(s)
-                              _      <- Task.when(s.executionStrategy == PersistentSingleNode)(store.delete(name))
+                              _      <- Task.when(s.executionStrategy == PersistentSingleNode)(projections.delete(name))
                               _      <- clear
                               status <- s.control.status
                                           .restartUntil(e => e == ExecutionStatus.Completed || e == ExecutionStatus.Stopped)
@@ -309,7 +396,7 @@ object Supervisor {
         _     <- semaphore.withPermit {
                    for {
                      supervised <- mapRef.get.map(_.values.toList)
-                     _          <- Task.delay(log.error(s"Stopping ${supervised.size} projection(s)..."))
+                     _          <- Task.delay(log.info(s"Stopping ${supervised.size} projection(s)..."))
                      _          <- supervised.traverse { s => stopProjection(s) }
                    } yield ()
                  }

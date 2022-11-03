@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
-import cats.effect.Clock
-import ch.epfl.bluebrain.nexus.delta.config.AppConfig
+import cats.effect.{Clock, Sync}
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceShifts
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
@@ -9,16 +8,17 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
 import ch.epfl.bluebrain.nexus.delta.sourcing.DeleteExpired
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{ProjectionConfig, QueryConfig}
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ReferenceRegistry.LazyReferenceRegistry
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projections
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes._
 import izumi.distage.model.definition.ModuleDef
-import monix.bio.UIO
+import monix.bio.{Task, UIO}
 
 /**
   * Indexing specific wiring.
   */
 object StreamModule extends ModuleDef {
+  addImplicit[Sync[Task]]
 
   make[GraphResourceStream].fromEffect {
     (
@@ -45,14 +45,12 @@ object StreamModule extends ModuleDef {
     registry
   }
 
-  make[LazyReferenceRegistry] // to solve circular dependencies for pipes that depend on the reference registry
-
-  make[ProjectionStore].from { (xas: Transactors, cfg: AppConfig) =>
-    ProjectionStore(xas, cfg.projections.query)
+  make[Projections].from { (xas: Transactors, cfg: ProjectionConfig) =>
+    Projections(xas, cfg.query, cfg.restartTtl)
   }
 
-  make[Supervisor].fromEffect { (store: ProjectionStore, cfg: AppConfig) =>
-    Supervisor(store, cfg.projections)
+  make[Supervisor].fromResource { (projections: Projections, cfg: ProjectionConfig) =>
+    Supervisor(projections, cfg)
   }
 
   make[DeleteExpired].fromEffect {
