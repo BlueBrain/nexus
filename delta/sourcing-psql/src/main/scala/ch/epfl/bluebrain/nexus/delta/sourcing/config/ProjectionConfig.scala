@@ -29,6 +29,7 @@ final case class ProjectionConfig(
     retry: RetryStrategyConfig,
     supervisionCheckInterval: FiniteDuration,
     deleteExpiredEvery: FiniteDuration,
+    deleteFailedElemAfter: FiniteDuration,
     query: QueryConfig
 )
 
