@@ -73,7 +73,7 @@ trait ProjectionStore {
     * @param failures
     *   the FailedElem to save
     */
-  def saveFailedElems(metadata: ProjectionMetadata, failures: List[FailedElem])(implicit clock: Clock[UIO]): UIO[Unit]
+  def saveFailedElems(metadata: ProjectionMetadata, failures: List[FailedElem]): UIO[Unit]
 
   /**
     * Saves one failed elem
@@ -192,7 +192,7 @@ object ProjectionStore {
       override def saveFailedElems(
           metadata: ProjectionMetadata,
           failures: List[FailedElem]
-      )(implicit clock: Clock[UIO]): UIO[Unit] = {
+      ): UIO[Unit] = {
         val log  = UIO(logger.debug(s"[{}] Saving {} failed elems.", metadata.name, failures.length))
         val save = IOUtils.instant.flatMap { instant =>
           failures.traverse(elem => saveFailedElem(metadata, elem, instant)).transact(xas.write).void.hideErrors
