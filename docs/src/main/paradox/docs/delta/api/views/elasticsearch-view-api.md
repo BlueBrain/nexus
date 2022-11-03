@@ -312,7 +312,7 @@ POST /v1/views/{org_label}/{project_label}/{view_id}/_search
 ```
 
 The supported payload is defined on the
-@link:[ElasticSearch documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-body.html){
+@link:[ElasticSearch documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-search.html#search-search-api-request-body){
 open=new }
 
 The string `documents` is used as a prefix of the default ElasticSearch `view_id`
