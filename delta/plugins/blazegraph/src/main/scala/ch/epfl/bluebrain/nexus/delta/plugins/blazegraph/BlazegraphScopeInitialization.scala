@@ -32,6 +32,8 @@ class BlazegraphScopeInitialization(views: BlazegraphViews, serviceAccount: Serv
   implicit private val kamonComponent: KamonMetricComponent = KamonMetricComponent(entityType.value)
 
   private val defaultValue: IndexingBlazegraphViewValue = IndexingBlazegraphViewValue(
+    name = None,
+    description = None,
     resourceSchemas = Set.empty,
     resourceTypes = Set.empty,
     resourceTag = None,

@@ -30,6 +30,8 @@ class BlazegraphViewsSerializationSuite extends SerializationSuite {
   private val indexingId       = nxv + "indexing-view"
   private val aggregateId      = nxv + "aggregate-view"
   private val indexingValue    = IndexingBlazegraphViewValue(
+    Some("viewName"),
+    Some("viewDescription"),
     Set(nxv + "some-schema"),
     Set(nxv + "SomeType"),
     Some(UserTag.unsafe("some.tag")),
@@ -38,16 +40,24 @@ class BlazegraphViewsSerializationSuite extends SerializationSuite {
     Permission.unsafe("my/permission")
   )
   private val viewRef          = ViewRef(projectRef, indexingId)
-  private val aggregateValue   = AggregateBlazegraphViewValue(NonEmptySet.of(viewRef))
+  private val aggregateValue   =
+    AggregateBlazegraphViewValue(Some("viewName"), Some("viewDescription"), NonEmptySet.of(viewRef))
 
   private val indexingSource  = indexingValue.toJson(indexingId)
   private val aggregateSource = aggregateValue.toJson(aggregateId)
 
+  private val defaultIndexingValue = IndexingBlazegraphViewValue()
+  private val defaultIndexingSource = defaultIndexingValue.toJson(indexingId)
+
   private val blazegraphViewsMapping = VectorMap(
+    BlazegraphViewCreated(indexingId, projectRef, uuid, defaultIndexingValue, defaultIndexingSource, 1, instant, subject)    ->
+      loadEvents("blazegraph", "default-indexing-view-created.json"),
     BlazegraphViewCreated(indexingId, projectRef, uuid, indexingValue, indexingSource, 1, instant, subject)       ->
       loadEvents("blazegraph", "indexing-view-created.json"),
     BlazegraphViewCreated(aggregateId, projectRef, uuid, aggregateValue, aggregateSource, 1, instant, subject)    ->
       loadEvents("blazegraph", "aggregate-view-created.json"),
+    BlazegraphViewUpdated(indexingId, projectRef, uuid, defaultIndexingValue, defaultIndexingSource, 2, instant, subject)       ->
+      loadEvents("blazegraph", "default-indexing-view-updated.json"),
     BlazegraphViewUpdated(indexingId, projectRef, uuid, indexingValue, indexingSource, 2, instant, subject)       ->
       loadEvents("blazegraph", "indexing-view-updated.json"),
     BlazegraphViewUpdated(aggregateId, projectRef, uuid, aggregateValue, aggregateSource, 2, instant, subject)    ->

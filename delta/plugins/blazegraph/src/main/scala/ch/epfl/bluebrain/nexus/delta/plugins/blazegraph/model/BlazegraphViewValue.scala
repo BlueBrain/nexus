@@ -28,6 +28,18 @@ sealed trait BlazegraphViewValue extends Product with Serializable {
 
   /**
     * @return
+    *   the name of the view
+    */
+  def name: Option[String]
+
+  /**
+    * @return
+    *   the description of the view
+    */
+  def description: Option[String]
+
+  /**
+    * @return
     *   the view type
     */
   def tpe: BlazegraphViewType
@@ -61,6 +73,8 @@ object BlazegraphViewValue {
     *   the permission required for querying this view
     */
   final case class IndexingBlazegraphViewValue(
+      name: Option[String] = None,
+      description: Option[String] = None,
       resourceSchemas: Set[Iri] = Set.empty,
       resourceTypes: Set[Iri] = Set.empty,
       resourceTag: Option[UserTag] = None,
@@ -91,7 +105,11 @@ object BlazegraphViewValue {
     * @param views
     *   the collection of views where queries will be delegated (if necessary permissions are met)
     */
-  final case class AggregateBlazegraphViewValue(views: NonEmptySet[ViewRef]) extends BlazegraphViewValue {
+  final case class AggregateBlazegraphViewValue(
+      name: Option[String],
+      description: Option[String],
+      views: NonEmptySet[ViewRef]
+  ) extends BlazegraphViewValue {
     override val tpe: BlazegraphViewType = BlazegraphViewType.AggregateBlazegraphView
   }
 
