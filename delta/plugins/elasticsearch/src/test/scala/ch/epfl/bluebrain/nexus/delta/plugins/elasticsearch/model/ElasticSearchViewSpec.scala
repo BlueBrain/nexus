@@ -11,9 +11,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.{PipeStep, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{DiscardMetadata, FilterBySchema, FilterByType, FilterDeprecated, SourceAsText}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.FilterBySchema.FilterBySchemaConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.FilterByType.FilterByTypeConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes._
 import ch.epfl.bluebrain.nexus.testkit.{CirceEq, CirceLiteral, IOValues, TestHelpers}
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
@@ -41,6 +41,8 @@ class ElasticSearchViewSpec
     val uuid                                                      = UUID.fromString("f85d862a-9ec0-4b9a-8aed-2938d7ca9981")
     def indexingView(pipeline: List[PipeStep]): ElasticSearchView = IndexingElasticSearchView(
       id,
+      Some("viewName"),
+      Some("viewDescription"),
       project,
       uuid,
       Some(UserTag.unsafe("mytag")),
@@ -81,6 +83,8 @@ class ElasticSearchViewSpec
   "An AggregateElasticSearchView" should {
     val view: ElasticSearchView = AggregateElasticSearchView(
       id,
+      Some("viewName"),
+      Some("viewDescription"),
       project,
       NonEmptySet.of(ViewRef(project, nxv + "view1"), ViewRef(project, nxv + "view2")),
       tagsMap,

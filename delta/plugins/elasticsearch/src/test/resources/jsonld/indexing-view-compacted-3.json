@@ -34,5 +34,7 @@
         }
       }
     }
-  }
+  },
+  "description": "viewDescription",
+  "name": "viewName"
 }

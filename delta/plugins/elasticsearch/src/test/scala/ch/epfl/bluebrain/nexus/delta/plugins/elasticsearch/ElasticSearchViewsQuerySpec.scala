@@ -90,6 +90,8 @@ class ElasticSearchViewsQuerySpec(override val docker: ElasticSearchDocker)
 
   private val indexingView: IndexingElasticSearchViewValue =
     IndexingElasticSearchViewValue(
+      name = None,
+      description = None,
       resourceTag = None,
       pipeline = List(PipeStep.noConfig(FilterDeprecated.label), PipeStep.noConfig(DiscardMetadata.label)),
       mapping = Some(mappings),
@@ -109,18 +111,24 @@ class ElasticSearchViewsQuerySpec(override val docker: ElasticSearchDocker)
   // Aggregates all views of project1
   private val aggView1Proj1      = ViewRef(project1.ref, nxv + "aggView1Proj1")
   private val aggView1Proj1Views = AggregateElasticSearchViewValue(
+    Some("aggregateView1"),
+    Some("aggregate of views from project1"),
     NonEmptySet.of(view1Proj1, view2Proj1)
   )
 
   // Aggregates view1 of project2, references an aggregated view on project 2 and references the previous aggregate which aggregates all views of project1
   private val aggView1Proj2      = ViewRef(project2.ref, nxv + "aggView1Proj2")
   private val aggView1Proj2Views = AggregateElasticSearchViewValue(
+    Some("aggregateView2"),
+    Some("aggregate view1proj2 and aggregate of project1"),
     NonEmptySet.of(view1Proj2, aggView1Proj1)
   )
 
   // Aggregates view2 of project2 and references aggView1Proj2
   private val aggView2Proj2      = ViewRef(project1.ref, nxv + "aggView1Proj2")
   private val aggView2Proj2Views = AggregateElasticSearchViewValue(
+    Some("aggregateView3"),
+    Some("aggregate view2proj2 and aggregateView2"),
     NonEmptySet.of(view2Proj2, aggView1Proj2)
   )
 
@@ -196,6 +204,8 @@ class ElasticSearchViewsQuerySpec(override val docker: ElasticSearchDocker)
 
     "create the cycle between project2 aggregate views" in {
       val newValue = AggregateElasticSearchViewValue(
+        None,
+        None,
         NonEmptySet.of(view1Proj1, view2Proj1, aggView2Proj2)
       )
       views.update(aggView1Proj1.viewId, aggView1Proj1.project, 1, newValue).accepted

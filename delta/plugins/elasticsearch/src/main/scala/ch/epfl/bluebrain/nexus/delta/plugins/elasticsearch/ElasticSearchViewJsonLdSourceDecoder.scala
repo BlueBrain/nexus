@@ -64,6 +64,8 @@ class ElasticSearchViewJsonLdSourceDecoder private (
 object ElasticSearchViewJsonLdSourceDecoder {
 
   sealed private trait ElasticSearchViewFields extends Product with Serializable {
+    def name: Option[String]
+    def description: Option[String]
     def tpe: ElasticSearchViewType
   }
 
@@ -71,6 +73,8 @@ object ElasticSearchViewJsonLdSourceDecoder {
 
     // Describe the legacy payload using deprecated fields to keep retro-compatibility
     final case class LegacyIndexingElasticSearchViewFields(
+        name: Option[String] = None,
+        description: Option[String] = None,
         resourceSchemas: Set[Iri] = Set.empty,
         resourceTypes: Set[Iri] = Set.empty,
         resourceTag: Option[UserTag] = None,
@@ -85,6 +89,8 @@ object ElasticSearchViewJsonLdSourceDecoder {
     }
 
     final case class IndexingElasticSearchViewFields(
+        name: Option[String] = None,
+        description: Option[String] = None,
         resourceTag: Option[UserTag] = None,
         pipeline: Option[List[PipeStep]] = None,
         mapping: JsonObject,
@@ -96,6 +102,8 @@ object ElasticSearchViewJsonLdSourceDecoder {
     }
 
     final case class AggregateElasticSearchViewFields(
+        name: Option[String] = None,
+        description: Option[String] = None,
         views: NonEmptySet[ViewRef]
     ) extends ElasticSearchViewFields {
       override val tpe: ElasticSearchViewType = ElasticSearchViewType.AggregateElasticSearch
@@ -153,6 +161,8 @@ object ElasticSearchViewJsonLdSourceDecoder {
       ).mapFilter { case (b, p) => Option.when(b)(p) }
 
       IndexingElasticSearchViewValue(
+        name = i.name,
+        description = i.description,
         resourceTag = i.resourceTag,
         pipeline,
         mapping = Some(i.mapping),
@@ -162,8 +172,10 @@ object ElasticSearchViewJsonLdSourceDecoder {
       )
     case i: IndexingElasticSearchViewFields       =>
       IndexingElasticSearchViewValue(
+        name = i.name,
+        description = i.description,
         resourceTag = i.resourceTag,
-        // If there is no pipeline defined, we use a default one to keep the historic behaviour
+        // If here is no pipeline defined, we use a default one to keep the historic behaviour
         pipeline = i.pipeline.getOrElse(IndexingElasticSearchViewValue.defaultPipeline),
         mapping = Some(i.mapping),
         settings = i.settings,
@@ -171,7 +183,11 @@ object ElasticSearchViewJsonLdSourceDecoder {
         permission = i.permission
       )
     case a: AggregateElasticSearchViewFields      =>
-      AggregateElasticSearchViewValue(a.views)
+      AggregateElasticSearchViewValue(
+        name = a.name,
+        description = a.description,
+        views = a.views
+      )
   }
 
   def apply(uuidF: UUIDF, contextResolution: ResolverContextResolution)(implicit api: JsonLdApi) =

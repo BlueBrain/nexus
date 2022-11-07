@@ -1,35 +1,45 @@
 [
   {
-    "@type" : [
+    "@type": [
       "https://bluebrain.github.io/nexus/vocabulary/AggregateElasticSearchView",
       "https://bluebrain.github.io/nexus/vocabulary/View"
     ],
-    "https://bluebrain.github.io/nexus/vocabulary/views" : [
+    "https://bluebrain.github.io/nexus/vocabulary/name": [
       {
-        "https://bluebrain.github.io/nexus/vocabulary/project" : [
+        "@value": "viewName"
+      }
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/description": [
+      {
+        "@value": "viewDescription"
+      }
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/views": [
+      {
+        "https://bluebrain.github.io/nexus/vocabulary/project": [
           {
-            "@value" : "org/project"
+            "@value": "org/project"
           }
         ],
-        "https://bluebrain.github.io/nexus/vocabulary/viewId" : [
+        "https://bluebrain.github.io/nexus/vocabulary/viewId": [
           {
-            "@id" : "https://bluebrain.github.io/nexus/vocabulary/view1"
+            "@id": "https://bluebrain.github.io/nexus/vocabulary/view1"
           }
         ]
       },
       {
-        "https://bluebrain.github.io/nexus/vocabulary/project" : [
+        "https://bluebrain.github.io/nexus/vocabulary/project": [
           {
-            "@value" : "org/project"
+            "@value": "org/project"
           }
         ],
-        "https://bluebrain.github.io/nexus/vocabulary/viewId" : [
+        "https://bluebrain.github.io/nexus/vocabulary/viewId": [
           {
-            "@id" : "https://bluebrain.github.io/nexus/vocabulary/view2"
+            "@id": "https://bluebrain.github.io/nexus/vocabulary/view2"
           }
         ]
       }
     ],
-    "@id" : "https://bluebrain.github.io/nexus/vocabulary/myview"
+    "@id": "https://bluebrain.github.io/nexus/vocabulary/myview"
   }
 ]

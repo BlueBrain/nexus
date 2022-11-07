@@ -34,6 +34,8 @@ class ElasticSearchViewSerializationSuite extends SerializationSuite {
   private val indexingId       = nxv + "indexing-view"
   private val aggregateId      = nxv + "aggregate-view"
   private val indexingValue    = IndexingElasticSearchViewValue(
+    Some("viewName"),
+    Some("viewDescription"),
     Some(UserTag.unsafe("some.tag")),
     List(
       PipeStep(FilterBySchema.label, FilterBySchemaConfig(Set(nxv + "some-schema")).toJsonLd)
@@ -47,17 +49,25 @@ class ElasticSearchViewSerializationSuite extends SerializationSuite {
     Permission.unsafe("my/permission")
   )
   private val viewRef          = ViewRef(projectRef, indexingId)
-  private val aggregateValue   = AggregateElasticSearchViewValue(NonEmptySet.of(viewRef))
+  private val aggregateValue   =
+    AggregateElasticSearchViewValue(Some("viewName"), Some("viewDescription"), NonEmptySet.of(viewRef))
 
   private val indexingSource  = indexingValue.toJson(indexingId)
   private val aggregateSource = aggregateValue.toJson(aggregateId)
 
+  private val defaultIndexingValue  = IndexingElasticSearchViewValue()
+  private val defaultIndexingSource = defaultIndexingValue.toJson(indexingId)
+
   // format: off
   private val elasticsearchViewsMapping = VectorMap(
+    ElasticSearchViewCreated(indexingId, projectRef, uuid, defaultIndexingValue, defaultIndexingSource, 1, instant, subject)            ->
+      loadEvents("elasticsearch","default-indexing-view-created.json"),
     ElasticSearchViewCreated(indexingId, projectRef, uuid, indexingValue, indexingSource, 1, instant, subject)            ->
       loadEvents("elasticsearch","indexing-view-created.json"),
     ElasticSearchViewCreated(aggregateId, projectRef, uuid, aggregateValue, aggregateSource, 1, instant, subject)         ->
       loadEvents("elasticsearch","aggregate-view-created.json"),
+    ElasticSearchViewUpdated(indexingId, projectRef, uuid, defaultIndexingValue, defaultIndexingSource, 2, instant, subject)            ->
+      loadEvents("elasticsearch","default-indexing-view-updated.json"),
     ElasticSearchViewUpdated(indexingId, projectRef, uuid, indexingValue, indexingSource, 2, instant, subject)            ->
       loadEvents("elasticsearch","indexing-view-updated.json"),
     ElasticSearchViewUpdated(aggregateId, projectRef, uuid, aggregateValue, aggregateSource, 2, instant, subject)         ->
@@ -88,8 +98,9 @@ class ElasticSearchViewSerializationSuite extends SerializationSuite {
   }
 
   private val statesMapping = Map(
-    (indexingId, indexingValue)   -> jsonContentOf("/elasticsearch/database/indexing-view-state.json"),
-    (aggregateId, aggregateValue) -> jsonContentOf("/elasticsearch/database/aggregate-view-state.json")
+    (indexingId, indexingValue)        -> jsonContentOf("/elasticsearch/database/indexing-view-state.json"),
+    (indexingId, defaultIndexingValue) -> jsonContentOf("/elasticsearch/database/default-indexing-view-state.json"),
+    (aggregateId, aggregateValue)      -> jsonContentOf("/elasticsearch/database/aggregate-view-state.json")
   ).map { case ((id, value), json) =>
     ElasticSearchViewState(
       id,

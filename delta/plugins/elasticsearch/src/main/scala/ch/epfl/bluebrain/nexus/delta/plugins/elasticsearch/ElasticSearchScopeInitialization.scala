@@ -35,6 +35,8 @@ class ElasticSearchScopeInitialization(views: ElasticSearchViews, serviceAccount
 
   private val defaultValue: IndexingElasticSearchViewValue =
     IndexingElasticSearchViewValue(
+      name = None,
+      description = None,
       resourceTag = None,
       List(PipeStep.noConfig(DefaultLabelPredicates.label), PipeStep.noConfig(SourceAsText.label)),
       mapping = None,

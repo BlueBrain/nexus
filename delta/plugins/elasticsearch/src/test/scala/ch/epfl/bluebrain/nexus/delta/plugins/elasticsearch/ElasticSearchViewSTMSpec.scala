@@ -54,8 +54,8 @@ class ElasticSearchViewSTMSpec
     val source2     = Json.obj("key" -> Json.fromInt(1))
 
     // format: off
-    val indexingValue = IndexingElasticSearchViewValue(None, List(), None, None, None, Permission.unsafe("my/permission"))
-    val aggregateValue = AggregateElasticSearchViewValue(NonEmptySet.of(viewRef))
+    val indexingValue = IndexingElasticSearchViewValue(None, None, None, List(), None, None, None, Permission.unsafe("my/permission"))
+    val aggregateValue = AggregateElasticSearchViewValue(None, None, NonEmptySet.of(viewRef))
     // format: on
 
     val invalidView: ValidateElasticSearchView =

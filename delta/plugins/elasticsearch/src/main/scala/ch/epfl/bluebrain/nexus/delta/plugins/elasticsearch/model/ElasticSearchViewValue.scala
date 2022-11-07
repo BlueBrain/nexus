@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 
 import cats.data.{NonEmptyChain, NonEmptySet}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.IndexingElasticSearchViewValue
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.IndexingElasticSearchViewValue.defaultPipeline
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
@@ -20,6 +21,18 @@ import scala.annotation.nowarn
   * Enumeration of ElasticSearch values.
   */
 sealed trait ElasticSearchViewValue extends Product with Serializable {
+
+  /**
+    * @return
+    *   the name of the view
+    */
+  def name: Option[String]
+
+  /**
+    * @return
+    *   the description of the view
+    */
+  def description(): Option[String]
 
   /**
     * @return
@@ -59,12 +72,14 @@ object ElasticSearchViewValue {
     *   the permission required for querying this view
     */
   final case class IndexingElasticSearchViewValue(
-      resourceTag: Option[UserTag],
-      pipeline: List[PipeStep],
-      mapping: Option[JsonObject],
-      settings: Option[JsonObject],
-      context: Option[ContextObject],
-      permission: Permission
+      name: Option[String] = None,
+      description: Option[String] = None,
+      resourceTag: Option[UserTag] = None,
+      pipeline: List[PipeStep] = defaultPipeline,
+      mapping: Option[JsonObject] = None,
+      settings: Option[JsonObject] = None,
+      context: Option[ContextObject] = None,
+      permission: Permission = permissions.query
   ) extends ElasticSearchViewValue {
     override val tpe: ElasticSearchViewType = ElasticSearchViewType.ElasticSearch
 
@@ -96,6 +111,8 @@ object ElasticSearchViewValue {
     *   the collection of views where queries will be delegated (if necessary permissions are met)
     */
   final case class AggregateElasticSearchViewValue(
+      name: Option[String],
+      description: Option[String],
       views: NonEmptySet[ViewRef]
   ) extends ElasticSearchViewValue {
     override val tpe: ElasticSearchViewType = ElasticSearchViewType.AggregateElasticSearch

@@ -41,5 +41,7 @@
         }
       }
     }
-  }
+  },
+  "description": "viewDescription",
+  "name": "viewName"
 }

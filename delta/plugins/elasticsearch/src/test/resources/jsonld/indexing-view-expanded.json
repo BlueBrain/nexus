@@ -9,6 +9,16 @@
         "@value": "{\"@vocab\":\"http://schema.org/\"}"
       }
     ],
+    "https://bluebrain.github.io/nexus/vocabulary/name" : [
+      {
+        "@value" : "viewName"
+      }
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/description" : [
+      {
+        "@value" : "viewDescription"
+      }
+    ],
     "https://bluebrain.github.io/nexus/vocabulary/includeDeprecated": [
       {
         "@value": true
@@ -24,6 +34,7 @@
         "@value": "{\"properties\":{\"@type\":{\"type\":\"keyword\"},\"@id\":{\"type\":\"keyword\"}}}"
       }
     ],
+
     "https://bluebrain.github.io/nexus/vocabulary/permission": [
       {
         "@value": "views/query"

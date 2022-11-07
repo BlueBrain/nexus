@@ -53,6 +53,8 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
   private val customSettings     = jobj"""{"analysis": {}}"""
   private val filterByTypeConfig = FilterByTypeConfig(Set(nxv + "PullRequest"))
   private val indexingCustom     = IndexingElasticSearchViewValue(
+    Some("viewName"),
+    Some("viewDescription"),
     Some(UserTag.unsafe("some.tag")),
     List(
       PipeStep(FilterByType.label, filterByTypeConfig.toJsonLd),
@@ -66,6 +68,8 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
 
   private val indexingDefault = IndexingElasticSearchViewValue(
     None,
+    None,
+    None,
     List.empty,
     None,
     None,
@@ -73,7 +77,7 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
     Permission.unsafe("my/permission")
   )
 
-  private val aggregate = AggregateElasticSearchViewValue(NonEmptySet.of(viewRef))
+  private val aggregate = AggregateElasticSearchViewValue(None, None, NonEmptySet.of(viewRef))
   private val sink      = new CacheSink[Json]()
 
   private def state(v: ElasticSearchViewValue) = ElasticSearchViewState(
