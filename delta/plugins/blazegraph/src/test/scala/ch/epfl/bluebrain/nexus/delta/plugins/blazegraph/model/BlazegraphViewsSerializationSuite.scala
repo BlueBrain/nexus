@@ -46,17 +46,35 @@ class BlazegraphViewsSerializationSuite extends SerializationSuite {
   private val indexingSource  = indexingValue.toJson(indexingId)
   private val aggregateSource = aggregateValue.toJson(aggregateId)
 
-  private val defaultIndexingValue = IndexingBlazegraphViewValue()
+  private val defaultIndexingValue  = IndexingBlazegraphViewValue()
   private val defaultIndexingSource = defaultIndexingValue.toJson(indexingId)
 
   private val blazegraphViewsMapping = VectorMap(
-    BlazegraphViewCreated(indexingId, projectRef, uuid, defaultIndexingValue, defaultIndexingSource, 1, instant, subject)    ->
+    BlazegraphViewCreated(
+      indexingId,
+      projectRef,
+      uuid,
+      defaultIndexingValue,
+      defaultIndexingSource,
+      1,
+      instant,
+      subject
+    )                                                                                                             ->
       loadEvents("blazegraph", "default-indexing-view-created.json"),
     BlazegraphViewCreated(indexingId, projectRef, uuid, indexingValue, indexingSource, 1, instant, subject)       ->
       loadEvents("blazegraph", "indexing-view-created.json"),
     BlazegraphViewCreated(aggregateId, projectRef, uuid, aggregateValue, aggregateSource, 1, instant, subject)    ->
       loadEvents("blazegraph", "aggregate-view-created.json"),
-    BlazegraphViewUpdated(indexingId, projectRef, uuid, defaultIndexingValue, defaultIndexingSource, 2, instant, subject)       ->
+    BlazegraphViewUpdated(
+      indexingId,
+      projectRef,
+      uuid,
+      defaultIndexingValue,
+      defaultIndexingSource,
+      2,
+      instant,
+      subject
+    )                                                                                                             ->
       loadEvents("blazegraph", "default-indexing-view-updated.json"),
     BlazegraphViewUpdated(indexingId, projectRef, uuid, indexingValue, indexingSource, 2, instant, subject)       ->
       loadEvents("blazegraph", "indexing-view-updated.json"),
