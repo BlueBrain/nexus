@@ -175,7 +175,7 @@ object ElasticSearchViewJsonLdSourceDecoder {
         name = i.name,
         description = i.description,
         resourceTag = i.resourceTag,
-        // If here is no pipeline defined, we use a default one to keep the historic behaviour
+        // If no pipeline defined, we use a default one to keep the historic behaviour
         pipeline = i.pipeline.getOrElse(IndexingElasticSearchViewValue.defaultPipeline),
         mapping = Some(i.mapping),
         settings = i.settings,
