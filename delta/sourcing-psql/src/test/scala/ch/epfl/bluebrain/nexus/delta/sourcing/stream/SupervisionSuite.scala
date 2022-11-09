@@ -106,7 +106,29 @@ class SupervisionSuite extends BioSuite with SupervisorSetup.Fixture with Doobie
   }
 
   test("Cannot fetch ignored projection descriptions (by default)") {
-    sv.getRunningProjections().assert(List.empty)
+    sv.getRunningProjections()
+      .assert(
+        List(
+          SupervisedDescription(
+            metadata = ProjectionMetadata(
+              module = "system",
+              name = "watch-restarts",
+              project = None,
+              resourceId = None
+            ),
+            ExecutionStrategy.EveryNode,
+            restarts = 0,
+            ExecutionStatus.Running,
+            progress = ProjectionProgress(
+              offset = Offset.at(1L),
+              instant = Instant.EPOCH,
+              processed = 1,
+              discarded = 1,
+              failed = 0
+            )
+          )
+        )
+      )
   }
 
   test("Destroy an ignored projection") {
@@ -286,7 +308,7 @@ class SupervisionSuite extends BioSuite with SupervisorSetup.Fixture with Doobie
     } yield ()
   }
 
-  test("Obtain the correct running projection") {
+  test("Obtain the correct running projections") {
     val expectedProgress = ProjectionProgress(
       Offset.at(20L),
       Instant.EPOCH,
@@ -304,6 +326,19 @@ class SupervisionSuite extends BioSuite with SupervisorSetup.Fixture with Doobie
                      .eventually(
                        List(
                          SupervisedDescription(
+                           metadata = Supervisor.watchRestartMetadata,
+                           ExecutionStrategy.EveryNode,
+                           restarts = 0,
+                           ExecutionStatus.Running,
+                           progress = ProjectionProgress(
+                             offset = Offset.at(3L),
+                             instant = Instant.EPOCH,
+                             processed = 3,
+                             discarded = 2,
+                             failed = 0
+                           )
+                         ),
+                         SupervisedDescription(
                            projection1,
                            PersistentSingleNode,
                            0,
@@ -312,12 +347,7 @@ class SupervisionSuite extends BioSuite with SupervisorSetup.Fixture with Doobie
                          )
                        )
                      )
-      _         <- sv.destroy(projection1.name).assertSome(ExecutionStatus.Stopped)
     } yield ()
-  }
-
-  test("No running projections are found when none are running") {
-    sv.getRunningProjections().eventually(List.empty)
   }
 
 }

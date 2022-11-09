@@ -281,17 +281,17 @@ class BlazegraphCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
     } yield ()
   }
 
-  test("Coordinator projection should have one error after failed elem offset 4") {
+  test("Coordinator projection should have one error after failed elem offset 3") {
     for {
-      entries <- projections.failedElemEntries(BlazegraphCoordinator.metadata.name, Offset.At(4L)).compile.toList
+      entries <- projections.failedElemEntries(BlazegraphCoordinator.metadata.name, Offset.At(3L)).compile.toList
       r        = entries.assertOneElem
       _        = assertEquals(r.failedElemData.id, "failed_coord")
     } yield ()
   }
 
-  test("View 2_2 projection should have one error after failed elem offset 4") {
+  test("View 2_2 projection should have one error after failed elem offset 3") {
     for {
-      entries <- projections.failedElemEntries(updatedView2.projection, Offset.At(4L)).compile.toList
+      entries <- projections.failedElemEntries(updatedView2.projection, Offset.At(3L)).compile.toList
       r        = entries.assertOneElem
       _        = assertEquals(r.failedElemData.id, "failed")
     } yield ()

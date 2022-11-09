@@ -136,7 +136,7 @@ CREATE INDEX IF NOT EXISTS projection_offsets_resource_id_idx ON public.projecti
 --
 CREATE TABLE IF NOT EXISTS public.projection_restarts(
     ordering     bigserial,
-    name         text NOT NULL,
+    name         text         NOT NULL,
     value        JSONB        NOT NULL,
     instant      timestamptz  NOT NULL,
     acknowledged boolean      NOT NULL,
