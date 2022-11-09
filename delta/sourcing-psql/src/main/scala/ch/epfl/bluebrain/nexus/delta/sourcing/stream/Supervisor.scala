@@ -184,10 +184,9 @@ object Supervisor {
   protected def restartProjection(supervised: Supervised, mapRef: Ref[Task, Map[String, Supervised]]): Task[Unit] = {
     val metadata = supervised.metadata
     supervised.task.flatMap { control =>
-      Task.delay(log.info(s"Restarting projection '${metadata.module}/${metadata.name}'")) >>
-        mapRef.update(
-          _.updatedWith(metadata.name)(_.map(_.copy(restarts = supervised.restarts + 1, control = control)))
-        )
+      mapRef.update(
+        _.updatedWith(metadata.name)(_.map(_.copy(restarts = supervised.restarts + 1, control = control)))
+      )
     }
   }
 
@@ -290,7 +289,7 @@ object Supervisor {
         Task.delay(log.debug(s"Ignoring '${metadata.module}/${metadata.name}' with strategy '$strategy'.")) >>
           Task.pure(ignored)
       else
-        Task.delay(log.info(s"Starting '${metadata.module}/${metadata.name}'  with strategy '$strategy'.")) >>
+        Task.delay(log.info(s"Starting '${metadata.module}/${metadata.name}' with strategy '$strategy'.")) >>
           init >>
           startProjection(projection).map { p =>
             Control(
