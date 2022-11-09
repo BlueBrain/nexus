@@ -77,6 +77,8 @@ class BlazegraphScopeInitializationSpec
           v.includeDeprecated shouldEqual true
           v.includeMetadata shouldEqual true
           v.permission shouldEqual permissions.query
+          v.name should contain(defaultName)
+          v.description should contain(defaultDescription)
         case _: AggregateBlazegraphView => fail("Expected an IndexingBlazegraphView to be created")
       }
       resource.rev shouldEqual 1L

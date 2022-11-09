@@ -41,7 +41,9 @@ package object model {
   }
 
   /**
-    * The id for the default blazegraph view
+    * The id, name, and description for the default blazegraph view
     */
-  final val defaultViewId = nxv + "defaultSparqlIndex"
+  final val defaultViewId      = nxv + "defaultSparqlIndex"
+  final val defaultName        = "sparqlView"
+  final val defaultDescription = "default sparql view"
 }
