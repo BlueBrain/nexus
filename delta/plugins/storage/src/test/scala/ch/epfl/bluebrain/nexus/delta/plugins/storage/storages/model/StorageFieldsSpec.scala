@@ -26,16 +26,24 @@ class StorageFieldsSpec
     val pc = ProjectContext.unsafe(ApiMappings.empty, nxv.base, nxv.base)
 
     "dealing with disk storages" should {
-      val json = diskFieldsJson.value.addContext(contexts.storages)
+      val json = diskJson.addContext(contexts.storages)
 
       "be created from Json-LD" in {
         sourceDecoder(pc, json).accepted._2 shouldEqual diskFields
       }
 
       "be created from Json-LD without optional values" in {
-        val jsonNoDefaults = json.removeKeys("readPermission", "writePermission", "capacity", "maxFileSize", "volume")
+        val jsonNoDefaults = json.removeKeys(
+          "name",
+          "description",
+          "readPermission",
+          "writePermission",
+          "capacity",
+          "maxFileSize",
+          "volume"
+        )
         sourceDecoder(pc, jsonNoDefaults).accepted._2 shouldEqual
-          DiskStorageFields(default = true, None, None, None, None, None)
+          DiskStorageFields(None, None, default = true, None, None, None, None, None)
       }
     }
 
@@ -49,6 +57,8 @@ class StorageFieldsSpec
       "be created from Json-LD without optional values" in {
         val jsonNoDefaults =
           json.removeKeys(
+            "name",
+            "description",
             "readPermission",
             "writePermission",
             "maxFileSize",
@@ -58,7 +68,7 @@ class StorageFieldsSpec
             "region"
           )
         sourceDecoder(pc, jsonNoDefaults).accepted._2 shouldEqual
-          S3StorageFields(default = true, "mybucket", None, None, None, None, None, None, None)
+          S3StorageFields(None, None, default = true, "mybucket", None, None, None, None, None, None, None)
       }
     }
 
@@ -71,17 +81,17 @@ class StorageFieldsSpec
 
       "be created from Json-LD without optional values" in {
         val jsonNoDefaults =
-          json.removeKeys("readPermission", "writePermission", "maxFileSize", "endpoint", "credentials")
-        sourceDecoder(pc, jsonNoDefaults).accepted._2 shouldEqual
-          RemoteDiskStorageFields(
-            default = true,
-            None,
-            None,
-            Label.unsafe("myfolder"),
-            None,
-            None,
-            None
+          json.removeKeys(
+            "name",
+            "description",
+            "readPermission",
+            "writePermission",
+            "maxFileSize",
+            "endpoint",
+            "credentials"
           )
+        sourceDecoder(pc, jsonNoDefaults).accepted._2 shouldEqual
+          RemoteDiskStorageFields(None, None, default = true, None, None, Label.unsafe("myfolder"), None, None, None)
       }
     }
   }

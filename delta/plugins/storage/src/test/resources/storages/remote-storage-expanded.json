@@ -5,6 +5,16 @@
       "https://bluebrain.github.io/nexus/vocabulary/Storage",
       "https://bluebrain.github.io/nexus/vocabulary/RemoteDiskStorage"
     ],
+    "https://bluebrain.github.io/nexus/vocabulary/name": [
+      {
+        "@value": "remoteName"
+      }
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/description": [
+      {
+        "@value": "remoteDescription"
+      }
+    ],
     "https://bluebrain.github.io/nexus/vocabulary/default": [
       {
         "@value": true

@@ -4,6 +4,8 @@
   "@type": "S3Storage",
   "default": true,
   "_algorithm" : "SHA-256",
+  "name": "s3name",
+  "description": "s3description",
   "bucket": "mybucket",
   "endpoint": "http://localhost",
   "accessKey": "accessKey",

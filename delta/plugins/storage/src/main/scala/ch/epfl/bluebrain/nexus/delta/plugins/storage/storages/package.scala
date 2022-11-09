@@ -38,6 +38,8 @@ package object storages {
   /**
     * The id for the default storage
     */
-  final val defaultStorageId = nxv + "diskStorageDefault"
+  final val defaultStorageId          = nxv + "diskStorageDefault"
+  final val defaultStorageName        = "diskStorage"
+  final val defaultStorageDescription = "default disk storage"
 
 }

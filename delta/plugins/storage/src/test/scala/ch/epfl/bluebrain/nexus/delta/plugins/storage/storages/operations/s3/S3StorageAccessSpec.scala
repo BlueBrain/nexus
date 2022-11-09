@@ -34,6 +34,8 @@ class S3StorageAccessSpec(docker: MinioDocker)
 
   override protected def beforeAll(): Unit = {
     storage = S3StorageValue(
+      None,
+      None,
       default = false,
       algorithm = DigestAlgorithm.default,
       bucket = "bucket",

@@ -27,6 +27,18 @@ sealed trait StorageFields extends Product with Serializable { self =>
 
   /**
     * @return
+    *   the name of the storage
+    */
+  def name: Option[String]
+
+  /**
+    * @return
+    *   the description of the storage
+    */
+  def description: Option[String]
+
+  /**
+    * @return
     *   the storage type
     */
   def tpe: StorageType
@@ -85,6 +97,8 @@ object StorageFields {
     *   the maximum allowed file size (in bytes) for uploaded files
     */
   final case class DiskStorageFields(
+      name: Option[String],
+      description: Option[String],
       default: Boolean,
       volume: Option[AbsolutePath],
       readPermission: Option[Permission],
@@ -99,6 +113,8 @@ object StorageFields {
     override def toValue(config: StorageTypeConfig): Option[Value] =
       Some(
         DiskStorageValue(
+          name,
+          description,
           default,
           config.disk.digestAlgorithm,
           volume.getOrElse(config.disk.defaultVolume),
@@ -133,6 +149,8 @@ object StorageFields {
     *   the maximum allowed file size (in bytes) for uploaded files
     */
   final case class S3StorageFields(
+      name: Option[String],
+      description: Option[String],
       default: Boolean,
       bucket: String,
       endpoint: Option[Uri],
@@ -150,6 +168,8 @@ object StorageFields {
     override def toValue(config: StorageTypeConfig): Option[Value] =
       config.amazon.map { cfg =>
         S3StorageValue(
+          name,
+          description,
           default,
           cfg.digestAlgorithm,
           bucket,
@@ -183,6 +203,8 @@ object StorageFields {
     *   the maximum allowed file size (in bytes) for uploaded files
     */
   final case class RemoteDiskStorageFields(
+      name: Option[String],
+      description: Option[String],
       default: Boolean,
       endpoint: Option[BaseUri],
       credentials: Option[Secret[String]],
@@ -199,6 +221,8 @@ object StorageFields {
     override def toValue(config: StorageTypeConfig): Option[Value] =
       config.remoteDisk.map { cfg =>
         RemoteDiskStorageValue(
+          name,
+          description,
           default,
           cfg.digestAlgorithm,
           endpoint = endpoint.getOrElse(cfg.defaultEndpoint),

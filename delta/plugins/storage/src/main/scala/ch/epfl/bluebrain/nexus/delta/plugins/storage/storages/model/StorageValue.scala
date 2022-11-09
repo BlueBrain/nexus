@@ -29,6 +29,18 @@ sealed trait StorageValue extends Product with Serializable {
 
   /**
     * @return
+    *   name of the storage
+    */
+  def name: Option[String]
+
+  /**
+    * @return
+    *   description of the storage
+    */
+  def description: Option[String]
+
+  /**
+    * @return
     *   the storage type
     */
   def tpe: StorageType
@@ -85,6 +97,8 @@ object StorageValue {
     *   [[StorageFields.DiskStorageFields]]
     */
   final case class DiskStorageValue(
+      name: Option[String],
+      description: Option[String],
       default: Boolean,
       algorithm: DigestAlgorithm,
       volume: AbsolutePath,
@@ -105,6 +119,8 @@ object StorageValue {
     *   [[StorageFields.S3StorageFields]]
     */
   final case class S3StorageValue(
+      name: Option[String],
+      description: Option[String],
       default: Boolean,
       algorithm: DigestAlgorithm,
       bucket: String,
@@ -170,6 +186,8 @@ object StorageValue {
     *   [[StorageFields.RemoteDiskStorageFields]]
     */
   final case class RemoteDiskStorageValue(
+      name: Option[String],
+      description: Option[String],
       default: Boolean,
       algorithm: DigestAlgorithm,
       endpoint: BaseUri,

@@ -58,6 +58,8 @@ class S3StorageSaveAndFetchFileSpec(docker: MinioDocker)
   override protected def beforeAll(): Unit = {
     super.beforeAll()
     storageValue = S3StorageValue(
+      None,
+      None,
       default = false,
       algorithm = DigestAlgorithm.default,
       bucket = "bucket2",

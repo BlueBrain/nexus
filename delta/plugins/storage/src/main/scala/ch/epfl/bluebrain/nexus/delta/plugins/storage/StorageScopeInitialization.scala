@@ -4,7 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages.entityType
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageFields.DiskStorageFields
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.{ProjectContextRejection, ResourceAlreadyExists}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{defaultStorageId, Storages}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{defaultStorageDescription, defaultStorageId, defaultStorageName, Storages}
 import ch.epfl.bluebrain.nexus.delta.sdk.ScopeInitialization
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{Caller, ServiceAccount}
@@ -31,6 +31,8 @@ class StorageScopeInitialization(storages: Storages, serviceAccount: ServiceAcco
   implicit private val caller: Caller = serviceAccount.caller
 
   private val defaultValue: DiskStorageFields = DiskStorageFields(
+    name = Some(defaultStorageName),
+    description = Some(defaultStorageDescription),
     default = true,
     volume = None,
     readPermission = None,

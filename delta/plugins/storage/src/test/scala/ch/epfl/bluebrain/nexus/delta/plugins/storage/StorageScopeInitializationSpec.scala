@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{Storages, StoragesConfig}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{defaultStorageDescription, defaultStorageName, Storages, StoragesConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.{ProjectContextRejection, StorageFetchRejection, StorageNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.DiskStorageValue
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schema}
@@ -70,6 +70,8 @@ class StorageScopeInitializationSpec
       init.onProjectCreation(project, bob).accepted
       val resource = storages.fetch(nxv + "diskStorageDefault", project.ref).accepted
       resource.value.storageValue shouldEqual DiskStorageValue(
+        name = Some(defaultStorageName),
+        description = Some(defaultStorageDescription),
         default = true,
         algorithm = config.disk.digestAlgorithm,
         volume = config.disk.defaultVolume,

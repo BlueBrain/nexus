@@ -1,6 +1,8 @@
 {
   "@context": {
     "@vocab": "https://bluebrain.github.io/nexus/vocabulary/",
+    "name": "https://bluebrain.github.io/nexus/vocabulary/name",
+    "description": "https://bluebrain.github.io/nexus/vocabulary/description",
     "_algorithm": "https://bluebrain.github.io/nexus/vocabulary/algorithm",
     "_storageId": {
       "@id": "https://bluebrain.github.io/nexus/vocabulary/storageId",

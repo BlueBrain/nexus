@@ -63,6 +63,8 @@ class RemoteStorageSaveAndFetchFileSpec(docker: RemoteStorageDocker)
   override protected def beforeAll(): Unit = {
     super.beforeAll()
     storageValue = RemoteDiskStorageValue(
+      None,
+      None,
       default = true,
       DigestAlgorithm.default,
       BaseUri(docker.hostConfig.endpoint).rightValue,
