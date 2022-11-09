@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews.entityType
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{ProjectContextRejection, ResourceAlreadyExists}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.IndexingElasticSearchViewValue
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultViewId, permissions}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultDescription, defaultName, defaultViewId, permissions}
 import ch.epfl.bluebrain.nexus.delta.sdk.ScopeInitialization
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
@@ -35,8 +35,8 @@ class ElasticSearchScopeInitialization(views: ElasticSearchViews, serviceAccount
 
   private val defaultValue: IndexingElasticSearchViewValue =
     IndexingElasticSearchViewValue(
-      name = None,
-      description = None,
+      name = Some(defaultName),
+      description = Some(defaultDescription),
       resourceTag = None,
       List(PipeStep.noConfig(DefaultLabelPredicates.label), PipeStep.noConfig(SourceAsText.label)),
       mapping = None,

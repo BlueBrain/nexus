@@ -4,7 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.{AggregateElasticSearchView, IndexingElasticSearchView}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{ProjectContextRejection, ViewNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.permissions.{query => queryPermissions}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultElasticsearchMapping, defaultElasticsearchSettings, defaultViewId, ElasticSearchViewRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultDescription, defaultElasticsearchMapping, defaultElasticsearchSettings, defaultName, defaultViewId, ElasticSearchViewRejection}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schema => schemaorg}
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
@@ -82,6 +82,8 @@ class ElasticSearchScopeInitializationSpec
           v.mapping shouldEqual mapping
           v.settings shouldEqual settings
           v.permission shouldEqual queryPermissions
+          v.name shouldEqual Some(defaultName)
+          v.description shouldEqual Some(defaultDescription)
         case _: AggregateElasticSearchView => fail("Expected an IndexingElasticSearchView to be created")
       }
       resource.rev shouldEqual 1L
