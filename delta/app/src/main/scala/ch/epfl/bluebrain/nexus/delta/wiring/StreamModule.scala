@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.ResourceShifts
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
-import ch.epfl.bluebrain.nexus.delta.sourcing.DeleteExpired
+import ch.epfl.bluebrain.nexus.delta.sourcing.{DeleteExpired, PurgeElemFailures}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{ProjectionConfig, QueryConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projections
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
@@ -56,5 +56,10 @@ object StreamModule extends ModuleDef {
   make[DeleteExpired].fromEffect {
     (supervisor: Supervisor, config: ProjectionConfig, xas: Transactors, clock: Clock[UIO]) =>
       DeleteExpired(supervisor, config, xas)(clock)
+  }
+
+  make[PurgeElemFailures].fromEffect {
+    (supervisor: Supervisor, config: ProjectionConfig, xas: Transactors, clock: Clock[UIO]) =>
+      PurgeElemFailures(supervisor, config, xas)(clock)
   }
 }

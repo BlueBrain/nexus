@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
+import ch.epfl.bluebrain.nexus.delta.sourcing.PurgeElemFailures
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
@@ -12,6 +13,7 @@ import ch.epfl.bluebrain.nexus.testkit.postgres.Doobie
 import munit.AnyFixture
 
 import java.time.Instant
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
 class ProjectionStoreSuite extends BioSuite with IOFixedClock with Doobie.Fixture with Doobie.Assertions {
 
@@ -107,6 +109,7 @@ class ProjectionStoreSuite extends BioSuite with IOFixedClock with Doobie.Fixtur
       r        = entries.assertOneElem
       _        = assertEquals(r.projectionMetadata, metadata)
       _        = assertEquals(r.ordering, Offset.At(1L))
+      _        = assertEquals(r.instant, Instant.EPOCH)
       elem     = r.failedElemData
       _        = assertEquals(elem.offset, Offset.At(42L))
       _        = assertEquals(elem.errorType, "java.lang.RuntimeException")
@@ -143,6 +146,24 @@ class ProjectionStoreSuite extends BioSuite with IOFixedClock with Doobie.Fixtur
     for {
       entries <- store.failedElemEntries(project, iri"https://example.com", Offset.start).compile.toList
       _        = entries.assertEmpty()
+    } yield ()
+  }
+
+  test("Purge failed elements after predefined ttl") {
+    val failedElemTtl = 14.days
+
+    lazy val purgeElemFailures: FiniteDuration => PurgeElemFailures = timeTravel =>
+      new PurgeElemFailures(xas, failedElemTtl)(
+        IOFixedClock.ioClock(Instant.EPOCH.plusMillis(timeTravel.toMillis))
+      )
+
+    for {
+      _        <- purgeElemFailures(failedElemTtl - 500.millis)()
+      entries  <- store.failedElemEntries(project, resource, Offset.start).compile.toList
+      _         = entries.assertSize(3) // no elements are deleted after 13 days
+      _        <- purgeElemFailures(failedElemTtl + 500.millis)()
+      entries2 <- store.failedElemEntries(project, resource, Offset.start).compile.toList
+      _         = entries2.assertEmpty() // all elements were deleted after 14 days
     } yield ()
   }
 
