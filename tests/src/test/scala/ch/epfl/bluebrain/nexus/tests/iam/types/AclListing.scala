@@ -157,7 +157,7 @@ object Permission {
   }
 
   object Supervision {
-    val name = "supervision"
+    val name             = "supervision"
     val Read: Permission = Permission(name, "read")
 
     val list: List[Permission] = Read :: Nil

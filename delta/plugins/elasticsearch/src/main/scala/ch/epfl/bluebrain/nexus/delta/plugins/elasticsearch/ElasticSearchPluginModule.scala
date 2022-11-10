@@ -30,7 +30,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeChain, ProjectionStore, ReferenceRegistry, Supervisor}
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projections
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeChain, ReferenceRegistry, Supervisor}
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
 import monix.execution.Scheduler
@@ -138,6 +139,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         identities: Identities,
         aclCheck: AclCheck,
         views: ElasticSearchViews,
+        projections: Projections,
         schemeDirectives: DeltaSchemeDirectives,
         indexingAction: IndexingAction @Id("aggregate"),
         viewsQuery: ElasticSearchViewsQuery,
@@ -147,8 +149,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering,
         resourcesToSchemaSet: Set[ResourceToSchemaMappings],
-        fusionConfig: FusionConfig,
-        projectionStore: ProjectionStore
+        fusionConfig: FusionConfig
     ) =>
       val resourceToSchema = resourcesToSchemaSet.foldLeft(ResourceToSchemaMappings.empty)(_ + _)
       new ElasticSearchViewsRoutes(
@@ -158,9 +159,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         viewsQuery,
         // TODO add progress stats
         null,
-        projectionStore,
-        // TODO add the way to restart ES views
-        (_, _) => UIO.unit,
+        projections,
         resourceToSchema,
         schemeDirectives,
         indexingAction

@@ -7,9 +7,7 @@ import akka.http.scaladsl.server._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.permissions.{read => Read, write => Write}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.ElasticSearchViewsRoutes.RestartView
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, ElasticSearchViewsQuery}
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -32,12 +30,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResult
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionStore
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projections
 import io.circe.generic.semiauto.deriveEncoder
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
-import monix.bio.UIO
 import monix.execution.Scheduler
 
 /**
@@ -53,8 +50,8 @@ import monix.execution.Scheduler
   *   the elasticsearch views query operations bundle
   * @param progresses
   *   the statistics of the progresses for the elasticsearch views
-  * @param restartView
-  *   the action to restart a view indexing process triggered by a client
+  * @param projections
+  *   the projections module
   * @param resourcesToSchemas
   *   a collection of root resource segment with their corresponding schema
   * @param schemeDirectives
@@ -68,8 +65,7 @@ final class ElasticSearchViewsRoutes(
     views: ElasticSearchViews,
     viewsQuery: ElasticSearchViewsQuery,
     progresses: ProgressesStatistics,
-    projectionStore: ProjectionStore,
-    restartView: RestartView,
+    projections: Projections,
     resourcesToSchemas: ResourceToSchemaMappings,
     schemeDirectives: DeltaSchemeDirectives,
     index: IndexingAction
@@ -199,7 +195,7 @@ final class ElasticSearchViewsRoutes(
                           views
                             .fetch(id, ref)
                             .map { view =>
-                              projectionStore
+                              projections
                                 .failedElemEntries(view.value.project, view.value.id, offset)
                                 .evalMap { felem =>
                                   felem.failedElemData.toCompactedJsonLd.map { compactJson =>
@@ -234,7 +230,7 @@ final class ElasticSearchViewsRoutes(
                         emit(
                           views
                             .fetchIndexingView(id, ref)
-                            .flatMap { v => restartView(v.id, v.value.project) }
+                            .flatMap { v => projections.scheduleRestart(ElasticSearchViews.projectionName(v)) }
                             .as(Offset.start)
                             .rejectWhen(decodingFailedOrViewNotFound)
                         )
@@ -405,8 +401,6 @@ final class ElasticSearchViewsRoutes(
 
 object ElasticSearchViewsRoutes {
 
-  type RestartView = (Iri, ProjectRef) => UIO[Unit]
-
   /**
     * @return
     *   the [[Route]] for elasticsearch views
@@ -417,8 +411,7 @@ object ElasticSearchViewsRoutes {
       views: ElasticSearchViews,
       viewsQuery: ElasticSearchViewsQuery,
       progresses: ProgressesStatistics,
-      projectionStore: ProjectionStore,
-      restartView: RestartView,
+      projections: Projections,
       resourcesToSchemas: ResourceToSchemaMappings,
       schemeDirectives: DeltaSchemeDirectives,
       index: IndexingAction
@@ -436,8 +429,7 @@ object ElasticSearchViewsRoutes {
       views,
       viewsQuery,
       progresses,
-      projectionStore,
-      restartView,
+      projections,
       resourcesToSchemas,
       schemeDirectives,
       index
