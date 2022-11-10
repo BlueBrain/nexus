@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
 
 import akka.http.scaladsl.model.StatusCodes.Created
-import akka.http.scaladsl.model.sse.ServerSentEvent
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection._
@@ -9,7 +8,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.permissions.{read => Read, write => Write}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, ElasticSearchViewsQuery}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
@@ -89,8 +87,6 @@ final class ElasticSearchViewsRoutes(
 
   implicit private val viewStatisticJsonLdEncoder: JsonLdEncoder[ProgressStatistics] =
     JsonLdEncoder.computeFromCirce(ContextValue(Vocabulary.contexts.statistics))
-
-  implicit private val api: JsonLdApi = JsonLdJavaApi.strict
 
   def routes: Route =
     (baseUriPrefix(baseUri.prefix) & replaceUri("views", schema.iri)) {
@@ -196,16 +192,7 @@ final class ElasticSearchViewsRoutes(
                             .fetch(id, ref)
                             .map { view =>
                               projections
-                                .failedElemEntries(view.value.project, view.value.id, offset)
-                                .evalMap { felem =>
-                                  felem.failedElemData.toCompactedJsonLd.map { compactJson =>
-                                    ServerSentEvent(
-                                      defaultPrinter.print(compactJson.json),
-                                      "IndexingFailure",
-                                      felem.ordering.value.toString
-                                    )
-                                  }
-                                }
+                                .failedElemSses(view.value.project, view.value.id, offset)
                             }
                         )
                       }
