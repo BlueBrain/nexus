@@ -45,7 +45,6 @@ object CompositeViewFields {
 
   @nowarn("cat=unused")
   final def jsonLdDecoder(minIntervalRebuild: FiniteDuration): JsonLdDecoder[CompositeViewFields] = {
-    implicit val config: Configuration = Configuration.default
     implicit val rebuildStrategyDecoder: JsonLdDecoder[RebuildStrategy] = {
       implicit val scopedFiniteDurationDecoder: JsonLdDecoder[FiniteDuration] =
         JsonLdDecoder.finiteDurationJsonLdDecoder.andThen { case (cursor, duration) =>
