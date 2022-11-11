@@ -81,7 +81,6 @@ class ElasticSearchViewDecodingSpec
       "all legacy fields are specified" in {
         val source      =
           json"""{
-                  "@context": "https://bluebrain.github.io/nexus/contexts/elasticsearch.json",
                   "@id": "http://localhost/id",
                   "@type": "ElasticSearchView",
                   "name": "viewName",
@@ -120,7 +119,6 @@ class ElasticSearchViewDecodingSpec
       "a pipeline is defined by skipping legacy fields" in {
         val source      =
           json"""{
-                  "@context": "https://bluebrain.github.io/nexus/contexts/elasticsearch.json",
                   "@id": "http://localhost/id",
                   "@type": "ElasticSearchView",
                   "name": "viewName",
