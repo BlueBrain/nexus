@@ -72,8 +72,8 @@ object ElasticSearchViewValue {
     *   the permission required for querying this view
     */
   final case class IndexingElasticSearchViewValue(
-      name: Option[String] = None,
-      description: Option[String] = None,
+      name: Option[String],
+      description: Option[String],
       resourceTag: Option[UserTag] = None,
       pipeline: List[PipeStep] = defaultPipeline,
       mapping: Option[JsonObject] = None,
@@ -102,6 +102,21 @@ object ElasticSearchViewValue {
       PipeStep(DiscardMetadata.label, None, None),
       PipeStep(DefaultLabelPredicates.label, None, None)
     )
+
+    /**
+      * @return
+      *   an IndexingElasticSearchViewValue without name and description
+      */
+    def apply(
+        resourceTag: Option[UserTag],
+        pipeline: List[PipeStep],
+        mapping: Option[JsonObject],
+        settings: Option[JsonObject],
+        context: Option[ContextObject],
+        permission: Permission
+    ): IndexingElasticSearchViewValue =
+      IndexingElasticSearchViewValue(None, None, resourceTag, pipeline, mapping, settings, context, permission)
+
   }
 
   /**
@@ -116,6 +131,16 @@ object ElasticSearchViewValue {
       views: NonEmptySet[ViewRef]
   ) extends ElasticSearchViewValue {
     override val tpe: ElasticSearchViewType = ElasticSearchViewType.AggregateElasticSearch
+  }
+
+  object AggregateElasticSearchViewValue {
+
+    /**
+      * @return
+      *   an AggregateElasticSearchViewValue without name and description
+      */
+    def apply(views: NonEmptySet[ViewRef]): AggregateElasticSearchViewValue =
+      AggregateElasticSearchViewValue(None, None, views)
   }
 
   object Source {

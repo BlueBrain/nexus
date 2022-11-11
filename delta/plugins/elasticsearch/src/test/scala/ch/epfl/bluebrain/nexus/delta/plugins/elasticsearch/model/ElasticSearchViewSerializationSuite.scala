@@ -55,7 +55,7 @@ class ElasticSearchViewSerializationSuite extends SerializationSuite {
   private val indexingSource  = indexingValue.toJson(indexingId)
   private val aggregateSource = aggregateValue.toJson(aggregateId)
 
-  private val defaultIndexingValue  = IndexingElasticSearchViewValue()
+  private val defaultIndexingValue  = IndexingElasticSearchViewValue(name = None, description = None)
   private val defaultIndexingSource = defaultIndexingValue.toJson(indexingId)
 
   // format: off

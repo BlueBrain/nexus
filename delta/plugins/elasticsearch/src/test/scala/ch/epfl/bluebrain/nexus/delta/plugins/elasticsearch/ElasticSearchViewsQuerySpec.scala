@@ -90,8 +90,6 @@ class ElasticSearchViewsQuerySpec(override val docker: ElasticSearchDocker)
 
   private val indexingView: IndexingElasticSearchViewValue =
     IndexingElasticSearchViewValue(
-      name = None,
-      description = None,
       resourceTag = None,
       pipeline = List(PipeStep.noConfig(FilterDeprecated.label), PipeStep.noConfig(DiscardMetadata.label)),
       mapping = Some(mappings),
@@ -203,11 +201,7 @@ class ElasticSearchViewsQuerySpec(override val docker: ElasticSearchDocker)
     }.accepted
 
     "create the cycle between project2 aggregate views" in {
-      val newValue = AggregateElasticSearchViewValue(
-        None,
-        None,
-        NonEmptySet.of(view1Proj1, view2Proj1, aggView2Proj2)
-      )
+      val newValue = AggregateElasticSearchViewValue(NonEmptySet.of(view1Proj1, view2Proj1, aggView2Proj2))
       views.update(aggView1Proj1.viewId, aggView1Proj1.project, 1, newValue).accepted
     }
 

@@ -58,8 +58,6 @@ class ElasticSearchViewDecodingSpec
     val settings = json"""{ "analysis": { } }""".asObject.value
 
     val indexingView = IndexingElasticSearchViewValue(
-      name = None,
-      description = None,
       resourceTag = None,
       pipeline = IndexingElasticSearchViewValue.defaultPipeline,
       mapping = Some(mapping),
@@ -277,7 +275,7 @@ class ElasticSearchViewDecodingSpec
                    "views": [ $viewRef1Json, $viewRef2Json ]
                  }"""
 
-        val expected = AggregateElasticSearchViewValue(None, None, NonEmptySet.of(viewRef1, viewRef2))
+        val expected = AggregateElasticSearchViewValue(NonEmptySet.of(viewRef1, viewRef2))
 
         val (decodedId, value) = decoder(ref, context, source).accepted
         value shouldEqual expected
@@ -290,7 +288,7 @@ class ElasticSearchViewDecodingSpec
                    "views": [ $viewRef1Json, $viewRef1Json ]
                  }"""
 
-        val expected = AggregateElasticSearchViewValue(None, None, NonEmptySet.of(viewRef1))
+        val expected = AggregateElasticSearchViewValue(NonEmptySet.of(viewRef1))
 
         val (decodedId, value) = decoder(ref, context, source).accepted
         value shouldEqual expected
@@ -305,7 +303,7 @@ class ElasticSearchViewDecodingSpec
                    "views": [ $viewRef1Json ]
                  }"""
 
-        val expected = AggregateElasticSearchViewValue(None, None, NonEmptySet.of(viewRef1))
+        val expected = AggregateElasticSearchViewValue(NonEmptySet.of(viewRef1))
 
         val value = decoder(ref, context, id, source).accepted
         value shouldEqual expected
@@ -318,7 +316,7 @@ class ElasticSearchViewDecodingSpec
                    "views": [ $viewRef1Json ]
                  }"""
 
-        val expected = AggregateElasticSearchViewValue(None, None, NonEmptySet.of(viewRef1))
+        val expected = AggregateElasticSearchViewValue(NonEmptySet.of(viewRef1))
 
         val value = decoder(ref, context, id, source).accepted
         value shouldEqual expected

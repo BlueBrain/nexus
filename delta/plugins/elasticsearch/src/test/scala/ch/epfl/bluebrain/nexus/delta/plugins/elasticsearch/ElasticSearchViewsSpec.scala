@@ -167,8 +167,6 @@ class ElasticSearchViewsSpec
         val expected = resourceFor(
           id = viewId,
           value = IndexingElasticSearchViewValue(
-            name = None,
-            description = None,
             resourceTag = None,
             IndexingElasticSearchViewValue.defaultPipeline,
             mapping = Some(mapping),
@@ -187,8 +185,6 @@ class ElasticSearchViewsSpec
       }
       "using an IndexingElasticSearchViewValue" in {
         val value = IndexingElasticSearchViewValue(
-          name = None,
-          description = Some("description"),
           resourceTag = Some(UserTag.unsafe("tag")),
           List(
             PipeStep(FilterBySchema.label, FilterBySchemaConfig(Set(iri"http://localhost/schema")).toJsonLd),
@@ -217,7 +213,7 @@ class ElasticSearchViewsSpec
         views.create(projectRef, source).accepted
       }
       "using an AggregateElasticSearchViewValue" in {
-        val value = AggregateElasticSearchViewValue(None, None, NonEmptySet.of(ViewRef(projectRef, viewId)))
+        val value = AggregateElasticSearchViewValue(NonEmptySet.of(ViewRef(projectRef, viewId)))
         views.create(aggregateViewId, projectRef, value).accepted
 
         // Dependency to the referenced project should have been saved
@@ -253,15 +249,13 @@ class ElasticSearchViewsSpec
       "the referenced view does not exist" in {
         val id           = iri"http://localhost/${genString()}"
         val referencedId = iri"http://localhost/${genString()}"
-        val value        = AggregateElasticSearchViewValue(None, None, NonEmptySet.of(ViewRef(projectRef, referencedId)))
+        val value        = AggregateElasticSearchViewValue(NonEmptySet.of(ViewRef(projectRef, referencedId)))
         views.create(id, projectRef, value).rejectedWith[InvalidViewReferences]
       }
 
       "too many views are referenced" in {
         val id    = iri"http://localhost/${genString()}"
         val value = AggregateElasticSearchViewValue(
-          None,
-          None,
           NonEmptySet.of(ViewRef(projectRef, aggregateViewId), ViewRef(projectRef, viewPipelineId))
         )
         views.create(id, projectRef, value).rejectedWith[TooManyViewReferences]
@@ -269,7 +263,7 @@ class ElasticSearchViewsSpec
 
       "the referenced project does not exist" in {
         val id    = iri"http://localhost/${genString()}"
-        val value = AggregateElasticSearchViewValue(None, None, NonEmptySet.of(ViewRef(unknownProjectRef, viewId)))
+        val value = AggregateElasticSearchViewValue(NonEmptySet.of(ViewRef(unknownProjectRef, viewId)))
         views.create(id, projectRef, value).rejectedWith[InvalidViewReferences]
       }
       "the referenced project is deprecated" in {
@@ -425,8 +419,6 @@ class ElasticSearchViewsSpec
         views.fetch(id, projectRef).accepted shouldEqual resourceFor(
           id = id,
           value = IndexingElasticSearchViewValue(
-            name = None,
-            description = None,
             resourceTag = None,
             IndexingElasticSearchViewValue.defaultPipeline,
             mapping = Some(mapping),
@@ -446,8 +438,6 @@ class ElasticSearchViewsSpec
         views.fetch(IdSegmentRef(id, 1), projectRef).accepted shouldEqual resourceFor(
           id = id,
           value = IndexingElasticSearchViewValue(
-            name = None,
-            description = None,
             resourceTag = None,
             IndexingElasticSearchViewValue.defaultPipeline,
             mapping = Some(mapping),
@@ -469,8 +459,6 @@ class ElasticSearchViewsSpec
         views.fetch(IdSegmentRef(id, tag), projectRef).accepted shouldEqual resourceFor(
           id = id,
           value = IndexingElasticSearchViewValue(
-            name = None,
-            description = None,
             resourceTag = None,
             IndexingElasticSearchViewValue.defaultPipeline,
             mapping = Some(mapping),
