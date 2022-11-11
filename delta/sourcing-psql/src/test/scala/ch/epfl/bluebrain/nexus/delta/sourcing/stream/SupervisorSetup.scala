@@ -25,6 +25,7 @@ object SupervisorSetup {
       RetryStrategyConfig.AlwaysGiveUp,
       10.millis,
       10.millis,
+      14.days,
       defaultQueryConfig
     )
     resource(config)

@@ -13,14 +13,15 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectCon
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport
 import ch.epfl.bluebrain.nexus.delta.sdk.views.{PipeStep, ViewRef}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{DefaultLabelPredicates, DiscardMetadata, FilterBySchema, FilterByType, FilterDeprecated}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.FilterBySchema.FilterBySchemaConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.FilterByType.FilterByTypeConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes._
 import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
 import io.circe.literal._
 import monix.bio.IO
+import monix.execution.Scheduler.Implicits.global
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{Inspectors, OptionValues}
@@ -49,7 +50,8 @@ class ElasticSearchViewDecodingSpec
     new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
 
   implicit private val caller: Caller = Caller.Anonymous
-  private val decoder                 = ElasticSearchViewJsonLdSourceDecoder(uuidF, resolverContext)
+  private val decoder                 =
+    ElasticSearchViewJsonLdSourceDecoder(uuidF, resolverContext).runSyncUnsafe()
 
   "An IndexingElasticSearchViewValue" should {
     val mapping  = json"""{ "dynamic": false }""".asObject.value
@@ -73,11 +75,14 @@ class ElasticSearchViewDecodingSpec
         value shouldEqual expected
         id.toString should startWith(context.base.iri.toString)
       }
+
       "all legacy fields are specified" in {
         val source      =
           json"""{
                   "@id": "http://localhost/id",
                   "@type": "ElasticSearchView",
+                  "name": "viewName",
+                  "description": "viewDescription",
                   "resourceSchemas": [ ${(context.vocab / "Person").toString} ],
                   "resourceTypes": [ ${(context.vocab / "Person").toString} ],
                   "resourceTag": "release",
@@ -89,6 +94,8 @@ class ElasticSearchViewDecodingSpec
                   "permission": "custom/permission"
                 }"""
         val expected    = IndexingElasticSearchViewValue(
+          name = Some("viewName"),
+          description = Some("viewDescription"),
           resourceTag = Some(UserTag.unsafe("release")),
           pipeline = List(
             PipeStep(FilterBySchema.label, FilterBySchemaConfig(Set(context.vocab / "Person")).toJsonLd),
@@ -112,6 +119,8 @@ class ElasticSearchViewDecodingSpec
           json"""{
                   "@id": "http://localhost/id",
                   "@type": "ElasticSearchView",
+                  "name": "viewName",
+                  "description": "viewDescription",
                   "pipeline": [],
                   "resourceSchemas": [ ${(context.vocab / "Person").toString} ],
                   "resourceTypes": [ ${(context.vocab / "Person").toString} ],
@@ -124,6 +133,8 @@ class ElasticSearchViewDecodingSpec
                   "permission": "custom/permission"
                 }"""
         val expected    = IndexingElasticSearchViewValue(
+          name = Some("viewName"),
+          description = Some("viewDescription"),
           resourceTag = Some(UserTag.unsafe("release")),
           pipeline = List(),
           mapping = Some(mapping),
@@ -141,6 +152,8 @@ class ElasticSearchViewDecodingSpec
           json"""{
                   "@id": "http://localhost/id",
                   "@type": "ElasticSearchView",
+                  "name": "viewName",
+                  "description": "viewDescription",
                   "pipeline": [
                     {
                       "name": "filterDeprecated"
@@ -164,6 +177,8 @@ class ElasticSearchViewDecodingSpec
                   "permission": "custom/permission"
                 }"""
         val expected    = IndexingElasticSearchViewValue(
+          name = Some("viewName"),
+          description = Some("viewDescription"),
           resourceTag = Some(UserTag.unsafe("release")),
           pipeline = List(
             PipeStep.noConfig(FilterDeprecated.label),

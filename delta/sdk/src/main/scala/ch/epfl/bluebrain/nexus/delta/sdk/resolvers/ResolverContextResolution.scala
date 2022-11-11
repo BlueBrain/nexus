@@ -30,7 +30,7 @@ import scala.collection.concurrent
   *   a function to resolve resources
   */
 final class ResolverContextResolution(
-    rcr: RemoteContextResolution,
+    val rcr: RemoteContextResolution,
     resolveResource: Resolve[Resource]
 ) {
 

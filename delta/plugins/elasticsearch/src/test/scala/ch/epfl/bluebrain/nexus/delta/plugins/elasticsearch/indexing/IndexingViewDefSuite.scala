@@ -53,6 +53,8 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
   private val customSettings     = jobj"""{"analysis": {}}"""
   private val filterByTypeConfig = FilterByTypeConfig(Set(nxv + "PullRequest"))
   private val indexingCustom     = IndexingElasticSearchViewValue(
+    Some("viewName"),
+    Some("viewDescription"),
     Some(UserTag.unsafe("some.tag")),
     List(
       PipeStep(FilterByType.label, filterByTypeConfig.toJsonLd),

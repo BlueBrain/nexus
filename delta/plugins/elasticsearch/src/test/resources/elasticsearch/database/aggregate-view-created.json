@@ -3,6 +3,8 @@
   "project" : "myorg/myproj",
   "uuid" : "f8468909-a797-4b10-8b5f-000cba337bfa",
   "value" : {
+    "name": "viewName",
+    "description": "viewDescription",
     "views" : [
       {
         "project" : "myorg/myproj",
@@ -12,6 +14,8 @@
     "@type" : "AggregateElasticSearchViewValue"
   },
   "source" : {
+    "name": "viewName",
+    "description": "viewDescription",
     "views" : [
       {
         "project" : "myorg/myproj",

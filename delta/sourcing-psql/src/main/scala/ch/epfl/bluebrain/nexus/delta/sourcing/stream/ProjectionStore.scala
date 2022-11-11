@@ -78,7 +78,7 @@ trait ProjectionStore {
   /**
     * Saves one failed elem
     */
-  protected def saveFailedElem(metadata: ProjectionMetadata, failure: FailedElem): ConnectionIO[Unit]
+  protected def saveFailedElem(metadata: ProjectionMetadata, failure: FailedElem, instant: Instant): ConnectionIO[Unit]
 
   /**
     * Get available failed elem entries for a given projection (provided by project and id), starting from a failed elem
@@ -194,13 +194,16 @@ object ProjectionStore {
           failures: List[FailedElem]
       ): UIO[Unit] = {
         val log  = UIO(logger.debug(s"[{}] Saving {} failed elems.", metadata.name, failures.length))
-        val save = failures.traverse(elem => saveFailedElem(metadata, elem)).transact(xas.write).void.hideErrors
+        val save = IOUtils.instant.flatMap { instant =>
+          failures.traverse(elem => saveFailedElem(metadata, elem, instant)).transact(xas.write).void.hideErrors
+        }
         log >> save
       }
 
       override protected def saveFailedElem(
           metadata: ProjectionMetadata,
-          failure: FailedElem
+          failure: FailedElem,
+          instant: Instant
       ): ConnectionIO[Unit] =
         sql"""
              | INSERT INTO public.failed_elem_logs (
@@ -215,7 +218,8 @@ object ProjectionStore {
              |  rev,
              |  error_type,
              |  message,
-             |  stack_trace
+             |  stack_trace,
+             |  instant
              | )
              | VALUES (
              |  ${metadata.name},
@@ -229,7 +233,8 @@ object ProjectionStore {
              |  ${failure.revision},
              |  ${failure.throwable.getClass.getCanonicalName},
              |  ${failure.throwable.getMessage},
-             |  ${stackTraceAsString(failure.throwable)}
+             |  ${stackTraceAsString(failure.throwable)},
+             |  $instant
              | )""".stripMargin.update.run.void
     }
 

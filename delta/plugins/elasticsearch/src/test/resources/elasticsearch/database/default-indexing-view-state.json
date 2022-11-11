@@ -6,7 +6,7 @@
     "subject": "username"
   },
   "deprecated": false,
-  "id": "https://bluebrain.github.io/nexus/vocabulary/aggregate-view",
+  "id": "https://bluebrain.github.io/nexus/vocabulary/indexing-view",
   "project": "myorg/myproj",
   "rev": 1,
   "source": {
@@ -23,14 +23,18 @@
   },
   "uuid": "f8468909-a797-4b10-8b5f-000cba337bfa",
   "value": {
-    "@type": "AggregateElasticSearchViewValue",
-    "name": "viewName",
-    "description": "viewDescription",
-    "views": [
+    "@type": "IndexingElasticSearchViewValue",
+    "pipeline": [
       {
-        "project": "myorg/myproj",
-        "viewId": "https://bluebrain.github.io/nexus/vocabulary/indexing-view"
+        "name": "filterDeprecated"
+      },
+      {
+        "name": "discardMetadata"
+      },
+      {
+        "name": "defaultLabelPredicates"
       }
-    ]
+    ],
+    "permission": "views/query"
   }
 }

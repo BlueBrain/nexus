@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews.en
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{ProjectContextRejection, ResourceAlreadyExists}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.IndexingElasticSearchViewValue
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultViewId, permissions}
-import ch.epfl.bluebrain.nexus.delta.sdk.ScopeInitialization
+import ch.epfl.bluebrain.nexus.delta.sdk.{Defaults, ScopeInitialization}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
@@ -26,8 +26,11 @@ import monix.bio.{IO, UIO}
   * @param serviceAccount
   *   the subject that will be recorded when performing the initialization
   */
-class ElasticSearchScopeInitialization(views: ElasticSearchViews, serviceAccount: ServiceAccount)
-    extends ScopeInitialization {
+class ElasticSearchScopeInitialization(
+    views: ElasticSearchViews,
+    serviceAccount: ServiceAccount,
+    defaults: Defaults
+) extends ScopeInitialization {
 
   private val logger: Logger                                = Logger[ElasticSearchScopeInitialization]
   implicit private val serviceAccountSubject: Subject       = serviceAccount.subject
@@ -35,6 +38,8 @@ class ElasticSearchScopeInitialization(views: ElasticSearchViews, serviceAccount
 
   private val defaultValue: IndexingElasticSearchViewValue =
     IndexingElasticSearchViewValue(
+      name = Some(defaults.name),
+      description = Some(defaults.description),
       resourceTag = None,
       List(PipeStep.noConfig(DefaultLabelPredicates.label), PipeStep.noConfig(SourceAsText.label)),
       mapping = None,
