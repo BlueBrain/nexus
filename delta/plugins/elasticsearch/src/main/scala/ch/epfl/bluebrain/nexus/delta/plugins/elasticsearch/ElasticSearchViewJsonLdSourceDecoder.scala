@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, JsonLdContext}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.semiauto.deriveJsonLdDecoder
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.configuration.semiauto.deriveConfigJsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{Configuration, JsonLdDecoder}
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
@@ -116,9 +116,9 @@ object ElasticSearchViewJsonLdSourceDecoder {
     implicit final def elasticSearchViewFieldsJsonLdDecoder(implicit
         configuration: Configuration
     ): JsonLdDecoder[ElasticSearchViewFields] = {
-      val legacyFieldsJsonLdDecoder    = deriveJsonLdDecoder[LegacyIndexingElasticSearchViewFields]
-      val indexingFieldsJsonLdDecoder  = deriveJsonLdDecoder[IndexingElasticSearchViewFields]
-      val aggregateFieldsJsonLdDecoder = deriveJsonLdDecoder[AggregateElasticSearchViewFields]
+      val legacyFieldsJsonLdDecoder    = deriveConfigJsonLdDecoder[LegacyIndexingElasticSearchViewFields]
+      val indexingFieldsJsonLdDecoder  = deriveConfigJsonLdDecoder[IndexingElasticSearchViewFields]
+      val aggregateFieldsJsonLdDecoder = deriveConfigJsonLdDecoder[AggregateElasticSearchViewFields]
       val pipeline                     = nxv + "pipeline"
       (cursor: ExpandedJsonLdCursor) =>
         cursor.getTypes.flatMap { types =>
