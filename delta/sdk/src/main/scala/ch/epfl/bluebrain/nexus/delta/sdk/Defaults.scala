@@ -13,6 +13,6 @@ import pureconfig.generic.semiauto.deriveReader
 final case class Defaults(name: String, description: String)
 
 object Defaults {
-  implicit final val batchConfigReader: ConfigReader[Defaults] =
+  implicit final val defaultsConfigReader: ConfigReader[Defaults] =
     deriveReader[Defaults]
 }
