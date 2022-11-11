@@ -6,11 +6,12 @@ object semiauto {
 
   type Typeclass[T] = JsonLdDecoder[T]
 
-  def combine[T](caseClass: CaseClass[Typeclass, T]): Typeclass[T] =
-    MagnoliaJsonLdDecoder.combine(caseClass)(Configuration.default)
+  def combine[T](caseClass: CaseClass[Typeclass, T])(implicit configuration: Configuration): Typeclass[T] =
+    MagnoliaJsonLdDecoder.combine(caseClass)
 
-  def dispatch[T](sealedTrait: SealedTrait[Typeclass, T]): Typeclass[T] =
-    MagnoliaJsonLdDecoder.dispatch(sealedTrait)(Configuration.default)
+  def dispatch[T](sealedTrait: SealedTrait[Typeclass, T])(implicit configuration: Configuration): Typeclass[T] =
+    MagnoliaJsonLdDecoder.dispatch(sealedTrait)
 
   def deriveJsonLdDecoder[T]: Typeclass[T] = macro Magnolia.gen[T]
+
 }

@@ -11,9 +11,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLdCursor
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, JsonLdContext}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.semiauto.deriveJsonLdDecoder
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{Configuration, JsonLdDecoder}
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceResolvingDecoder
@@ -23,12 +24,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.views.{PipeStep, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{DefaultLabelPredicates, DiscardMetadata, FilterBySchema, FilterByType, FilterDeprecated, SourceAsText}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.FilterBySchema.FilterBySchemaConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.FilterByType.FilterByTypeConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes._
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
 import monix.bio.IO
+
+import scala.annotation.nowarn
 
 /**
   * Decoder for [[ElasticSearchViewValue]] which maps some fields to string, before decoding to get around lack of
@@ -109,7 +112,10 @@ object ElasticSearchViewJsonLdSourceDecoder {
       override val tpe: ElasticSearchViewType = ElasticSearchViewType.AggregateElasticSearch
     }
 
-    implicit final val elasticSearchViewFieldsJsonLdDecoder: JsonLdDecoder[ElasticSearchViewFields] = {
+    @nowarn("cat=unused")
+    implicit final def elasticSearchViewFieldsJsonLdDecoder(implicit
+        configuration: Configuration
+    ): JsonLdDecoder[ElasticSearchViewFields] = {
       val legacyFieldsJsonLdDecoder    = deriveJsonLdDecoder[LegacyIndexingElasticSearchViewFields]
       val indexingFieldsJsonLdDecoder  = deriveJsonLdDecoder[IndexingElasticSearchViewFields]
       val aggregateFieldsJsonLdDecoder = deriveJsonLdDecoder[AggregateElasticSearchViewFields]
@@ -190,12 +196,21 @@ object ElasticSearchViewJsonLdSourceDecoder {
       )
   }
 
-  def apply(uuidF: UUIDF, contextResolution: ResolverContextResolution)(implicit api: JsonLdApi) =
-    new ElasticSearchViewJsonLdSourceDecoder(
-      new JsonLdSourceResolvingDecoder[ElasticSearchViewRejection, ElasticSearchViewFields](
-        contexts.elasticsearch,
-        contextResolution,
-        uuidF
+  def apply(uuidF: UUIDF, contextResolution: ResolverContextResolution)(implicit api: JsonLdApi) = {
+    implicit val rcr = contextResolution.rcr
+
+    for {
+      cv <- IO.delay { ContextValue.apply(contexts.elasticsearch) }
+      jc <- JsonLdContext.apply(cv)
+    } yield {
+      implicit val config: Configuration = Configuration(jc, "id")
+      new ElasticSearchViewJsonLdSourceDecoder(
+        new JsonLdSourceResolvingDecoder[ElasticSearchViewRejection, ElasticSearchViewFields](
+          contexts.elasticsearch,
+          contextResolution,
+          uuidF
+        )
       )
-    )
+    }
+  }
 }

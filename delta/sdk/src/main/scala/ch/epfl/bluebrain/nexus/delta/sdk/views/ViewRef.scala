@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.views
 
 import cats.Order
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{Configuration, JsonLdDecoder}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.semiauto.deriveJsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.Codec
@@ -22,6 +22,7 @@ object ViewRef {
 
   implicit final val viewRefEncoder: Codec.AsObject[ViewRef] = deriveCodec[ViewRef]
 
+  implicit final val config                                       = Configuration.default
   implicit final val viewRefJsonLdDecoder: JsonLdDecoder[ViewRef] = deriveJsonLdDecoder[ViewRef]
 
   implicit final val viewRefOrder: Order[ViewRef] = Order.by { viewRef =>

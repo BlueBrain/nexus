@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.SourceType._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{Configuration, JsonLdDecoder}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.semiauto.deriveJsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
@@ -198,6 +198,7 @@ object CompositeViewSource {
 
   @nowarn("cat=unused")
   implicit final val sourceLdDecoder: JsonLdDecoder[CompositeViewSource] = {
+    implicit val config                                           = Configuration.default
     implicit val identityLdDecoder: JsonLdDecoder[Identity]       = deriveJsonLdDecoder[Identity]
     implicit val accessTokenLdDecoder: JsonLdDecoder[AccessToken] = deriveJsonLdDecoder[AccessToken]
     deriveJsonLdDecoder[CompositeViewSource]

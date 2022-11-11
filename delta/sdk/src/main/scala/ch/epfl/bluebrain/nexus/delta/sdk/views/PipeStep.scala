@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.views
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{Configuration, JsonLdDecoder}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.semiauto.deriveJsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{ExpandedJsonLd, ExpandedJsonLdCursor}
@@ -66,7 +66,7 @@ object PipeStep {
   implicit val pipeStepJsonLdEncoder: JsonLdEncoder[PipeStep] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.pipeline))
 
-  implicit val pipeStepJsonLdDecoder: JsonLdDecoder[PipeStep] = {
+  implicit def pipeStepJsonLdDecoder(implicit configuration: Configuration): JsonLdDecoder[PipeStep] = {
     implicit val expandedJsonLdDecoder: JsonLdDecoder[ExpandedJsonLd] = (cursor: ExpandedJsonLdCursor) => cursor.focus
     deriveJsonLdDecoder[PipeStep].map {
       case p if p.config.isDefined => p.copy(config = p.config.map(_.copy(rootId = nxv + p.name.value)))
