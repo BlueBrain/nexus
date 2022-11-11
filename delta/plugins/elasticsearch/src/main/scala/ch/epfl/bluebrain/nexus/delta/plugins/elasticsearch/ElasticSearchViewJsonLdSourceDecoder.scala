@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLdCursor
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, JsonLdContext, RemoteContextResolution}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.configuration.semiauto.deriveConfigJsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{Configuration, JsonLdDecoder}
@@ -29,7 +29,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.FilterByType.FilterBy
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes._
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
-import monix.bio.IO
+import monix.bio.{IO, Task}
 
 import scala.annotation.nowarn
 
@@ -198,14 +198,10 @@ object ElasticSearchViewJsonLdSourceDecoder {
 
   def apply(uuidF: UUIDF, contextResolution: ResolverContextResolution)(implicit
       api: JsonLdApi
-  ): IO[Throwable, ElasticSearchViewJsonLdSourceDecoder] = {
+  ): Task[ElasticSearchViewJsonLdSourceDecoder] = {
     implicit val rcr: RemoteContextResolution = contextResolution.rcr
 
-    for {
-      contextValue  <- IO.delay { ContextValue(contexts.elasticsearch) }
-      jsonLdContext <- JsonLdContext(contextValue)
-    } yield {
-      implicit val config: Configuration = Configuration(jsonLdContext, "id")
+    ElasticSearchDecoderConfiguration.apply.map { implicit config =>
       new ElasticSearchViewJsonLdSourceDecoder(
         new JsonLdSourceResolvingDecoder[ElasticSearchViewRejection, ElasticSearchViewFields](
           contexts.elasticsearch,
