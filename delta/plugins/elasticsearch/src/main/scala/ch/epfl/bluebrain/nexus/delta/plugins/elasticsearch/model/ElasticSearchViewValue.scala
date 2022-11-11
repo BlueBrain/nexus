@@ -32,7 +32,7 @@ sealed trait ElasticSearchViewValue extends Product with Serializable {
     * @return
     *   the description of the view
     */
-  def description(): Option[String]
+  def description: Option[String]
 
   /**
     * @return
