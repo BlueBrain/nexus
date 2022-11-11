@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewDefaults
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{BatchConfig, EventLogConfig}
 import com.typesafe.config.Config
 import pureconfig.error.{CannotConvert, FailureReason}
@@ -40,6 +41,8 @@ import scala.concurrent.duration._
   *   the value for `refresh` Elasticsearch parameter for synchronous indexing
   * @param maxIndexPathLength
   *   the maximum length of the URL path for elasticsearch queries
+  * @param defaults
+  *   the default view values
   */
 final case class ElasticSearchViewsConfig(
     base: Uri,
@@ -52,7 +55,8 @@ final case class ElasticSearchViewsConfig(
     maxViewRefs: Int,
     idleTimeout: Duration,
     syncIndexingRefresh: Refresh,
-    maxIndexPathLength: Int
+    maxIndexPathLength: Int,
+    defaults: ViewDefaults
 )
 
 object ElasticSearchViewsConfig {

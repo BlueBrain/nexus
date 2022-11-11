@@ -51,9 +51,7 @@ package object model {
   /**
     * The id, name, and description for the default elasticsearch view
     */
-  final val defaultViewId      = nxv + "defaultElasticSearchIndex"
-  final val defaultName        = "elasticSearchView"
-  final val defaultDescription = "default elasticsearch view"
+  final val defaultViewId = nxv + "defaultElasticSearchIndex"
 
   implicit private val cl: ClassLoader = getClass.getClassLoader
 
