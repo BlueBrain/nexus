@@ -9,7 +9,7 @@ import monix.bio.Task
 object BlazegraphDecoderConfiguration {
 
   def apply(implicit jsonLdApi: JsonLdApi, rcr: RemoteContextResolution): Task[Configuration] = for {
-    contextValue <- Task.delay { ContextValue(contexts.blazegraph) }
+    contextValue  <- Task.delay { ContextValue(contexts.blazegraph) }
     jsonLdContext <- JsonLdContext(contextValue)
   } yield {
     val enhancedJsonLdContext = jsonLdContext

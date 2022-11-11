@@ -62,9 +62,9 @@ class BlazegraphScopeInitializationSpec
     xas
   ).accepted
 
-  private val defaultViewName = "defaultName"
+  private val defaultViewName        = "defaultName"
   private val defaultViewDescription = "defaultDescription"
-  private val defaults = Defaults(defaultViewName, defaultViewDescription)
+  private val defaults               = Defaults(defaultViewName, defaultViewDescription)
 
   "A BlazegraphScopeInitialization" should {
     lazy val init = new BlazegraphScopeInitialization(views, sa, defaults)

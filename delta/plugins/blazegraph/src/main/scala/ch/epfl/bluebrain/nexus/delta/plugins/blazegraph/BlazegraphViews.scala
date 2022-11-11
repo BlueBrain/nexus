@@ -565,25 +565,27 @@ object BlazegraphViews {
   ): Task[BlazegraphViews] = {
     implicit val rcr: RemoteContextResolution = contextResolution.rcr
 
-    BlazegraphDecoderConfiguration.apply.map { implicit config =>
-      new JsonLdSourceResolvingDecoder[BlazegraphViewRejection, BlazegraphViewValue](
-        contexts.blazegraph,
-        contextResolution,
-        uuidF
-      )
-    }.map { sourceDecoder =>
-      new BlazegraphViews(
-        ScopedEventLog(
-          definition(validate),
-          eventLogConfig,
-          xas
-        ),
-        fetchContext,
-        sourceDecoder,
-        createNamespace,
-        prefix
-      )
-    }
+    BlazegraphDecoderConfiguration.apply
+      .map { implicit config =>
+        new JsonLdSourceResolvingDecoder[BlazegraphViewRejection, BlazegraphViewValue](
+          contexts.blazegraph,
+          contextResolution,
+          uuidF
+        )
+      }
+      .map { sourceDecoder =>
+        new BlazegraphViews(
+          ScopedEventLog(
+            definition(validate),
+            eventLogConfig,
+            xas
+          ),
+          fetchContext,
+          sourceDecoder,
+          createNamespace,
+          prefix
+        )
+      }
 
   }
 }
