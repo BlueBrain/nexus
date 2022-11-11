@@ -4,9 +4,9 @@ import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.headers.BasicHttpCredentials
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
+import ch.epfl.bluebrain.nexus.delta.sdk.Defaults
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewDefaults
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{BatchConfig, EventLogConfig}
 import com.typesafe.config.Config
 import pureconfig.error.{CannotConvert, FailureReason}
@@ -42,7 +42,7 @@ import scala.concurrent.duration._
   * @param maxIndexPathLength
   *   the maximum length of the URL path for elasticsearch queries
   * @param defaults
-  *   the default view values
+  *   default values for the view
   */
 final case class ElasticSearchViewsConfig(
     base: Uri,
@@ -56,7 +56,7 @@ final case class ElasticSearchViewsConfig(
     idleTimeout: Duration,
     syncIndexingRefresh: Refresh,
     maxIndexPathLength: Int,
-    defaults: ViewDefaults
+    defaults: Defaults
 )
 
 object ElasticSearchViewsConfig {
