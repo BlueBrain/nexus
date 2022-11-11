@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews.entityTy
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{ProjectContextRejection, ResourceAlreadyExists}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.IndexingBlazegraphViewValue
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.ScopeInitialization
+import ch.epfl.bluebrain.nexus.delta.sdk.{Defaults, ScopeInitialization}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
@@ -24,16 +24,19 @@ import monix.bio.{IO, UIO}
   * @param serviceAccount
   *   the subject that will be recorded when performing the initialization
   */
-class BlazegraphScopeInitialization(views: BlazegraphViews, serviceAccount: ServiceAccount)
-    extends ScopeInitialization {
+class BlazegraphScopeInitialization(
+    views: BlazegraphViews,
+    serviceAccount: ServiceAccount,
+    defaults: Defaults
+) extends ScopeInitialization {
 
   private val logger: Logger                                = Logger[BlazegraphScopeInitialization]
   implicit private val serviceAccountSubject: Subject       = serviceAccount.subject
   implicit private val kamonComponent: KamonMetricComponent = KamonMetricComponent(entityType.value)
 
   private val defaultValue: IndexingBlazegraphViewValue = IndexingBlazegraphViewValue(
-    name = Some(defaultName),
-    description = Some(defaultDescription),
+    name = Some(defaults.name),
+    description = Some(defaults.description),
     resourceSchemas = Set.empty,
     resourceTypes = Set.empty,
     resourceTag = None,

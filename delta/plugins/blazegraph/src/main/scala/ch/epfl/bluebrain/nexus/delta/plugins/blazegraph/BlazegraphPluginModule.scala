@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.config.BlazegraphViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphCoordinator
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.ProjectContextRejection
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{contexts, schema => viewsSchemaId, BlazegraphView, BlazegraphViewEvent}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphView, BlazegraphViewEvent, contexts, schema => viewsSchemaId}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.BlazegraphViewsRoutes
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
@@ -19,6 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
@@ -166,7 +167,10 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
       )
   }
 
-  make[BlazegraphScopeInitialization]
+  make[BlazegraphScopeInitialization].from {
+    (views: BlazegraphViews, serviceAccount: ServiceAccount, config: BlazegraphViewsConfig) =>
+      new BlazegraphScopeInitialization(views, serviceAccount, config.defaults)
+  }
   many[ScopeInitialization].ref[BlazegraphScopeInitialization]
 
   many[MetadataContextValue].addEffect(MetadataContextValue.fromFile("contexts/sparql-metadata.json"))
