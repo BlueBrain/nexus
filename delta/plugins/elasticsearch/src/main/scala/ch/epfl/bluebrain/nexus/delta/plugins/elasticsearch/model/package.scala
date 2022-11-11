@@ -49,7 +49,7 @@ package object model {
   }
 
   /**
-    * The id, name, and description for the default elasticsearch view
+    * The id for the default elasticsearch view
     */
   final val defaultViewId = nxv + "defaultElasticSearchIndex"
 
