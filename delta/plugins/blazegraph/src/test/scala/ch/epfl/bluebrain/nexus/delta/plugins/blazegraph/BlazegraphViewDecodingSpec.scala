@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewReje
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.{AggregateBlazegraphViewValue, IndexingBlazegraphViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{contexts, BlazegraphViewRejection, BlazegraphViewValue}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.Configuration
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
@@ -37,7 +38,8 @@ class BlazegraphViewDecodingSpec
 
   implicit private val uuidF: UUIDF = UUIDF.fixed(UUID.randomUUID())
 
-  private val decoder =
+  implicit val config: Configuration = BlazegraphDecoderConfiguration.apply.accepted
+  private val decoder                =
     new JsonLdSourceDecoder[BlazegraphViewRejection, BlazegraphViewValue](contexts.blazegraph, uuidF)
 
   "An IndexingBlazegraphValue" should {

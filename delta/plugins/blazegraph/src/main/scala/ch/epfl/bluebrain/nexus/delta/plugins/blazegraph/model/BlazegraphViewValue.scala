@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValu
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{Configuration, JsonLdDecoder}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.configuration.semiauto.deriveConfigJsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
@@ -130,16 +130,9 @@ object BlazegraphViewValue {
     deriveConfiguredEncoder[BlazegraphViewValue]
   }
 
-  implicit val blazegraphViewValueJsonLdDecoder: JsonLdDecoder[BlazegraphViewValue] = {
-    import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.Configuration
-
-    val ctx = Configuration.default.context
-      .addAliasIdType("IndexingBlazegraphViewValue", BlazegraphViewType.IndexingBlazegraphView.tpe)
-      .addAliasIdType("AggregateBlazegraphViewValue", BlazegraphViewType.AggregateBlazegraphView.tpe)
-
-    implicit val cfg: Configuration = Configuration.default.copy(context = ctx)
-
+  implicit def blazegraphViewValueJsonLdDecoder(implicit
+      configuration: Configuration
+  ): JsonLdDecoder[BlazegraphViewValue] =
     deriveConfigJsonLdDecoder[BlazegraphViewValue]
-  }
 
 }
