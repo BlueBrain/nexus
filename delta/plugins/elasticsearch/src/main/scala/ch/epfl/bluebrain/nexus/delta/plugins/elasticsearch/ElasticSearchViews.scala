@@ -410,7 +410,7 @@ object ElasticSearchViews {
       xas: Transactors
   )(implicit api: JsonLdApi, clock: Clock[UIO], uuidF: UUIDF): Task[ElasticSearchViews] = {
     for {
-      sourceDecoder   <- Task.delay(ElasticSearchViewJsonLdSourceDecoder(uuidF, contextResolution))
+      sourceDecoder   <- ElasticSearchViewJsonLdSourceDecoder(uuidF, contextResolution)
       defaultMapping  <- defaultElasticsearchMapping
       defaultSettings <- defaultElasticsearchSettings
     } yield new ElasticSearchViews(

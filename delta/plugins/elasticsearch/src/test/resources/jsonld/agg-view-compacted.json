@@ -5,6 +5,8 @@
     "AggregateElasticSearchView",
     "View"
   ],
+  "name": "viewName",
+  "description": "viewDescription",
   "views": [
     {
       "project": "org/project",

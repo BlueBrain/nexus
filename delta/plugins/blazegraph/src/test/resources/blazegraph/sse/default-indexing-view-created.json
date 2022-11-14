@@ -12,18 +12,11 @@
   "_source": {
     "@id": "https://bluebrain.github.io/nexus/vocabulary/indexing-view",
     "@type": "SparqlView",
-    "name": "viewName",
-    "description": "viewDescription",
     "includeDeprecated": false,
     "includeMetadata": false,
-    "permission": "my/permission",
-    "resourceSchemas": [
-      "https://bluebrain.github.io/nexus/vocabulary/some-schema"
-    ],
-    "resourceTag": "some.tag",
-    "resourceTypes": [
-      "https://bluebrain.github.io/nexus/vocabulary/SomeType"
-    ]
+    "permission": "views/query",
+    "resourceSchemas": [],
+    "resourceTypes": []
   },
   "_subject": "http://localhost/v1/realms/myrealm/users/username",
   "_types": [

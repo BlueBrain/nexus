@@ -12,6 +12,8 @@
   "_source": {
     "@id": "https://bluebrain.github.io/nexus/vocabulary/aggregate-view",
     "@type": "AggregateElasticSearchView",
+    "name": "viewName",
+    "description": "viewDescription",
     "views": [
       {
         "project": "myorg/myproj",

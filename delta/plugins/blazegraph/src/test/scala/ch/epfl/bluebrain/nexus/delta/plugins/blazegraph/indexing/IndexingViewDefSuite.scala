@@ -52,7 +52,8 @@ class IndexingViewDefSuite extends BioSuite {
     resourceTypes = Set(nxv + "PullRequest")
   )
 
-  private val aggregate = AggregateBlazegraphViewValue(NonEmptySet.of(viewRef))
+  private val aggregate =
+    AggregateBlazegraphViewValue(Some("viewName"), Some("viewDescription"), NonEmptySet.of(viewRef))
   private val sink      = new CacheSink[NTriples]()
 
   private def state(v: BlazegraphViewValue) = BlazegraphViewState(

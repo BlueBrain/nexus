@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValu
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{Configuration, JsonLdDecoder}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.configuration.semiauto.deriveConfigJsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
@@ -25,6 +25,18 @@ import scala.annotation.nowarn
   * Enumeration of Blazegraph view values.
   */
 sealed trait BlazegraphViewValue extends Product with Serializable {
+
+  /**
+    * @return
+    *   the name of the view
+    */
+  def name: Option[String]
+
+  /**
+    * @return
+    *   the description of the view
+    */
+  def description: Option[String]
 
   /**
     * @return
@@ -61,6 +73,8 @@ object BlazegraphViewValue {
     *   the permission required for querying this view
     */
   final case class IndexingBlazegraphViewValue(
+      name: Option[String] = None,
+      description: Option[String] = None,
       resourceSchemas: Set[Iri] = Set.empty,
       resourceTypes: Set[Iri] = Set.empty,
       resourceTag: Option[UserTag] = None,
@@ -91,7 +105,11 @@ object BlazegraphViewValue {
     * @param views
     *   the collection of views where queries will be delegated (if necessary permissions are met)
     */
-  final case class AggregateBlazegraphViewValue(views: NonEmptySet[ViewRef]) extends BlazegraphViewValue {
+  final case class AggregateBlazegraphViewValue(
+      name: Option[String],
+      description: Option[String],
+      views: NonEmptySet[ViewRef]
+  ) extends BlazegraphViewValue {
     override val tpe: BlazegraphViewType = BlazegraphViewType.AggregateBlazegraphView
   }
 
@@ -112,16 +130,9 @@ object BlazegraphViewValue {
     deriveConfiguredEncoder[BlazegraphViewValue]
   }
 
-  implicit val blazegraphViewValueJsonLdDecoder: JsonLdDecoder[BlazegraphViewValue] = {
-    import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.Configuration
-
-    val ctx = Configuration.default.context
-      .addAliasIdType("IndexingBlazegraphViewValue", BlazegraphViewType.IndexingBlazegraphView.tpe)
-      .addAliasIdType("AggregateBlazegraphViewValue", BlazegraphViewType.AggregateBlazegraphView.tpe)
-
-    implicit val cfg: Configuration = Configuration.default.copy(context = ctx)
-
+  implicit def blazegraphViewValueJsonLdDecoder(implicit
+      configuration: Configuration
+  ): JsonLdDecoder[BlazegraphViewValue] =
     deriveConfigJsonLdDecoder[BlazegraphViewValue]
-  }
 
 }

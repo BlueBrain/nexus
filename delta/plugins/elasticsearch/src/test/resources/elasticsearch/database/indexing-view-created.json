@@ -3,6 +3,8 @@
   "project": "myorg/myproj",
   "uuid": "f8468909-a797-4b10-8b5f-000cba337bfa",
   "value": {
+    "name": "viewName",
+    "description": "viewDescription",
     "resourceTag": "some.tag",
     "pipeline": [
       {
@@ -49,6 +51,8 @@
     "@type": "IndexingElasticSearchViewValue"
   },
   "source": {
+    "name": "viewName",
+    "description": "viewDescription",
     "resourceTag": "some.tag",
     "pipeline": [
       {

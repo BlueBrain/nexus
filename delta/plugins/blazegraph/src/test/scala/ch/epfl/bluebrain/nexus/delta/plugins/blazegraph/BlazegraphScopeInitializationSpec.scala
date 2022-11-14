@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.{Ag
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{ProjectContextRejection, ViewNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schema => schemaorg}
-import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
+import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, Defaults}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
@@ -62,8 +62,12 @@ class BlazegraphScopeInitializationSpec
     xas
   ).accepted
 
+  private val defaultViewName        = "defaultName"
+  private val defaultViewDescription = "defaultDescription"
+  private val defaults               = Defaults(defaultViewName, defaultViewDescription)
+
   "A BlazegraphScopeInitialization" should {
-    lazy val init = new BlazegraphScopeInitialization(views, sa)
+    lazy val init = new BlazegraphScopeInitialization(views, sa, defaults)
 
     "create a default SparqlView on newly created project" in {
       views.fetch(defaultViewId, project.ref).rejectedWith[ViewNotFound]
@@ -77,6 +81,8 @@ class BlazegraphScopeInitializationSpec
           v.includeDeprecated shouldEqual true
           v.includeMetadata shouldEqual true
           v.permission shouldEqual permissions.query
+          v.name should contain(defaultViewName)
+          v.description should contain(defaultViewDescription)
         case _: AggregateBlazegraphView => fail("Expected an IndexingBlazegraphView to be created")
       }
       resource.rev shouldEqual 1L
