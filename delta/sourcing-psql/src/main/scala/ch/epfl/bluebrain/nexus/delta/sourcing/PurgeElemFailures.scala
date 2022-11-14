@@ -41,7 +41,7 @@ object PurgeElemFailures {
   def apply(supervisor: Supervisor, config: ProjectionConfig, xas: Transactors)(implicit
       clock: Clock[UIO]
   ): Task[PurgeElemFailures] = {
-    val purgeElemFailures = new PurgeElemFailures(xas, config.deleteFailedElemAfter)
+    val purgeElemFailures = new PurgeElemFailures(xas, config.failedElemTtl)
 
     val stream = Stream
       .awakeEvery[Task](config.deleteExpiredEvery)

@@ -171,7 +171,7 @@ object ProjectionStore {
         sql"""SELECT * from public.failed_elem_logs
              |WHERE projection_project = $projectionProject
              |AND projection_id = $projectionId
-             |AND ordering >= $offset
+             |AND ordering > $offset
              |ORDER BY ordering ASC""".stripMargin
           .query[FailedElemLogRow]
           .streamWithChunkSize(config.batchSize)
@@ -183,7 +183,7 @@ object ProjectionStore {
       ): Stream[Task, FailedElemLogRow] =
         sql"""SELECT * from public.failed_elem_logs
              |WHERE projection_name = $projectionName
-             |AND ordering >= $offset
+             |AND ordering > $offset
              |ORDER BY ordering ASC""".stripMargin
           .query[FailedElemLogRow]
           .streamWithChunkSize(config.batchSize)

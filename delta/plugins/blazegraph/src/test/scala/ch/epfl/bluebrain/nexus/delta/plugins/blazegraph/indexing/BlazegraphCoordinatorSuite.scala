@@ -28,10 +28,10 @@ class BlazegraphCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
 
   implicit private val patienceConfig: PatienceConfig = PatienceConfig(5.seconds, 10.millis)
 
-  private lazy val (sv, projectionStore) = supervisor()
-  private val project                    = ProjectRef.unsafe("org", "proj")
-  private val id1                        = nxv + "view1"
-  private val view1                      = ActiveViewDef(
+  private lazy val (sv, projections) = supervisor()
+  private val project                = ProjectRef.unsafe("org", "proj")
+  private val id1                    = nxv + "view1"
+  private val view1                  = ActiveViewDef(
     ViewRef(project, id1),
     projection = id1.toString,
     None,
@@ -171,7 +171,7 @@ class BlazegraphCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
       _ <- sv.describe(view1.projection)
              .map(_.map(_.status))
              .eventuallySome(ExecutionStatus.Completed)
-      _ <- projectionStore.offset(view1.projection).assertSome(expectedViewProgress)
+      _ <- projections.offset(view1.projection).assertSome(expectedViewProgress)
       _  = assert(
              createdIndices.contains(view1.namespace),
              s"The index for '${view1.ref.viewId}' should have been created."
@@ -184,7 +184,7 @@ class BlazegraphCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
       _ <- sv.describe(view2.projection)
              .map(_.map(_.status))
              .eventuallySome(ExecutionStatus.Completed)
-      _ <- projectionStore.offset(view2.projection).assertSome(expectedViewProgress)
+      _ <- projections.offset(view2.projection).assertSome(expectedViewProgress)
       _  = assert(
              createdIndices.contains(view2.namespace),
              s"The index for '${view2.ref.viewId}' should have been created."
@@ -195,7 +195,7 @@ class BlazegraphCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
   test("View 3 is invalid so it should not be started") {
     for {
       _ <- sv.describe(view3.projection).assertNone
-      _ <- projectionStore.offset(view3.projection).assertNone
+      _ <- projections.offset(view3.projection).assertNone
       _  = assert(
              !createdIndices.contains(view3.namespace),
              s"The index for '${view3.ref.viewId}' should not have been created."
@@ -205,7 +205,7 @@ class BlazegraphCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
 
   test("There is one error for the coordinator projection before the signal") {
     for {
-      entries <- projectionStore.failedElemEntries(BlazegraphCoordinator.metadata.name, Offset.start).compile.toList
+      entries <- projections.failedElemEntries(BlazegraphCoordinator.metadata.name, Offset.start).compile.toList
       r        = entries.assertOneElem
       _        = assertEquals(r.failedElemData.id, "https://bluebrain.github.io/nexus/vocabulary/view3")
     } yield ()
@@ -213,7 +213,7 @@ class BlazegraphCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
 
   test("There is one error for view 1") {
     for {
-      entries <- projectionStore.failedElemEntries(view1.projection, Offset.start).compile.toList
+      entries <- projections.failedElemEntries(view1.projection, Offset.start).compile.toList
       r        = entries.assertOneElem
       _        = assertEquals(r.failedElemData.id, "failed")
       _        = assertEquals(r.failedElemData.entityType, PullRequest.entityType)
@@ -223,14 +223,14 @@ class BlazegraphCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
 
   test("There is one error for view 2") {
     for {
-      entries <- projectionStore.failedElemEntries(view2.projection, Offset.start).compile.toList
+      entries <- projections.failedElemEntries(view2.projection, Offset.start).compile.toList
       _        = entries.assertOneElem
     } yield ()
   }
 
   test("There are no errors for view 3") {
     for {
-      entries <- projectionStore.failedElemEntries(view3.projection, Offset.start).compile.toList
+      entries <- projections.failedElemEntries(view3.projection, Offset.start).compile.toList
       _        = entries.assertEmpty()
     } yield ()
   }
@@ -247,7 +247,7 @@ class BlazegraphCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
   test("View 1 is deprecated so it is stopped, the progress and the index should be deleted.") {
     for {
       _ <- sv.describe(view1.projection).eventuallyNone
-      _ <- projectionStore.offset(view1.projection).assertNone
+      _ <- projections.offset(view1.projection).assertNone
       _  = assert(
              deletedIndices.contains(view1.namespace),
              s"The index for '${view1.ref.viewId}' should have been deleted."
@@ -260,7 +260,7 @@ class BlazegraphCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
   ) {
     for {
       _ <- sv.describe(view2.projection).eventuallyNone
-      _ <- projectionStore.offset(view2.projection).assertNone
+      _ <- projections.offset(view2.projection).assertNone
       _  = assert(
              deletedIndices.contains(view2.namespace),
              s"The index for '${view2.ref.viewId}' should have been deleted."
@@ -273,7 +273,7 @@ class BlazegraphCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
       _ <- sv.describe(updatedView2.projection)
              .map(_.map(_.status))
              .eventuallySome(ExecutionStatus.Completed)
-      _ <- projectionStore.offset(updatedView2.projection).assertSome(expectedViewProgress)
+      _ <- projections.offset(updatedView2.projection).assertSome(expectedViewProgress)
       _  = assert(
              createdIndices.contains(updatedView2.namespace),
              s"The new index for '${updatedView2.ref.viewId}' should have been created."
@@ -281,17 +281,17 @@ class BlazegraphCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
     } yield ()
   }
 
-  test("Coordinator projection should have one error after failed elem offset 4") {
+  test("Coordinator projection should have one error after failed elem offset 3") {
     for {
-      entries <- projectionStore.failedElemEntries(BlazegraphCoordinator.metadata.name, Offset.At(4L)).compile.toList
+      entries <- projections.failedElemEntries(BlazegraphCoordinator.metadata.name, Offset.At(3L)).compile.toList
       r        = entries.assertOneElem
       _        = assertEquals(r.failedElemData.id, "failed_coord")
     } yield ()
   }
 
-  test("View 2_2 projection should have one error after failed elem offset 4") {
+  test("View 2_2 projection should have one error after failed elem offset 3") {
     for {
-      entries <- projectionStore.failedElemEntries(updatedView2.projection, Offset.At(4L)).compile.toList
+      entries <- projections.failedElemEntries(updatedView2.projection, Offset.At(3L)).compile.toList
       r        = entries.assertOneElem
       _        = assertEquals(r.failedElemData.id, "failed")
     } yield ()
