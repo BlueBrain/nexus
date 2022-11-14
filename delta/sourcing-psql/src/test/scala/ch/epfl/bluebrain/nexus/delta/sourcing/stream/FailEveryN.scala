@@ -3,8 +3,8 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.semiauto.deriveJsonLdDecoder
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{Configuration, JsonLdDecoder}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.semiauto.deriveDefaultJsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Pipe
@@ -56,7 +56,8 @@ object FailEveryN extends PipeDef {
   }
 
   object FailEveryNConfig {
+    implicit val config                                                         = Configuration.default
     implicit val failEveryNConfigJsonLdDecoder: JsonLdDecoder[FailEveryNConfig] =
-      deriveJsonLdDecoder[FailEveryNConfig]
+      deriveDefaultJsonLdDecoder[FailEveryNConfig]
   }
 }

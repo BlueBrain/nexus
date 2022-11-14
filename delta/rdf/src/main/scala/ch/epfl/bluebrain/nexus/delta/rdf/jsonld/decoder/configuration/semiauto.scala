@@ -13,5 +13,9 @@ object semiauto {
   def dispatch[T](sealedTrait: SealedTrait[Typeclass, T])(implicit config: Configuration): Typeclass[T] =
     MagnoliaJsonLdDecoder.dispatch(sealedTrait)
 
+  /**
+    * @return
+    *   derived json-ld decoder using a provided config (implicit)
+    */
   def deriveConfigJsonLdDecoder[T]: Typeclass[T] = macro Magnolia.gen[T]
 }

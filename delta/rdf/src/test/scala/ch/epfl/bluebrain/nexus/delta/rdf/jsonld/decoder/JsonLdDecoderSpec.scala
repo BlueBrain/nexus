@@ -68,8 +68,8 @@ class JsonLdDecoderSpec
     }
 
     "fail decoding a Menu" in {
-      implicit val drinkDecoder: JsonLdDecoder[Drink] = deriveJsonLdDecoder[Drink]
-      implicit val menuDecoder: JsonLdDecoder[Menu]   = deriveJsonLdDecoder[Menu]
+      implicit val drinkDecoder: JsonLdDecoder[Drink] = deriveDefaultJsonLdDecoder[Drink]
+      implicit val menuDecoder: JsonLdDecoder[Menu]   = deriveDefaultJsonLdDecoder[Menu]
       jsonLd.to[Menu].leftValue shouldBe a[DecodingDerivationFailure]
     }
 

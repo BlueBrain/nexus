@@ -12,6 +12,8 @@
   "_source": {
     "@id": "https://bluebrain.github.io/nexus/vocabulary/indexing-view",
     "@type": "ElasticSearchView",
+    "name": "viewName",
+    "description": "viewDescription",
     "context": {
       "@vocab": "http://schema.org/"
     },

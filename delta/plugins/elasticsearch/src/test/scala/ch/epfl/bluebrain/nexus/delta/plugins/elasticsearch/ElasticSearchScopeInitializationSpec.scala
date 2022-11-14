@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchVi
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.permissions.{query => queryPermissions}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultElasticsearchMapping, defaultElasticsearchSettings, defaultViewId, ElasticSearchViewRejection}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schema => schemaorg}
-import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
+import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, Defaults}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
@@ -65,8 +65,11 @@ class ElasticSearchScopeInitializationSpec
     xas
   ).accepted
 
+  private val defaultName        = "defaultName"
+  private val defaultDescription = "defaultDescription"
+
   "An ElasticSearchScopeInitialization" should {
-    lazy val init = new ElasticSearchScopeInitialization(views, sa)
+    lazy val init = new ElasticSearchScopeInitialization(views, sa, Defaults(defaultName, defaultDescription))
 
     "create a default ElasticSearchView on a newly created project" in {
       views.fetch(defaultViewId, project.ref).rejectedWith[ViewNotFound]
@@ -82,6 +85,8 @@ class ElasticSearchScopeInitializationSpec
           v.mapping shouldEqual mapping
           v.settings shouldEqual settings
           v.permission shouldEqual queryPermissions
+          v.name shouldEqual Some(defaultName)
+          v.description shouldEqual Some(defaultDescription)
         case _: AggregateElasticSearchView => fail("Expected an IndexingElasticSearchView to be created")
       }
       resource.rev shouldEqual 1L

@@ -37,6 +37,18 @@ sealed trait ElasticSearchView extends Product with Serializable {
 
   /**
     * @return
+    *   the name of the view
+    */
+  def name: Option[String]
+
+  /**
+    * @return
+    *   the description of the view
+    */
+  def description: Option[String]
+
+  /**
+    * @return
     *   the view id
     */
   def id: Iri
@@ -101,6 +113,8 @@ object ElasticSearchView {
     */
   final case class IndexingElasticSearchView(
       id: Iri,
+      name: Option[String],
+      description: Option[String],
       project: ProjectRef,
       uuid: UUID,
       resourceTag: Option[UserTag],
@@ -133,6 +147,8 @@ object ElasticSearchView {
     */
   final case class AggregateElasticSearchView(
       id: Iri,
+      name: Option[String],
+      description: Option[String],
       project: ProjectRef,
       views: NonEmptySet[ViewRef],
       tags: Tags,

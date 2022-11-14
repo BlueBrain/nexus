@@ -70,6 +70,8 @@ final case class ElasticSearchViewState(
     */
   def asElasticSearchView(defaultMapping: JsonObject, defaultSettings: JsonObject): ElasticSearchView = value match {
     case IndexingElasticSearchViewValue(
+          name,
+          description,
           resourceTag,
           pipeline,
           mapping,
@@ -79,6 +81,8 @@ final case class ElasticSearchViewState(
         ) =>
       IndexingElasticSearchView(
         id = id,
+        name = name,
+        description = description,
         project = project,
         uuid = uuid,
         resourceTag = resourceTag,
@@ -90,9 +94,11 @@ final case class ElasticSearchViewState(
         tags = tags,
         source = source
       )
-    case AggregateElasticSearchViewValue(views) =>
+    case AggregateElasticSearchViewValue(name, description, views) =>
       AggregateElasticSearchView(
         id = id,
+        name = name,
+        description = description,
         project = project,
         views = views,
         tags = tags,
