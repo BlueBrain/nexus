@@ -10,12 +10,12 @@
         "@value": "SHA-256"
       }
     ],
-    "https://bluebrain.github.io/nexus/vocabulary/name": [
+    "https://schema.org/name": [
       {
         "@value": "diskName"
       }
     ],
-    "https://bluebrain.github.io/nexus/vocabulary/description": [
+    "https://schema.org/description": [
       {
         "@value": "diskDescription"
       }
