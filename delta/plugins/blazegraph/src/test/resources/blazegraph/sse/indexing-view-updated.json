@@ -12,6 +12,8 @@
   "_source": {
     "@id": "https://bluebrain.github.io/nexus/vocabulary/indexing-view",
     "@type": "SparqlView",
+    "name": "viewName",
+    "description": "viewDescription",
     "includeDeprecated": false,
     "includeMetadata": false,
     "permission": "my/permission",

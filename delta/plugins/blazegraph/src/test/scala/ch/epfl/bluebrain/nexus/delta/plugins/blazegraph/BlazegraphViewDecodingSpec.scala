@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewReje
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.{AggregateBlazegraphViewValue, IndexingBlazegraphViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{contexts, BlazegraphViewRejection, BlazegraphViewValue}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.Configuration
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
@@ -37,7 +38,8 @@ class BlazegraphViewDecodingSpec
 
   implicit private val uuidF: UUIDF = UUIDF.fixed(UUID.randomUUID())
 
-  private val decoder =
+  implicit val config: Configuration = BlazegraphDecoderConfiguration.apply.accepted
+  private val decoder                =
     new JsonLdSourceDecoder[BlazegraphViewRejection, BlazegraphViewValue](contexts.blazegraph, uuidF)
 
   "An IndexingBlazegraphValue" should {
@@ -56,6 +58,8 @@ class BlazegraphViewDecodingSpec
           json"""{
                   "@id": "http://localhost/id",
                   "@type": "SparqlView",
+                  "name": "viewName",
+                  "description": "viewDescription",
                   "resourceSchemas": [ ${(context.vocab / "Person").toString} ],
                   "resourceTypes": [ ${(context.vocab / "Person").toString} ],
                   "resourceTag": "release",
@@ -64,6 +68,8 @@ class BlazegraphViewDecodingSpec
                   "permission": "custom/permission"
                 }"""
         val expected    = IndexingBlazegraphViewValue(
+          name = Some("viewName"),
+          description = Some("viewDescription"),
           resourceSchemas = Set(context.vocab / "Person"),
           resourceTypes = Set(context.vocab / "Person"),
           resourceTag = Some(UserTag.unsafe("release")),
@@ -118,7 +124,7 @@ class BlazegraphViewDecodingSpec
                    "views": [ $viewRef1Json, $viewRef2Json ]
                  }"""
 
-        val expected = AggregateBlazegraphViewValue(NonEmptySet.of(viewRef1, viewRef2))
+        val expected = AggregateBlazegraphViewValue(None, None, NonEmptySet.of(viewRef1, viewRef2))
 
         val (decodedId, value) = decoder(context, source).accepted
         value shouldEqual expected
@@ -131,7 +137,7 @@ class BlazegraphViewDecodingSpec
                    "views": [ $viewRef1Json, $viewRef1Json ]
                  }"""
 
-        val expected = AggregateBlazegraphViewValue(NonEmptySet.of(viewRef1))
+        val expected = AggregateBlazegraphViewValue(None, None, NonEmptySet.of(viewRef1))
 
         val (decodedId, value) = decoder(context, source).accepted
         value shouldEqual expected
@@ -146,10 +152,27 @@ class BlazegraphViewDecodingSpec
                    "views": [ $viewRef1Json ]
                  }"""
 
-        val expected = AggregateBlazegraphViewValue(NonEmptySet.of(viewRef1))
+        val expected = AggregateBlazegraphViewValue(None, None, NonEmptySet.of(viewRef1))
 
         val value = decoder(context, id, source).accepted
         value shouldEqual expected
+      }
+      "all fields are specified" in {
+        val source =
+          json"""{
+                   "@id": "http://localhost/id",
+                   "@type": "AggregateSparqlView",
+                   "name": "viewName",
+                   "description": "viewDescription",
+                   "views": [ $viewRef1Json, $viewRef2Json ]
+                 }"""
+
+        val expected =
+          AggregateBlazegraphViewValue(Some("viewName"), Some("viewDescription"), NonEmptySet.of(viewRef1, viewRef2))
+
+        val (decodedId, value) = decoder(context, source).accepted
+        value shouldEqual expected
+        decodedId shouldEqual iri"http://localhost/id"
       }
     }
     "fail decoding from json-ld" when {

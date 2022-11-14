@@ -17,6 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValu
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
@@ -561,15 +562,17 @@ object BlazegraphViews {
       api: JsonLdApi,
       clock: Clock[UIO],
       uuidF: UUIDF
-  ): Task[BlazegraphViews] =
-    Task
-      .delay(
+  ): Task[BlazegraphViews] = {
+    implicit val rcr: RemoteContextResolution = contextResolution.rcr
+
+    BlazegraphDecoderConfiguration.apply
+      .map { implicit config =>
         new JsonLdSourceResolvingDecoder[BlazegraphViewRejection, BlazegraphViewValue](
           contexts.blazegraph,
           contextResolution,
           uuidF
         )
-      )
+      }
       .map { sourceDecoder =>
         new BlazegraphViews(
           ScopedEventLog(
@@ -583,4 +586,6 @@ object BlazegraphViews {
           prefix
         )
       }
+
+  }
 }

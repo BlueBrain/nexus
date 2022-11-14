@@ -36,6 +36,18 @@ sealed trait BlazegraphView extends Product with Serializable {
 
   /**
     * @return
+    *   the name of the view
+    */
+  def name: Option[String]
+
+  /**
+    * @return
+    *   the description of the view
+    */
+  def description: Option[String]
+
+  /**
+    * @return
     *   a reference to the parent project
     */
   def project: ProjectRef
@@ -96,6 +108,8 @@ object BlazegraphView {
     */
   final case class IndexingBlazegraphView(
       id: Iri,
+      name: Option[String],
+      description: Option[String],
       project: ProjectRef,
       uuid: UUID,
       resourceSchemas: Set[Iri],
@@ -128,6 +142,8 @@ object BlazegraphView {
     */
   final case class AggregateBlazegraphView(
       id: Iri,
+      name: Option[String],
+      description: Option[String],
       project: ProjectRef,
       views: NonEmptySet[ViewRef],
       tags: Tags,

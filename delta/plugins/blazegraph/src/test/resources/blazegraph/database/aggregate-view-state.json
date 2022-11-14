@@ -24,6 +24,8 @@
   "uuid": "f8468909-a797-4b10-8b5f-000cba337bfa",
   "value": {
     "@type": "AggregateBlazegraphViewValue",
+    "name": "viewName",
+    "description": "viewDescription",
     "views": [
       {
         "project": "myorg/myproj",

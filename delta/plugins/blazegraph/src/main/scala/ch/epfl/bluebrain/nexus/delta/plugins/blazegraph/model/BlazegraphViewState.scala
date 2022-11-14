@@ -70,6 +70,8 @@ final case class BlazegraphViewState(
     */
   lazy val asBlazegraphView: BlazegraphView = value match {
     case IndexingBlazegraphViewValue(
+          name,
+          description,
           resourceSchemas,
           resourceTypes,
           resourceTag,
@@ -79,6 +81,8 @@ final case class BlazegraphViewState(
         ) =>
       IndexingBlazegraphView(
         id,
+        name,
+        description,
         project,
         uuid,
         resourceSchemas,
@@ -90,8 +94,8 @@ final case class BlazegraphViewState(
         tags,
         source
       )
-    case AggregateBlazegraphViewValue(views) =>
-      AggregateBlazegraphView(id, project, views, tags, source)
+    case AggregateBlazegraphViewValue(name, description, views) =>
+      AggregateBlazegraphView(id, name, description, project, views, tags, source)
   }
 
   def toResource(mappings: ApiMappings, base: ProjectBase): ViewResource =

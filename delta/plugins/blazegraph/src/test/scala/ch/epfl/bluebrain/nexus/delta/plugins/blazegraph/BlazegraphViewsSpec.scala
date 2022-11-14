@@ -52,6 +52,8 @@ class BlazegraphViewsSpec
     implicit val caller: Caller = Caller(bob, Set(bob, Group("mygroup", realm), Authenticated(realm)))
 
     val indexingValue  = IndexingBlazegraphViewValue(
+      None,
+      None,
       Set.empty,
       Set.empty,
       None,
@@ -75,7 +77,7 @@ class BlazegraphViewsSpec
     val projectRef        = project.ref
 
     val viewRef         = ViewRef(project.ref, indexingViewId)
-    val aggregateValue  = AggregateBlazegraphViewValue(NonEmptySet.of(viewRef))
+    val aggregateValue  = AggregateBlazegraphViewValue(None, None, NonEmptySet.of(viewRef))
     val aggregateViewId = nxv + "aggregate-view"
     val aggregateSource = jsonContentOf("aggregate-view-source.json")
 
@@ -215,7 +217,7 @@ class BlazegraphViewsSpec
       "reject when referenced view does not exist" in {
         val nonExistentViewRef            = ViewRef(projectRef, indexingViewId2)
         val aggregateValueWithInvalidView =
-          AggregateBlazegraphViewValue(NonEmptySet.of(nonExistentViewRef))
+          AggregateBlazegraphViewValue(None, None, NonEmptySet.of(nonExistentViewRef))
         views
           .update(aggregateViewId, projectRef, 2, aggregateValueWithInvalidView)
           .rejected shouldEqual InvalidViewReferences(Set(nonExistentViewRef))
@@ -232,7 +234,7 @@ class BlazegraphViewsSpec
       "reject when referenced view is deprecated" in {
         val deprecatedViewRef             = ViewRef(projectRef, indexingViewId2)
         val aggregateValueWithInvalidView =
-          AggregateBlazegraphViewValue(NonEmptySet.of(deprecatedViewRef))
+          AggregateBlazegraphViewValue(None, None, NonEmptySet.of(deprecatedViewRef))
         views
           .update(aggregateViewId, projectRef, 2, aggregateValueWithInvalidView)
           .rejected shouldEqual InvalidViewReferences(Set(deprecatedViewRef))

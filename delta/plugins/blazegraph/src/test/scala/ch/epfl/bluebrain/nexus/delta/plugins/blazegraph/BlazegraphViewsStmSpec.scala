@@ -51,6 +51,8 @@ class BlazegraphViewsStmSpec
     val source2     = Json.obj("key" -> Json.fromInt(1))
 
     val indexingValue  = IndexingBlazegraphViewValue(
+      None,
+      None,
       Set.empty,
       Set.empty,
       None,
@@ -58,7 +60,7 @@ class BlazegraphViewsStmSpec
       includeDeprecated = false,
       Permission.unsafe("my/permission")
     )
-    val aggregateValue = AggregateBlazegraphViewValue(NonEmptySet.of(viewRef))
+    val aggregateValue = AggregateBlazegraphViewValue(None, None, NonEmptySet.of(viewRef))
 
     def current(
         id: Iri = id,
