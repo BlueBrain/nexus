@@ -2,17 +2,17 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{defaultStorageDescription, defaultStorageName, Storages, StoragesConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.{ProjectContextRejection, StorageFetchRejection, StorageNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.DiskStorageValue
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{Storages, StoragesConfig}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schema}
-import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport
+import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, Defaults}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.{DoobieScalaTestFixture, IOFixedClock, IOValues, TestHelpers}
@@ -63,15 +63,16 @@ class StorageScopeInitializationSpec
       serviceAccount
     ).accepted
 
-    lazy val init = new StorageScopeInitialization(storages, sa)
+    val defaults = Defaults("defaultName", "defaultDescription")
+    lazy val init = new StorageScopeInitialization(storages, sa, defaults)
 
     "create a default storage on newly created project" in {
       storages.fetch(nxv + "diskStorageDefault", project.ref).rejectedWith[StorageNotFound]
       init.onProjectCreation(project, bob).accepted
       val resource = storages.fetch(nxv + "diskStorageDefault", project.ref).accepted
       resource.value.storageValue shouldEqual DiskStorageValue(
-        name = Some(defaultStorageName),
-        description = Some(defaultStorageDescription),
+        name = Some(defaults.name),
+        description = Some(defaults.description),
         default = true,
         algorithm = config.disk.digestAlgorithm,
         volume = config.disk.defaultVolume,
