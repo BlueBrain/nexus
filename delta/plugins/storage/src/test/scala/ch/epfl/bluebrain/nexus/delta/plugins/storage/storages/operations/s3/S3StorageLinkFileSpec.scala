@@ -57,8 +57,6 @@ class S3StorageLinkFileSpec(docker: MinioDocker)
 
   override protected def beforeAll(): Unit = {
     storageValue = S3StorageValue(
-      None,
-      None,
       default = false,
       algorithm = DigestAlgorithm.default,
       bucket = "bucket3",
