@@ -21,6 +21,8 @@
   "_updatedBy" : "http://localhost/v1/realms/wonderland/users/alice",
   "_algorithm" : "SHA-256",
   "default" : true,
+  "name": "remoteName",
+  "description": "remoteDescription",
   "endpoint" : "http://localhost",
   "folder" : "myfolder",
   "maxFileSize" : 52,

@@ -36,13 +36,13 @@ trait StorageFixtures extends TestHelpers with CirceLiteral {
   )
   val crypto: Crypto = EncryptionConfig(Secret("changeme"), Secret("salt")).crypto
 
-  val diskFields        = DiskStorageFields(default = true, Some(tmpVolume), Some(Permission.unsafe("disk/read")), Some(Permission.unsafe("disk/write")), Some(1000), Some(50))
+  val diskFields        = DiskStorageFields(Some("diskName"), Some("diskDescription"), default = true, Some(tmpVolume), Some(Permission.unsafe("disk/read")), Some(Permission.unsafe("disk/write")), Some(1000), Some(50))
   val diskVal           = diskFields.toValue(config).get
-  val diskFieldsUpdate  = DiskStorageFields(default = false, Some(tmpVolume), Some(Permission.unsafe("disk/read")), Some(Permission.unsafe("disk/write")), Some(2000), Some(40))
+  val diskFieldsUpdate  = DiskStorageFields(Some("diskName"), Some("diskDescription"), default = false, Some(tmpVolume), Some(Permission.unsafe("disk/read")), Some(Permission.unsafe("disk/write")), Some(2000), Some(40))
   val diskValUpdate     = diskFieldsUpdate.toValue(config).get
-  val s3Fields          = S3StorageFields(default = true, "mybucket", Some("http://localhost"), Some(Secret("accessKey")), Some(Secret("secretKey")), Some(Region.EU_WEST_1), Some(Permission.unsafe("s3/read")), Some(Permission.unsafe("s3/write")), Some(51))
+  val s3Fields          = S3StorageFields(Some("s3name"), Some("s3description"), default = true, "mybucket", Some("http://localhost"), Some(Secret("accessKey")), Some(Secret("secretKey")), Some(Region.EU_WEST_1), Some(Permission.unsafe("s3/read")), Some(Permission.unsafe("s3/write")), Some(51))
   val s3Val             = s3Fields.toValue(config).get
-  val remoteFields      = RemoteDiskStorageFields(default = true, Some(BaseUri.withoutPrefix("http://localhost")), Some(Secret("authToken")), Label.unsafe("myfolder"), Some(Permission.unsafe("remote/read")), Some(Permission.unsafe("remote/write")), Some(52))
+  val remoteFields      = RemoteDiskStorageFields(Some("remoteName"), Some("remoteDescription"), default = true, Some(BaseUri.withoutPrefix("http://localhost")), Some(Secret("authToken")), Label.unsafe("myfolder"), Some(Permission.unsafe("remote/read")), Some(Permission.unsafe("remote/write")), Some(52))
   val remoteVal         = remoteFields.toValue(config).get
   // format: on
 

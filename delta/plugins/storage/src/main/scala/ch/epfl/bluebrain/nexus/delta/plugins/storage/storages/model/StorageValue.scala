@@ -29,6 +29,18 @@ sealed trait StorageValue extends Product with Serializable {
 
   /**
     * @return
+    *   name of the storage
+    */
+  def name: Option[String]
+
+  /**
+    * @return
+    *   description of the storage
+    */
+  def description: Option[String]
+
+  /**
+    * @return
     *   the storage type
     */
   def tpe: StorageType
@@ -85,6 +97,8 @@ object StorageValue {
     *   [[StorageFields.DiskStorageFields]]
     */
   final case class DiskStorageValue(
+      name: Option[String] = None,
+      description: Option[String] = None,
       default: Boolean,
       algorithm: DigestAlgorithm,
       volume: AbsolutePath,
@@ -98,6 +112,25 @@ object StorageValue {
     override val secrets: Set[Secret[String]] = Set.empty
   }
 
+  object DiskStorageValue {
+
+    /**
+      * @return
+      *   a DiskStorageValue without name or description
+      */
+    def apply(
+        default: Boolean,
+        algorithm: DigestAlgorithm,
+        volume: AbsolutePath,
+        readPermission: Permission,
+        writePermission: Permission,
+        capacity: Option[Long],
+        maxFileSize: Long
+    ): DiskStorageValue =
+      DiskStorageValue(None, None, default, algorithm, volume, readPermission, writePermission, capacity, maxFileSize)
+
+  }
+
   /**
     * Resolved values to create/update a S3 compatible storage
     *
@@ -105,6 +138,8 @@ object StorageValue {
     *   [[StorageFields.S3StorageFields]]
     */
   final case class S3StorageValue(
+      name: Option[String],
+      description: Option[String],
       default: Boolean,
       algorithm: DigestAlgorithm,
       bucket: String,
@@ -163,6 +198,40 @@ object StorageValue {
     }
   }
 
+  object S3StorageValue {
+
+    /**
+      * @return
+      *   a S3StorageValue without name or description
+      */
+    def apply(
+        default: Boolean,
+        algorithm: DigestAlgorithm,
+        bucket: String,
+        endpoint: Option[Uri],
+        accessKey: Option[Secret[String]],
+        secretKey: Option[Secret[String]],
+        region: Option[Region],
+        readPermission: Permission,
+        writePermission: Permission,
+        maxFileSize: Long
+    ): S3StorageValue =
+      S3StorageValue(
+        None,
+        None,
+        default,
+        algorithm,
+        bucket,
+        endpoint,
+        accessKey,
+        secretKey,
+        region,
+        readPermission,
+        writePermission,
+        maxFileSize
+      )
+  }
+
   /**
     * Resolved values to create/update a Remote disk storage
     *
@@ -170,6 +239,8 @@ object StorageValue {
     *   [[StorageFields.RemoteDiskStorageFields]]
     */
   final case class RemoteDiskStorageValue(
+      name: Option[String] = None,
+      description: Option[String] = None,
       default: Boolean,
       algorithm: DigestAlgorithm,
       endpoint: BaseUri,
@@ -194,6 +265,36 @@ object StorageValue {
         }
         .map(secret => AuthToken(secret.value))
 
+  }
+
+  object RemoteDiskStorageValue {
+
+    /**
+      * @return
+      *   a RemoteDiskStorageValue without name or description
+      */
+    def apply(
+        default: Boolean,
+        algorithm: DigestAlgorithm,
+        endpoint: BaseUri,
+        credentials: Option[Secret[String]],
+        folder: Label,
+        readPermission: Permission,
+        writePermission: Permission,
+        maxFileSize: Long
+    ): RemoteDiskStorageValue =
+      RemoteDiskStorageValue(
+        None,
+        None,
+        default,
+        algorithm,
+        endpoint,
+        credentials,
+        folder,
+        readPermission,
+        writePermission,
+        maxFileSize
+      )
   }
 
   @nowarn("cat=unused")

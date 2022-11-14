@@ -4,6 +4,8 @@
   "@type": "RemoteDiskStorage",
   "default": true,
   "_algorithm" : "SHA-256",
+  "name": "remoteName",
+  "description": "remoteDescription",
   "endpoint": "http://localhost",
   "credentials": "authToken",
   "folder": "myfolder",

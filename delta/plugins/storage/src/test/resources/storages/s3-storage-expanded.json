@@ -5,6 +5,16 @@
       "https://bluebrain.github.io/nexus/vocabulary/Storage",
       "https://bluebrain.github.io/nexus/vocabulary/S3Storage"
     ],
+    "https://schema.org/name": [
+      {
+        "@value": "s3name"
+      }
+    ],
+    "https://schema.org/description": [
+      {
+        "@value": "s3description"
+      }
+    ],
     "https://bluebrain.github.io/nexus/vocabulary/algorithm": [
       {
         "@value": "SHA-256"

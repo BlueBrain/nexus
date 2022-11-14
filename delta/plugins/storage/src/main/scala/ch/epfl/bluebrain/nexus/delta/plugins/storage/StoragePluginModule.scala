@@ -216,7 +216,11 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
       )
   }
 
-  make[StorageScopeInitialization]
+  make[StorageScopeInitialization].from {
+    (storages: Storages, serviceAccount: ServiceAccount, cfg: StoragePluginConfig) =>
+      new StorageScopeInitialization(storages, serviceAccount, cfg.defaults)
+  }
+
   many[ScopeInitialization].ref[StorageScopeInitialization]
 
   many[MetadataContextValue].addEffect(MetadataContextValue.fromFile("contexts/storages-metadata.json"))

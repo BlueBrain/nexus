@@ -11,6 +11,8 @@
   "_rev": 1,
   "_source": {
     "@type": "S3Storage",
+    "name": "s3name",
+    "description": "s3description",
     "accessKey": "O2vOp16ah21Fk/B0OucyxQ==",
     "bucket": "mybucket",
     "default": true,

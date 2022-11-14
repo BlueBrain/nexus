@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, JsonLdCon
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.Configuration
 import monix.bio.Task
 
-object BlazegraphDecoderConfiguration {
+private[blazegraph] object BlazegraphDecoderConfiguration {
 
   def apply(implicit jsonLdApi: JsonLdApi, rcr: RemoteContextResolution): Task[Configuration] = for {
     contextValue  <- Task.delay { ContextValue(contexts.blazegraph) }

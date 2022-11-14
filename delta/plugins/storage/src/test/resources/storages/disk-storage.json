@@ -3,6 +3,8 @@
   "@id" : "https://bluebrain.github.io/nexus/vocabulary/disk",
   "@type" : "DiskStorage",
   "_algorithm" : "SHA-256",
+  "name": "diskName",
+  "description": "diskDescription",
   "volume": "/tmp",
   "default": true,
   "readPermission": "disk/read",
