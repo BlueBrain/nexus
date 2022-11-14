@@ -4,7 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages.entityType
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageFields.DiskStorageFields
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.{ProjectContextRejection, ResourceAlreadyExists}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{Storages, defaultStorageId}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{defaultStorageId, Storages}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{Caller, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
@@ -23,7 +23,11 @@ import monix.bio.{IO, UIO}
   * @param serviceAccount
   *   the subject that will be recorded when performing the initialization
   */
-class StorageScopeInitialization(storages: Storages, serviceAccount: ServiceAccount, defaults: Defaults) extends ScopeInitialization {
+class StorageScopeInitialization(
+    storages: Storages,
+    serviceAccount: ServiceAccount,
+    defaults: Defaults
+) extends ScopeInitialization {
 
   private val logger: Logger                                = Logger[StorageScopeInitialization]
   implicit private val kamonComponent: KamonMetricComponent = KamonMetricComponent(entityType.value)

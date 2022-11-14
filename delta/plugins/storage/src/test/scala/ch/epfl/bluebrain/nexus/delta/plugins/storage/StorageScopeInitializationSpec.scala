@@ -63,7 +63,7 @@ class StorageScopeInitializationSpec
       serviceAccount
     ).accepted
 
-    val defaults = Defaults("defaultName", "defaultDescription")
+    val defaults  = Defaults("defaultName", "defaultDescription")
     lazy val init = new StorageScopeInitialization(storages, sa, defaults)
 
     "create a default storage on newly created project" in {
