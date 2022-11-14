@@ -19,7 +19,11 @@ import scala.concurrent.duration.FiniteDuration
   * @param supervisionCheckInterval
   *   the interval at which projections are checked
   * @param deleteExpiredEvery
-  *   the interval at which we delete expired ephemeral states
+  *   the interval at which we delete expired ephemeral states, projection restarts and errors
+  * @param failedElemTtl
+  *   the life span of projection errors in database
+  * @param restartTtl
+  *   the life span of projection restarts
   * @param query
   *   a configuration for how to interact with the underlying store
   */
@@ -29,7 +33,8 @@ final case class ProjectionConfig(
     retry: RetryStrategyConfig,
     supervisionCheckInterval: FiniteDuration,
     deleteExpiredEvery: FiniteDuration,
-    deleteFailedElemAfter: FiniteDuration,
+    failedElemTtl: FiniteDuration,
+    restartTtl: FiniteDuration,
     query: QueryConfig
 )
 

@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes
 
 import akka.http.scaladsl.model.MediaTypes.`text/html`
-import akka.http.scaladsl.model.headers.{`Content-Type`, Accept, Location, OAuth2BearerToken}
-import akka.http.scaladsl.model.{HttpEntity, StatusCodes, Uri}
+import akka.http.scaladsl.model.headers.{`Content-Type`, `Last-Event-ID`, Accept, Location, OAuth2BearerToken}
+import akka.http.scaladsl.model.{HttpEntity, MediaTypes, StatusCodes, Uri}
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import akka.util.ByteString
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
@@ -10,7 +10,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{SparqlQueryClien
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{BlazegraphViews, Fixtures}
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -33,11 +32,16 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectStatistics
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, IndexingActionDummy, ProgressesStatistics}
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, User}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionProgress
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projections
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.model.ProjectionRestart
+import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{FailedElem, SuccessElem}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{ProjectionMetadata, ProjectionProgress}
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
 import io.circe.syntax._
@@ -48,6 +52,7 @@ import org.scalatest.matchers.should.Matchers
 
 import java.time.Instant
 import java.util.UUID
+import scala.concurrent.duration._
 
 class BlazegraphViewsRoutesSpec
     extends RouteHelpers
@@ -123,10 +128,7 @@ class BlazegraphViewsRoutesSpec
   private val selectQuery    = SparqlQuery("SELECT * {?s ?p ?o}")
   private val constructQuery = SparqlConstructQuery("CONSTRUCT {?s ?p ?o} WHERE {?s ?p ?o}").rightValue
 
-  var restartedView: Option[(ProjectRef, Iri)] = None
-
-  private def restart(id: Iri, projectRef: ProjectRef) = UIO { restartedView = Some(projectRef -> id) }.void
-  private lazy val views                               = BlazegraphViews(
+  private lazy val views = BlazegraphViews(
     fetchContext,
     ResolverContextResolution(rcr),
     alwaysValidate,
@@ -135,6 +137,8 @@ class BlazegraphViewsRoutesSpec
     prefix,
     xas
   ).accepted
+
+  private lazy val projections = Projections(xas, QueryConfig(10, RefreshStrategy.Stop), 1.hour)
 
   lazy val viewsQuery = new BlazegraphViewsQueryDummy(
     projectRef,
@@ -153,7 +157,7 @@ class BlazegraphViewsRoutesSpec
         identities,
         aclCheck,
         statisticsProgress,
-        restart,
+        projections,
         groupDirectives,
         IndexingActionDummy()
       )
@@ -467,13 +471,67 @@ class BlazegraphViewsRoutesSpec
       }
     }
 
-    "restart offset from view" ignore {
+    "restart offset from view" in {
       aclCheck.append(AclAddress.Root, Anonymous -> Set(permissions.write)).accepted
-      restartedView shouldEqual None
+      projections.restarts(Offset.start).compile.toList.accepted.size shouldEqual 0
       Delete("/v1/views/org/proj/indexing-view/offset") ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual json"""{"@context": "${Vocabulary.contexts.offset}", "@type": "NoOffset"}"""
-        restartedView shouldEqual Some(projectRef -> indexingViewId)
+        response.asJson shouldEqual json"""{"@context": "${Vocabulary.contexts.offset}", "@type": "Start"}"""
+        projections.restarts(Offset.start).compile.lastOrError.accepted shouldEqual SuccessElem(
+          ProjectionRestart.entityType,
+          Offset.at(1L).toString,
+          None,
+          Instant.EPOCH,
+          Offset.at(1L),
+          ProjectionRestart(
+            "blazegraph-org/proj-https://bluebrain.github.io/nexus/vocabulary/indexing-view-4",
+            Instant.EPOCH,
+            Anonymous
+          ),
+          1
+        )
+      }
+    }
+
+    "return no blazegraph projection failures without write permission" in {
+      aclCheck.subtract(AclAddress.Root, Anonymous -> Set(permissions.write)).accepted
+
+      Get("/v1/views/org/proj/indexing-view/failures") ~> routes ~> check {
+        response.status shouldBe StatusCodes.Forbidden
+        response.asJson shouldEqual jsonContentOf("/routes/errors/authorization-failed.json")
+      }
+    }
+
+    "not return any failures if there aren't any" in {
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(permissions.write)).accepted
+
+      Get("/v1/views/org/proj/indexing-view/failures") ~> routes ~> check {
+        mediaType shouldBe MediaTypes.`text/event-stream`
+        response.status shouldBe StatusCodes.OK
+        chunksStream.asString(2).strip shouldBe ""
+      }
+    }
+
+    "return all available failures when no LastEventID is provided" in {
+      val metadata = ProjectionMetadata("testModule", "testName", Some(projectRef), Some(indexingViewId))
+      val error    = new Exception("boom")
+      val rev      = 1
+      val fail1    = FailedElem(EntityType("ACL"), "myid", Some(projectRef), Instant.EPOCH, Offset.At(42L), error, rev)
+      val fail2    = FailedElem(EntityType("Schema"), "myid", None, Instant.EPOCH, Offset.At(42L), error, rev)
+      projections.saveFailedElems(metadata, List(fail1, fail2)).accepted
+
+      Get("/v1/views/org/proj/indexing-view/failures") ~> routes ~> check {
+        mediaType shouldBe MediaTypes.`text/event-stream`
+        response.status shouldBe StatusCodes.OK
+        chunksStream.asString(2).strip shouldEqual contentOf("/routes/sse/indexing-failures-1-2.txt")
+      }
+    }
+
+    "return failures only from the given LastEventID" in {
+      Get("/v1/views/org/proj/indexing-view/failures") ~> `Last-Event-ID`("1") ~> routes ~> check {
+        mediaType shouldBe MediaTypes.`text/event-stream`
+        response.status shouldBe StatusCodes.OK
+        chunksStream.asString(3).strip shouldEqual contentOf("/routes/sse/indexing-failure-2.txt")
       }
     }
 

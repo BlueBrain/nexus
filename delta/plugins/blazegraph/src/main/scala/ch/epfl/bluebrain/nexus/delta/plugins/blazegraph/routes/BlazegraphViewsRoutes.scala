@@ -7,7 +7,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.permissions.{read => Read, write => Write}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.BlazegraphViewsRoutes.RestartView
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{BlazegraphViews, BlazegraphViewsQuery}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
@@ -32,6 +31,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, ProgressStat
 import ch.epfl.bluebrain.nexus.delta.sdk.{IndexingAction, ProgressesStatistics}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projections
 import io.circe.generic.semiauto.deriveEncoder
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
@@ -50,8 +50,8 @@ import monix.execution.Scheduler
   *   to check the acls
   * @param progresses
   *   the statistics of the progresses for the blazegraph views
-  * @param restartView
-  *   the action to restart a view indexing process triggered by a client
+  * @param projections
+  *   the projections module
   * @param schemeDirectives
   *   directives related to orgs and projects
   * @param index
@@ -63,7 +63,7 @@ class BlazegraphViewsRoutes(
     identities: Identities,
     aclCheck: AclCheck,
     progresses: ProgressesStatistics,
-    restartView: RestartView,
+    projections: Projections,
     schemeDirectives: DeltaSchemeDirectives,
     index: IndexingAction
 )(implicit
@@ -189,6 +189,23 @@ class BlazegraphViewsRoutes(
                         }
                       }
                     },
+                    // Fetch blazegraph view indexing failures
+                    lastEventId { offset =>
+                      (pathPrefix("failures") & get & pathEndOrSingleSlash) {
+                        operationName(s"$prefixSegment/views/{org}/{project}/{id}/failures") {
+                          authorizeFor(ref, Write).apply {
+                            emit(
+                              views
+                                .fetch(id, ref)
+                                .map { view =>
+                                  projections
+                                    .failedElemSses(view.value.project, view.value.id, offset)
+                                }
+                            )
+                          }
+                        }
+                      }
+                    },
                     // Manage an blazegraph view offset
                     (pathPrefix("offset") & pathEndOrSingleSlash) {
                       operationName(s"$prefixSegment/views/{org}/{project}/{id}/offset") {
@@ -207,7 +224,7 @@ class BlazegraphViewsRoutes(
                             emit(
                               views
                                 .fetchIndexingView(id, ref)
-                                .flatMap { r => restartView(r.value.id, r.value.project) }
+                                .flatMap { r => projections.scheduleRestart(BlazegraphViews.projectionName(r)) }
                                 .as(Offset.start)
                                 .rejectOn[ViewNotFound]
                             )
@@ -318,7 +335,7 @@ object BlazegraphViewsRoutes {
       identities: Identities,
       aclCheck: AclCheck,
       progresses: ProgressesStatistics,
-      restartView: RestartView,
+      projections: Projections,
       schemeDirectives: DeltaSchemeDirectives,
       index: IndexingAction
   )(implicit
@@ -335,7 +352,7 @@ object BlazegraphViewsRoutes {
       identities,
       aclCheck,
       progresses,
-      restartView,
+      projections,
       schemeDirectives,
       index
     ).routes

@@ -37,11 +37,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, IndexingActionDummy, ProgressesStatistics}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject, User}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projections
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.model.ProjectionRestart
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.FailedElem
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeChain, ProjectionMetadata, ProjectionProgress, ProjectionStore}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{FailedElem, SuccessElem}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeChain, ProjectionMetadata, ProjectionProgress}
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
@@ -52,6 +54,7 @@ import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
 
 import java.time.Instant
 import java.util.UUID
+import scala.concurrent.duration._
 
 class ElasticSearchViewsRoutesSpec
     extends RouteHelpers
@@ -132,10 +135,6 @@ class ElasticSearchViewsRoutesSpec
   private val now       = Instant.now()
   private val nowMinus5 = now.minusSeconds(5)
 
-  var restartedView: Option[(ProjectRef, Iri)] = None
-
-  private def restart(id: Iri, projectRef: ProjectRef) = UIO { restartedView = Some(projectRef -> id) }.void
-
   private val resourceToSchemaMapping = ResourceToSchemaMappings(Label.unsafe("views") -> elasticSearchSchema.iri)
   private val viewsProgressesCache    =
     KeyValueStore.localLRU[String, ProjectionProgress](10L).accepted
@@ -169,7 +168,7 @@ class ElasticSearchViewsRoutesSpec
 
   private lazy val viewsQuery = new DummyElasticSearchViewsQuery(views)
 
-  private lazy val store = ProjectionStore(xas, QueryConfig(10, RefreshStrategy.Stop))
+  private lazy val projections = Projections(xas, QueryConfig(10, RefreshStrategy.Stop), 1.hour)
 
   private lazy val routes =
     Route.seal(
@@ -179,8 +178,7 @@ class ElasticSearchViewsRoutesSpec
         views,
         viewsQuery,
         statisticsProgress,
-        store,
-        restart,
+        projections,
         resourceToSchemaMapping,
         groupDirectives,
         IndexingActionDummy()
@@ -467,7 +465,7 @@ class ElasticSearchViewsRoutesSpec
       }
     }
 
-    "fail to restart offset from view without resources/write permission" in {
+    "fail to restart offset from view without views/write permission" in {
       aclCheck.subtract(AclAddress.Root, Anonymous -> Set(esPermissions.write)).accepted
 
       Delete("/v1/views/myorg/myproject/myid2/offset") ~> routes ~> check {
@@ -476,13 +474,25 @@ class ElasticSearchViewsRoutesSpec
       }
     }
 
-    "restart offset from view" ignore {
+    "restart offset from view" in {
       aclCheck.append(AclAddress.Root, Anonymous -> Set(esPermissions.write)).accepted
-      restartedView shouldEqual None
+      projections.restarts(Offset.start).compile.toList.accepted.size shouldEqual 0
       Delete("/v1/views/myorg/myproject/myid2/offset") ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual json"""{"@context": "${Vocabulary.contexts.offset}", "@type": "NoOffset"}"""
-        restartedView shouldEqual Some(projectRef -> myId2)
+        response.asJson shouldEqual json"""{"@context": "${Vocabulary.contexts.offset}", "@type": "Start"}"""
+        projections.restarts(Offset.start).compile.lastOrError.accepted shouldEqual SuccessElem(
+          ProjectionRestart.entityType,
+          Offset.at(1L).toString,
+          None,
+          Instant.EPOCH,
+          Offset.at(1L),
+          ProjectionRestart(
+            "elasticsearch-myorg/myproject-https://bluebrain.github.io/nexus/vocabulary/myid2-2",
+            Instant.EPOCH,
+            Anonymous
+          ),
+          1
+        )
       }
     }
 
@@ -589,13 +599,6 @@ class ElasticSearchViewsRoutesSpec
       }
     }
 
-    val resource = iri"https://bluebrain.github.io/nexus/vocabulary/myid"
-    val metadata = ProjectionMetadata("testModule", "testName", Some(projectRef), Some(resource))
-    val error    = new Exception("boom")
-    val rev      = 1
-    val fail1    = FailedElem(EntityType("ACL"), "myid", Some(projectRef), Instant.EPOCH, Offset.At(42L), error, rev)
-    val fail2    = FailedElem(EntityType("Schema"), "myid", None, Instant.EPOCH, Offset.At(42L), error, rev)
-
     "return no elasticsearch projection failures without write permission" in {
       aclCheck.subtract(AclAddress.Root, Anonymous -> Set(esPermissions.write)).accepted
 
@@ -616,20 +619,25 @@ class ElasticSearchViewsRoutesSpec
     }
 
     "return all available failures when no LastEventID is provided" in {
-      store.saveFailedElems(metadata, List(fail1, fail2)).accepted
+      val metadata = ProjectionMetadata("testModule", "testName", Some(projectRef), Some(myId))
+      val error    = new Exception("boom")
+      val rev      = 1
+      val fail1    = FailedElem(EntityType("ACL"), "myid", Some(projectRef), Instant.EPOCH, Offset.At(42L), error, rev)
+      val fail2    = FailedElem(EntityType("Schema"), "myid", None, Instant.EPOCH, Offset.At(42L), error, rev)
+      projections.saveFailedElems(metadata, List(fail1, fail2)).accepted
 
       Get("/v1/views/myorg/myproject/myid/failures") ~> routes ~> check {
         mediaType shouldBe MediaTypes.`text/event-stream`
         response.status shouldBe StatusCodes.OK
-        chunksStream.asString(2).strip shouldEqual contentOf("/responses/indexing-failures-1-2.txt")
+        chunksStream.asString(2).strip shouldEqual contentOf("/routes/sse/indexing-failures-1-2.txt")
       }
     }
 
     "return failures only from the given LastEventID" in {
-      Get("/v1/views/myorg/myproject/myid/failures") ~> `Last-Event-ID`("2") ~> routes ~> check {
+      Get("/v1/views/myorg/myproject/myid/failures") ~> `Last-Event-ID`("1") ~> routes ~> check {
         mediaType shouldBe MediaTypes.`text/event-stream`
         response.status shouldBe StatusCodes.OK
-        chunksStream.asString(3).strip shouldEqual contentOf("/responses/indexing-failure-2.txt")
+        chunksStream.asString(3).strip shouldEqual contentOf("/routes/sse/indexing-failure-2.txt")
       }
     }
 
