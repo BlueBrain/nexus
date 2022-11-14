@@ -45,7 +45,7 @@ class StorageFieldsSpec
           "volume"
         )
         sourceDecoder(pc, jsonNoDefaults).accepted._2 shouldEqual
-          DiskStorageFields(default = true, None, None, None, None, None)
+          DiskStorageFields(None, None, default = true, None, None, None, None, None)
       }
     }
 
@@ -70,7 +70,7 @@ class StorageFieldsSpec
             "region"
           )
         sourceDecoder(pc, jsonNoDefaults).accepted._2 shouldEqual
-          S3StorageFields(default = true, "mybucket", None, None, None, None, None, None, None)
+          S3StorageFields(None, None, default = true, "mybucket", None, None, None, None, None, None, None)
       }
     }
 
@@ -93,7 +93,7 @@ class StorageFieldsSpec
             "credentials"
           )
         sourceDecoder(pc, jsonNoDefaults).accepted._2 shouldEqual
-          RemoteDiskStorageFields(default = true, None, None, Label.unsafe("myfolder"), None, None, None)
+          RemoteDiskStorageFields(None, None, default = true, None, None, Label.unsafe("myfolder"), None, None, None)
       }
     }
   }
