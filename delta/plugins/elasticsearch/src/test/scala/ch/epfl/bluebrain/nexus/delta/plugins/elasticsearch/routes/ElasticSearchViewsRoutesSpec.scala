@@ -599,13 +599,6 @@ class ElasticSearchViewsRoutesSpec
       }
     }
 
-    val resource = iri"https://bluebrain.github.io/nexus/vocabulary/myid"
-    val metadata = ProjectionMetadata("testModule", "testName", Some(projectRef), Some(resource))
-    val error    = new Exception("boom")
-    val rev      = 1
-    val fail1    = FailedElem(EntityType("ACL"), "myid", Some(projectRef), Instant.EPOCH, Offset.At(42L), error, rev)
-    val fail2    = FailedElem(EntityType("Schema"), "myid", None, Instant.EPOCH, Offset.At(42L), error, rev)
-
     "return no elasticsearch projection failures without write permission" in {
       aclCheck.subtract(AclAddress.Root, Anonymous -> Set(esPermissions.write)).accepted
 
@@ -626,12 +619,17 @@ class ElasticSearchViewsRoutesSpec
     }
 
     "return all available failures when no LastEventID is provided" in {
+      val metadata = ProjectionMetadata("testModule", "testName", Some(projectRef), Some(myId))
+      val error    = new Exception("boom")
+      val rev      = 1
+      val fail1    = FailedElem(EntityType("ACL"), "myid", Some(projectRef), Instant.EPOCH, Offset.At(42L), error, rev)
+      val fail2    = FailedElem(EntityType("Schema"), "myid", None, Instant.EPOCH, Offset.At(42L), error, rev)
       projections.saveFailedElems(metadata, List(fail1, fail2)).accepted
 
       Get("/v1/views/myorg/myproject/myid/failures") ~> routes ~> check {
         mediaType shouldBe MediaTypes.`text/event-stream`
         response.status shouldBe StatusCodes.OK
-        chunksStream.asString(2).strip shouldEqual contentOf("/responses/indexing-failures-1-2.txt")
+        chunksStream.asString(2).strip shouldEqual contentOf("/routes/sse/indexing-failures-1-2.txt")
       }
     }
 
@@ -639,7 +637,7 @@ class ElasticSearchViewsRoutesSpec
       Get("/v1/views/myorg/myproject/myid/failures") ~> `Last-Event-ID`("1") ~> routes ~> check {
         mediaType shouldBe MediaTypes.`text/event-stream`
         response.status shouldBe StatusCodes.OK
-        chunksStream.asString(3).strip shouldEqual contentOf("/responses/indexing-failure-2.txt")
+        chunksStream.asString(3).strip shouldEqual contentOf("/routes/sse/indexing-failure-2.txt")
       }
     }
 

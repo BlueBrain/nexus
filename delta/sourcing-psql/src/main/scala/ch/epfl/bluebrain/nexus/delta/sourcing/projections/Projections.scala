@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.projections
 
+import akka.http.scaladsl.model.sse.ServerSentEvent
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils
@@ -12,7 +13,11 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.projections.model.ProjectionRestar
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.FailedElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionStore.FailedElemLogRow
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{ProjectionMetadata, ProjectionProgress, ProjectionStore}
+import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import fs2.Stream
+import io.circe.Printer
 import monix.bio.{Task, UIO}
 
 import scala.concurrent.duration.FiniteDuration
@@ -82,6 +87,20 @@ trait Projections {
   def failedElemEntries(projectionName: String, offset: Offset): Stream[Task, FailedElemLogRow]
 
   /**
+    * Get available failed elem entries for a given projection (provided by project and id), starting from a failed elem
+    * offset as a stream of Server Sent Events
+    * @param projectionProject
+    *   the project the projection belongs to
+    * @param projectionId
+    *   IRI of the projection
+    * @param offset
+    *   failed elem offset
+    */
+  def failedElemSses(projectionProject: ProjectRef, projectionId: Iri, offset: Offset)(implicit
+      rcr: RemoteContextResolution
+  ): Stream[Task, ServerSentEvent]
+
+  /**
     * Schedules a restart for the given projection at the given offset
     * @param projectionName
     *   the name of the projection
@@ -118,6 +137,9 @@ object Projections {
       private val projectionStore        = ProjectionStore(xas, config)
       private val projectionRestartStore = new ProjectionRestartStore(xas, config)
 
+      implicit private val api: JsonLdApi = JsonLdJavaApi.lenient
+      private val defaultPrinter: Printer = Printer(dropNullValues = true, indent = "")
+
       override def offset(name: String): UIO[Option[ProjectionProgress]] = projectionStore.offset(name)
 
       override def save(metadata: ProjectionMetadata, progress: ProjectionProgress): UIO[Unit] =
@@ -137,6 +159,19 @@ object Projections {
 
       override def failedElemEntries(projectionName: String, offset: Offset): Stream[Task, FailedElemLogRow] =
         projectionStore.failedElemEntries(projectionName, offset)
+
+      override def failedElemSses(projectionProject: ProjectRef, projectionId: Iri, offset: Offset)(implicit
+          rcr: RemoteContextResolution
+      ): Stream[Task, ServerSentEvent] =
+        failedElemEntries(projectionProject, projectionId, offset).evalMap { felem =>
+          felem.failedElemData.toCompactedJsonLd.map { compactJson =>
+            ServerSentEvent(
+              defaultPrinter.print(compactJson.json),
+              "IndexingFailure",
+              felem.ordering.value.toString
+            )
+          }
+        }
 
       override def scheduleRestart(projectionName: String)(implicit subject: Subject): UIO[Unit] = {
         IOUtils.instant.flatMap { now =>
