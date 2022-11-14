@@ -3,8 +3,9 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.RemoteContextResolutionFixture
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageFields._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{contexts, StorageFixtures}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageDecoderConfiguration, StorageFixtures, contexts}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.Configuration
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -20,6 +21,7 @@ class StorageFieldsSpec
     with IOValues
     with StorageFixtures {
 
+  implicit private val cfg: Configuration = StorageDecoderConfiguration.apply.accepted
   val sourceDecoder = new JsonLdSourceDecoder[StorageRejection, StorageFields](contexts.storages, UUIDF.random)
 
   "StorageFields" when {

@@ -249,16 +249,9 @@ object StorageFields {
 
   private val regions = Region.regions().asScala
 
-  implicit val storageFieldsJsonLdDecoder: JsonLdDecoder[StorageFields] = {
-    val ctx = JsonLdConfiguration.default.context
-      .addAlias("DiskStorageFields", StorageType.DiskStorage.iri)
-      .addAlias("S3StorageFields", StorageType.S3Storage.iri)
-      .addAlias("RemoteDiskStorageFields", StorageType.RemoteDiskStorage.iri)
+  implicit val regionJsonLdDecoder: JsonLdDecoder[Region] =
+    _.getValue(s => Option.when(regions.contains(Region.of(s)))(Region.of(s)))
 
-    implicit val regionJsonLdDecoder: JsonLdDecoder[Region] =
-      _.getValue(s => Option.when(regions.contains(Region.of(s)))(Region.of(s)))
-
-    implicit val config: JsonLdConfiguration = JsonLdConfiguration.default.copy(context = ctx)
+  implicit def storageFieldsJsonLdDecoder(implicit cfg: JsonLdConfiguration): JsonLdDecoder[StorageFields] =
     deriveConfigJsonLdDecoder[StorageFields]
-  }
 }

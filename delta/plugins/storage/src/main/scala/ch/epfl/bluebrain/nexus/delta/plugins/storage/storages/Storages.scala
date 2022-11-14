@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.schemas.{storage => storageSchema}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{Caller, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
@@ -591,10 +591,12 @@ object Storages {
       clock: Clock[UIO],
       uuidF: UUIDF
   ): Task[Storages] = {
-    Task
-      .delay(
+    implicit val rcr: RemoteContextResolution = contextResolution.rcr
+
+    StorageDecoderConfiguration.apply
+      .map { implicit config =>
         new JsonLdSourceResolvingDecoder[StorageRejection, StorageFields](contexts.storages, contextResolution, uuidF)
-      )
+      }
       .map { sourceDecoder =>
         new Storages(
           ScopedEventLog(definition(config.storageTypeConfig, access, fetchPermissions, crypto), config.eventLog, xas),

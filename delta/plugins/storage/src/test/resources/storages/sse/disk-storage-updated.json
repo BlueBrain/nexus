@@ -11,6 +11,8 @@
   "_rev": 2,
   "_source": {
     "@type": "DiskStorage",
+    "name": "diskName",
+    "description": "diskDescription",
     "capacity": 1000,
     "default": true,
     "maxFileSize": 50,

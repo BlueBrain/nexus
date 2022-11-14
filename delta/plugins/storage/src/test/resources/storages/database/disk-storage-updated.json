@@ -3,6 +3,8 @@
   "project" : "myorg/myproj",
   "value" : {
     "default" : false,
+    "name": "diskName",
+    "description": "diskDescription",
     "algorithm" : "SHA-256",
     "volume" : "/tmp",
     "readPermission" : "disk/read",
@@ -13,6 +15,8 @@
   },
   "source" : {
     "@type" : "DiskStorage",
+    "name": "diskName",
+    "description": "diskDescription",
     "volume" : "/tmp",
     "default" : true,
     "readPermission" : "disk/read",

@@ -3,6 +3,8 @@
   "project": "myorg/myproj",
   "value": {
     "default": true,
+    "name": "s3name",
+    "description": "s3description",
     "algorithm": "SHA-256",
     "bucket": "mybucket",
     "endpoint": "http://localhost",
@@ -18,6 +20,8 @@
     "secretKey": "dqO3PR6kLOCFNBk9I6zsZQ==",
     "accessKey": "O2vOp16ah21Fk/B0OucyxQ==",
     "@type": "S3Storage",
+    "name": "s3name",
+    "description": "s3description",
     "default": true,
     "bucket": "mybucket",
     "endpoint": "http://localhost",
