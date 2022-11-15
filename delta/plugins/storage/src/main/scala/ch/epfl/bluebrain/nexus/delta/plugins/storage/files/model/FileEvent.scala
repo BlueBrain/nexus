@@ -44,6 +44,18 @@ sealed trait FileEvent extends ScopedEvent {
     */
   def project: ProjectRef
 
+  /**
+    * @return
+    *   the reference to the used storage
+    */
+  def storage: ResourceRef.Revision
+
+  /**
+    * @return
+    *   the type of storage
+    */
+  def storageType: StorageType
+
 }
 
 object FileEvent {
