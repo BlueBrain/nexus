@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model
 
 import akka.http.scaladsl.model.ContentType
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts, Files}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{Files, contexts, nxvFile}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
@@ -13,7 +13,9 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.instances._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.IriEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sdk.sse.{resourcesSelector, SseEncoder}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.sse.{SseEncoder, resourcesSelector}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.ScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
@@ -263,6 +265,23 @@ object FileEvent {
     Serializer(_.id)
   }
 
+  val fileEventMetricEncoder: ScopedEventMetricEncoder[FileEvent] =
+    event =>
+      ProjectScopedMetric.from(
+        event,
+        event match {
+          case _: FileCreated => Created
+          case _: FileUpdated => Updated
+          case _: FileAttributesUpdated => Updated
+          case _: FileTagAdded => Tagged
+          case _: FileTagDeleted => TagDeleted
+          case _: FileDeprecated => Deprecated
+        },
+        event.id,
+        Set(nxvFile),
+        FileExtraFields.fromEvent(event).asJsonObject
+      )
+
   def sseEncoder(implicit base: BaseUri, @nowarn("cat=unused") config: StorageTypeConfig): SseEncoder[FileEvent] =
     new SseEncoder[FileEvent] {
       override val databaseDecoder: Decoder[FileEvent] = serializer.codec
@@ -314,3 +333,4 @@ object FileEvent {
       }
     }
 }
+

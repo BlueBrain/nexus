@@ -10,6 +10,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.IriEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.{resourcesSelector, SseEncoder}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.ScopedEvent
@@ -19,7 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectR
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.{deriveConfiguredCodec, deriveConfiguredEncoder}
 import io.circe.syntax._
-import io.circe.{Codec, Decoder, Encoder, Json}
+import io.circe.{Codec, Decoder, Encoder, Json, JsonObject}
 
 import java.time.Instant
 import java.util.UUID
@@ -175,6 +177,21 @@ object CompositeViewEvent {
     implicit val codec: Codec.AsObject[CompositeViewEvent]          = deriveConfiguredCodec[CompositeViewEvent]
     Serializer(_.id)
   }
+
+  val compositeViewMetricEncoder: ScopedEventMetricEncoder[CompositeViewEvent] =
+    event =>
+      ProjectScopedMetric.from(
+        event,
+        event match {
+          case _: CompositeViewCreated    => Created
+          case _: CompositeViewUpdated    => Updated
+          case _: CompositeViewTagAdded   => Tagged
+          case _: CompositeViewDeprecated => Deprecated
+        },
+        event.id,
+        Set(nxv.View, compositeViewType),
+        JsonObject.empty
+      )
 
   def sseEncoder(crypto: Crypto)(implicit base: BaseUri): SseEncoder[CompositeViewEvent] =
     new SseEncoder[CompositeViewEvent] {

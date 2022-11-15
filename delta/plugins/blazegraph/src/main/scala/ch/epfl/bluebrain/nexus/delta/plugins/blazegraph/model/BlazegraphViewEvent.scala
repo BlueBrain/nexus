@@ -9,6 +9,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.IriEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.{resourcesSelector, SseEncoder}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.ScopedEvent
@@ -18,7 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.{deriveConfiguredCodec, deriveConfiguredDecoder, deriveConfiguredEncoder}
 import io.circe.syntax._
-import io.circe.{Codec, Decoder, Encoder, Json}
+import io.circe.{Codec, Decoder, Encoder, Json, JsonObject}
 
 import java.time.Instant
 import java.util.UUID
@@ -212,6 +214,21 @@ object BlazegraphViewEvent {
     implicit val coder: Codec.AsObject[BlazegraphViewEvent] = deriveConfiguredCodec[BlazegraphViewEvent]
     Serializer(_.id)
   }
+
+  val bgViewMetricEncoder: ScopedEventMetricEncoder[BlazegraphViewEvent] =
+    event =>
+      ProjectScopedMetric.from(
+        event,
+        event match {
+          case _: BlazegraphViewCreated    => Created
+          case _: BlazegraphViewUpdated    => Updated
+          case _: BlazegraphViewTagAdded   => Tagged
+          case _: BlazegraphViewDeprecated => Deprecated
+        },
+        event.id,
+        event.tpe.types,
+        JsonObject.empty
+      )
 
   def sseEncoder(implicit base: BaseUri): SseEncoder[BlazegraphViewEvent] = new SseEncoder[BlazegraphViewEvent] {
     override val databaseDecoder: Decoder[BlazegraphViewEvent] = serializer.codec

@@ -7,6 +7,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.IriEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.Resolvers
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.{resourcesSelector, SseEncoder}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
@@ -17,7 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Identity, Label
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.{deriveConfiguredCodec, deriveConfiguredEncoder}
 import io.circe.syntax._
-import io.circe.{Codec, Decoder, Encoder, Json}
+import io.circe.{Codec, Decoder, Encoder, Json, JsonObject}
 
 import java.time.Instant
 import scala.annotation.nowarn
@@ -168,6 +170,21 @@ object ResolverEvent {
     implicit val coder: Codec.AsObject[ResolverEvent]              = deriveConfiguredCodec[ResolverEvent]
     Serializer(_.id)
   }
+
+  val resolverEventMetricEncoder: ScopedEventMetricEncoder[ResolverEvent] =
+    event =>
+      ProjectScopedMetric.from(
+        event,
+        event match {
+          case _: ResolverCreated    => Created
+          case _: ResolverUpdated    => Updated
+          case _: ResolverTagAdded   => Tagged
+          case _: ResolverDeprecated => Deprecated
+        },
+        event.id,
+        event.tpe.types,
+        JsonObject.empty
+      )
 
   def sseEncoder(implicit base: BaseUri): SseEncoder[ResolverEvent] = new SseEncoder[ResolverEvent] {
 
