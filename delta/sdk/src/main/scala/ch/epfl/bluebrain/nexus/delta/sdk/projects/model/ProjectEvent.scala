@@ -224,19 +224,25 @@ object ProjectEvent {
   }
 
   def projectEventMetricEncoder(implicit base: BaseUri): ScopedEventMetricEncoder[ProjectEvent] =
-    event =>
-      ProjectScopedMetric.from(
-        event,
-        event match {
-          case _: ProjectCreated           => Created
-          case _: ProjectUpdated           => Updated
-          case _: ProjectDeprecated        => Deprecated
-          case _: ProjectMarkedForDeletion => TagDeleted
-        },
-        ResourceUris.project(event.project).accessUri.toIri,
-        Set(nxv.Project),
-        JsonObject.empty
-      )
+    new ScopedEventMetricEncoder[ProjectEvent] {
+      override def databaseDecoder: Decoder[ProjectEvent] = serializer.codec
+
+      override def entityType: EntityType = Projects.entityType
+
+      override def eventToMetric: ProjectEvent => ProjectScopedMetric = event =>
+        ProjectScopedMetric.from(
+          event,
+          event match {
+            case _: ProjectCreated           => Created
+            case _: ProjectUpdated           => Updated
+            case _: ProjectDeprecated        => Deprecated
+            case _: ProjectMarkedForDeletion => TagDeleted
+          },
+          ResourceUris.project(event.project).accessUri.toIri,
+          Set(nxv.Project),
+          JsonObject.empty
+        )
+    }
 
   def sseEncoder(implicit base: BaseUri): SseEncoder[ProjectEvent] =
     new SseEncoder[ProjectEvent] {

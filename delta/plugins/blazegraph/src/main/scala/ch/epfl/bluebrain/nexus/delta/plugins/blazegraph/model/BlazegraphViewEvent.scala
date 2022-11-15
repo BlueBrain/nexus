@@ -216,19 +216,25 @@ object BlazegraphViewEvent {
   }
 
   val bgViewMetricEncoder: ScopedEventMetricEncoder[BlazegraphViewEvent] =
-    event =>
-      ProjectScopedMetric.from(
-        event,
-        event match {
-          case _: BlazegraphViewCreated    => Created
-          case _: BlazegraphViewUpdated    => Updated
-          case _: BlazegraphViewTagAdded   => Tagged
-          case _: BlazegraphViewDeprecated => Deprecated
-        },
-        event.id,
-        event.tpe.types,
-        JsonObject.empty
-      )
+    new ScopedEventMetricEncoder[BlazegraphViewEvent] {
+      override def databaseDecoder: Decoder[BlazegraphViewEvent] = serializer.codec
+
+      override def entityType: EntityType = BlazegraphViews.entityType
+
+      override def eventToMetric: BlazegraphViewEvent => ProjectScopedMetric = event =>
+        ProjectScopedMetric.from(
+          event,
+          event match {
+            case _: BlazegraphViewCreated    => Created
+            case _: BlazegraphViewUpdated    => Updated
+            case _: BlazegraphViewTagAdded   => Tagged
+            case _: BlazegraphViewDeprecated => Deprecated
+          },
+          event.id,
+          event.tpe.types,
+          JsonObject.empty
+        )
+    }
 
   def sseEncoder(implicit base: BaseUri): SseEncoder[BlazegraphViewEvent] = new SseEncoder[BlazegraphViewEvent] {
     override val databaseDecoder: Decoder[BlazegraphViewEvent] = serializer.codec

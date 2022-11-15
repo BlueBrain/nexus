@@ -198,19 +198,25 @@ object ElasticSearchViewEvent {
   }
 
   val esViewMetricEncoder: ScopedEventMetricEncoder[ElasticSearchViewEvent] =
-    event =>
-      ProjectScopedMetric.from(
-        event,
-        event match {
-          case _: ElasticSearchViewCreated    => Created
-          case _: ElasticSearchViewUpdated    => Updated
-          case _: ElasticSearchViewTagAdded   => Tagged
-          case _: ElasticSearchViewDeprecated => Deprecated
-        },
-        event.id,
-        event.tpe.types,
-        JsonObject.empty
-      )
+    new ScopedEventMetricEncoder[ElasticSearchViewEvent] {
+      override def databaseDecoder: Decoder[ElasticSearchViewEvent] = serializer.codec
+
+      override def entityType: EntityType = ElasticSearchViews.entityType
+
+      override def eventToMetric: ElasticSearchViewEvent => ProjectScopedMetric = event =>
+        ProjectScopedMetric.from(
+          event,
+          event match {
+            case _: ElasticSearchViewCreated    => Created
+            case _: ElasticSearchViewUpdated    => Updated
+            case _: ElasticSearchViewTagAdded   => Tagged
+            case _: ElasticSearchViewDeprecated => Deprecated
+          },
+          event.id,
+          event.tpe.types,
+          JsonObject.empty
+        )
+    }
 
   def sseEncoder(implicit base: BaseUri): SseEncoder[ElasticSearchViewEvent] = new SseEncoder[ElasticSearchViewEvent] {
     override val databaseDecoder: Decoder[ElasticSearchViewEvent] = serializer.codec

@@ -195,21 +195,27 @@ object SchemaEvent {
     Serializer(_.id)
   }
 
-  val schemaEventMetricEncoder: ScopedEventMetricEncoder[SchemaEvent] =
-    event =>
-      ProjectScopedMetric.from(
-        event,
-        event match {
-          case _: SchemaCreated    => Created
-          case _: SchemaUpdated    => Updated
-          case _: SchemaTagAdded   => Tagged
-          case _: SchemaTagDeleted => TagDeleted
-          case _: SchemaDeprecated => Deprecated
-        },
-        event.id,
-        Set(nxv.Schema),
-        JsonObject.empty
-      )
+  val oldschemaEventMetricEncoder: ScopedEventMetricEncoder[SchemaEvent] =
+    new ScopedEventMetricEncoder[SchemaEvent] {
+      override def databaseDecoder: Decoder[SchemaEvent] = serializer.codec
+
+      override def entityType: EntityType = Schemas.entityType
+
+      override def eventToMetric: SchemaEvent => ProjectScopedMetric = event =>
+        ProjectScopedMetric.from(
+          event,
+          event match {
+            case _: SchemaCreated    => Created
+            case _: SchemaUpdated    => Updated
+            case _: SchemaTagAdded   => Tagged
+            case _: SchemaTagDeleted => TagDeleted
+            case _: SchemaDeprecated => Deprecated
+          },
+          event.id,
+          Set(nxv.Schema),
+          JsonObject.empty
+        )
+    }
 
   def sseEncoder(implicit base: BaseUri): SseEncoder[SchemaEvent] = new SseEncoder[SchemaEvent] {
 

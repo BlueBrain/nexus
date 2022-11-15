@@ -180,20 +180,26 @@ object StorageEvent {
     Serializer(_.id)
   }
 
-  val storageEventMetricEncoder: ScopedEventMetricEncoder[StorageEvent] =
-    event =>
-      ProjectScopedMetric.from(
-        event,
-        event match {
-          case _: StorageCreated    => Created
-          case _: StorageUpdated    => Updated
-          case _: StorageTagAdded   => Tagged
-          case _: StorageDeprecated => Deprecated
-        },
-        event.id,
-        Set(nxvStorage),
-        JsonObject.empty
-      )
+  def storageEventMetricEncoder(crypto: Crypto): ScopedEventMetricEncoder[StorageEvent] =
+    new ScopedEventMetricEncoder[StorageEvent] {
+      override def databaseDecoder: Decoder[StorageEvent] = serializer(crypto).codec
+
+      override def entityType: EntityType = Storages.entityType
+
+      override def eventToMetric: StorageEvent => ProjectScopedMetric = event =>
+        ProjectScopedMetric.from(
+          event,
+          event match {
+            case _: StorageCreated    => Created
+            case _: StorageUpdated    => Updated
+            case _: StorageTagAdded   => Tagged
+            case _: StorageDeprecated => Deprecated
+          },
+          event.id,
+          Set(nxvStorage),
+          JsonObject.empty
+        )
+    }
 
   def sseEncoder(crypto: Crypto)(implicit base: BaseUri): SseEncoder[StorageEvent] = new SseEncoder[StorageEvent] {
     override val databaseDecoder: Decoder[StorageEvent] = serializer(crypto).codec

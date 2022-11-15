@@ -178,20 +178,26 @@ object CompositeViewEvent {
     Serializer(_.id)
   }
 
-  val compositeViewMetricEncoder: ScopedEventMetricEncoder[CompositeViewEvent] =
-    event =>
-      ProjectScopedMetric.from(
-        event,
-        event match {
-          case _: CompositeViewCreated    => Created
-          case _: CompositeViewUpdated    => Updated
-          case _: CompositeViewTagAdded   => Tagged
-          case _: CompositeViewDeprecated => Deprecated
-        },
-        event.id,
-        Set(nxv.View, compositeViewType),
-        JsonObject.empty
-      )
+  def compositeViewMetricEncoder(crypto: Crypto): ScopedEventMetricEncoder[CompositeViewEvent] =
+    new ScopedEventMetricEncoder[CompositeViewEvent] {
+      override def databaseDecoder: Decoder[CompositeViewEvent] = serializer(crypto).codec
+
+      override def entityType: EntityType = CompositeViews.entityType
+
+      override def eventToMetric: CompositeViewEvent => ProjectScopedMetric = event =>
+        ProjectScopedMetric.from(
+          event,
+          event match {
+            case _: CompositeViewCreated    => Created
+            case _: CompositeViewUpdated    => Updated
+            case _: CompositeViewTagAdded   => Tagged
+            case _: CompositeViewDeprecated => Deprecated
+          },
+          event.id,
+          Set(nxv.View, compositeViewType),
+          JsonObject.empty
+        )
+    }
 
   def sseEncoder(crypto: Crypto)(implicit base: BaseUri): SseEncoder[CompositeViewEvent] =
     new SseEncoder[CompositeViewEvent] {

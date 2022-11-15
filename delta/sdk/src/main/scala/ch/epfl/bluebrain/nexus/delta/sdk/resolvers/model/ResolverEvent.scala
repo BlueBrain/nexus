@@ -172,19 +172,25 @@ object ResolverEvent {
   }
 
   val resolverEventMetricEncoder: ScopedEventMetricEncoder[ResolverEvent] =
-    event =>
-      ProjectScopedMetric.from(
-        event,
-        event match {
-          case _: ResolverCreated    => Created
-          case _: ResolverUpdated    => Updated
-          case _: ResolverTagAdded   => Tagged
-          case _: ResolverDeprecated => Deprecated
-        },
-        event.id,
-        event.tpe.types,
-        JsonObject.empty
-      )
+    new ScopedEventMetricEncoder[ResolverEvent] {
+      override def databaseDecoder: Decoder[ResolverEvent] = serializer.codec
+
+      override def entityType: EntityType = Resolvers.entityType
+
+      override def eventToMetric: ResolverEvent => ProjectScopedMetric = event =>
+        ProjectScopedMetric.from(
+          event,
+          event match {
+            case _: ResolverCreated    => Created
+            case _: ResolverUpdated    => Updated
+            case _: ResolverTagAdded   => Tagged
+            case _: ResolverDeprecated => Deprecated
+          },
+          event.id,
+          event.tpe.types,
+          JsonObject.empty
+        )
+    }
 
   def sseEncoder(implicit base: BaseUri): SseEncoder[ResolverEvent] = new SseEncoder[ResolverEvent] {
 

@@ -228,20 +228,26 @@ object ResourceEvent {
   }
 
   val resourceEventMetricEncoder: ScopedEventMetricEncoder[ResourceEvent] =
-    event =>
-      ProjectScopedMetric.from(
-        event,
-        event match {
-          case _: ResourceCreated    => Created
-          case _: ResourceUpdated    => Updated
-          case _: ResourceTagAdded   => Tagged
-          case _: ResourceTagDeleted => TagDeleted
-          case _: ResourceDeprecated => Deprecated
-        },
-        event.id,
-        event.types,
-        JsonObject.empty
-      )
+    new ScopedEventMetricEncoder[ResourceEvent] {
+      override def databaseDecoder: Decoder[ResourceEvent] = serializer.codec
+
+      override def entityType: EntityType = Resources.entityType
+
+      override def eventToMetric: ResourceEvent => ProjectScopedMetric = event =>
+        ProjectScopedMetric.from(
+          event,
+          event match {
+            case _: ResourceCreated    => Created
+            case _: ResourceUpdated    => Updated
+            case _: ResourceTagAdded   => Tagged
+            case _: ResourceTagDeleted => TagDeleted
+            case _: ResourceDeprecated => Deprecated
+          },
+          event.id,
+          event.types,
+          JsonObject.empty
+        )
+    }
 
   def sseEncoder(implicit base: BaseUri): SseEncoder[ResourceEvent] = new SseEncoder[ResourceEvent] {
 

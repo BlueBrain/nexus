@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model
 
 import akka.http.scaladsl.model.ContentType
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{Files, contexts, nxvFile}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts, nxvFile, Files}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.IriEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.sse.{SseEncoder, resourcesSelector}
+import ch.epfl.bluebrain.nexus.delta.sdk.sse.{resourcesSelector, SseEncoder}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.ScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
@@ -266,21 +266,27 @@ object FileEvent {
   }
 
   val fileEventMetricEncoder: ScopedEventMetricEncoder[FileEvent] =
-    event =>
-      ProjectScopedMetric.from(
-        event,
-        event match {
-          case _: FileCreated => Created
-          case _: FileUpdated => Updated
-          case _: FileAttributesUpdated => Updated
-          case _: FileTagAdded => Tagged
-          case _: FileTagDeleted => TagDeleted
-          case _: FileDeprecated => Deprecated
-        },
-        event.id,
-        Set(nxvFile),
-        FileExtraFields.fromEvent(event).asJsonObject
-      )
+    new ScopedEventMetricEncoder[FileEvent] {
+      override def databaseDecoder: Decoder[FileEvent] = serializer.codec
+
+      override def entityType: EntityType = Files.entityType
+
+      override def eventToMetric: FileEvent => ProjectScopedMetric = event =>
+        ProjectScopedMetric.from(
+          event,
+          event match {
+            case _: FileCreated           => Created
+            case _: FileUpdated           => Updated
+            case _: FileAttributesUpdated => Updated
+            case _: FileTagAdded          => Tagged
+            case _: FileTagDeleted        => TagDeleted
+            case _: FileDeprecated        => Deprecated
+          },
+          event.id,
+          Set(nxvFile),
+          FileExtraFields.fromEvent(event).asJsonObject
+        )
+    }
 
   def sseEncoder(implicit base: BaseUri, @nowarn("cat=unused") config: StorageTypeConfig): SseEncoder[FileEvent] =
     new SseEncoder[FileEvent] {
@@ -333,4 +339,3 @@ object FileEvent {
       }
     }
 }
-
