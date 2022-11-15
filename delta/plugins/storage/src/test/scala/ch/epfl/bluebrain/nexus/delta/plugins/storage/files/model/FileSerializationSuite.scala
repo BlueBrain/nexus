@@ -45,41 +45,22 @@ class FileSerializationSuite extends SerializationSuite with StorageFixtures {
       Client
     )
 
+  // format: off
   private val filesMapping = VectorMap(
-    FileCreated(
-      fileId,
-      projectRef,
-      storageRef,
-      DiskStorageType,
-      attributes.copy(digest = NotComputedDigest),
-      1,
-      instant,
-      subject
-    )                                                                                                     -> loadEvents(
-      "files",
-      "file-created.json"
-    ),
-    FileUpdated(fileId, projectRef, storageRef, DiskStorageType, attributes, 2, instant, subject)         -> loadEvents(
-      "files",
-      "file-updated.json"
-    ),
-    FileAttributesUpdated(fileId, projectRef, Some(`text/plain(UTF-8)`), 12, digest, 3, instant, subject) -> loadEvents(
-      "files",
-      "file-attributes-created-updated.json"
-    ),
-    FileTagAdded(fileId, projectRef, targetRev = 1, tag, 4, instant, subject)                             -> loadEvents(
-      "files",
-      "file-tag-added.json"
-    ),
-    FileTagDeleted(fileId, projectRef, tag, 4, instant, subject)                                          -> loadEvents(
-      "files",
-      "file-tag-deleted.json"
-    ),
-    FileDeprecated(fileId, projectRef, 5, instant, subject)                                               -> loadEvents(
-      "files",
-      "file-deprecated.json"
-    )
+    FileCreated(fileId, projectRef, storageRef, DiskStorageType, attributes.copy(digest = NotComputedDigest), 1, instant, subject)
+      -> loadEvents("files", "file-created.json"),
+    FileUpdated(fileId, projectRef, storageRef, DiskStorageType, attributes, 2, instant, subject) 
+      -> loadEvents("files", "file-updated.json"),
+    FileAttributesUpdated(fileId, projectRef, storageRef, DiskStorageType, Some(`text/plain(UTF-8)`), 12, digest, 3, instant, subject)
+      -> loadEvents("files", "file-attributes-created-updated.json"),
+    FileTagAdded(fileId, projectRef, storageRef, DiskStorageType, targetRev = 1, tag, 4, instant, subject)
+      -> loadEvents("files", "file-tag-added.json"),
+    FileTagDeleted(fileId, projectRef, storageRef, DiskStorageType, tag, 4, instant, subject)
+      -> loadEvents("files", "file-tag-deleted.json"),
+    FileDeprecated(fileId, projectRef, storageRef, DiskStorageType, 5, instant, subject)
+      -> loadEvents("files", "file-deprecated.json")
   )
+  // format: on
 
   filesMapping.foreach { case (event, (database, sse)) =>
     test(s"Correctly serialize ${event.getClass.getName}") {

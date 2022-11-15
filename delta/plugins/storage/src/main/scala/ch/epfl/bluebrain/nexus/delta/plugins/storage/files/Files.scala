@@ -619,7 +619,7 @@ object Files {
       case Some(s)                                 =>
         // format: off
         IOUtils.instant
-          .map(FileAttributesUpdated(c.id, c.project, c.mediaType, c.bytes, c.digest, s.rev + 1, _, c.subject))
+          .map(FileAttributesUpdated(c.id, c.project, s.storage, s.storageType, c.mediaType, c.bytes, c.digest, s.rev + 1, _, c.subject))
       // format: on
     }
 
@@ -627,7 +627,10 @@ object Files {
       case None                                                => IO.raiseError(FileNotFound(c.id, c.project))
       case Some(s) if s.rev != c.rev                           => IO.raiseError(IncorrectRev(c.rev, s.rev))
       case Some(s) if c.targetRev <= 0L || c.targetRev > s.rev => IO.raiseError(RevisionNotFound(c.targetRev, s.rev))
-      case Some(s)                                             => IOUtils.instant.map(FileTagAdded(c.id, c.project, c.targetRev, c.tag, s.rev + 1, _, c.subject))
+      case Some(s)                                             =>
+        IOUtils.instant.map(
+          FileTagAdded(c.id, c.project, s.storage, s.storageType, c.targetRev, c.tag, s.rev + 1, _, c.subject)
+        )
     }
 
     def deleteTag(c: DeleteFileTag) =
@@ -635,14 +638,16 @@ object Files {
         case None                               => IO.raiseError(FileNotFound(c.id, c.project))
         case Some(s) if s.rev != c.rev          => IO.raiseError(IncorrectRev(c.rev, s.rev))
         case Some(s) if !s.tags.contains(c.tag) => IO.raiseError(TagNotFound(c.tag))
-        case Some(s)                            => IOUtils.instant.map(FileTagDeleted(c.id, c.project, c.tag, s.rev + 1, _, c.subject))
+        case Some(s)                            =>
+          IOUtils.instant.map(FileTagDeleted(c.id, c.project, s.storage, s.storageType, c.tag, s.rev + 1, _, c.subject))
       }
 
     def deprecate(c: DeprecateFile) = state match {
       case None                      => IO.raiseError(FileNotFound(c.id, c.project))
       case Some(s) if s.rev != c.rev => IO.raiseError(IncorrectRev(c.rev, s.rev))
       case Some(s) if s.deprecated   => IO.raiseError(FileIsDeprecated(c.id))
-      case Some(s)                   => IOUtils.instant.map(FileDeprecated(c.id, c.project, s.rev + 1, _, c.subject))
+      case Some(s)                   =>
+        IOUtils.instant.map(FileDeprecated(c.id, c.project, s.storage, s.storageType, s.rev + 1, _, c.subject))
     }
 
     cmd match {
