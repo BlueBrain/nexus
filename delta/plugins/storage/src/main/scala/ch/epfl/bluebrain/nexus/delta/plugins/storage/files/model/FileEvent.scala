@@ -117,6 +117,10 @@ object FileEvent {
     *   the file identifier
     * @param project
     *   the project the file belongs to
+    * @param storage
+    *   the reference to the remote storage used
+    * @param storageType
+    *   the type of storage
     * @param mediaType
     *   the optional media type of the file
     * @param bytes
@@ -133,6 +137,8 @@ object FileEvent {
   final case class FileAttributesUpdated(
       id: Iri,
       project: ProjectRef,
+      storage: ResourceRef.Revision,
+      storageType: StorageType,
       mediaType: Option[ContentType],
       bytes: Long,
       digest: Digest,
@@ -148,6 +154,10 @@ object FileEvent {
     *   the file identifier
     * @param project
     *   the project the file belongs to
+    * @param storage
+    *   the reference to the used storage
+    * @param storageType
+    *   the type of storage
     * @param targetRev
     *   the revision that is being aliased with the provided ''tag''
     * @param tag
@@ -162,6 +172,8 @@ object FileEvent {
   final case class FileTagAdded(
       id: Iri,
       project: ProjectRef,
+      storage: ResourceRef.Revision,
+      storageType: StorageType,
       targetRev: Int,
       tag: UserTag,
       rev: Int,
@@ -176,6 +188,10 @@ object FileEvent {
     *   the file identifier
     * @param project
     *   the project the file belongs to
+    * @param storage
+    *   the reference to the used storage
+    * @param storageType
+    *   the type of storage
     * @param tag
     *   the tag that was deleted
     * @param rev
@@ -188,6 +204,8 @@ object FileEvent {
   final case class FileTagDeleted(
       id: Iri,
       project: ProjectRef,
+      storage: ResourceRef.Revision,
+      storageType: StorageType,
       tag: UserTag,
       rev: Int,
       instant: Instant,
@@ -200,6 +218,10 @@ object FileEvent {
     *   the file identifier
     * @param project
     *   the project the file belongs to
+    * @param storage
+    *   the reference to the used storage
+    * @param storageType
+    *   the type of storage
     * @param rev
     *   the last known revision of the file
     * @param instant
@@ -207,8 +229,15 @@ object FileEvent {
     * @param subject
     *   the subject creating this event
     */
-  final case class FileDeprecated(id: Iri, project: ProjectRef, rev: Int, instant: Instant, subject: Subject)
-      extends FileEvent
+  final case class FileDeprecated(
+      id: Iri,
+      project: ProjectRef,
+      storage: ResourceRef.Revision,
+      storageType: StorageType,
+      rev: Int,
+      instant: Instant,
+      subject: Subject
+  ) extends FileEvent
 
   @nowarn("cat=unused")
   val serializer: Serializer[Iri, FileEvent] = {

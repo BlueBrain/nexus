@@ -1,6 +1,8 @@
 {
   "id" : "https://bluebrain.github.io/nexus/vocabulary/file",
   "project" : "myorg/myproj",
+  "storage": "https://bluebrain.github.io/nexus/vocabulary/disk-storage?rev=1",
+  "storageType": "DiskStorage",
   "targetRev" : 1,
   "tag" : "mytag",
   "rev" : 4,

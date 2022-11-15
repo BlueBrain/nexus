@@ -82,32 +82,32 @@ class FilesStmSpec
           FileGen.state(id, projectRef, remoteStorageRef, attributes.copy(bytes = 1, digest = Digest.NotComputedDigest))
 
         evaluate(Some(current), updateAttrCmd).accepted shouldEqual
-          FileAttributesUpdated(id, projectRef, mediaType, 10, dig, 2, epoch, alice)
+          FileAttributesUpdated(id, projectRef, remoteStorageRef, DiskStorageType, mediaType, 10, dig, 2, epoch, alice)
       }
 
       "create a new event from a TagFile command" in {
         val current = FileGen.state(id, projectRef, storageRef, attributes, rev = 2)
         evaluate(Some(current), TagFile(id, projectRef, targetRev = 2, myTag, 2, alice)).accepted shouldEqual
-          FileTagAdded(id, projectRef, targetRev = 2, myTag, 3, epoch, alice)
+          FileTagAdded(id, projectRef, storageRef, DiskStorageType, targetRev = 2, myTag, 3, epoch, alice)
       }
 
       "create a new event from a DeleteFileTag command" in {
         val current =
           FileGen.state(id, projectRef, storageRef, attributes, rev = 2).copy(tags = Tags(myTag -> 2))
         evaluate(Some(current), DeleteFileTag(id, projectRef, myTag, 2, alice)).accepted shouldEqual
-          FileTagDeleted(id, projectRef, myTag, 3, epoch, alice)
+          FileTagDeleted(id, projectRef, storageRef, DiskStorageType, myTag, 3, epoch, alice)
       }
 
       "create a new event from a TagFile command when deprecated" in {
         val current = FileGen.state(id, projectRef, storageRef, attributes, rev = 2, deprecated = true)
         evaluate(Some(current), TagFile(id, projectRef, targetRev = 2, myTag, 2, alice)).accepted shouldEqual
-          FileTagAdded(id, projectRef, targetRev = 2, myTag, 3, epoch, alice)
+          FileTagAdded(id, projectRef, storageRef, DiskStorageType, targetRev = 2, myTag, 3, epoch, alice)
       }
 
       "create a new event from a DeprecateFile command" in {
         val current = FileGen.state(id, projectRef, storageRef, attributes, rev = 2)
         evaluate(Some(current), DeprecateFile(id, projectRef, 2, alice)).accepted shouldEqual
-          FileDeprecated(id, projectRef, 3, epoch, alice)
+          FileDeprecated(id, projectRef, storageRef, DiskStorageType, 3, epoch, alice)
       }
 
       "reject with IncorrectRev" in {
@@ -199,7 +199,7 @@ class FilesStmSpec
 
       "from a new FileTagAdded event" in {
         val tag1    = UserTag.unsafe("tag1")
-        val event   = FileTagAdded(id, projectRef, targetRev = 1, tag1, 3, time2, alice)
+        val event   = FileTagAdded(id, projectRef, storageRef, DiskStorageType, targetRev = 1, tag1, 3, time2, alice)
         val current = FileGen.state(id, projectRef, storageRef, attributes, tags = Tags(myTag -> 2), rev = 2)
 
         next(None, event) shouldEqual None
@@ -209,7 +209,7 @@ class FilesStmSpec
       }
 
       "from a new FileDeprecated event" in {
-        val event   = FileDeprecated(id, projectRef, 2, time2, alice)
+        val event   = FileDeprecated(id, projectRef, storageRef, DiskStorageType, 2, time2, alice)
         val current = FileGen.state(id, projectRef, storageRef, attributes)
 
         next(None, event) shouldEqual None
