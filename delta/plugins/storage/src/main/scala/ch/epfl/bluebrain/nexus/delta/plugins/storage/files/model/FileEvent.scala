@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model
 
 import akka.http.scaladsl.model.ContentType
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{Files, contexts, nxvFile}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts, nxvFile, Files}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.IriEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.sse.{SseEncoder, resourcesSelector}
+import ch.epfl.bluebrain.nexus.delta.sdk.sse.{resourcesSelector, SseEncoder}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.ScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
@@ -344,7 +344,7 @@ object FileEvent {
   final private case class FileExtraFields(
       storage: Iri,
       storageType: StorageType,
-      physicalFile: Option[Int],
+      newFileWritten: Option[Int],
       bytes: Option[Long],
       mediaType: Option[ContentType],
       origin: Option[FileAttributesOrigin]
@@ -353,16 +353,34 @@ object FileEvent {
   private object FileExtraFields {
     def fromEvent(event: FileEvent): FileExtraFields =
       event match {
-        case c: FileCreated =>
+        case c: FileCreated if c.attributes.digest.computed =>
           FileExtraFields(
             c.storage.iri,
             c.storageType,
-            None,
+            Some(1),
             Some(c.attributes.bytes),
             c.attributes.mediaType,
             Some(c.attributes.origin)
           )
-        case u: FileUpdated =>
+        case c: FileCreated                                 =>
+          FileExtraFields(
+            c.storage.iri,
+            c.storageType,
+            Some(1),
+            None,
+            None,
+            Some(c.attributes.origin)
+          )
+        case u: FileUpdated if u.attributes.digest.computed =>
+          FileExtraFields(
+            u.storage.iri,
+            u.storageType,
+            None,
+            None,
+            None,
+            Some(u.attributes.origin)
+          )
+        case u: FileUpdated                                 =>
           FileExtraFields(
             u.storage.iri,
             u.storageType,
@@ -371,7 +389,7 @@ object FileEvent {
             u.attributes.mediaType,
             Some(u.attributes.origin)
           )
-        case fau: FileAttributesUpdated =>
+        case fau: FileAttributesUpdated                     =>
           FileExtraFields(
             fau.storage.iri,
             fau.storageType,
@@ -380,11 +398,11 @@ object FileEvent {
             fau.mediaType,
             Some(FileAttributesOrigin.Storage)
           )
-        case fta: FileTagAdded =>
+        case fta: FileTagAdded                              =>
           FileExtraFields(fta.storage.iri, fta.storageType, None, None, None, None)
-        case ftd: FileTagDeleted =>
+        case ftd: FileTagDeleted                            =>
           FileExtraFields(ftd.storage.iri, ftd.storageType, None, None, None, None)
-        case fd: FileDeprecated =>
+        case fd: FileDeprecated                             =>
           FileExtraFields(fd.storage.iri, fd.storageType, None, None, None, None)
       }
 
