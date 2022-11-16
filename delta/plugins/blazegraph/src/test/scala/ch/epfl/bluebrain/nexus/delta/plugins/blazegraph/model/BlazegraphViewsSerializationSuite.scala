@@ -50,14 +50,14 @@ class BlazegraphViewsSerializationSuite extends SerializationSuite {
   private val defaultIndexingSource = defaultIndexingValue.toJson(indexingId)
   
   // format: off
-  private val created = BlazegraphViewCreated(indexingId, projectRef, uuid, defaultIndexingValue, defaultIndexingSource, 1, instant, subject)
-  private val created1= BlazegraphViewCreated(indexingId, projectRef, uuid, indexingValue, indexingSource, 1, instant, subject)
-  private val created2 = BlazegraphViewCreated(aggregateId, projectRef, uuid, aggregateValue, aggregateSource, 1, instant, subject)
-  private val updated = BlazegraphViewUpdated(indexingId, projectRef, uuid, defaultIndexingValue, defaultIndexingSource, 2, instant, subject)
-  private val updated1= BlazegraphViewUpdated(indexingId, projectRef, uuid, indexingValue, indexingSource, 2, instant, subject)
-  private val updated2=BlazegraphViewUpdated(aggregateId, projectRef, uuid, aggregateValue, aggregateSource, 2, instant, subject)
-  private val tagged=BlazegraphViewTagAdded(indexingId, projectRef, BlazegraphType, uuid, targetRev = 1, tag, 3, instant, subject)
-  private val deprecated=BlazegraphViewDeprecated(indexingId, projectRef, BlazegraphType, uuid, 4, instant, subject)
+  private val created    = BlazegraphViewCreated(indexingId, projectRef, uuid, defaultIndexingValue, defaultIndexingSource, 1, instant, subject)
+  private val created1   = BlazegraphViewCreated(indexingId, projectRef, uuid, indexingValue, indexingSource, 1, instant, subject)
+  private val created2   = BlazegraphViewCreated(aggregateId, projectRef, uuid, aggregateValue, aggregateSource, 1, instant, subject)
+  private val updated    = BlazegraphViewUpdated(indexingId, projectRef, uuid, defaultIndexingValue, defaultIndexingSource, 2, instant, subject)
+  private val updated1   = BlazegraphViewUpdated(indexingId, projectRef, uuid, indexingValue, indexingSource, 2, instant, subject)
+  private val updated2   = BlazegraphViewUpdated(aggregateId, projectRef, uuid, aggregateValue, aggregateSource, 2, instant, subject)
+  private val tagged     = BlazegraphViewTagAdded(indexingId, projectRef, BlazegraphType, uuid, targetRev = 1, tag, 3, instant, subject)
+  private val deprecated = BlazegraphViewDeprecated(indexingId, projectRef, BlazegraphType, uuid, 4, instant, subject)
   // format: on
 
   private val blazegraphViewsMapping = List(
