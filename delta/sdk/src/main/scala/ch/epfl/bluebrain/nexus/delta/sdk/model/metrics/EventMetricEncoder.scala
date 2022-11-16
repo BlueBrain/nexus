@@ -10,11 +10,11 @@ import io.circe.Decoder
   * Typeclass of Events [[E]] that can be encoded into EventMetric [[M]]
   */
 sealed trait EventMetricEncoder[E <: Event, M <: EventMetric] {
-  def databaseDecoder: Decoder[E]
+  protected def databaseDecoder: Decoder[E]
 
   def entityType: EntityType
 
-  def eventToMetric: E => M
+  protected def eventToMetric: E => M
 
   def toMetric: Decoder[M] =
     databaseDecoder.map(eventToMetric)
