@@ -2,11 +2,14 @@ package ch.epfl.bluebrain.nexus.delta.sdk.projects.model
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
+import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.SerializationSuite
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectEvent.{ProjectCreated, ProjectDeprecated, ProjectUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder.SseData
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
+import io.circe.JsonObject
 
 import java.time.Instant
 import java.util.UUID
@@ -31,7 +34,7 @@ class ProjectSerializationSuite extends SerializationSuite {
   private val base: PrefixIri          = PrefixIri.unsafe(schemas.base)
   private val vocab: PrefixIri         = PrefixIri.unsafe(nxv.base)
 
-  private val projectsMapping = Map(
+  private val created    =
     ProjectCreated(
       label = proj,
       uuid = projUuid,
@@ -44,7 +47,8 @@ class ProjectSerializationSuite extends SerializationSuite {
       vocab = vocab,
       instant = instant,
       subject = subject
-    ) -> loadEvents("projects", "project-created.json"),
+    )
+  private val updated    =
     ProjectUpdated(
       label = proj,
       uuid = projUuid,
@@ -57,7 +61,8 @@ class ProjectSerializationSuite extends SerializationSuite {
       vocab = vocab,
       instant = instant,
       subject = subject
-    ) -> loadEvents("projects", "project-updated.json"),
+    )
+  private val deprecated =
     ProjectDeprecated(
       label = proj,
       uuid = projUuid,
@@ -66,10 +71,15 @@ class ProjectSerializationSuite extends SerializationSuite {
       rev = rev,
       instant = instant,
       subject = subject
-    ) -> loadEvents("projects", "project-deprecated.json")
+    )
+
+  private val projectsMapping = List(
+    (created, loadEvents("projects", "project-created.json"), Created),
+    (updated, loadEvents("projects", "project-updated.json"), Updated),
+    (deprecated, loadEvents("projects", "project-deprecated.json"), Deprecated)
   )
 
-  projectsMapping.foreach { case (event, (database, sse)) =>
+  projectsMapping.foreach { case (event, (database, sse), action) =>
     test(s"Correctly serialize ${event.getClass.getName}") {
       assertEquals(ProjectEvent.serializer.codec(event), database)
     }
@@ -82,6 +92,22 @@ class ProjectSerializationSuite extends SerializationSuite {
       sseEncoder.toSse
         .decodeJson(database)
         .assertRight(SseData(ClassUtils.simpleName(event), Some(ProjectRef(org, proj)), sse))
+    }
+
+    test(s"Correctly encode ${event.getClass.getName} to metric") {
+      ProjectEvent.projectEventMetricEncoder.toMetric.decodeJson(database).assertRight {
+        ProjectScopedMetric(
+          instant,
+          subject,
+          rev,
+          action,
+          ProjectRef(org, proj),
+          org,
+          iri"http://localhost/v1/projects/myorg/myproj",
+          Set(nxv.Project),
+          JsonObject.empty
+        )
+      }
     }
   }
 

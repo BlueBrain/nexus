@@ -376,8 +376,8 @@ object FileEvent {
             u.storage.iri,
             u.storageType,
             None,
-            None,
-            None,
+            Some(u.attributes.bytes),
+            u.attributes.mediaType,
             Some(u.attributes.origin)
           )
         case u: FileUpdated                                 =>
@@ -385,8 +385,8 @@ object FileEvent {
             u.storage.iri,
             u.storageType,
             None,
-            Some(u.attributes.bytes),
-            u.attributes.mediaType,
+            None,
+            None,
             Some(u.attributes.origin)
           )
         case fau: FileAttributesUpdated                     =>

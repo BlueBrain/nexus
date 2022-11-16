@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{contexts, nxvStorage, schemas, Storages}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{contexts, schemas, Storages}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -196,7 +196,7 @@ object StorageEvent {
             case _: StorageDeprecated => Deprecated
           },
           event.id,
-          Set(nxvStorage),
+          event.tpe.types,
           JsonObject.empty
         )
     }

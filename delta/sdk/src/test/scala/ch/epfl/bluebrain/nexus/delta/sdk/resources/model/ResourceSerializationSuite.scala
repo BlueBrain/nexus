@@ -6,12 +6,14 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schema, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.SerializationSuite
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ResourceGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder.SseData
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Revision
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
+import io.circe.JsonObject
 
 import java.time.Instant
 
@@ -27,10 +29,10 @@ class ResourceSerializationSuite extends SerializationSuite {
   val projectRef: ProjectRef = ProjectRef(org, proj)
   val myId: IriOrBNode.Iri   = nxv + "myId"
 
-  val resource: Resource       =
+  val resource: Resource =
     ResourceGen.resource(myId, projectRef, jsonContentOf("resources/resource.json", "id" -> myId))
 
-  private val resourcesMapping = Map(
+  private val created    =
     ResourceCreated(
       myId,
       projectRef,
@@ -43,7 +45,8 @@ class ResourceSerializationSuite extends SerializationSuite {
       1,
       instant,
       subject
-    ) -> loadEvents("resources", "resource-created.json"),
+    )
+  private val updated    =
     ResourceUpdated(
       myId,
       projectRef,
@@ -56,7 +59,8 @@ class ResourceSerializationSuite extends SerializationSuite {
       2,
       instant,
       subject
-    ) -> loadEvents("resources", "resource-updated.json"),
+    )
+  private val tagged     =
     ResourceTagAdded(
       myId,
       projectRef,
@@ -66,7 +70,8 @@ class ResourceSerializationSuite extends SerializationSuite {
       3,
       instant,
       subject
-    ) -> loadEvents("resources", "resource-tagged.json"),
+    )
+  private val deprecated =
     ResourceDeprecated(
       myId,
       projectRef,
@@ -74,7 +79,8 @@ class ResourceSerializationSuite extends SerializationSuite {
       4,
       instant,
       subject
-    ) -> loadEvents("resources", "resource-deprecated.json"),
+    )
+  private val tagDeleted =
     ResourceTagDeleted(
       myId,
       projectRef,
@@ -83,10 +89,17 @@ class ResourceSerializationSuite extends SerializationSuite {
       5,
       instant,
       subject
-    ) -> loadEvents("resources", "resource-tag-deleted.json")
+    )
+
+  private val resourcesMapping = List(
+    (created, loadEvents("resources", "resource-created.json"), Created),
+    (updated, loadEvents("resources", "resource-updated.json"), Updated),
+    (tagged, loadEvents("resources", "resource-tagged.json"), Tagged),
+    (deprecated, loadEvents("resources", "resource-deprecated.json"), Deprecated),
+    (tagDeleted, loadEvents("resources", "resource-tag-deleted.json"), TagDeleted)
   )
 
-  resourcesMapping.foreach { case (event, (database, sse)) =>
+  resourcesMapping.foreach { case (event, (database, sse), action) =>
     test(s"Correctly serialize ${event.getClass.getName}") {
       assertEquals(ResourceEvent.serializer.codec(event), database)
     }
@@ -99,6 +112,22 @@ class ResourceSerializationSuite extends SerializationSuite {
       sseEncoder.toSse
         .decodeJson(database)
         .assertRight(SseData(ClassUtils.simpleName(event), Some(ProjectRef(org, proj)), sse))
+    }
+
+    test(s"Correctly encode ${event.getClass.getName} to metric") {
+      ResourceEvent.resourceEventMetricEncoder.toMetric.decodeJson(database).assertRight {
+        ProjectScopedMetric(
+          instant,
+          subject,
+          event.rev,
+          action,
+          ProjectRef(org, proj),
+          org,
+          event.id,
+          event.types,
+          JsonObject.empty
+        )
+      }
     }
   }
 

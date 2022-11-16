@@ -195,7 +195,7 @@ object SchemaEvent {
     Serializer(_.id)
   }
 
-  val oldschemaEventMetricEncoder: ScopedEventMetricEncoder[SchemaEvent] =
+  val schemaEventMetricEncoder: ScopedEventMetricEncoder[SchemaEvent] =
     new ScopedEventMetricEncoder[SchemaEvent] {
       override def databaseDecoder: Decoder[SchemaEvent] = serializer.codec
 
