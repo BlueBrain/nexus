@@ -5,11 +5,12 @@ import ch.epfl.bluebrain.nexus.delta.rdf.syntax.jsonOpsSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.SerializationSuite
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.SchemaGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaEvent._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
-import io.circe.Json
+import io.circe.JsonObject
 
 import java.time.Instant
 
@@ -31,7 +32,7 @@ class SchemaSerializationSuite extends SerializationSuite {
       .addContext(contexts.shacl, contexts.schemasMetadata) deepMerge json"""{"@id": "$myId"}"""
   )
 
-  val schemasMapping: Map[SchemaEvent, Json] = Map(
+  private val created    =
     SchemaCreated(
       myId,
       projectRef,
@@ -41,7 +42,8 @@ class SchemaSerializationSuite extends SerializationSuite {
       1,
       instant,
       subject
-    ) -> jsonContentOf("/schemas/schema-created.json"),
+    )
+  private val updated    =
     SchemaUpdated(
       myId,
       projectRef,
@@ -51,7 +53,8 @@ class SchemaSerializationSuite extends SerializationSuite {
       2,
       instant,
       subject
-    ) -> jsonContentOf("/schemas/schema-updated.json"),
+    )
+  private val tagged     =
     SchemaTagAdded(
       myId,
       projectRef,
@@ -60,7 +63,8 @@ class SchemaSerializationSuite extends SerializationSuite {
       3,
       instant,
       subject
-    ) -> jsonContentOf("/schemas/schema-tagged.json"),
+    )
+  private val tagDeleted =
     SchemaTagDeleted(
       myId,
       projectRef,
@@ -68,25 +72,47 @@ class SchemaSerializationSuite extends SerializationSuite {
       3,
       instant,
       subject
-    ) -> jsonContentOf("/schemas/schema-tag-deleted.json"),
+    )
+  private val deprecated =
     SchemaDeprecated(
       myId,
       projectRef,
       4,
       instant,
       subject
-    ) -> jsonContentOf("/schemas/schema-deprecated.json")
+    )
+
+  private val schemasMapping = List(
+    (created, jsonContentOf("/schemas/schema-created.json"), Created),
+    (updated, jsonContentOf("/schemas/schema-updated.json"), Updated),
+    (tagged, jsonContentOf("/schemas/schema-tagged.json"), Tagged),
+    (tagDeleted, jsonContentOf("/schemas/schema-tag-deleted.json"), TagDeleted),
+    (deprecated, jsonContentOf("/schemas/schema-deprecated.json"), Deprecated)
   )
 
-  schemasMapping.foreach { case (event, json) =>
+  schemasMapping.foreach { case (event, json, action) =>
     test(s"Correctly serialize ${event.getClass.getName}") {
       assertEquals(SchemaEvent.serializer.codec(event), json)
     }
-  }
 
-  schemasMapping.foreach { case (event, json) =>
     test(s"Correctly deserialize ${event.getClass.getName}") {
       assertEquals(SchemaEvent.serializer.codec.decodeJson(json), Right(event))
+    }
+
+    test(s"Correctly encode ${event.getClass.getName} to metric") {
+      SchemaEvent.schemaEventMetricEncoder.toMetric.decodeJson(json).assertRight {
+        ProjectScopedMetric(
+          instant,
+          subject,
+          event.rev,
+          action,
+          ProjectRef(org, proj),
+          org,
+          event.id,
+          Set(nxv.Schema),
+          JsonObject.empty
+        )
+      }
     }
   }
 

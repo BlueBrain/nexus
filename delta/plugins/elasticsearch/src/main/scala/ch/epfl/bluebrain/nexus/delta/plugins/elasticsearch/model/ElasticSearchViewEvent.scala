@@ -9,6 +9,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.IriEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.{resourcesSelector, SseEncoder}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.ScopedEvent
@@ -18,7 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectR
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.{deriveConfiguredCodec, deriveConfiguredDecoder, deriveConfiguredEncoder}
 import io.circe.syntax._
-import io.circe.{Codec, Decoder, Encoder, Json}
+import io.circe.{Codec, Decoder, Encoder, Json, JsonObject}
 
 import java.time.Instant
 import java.util.UUID
@@ -194,6 +196,27 @@ object ElasticSearchViewEvent {
     implicit val coder: Codec.AsObject[ElasticSearchViewEvent]              = deriveConfiguredCodec[ElasticSearchViewEvent]
     Serializer(_.id)
   }
+
+  val esViewMetricEncoder: ScopedEventMetricEncoder[ElasticSearchViewEvent] =
+    new ScopedEventMetricEncoder[ElasticSearchViewEvent] {
+      override def databaseDecoder: Decoder[ElasticSearchViewEvent] = serializer.codec
+
+      override def entityType: EntityType = ElasticSearchViews.entityType
+
+      override def eventToMetric: ElasticSearchViewEvent => ProjectScopedMetric = event =>
+        ProjectScopedMetric.from(
+          event,
+          event match {
+            case _: ElasticSearchViewCreated    => Created
+            case _: ElasticSearchViewUpdated    => Updated
+            case _: ElasticSearchViewTagAdded   => Tagged
+            case _: ElasticSearchViewDeprecated => Deprecated
+          },
+          event.id,
+          event.tpe.types,
+          JsonObject.empty
+        )
+    }
 
   def sseEncoder(implicit base: BaseUri): SseEncoder[ElasticSearchViewEvent] = new SseEncoder[ElasticSearchViewEvent] {
     override val databaseDecoder: Decoder[ElasticSearchViewEvent] = serializer.codec

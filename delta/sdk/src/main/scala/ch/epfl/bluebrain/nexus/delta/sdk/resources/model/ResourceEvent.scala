@@ -8,6 +8,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.IriEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.{resourcesSelector, SseEncoder}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
@@ -18,7 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectR
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.{deriveConfiguredCodec, deriveConfiguredEncoder}
 import io.circe.syntax._
-import io.circe.{Codec, Decoder, Encoder, Json}
+import io.circe.{Codec, Decoder, Encoder, Json, JsonObject}
 
 import java.time.Instant
 import scala.annotation.nowarn
@@ -224,6 +226,28 @@ object ResourceEvent {
     implicit val coder: Codec.AsObject[ResourceEvent] = deriveConfiguredCodec[ResourceEvent]
     Serializer(_.id)
   }
+
+  val resourceEventMetricEncoder: ScopedEventMetricEncoder[ResourceEvent] =
+    new ScopedEventMetricEncoder[ResourceEvent] {
+      override def databaseDecoder: Decoder[ResourceEvent] = serializer.codec
+
+      override def entityType: EntityType = Resources.entityType
+
+      override def eventToMetric: ResourceEvent => ProjectScopedMetric = event =>
+        ProjectScopedMetric.from(
+          event,
+          event match {
+            case _: ResourceCreated    => Created
+            case _: ResourceUpdated    => Updated
+            case _: ResourceTagAdded   => Tagged
+            case _: ResourceTagDeleted => TagDeleted
+            case _: ResourceDeprecated => Deprecated
+          },
+          event.id,
+          event.types,
+          JsonObject.empty
+        )
+    }
 
   def sseEncoder(implicit base: BaseUri): SseEncoder[ResourceEvent] = new SseEncoder[ResourceEvent] {
 

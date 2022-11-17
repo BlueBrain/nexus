@@ -12,6 +12,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.IriEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.{resourcesSelector, SseEncoder}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.ScopedEvent
@@ -21,7 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectR
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.{deriveConfiguredCodec, deriveConfiguredEncoder}
 import io.circe.syntax._
-import io.circe.{Codec, Decoder, Encoder, Json}
+import io.circe.{Codec, Decoder, Encoder, Json, JsonObject}
 
 import java.time.Instant
 import scala.annotation.nowarn
@@ -177,6 +179,27 @@ object StorageEvent {
     implicit val coder: Codec.AsObject[StorageEvent]             = deriveConfiguredCodec[StorageEvent]
     Serializer(_.id)
   }
+
+  def storageEventMetricEncoder(crypto: Crypto): ScopedEventMetricEncoder[StorageEvent] =
+    new ScopedEventMetricEncoder[StorageEvent] {
+      override def databaseDecoder: Decoder[StorageEvent] = serializer(crypto).codec
+
+      override def entityType: EntityType = Storages.entityType
+
+      override def eventToMetric: StorageEvent => ProjectScopedMetric = event =>
+        ProjectScopedMetric.from(
+          event,
+          event match {
+            case _: StorageCreated    => Created
+            case _: StorageUpdated    => Updated
+            case _: StorageTagAdded   => Tagged
+            case _: StorageDeprecated => Deprecated
+          },
+          event.id,
+          event.tpe.types,
+          JsonObject.empty
+        )
+    }
 
   def sseEncoder(crypto: Crypto)(implicit base: BaseUri): SseEncoder[StorageEvent] = new SseEncoder[StorageEvent] {
     override val databaseDecoder: Decoder[StorageEvent] = serializer(crypto).codec

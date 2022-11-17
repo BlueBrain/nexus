@@ -9,20 +9,20 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.sdk.SerializationSuite
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder.SseData
 import ch.epfl.bluebrain.nexus.delta.sdk.views.{PipeStep, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{FilterBySchema, FilterByType, SourceAsText}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.FilterBySchema.FilterBySchemaConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.FilterByType.FilterByTypeConfig
-import io.circe.Json
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{FilterBySchema, FilterByType, SourceAsText}
+import io.circe.{Json, JsonObject}
 
 import java.time.Instant
 import java.util.UUID
-import scala.collection.immutable.VectorMap
 
 class ElasticSearchViewSerializationSuite extends SerializationSuite {
 
@@ -59,29 +59,30 @@ class ElasticSearchViewSerializationSuite extends SerializationSuite {
   private val defaultIndexingSource = defaultIndexingValue.toJson(indexingId)
 
   // format: off
-  private val elasticsearchViewsMapping = VectorMap(
-    ElasticSearchViewCreated(indexingId, projectRef, uuid, defaultIndexingValue, defaultIndexingSource, 1, instant, subject)            ->
-      loadEvents("elasticsearch","default-indexing-view-created.json"),
-    ElasticSearchViewCreated(indexingId, projectRef, uuid, indexingValue, indexingSource, 1, instant, subject)            ->
-      loadEvents("elasticsearch","indexing-view-created.json"),
-    ElasticSearchViewCreated(aggregateId, projectRef, uuid, aggregateValue, aggregateSource, 1, instant, subject)         ->
-      loadEvents("elasticsearch","aggregate-view-created.json"),
-    ElasticSearchViewUpdated(indexingId, projectRef, uuid, defaultIndexingValue, defaultIndexingSource, 2, instant, subject)            ->
-      loadEvents("elasticsearch","default-indexing-view-updated.json"),
-    ElasticSearchViewUpdated(indexingId, projectRef, uuid, indexingValue, indexingSource, 2, instant, subject)            ->
-      loadEvents("elasticsearch","indexing-view-updated.json"),
-    ElasticSearchViewUpdated(aggregateId, projectRef, uuid, aggregateValue, aggregateSource, 2, instant, subject)         ->
-      loadEvents("elasticsearch","aggregate-view-updated.json"),
-    ElasticSearchViewTagAdded(indexingId, projectRef, ElasticSearchType, uuid, targetRev = 1, tag, 3, instant, subject)   ->
-      loadEvents("elasticsearch","view-tag-added.json"),
-    ElasticSearchViewDeprecated(indexingId, projectRef, ElasticSearchType, uuid, 4, instant, subject)                     ->
-      loadEvents("elasticsearch","view-deprecated.json")
-  )
+  private val created = ElasticSearchViewCreated(indexingId, projectRef, uuid, defaultIndexingValue, defaultIndexingSource, 1, instant, subject)
+  private val created1 = ElasticSearchViewCreated(indexingId, projectRef, uuid, indexingValue, indexingSource, 1, instant, subject)
+  private val created2 = ElasticSearchViewCreated(aggregateId, projectRef, uuid, aggregateValue, aggregateSource, 1, instant, subject)
+  private val updated = ElasticSearchViewUpdated(indexingId, projectRef, uuid, defaultIndexingValue, defaultIndexingSource, 2, instant, subject)
+  private val updated1 = ElasticSearchViewUpdated(indexingId, projectRef, uuid, indexingValue, indexingSource, 2, instant, subject)
+  private val updated2 = ElasticSearchViewUpdated(aggregateId, projectRef, uuid, aggregateValue, aggregateSource, 2, instant, subject)
+  private val tagged = ElasticSearchViewTagAdded(indexingId, projectRef, ElasticSearchType, uuid, targetRev = 1, tag, 3, instant, subject)
+  private val deprecated = ElasticSearchViewDeprecated(indexingId, projectRef, ElasticSearchType, uuid, 4, instant, subject)
   // format: on
+
+  private val elasticsearchViewsMapping = List(
+    (created, loadEvents("elasticsearch", "default-indexing-view-created.json"), Created),
+    (created1, loadEvents("elasticsearch", "indexing-view-created.json"), Created),
+    (created2, loadEvents("elasticsearch", "aggregate-view-created.json"), Created),
+    (updated, loadEvents("elasticsearch", "default-indexing-view-updated.json"), Updated),
+    (updated1, loadEvents("elasticsearch", "indexing-view-updated.json"), Updated),
+    (updated2, loadEvents("elasticsearch", "aggregate-view-updated.json"), Updated),
+    (tagged, loadEvents("elasticsearch", "view-tag-added.json"), Tagged),
+    (deprecated, loadEvents("elasticsearch", "view-deprecated.json"), Deprecated)
+  )
 
   private val sseEncoder = ElasticSearchViewEvent.sseEncoder
 
-  elasticsearchViewsMapping.foreach { case (event, (database, sse)) =>
+  elasticsearchViewsMapping.foreach { case (event, (database, sse), action) =>
     test(s"Correctly serialize ${event.getClass.getName}") {
       assertEquals(ElasticSearchViewEvent.serializer.codec(event), database)
     }
@@ -94,6 +95,22 @@ class ElasticSearchViewSerializationSuite extends SerializationSuite {
       sseEncoder.toSse
         .decodeJson(database)
         .assertRight(SseData(ClassUtils.simpleName(event), Some(projectRef), sse))
+    }
+
+    test(s"Correctly encode ${event.getClass.getName} to metric") {
+      ElasticSearchViewEvent.esViewMetricEncoder.toMetric.decodeJson(database).assertRight {
+        ProjectScopedMetric(
+          instant,
+          subject,
+          event.rev,
+          action,
+          projectRef,
+          Label.unsafe("myorg"),
+          event.id,
+          event.tpe.types,
+          JsonObject.empty
+        )
+      }
     }
   }
 

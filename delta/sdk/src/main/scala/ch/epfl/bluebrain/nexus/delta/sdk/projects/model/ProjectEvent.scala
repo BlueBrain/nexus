@@ -6,6 +6,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.IriEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectEvent.ProjectCreated
@@ -17,7 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectR
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.{deriveConfiguredCodec, deriveConfiguredEncoder}
 import io.circe.syntax._
-import io.circe.{Codec, Decoder, Encoder}
+import io.circe.{Codec, Decoder, Encoder, JsonObject}
 
 import java.time.Instant
 import java.util.UUID
@@ -220,6 +222,27 @@ object ProjectEvent {
     implicit val coder: Codec.AsObject[ProjectEvent] = deriveConfiguredCodec[ProjectEvent]
     Serializer(_.project)
   }
+
+  def projectEventMetricEncoder(implicit base: BaseUri): ScopedEventMetricEncoder[ProjectEvent] =
+    new ScopedEventMetricEncoder[ProjectEvent] {
+      override def databaseDecoder: Decoder[ProjectEvent] = serializer.codec
+
+      override def entityType: EntityType = Projects.entityType
+
+      override def eventToMetric: ProjectEvent => ProjectScopedMetric = event =>
+        ProjectScopedMetric.from(
+          event,
+          event match {
+            case _: ProjectCreated           => Created
+            case _: ProjectUpdated           => Updated
+            case _: ProjectDeprecated        => Deprecated
+            case _: ProjectMarkedForDeletion => TagDeleted
+          },
+          ResourceUris.project(event.project).accessUri.toIri,
+          Set(nxv.Project),
+          JsonObject.empty
+        )
+    }
 
   def sseEncoder(implicit base: BaseUri): SseEncoder[ProjectEvent] =
     new SseEncoder[ProjectEvent] {

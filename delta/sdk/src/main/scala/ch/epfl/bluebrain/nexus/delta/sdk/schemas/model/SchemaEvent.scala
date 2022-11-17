@@ -9,6 +9,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.IriEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.{resourcesSelector, SseEncoder}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
@@ -19,7 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectR
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.{deriveConfiguredCodec, deriveConfiguredEncoder}
 import io.circe.syntax._
-import io.circe.{Codec, Decoder, Encoder, Json}
+import io.circe.{Codec, Decoder, Encoder, Json, JsonObject}
 
 import java.time.Instant
 import scala.annotation.nowarn
@@ -192,6 +194,28 @@ object SchemaEvent {
     implicit val coder: Codec.AsObject[SchemaEvent] = deriveConfiguredCodec[SchemaEvent]
     Serializer(_.id)
   }
+
+  val schemaEventMetricEncoder: ScopedEventMetricEncoder[SchemaEvent] =
+    new ScopedEventMetricEncoder[SchemaEvent] {
+      override def databaseDecoder: Decoder[SchemaEvent] = serializer.codec
+
+      override def entityType: EntityType = Schemas.entityType
+
+      override def eventToMetric: SchemaEvent => ProjectScopedMetric = event =>
+        ProjectScopedMetric.from(
+          event,
+          event match {
+            case _: SchemaCreated    => Created
+            case _: SchemaUpdated    => Updated
+            case _: SchemaTagAdded   => Tagged
+            case _: SchemaTagDeleted => TagDeleted
+            case _: SchemaDeprecated => Deprecated
+          },
+          event.id,
+          Set(nxv.Schema),
+          JsonObject.empty
+        )
+    }
 
   def sseEncoder(implicit base: BaseUri): SseEncoder[SchemaEvent] = new SseEncoder[SchemaEvent] {
 

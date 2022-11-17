@@ -1,7 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model
 
 import akka.http.scaladsl.model.ContentType
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts, Files}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts, nxvFile, Files}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
@@ -13,6 +14,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.instances._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.IriEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.{resourcesSelector, SseEncoder}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.ScopedEvent
@@ -21,6 +24,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef, ResourceRef}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.{deriveConfiguredCodec, deriveConfiguredEncoder}
+import io.circe.generic.semiauto.deriveEncoder
 import io.circe.syntax._
 import io.circe.{Codec, Decoder, Encoder, Json}
 
@@ -263,6 +267,29 @@ object FileEvent {
     Serializer(_.id)
   }
 
+  val fileEventMetricEncoder: ScopedEventMetricEncoder[FileEvent] =
+    new ScopedEventMetricEncoder[FileEvent] {
+      override def databaseDecoder: Decoder[FileEvent] = serializer.codec
+
+      override def entityType: EntityType = Files.entityType
+
+      override def eventToMetric: FileEvent => ProjectScopedMetric = event =>
+        ProjectScopedMetric.from(
+          event,
+          event match {
+            case _: FileCreated           => Created
+            case _: FileUpdated           => Updated
+            case _: FileAttributesUpdated => Updated
+            case _: FileTagAdded          => Tagged
+            case _: FileTagDeleted        => TagDeleted
+            case _: FileDeprecated        => Deprecated
+          },
+          event.id,
+          Set(nxvFile),
+          FileExtraFields.fromEvent(event).asJsonObject
+        )
+    }
+
   def sseEncoder(implicit base: BaseUri, @nowarn("cat=unused") config: StorageTypeConfig): SseEncoder[FileEvent] =
     new SseEncoder[FileEvent] {
       override val databaseDecoder: Decoder[FileEvent] = serializer.codec
@@ -313,4 +340,73 @@ object FileEvent {
         }
       }
     }
+
+  final private case class FileExtraFields(
+      storage: Iri,
+      storageType: StorageType,
+      newFileWritten: Option[Int],
+      bytes: Option[Long],
+      mediaType: Option[ContentType],
+      origin: Option[FileAttributesOrigin]
+  )
+
+  private object FileExtraFields {
+    def fromEvent(event: FileEvent): FileExtraFields =
+      event match {
+        case c: FileCreated if c.attributes.digest.computed =>
+          FileExtraFields(
+            c.storage.iri,
+            c.storageType,
+            Some(1),
+            Some(c.attributes.bytes),
+            c.attributes.mediaType,
+            Some(c.attributes.origin)
+          )
+        case c: FileCreated                                 =>
+          FileExtraFields(
+            c.storage.iri,
+            c.storageType,
+            Some(1),
+            None,
+            None,
+            Some(c.attributes.origin)
+          )
+        case u: FileUpdated if u.attributes.digest.computed =>
+          FileExtraFields(
+            u.storage.iri,
+            u.storageType,
+            None,
+            Some(u.attributes.bytes),
+            u.attributes.mediaType,
+            Some(u.attributes.origin)
+          )
+        case u: FileUpdated                                 =>
+          FileExtraFields(
+            u.storage.iri,
+            u.storageType,
+            None,
+            None,
+            None,
+            Some(u.attributes.origin)
+          )
+        case fau: FileAttributesUpdated                     =>
+          FileExtraFields(
+            fau.storage.iri,
+            fau.storageType,
+            None,
+            Some(fau.bytes),
+            fau.mediaType,
+            Some(FileAttributesOrigin.Storage)
+          )
+        case fta: FileTagAdded                              =>
+          FileExtraFields(fta.storage.iri, fta.storageType, None, None, None, None)
+        case ftd: FileTagDeleted                            =>
+          FileExtraFields(ftd.storage.iri, ftd.storageType, None, None, None, None)
+        case fd: FileDeprecated                             =>
+          FileExtraFields(fd.storage.iri, fd.storageType, None, None, None, None)
+      }
+
+    implicit val fileExtraFieldsEncoder: Encoder.AsObject[FileExtraFields] =
+      deriveEncoder[FileExtraFields]
+  }
 }

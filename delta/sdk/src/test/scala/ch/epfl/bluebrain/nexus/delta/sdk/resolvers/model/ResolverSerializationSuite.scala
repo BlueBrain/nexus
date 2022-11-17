@@ -5,6 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.SerializationSuite
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.IdentityResolution.{ProvidedIdentities, UseCurrentCaller}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverEvent.{ResolverCreated, ResolverDeprecated, ResolverTagAdded, ResolverUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverValue.{CrossProjectValue, InProjectValue}
@@ -12,9 +13,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder.SseData
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
-import io.circe.Json
+import io.circe.{Json, JsonObject}
 
 import java.time.Instant
+import scala.collection.immutable.Set
 
 class ResolverSerializationSuite extends SerializationSuite {
 
@@ -48,7 +50,7 @@ class ResolverSerializationSuite extends SerializationSuite {
     UseCurrentCaller
   )
 
-  private val resolversMapping = Map(
+  private val created    =
     ResolverCreated(
       myId,
       projectRef,
@@ -57,7 +59,8 @@ class ResolverSerializationSuite extends SerializationSuite {
       1,
       instant,
       subject
-    ) -> loadEvents("resolvers", "resolver-in-project-created.json"),
+    )
+  private val created1   =
     ResolverCreated(
       myId,
       projectRef,
@@ -66,7 +69,8 @@ class ResolverSerializationSuite extends SerializationSuite {
       1,
       instant,
       subject
-    ) -> loadEvents("resolvers", "resolver-cross-project-created-1.json"),
+    )
+  private val created2   =
     ResolverCreated(
       myId,
       projectRef,
@@ -75,7 +79,8 @@ class ResolverSerializationSuite extends SerializationSuite {
       1,
       instant,
       subject
-    ) -> loadEvents("resolvers", "resolver-cross-project-created-2.json"),
+    )
+  private val updated    =
     ResolverUpdated(
       myId,
       projectRef,
@@ -84,7 +89,8 @@ class ResolverSerializationSuite extends SerializationSuite {
       2,
       instant,
       subject
-    ) -> loadEvents("resolvers", "resolver-in-project-updated.json"),
+    )
+  private val updated1   =
     ResolverUpdated(
       myId,
       projectRef,
@@ -93,7 +99,8 @@ class ResolverSerializationSuite extends SerializationSuite {
       2,
       instant,
       subject
-    ) -> loadEvents("resolvers", "resolver-cross-project-updated-1.json"),
+    )
+  private val updated2   =
     ResolverUpdated(
       myId,
       projectRef,
@@ -102,7 +109,8 @@ class ResolverSerializationSuite extends SerializationSuite {
       2,
       instant,
       subject
-    ) -> loadEvents("resolvers", "resolver-cross-project-updated-2.json"),
+    )
+  private val tagged     =
     ResolverTagAdded(
       myId,
       projectRef,
@@ -112,7 +120,8 @@ class ResolverSerializationSuite extends SerializationSuite {
       3,
       instant,
       subject
-    ) -> loadEvents("resolvers", "resolver-tagged.json"),
+    )
+  private val deprecated =
     ResolverDeprecated(
       myId,
       projectRef,
@@ -120,10 +129,20 @@ class ResolverSerializationSuite extends SerializationSuite {
       4,
       instant,
       subject
-    ) -> loadEvents("resolvers", "resolver-deprecated.json")
+    )
+
+  private val resolversMapping = List(
+    (created, loadEvents("resolvers", "resolver-in-project-created.json"), Created),
+    (created1, loadEvents("resolvers", "resolver-cross-project-created-1.json"), Created),
+    (created2, loadEvents("resolvers", "resolver-cross-project-created-2.json"), Created),
+    (updated, loadEvents("resolvers", "resolver-in-project-updated.json"), Updated),
+    (updated1, loadEvents("resolvers", "resolver-cross-project-updated-1.json"), Updated),
+    (updated2, loadEvents("resolvers", "resolver-cross-project-updated-2.json"), Updated),
+    (tagged, loadEvents("resolvers", "resolver-tagged.json"), Tagged),
+    (deprecated, loadEvents("resolvers", "resolver-deprecated.json"), Deprecated)
   )
 
-  resolversMapping.foreach { case (event, (database, sse)) =>
+  resolversMapping.foreach { case (event, (database, sse), action) =>
     test(s"Correctly serialize ${event.getClass.getName}") {
       ResolverEvent.serializer.codec(event).equalsIgnoreArrayOrder(database)
     }
@@ -136,6 +155,22 @@ class ResolverSerializationSuite extends SerializationSuite {
       sseEncoder.toSse
         .decodeJson(database)
         .assertRight(SseData(ClassUtils.simpleName(event), Some(ProjectRef(org, proj)), sse))
+    }
+
+    test(s"Correctly encode ${event.getClass.getName} to metric") {
+      ResolverEvent.resolverEventMetricEncoder.toMetric.decodeJson(database).assertRight {
+        ProjectScopedMetric(
+          instant,
+          subject,
+          event.rev,
+          action,
+          ProjectRef(org, proj),
+          org,
+          event.id,
+          event.tpe.types,
+          JsonObject.empty
+        )
+      }
     }
   }
 

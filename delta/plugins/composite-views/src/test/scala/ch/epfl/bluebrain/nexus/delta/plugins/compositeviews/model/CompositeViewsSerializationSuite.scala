@@ -3,11 +3,17 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViewsFixture
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewEvent.{CompositeViewCreated, CompositeViewDeprecated, CompositeViewTagAdded, CompositeViewUpdated}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.SerializationSuite
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder.SseData
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import io.circe.JsonObject
+
+import java.time.Instant
 
 class CompositeViewsSerializationSuite extends SerializationSuite with CompositeViewsFixture {
 
@@ -24,8 +30,8 @@ class CompositeViewsSerializationSuite extends SerializationSuite with Composite
   )
 
   private val eventSerializer = CompositeViewEvent.serializer(crypto)
-
-  private val sseEncoder = CompositeViewEvent.sseEncoder(crypto)
+  private val sseEncoder      = CompositeViewEvent.sseEncoder(crypto)
+  private val metricEncoder   = CompositeViewEvent.compositeViewMetricEncoder(crypto)
 
   eventsMapping.foreach { case (event, (database, sse)) =>
     test(s"Correctly serialize ${event.getClass.getName}") {
@@ -40,6 +46,27 @@ class CompositeViewsSerializationSuite extends SerializationSuite with Composite
       sseEncoder.toSse
         .decodeJson(database)
         .assertRight(SseData(ClassUtils.simpleName(event), Some(projectRef), sse))
+    }
+
+    test(s"Correctly encode ${event.getClass.getName} to metric") {
+      metricEncoder.toMetric.decodeJson(database).assertRight {
+        ProjectScopedMetric(
+          Instant.EPOCH,
+          subject,
+          event.rev,
+          event match {
+            case _: CompositeViewCreated    => Created
+            case _: CompositeViewUpdated    => Updated
+            case _: CompositeViewTagAdded   => Tagged
+            case _: CompositeViewDeprecated => Deprecated
+          },
+          projectRef,
+          Label.unsafe("myorg"),
+          event.id,
+          Set(nxv.View, compositeViewType),
+          JsonObject.empty
+        )
+      }
     }
   }
 
