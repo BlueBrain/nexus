@@ -31,6 +31,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig, Htt
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
@@ -248,10 +249,12 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
   many[SseEncoder[_]].add { (crypto: Crypto, base: BaseUri) => StorageEvent.sseEncoder(crypto)(base) }
   many[SseEncoder[_]].add { (base: BaseUri, config: StorageTypeConfig) => FileEvent.sseEncoder(base, config) }
 
+  many[ScopedEventMetricEncoder[_]].add { FileEvent.fileEventMetricEncoder }
+  many[ScopedEventMetricEncoder[_]].add { (crypto: Crypto) => StorageEvent.storageEventMetricEncoder(crypto) }
+
   many[PriorityRoute].add { (storagesRoutes: StoragesRoutes) =>
     PriorityRoute(priority, storagesRoutes.routes, requiresStrictEntity = true)
   }
-
   many[PriorityRoute].add { (fileRoutes: FilesRoutes) =>
     PriorityRoute(priority, fileRoutes.routes, requiresStrictEntity = false)
   }
