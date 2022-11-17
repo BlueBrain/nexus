@@ -144,7 +144,7 @@ object EventMetric {
       )
   }
 
-  implicit val eventMetricEncoder: Encoder.AsObject[EventMetric] = {
+  implicit def eventMetricEncoder[E <: EventMetric]: Encoder.AsObject[E] = {
     @nowarn("cat=unused")
     implicit val configuration: Configuration   = Configuration.default.withDiscriminator(keywords.tpe)
     implicit val subjectCodec: Encoder[Subject] = deriveConfiguredEncoder[Subject]
