@@ -158,10 +158,9 @@ object Project {
       case "_markedForDeletion" => Ordering[Boolean] on (_.markedForDeletion)
     }
 
-  def shift(
-      projects: Projects,
-      defaultMappings: ApiMappings
-  )(implicit baseUri: BaseUri): ResourceShift[ProjectState, Project, Metadata] =
+  type Shift = ResourceShift[ProjectState, Project, Metadata]
+
+  def shift(projects: Projects, defaultMappings: ApiMappings)(implicit baseUri: BaseUri): Shift =
     ResourceShift.withMetadata[ProjectState, Project, Metadata](
       Projects.entityType,
       (_, ref) => projects.fetch(ref),

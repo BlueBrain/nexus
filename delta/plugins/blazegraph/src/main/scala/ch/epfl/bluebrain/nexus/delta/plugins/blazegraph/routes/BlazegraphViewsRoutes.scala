@@ -65,7 +65,7 @@ class BlazegraphViewsRoutes(
     progresses: ProgressesStatistics,
     projections: Projections,
     schemeDirectives: DeltaSchemeDirectives,
-    index: IndexingAction
+    index: IndexingAction.Execute[BlazegraphView]
 )(implicit
     baseUri: BaseUri,
     s: Scheduler,
@@ -337,7 +337,7 @@ object BlazegraphViewsRoutes {
       progresses: ProgressesStatistics,
       projections: Projections,
       schemeDirectives: DeltaSchemeDirectives,
-      index: IndexingAction
+      index: IndexingAction.Execute[BlazegraphView]
   )(implicit
       baseUri: BaseUri,
       s: Scheduler,

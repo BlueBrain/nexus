@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.StatusCodes
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchCoordinator.logger
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.IndexingViewDef.{ActiveViewDef, DeprecatedViewDef}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
@@ -121,7 +122,8 @@ object ElasticSearchCoordinator {
       graphStream,
       PipeChain.compile(_, registry),
       supervisor,
-      (v: ActiveViewDef) => new ElasticSearchSink(client, batchConfig.maxElements, batchConfig.maxInterval, v.index),
+      (v: ActiveViewDef) =>
+        new ElasticSearchSink(client, batchConfig.maxElements, batchConfig.maxInterval, v.index, Refresh.False),
       (v: ActiveViewDef) =>
         client
           .createIndex(v.index, Some(v.mapping), Some(v.settings))

@@ -7,6 +7,7 @@ import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model.headers.Location
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import akka.stream.{Materializer, SystemMaterializer}
+import cats.data.NonEmptyList
 import cats.effect.{Clock, Resource, Sync}
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.database.{DatabaseConfig, Transactors}
@@ -68,8 +69,9 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
 
   many[MetadataContextValue].addEffect(MetadataContextValue.fromFile("contexts/metadata.json"))
 
-  // TODO Change back when views are migrated
-  make[IndexingAction].named("aggregate").fromValue { AggregateIndexingAction(List.empty) }
+  make[IndexingAction].named("aggregate").from { (internal: Set[IndexingAction]) =>
+    AggregateIndexingAction(NonEmptyList.fromListUnsafe(internal.toList))
+  }
 
   make[RemoteContextResolution].named("aggregate").fromEffect { (otherCtxResolutions: Set[RemoteContextResolution]) =>
     for {

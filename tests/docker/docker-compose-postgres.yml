@@ -94,7 +94,6 @@ services:
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.16.2
     environment:
-      ES_JAVA_OPTS: "-Xmx256m"
       discovery.type: "single-node"
       bootstrap.memory_lock: "true"
       ELASTIC_PASSWORD: "password"
@@ -108,7 +107,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 384M
+          memory: 512M
 
   blazegraph:
     image: bluebrain/blazegraph-nexus:2.1.6-RC

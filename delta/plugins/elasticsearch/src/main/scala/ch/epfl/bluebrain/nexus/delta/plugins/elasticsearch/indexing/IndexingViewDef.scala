@@ -9,8 +9,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObje
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, Tag}
+import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
 import com.typesafe.scalalogging.Logger
@@ -23,6 +25,8 @@ import monix.bio.Task
 sealed trait IndexingViewDef extends Product with Serializable {
 
   def ref: ViewRef
+
+  override def toString: String = s"${ref.project}/${ref.viewId}"
 
 }
 
@@ -77,7 +81,23 @@ object IndexingViewDef {
   def compile(
       v: ActiveViewDef,
       compilePipeChain: PipeChain => Either[ProjectionErr, Operation],
+      elems: ElemStream[GraphResource],
+      sink: Sink
+  )(implicit cr: RemoteContextResolution): Task[CompiledProjection] =
+    compile(v, compilePipeChain, _ => elems, sink)
+
+  def compile(
+      v: ActiveViewDef,
+      compilePipeChain: PipeChain => Either[ProjectionErr, Operation],
       graphStream: GraphResourceStream,
+      sink: Sink
+  )(implicit cr: RemoteContextResolution): Task[CompiledProjection] =
+    compile(v, compilePipeChain, graphStream(v.ref.project, v.resourceTag.getOrElse(Tag.latest), _), sink)
+
+  private def compile(
+      v: ActiveViewDef,
+      compilePipeChain: PipeChain => Either[ProjectionErr, Operation],
+      stream: Offset => ElemStream[GraphResource],
       sink: Sink
   )(implicit cr: RemoteContextResolution): Task[CompiledProjection] = {
     val project  = v.ref.project
@@ -97,7 +117,7 @@ object IndexingViewDef {
       projection <- CompiledProjection.compile(
                       metadata,
                       ExecutionStrategy.PersistentSingleNode,
-                      Source(graphStream(project, v.resourceTag.getOrElse(Tag.latest), _)),
+                      Source(stream),
                       chain,
                       sink
                     )

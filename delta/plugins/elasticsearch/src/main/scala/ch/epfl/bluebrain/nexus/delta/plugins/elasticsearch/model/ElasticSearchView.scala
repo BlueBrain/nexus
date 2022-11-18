@@ -262,9 +262,11 @@ object ElasticSearchView {
   implicit val elasticSearchMetadataJsonLdEncoder: JsonLdEncoder[Metadata] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.elasticsearchMetadata))
 
+  type Shift = ResourceShift[ElasticSearchViewState, ElasticSearchView, Metadata]
+
   def shift(views: ElasticSearchViews, defaultMapping: JsonObject, defaultSettings: JsonObject)(implicit
       baseUri: BaseUri
-  ): ResourceShift[ElasticSearchViewState, ElasticSearchView, Metadata] =
+  ): Shift =
     ResourceShift.withMetadata[ElasticSearchViewState, ElasticSearchView, Metadata](
       ElasticSearchViews.entityType,
       (ref, project) => views.fetch(IdSegmentRef(ref), project),

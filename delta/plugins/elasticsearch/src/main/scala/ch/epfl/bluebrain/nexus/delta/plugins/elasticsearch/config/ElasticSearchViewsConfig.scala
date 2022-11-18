@@ -37,6 +37,8 @@ import scala.concurrent.duration._
   *   configuration of the maximum number of view references allowed on an aggregated view
   * @param idleTimeout
   *   the maximum idle duration in between events on the indexing stream after which the stream will be stopped
+  * @param syncIndexingTimeout
+  *   the maximum duration for synchronous indexing to complete
   * @param syncIndexingRefresh
   *   the value for `refresh` Elasticsearch parameter for synchronous indexing
   * @param maxIndexPathLength
@@ -54,6 +56,7 @@ final case class ElasticSearchViewsConfig(
     prefix: String,
     maxViewRefs: Int,
     idleTimeout: Duration,
+    syncIndexingTimeout: FiniteDuration,
     syncIndexingRefresh: Refresh,
     maxIndexPathLength: Int,
     defaults: Defaults

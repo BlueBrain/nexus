@@ -35,7 +35,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, EntityDependency, EntityType, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, EntityDependency, EntityType, Envelope, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import io.circe.Json
@@ -306,20 +306,32 @@ final class BlazegraphViews(
       .span("listBlazegraphViews")
   }
 
+  /**
+    * Return the existing indexing views in a finite stream
+    */
+  def currentIndexingViews(project: ProjectRef): ElemStream[IndexingViewDef] =
+    log.currentStates(Predicate.Project(project)).evalMapFilter { envelope =>
+      Task.pure(toIndexViewDef(envelope))
+    }
+
+  /**
+    * Return the indexing views in a non-ending stream
+    */
   def indexingViews(start: Offset): ElemStream[IndexingViewDef] =
     log.states(Predicate.Root, start).evalMapFilter { envelope =>
-      Task.pure(
-        IndexingViewDef(envelope.value, prefix).map { viewDef =>
-          SuccessElem(
-            tpe = envelope.tpe,
-            id = envelope.id,
-            project = Some(envelope.value.project),
-            instant = envelope.instant,
-            offset = envelope.offset,
-            value = viewDef,
-            revision = envelope.rev
-          )
-        }
+      Task.pure(toIndexViewDef(envelope))
+    }
+
+  private def toIndexViewDef(envelope: Envelope[Iri, BlazegraphViewState]) =
+    IndexingViewDef(envelope.value, prefix).map { viewDef =>
+      SuccessElem(
+        tpe = envelope.tpe,
+        id = envelope.id,
+        project = Some(envelope.value.project),
+        instant = envelope.instant,
+        offset = envelope.offset,
+        value = viewDef,
+        revision = envelope.rev
       )
     }
 

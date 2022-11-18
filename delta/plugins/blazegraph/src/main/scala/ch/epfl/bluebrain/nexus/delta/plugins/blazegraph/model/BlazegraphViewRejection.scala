@@ -12,7 +12,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.{RdfError, Vocabulary}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError
-import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.IndexingActionFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.UnexpectedId
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
@@ -201,12 +200,6 @@ object BlazegraphViewRejection {
   final case class WrappedBlazegraphClientError(error: SparqlClientError) extends BlazegraphViewRejection(error.reason)
 
   /**
-    * Signals a rejection caused by a failure to perform indexing.
-    */
-  final case class WrappedIndexingActionRejection(rejection: IndexingActionFailed)
-      extends BlazegraphViewRejection(rejection.reason)
-
-  /**
     * Rejection returned when too many view references are specified on an aggregated view.
     *
     * @param provided
@@ -216,10 +209,6 @@ object BlazegraphViewRejection {
     */
   final case class TooManyViewReferences(provided: Int, max: Int)
       extends BlazegraphViewRejection(s"$provided exceeds the maximum allowed number of view references ($max).")
-
-  implicit val blazegraphViewIndexingActionRejectionMapper
-      : Mapper[IndexingActionFailed, WrappedIndexingActionRejection] =
-    (value: IndexingActionFailed) => WrappedIndexingActionRejection(value)
 
   implicit val jsonLdRejectionMapper: Mapper[JsonLdRejection, BlazegraphViewRejection] = {
     case UnexpectedId(id, payloadIri)                      => UnexpectedBlazegraphViewId(id, payloadIri)
@@ -249,14 +238,13 @@ object BlazegraphViewRejection {
 
   implicit val blazegraphViewHttpResponseFields: HttpResponseFields[BlazegraphViewRejection] =
     HttpResponseFields {
-      case RevisionNotFound(_, _)            => StatusCodes.NotFound
-      case TagNotFound(_)                    => StatusCodes.NotFound
-      case ViewNotFound(_, _)                => StatusCodes.NotFound
-      case ResourceAlreadyExists(_, _)       => StatusCodes.Conflict
-      case IncorrectRev(_, _)                => StatusCodes.Conflict
-      case ProjectContextRejection(rej)      => rej.status
-      case WrappedIndexingActionRejection(_) => StatusCodes.InternalServerError
-      case AuthorizationFailed               => StatusCodes.Forbidden
-      case _                                 => StatusCodes.BadRequest
+      case RevisionNotFound(_, _)       => StatusCodes.NotFound
+      case TagNotFound(_)               => StatusCodes.NotFound
+      case ViewNotFound(_, _)           => StatusCodes.NotFound
+      case ResourceAlreadyExists(_, _)  => StatusCodes.Conflict
+      case IncorrectRev(_, _)           => StatusCodes.Conflict
+      case ProjectContextRejection(rej) => rej.status
+      case AuthorizationFailed          => StatusCodes.Forbidden
+      case _                            => StatusCodes.BadRequest
     }
 }

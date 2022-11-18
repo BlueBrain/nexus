@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.config
 import pureconfig.ConfigReader
 import pureconfig.generic.semiauto.deriveReader
 
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration._
 
 /**
   * The batch configuration.
@@ -16,6 +16,9 @@ import scala.concurrent.duration.FiniteDuration
 final case class BatchConfig(maxElements: Int, maxInterval: FiniteDuration)
 
 object BatchConfig {
+
+  val individual = BatchConfig(1, 5.millis)
+
   implicit final val batchConfigReader: ConfigReader[BatchConfig] =
     deriveReader[BatchConfig]
 }

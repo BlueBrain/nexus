@@ -219,7 +219,7 @@ object PullRequest {
     }
 
     @nowarn("cat=unused")
-    val serializer: Serializer[Label, PullRequestState] = {
+    implicit val serializer: Serializer[Label, PullRequestState] = {
       import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
       implicit val configuration: Configuration            = Configuration.default.withDiscriminator("@type")
       implicit val coder: Codec.AsObject[PullRequestState] = deriveConfiguredCodec[PullRequestState]

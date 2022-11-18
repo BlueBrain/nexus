@@ -15,7 +15,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError
-import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.IndexingActionFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfRejectionHandler.all._
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
@@ -253,17 +252,8 @@ object FileRejection {
   final case class ProjectContextRejection(rejection: FetchContext.ContextRejection)
       extends FileRejection("Something went wrong while interacting with another module.")
 
-  /**
-    * Signals a rejection caused by a failure to perform indexing.
-    */
-  final case class WrappedIndexingActionRejection(rejection: IndexingActionFailed)
-      extends FileRejection(rejection.reason)
-
   implicit val fileStorageFetchRejectionMapper: Mapper[StorageFetchRejection, WrappedStorageRejection] =
     WrappedStorageRejection.apply
-
-  implicit val fileIndexingActionRejectionMapper: Mapper[IndexingActionFailed, WrappedIndexingActionRejection] =
-    (value: IndexingActionFailed) => WrappedIndexingActionRejection(value)
 
   implicit val fileRejectionEncoder: Encoder.AsObject[FileRejection] =
     Encoder.AsObject.instance { r =>
@@ -306,7 +296,6 @@ object FileRejection {
       case SaveRejection(_, _, SaveFileRejection.ResourceAlreadyExists(_)) => (StatusCodes.Conflict, Seq.empty)
       case FetchRejection(_, _, _)                                         => (StatusCodes.InternalServerError, Seq.empty)
       case SaveRejection(_, _, _)                                          => (StatusCodes.InternalServerError, Seq.empty)
-      case WrappedIndexingActionRejection(_)                               => (StatusCodes.InternalServerError, Seq.empty)
       case AuthorizationFailed(_, _)                                       => (StatusCodes.Forbidden, Seq.empty)
       case _                                                               => (StatusCodes.BadRequest, Seq.empty)
     }

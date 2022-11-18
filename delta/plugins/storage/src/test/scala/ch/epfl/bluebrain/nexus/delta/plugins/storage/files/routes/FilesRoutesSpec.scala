@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{permissions => st
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes.`application/ld+json`
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
-import ch.epfl.bluebrain.nexus.delta.sdk.IndexingActionDummy
+import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
@@ -99,7 +99,7 @@ class FilesRoutesSpec extends BaseRouteSpec with CancelAfterFailure with Storage
     DeltaSchemeDirectives(fetchContext, ioFromMap(uuid -> projectRef.organization), ioFromMap(uuid -> projectRef))
 
   private lazy val routes     =
-    Route.seal(FilesRoutes(stCfg, identities, aclCheck, files, groupDirectives, IndexingActionDummy()))
+    Route.seal(FilesRoutes(stCfg, identities, aclCheck, files, groupDirectives, IndexingAction.noop))
 
   private val diskIdRev = ResourceRef.Revision(dId, 1)
   private val s3IdRev   = ResourceRef.Revision(s3Id, 2)

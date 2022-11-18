@@ -11,7 +11,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.{RdfError, Vocabulary}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError
-import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.IndexingActionFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
@@ -106,12 +105,6 @@ object ElasticSearchViewRejection {
     */
   final case class ProjectContextRejection(rejection: ContextRejection)
       extends ElasticSearchViewRejection("Something went wrong while interacting with another module.")
-
-  /**
-    * Signals a rejection caused by a failure to indexing.
-    */
-  final case class WrappedIndexingActionRejection(rejection: IndexingActionFailed)
-      extends ElasticSearchViewRejection(rejection.reason)
 
   /**
     * Signals a rejection caused by an attempt to create or update an ElasticSearch view with a permission that is not
@@ -235,10 +228,6 @@ object ElasticSearchViewRejection {
   final case class TooManyViewReferences(provided: Int, max: Int)
       extends ElasticSearchViewRejection(s"$provided exceeds the maximum allowed number of view references ($max).")
 
-  implicit val elasticSearchViewIndexingActionRejectionMapper
-      : Mapper[IndexingActionFailed, WrappedIndexingActionRejection] =
-    (value: IndexingActionFailed) => WrappedIndexingActionRejection(value)
-
   implicit final val jsonLdRejectionMapper: Mapper[JsonLdRejection, ElasticSearchViewRejection] = {
     case JsonLdRejection.UnexpectedId(id, sourceId)        => UnexpectedElasticSearchViewId(id, sourceId)
     case JsonLdRejection.InvalidJsonLdFormat(id, rdfError) => InvalidJsonLdFormat(id, rdfError)
@@ -276,7 +265,6 @@ object ElasticSearchViewRejection {
       case IncorrectRev(_, _)                     => StatusCodes.Conflict
       case ProjectContextRejection(rej)           => rej.status
       case AuthorizationFailed                    => StatusCodes.Forbidden
-      case WrappedIndexingActionRejection(_)      => StatusCodes.InternalServerError
       case WrappedElasticSearchClientError(error) => error.errorCode.getOrElse(StatusCodes.InternalServerError)
       case _                                      => StatusCodes.BadRequest
     }

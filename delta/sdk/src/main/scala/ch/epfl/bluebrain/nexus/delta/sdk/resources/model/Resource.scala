@@ -62,7 +62,9 @@ object Resource {
         value.source.topContextValueOrEmpty
     }
 
-  def shift(resources: Resources)(implicit baseUri: BaseUri): ResourceShift[ResourceState, Resource, Nothing] =
+  type Shift = ResourceShift[ResourceState, Resource, Nothing]
+
+  def shift(resources: Resources)(implicit baseUri: BaseUri): Shift =
     ResourceShift.apply[ResourceState, Resource](
       Resources.entityType,
       (ref, project) => resources.fetch(IdSegmentRef(ref), project, None),

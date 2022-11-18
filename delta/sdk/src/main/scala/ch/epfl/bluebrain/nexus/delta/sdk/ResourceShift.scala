@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
@@ -11,8 +10,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{FailedElem, SuccessElem}
 import io.circe.Json
 import monix.bio.{IO, Task, UIO}
 
@@ -72,13 +74,21 @@ abstract class ResourceShift[State <: ScopedState, A, M](
     for {
       state   <- Task.fromEither(serializer.codec.decodeJson(json))
       context <- fetchContext(state.project)
-      graph   <- toGraphResource(context, state)
+      resource = toResourceF(context, state)
+      graph   <- toGraphResource(state.project, resource)
     } yield graph
 
-  private def toGraphResource(context: ProjectContext, state: State)(implicit
+  def toGraphResourceElem(project: ProjectRef, resource: ResourceF[A])(implicit
       cr: RemoteContextResolution
-  ): IO[RdfError, GraphResource] = {
-    val resource = toResourceF(context, state)
+  ): UIO[Elem[GraphResource]] = toGraphResource(project, resource).redeem(
+    err =>
+      FailedElem(entityType, resource.id.toString, Some(project), resource.updatedAt, Offset.Start, err, resource.rev),
+    graph => SuccessElem(entityType, resource.id, Some(project), resource.updatedAt, Offset.Start, graph, resource.rev)
+  )
+
+  private def toGraphResource(project: ProjectRef, resource: ResourceF[A])(implicit
+      cr: RemoteContextResolution
+  ): Task[GraphResource] = {
     val content  = resourceToContent(resource)
     val metadata = content.metadata
     val id       = resource.resolvedId
@@ -92,12 +102,12 @@ abstract class ResourceShift[State <: ScopedState, A, M](
       finalRootGraph     = rootGraph -- rootMetaGraph ++ typesGraph
     } yield GraphResource(
       tpe = entityType,
-      project = state.project,
+      project = project,
       id = id,
-      rev = state.rev,
-      deprecated = state.deprecated,
-      schema = state.schema,
-      types = state.types,
+      rev = resource.rev,
+      deprecated = resource.deprecated,
+      schema = resource.schema,
+      types = resource.types,
       graph = finalRootGraph,
       metadataGraph = rootMetaGraph,
       source = content.source

@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing
 
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchBulk, ElasticSearchClient, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchSink.logger
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
@@ -28,7 +29,8 @@ final class ElasticSearchSink(
     client: ElasticSearchClient,
     override val chunkSize: Int,
     override val maxWindow: FiniteDuration,
-    index: IndexLabel
+    index: IndexLabel,
+    refresh: Refresh
 ) extends Sink {
   override type In = Json
 
@@ -48,7 +50,7 @@ final class ElasticSearchSink(
 
     if (bulk.nonEmpty) {
       client
-        .bulk(bulk)
+        .bulk(bulk, refresh)
         .redeemWith(
           err =>
             UIO

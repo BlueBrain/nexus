@@ -38,16 +38,12 @@ object ServiceError {
 
   /**
     * Signals when fetch a project context for a given project
-    * @param project
     */
   final case class FetchContextFailed(project: ProjectRef)
       extends ServiceError(s"Fetching the context for the project '$project' failed.")
 
-  sealed abstract class IndexingActionFailed(override val reason: String, val resource: ResourceF[Unit])
-      extends ServiceError(reason)
-
-  final case class IndexingFailed(override val reason: String, override val resource: ResourceF[Unit])
-      extends IndexingActionFailed(reason, resource)
+  final case class IndexingFailed(resource: ResourceF[Unit], errors: List[Throwable])
+      extends ServiceError(errors.map(_.getMessage).mkString("* ", "\n* ", ""))
 
   /**
     * Signals that the SSE label can't be found
@@ -67,14 +63,14 @@ object ServiceError {
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.error))
 
   @nowarn("cat=unused")
-  implicit def consistentWriteFailedEncoder(implicit baseUri: BaseUri): Encoder.AsObject[IndexingActionFailed] = {
+  implicit def indexingFailedEncoder(implicit baseUri: BaseUri): Encoder.AsObject[IndexingFailed] = {
     implicit val configuration: Configuration = Configuration.default.withDiscriminator("@type")
     val enc                                   = deriveConfiguredEncoder[ServiceError]
-    Encoder.AsObject.instance[IndexingActionFailed] { r =>
+    Encoder.AsObject.instance[IndexingFailed] { r =>
       enc.encodeObject(r).add("reason", Json.fromString(r.reason)).add("_resource", r.resource.asJson)
     }
   }
 
-  implicit def consistentWriteFailedJsonLdEncoder(implicit baseUri: BaseUri): JsonLdEncoder[IndexingActionFailed] =
+  implicit def consistentWriteFailedJsonLdEncoder(implicit baseUri: BaseUri): JsonLdEncoder[IndexingFailed] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.error))
 }

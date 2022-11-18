@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.sdk.IndexingActionDummy
+import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
@@ -90,7 +90,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec {
         aclCheck,
         ResourcesImpl(resourceResolution, fetchContext, resolverContextResolution, config, xas),
         DeltaSchemeDirectives(fetchContext, ioFromMap(uuid -> projectRef.organization), ioFromMap(uuid -> projectRef)),
-        IndexingActionDummy()
+        IndexingAction.noop
       )
     )
 
@@ -362,7 +362,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec {
       }
     }
 
-    "fail to fetch resource by the deleted tag" ignore {
+    "fail to fetch resource by the deleted tag" in {
       Get("/v1/resources/myorg/myproject/_/myid2?tag=mytag") ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
         response.asJson shouldEqual jsonContentOf("/errors/tag-not-found.json", "tag" -> "mytag")

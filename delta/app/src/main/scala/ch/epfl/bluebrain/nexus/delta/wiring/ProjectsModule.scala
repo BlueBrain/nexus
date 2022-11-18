@@ -132,8 +132,10 @@ object ProjectsModule extends ModuleDef {
     PriorityRoute(pluginsMaxPriority + 7, route.routes, requiresStrictEntity = true)
   }
 
-  many[ResourceShift[_, _, _]].add { (projects: Projects, mappings: ApiMappingsCollection, base: BaseUri) =>
+  make[Project.Shift].from { (projects: Projects, mappings: ApiMappingsCollection, base: BaseUri) =>
     Project.shift(projects, mappings.merge)(base)
   }
+
+  many[ResourceShift[_, _, _]].ref[Project.Shift]
 
 }

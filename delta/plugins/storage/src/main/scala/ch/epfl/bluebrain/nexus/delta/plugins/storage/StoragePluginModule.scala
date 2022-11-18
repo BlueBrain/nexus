@@ -113,6 +113,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         storagesStatistics: StoragesStatistics,
         schemeDirectives: DeltaSchemeDirectives,
         indexingAction: IndexingAction @Id("aggregate"),
+        shift: Storage.Shift,
         baseUri: BaseUri,
         s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
@@ -121,7 +122,14 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
     ) =>
       {
         val paginationConfig: PaginationConfig = cfg.storages.pagination
-        new StoragesRoutes(identities, aclCheck, storages, storagesStatistics, schemeDirectives, indexingAction)(
+        new StoragesRoutes(
+          identities,
+          aclCheck,
+          storages,
+          storagesStatistics,
+          schemeDirectives,
+          indexingAction(_, _, _)(shift, cr)
+        )(
           baseUri,
           crypto,
           paginationConfig,
@@ -133,9 +141,11 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
       }
   }
 
-  many[ResourceShift[_, _, _]].add { (storages: Storages, base: BaseUri, crypto: Crypto) =>
+  make[Storage.Shift].from { (storages: Storages, base: BaseUri, crypto: Crypto) =>
     Storage.shift(storages)(base, crypto)
   }
+
+  many[ResourceShift[_, _, _]].ref[Storage.Shift]
 
   make[Files]
     .fromEffect {
@@ -185,6 +195,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         files: Files,
         schemeDirectives: DeltaSchemeDirectives,
         indexingAction: IndexingAction @Id("aggregate"),
+        shift: File.Shift,
         baseUri: BaseUri,
         s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
@@ -192,7 +203,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         fusionConfig: FusionConfig
     ) =>
       val storageConfig = cfg.storages.storageTypeConfig
-      new FilesRoutes(identities, aclCheck, files, schemeDirectives, indexingAction)(
+      new FilesRoutes(identities, aclCheck, files, schemeDirectives, indexingAction(_, _, _)(shift, cr))(
         baseUri,
         storageConfig,
         s,
@@ -202,9 +213,11 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
       )
   }
 
-  many[ResourceShift[_, _, _]].add { (files: Files, base: BaseUri, storageTypeConfig: StorageTypeConfig) =>
+  make[File.Shift].from { (files: Files, base: BaseUri, storageTypeConfig: StorageTypeConfig) =>
     File.shift(files)(base, storageTypeConfig)
   }
+
+  many[ResourceShift[_, _, _]].ref[File.Shift]
 
   many[ServiceDependency].addSet {
     (cfg: StorageTypeConfig, client: HttpClient @Id("storage"), as: ActorSystem[Nothing]) =>

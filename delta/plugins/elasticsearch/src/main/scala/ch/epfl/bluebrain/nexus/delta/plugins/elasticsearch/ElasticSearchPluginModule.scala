@@ -144,6 +144,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         schemeDirectives: DeltaSchemeDirectives,
         indexingAction: IndexingAction @Id("aggregate"),
         viewsQuery: ElasticSearchViewsQuery,
+        shift: ElasticSearchView.Shift,
         baseUri: BaseUri,
         cfg: ElasticSearchViewsConfig,
         s: Scheduler,
@@ -163,7 +164,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         projections,
         resourceToSchema,
         schemeDirectives,
-        indexingAction
+        indexingAction(_, _, _)(shift, cr)
       )(
         baseUri,
         cfg.pagination,
@@ -231,15 +232,23 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
 
   many[ServiceDependency].add { new ElasticSearchServiceDependency(_) }
 
-  many[IndexingAction].addValue {
-    new ElasticSearchIndexingAction()
+  many[IndexingAction].add {
+    (
+        views: ElasticSearchViews,
+        registry: ReferenceRegistry,
+        client: ElasticSearchClient,
+        config: ElasticSearchViewsConfig
+    ) =>
+      ElasticSearchIndexingAction(views, registry, client, config.syncIndexingTimeout, config.syncIndexingRefresh)
   }
 
-  many[ResourceShift[_, _, _]].addEffect { (views: ElasticSearchViews, base: BaseUri) =>
+  make[ElasticSearchView.Shift].fromEffect { (views: ElasticSearchViews, base: BaseUri) =>
     for {
       defaultMapping  <- defaultElasticsearchMapping
       defaultSettings <- defaultElasticsearchSettings
     } yield ElasticSearchView.shift(views, defaultMapping, defaultSettings)(base)
   }
+
+  many[ResourceShift[_, _, _]].ref[ElasticSearchView.Shift]
 
 }

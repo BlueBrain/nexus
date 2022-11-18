@@ -87,7 +87,9 @@ object Schema {
         value.source.topContextValueOrEmpty.merge(ContextValue(contexts.shacl))
     }
 
-  def shift(schemas: Schemas)(implicit baseUri: BaseUri): ResourceShift[SchemaState, Schema, Nothing] =
+  type Shift = ResourceShift[SchemaState, Schema, Nothing]
+
+  def shift(schemas: Schemas)(implicit baseUri: BaseUri): Shift =
     ResourceShift.apply[SchemaState, Schema](
       Schemas.entityType,
       (ref, project) => schemas.fetch(IdSegmentRef(ref), project),

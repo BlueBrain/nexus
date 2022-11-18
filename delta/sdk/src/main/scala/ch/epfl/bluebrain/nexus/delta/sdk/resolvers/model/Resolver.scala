@@ -99,7 +99,9 @@ object Resolver {
 
   implicit val resolverOrderingFields: OrderingFields[Resolver] = OrderingFields.empty
 
-  def shift(resolvers: Resolvers)(implicit baseUri: BaseUri): ResourceShift[ResolverState, Resolver, Nothing] =
+  type Shift = ResourceShift[ResolverState, Resolver, Nothing]
+
+  def shift(resolvers: Resolvers)(implicit baseUri: BaseUri): Shift =
     ResourceShift.apply[ResolverState, Resolver](
       Resolvers.entityType,
       (ref, project) => resolvers.fetch(IdSegmentRef(ref), project),

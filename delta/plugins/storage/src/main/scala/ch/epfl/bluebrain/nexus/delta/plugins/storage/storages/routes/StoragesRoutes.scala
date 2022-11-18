@@ -53,7 +53,7 @@ final class StoragesRoutes(
     storages: Storages,
     storagesStatistics: StoragesStatistics,
     schemeDirectives: DeltaSchemeDirectives,
-    index: IndexingAction
+    index: IndexingAction.Execute[Storage]
 )(implicit
     baseUri: BaseUri,
     crypto: Crypto,
@@ -236,7 +236,7 @@ object StoragesRoutes {
       storages: Storages,
       storagesStatistics: StoragesStatistics,
       schemeDirectives: DeltaSchemeDirectives,
-      index: IndexingAction
+      index: IndexingAction.Execute[Storage]
   )(implicit
       baseUri: BaseUri,
       s: Scheduler,
