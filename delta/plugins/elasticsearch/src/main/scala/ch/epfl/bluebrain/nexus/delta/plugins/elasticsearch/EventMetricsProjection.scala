@@ -18,7 +18,7 @@ trait EventMetricsProjection
 
 object EventMetricsProjection {
 
-  private val projectionMetadata = ProjectionMetadata("system", "eventMetrics", None, None)
+  private val projectionMetadata = ProjectionMetadata("system", "event-metrics", None, None)
   private val eventMetricsIndex  = IndexLabel.unsafe("eventMetricsIndex")
 
   /**
