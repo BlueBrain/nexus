@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearch
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchSink
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.{BatchConfig, QueryConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.EventStreaming
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
@@ -45,10 +45,11 @@ object EventMetricsProjection {
       queryConfig: QueryConfig,
       supervisor: Supervisor,
       client: ElasticSearchClient,
-      xas: Transactors
+      xas: Transactors,
+      batchConfig: BatchConfig
   ): Task[EventMetricsProjection] = {
 
-    val sink = new ElasticSearchSink(client, 5, 50.millis, eventMetricsIndex)
+    val sink = new ElasticSearchSink(client, batchConfig.maxElements, batchConfig.maxInterval, eventMetricsIndex)
 
     val allEntityTypes = metricEncoders.map(_.entityType).toList
 

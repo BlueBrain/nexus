@@ -125,14 +125,16 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         metricEncoders: Set[ScopedEventMetricEncoder[_]],
         xas: Transactors,
         supervisor: Supervisor,
-        client: ElasticSearchClient
+        client: ElasticSearchClient,
+        config: ElasticSearchViewsConfig
     ) =>
       EventMetricsProjection(
         metricEncoders,
         QueryConfig.apply(1, RefreshStrategy.Delay.apply(1.second)),
         supervisor,
         client,
-        xas
+        xas,
+        config.batch,
       )
   }
 
