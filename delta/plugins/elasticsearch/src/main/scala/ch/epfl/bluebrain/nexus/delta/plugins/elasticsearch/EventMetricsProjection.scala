@@ -99,7 +99,7 @@ object EventMetricsProjection {
           .drain
 
     val compiledProjection = CompiledProjection
-      .fromStream(projectionMetadata, ExecutionStrategy.EveryNode, pushScopedEventMetricsToSink)
+      .fromStream(projectionMetadata, ExecutionStrategy.PersistentSingleNode, pushScopedEventMetricsToSink)
 
     supervisor
       .run(compiledProjection, init)
