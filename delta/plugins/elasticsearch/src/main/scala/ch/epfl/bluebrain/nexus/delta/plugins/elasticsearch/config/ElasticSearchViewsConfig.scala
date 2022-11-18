@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchC
 import ch.epfl.bluebrain.nexus.delta.sdk.Defaults
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.{BatchConfig, EventLogConfig}
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.{BatchConfig, EventLogConfig, QueryConfig}
 import com.typesafe.config.Config
 import pureconfig.error.{CannotConvert, FailureReason}
 import pureconfig.generic.semiauto.deriveReader
@@ -43,6 +43,8 @@ import scala.concurrent.duration._
   *   the maximum length of the URL path for elasticsearch queries
   * @param defaults
   *   default values for the view
+  * @param metricsQuery
+  *   query configuration for the metrics projection
   */
 final case class ElasticSearchViewsConfig(
     base: Uri,
@@ -56,7 +58,8 @@ final case class ElasticSearchViewsConfig(
     idleTimeout: Duration,
     syncIndexingRefresh: Refresh,
     maxIndexPathLength: Int,
-    defaults: Defaults
+    defaults: Defaults,
+    metricsQuery: QueryConfig
 )
 
 object ElasticSearchViewsConfig {
