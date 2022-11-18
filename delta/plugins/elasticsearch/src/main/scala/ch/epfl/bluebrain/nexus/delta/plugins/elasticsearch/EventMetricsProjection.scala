@@ -14,8 +14,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.{MultiDecoder, Predicate}
 import io.circe.syntax.EncoderOps
 import monix.bio.Task
 
-import scala.concurrent.duration.DurationInt
-
 trait EventMetricsProjection
 
 object EventMetricsProjection {
@@ -24,29 +22,30 @@ object EventMetricsProjection {
   private val eventMetricsIndex  = IndexLabel.unsafe("eventMetricsIndex")
 
   /**
-    * Registers a projection with the supervisor which reads all scoped events and pushes their metrics to
-    * Elasticsearch. Events of implementations of ScopedEvents that do not have an instance of ScopedEventMetricEncoder
-    * are silently ignored.
-    *
     * @param metricEncoders
     *   a set of encoders for all entit
-    * @param queryConfig
-    *   query config for fetching scoped events
     * @param supervisor
     *   the supervisor which will supervise the projection
     * @param client
     *   the elasticsearch client
     * @param xas
     *   doobie transactors
+    * @param batchConfig
+    *   Elasticsearch batch config
+    * @param queryConfig
+    *   query config for fetching scoped events
     * @return
+    *   a Task that registers a projection with the supervisor which reads all scoped events and pushes their metrics to
+    *   Elasticsearch. Events of implementations of ScopedEvents that do not have an instance of
+    *   ScopedEventMetricEncoder are silently ignored.
     */
   def apply(
       metricEncoders: Set[ScopedEventMetricEncoder[_]],
-      queryConfig: QueryConfig,
       supervisor: Supervisor,
       client: ElasticSearchClient,
       xas: Transactors,
-      batchConfig: BatchConfig
+      batchConfig: BatchConfig,
+      queryConfig: QueryConfig
   ): Task[EventMetricsProjection] = {
 
     val sink = new ElasticSearchSink(client, batchConfig.maxElements, batchConfig.maxInterval, eventMetricsIndex)
