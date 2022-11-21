@@ -20,7 +20,7 @@ class EventMetricsProjectionSuite extends BioSuite with SupervisorSetup.Fixture 
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(supervisor)
 
-  implicit private val patienceConfig: PatienceConfig = PatienceConfig(10.seconds, 10.millis)
+  implicit private val patienceConfig: PatienceConfig = PatienceConfig(2.seconds, 10.millis)
 
   private lazy val (sv, _) = supervisor()
   private val sink         = new CacheSink[Json]
@@ -32,7 +32,7 @@ class EventMetricsProjectionSuite extends BioSuite with SupervisorSetup.Fixture 
     Created,
     ProjectRef.unsafe("org", "project"),
     Label.unsafe("org"),
-    iri"http://bbp.epfl.ch",
+    iri"http://bbp.epfl.ch/1",
     Set(iri"Entity"),
     JsonObject.empty
   )
@@ -43,14 +43,14 @@ class EventMetricsProjectionSuite extends BioSuite with SupervisorSetup.Fixture 
     Updated,
     ProjectRef.unsafe("org", "project"),
     Label.unsafe("org"),
-    iri"http://bbp.epfl.ch",
+    iri"http://bbp.epfl.ch/2",
     Set(iri"Entity"),
     JsonObject.empty
   )
 
   private val envelopes = List(
-    Envelope(EntityType("entity"), "first", 1, metric1, Instant.EPOCH, Offset.at(1L)),
-    Envelope(EntityType("entity"), "second", 1, metric2, Instant.EPOCH, Offset.at(2L))
+    Envelope(EntityType("entity"), "first", 1, metric1, Instant.EPOCH, Offset.At(1L)),
+    Envelope(EntityType("entity"), "second", 1, metric2, Instant.EPOCH, Offset.At(2L))
   )
 
   test("Start the metrics projection") {
@@ -59,14 +59,14 @@ class EventMetricsProjectionSuite extends BioSuite with SupervisorSetup.Fixture 
       _       <- EventMetricsProjection(
                    sink,
                    sv,
-                   (_: Offset) => Stream.emits(envelopes),
+                   _ => Stream.emits(envelopes),
                    Task.unit
                  )
       running <- sv.getRunningProjections()
       _        = println(running)
       _       <- sv.describe(EventMetricsProjection.projectionMetadata.name)
                    .map(_.map(_.progress))
-                   .eventuallySome(ProjectionProgress(Offset.at(1L), Instant.EPOCH, 1, 0, 0))
+                   .eventuallySome(ProjectionProgress(Offset.at(2L), Instant.EPOCH, 2, 0, 0))
     } yield ()
 
   }

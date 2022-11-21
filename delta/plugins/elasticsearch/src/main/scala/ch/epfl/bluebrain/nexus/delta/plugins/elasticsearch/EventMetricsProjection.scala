@@ -1,6 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
+import cats.data.NonEmptyChain
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchSink
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
@@ -11,17 +13,21 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.EnvelopeStream
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{CompiledProjection, ExecutionStrategy, ProjectionMetadata, Supervisor}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.AsJson
 import ch.epfl.bluebrain.nexus.delta.sourcing.{MultiDecoder, Predicate}
-import io.circe.syntax.EncoderOps
 import monix.bio.Task
 
 trait EventMetricsProjection
 
 object EventMetricsProjection {
-
   val projectionMetadata: ProjectionMetadata = ProjectionMetadata("system", "event-metrics", None, None)
-  private val eventMetricsIndex              = IndexLabel.unsafe("event_metrics_index")
+  private val eventMetricsIndex              = IndexLabel.unsafe("abcdefg")
+
+  implicit private val cl: ClassLoader = getClass.getClassLoader
+
+  private val metricsMapping  = ClasspathResourceUtils.ioJsonObjectContentOf("metrics/metrics-mapping.json")
+  private val metricsSettings = ClasspathResourceUtils.ioJsonObjectContentOf("metrics/metrics-settings.json")
 
   /**
     * @param metricEncoders
@@ -58,11 +64,15 @@ object EventMetricsProjection {
     val metrics                                                  = (offset: Offset) =>
       EventStreaming.fetchScoped(Predicate.root, allEntityTypes, offset, queryConfig, xas)
 
-    val sink =
+    lazy val sink =
       new ElasticSearchSink(client, batchConfig.maxElements, batchConfig.maxInterval, eventMetricsIndex)
 
     // create the ES index before running the projection
-    val init: Task[Unit] = client.createIndex(eventMetricsIndex, None, None).void
+    val init = for {
+      mappings <- metricsMapping
+      settings <- metricsSettings
+      _        <- client.createIndex(eventMetricsIndex, Some(mappings), Some(settings))
+    } yield ()
 
     apply(sink, supervisor, metrics, init)
   }
@@ -77,33 +87,35 @@ object EventMetricsProjection {
       init: Task[Unit]
   ): Task[EventMetricsProjection] = {
 
-    val pushScopedEventMetricsToSink =
-      (offset: Offset) =>
-        metrics(offset)
-          .map { envelope =>
-            val eventMetric = envelope.value
-            SuccessElem(
-              envelope.tpe,
-              eventMetric.resourceId,
-              Some(eventMetric.project),
-              eventMetric.instant,
-              envelope.offset,
-              eventMetric.asJson.asInstanceOf[sink.In],
-              eventMetric.rev
-            )
-          }
-          .chunks
-          .evalTap {
-            sink.apply
-          }
-          .drain
+    val source = Source { (offset: Offset) =>
+      metrics(offset)
+        .map { envelope =>
+          val eventMetric = envelope.value
+          SuccessElem(
+            envelope.tpe,
+            eventMetric.resourceId,
+            Some(eventMetric.project),
+            eventMetric.instant,
+            envelope.offset,
+            eventMetric,
+            eventMetric.rev
+          )
+        }
+    }
 
-    val compiledProjection = CompiledProjection
-      .fromStream(projectionMetadata, ExecutionStrategy.PersistentSingleNode, pushScopedEventMetricsToSink)
+    val compiledProjection =
+      CompiledProjection.compile(
+        projectionMetadata,
+        ExecutionStrategy.PersistentSingleNode,
+        source,
+        NonEmptyChain.one(AsJson.pipe[ProjectScopedMetric]),
+        sink
+      )
 
-    supervisor
-      .run(compiledProjection, init)
-      .as(new EventMetricsProjection {})
+    for {
+      projection <- Task.fromEither(compiledProjection)
+      _          <- supervisor.run(projection, init)
+    } yield new EventMetricsProjection {}
   }
 
 }
