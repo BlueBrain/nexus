@@ -72,6 +72,7 @@ object ResolversModule extends ModuleDef {
         resolvers: Resolvers,
         schemeDirectives: DeltaSchemeDirectives,
         indexingAction: IndexingAction @Id("aggregate"),
+        shift: Resolver.Shift,
         multiResolution: MultiResolution,
         baseUri: BaseUri,
         s: Scheduler,
@@ -79,7 +80,14 @@ object ResolversModule extends ModuleDef {
         ordering: JsonKeyOrdering,
         fusionConfig: FusionConfig
     ) =>
-      new ResolversRoutes(identities, aclCheck, resolvers, multiResolution, schemeDirectives, indexingAction)(
+      new ResolversRoutes(
+        identities,
+        aclCheck,
+        resolvers,
+        multiResolution,
+        schemeDirectives,
+        indexingAction(_, _, _)(shift, cr)
+      )(
         baseUri,
         config.resolvers.pagination,
         s,
@@ -113,7 +121,9 @@ object ResolversModule extends ModuleDef {
     PriorityRoute(pluginsMaxPriority + 9, route.routes, requiresStrictEntity = true)
   }
 
-  many[ResourceShift[_, _, _]].add { (resolvers: Resolvers, base: BaseUri) =>
+  make[Resolver.Shift].from { (resolvers: Resolvers, base: BaseUri) =>
     Resolver.shift(resolvers)(base)
   }
+
+  many[ResourceShift[_, _, _]].ref[Resolver.Shift]
 }

@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing
 
 import akka.http.scaladsl.model.Uri.Query
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchClientSetup
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{IndexLabel, QueryBuilder}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
@@ -19,7 +20,7 @@ class ElasticSearchSinkSuite extends BioSuite with ElasticSearchClientSetup.Fixt
   override def munitFixtures: Seq[AnyFixture[_]] = List(esClient)
 
   private lazy val client = esClient()
-  private lazy val sink   = new ElasticSearchSink(client, 2, 50.millis, index)
+  private lazy val sink   = new ElasticSearchSink(client, 2, 50.millis, index, Refresh.True)
 
   private val membersEntity = EntityType("members")
   private val index         = IndexLabel.unsafe("test_members")
@@ -44,7 +45,6 @@ class ElasticSearchSinkSuite extends BioSuite with ElasticSearchClientSetup.Fixt
 
     for {
       _ <- sink.apply(chunk).assert(chunk.map(_.void))
-      _ <- client.refresh(index)
       _ <- client
              .search(QueryBuilder.empty, Set(index.value), Query.Empty)
              .map(_.sources.toSet)
@@ -59,7 +59,6 @@ class ElasticSearchSinkSuite extends BioSuite with ElasticSearchClientSetup.Fixt
 
     for {
       _ <- sink.apply(chunk).assert(chunk.map(_.void))
-      _ <- client.refresh(index)
       _ <- client
              .search(QueryBuilder.empty, Set(index.value), Query.Empty)
              .map(_.sources.toSet)
@@ -83,7 +82,6 @@ class ElasticSearchSinkSuite extends BioSuite with ElasticSearchClientSetup.Fixt
                }
              }
              .assert(2)
-      _ <- client.refresh(index)
       _ <- client
              .search(QueryBuilder.empty, Set(index.value), Query.Empty)
              .map(_.sources.toSet)

@@ -54,7 +54,7 @@ final class ResolversRoutes(
     resolvers: Resolvers,
     multiResolution: MultiResolution,
     schemeDirectives: DeltaSchemeDirectives,
-    index: IndexingAction
+    index: IndexingAction.Execute[Resolver]
 )(implicit
     baseUri: BaseUri,
     paginationConfig: PaginationConfig,
@@ -238,7 +238,7 @@ object ResolversRoutes {
       resolvers: Resolvers,
       multiResolution: MultiResolution,
       schemeDirectives: DeltaSchemeDirectives,
-      index: IndexingAction
+      index: IndexingAction.Execute[Resolver]
   )(implicit
       baseUri: BaseUri,
       s: Scheduler,

@@ -90,7 +90,7 @@ object IdentitiesImpl {
 
   type GroupsCache = KeyValueStore[String, Set[Group]]
 
-  val logger: Logger = Logger[this.type]
+  private val logger: Logger = Logger[this.type]
 
   def extractGroups(
       getUserInfo: (Uri, OAuth2BearerToken) => IO[HttpClientError, Json]

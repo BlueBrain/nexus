@@ -6,7 +6,7 @@ import akka.http.scaladsl.model.headers.Accept
 import akka.http.scaladsl.model.{ContentType, MediaRange}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{File, FileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.permissions.{read => Read, write => Write}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutes._
@@ -54,7 +54,7 @@ final class FilesRoutes(
     aclCheck: AclCheck,
     files: Files,
     schemeDirectives: DeltaSchemeDirectives,
-    index: IndexingAction
+    index: IndexingAction.Execute[File]
 )(implicit
     baseUri: BaseUri,
     storageConfig: StorageTypeConfig,
@@ -211,7 +211,7 @@ object FilesRoutes {
       aclCheck: AclCheck,
       files: Files,
       schemeDirectives: DeltaSchemeDirectives,
-      index: IndexingAction
+      index: IndexingAction.Execute[File]
   )(implicit
       baseUri: BaseUri,
       s: Scheduler,

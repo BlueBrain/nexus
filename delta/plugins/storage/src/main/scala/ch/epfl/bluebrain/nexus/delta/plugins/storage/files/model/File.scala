@@ -55,10 +55,9 @@ object File {
   implicit def fileJsonLdEncoder(implicit config: StorageTypeConfig): JsonLdEncoder[File] =
     JsonLdEncoder.computeFromCirce(_.id, Files.context)
 
-  def shift(files: Files)(implicit
-      baseUri: BaseUri,
-      config: StorageTypeConfig
-  ): ResourceShift[FileState, File, Nothing] =
+  type Shift = ResourceShift[FileState, File, Nothing]
+
+  def shift(files: Files)(implicit baseUri: BaseUri, config: StorageTypeConfig): Shift =
     ResourceShift.apply[FileState, File](
       Files.entityType,
       (ref, project) => files.fetch(IdSegmentRef(ref), project),

@@ -71,13 +71,14 @@ object ResourcesModule extends ModuleDef {
         resources: Resources,
         schemeDirectives: DeltaSchemeDirectives,
         indexingAction: IndexingAction @Id("aggregate"),
+        shift: Resource.Shift,
         baseUri: BaseUri,
         s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering,
         fusionConfig: FusionConfig
     ) =>
-      new ResourcesRoutes(identities, aclCheck, resources, schemeDirectives, indexingAction)(
+      new ResourcesRoutes(identities, aclCheck, resources, schemeDirectives, indexingAction(_, _, _)(shift, cr))(
         baseUri,
         s,
         cr,
@@ -94,8 +95,10 @@ object ResourcesModule extends ModuleDef {
     PriorityRoute(pluginsMinPriority - 1, route.routes, requiresStrictEntity = true)
   }
 
-  many[ResourceShift[_, _, _]].add { (resources: Resources, base: BaseUri) =>
+  make[Resource.Shift].from { (resources: Resources, base: BaseUri) =>
     Resource.shift(resources)(base)
   }
+
+  many[ResourceShift[_, _, _]].ref[Resource.Shift]
 
 }

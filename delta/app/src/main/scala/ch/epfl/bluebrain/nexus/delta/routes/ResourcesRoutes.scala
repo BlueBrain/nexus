@@ -21,7 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources.{read => Read, write => Write}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{Resource, ResourceRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{InvalidJsonLdFormat, InvalidSchemaRejection, ResourceNotFound}
 import io.circe.{Json, Printer}
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
@@ -46,7 +46,7 @@ final class ResourcesRoutes(
     aclCheck: AclCheck,
     resources: Resources,
     schemeDirectives: DeltaSchemeDirectives,
-    index: IndexingAction
+    index: IndexingAction.Execute[Resource]
 )(implicit
     baseUri: BaseUri,
     s: Scheduler,
@@ -239,7 +239,7 @@ object ResourcesRoutes {
       aclCheck: AclCheck,
       resources: Resources,
       projectsDirectives: DeltaSchemeDirectives,
-      index: IndexingAction
+      index: IndexingAction.Execute[Resource]
   )(implicit
       baseUri: BaseUri,
       s: Scheduler,

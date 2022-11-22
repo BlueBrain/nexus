@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
-import ch.epfl.bluebrain.nexus.delta.sdk.IndexingActionDummy
+import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
@@ -123,7 +123,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with TryValues with StorageFixtur
 
   private lazy val routes      =
     Route.seal(
-      StoragesRoutes(cfg, identities, aclCheck, storages, storageStatistics, schemeDirectives, IndexingActionDummy())
+      StoragesRoutes(cfg, identities, aclCheck, storages, storageStatistics, schemeDirectives, IndexingAction.noop)
     )
 
   "Storage routes" should {

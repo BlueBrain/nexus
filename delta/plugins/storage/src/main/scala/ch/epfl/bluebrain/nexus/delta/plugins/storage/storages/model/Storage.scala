@@ -219,10 +219,9 @@ object Storage {
       Ordering[String] on (_.storageValue.algorithm.value)
     }
 
-  def shift(storages: Storages)(implicit
-      baseUri: BaseUri,
-      crypto: Crypto
-  ): ResourceShift[StorageState, Storage, Metadata] =
+  type Shift = ResourceShift[StorageState, Storage, Metadata]
+
+  def shift(storages: Storages)(implicit baseUri: BaseUri, crypto: Crypto): Shift =
     ResourceShift.withMetadata[StorageState, Storage, Metadata](
       Storages.entityType,
       (ref, project) => storages.fetch(IdSegmentRef(ref), project),

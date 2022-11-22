@@ -186,9 +186,9 @@ object BlazegraphView {
   implicit val blazegraphMetadataJsonLdEncoder: JsonLdEncoder[Metadata] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.blazegraphMetadata))
 
-  def shift(views: BlazegraphViews)(implicit
-      baseUri: BaseUri
-  ): ResourceShift[BlazegraphViewState, BlazegraphView, Metadata] =
+  type Shift = ResourceShift[BlazegraphViewState, BlazegraphView, Metadata]
+
+  def shift(views: BlazegraphViews)(implicit baseUri: BaseUri): Shift =
     ResourceShift.withMetadata[BlazegraphViewState, BlazegraphView, Metadata](
       BlazegraphViews.entityType,
       (ref, project) => views.fetch(IdSegmentRef(ref), project),

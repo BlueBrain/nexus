@@ -66,7 +66,7 @@ final class ElasticSearchViewsRoutes(
     projections: Projections,
     resourcesToSchemas: ResourceToSchemaMappings,
     schemeDirectives: DeltaSchemeDirectives,
-    index: IndexingAction
+    index: IndexingAction.Execute[ElasticSearchView]
 )(implicit
     baseUri: BaseUri,
     paginationConfig: PaginationConfig,
@@ -401,7 +401,7 @@ object ElasticSearchViewsRoutes {
       projections: Projections,
       resourcesToSchemas: ResourceToSchemaMappings,
       schemeDirectives: DeltaSchemeDirectives,
-      index: IndexingAction
+      index: IndexingAction.Execute[ElasticSearchView]
   )(implicit
       baseUri: BaseUri,
       paginationConfig: PaginationConfig,

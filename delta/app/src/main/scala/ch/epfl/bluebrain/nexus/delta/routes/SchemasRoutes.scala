@@ -22,7 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.schemas.{read => Read, write => Write}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas
-import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.{Schema, SchemaRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaRejection.SchemaNotFound
 import io.circe.{Json, Printer}
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
@@ -47,7 +47,7 @@ final class SchemasRoutes(
     aclCheck: AclCheck,
     schemas: Schemas,
     schemeDirectives: DeltaSchemeDirectives,
-    index: IndexingAction
+    index: IndexingAction.Execute[Schema]
 )(implicit
     baseUri: BaseUri,
     s: Scheduler,
@@ -183,7 +183,7 @@ object SchemasRoutes {
       aclCheck: AclCheck,
       schemas: Schemas,
       schemeDirectives: DeltaSchemeDirectives,
-      index: IndexingAction
+      index: IndexingAction.Execute[Schema]
   )(implicit
       baseUri: BaseUri,
       s: Scheduler,

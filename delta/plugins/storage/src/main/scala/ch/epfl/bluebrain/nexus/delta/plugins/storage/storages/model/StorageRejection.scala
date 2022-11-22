@@ -9,7 +9,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.{RdfError, Vocabulary}
-import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.IndexingActionFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.UnexpectedId
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
@@ -208,12 +207,6 @@ object StorageRejection {
   final case class ProjectContextRejection(rejection: ContextRejection)
       extends StorageFetchRejection("Something went wrong while interacting with another module.")
 
-  /**
-    * Signals a rejection caused by a failure to perform indexing.
-    */
-  final case class WrappedIndexingActionRejection(rejection: IndexingActionFailed)
-      extends StorageRejection(rejection.reason)
-
   private val logger: Logger = Logger("StorageRejection")
 
   implicit val storageJsonLdRejectionMapper: Mapper[JsonLdRejection, StorageRejection] = {
@@ -221,9 +214,6 @@ object StorageRejection {
     case JsonLdRejection.InvalidJsonLdFormat(id, rdfError) => InvalidJsonLdFormat(id, rdfError)
     case JsonLdRejection.DecodingFailed(error)             => DecodingFailed(error)
   }
-
-  implicit val storageIndexingActionRejectionMapper: Mapper[IndexingActionFailed, WrappedIndexingActionRejection] =
-    (value: IndexingActionFailed) => WrappedIndexingActionRejection(value)
 
   implicit private[plugins] val storageRejectionEncoder: Encoder.AsObject[StorageRejection] =
     Encoder.AsObject.instance { r =>
@@ -245,17 +235,16 @@ object StorageRejection {
 
   implicit final val storageRejectionHttpResponseFields: HttpResponseFields[StorageRejection] =
     HttpResponseFields {
-      case RevisionNotFound(_, _)            => StatusCodes.NotFound
-      case TagNotFound(_)                    => StatusCodes.NotFound
-      case StorageNotFound(_, _)             => StatusCodes.NotFound
-      case DefaultStorageNotFound(_)         => StatusCodes.NotFound
-      case ResourceAlreadyExists(_, _)       => StatusCodes.Conflict
-      case IncorrectRev(_, _)                => StatusCodes.Conflict
-      case ProjectContextRejection(rej)      => rej.status
-      case StorageNotAccessible(_, _)        => StatusCodes.BadRequest
-      case InvalidEncryptionSecrets(_, _)    => StatusCodes.InternalServerError
-      case WrappedIndexingActionRejection(_) => StatusCodes.InternalServerError
-      case _                                 => StatusCodes.BadRequest
+      case RevisionNotFound(_, _)         => StatusCodes.NotFound
+      case TagNotFound(_)                 => StatusCodes.NotFound
+      case StorageNotFound(_, _)          => StatusCodes.NotFound
+      case DefaultStorageNotFound(_)      => StatusCodes.NotFound
+      case ResourceAlreadyExists(_, _)    => StatusCodes.Conflict
+      case IncorrectRev(_, _)             => StatusCodes.Conflict
+      case ProjectContextRejection(rej)   => rej.status
+      case StorageNotAccessible(_, _)     => StatusCodes.BadRequest
+      case InvalidEncryptionSecrets(_, _) => StatusCodes.InternalServerError
+      case _                              => StatusCodes.BadRequest
     }
 
 }

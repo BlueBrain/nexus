@@ -9,6 +9,8 @@ import fs2.Chunk
 import fs2.concurrent.SignallingRef
 import monix.bio.{Fiber, Task, UIO}
 
+import scala.concurrent.duration.FiniteDuration
+
 /**
   * A reference to a projection that has been started.
   *
@@ -38,6 +40,10 @@ final class Projection private[stream] (
   def executionStatus: Task[ExecutionStatus] =
     status.get
 
+  /**
+    * Return the current progress for this projection
+    * @return
+    */
   def currentProgress: Task[ProjectionProgress] = progress.get
 
   /**
@@ -46,6 +52,23 @@ final class Projection private[stream] (
     */
   def isRunning: Task[Boolean] =
     status.get.map(_.isRunning)
+
+  /**
+    * Wait for the projection to complete within the defined timeout
+    * @param timeout
+    *   the maximum time expected for the projection to complete
+    * @return
+    */
+  def waitForCompletion(timeout: FiniteDuration): Task[ExecutionStatus] =
+    executionStatus
+      .restartUntil {
+        case ExecutionStatus.Completed => true
+        case ExecutionStatus.Failed(_) => true
+        case ExecutionStatus.Stopped   => true
+        case _                         => false
+      }
+      .timeout(timeout)
+      .flatMap(_ => executionStatus)
 
   /**
     * Stops the projection. Has no effect if the projection is already stopped.

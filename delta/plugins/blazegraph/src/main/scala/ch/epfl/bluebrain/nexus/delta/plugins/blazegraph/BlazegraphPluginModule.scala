@@ -141,6 +141,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         viewsQuery: BlazegraphViewsQuery,
         schemeDirectives: DeltaSchemeDirectives,
         indexingAction: IndexingAction @Id("aggregate"),
+        shift: BlazegraphView.Shift,
         baseUri: BaseUri,
         cfg: BlazegraphViewsConfig,
         s: Scheduler,
@@ -157,7 +158,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         null,
         projections,
         schemeDirectives,
-        indexingAction
+        indexingAction(_, _, _)(shift, cr)
       )(
         baseUri,
         s,
@@ -202,12 +203,20 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
     new BlazegraphServiceDependency(client)
   }
 
-  many[IndexingAction].addValue {
-    new BlazegraphIndexingAction()
+  many[IndexingAction].add {
+    (
+        views: BlazegraphViews,
+        registry: ReferenceRegistry,
+        client: BlazegraphClient @Id("blazegraph-indexing-client"),
+        config: BlazegraphViewsConfig
+    ) =>
+      BlazegraphIndexingAction(views, registry, client, config.syncIndexingTimeout)
   }
 
-  many[ResourceShift[_, _, _]].add { (views: BlazegraphViews, base: BaseUri) =>
+  make[BlazegraphView.Shift].from { (views: BlazegraphViews, base: BaseUri) =>
     BlazegraphView.shift(views)(base)
   }
+
+  many[ResourceShift[_, _, _]].ref[BlazegraphView.Shift]
 
 }

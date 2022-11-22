@@ -5,6 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
+import monix.bio.{Task, UIO}
 
 import java.time.Instant
 
@@ -83,10 +84,45 @@ sealed trait Elem[+A] extends Product with Serializable {
   }
 
   /**
+    * Like `[[Elem#map]]`, but accepts a function returning a [[Task]]. If the task failed, the [[Elem.SuccessElem]]
+    * will become a [[Elem.FailedElem]]
+    * @param f
+    *   the mapping function
+    */
+  def evalMap[B](f: A => Task[B]): UIO[Elem[B]] = this match {
+    case e: SuccessElem[A] =>
+      f(e.value).redeem(
+        e.failed,
+        e.success
+      )
+    case e: FailedElem     => UIO.pure(e)
+    case e: DroppedElem    => UIO.pure(e)
+  }
+
+  /**
+    * Effectfully maps and filters the elem depending on the optionality of the result of the application of the
+    * effectful function `f`.
+    */
+  def evalMapFilter[B](f: A => Task[Option[B]]): UIO[Elem[B]] = this match {
+    case e: SuccessElem[A] =>
+      f(e.value).redeem(
+        e.failed,
+        {
+          case Some(v) => e.success(v)
+          case None    => e.dropped
+        }
+      )
+    case e: FailedElem     => UIO.pure(e)
+    case e: DroppedElem    => UIO.pure(e)
+  }
+
+  /**
     * Discard the underlying element value if present.
     */
   def void: Elem[Unit] =
     map(_ => ())
+
+  override def toString: String = s"${project.fold("")(_.toString)}/$id:$revision"
 }
 
 object Elem {
