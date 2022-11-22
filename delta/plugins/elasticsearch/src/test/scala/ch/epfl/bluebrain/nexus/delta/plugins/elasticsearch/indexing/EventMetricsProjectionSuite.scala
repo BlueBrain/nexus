@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{CacheSink, ProjectionProgress, SupervisorSetup}
 import ch.epfl.bluebrain.nexus.testkit.bio.{BioSuite, PatienceConfig}
 import fs2.Stream
+import io.circe.syntax.EncoderOps
 import io.circe.{Json, JsonObject}
 import monix.bio.Task
 import munit.AnyFixture
@@ -54,7 +55,6 @@ class EventMetricsProjectionSuite extends BioSuite with SupervisorSetup.Fixture 
   )
 
   test("Start the metrics projection") {
-
     for {
       _       <- EventMetricsProjection(
                    sink,
@@ -62,13 +62,18 @@ class EventMetricsProjectionSuite extends BioSuite with SupervisorSetup.Fixture 
                    _ => Stream.emits(envelopes),
                    Task.unit
                  )
-      running <- sv.getRunningProjections()
-      _        = println(running)
       _       <- sv.describe(EventMetricsProjection.projectionMetadata.name)
                    .map(_.map(_.progress))
                    .eventuallySome(ProjectionProgress(Offset.at(2L), Instant.EPOCH, 2, 0, 0))
     } yield ()
+  }
 
+  test("Sink has the correct metrics") {
+    assert(sink.successes.size equals 2)
+    assert(sink.dropped.isEmpty)
+    assert(sink.failed.isEmpty)
+    assert(sink.successes.values.toSet.contains(metric1.asJson))
+    assert(sink.successes.values.toSet.contains(metric2.asJson))
   }
 
 }
