@@ -2,9 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import cats.data.NonEmptyChain
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchSink
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{metricsMapping, metricsSettings}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{BatchConfig, QueryConfig}
@@ -22,12 +22,7 @@ trait EventMetricsProjection
 
 object EventMetricsProjection {
   val projectionMetadata: ProjectionMetadata = ProjectionMetadata("system", "event-metrics", None, None)
-  private val eventMetricsIndex              = IndexLabel.unsafe("abcdefg")
-
-  implicit private val cl: ClassLoader = getClass.getClassLoader
-
-  private val metricsMapping  = ClasspathResourceUtils.ioJsonObjectContentOf("metrics/metrics-mapping.json")
-  private val metricsSettings = ClasspathResourceUtils.ioJsonObjectContentOf("metrics/metrics-settings.json")
+  private val eventMetricsIndex              = IndexLabel.unsafe("event_metrics_index")
 
   /**
     * @param metricEncoders
