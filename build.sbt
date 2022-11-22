@@ -39,7 +39,6 @@ val jsonldjavaVersion       = "0.13.4"
 val kamonVersion            = "2.5.1"
 val kanelaAgentVersion      = "1.0.13"
 val kindProjectorVersion    = "0.13.2"
-val kryoVersion             = "2.4.3"
 val logbackVersion          = "1.2.11"
 val magnoliaVersion         = "0.17.0"
 val mockitoVersion          = "1.17.5"
@@ -56,10 +55,7 @@ val topBraidVersion         = "1.3.2" // 1.4.1 fails to validate some test schem
 val testContainersVersion   = "1.17.1"
 val uuidGeneratorVersion    = "4.0.1"
 
-lazy val akkaActorTyped           = "com.typesafe.akka" %% "akka-actor-typed"            % akkaVersion
-lazy val akkaClusterTyped         = "com.typesafe.akka" %% "akka-cluster-typed"          % akkaVersion
-lazy val akkaClusterShardingTyped = "com.typesafe.akka" %% "akka-cluster-sharding-typed" % akkaVersion
-lazy val akkaDistributedData      = "com.typesafe.akka" %% "akka-distributed-data"       % akkaVersion
+lazy val akkaActorTyped = "com.typesafe.akka" %% "akka-actor-typed" % akkaVersion
 
 lazy val akkaHttp        = "com.typesafe.akka" %% "akka-http"         % akkaHttpVersion
 lazy val akkaHttpCore    = "com.typesafe.akka" %% "akka-http-core"    % akkaHttpVersion
@@ -108,7 +104,6 @@ lazy val kamonAkkaHttp      = "io.kamon"                     %% "kamon-akka-http
 lazy val kamonCore          = "io.kamon"                     %% "kamon-core"               % kamonVersion
 lazy val kanelaAgent        = "io.kamon"                      % "kanela-agent"             % kanelaAgentVersion
 lazy val kindProjector      = "org.typelevel"                %% "kind-projector"           % kindProjectorVersion cross CrossVersion.full
-lazy val kryo               = "io.altoo"                     %% "akka-kryo-serialization"  % kryoVersion
 lazy val logback            = "ch.qos.logback"                % "logback-classic"          % logbackVersion
 lazy val magnolia           = "com.propensive"               %% "magnolia"                 % magnoliaVersion
 lazy val mockito            = "org.mockito"                  %% "mockito-scala"            % mockitoVersion
@@ -307,8 +302,7 @@ lazy val sdk = project
   .settings(
     coverageFailOnMinimum := false,
     libraryDependencies  ++= Seq(
-      akkaClusterTyped,
-      akkaDistributedData,
+      akkaStream,
       akkaHttp,
       akkaHttpXml,
       caffeine,
@@ -316,7 +310,6 @@ lazy val sdk = project
       circeGenericExtras,
       distageCore,
       fs2,
-      kryo,
       monixBio,
       nimbusJoseJwt,
       akkaTestKitTyped % Test,

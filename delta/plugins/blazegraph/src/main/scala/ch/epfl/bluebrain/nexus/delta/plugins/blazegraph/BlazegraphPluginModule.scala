@@ -154,8 +154,6 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         viewsQuery,
         identities,
         aclCheck,
-        // TODO add progress stats
-        null,
         projections,
         schemeDirectives,
         indexingAction(_, _, _)(shift, cr)

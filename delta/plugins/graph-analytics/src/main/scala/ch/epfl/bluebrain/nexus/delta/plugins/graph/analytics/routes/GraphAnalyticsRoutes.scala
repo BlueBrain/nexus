@@ -5,7 +5,6 @@ import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.GraphAnalytics
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.{baseUriPrefix, emit, idSegment}
@@ -14,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources.{read => Read}
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projections
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.execution.Scheduler
 
@@ -26,8 +26,8 @@ import monix.execution.Scheduler
   *   to check acls
   * @param graphAnalytics
   *   analytics the graph analytics module
-  * @param progresses
-  *   the progresses for graph analytics
+  * @param projections
+  *   the projections module
   * @param schemeDirectives
   *   directives related to orgs and projects
   */
@@ -35,7 +35,7 @@ class GraphAnalyticsRoutes(
     identities: Identities,
     aclCheck: AclCheck,
     graphAnalytics: GraphAnalytics,
-    progresses: ProgressesStatistics,
+    projections: Projections,
     schemeDirectives: DeltaSchemeDirectives
 )(implicit baseUri: BaseUri, s: Scheduler, cr: RemoteContextResolution, ordering: JsonKeyOrdering)
     extends AuthDirectives(identities, aclCheck)
@@ -71,7 +71,7 @@ class GraphAnalyticsRoutes(
               (pathPrefix("progress") & get & pathEndOrSingleSlash) {
                 operationName(s"$prefixSegment/graph-analytics/{org}/{project}/progress") {
                   authorizeFor(projectRef, Read).apply {
-                    emit(progresses.statistics(projectRef, GraphAnalytics.projectionId(projectRef)))
+                    emit(projections.statistics(projectRef, None, GraphAnalytics.projectionId(projectRef)))
                   }
                 }
               }

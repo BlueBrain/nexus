@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.Predicate.Project
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef, Tag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, RemainingElems}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
 import com.typesafe.scalalogging.Logger
 import doobie.Fragments
@@ -17,7 +17,7 @@ import doobie.postgres.implicits._
 import doobie.util.query.Query0
 import fs2.Stream
 import io.circe.Json
-import monix.bio.Task
+import monix.bio.{Task, UIO}
 
 import java.time.Instant
 
@@ -29,6 +29,30 @@ object StreamingQuery {
   private val logger: Logger = Logger[StreamingQuery.type]
 
   private val newState = "newState"
+
+  /**
+    * Get information about the remaining elements to stream
+    * @param project
+    *   the project of the states / tombstones
+    * @param tag
+    *   the tag to follow
+    * @param xas
+    *   the transactors
+    */
+  def remaining(project: ProjectRef, tag: Tag, start: Offset, xas: Transactors): UIO[Option[RemainingElems]] = {
+    val where = Fragments.whereAndOpt(Project(project).asFragment, Some(fr"tag = $tag"), start.asFragment)
+    sql"""SELECT count(ordering), max(instant)
+         |FROM public.scoped_states
+         |$where
+         |""".stripMargin
+      .query[(Long, Option[Instant])]
+      .map { case (count, maxInstant) =>
+        maxInstant.map { m => RemainingElems(count, m) }
+      }
+      .unique
+      .transact(xas.read)
+      .hideErrors
+  }
 
   /**
     * Streams states and tombstones as [[Elem]] s.

@@ -152,7 +152,6 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         // TODO add the way to restart composite views
         (_, _) => UIO.unit,
         (_, _, _) => UIO.unit,
-        null,
         blazegraphQuery,
         elasticSearchQuery,
         deltaClient,

@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes
 
 import akka.http.scaladsl.model.MediaTypes.`text/html`
-import akka.http.scaladsl.model.headers.{`Content-Type`, `Last-Event-ID`, Accept, Location, OAuth2BearerToken}
+import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.model.{HttpEntity, MediaTypes, StatusCodes, Uri}
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import akka.util.ByteString
@@ -16,10 +16,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction
+import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, IndexingAction}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
@@ -29,20 +28,18 @@ import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRe
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectStatistics
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
-import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, ProgressesStatistics}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, User}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projections
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.model.ProjectionRestart
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{FailedElem, SuccessElem}
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{ProjectionMetadata, ProjectionProgress}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionMetadata
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
 import io.circe.syntax._
@@ -111,18 +108,6 @@ class BlazegraphViewsRoutesSpec
 
   val doesntExistId = nxv + "doesntexist"
 
-  private val now       = Instant.now()
-  private val nowMinus5 = now.minusSeconds(5)
-
-  val viewsProgressesCache =
-    KeyValueStore.localLRU[String, ProjectionProgress](10L).accepted
-  val statisticsProgress   = new ProgressesStatistics(
-    viewsProgressesCache,
-    ioFromMap(
-      projectRef -> ProjectStatistics(events = 10, resources = 10, now)
-    )
-  )
-
   implicit val paginationConfig        = pagination
   implicit private val f: FusionConfig = fusionConfig
 
@@ -157,7 +142,6 @@ class BlazegraphViewsRoutesSpec
         viewsQuery,
         identities,
         aclCheck,
-        statisticsProgress,
         projections,
         groupDirectives,
         IndexingAction.noop
@@ -216,6 +200,39 @@ class BlazegraphViewsRoutesSpec
             response.asString shouldEqual expected
           }
         }
+      }
+    }
+
+    "fail to fetch statistics and offset from view without resources/read permission" in {
+
+      val endpoints = List(
+        "/v1/views/org/proj/indexing-view/statistics",
+        "/v1/views/org/proj/indexing-view/offset"
+      )
+      forAll(endpoints) { endpoint =>
+        Get(endpoint) ~> routes ~> check {
+          response.status shouldEqual StatusCodes.Forbidden
+          response.asJson shouldEqual jsonContentOf("routes/errors/authorization-failed.json")
+        }
+      }
+    }
+
+    "fetch statistics from view" in {
+
+      Get("/v1/views/org/proj/indexing-view/statistics") ~> asBob ~> routes ~> check {
+        response.status shouldEqual StatusCodes.OK
+        response.asJson shouldEqual jsonContentOf(
+          "routes/responses/statistics.json",
+          "projectLatestInstant" -> Instant.EPOCH,
+          "viewLatestInstant"    -> Instant.EPOCH
+        )
+      }
+    }
+
+    "fetch offset from view" in {
+      Get("/v1/views/org/proj/indexing-view/offset") ~> asBob ~> routes ~> check {
+        response.status shouldEqual StatusCodes.OK
+        response.asJson shouldEqual jsonContentOf("routes/responses/offset.json")
       }
     }
 
@@ -371,41 +388,6 @@ class BlazegraphViewsRoutesSpec
       Get("/v1/views/org/proj/indexing-view?rev=1&tag=mytag") ~> asBob ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual jsonContentOf("routes/errors/tag-and-rev-error.json")
-      }
-    }
-
-    "fail to fetch statistics and offset from view without resources/read permission" in {
-
-      val endpoints = List(
-        "/v1/views/org/proj/indexing-view/statistics",
-        "/v1/views/org/proj/indexing-view/offset"
-      )
-      forAll(endpoints) { endpoint =>
-        Get(endpoint) ~> routes ~> check {
-          response.status shouldEqual StatusCodes.Forbidden
-          response.asJson shouldEqual jsonContentOf("routes/errors/authorization-failed.json")
-        }
-      }
-    }
-
-    "fetch statistics from view" ignore {
-      val projectionId = s"blazegraph-${uuid}_4"
-      viewsProgressesCache.put(projectionId, ProjectionProgress(Offset.at(2), nowMinus5, 2, 0, 0)).accepted
-
-      Get("/v1/views/org/proj/indexing-view/statistics") ~> asBob ~> routes ~> check {
-        response.status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual jsonContentOf(
-          "routes/responses/statistics.json",
-          "projectLatestInstant" -> now,
-          "viewLatestInstant"    -> nowMinus5
-        )
-      }
-    }
-
-    "fetch offset from view" ignore {
-      Get("/v1/views/org/proj/indexing-view/offset") ~> asBob ~> routes ~> check {
-        response.status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual jsonContentOf("routes/responses/offset.json")
       }
     }
 

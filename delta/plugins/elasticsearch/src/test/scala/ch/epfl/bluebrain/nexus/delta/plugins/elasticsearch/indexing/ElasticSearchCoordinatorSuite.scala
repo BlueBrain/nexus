@@ -184,7 +184,7 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
       _ <- sv.describe(view1.projection)
              .map(_.map(_.status))
              .eventuallySome(ExecutionStatus.Completed)
-      _ <- projections.offset(view1.projection).assertSome(expectedViewProgress)
+      _ <- projections.progress(view1.projection).assertSome(expectedViewProgress)
       _  = assert(createdIndices.contains(view1.index), s"The index for '${view1.ref.viewId}' should have been created.")
     } yield ()
   }
@@ -194,7 +194,7 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
       _ <- sv.describe(view2.projection)
              .map(_.map(_.status))
              .eventuallySome(ExecutionStatus.Completed)
-      _ <- projections.offset(view2.projection).assertSome(expectedViewProgress)
+      _ <- projections.progress(view2.projection).assertSome(expectedViewProgress)
       _  = assert(createdIndices.contains(view2.index), s"The index for '${view2.ref.viewId}' should have been created.")
     } yield ()
   }
@@ -202,7 +202,7 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
   test("View 3 is invalid so it should not be started") {
     for {
       _ <- sv.describe(view3.projection).assertNone
-      _ <- projections.offset(view3.projection).assertNone
+      _ <- projections.progress(view3.projection).assertNone
       _  = assert(
              !createdIndices.contains(view3.index),
              s"The index for '${view3.ref.viewId}' should not have been created."
@@ -254,7 +254,7 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
   test("View 1 is deprecated so it is stopped, the progress and the index should be deleted.") {
     for {
       _ <- sv.describe(view1.projection).eventuallyNone
-      _ <- projections.offset(view1.projection).assertNone
+      _ <- projections.progress(view1.projection).assertNone
       _  = assert(deletedIndices.contains(view1.index), s"The index for '${view1.ref.viewId}' should have been deleted.")
     } yield ()
   }
@@ -264,7 +264,7 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
   ) {
     for {
       _ <- sv.describe(view2.projection).eventuallyNone
-      _ <- projections.offset(view2.projection).assertNone
+      _ <- projections.progress(view2.projection).assertNone
       _  = assert(deletedIndices.contains(view2.index), s"The index for '${view2.ref.viewId}' should have been deleted.")
     } yield ()
   }
@@ -274,7 +274,7 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
       _ <- sv.describe(updatedView2.projection)
              .map(_.map(_.status))
              .eventuallySome(ExecutionStatus.Completed)
-      _ <- projections.offset(updatedView2.projection).assertSome(expectedViewProgress)
+      _ <- projections.progress(updatedView2.projection).assertSome(expectedViewProgress)
       _  = assert(
              createdIndices.contains(updatedView2.index),
              s"The new index for '${updatedView2.ref.viewId}' should have been created."
