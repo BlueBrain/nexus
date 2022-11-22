@@ -56,15 +56,15 @@ class EventMetricsProjectionSuite extends BioSuite with SupervisorSetup.Fixture 
 
   test("Start the metrics projection") {
     for {
-      _       <- EventMetricsProjection(
-                   sink,
-                   sv,
-                   _ => Stream.emits(envelopes),
-                   Task.unit
-                 )
-      _       <- sv.describe(EventMetricsProjection.projectionMetadata.name)
-                   .map(_.map(_.progress))
-                   .eventuallySome(ProjectionProgress(Offset.at(2L), Instant.EPOCH, 2, 0, 0))
+      _ <- EventMetricsProjection(
+             sink,
+             sv,
+             _ => Stream.emits(envelopes),
+             Task.unit
+           )
+      _ <- sv.describe(EventMetricsProjection.projectionMetadata.name)
+             .map(_.map(_.progress))
+             .eventuallySome(ProjectionProgress(Offset.at(2L), Instant.EPOCH, 2, 0, 0))
     } yield ()
   }
 
