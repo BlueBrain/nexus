@@ -75,6 +75,7 @@ trait IndexingAction {
       errorsRef <- Ref.of[Task, List[FailedElem]](List.empty)
       // We build and start the projections where the resource will apply
       _         <- projections(project, elem)
+                     // TODO make this configurable
                      .parEvalMap(5) {
                        case s: SuccessElem[CompiledProjection] =>
                          runProjection(s.value, failed => errorsRef.update(_ ++ failed).hideErrors)

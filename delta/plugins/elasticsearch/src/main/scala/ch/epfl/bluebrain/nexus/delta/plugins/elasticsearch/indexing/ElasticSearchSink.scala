@@ -24,6 +24,8 @@ import scala.concurrent.duration.FiniteDuration
   *   the maximum window before a document is pushed
   * @param index
   *   the index to push into
+  * @param refresh
+  *   the value for the `refresh` Elasticsearch parameter
   */
 final class ElasticSearchSink(
     client: ElasticSearchClient,
