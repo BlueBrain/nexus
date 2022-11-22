@@ -13,16 +13,20 @@ object AsJson {
 
   private val label = Label.unsafe("asJson")
 
-  private def fn[A: Encoder]: SuccessElem[A] => Task[Elem[Json]] =
+  private def elemValueToJson[A: Encoder]: SuccessElem[A] => Task[Elem[Json]] =
     elem =>
       Task {
         elem.copy(value = elem.value.asJson)
       }
 
+  /**
+    * @return
+    *   a pipe that converts an Elem[A] into an Elem[Json] using its Encoder
+    */
   def pipe[A: Typeable: Encoder]: Pipe =
-    new GenericPipe[A, Json](label, fn)
+    new GenericPipe[A, Json](label, elemValueToJson)
 
   def apply[A: Typeable: Encoder]: PipeDef =
-    GenericPipe[A, Json](label, fn)
+    GenericPipe[A, Json](label, elemValueToJson)
 
 }
