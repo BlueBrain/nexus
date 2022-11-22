@@ -59,7 +59,8 @@ final case class ElasticSearchViewsConfig(
     syncIndexingRefresh: Refresh,
     maxIndexPathLength: Int,
     defaults: Defaults,
-    metricsQuery: QueryConfig
+    metricsQuery: QueryConfig,
+    disableMetricsProjection: Boolean
 )
 
 object ElasticSearchViewsConfig {

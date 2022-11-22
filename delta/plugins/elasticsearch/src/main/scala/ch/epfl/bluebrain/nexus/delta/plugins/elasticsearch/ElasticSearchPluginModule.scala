@@ -35,7 +35,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projections
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeChain, ReferenceRegistry, Supervisor}
 import izumi.distage.model.definition.{Id, ModuleDef}
-import monix.bio.UIO
+import monix.bio.{Task, UIO}
 import monix.execution.Scheduler
 
 /**
@@ -124,14 +124,17 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         client: ElasticSearchClient,
         config: ElasticSearchViewsConfig
     ) =>
-      EventMetricsProjection(
-        metricEncoders,
-        supervisor,
-        client,
-        xas,
-        config.batch,
-        config.metricsQuery
-      )
+      if (config.disableMetricsProjection)
+        Task.unit.as(new EventMetricsProjection {})
+      else
+        EventMetricsProjection(
+          metricEncoders,
+          supervisor,
+          client,
+          xas,
+          config.batch,
+          config.metricsQuery
+        )
   }
 
   make[ElasticSearchViewsQuery].from {

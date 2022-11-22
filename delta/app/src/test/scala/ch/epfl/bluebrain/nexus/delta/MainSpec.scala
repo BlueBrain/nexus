@@ -53,6 +53,8 @@ class MainSpec
     System.setProperty("akka.actor.testkit.typed.throw-on-shutdown-timeout", "false")
     System.setProperty("plugins.elasticsearch.credentials.username", "elastic")
     System.setProperty("plugins.elasticsearch.credentials.password", "password")
+    //TODO Investigate how to remove this property from the config
+    System.setProperty("plugins.elasticsearch.disable-metrics-projection", "true")
 
     //TODO Enable these plugins again after migration
     System.setProperty("plugins.graph-analytics.enabled", "false")
