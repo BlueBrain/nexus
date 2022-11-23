@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import cats.data.NonEmptyChain
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchSink
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{metricsMapping, metricsSettings}
@@ -59,8 +60,8 @@ object EventMetricsProjection {
     val metrics                                                  = (offset: Offset) =>
       EventStreaming.fetchScoped(Predicate.root, allEntityTypes, offset, queryConfig, xas)
 
-    lazy val sink =
-      new ElasticSearchSink(client, batchConfig.maxElements, batchConfig.maxInterval, eventMetricsIndex)
+    val sink =
+      new ElasticSearchSink(client, batchConfig.maxElements, batchConfig.maxInterval, eventMetricsIndex, Refresh.False)
 
     // create the ES index before running the projection
     val init = for {
