@@ -5,17 +5,19 @@ import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.model.ProjectionRestart
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.FailedElem
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionStore.FailedElemLogRow
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{ProjectionMetadata, ProjectionProgress, ProjectionStore}
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.sourcing.ProgressStatistics
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef, Tag}
+import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.model.ProjectionRestart
+import ch.epfl.bluebrain.nexus.delta.sourcing.query.StreamingQuery
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.FailedElem
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionStore.FailedElemLogRow
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{ProjectionMetadata, ProjectionProgress, ProjectionStore, RemainingElems}
 import fs2.Stream
 import io.circe.Printer
 import monix.bio.{Task, UIO}
@@ -25,12 +27,20 @@ import scala.concurrent.duration.FiniteDuration
 trait Projections {
 
   /**
-    * Retrieves a projection offset if found.
+    * Retrieves a projection progress if found.
     *
     * @param name
     *   the name of the projection
     */
-  def offset(name: String): UIO[Option[ProjectionProgress]]
+  def progress(name: String): UIO[Option[ProjectionProgress]]
+
+  /**
+    * Retrieves the offset for a given projection.
+    *
+    * @param name
+    *   the name of the projection
+    */
+  def offset(name: String): UIO[Offset] = progress(name).map(_.fold[Offset](Offset.start)(_.offset))
 
   /**
     * Saves a projection offset.
@@ -126,6 +136,29 @@ trait Projections {
     * Deletes projection restarts older than the configured period
     */
   def deleteExpiredRestarts(): UIO[Unit]
+
+  /**
+    * Returns the statistics for the given projection in the given project
+    *
+    * @param project
+    *   the project for which the counts are collected
+    * @param tag
+    *   the tag the projection is working on
+    * @param projectionId
+    *   the projection id for which the statistics are computed
+    */
+  def statistics(project: ProjectRef, tag: Option[Tag], projectionId: String): UIO[ProgressStatistics]
+
+  /**
+    * Retrieves the progress of the provided ''projectionId'' and uses the provided ''remaining elems'' to compute its
+    * statistics.
+    *
+    * @param remainingElems
+    *   a description of the remaining elements to stream
+    * @param projectionId
+    *   the projection id for which the statistics are computed
+    */
+  def statistics(remainingElems: RemainingElems, projectionId: String): UIO[ProgressStatistics]
 }
 
 object Projections {
@@ -140,7 +173,7 @@ object Projections {
       implicit private val api: JsonLdApi = JsonLdJavaApi.lenient
       private val defaultPrinter: Printer = Printer(dropNullValues = true, indent = "")
 
-      override def offset(name: String): UIO[Option[ProjectionProgress]] = projectionStore.offset(name)
+      override def progress(name: String): UIO[Option[ProjectionProgress]] = projectionStore.offset(name)
 
       override def save(metadata: ProjectionMetadata, progress: ProjectionProgress): UIO[Unit] =
         projectionStore.save(metadata, progress)
@@ -186,6 +219,33 @@ object Projections {
       override def deleteExpiredRestarts(): UIO[Unit] =
         IOUtils.instant.flatMap { now =>
           projectionRestartStore.deleteExpired(now.minusMillis(restartTtl.toMillis))
+        }
+
+      def statistics(project: ProjectRef, tag: Option[Tag], projectionId: String): UIO[ProgressStatistics] =
+        for {
+          current   <- progress(projectionId).map(_.getOrElse(ProjectionProgress.NoProgress))
+          remaining <- StreamingQuery.remaining(project, tag.getOrElse(Tag.latest), current.offset, xas)
+        } yield ProgressStatistics(
+          current.processed,
+          current.discarded,
+          current.failed,
+          current.processed + remaining.fold(0L)(_.count),
+          remaining.map(_.maxInstant),
+          Some(current.instant)
+        )
+
+      def statistics(remainingElems: RemainingElems, projectionId: String): UIO[ProgressStatistics] =
+        progress(projectionId).map {
+          case None          => ProgressStatistics(0L, 0L, 0L, remainingElems.count, Some(remainingElems.maxInstant), None)
+          case Some(current) =>
+            ProgressStatistics(
+              current.processed,
+              current.discarded,
+              current.failed,
+              remainingElems.count,
+              Some(remainingElems.maxInstant),
+              Some(current.instant)
+            )
         }
     }
 }

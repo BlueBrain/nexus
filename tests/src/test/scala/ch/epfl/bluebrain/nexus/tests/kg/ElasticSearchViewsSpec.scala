@@ -223,7 +223,7 @@ class ElasticSearchViewsSpec extends BaseSpec with EitherValuable with CirceEq {
       }
     }
 
-    "fetch statistics for testView" ignore eventually {
+    "fetch statistics for testView" in eventually {
       deltaClient.get[Json](s"/views/$fullId/test-resource:testView/statistics", ScoobyDoo) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
         val expected = jsonContentOf(

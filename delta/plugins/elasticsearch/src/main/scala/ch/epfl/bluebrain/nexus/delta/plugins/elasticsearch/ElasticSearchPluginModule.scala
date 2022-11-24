@@ -181,8 +181,6 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         aclCheck,
         views,
         viewsQuery,
-        // TODO add progress stats
-        null,
         projections,
         resourceToSchema,
         schemeDirectives,

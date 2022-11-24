@@ -11,10 +11,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.{contexts, GraphAna
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schema
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
@@ -22,18 +20,20 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.ProjectNotFound
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ProjectRejection, ProjectStatistics}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionProgress
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projections
+import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import monix.bio.IO
 import org.scalatest.CancelAfterFailure
 
-import java.time.Instant
 import java.util.UUID
+import scala.concurrent.duration._
 
 class GraphAnalyticsRoutesSpec extends BaseRouteSpec with CancelAfterFailure {
 
@@ -80,20 +80,15 @@ class GraphAnalyticsRoutesSpec extends BaseRouteSpec with CancelAfterFailure {
         )
   }
 
-  private val viewsProgressesCache   =
-    KeyValueStore.localLRU[String, ProjectionProgress](10L).accepted
-  private val graphAnalyticsProgress = new ProgressesStatistics(
-    viewsProgressesCache,
-    ioFromMap(project.ref -> ProjectStatistics(10, 10, Instant.EPOCH))
-  )
+  private lazy val projections = Projections(xas, QueryConfig(10, RefreshStrategy.Stop), 1.hour)
 
-  private val routes =
+  private lazy val routes =
     Route.seal(
       new GraphAnalyticsRoutes(
         identities,
         aclCheck,
         graphAnalytics,
-        graphAnalyticsProgress,
+        projections,
         DeltaSchemeDirectives.empty
       ).routes
     )
@@ -143,7 +138,7 @@ class GraphAnalyticsRoutesSpec extends BaseRouteSpec with CancelAfterFailure {
         }
       }
 
-      "fetch" in {
+      "fetch" ignore {
         Get("/v1/graph-analytics/org/project/progress") ~> asAlice ~> routes ~> check {
           response.status shouldEqual StatusCodes.OK
           response.asJson shouldEqual jsonContentOf("routes/statistics.json")

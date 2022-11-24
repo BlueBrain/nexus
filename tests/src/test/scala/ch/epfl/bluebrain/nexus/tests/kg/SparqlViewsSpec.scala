@@ -161,7 +161,7 @@ class SparqlViewsSpec extends BaseSpec with EitherValuable with CirceEq {
       }
     }
 
-    "search instances in SPARQL endpoint in project 2" in {
+    "search instances in SPARQL endpoint in project 2" in eventually {
       deltaClient.sparqlQuery[Json](s"/views/$fullId2/nxv:defaultSparqlIndex/sparql", query, ScoobyDoo) {
         (json, response) =>
           response.status shouldEqual StatusCodes.OK
@@ -185,15 +185,15 @@ class SparqlViewsSpec extends BaseSpec with EitherValuable with CirceEq {
       }
     }
 
-    "fetch statistics for defaultSparqlIndex" ignore eventually {
+    "fetch statistics for defaultSparqlIndex" in eventually {
       deltaClient.get[Json](s"/views/$fullId/nxv:defaultSparqlIndex/statistics", ScoobyDoo) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
         val expected = jsonContentOf(
           "/kg/views/statistics.json",
-          "total"     -> "13",
-          "processed" -> "13",
-          "evaluated" -> "13",
-          "discarded" -> "0",
+          "total"     -> "12",
+          "processed" -> "12",
+          "evaluated" -> "11",
+          "discarded" -> "1",
           "remaining" -> "0"
         )
         filterNestedKeys("lastEventDateTime", "lastProcessedEventDateTime")(json) shouldEqual expected

@@ -70,7 +70,7 @@ class SupervisionSuite extends BioSuite with SupervisorSetup.Fixture with Doobie
       // The projection should still be ignored and should not have made any progress
       _         <- sv.describe(projection2.name).assertSome(projection2Description)
       // No progress has been saved in database either
-      _         <- projections.offset(projection2.name).assertNone
+      _         <- projections.progress(projection2.name).assertNone
       // This means the stream has never been started
       _         <- flag.get.assert(false)
     } yield ()
@@ -179,7 +179,7 @@ class SupervisionSuite extends BioSuite with SupervisorSetup.Fixture with Doobie
                        )
                      )
       // As it runs on every node, it is implicitly transient so no progress has been saved to database
-      _         <- projections.offset(projection3.name).assertNone
+      _         <- projections.progress(projection3.name).assertNone
     } yield ()
   }
 
@@ -207,7 +207,7 @@ class SupervisionSuite extends BioSuite with SupervisorSetup.Fixture with Doobie
                        )
                      )
       // As it is transient, no progress has been saved to database
-      _         <- projections.offset(projection1.name).assertNone
+      _         <- projections.progress(projection1.name).assertNone
     } yield ()
   }
 
@@ -238,7 +238,7 @@ class SupervisionSuite extends BioSuite with SupervisorSetup.Fixture with Doobie
                        )
                      )
       // As it is persistent, progress has also been saved to database
-      _         <- projections.offset(projection1.name).assertSome(expectedProgress)
+      _         <- projections.progress(projection1.name).assertSome(expectedProgress)
     } yield ()
   }
 
@@ -269,7 +269,7 @@ class SupervisionSuite extends BioSuite with SupervisorSetup.Fixture with Doobie
                )
              )
       // As it is persistent, progress has also been saved to database
-      _ <- projections.offset(projection1.name).assertSome(expectedProgress)
+      _ <- projections.progress(projection1.name).assertSome(expectedProgress)
       // The restart has been acknowledged and now longer comes up
       _ <- projections.restarts(Offset.at(2L)).assertEmpty
     } yield ()
@@ -279,7 +279,7 @@ class SupervisionSuite extends BioSuite with SupervisorSetup.Fixture with Doobie
     for {
       _ <- sv.destroy(projection1.name).assertSome(ExecutionStatus.Stopped)
       _ <- sv.describe(projection1.name).assertNone
-      _ <- projections.offset(projection1.name).assertNone
+      _ <- projections.progress(projection1.name).assertNone
     } yield ()
   }
 
@@ -287,7 +287,7 @@ class SupervisionSuite extends BioSuite with SupervisorSetup.Fixture with Doobie
     val expectedException = new IllegalStateException("The stream crashed unexpectedly.")
     for {
       flag      <- Ref.of[Task, Boolean](false)
-      _         <- projections.offset(projection1.name).assertNone
+      _         <- projections.progress(projection1.name).assertNone
       projection =
         CompiledProjection.fromStream(
           projection1,
@@ -304,7 +304,7 @@ class SupervisionSuite extends BioSuite with SupervisorSetup.Fixture with Doobie
     for {
       _ <- sv.destroy(projection1.name).assertSome(ExecutionStatus.Stopped)
       _ <- sv.describe(projection1.name).eventuallyNone
-      _ <- projections.offset(projection1.name).assertNone
+      _ <- projections.progress(projection1.name).assertNone
     } yield ()
   }
 

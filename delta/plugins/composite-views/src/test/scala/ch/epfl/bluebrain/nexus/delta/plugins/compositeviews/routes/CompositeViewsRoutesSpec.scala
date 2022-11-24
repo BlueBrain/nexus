@@ -20,10 +20,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.graph.{NQuads, NTriples}
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.rdf.{RdfMediaTypes, Vocabulary}
-import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
@@ -43,7 +41,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionProgress
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Decoder
 import io.circe.syntax._
@@ -97,8 +94,6 @@ class CompositeViewsRoutesSpec
   private val now      = Instant.now()
   private val nowPlus5 = now.plusSeconds(5)
 
-  private val projectStats       = ProjectStatistics(10, 10, nowPlus5)
-  private val otherProjectStats  = ProjectStatistics(100, 100, nowPlus5)
   private val remoteProjectStats = ProjectStatistics(1000, 1000, nowPlus5)
 
   private val deltaClient = new DeltaClient {
@@ -122,19 +117,13 @@ class CompositeViewsRoutesSpec
   private val esId    = iri"http://example.com/es-projection"
   private val blazeId = iri"http://example.com/blazegraph-projection"
 
-  private val esProjectionId       =
+  private val esProjectionId    =
     CompositeViewProjectionId(
       SourceProjectionId(s"${uuid}_3"),
       ViewProjectionId(ElasticSearchViews.projectionName(projectRef, esId, 3))
     )
-  private val blazeProjectionId    =
+  private val blazeProjectionId =
     CompositeViewProjectionId(SourceProjectionId(s"${uuid}_3"), ViewProjectionId(s"${uuid}_3"))
-  private val viewsProgressesCache = KeyValueStore.localLRU[String, ProjectionProgress](10L).accepted
-
-  private val statisticsProgress = new ProgressesStatistics(
-    viewsProgressesCache,
-    ioFromMap(projectRef -> projectStats, otherProjectRef -> otherProjectStats)
-  )
 
   private val selectQuery = SparqlQuery("SELECT * WHERE {?s ?p ?o}")
   private val esQuery     = jobj"""{"query": {"match_all": {} } }"""
@@ -186,7 +175,6 @@ class CompositeViewsRoutesSpec
         views,
         restart,
         restartProjection,
-        statisticsProgress,
         blazegraphQuery,
         elasticSearchQuery,
         deltaClient,

@@ -18,7 +18,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
@@ -31,10 +30,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectStatistics}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
-import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, IndexingAction, ProgressesStatistics}
+import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, IndexingAction}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label}
@@ -43,7 +42,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projections
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.model.ProjectionRestart
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{FailedElem, SuccessElem}
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeChain, ProjectionMetadata, ProjectionProgress}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeChain, ProjectionMetadata}
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
@@ -132,19 +131,7 @@ class ElasticSearchViewsRoutesSpec
     ProjectContextRejection
   )
 
-  private val now       = Instant.now()
-  private val nowMinus5 = now.minusSeconds(5)
-
   private val resourceToSchemaMapping = ResourceToSchemaMappings(Label.unsafe("views") -> elasticSearchSchema.iri)
-  private val viewsProgressesCache    =
-    KeyValueStore.localLRU[String, ProjectionProgress](10L).accepted
-
-  private val statisticsProgress = new ProgressesStatistics(
-    viewsProgressesCache,
-    ioFromMap(
-      projectRef -> ProjectStatistics(events = 10, resources = 10, now)
-    )
-  )
 
   private val aclCheck                       = AclSimpleCheck().accepted
   private val groupDirectives                =
@@ -177,7 +164,6 @@ class ElasticSearchViewsRoutesSpec
         aclCheck,
         views,
         viewsQuery,
-        statisticsProgress,
         projections,
         resourceToSchemaMapping,
         groupDirectives,
@@ -444,21 +430,19 @@ class ElasticSearchViewsRoutesSpec
       }
     }
 
-    "fetch statistics from view" ignore {
+    "fetch statistics from view" in {
       aclCheck.append(AclAddress.Root, Anonymous -> Set(esPermissions.read)).accepted
-      val projectionId = s"elasticsearch-${uuid}_2"
-      viewsProgressesCache.put(projectionId, ProjectionProgress(Offset.at(2), nowMinus5, 2, 0, 0)).accepted
       Get("/v1/views/myorg/myproject/myid2/statistics") ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
         response.asJson shouldEqual jsonContentOf(
           "/routes/statistics.json",
-          "projectLatestInstant" -> now,
-          "viewLatestInstant"    -> nowMinus5
+          "projectLatestInstant" -> Instant.EPOCH,
+          "viewLatestInstant"    -> Instant.EPOCH
         )
       }
     }
 
-    "fetch offset from view" ignore {
+    "fetch offset from view" in {
       Get("/v1/views/myorg/myproject/myid2/offset") ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
         response.asJson shouldEqual jsonContentOf("/routes/offset.json")

@@ -304,7 +304,7 @@ object Supervisor {
       val (fetchProgress, saveProgress, saveFailedElems) = projection.executionStrategy match {
         case PersistentSingleNode            =>
           (
-            projections.offset(projection.metadata.name),
+            projections.progress(projection.metadata.name),
             projections.save(projection.metadata, _),
             projections.saveFailedElems(projection.metadata, _)
           )

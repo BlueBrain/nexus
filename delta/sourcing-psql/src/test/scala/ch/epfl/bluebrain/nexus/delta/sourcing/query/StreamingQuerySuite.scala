@@ -14,6 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.query.StreamingQuerySuite.Release
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.RemainingElems
 import ch.epfl.bluebrain.nexus.delta.sourcing.tombstone.TombstoneStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.{PullRequest, Serializer}
 import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
@@ -198,6 +199,34 @@ class StreamingQuerySuite extends BioSuite with Doobie.Fixture {
         SuccessElem(PullRequest.entityType, id4.value, Some(project1), Instant.EPOCH, Offset.at(15L), id4.value, rev)
       )
     )
+  }
+
+  test("Get the remaining elems for project 1 on latest from the beginning") {
+    StreamingQuery
+      .remaining(project1, Tag.Latest, Offset.start, xas)
+      .assertSome(
+        RemainingElems(6L, Instant.EPOCH)
+      )
+  }
+
+  test("Get the remaining elems for project 1 on latest from offset 6") {
+    StreamingQuery
+      .remaining(project1, Tag.Latest, Offset.at(6L), xas)
+      .assertSome(
+        RemainingElems(3L, Instant.EPOCH)
+      )
+  }
+
+  test(s"Get the remaining elems for project 1 on tag ${customTag} from the beginning") {
+    StreamingQuery
+      .remaining(project1, customTag, Offset.at(6L), xas)
+      .assertSome(
+        RemainingElems(4L, Instant.EPOCH)
+      )
+  }
+
+  test(s"Get no remaining for an unknown project") {
+    StreamingQuery.remaining(ProjectRef.unsafe("xxx", "xxx"), Tag.Latest, Offset.at(6L), xas).assertNone
   }
 }
 

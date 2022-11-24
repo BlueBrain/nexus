@@ -19,7 +19,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaDirectives, DeltaSchemeDirectives}
@@ -31,12 +30,15 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.sourcing.ProgressStatistics
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import io.circe.{Json, JsonObject}
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
+
+import scala.annotation.nowarn
 
 /**
   * Composite views routes.
@@ -47,7 +49,6 @@ class CompositeViewsRoutes(
     views: CompositeViews,
     restartView: RestartView,
     restartProjections: RestartProjections,
-    progresses: ProgressesStatistics,
     blazegraphQuery: BlazegraphQuery,
     elasticSearchQuery: ElasticSearchQuery,
     deltaClient: DeltaClient,
@@ -378,26 +379,23 @@ class CompositeViewsRoutes(
       statisticsFor(viewRes, source, projection)
     }.map(list => SearchResults(list.size.toLong, list.sorted))
 
+  @nowarn("cat=unused")
   private def statisticsFor(
       viewRes: ViewResource,
       source: CompositeViewSource,
       projection: CompositeViewProjection
   ): IO[CompositeViewRejection, ProjectionStatistics] = {
+    //TODO: migrate statistics
     val statsIO = source match {
       case source: RemoteProjectSource =>
         deltaClient
           .projectCount(source)
-          .flatMap(count =>
-            progresses.statistics(count, CompositeViews.projectionId(source, projection, viewRes.rev).value)
-          )
+          .map(_ => ProgressStatistics.empty)
           .mapError(clientError => InvalidRemoteProjectSource(source, clientError))
-      case source: ProjectSource       =>
-        progresses.statistics(
-          viewRes.value.project,
-          CompositeViews.projectionId(source, projection, viewRes.rev).value
-        )
-      case source: CrossProjectSource  =>
-        progresses.statistics(source.project, CompositeViews.projectionId(source, projection, viewRes.rev).value)
+      case _: ProjectSource            =>
+        UIO.pure(ProgressStatistics.empty)
+      case _: CrossProjectSource       =>
+        UIO.pure(ProgressStatistics.empty)
     }
     statsIO.map { stats => ProjectionStatistics(source.id, projection.id, stats) }
   }
@@ -449,7 +447,6 @@ object CompositeViewsRoutes {
       views: CompositeViews,
       restartView: RestartView,
       restartProjections: RestartProjections,
-      progresses: ProgressesStatistics,
       blazegraphQuery: BlazegraphQuery,
       elasticSearchQuery: ElasticSearchQuery,
       deltaClient: DeltaClient,
@@ -467,7 +464,6 @@ object CompositeViewsRoutes {
       views,
       restartView,
       restartProjections,
-      progresses,
       blazegraphQuery,
       elasticSearchQuery,
       deltaClient,
