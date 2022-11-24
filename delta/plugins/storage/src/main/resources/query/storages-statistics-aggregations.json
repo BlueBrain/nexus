@@ -1,0 +1,33 @@
+{
+  "query": {
+    "bool": {
+      "filter": [
+        {
+          "term": {
+            "@type.short": "File"
+          }
+        }
+      ]
+    }
+  },
+  "aggs": {
+    "by_storage": {
+      "terms": {
+        "field": "storage"
+      },
+      "aggs": {
+        "storageSize": {
+          "sum": {
+            "field": "bytes"
+          }
+        },
+        "filesCount": {
+          "sum": {
+            "field": "newFileWritten"
+          }
+        }
+      }
+    }
+  },
+  "size": 0
+}

@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotFound
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageStatsCollection.StorageStatEntry
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageStatsCollection.{StorageStatEntry, StoragesStats}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{StorageRejection, StorageStatsCollection}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
@@ -25,14 +25,11 @@ object StoragesStatisticsSetup {
             )
         }
 
-      private val statsByProjectRef = stats.map { case (project, value) =>
-        project.ref -> value
-      }
+      override def get(): UIO[StoragesStats] =
+        UIO.pure(Map.empty)
 
-      override def get(): UIO[StorageStatsCollection] = UIO.pure(StorageStatsCollection(statsByProjectRef))
-
-      override def get(project: ProjectRef): UIO[Map[Iri, StorageStatEntry]] =
-        get().map(_.value.getOrElse(project, Map.empty[Iri, StorageStatEntry]))
+      override def get(project: ProjectRef): UIO[StoragesStats] =
+        UIO.pure(Map.empty)
 
       override def get(
           idSegment: IdSegment,

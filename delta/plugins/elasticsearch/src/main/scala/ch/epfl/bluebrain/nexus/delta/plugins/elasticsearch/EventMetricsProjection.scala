@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.AsJson
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{AsJson, CustomId}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{MultiDecoder, Predicate}
 import monix.bio.Task
 
@@ -23,7 +23,7 @@ trait EventMetricsProjection
 
 object EventMetricsProjection {
   val projectionMetadata: ProjectionMetadata = ProjectionMetadata("system", "event-metrics", None, None)
-  private val eventMetricsIndex              = IndexLabel.unsafe("event_metrics_index")
+  val eventMetricsIndex                      = IndexLabel.unsafe("event_metrics_index")
 
   /**
     * @param metricEncoders
@@ -104,7 +104,7 @@ object EventMetricsProjection {
         projectionMetadata,
         ExecutionStrategy.PersistentSingleNode,
         source,
-        NonEmptyChain.one(AsJson.pipe[ProjectScopedMetric]),
+        NonEmptyChain(CustomId.pipe[ProjectScopedMetric], AsJson.pipe[ProjectScopedMetric]),
         sink
       )
 

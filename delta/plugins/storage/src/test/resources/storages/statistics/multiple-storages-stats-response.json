@@ -1,0 +1,46 @@
+{
+  "took": 6,
+  "timed_out": false,
+  "_shards": {
+    "total": 1,
+    "successful": 1,
+    "skipped": 0,
+    "failed": 0
+  },
+  "hits": {
+    "total": {
+      "value": 3,
+      "relation": "eq"
+    },
+    "max_score": null,
+    "hits": []
+  },
+  "aggregations": {
+    "by_storage": {
+      "doc_count_error_upper_bound": 0,
+      "sum_other_doc_count": 0,
+      "buckets": [
+        {
+          "key": "https://bluebrain.github.io/nexus/vocabulary/diskStorageDefault",
+          "doc_count": 2,
+          "filesCount": {
+            "value": 2
+          },
+          "storageSize": {
+            "value": 5096786
+          }
+        },
+        {
+          "key": "https://bluebrain.github.io/nexus/vocabulary/remote",
+          "doc_count": 1,
+          "filesCount": {
+            "value": 1
+          },
+          "storageSize": {
+            "value": 1234567
+          }
+        }
+      ]
+    }
+  }
+}

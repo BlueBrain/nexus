@@ -41,8 +41,6 @@ import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{DoNotDiscover, Inspectors, OptionValues}
 
-import java.time.Instant
-
 @DoNotDiscover
 class FilesSpec(docker: RemoteStorageDocker)
     extends TestKit(ActorSystem("FilesSpec"))
@@ -101,7 +99,7 @@ class FilesSpec(docker: RemoteStorageDocker)
     )
 
     val storageStatistics       =
-      StoragesStatisticsSetup.init(Map(project -> Map(diskId -> StorageStatEntry(10L, 100L, Some(Instant.EPOCH)))))
+      StoragesStatisticsSetup.init(Map(project -> Map(diskId -> StorageStatEntry(10L, 100L))))
 
     lazy val storages: Storages = Storages(
       fetchContext.mapRejection(StorageRejection.ProjectContextRejection),

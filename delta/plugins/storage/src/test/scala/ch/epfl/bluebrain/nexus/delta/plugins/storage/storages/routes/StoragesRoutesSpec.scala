@@ -36,7 +36,6 @@ import io.circe.Json
 import monix.bio.IO
 import org.scalatest._
 
-import java.time.Instant
 import java.util.UUID
 
 class StoragesRoutesSpec extends BaseRouteSpec with TryValues with StorageFixtures {
@@ -99,9 +98,9 @@ class StoragesRoutesSpec extends BaseRouteSpec with TryValues with StorageFixtur
   private val storageStatistics = StoragesStatisticsSetup.init(
     Map(
       project -> Map(
-        dId  -> StorageStatEntry(10L, 1000L, Some(Instant.ofEpochMilli(1000L))),
-        rdId -> StorageStatEntry(50L, 5000L, Some(Instant.ofEpochMilli(5000L))),
-        s3Id -> StorageStatEntry(100L, 10000L, Some(Instant.ofEpochMilli(10000L)))
+        dId  -> StorageStatEntry(10L, 1000L),
+        rdId -> StorageStatEntry(50L, 5000L),
+        s3Id -> StorageStatEntry(100L, 10000L)
       )
     )
   )
