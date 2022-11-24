@@ -92,8 +92,8 @@ object BlazegraphViewValue {
               resourceSchemas
             ).toJsonLd),
             resourceTypes.nonEmpty   -> (PipeRef(FilterByType.label)     -> FilterByTypeConfig(resourceTypes).toJsonLd),
-            !includeDeprecated        -> (PipeRef(FilterDeprecated.label) -> ExpandedJsonLd.empty),
-            !includeMetadata          -> (PipeRef(DiscardMetadata.label)  -> ExpandedJsonLd.empty)
+            !includeDeprecated       -> (PipeRef(FilterDeprecated.label) -> ExpandedJsonLd.empty),
+            !includeMetadata         -> (PipeRef(DiscardMetadata.label)  -> ExpandedJsonLd.empty)
           ).mapFilter { case (b, p) => Option.when(b)(p) }
         }
         .map(PipeChain(_))

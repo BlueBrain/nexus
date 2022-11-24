@@ -178,10 +178,10 @@ class EventStreamingSuite extends BioSuite with Doobie.Fixture with Doobie.Asser
       )
       .map { e => e.offset -> e.value }
       .assert(
-        Offset.at(2L) -> IdRev("id2", 1),
-        Offset.at(4L) -> IdRev("id4", 1),
-        Offset.at(5L) -> IdRev("id2", 2),
-        Offset.at(6L) -> IdRev("id5", 1)
+        Offset.at(2L) -> IdRev(id2, 1),
+        Offset.at(4L) -> IdRev(id4, 1),
+        Offset.at(5L) -> IdRev(id2, 2),
+        Offset.at(6L) -> IdRev(id5, 1)
       )
   }
 

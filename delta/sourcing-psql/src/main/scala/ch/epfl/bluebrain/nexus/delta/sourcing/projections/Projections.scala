@@ -226,8 +226,8 @@ object Projections {
         for {
           current   <- progress(projectionId)
           remaining <- current.flatTraverse { c =>
-            StreamingQuery.remaining(project, tag.getOrElse(Tag.latest), c.offset, xas)
-          }
+                         StreamingQuery.remaining(project, tag.getOrElse(Tag.latest), c.offset, xas)
+                       }
         } yield statistics(current, remaining)
 
       def statistics(projectionId: String, remaining: Option[RemainingElems]): UIO[ProgressStatistics] =
@@ -235,31 +235,34 @@ object Projections {
 
       private def statistics(current: Option[ProjectionProgress], remaining: Option[RemainingElems]) =
         (current, remaining) match {
-          case (Some(c), Some (r)) => ProgressStatistics (
-                c.processed,
+          case (Some(c), Some(r)) =>
+            ProgressStatistics(
+              c.processed,
               c.discarded,
               c.failed,
               r.count,
-              Some (r.maxInstant),
-            Some (c.instant)
+              Some(r.maxInstant),
+              Some(c.instant)
             )
-          case (None, Some (r)) => ProgressStatistics (
-            0L,
-            0L,
-            0L,
-            r.count,
-            Some (r.maxInstant),
-            None
-          )
-          case (Some(c), None) => ProgressStatistics (
-            c.processed,
-            c.discarded,
-            c.failed,
-            c.processed,
-            Some (c.instant),
-            Some (c.instant)
-          )
-          case (None, None) => ProgressStatistics.empty
+          case (None, Some(r))    =>
+            ProgressStatistics(
+              0L,
+              0L,
+              0L,
+              r.count,
+              Some(r.maxInstant),
+              None
+            )
+          case (Some(c), None)    =>
+            ProgressStatistics(
+              c.processed,
+              c.discarded,
+              c.failed,
+              c.processed,
+              Some(c.instant),
+              Some(c.instant)
+            )
+          case (None, None)       => ProgressStatistics.empty
         }
     }
 }

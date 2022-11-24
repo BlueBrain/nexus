@@ -16,6 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset.{At, Start}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{MultiDecoder, Predicate}
+import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import io.circe.syntax.EncoderOps
 import monix.bio.{IO, Task, UIO}
@@ -113,6 +114,8 @@ object SseEventLog {
 
   type ServerSentEventStream = Stream[Task, ServerSentEvent]
 
+  private val logger: Logger = Logger[SseEventLog]
+
   private[sse] def toServerSentEvent(
       envelope: Envelope[SseData],
       fetchUuids: ProjectRef => UIO[Option[(UUID, UUID)]]
@@ -141,67 +144,73 @@ object SseEventLog {
       config: SseConfig,
       xas: Transactors
   )(implicit jo: JsonKeyOrdering): UIO[SseEventLog] =
-    KeyValueStore.localLRU[ProjectRef, (UUID, UUID)](config.cache).map { cache =>
-      new SseEventLog {
-        implicit private val multiDecoder: MultiDecoder[SseData]        =
-          MultiDecoder(sseEncoders.map { encoder => encoder.entityType -> encoder.toSse }.toMap)
+    KeyValueStore
+      .localLRU[ProjectRef, (UUID, UUID)](config.cache)
+      .map { cache =>
+        new SseEventLog {
+          implicit private val multiDecoder: MultiDecoder[SseData]        =
+            MultiDecoder(sseEncoders.map { encoder => encoder.entityType -> encoder.toSse }.toMap)
 
-        private val entityTypesBySelector: Map[Label, List[EntityType]] = sseEncoders
-          .flatMap { encoder => encoder.selectors.map(_ -> encoder.entityType) }
-          .groupMap(_._1)(_._2)
-          .map { case (k, v) => k -> v.toList }
+          private val entityTypesBySelector: Map[Label, List[EntityType]] = sseEncoders
+            .flatMap { encoder => encoder.selectors.map(_ -> encoder.entityType) }
+            .groupMap(_._1)(_._2)
+            .map { case (k, v) => k -> v.toList }
 
-        private def fetchUuids(ref: ProjectRef)                         =
-          cache.getOrElseUpdate(ref, fetchProject(ref)).attempt.map(_.toOption)
+          override val allSelectors                                       = sseEncoders.flatMap(_.selectors)
 
-        private def stream(predicate: Predicate, selector: Option[Label], offset: Offset)
-            : Stream[Task, ServerSentEvent] = {
-          Stream
-            .fromEither[Task](
-              selector
-                .map { l =>
-                  entityTypesBySelector.get(l).toRight(UnknownSseLabel(l))
-                }
-                .getOrElse(Right(List.empty))
-            )
-            .flatMap { entityTypes =>
-              EventStreaming
-                .fetchAll(
-                  predicate,
-                  entityTypes,
-                  offset,
-                  config.query,
-                  xas
-                )
-                .evalMap(toServerSentEvent(_, fetchUuids))
-            }
-        }
+          override val scopedSelectors: Set[Label] = sseEncoders.flatMap { encoder =>
+            if (encoder.handlesScopedEvent) encoder.selectors else Set.empty
+          }
 
-        override def stream(offset: Offset): Stream[Task, ServerSentEvent] = stream(Predicate.root, None, offset)
+          private def fetchUuids(ref: ProjectRef) =
+            cache.getOrElseUpdate(ref, fetchProject(ref)).attempt.map(_.toOption)
 
-        override def streamBy(selector: Label, offset: Offset): Stream[Task, ServerSentEvent] =
-          stream(Predicate.root, Some(selector), offset)
+          private def stream(predicate: Predicate, selector: Option[Label], offset: Offset)
+              : Stream[Task, ServerSentEvent] = {
+            Stream
+              .fromEither[Task](
+                selector
+                  .map { l =>
+                    entityTypesBySelector.get(l).toRight(UnknownSseLabel(l))
+                  }
+                  .getOrElse(Right(List.empty))
+              )
+              .flatMap { entityTypes =>
+                EventStreaming
+                  .fetchAll(
+                    predicate,
+                    entityTypes,
+                    offset,
+                    config.query,
+                    xas
+                  )
+                  .evalMap(toServerSentEvent(_, fetchUuids))
+              }
+          }
 
-        override def stream(org: Label, offset: Offset): IO[OrganizationRejection, Stream[Task, ServerSentEvent]] =
-          fetchOrg(org).as(stream(Predicate.Org(org), None, offset))
+          override def stream(offset: Offset): Stream[Task, ServerSentEvent] = stream(Predicate.root, None, offset)
 
-        override def streamBy(selector: Label, org: Label, offset: Offset)
-            : IO[OrganizationRejection, Stream[Task, ServerSentEvent]] =
-          fetchOrg(org).as(stream(Predicate.Org(org), Some(selector), offset))
+          override def streamBy(selector: Label, offset: Offset): Stream[Task, ServerSentEvent] =
+            stream(Predicate.root, Some(selector), offset)
 
-        override def stream(project: ProjectRef, offset: Offset): IO[ProjectRejection, Stream[Task, ServerSentEvent]] =
-          fetchProject(project).as(stream(Predicate.Project(project), None, offset))
+          override def stream(org: Label, offset: Offset): IO[OrganizationRejection, Stream[Task, ServerSentEvent]] =
+            fetchOrg(org).as(stream(Predicate.Org(org), None, offset))
 
-        override def streamBy(selector: Label, project: ProjectRef, offset: Offset)
-            : IO[ProjectRejection, Stream[Task, ServerSentEvent]] =
-          fetchProject(project).as(stream(Predicate.Project(project), Some(selector), offset))
+          override def streamBy(selector: Label, org: Label, offset: Offset)
+              : IO[OrganizationRejection, Stream[Task, ServerSentEvent]] =
+            fetchOrg(org).as(stream(Predicate.Org(org), Some(selector), offset))
 
-        override def allSelectors: Set[Label] = sseEncoders.flatMap(_.selectors)
+          override def stream(project: ProjectRef, offset: Offset)
+              : IO[ProjectRejection, Stream[Task, ServerSentEvent]] =
+            fetchProject(project).as(stream(Predicate.Project(project), None, offset))
 
-        override def scopedSelectors: Set[Label] = sseEncoders.flatMap { encoder =>
-          if (encoder.handlesScopedEvent) encoder.selectors else Set.empty
+          override def streamBy(selector: Label, project: ProjectRef, offset: Offset)
+              : IO[ProjectRejection, Stream[Task, ServerSentEvent]] =
+            fetchProject(project).as(stream(Predicate.Project(project), Some(selector), offset))
         }
       }
-    }
+      .tapEval { sseLog =>
+        UIO.delay(logger.info(s"SseLog is configured with selectors: ${sseLog.allSelectors.mkString("'", "','", "'")}"))
+      }
 
 }
