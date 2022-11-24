@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.projections
 
 import akka.http.scaladsl.model.sse.ServerSentEvent
-import cats.syntax.all._
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils
@@ -225,22 +224,21 @@ object Projections {
       def statistics(project: ProjectRef, tag: Option[Tag], projectionId: String): UIO[ProgressStatistics] =
         for {
           current   <- progress(projectionId)
-          remaining <- current.flatTraverse { c =>
-                         StreamingQuery.remaining(project, tag.getOrElse(Tag.latest), c.offset, xas)
-                       }
+          remaining <-
+            StreamingQuery.remaining(project, tag.getOrElse(Tag.latest), current.fold(Offset.start)(_.offset), xas)
         } yield statistics(current, remaining)
 
       def statistics(projectionId: String, remaining: Option[RemainingElems]): UIO[ProgressStatistics] =
         progress(projectionId).map(statistics(_, remaining))
 
-      private def statistics(current: Option[ProjectionProgress], remaining: Option[RemainingElems]) =
+      private def statistics(current: Option[ProjectionProgress], remaining: Option[RemainingElems]) = {
         (current, remaining) match {
           case (Some(c), Some(r)) =>
             ProgressStatistics(
               c.processed,
               c.discarded,
               c.failed,
-              r.count,
+              c.processed + r.count,
               Some(r.maxInstant),
               Some(c.instant)
             )
@@ -264,5 +262,6 @@ object Projections {
             )
           case (None, None)       => ProgressStatistics.empty
         }
+      }
     }
 }

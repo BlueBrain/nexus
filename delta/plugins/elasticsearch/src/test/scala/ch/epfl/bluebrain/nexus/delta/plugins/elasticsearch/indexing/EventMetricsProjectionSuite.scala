@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing
 
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{EventMetricsProjection, Fixtures}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric.{Created, ProjectScopedMetric, Updated}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
@@ -50,8 +51,8 @@ class EventMetricsProjectionSuite extends BioSuite with SupervisorSetup.Fixture 
   )
 
   private val envelopes = List(
-    Envelope(EntityType("entity"), "first", 1, metric1, Instant.EPOCH, Offset.At(1L)),
-    Envelope(EntityType("entity"), "second", 1, metric2, Instant.EPOCH, Offset.At(2L))
+    Envelope(EntityType("entity"), nxv + "first", 1, metric1, Instant.EPOCH, Offset.At(1L)),
+    Envelope(EntityType("entity"), nxv + "second", 1, metric2, Instant.EPOCH, Offset.At(2L))
   )
 
   test("Start the metrics projection") {
