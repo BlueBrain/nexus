@@ -7,7 +7,6 @@ import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts => fileContexts}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.{ProjectContextRejection, StorageFetchRejection}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageStatsCollection.StorageStatEntry
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, Storage, StorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{contexts => storageContexts, _}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -95,15 +94,18 @@ class StoragesRoutesSpec extends BaseRouteSpec with TryValues with StorageFixtur
 
   implicit private val c: Crypto = crypto
 
-  private val storageStatistics = StoragesStatisticsSetup.init(
-    Map(
-      project -> Map(
-        dId  -> StorageStatEntry(10L, 1000L),
-        rdId -> StorageStatEntry(50L, 5000L),
-        s3Id -> StorageStatEntry(100L, 10000L)
-      )
-    )
-  )
+  private val storageStatistics =
+    StoragesStatistics(_ => IO.pure(Json.Null), (_, _) => IO.pure(iri"storageId"))
+
+//  private val storageStatistics = StoragesStatisticsSetup.init(
+//    Map(
+//      project -> Map(
+//        dId  -> StorageStatEntry(10L, 1000L),
+//        rdId -> StorageStatEntry(50L, 5000L),
+//        s3Id -> StorageStatEntry(100L, 10000L)
+//      )
+//    )
+//  )
 
   private val cfg = StoragesConfig(eventLogConfig, pagination, config)
 

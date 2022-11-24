@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutesSpec.fileMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{permissions, FileFixtures, Files, FilesConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{StorageRejection, StorageType}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{permissions => storagesPermissions, StorageFixtures, Storages, StoragesConfig, StoragesStatisticsSetup}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{permissions => storagesPermissions, StorageFixtures, Storages, StoragesConfig, StoragesStatistics}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes.`application/ld+json`
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
@@ -73,7 +73,7 @@ class FilesRoutesSpec extends BaseRouteSpec with CancelAfterFailure with Storage
   private val stCfg = config.copy(disk = config.disk.copy(defaultMaxFileSize = 1000, allowedVolumes = Set(path)))
 
   private val storageStatistics =
-    StoragesStatisticsSetup.init(Map.empty)
+    StoragesStatistics(_ => IO.pure(Json.Null), (_, _) => IO.pure(iri"storageId"))
 
   private val aclCheck        = AclSimpleCheck().accepted
   lazy val storages: Storages = Storages(

@@ -13,10 +13,9 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotFound
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageStatsCollection.StorageStatEntry
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.{RemoteDiskStorage => RemoteStorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageFixtures, Storages, StoragesConfig, StoragesStatisticsSetup}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageFixtures, Storages, StoragesConfig, StoragesStatistics}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
@@ -35,6 +34,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.testkit.remotestorage.RemoteStorageDocker
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, DoobieScalaTestFixture, IOFixedClock, IOValues}
+import io.circe.Json
 import monix.bio.IO
 import monix.execution.Scheduler
 import org.scalatest.concurrent.Eventually
@@ -98,8 +98,8 @@ class FilesSpec(docker: RemoteStorageDocker)
       remoteDisk = Some(config.remoteDisk.value.copy(defaultMaxFileSize = 500))
     )
 
-    val storageStatistics       =
-      StoragesStatisticsSetup.init(Map(project -> Map(diskId -> StorageStatEntry(10L, 100L))))
+    val storageStatistics =
+      StoragesStatistics(_ => IO.pure(Json.Null), (_, _) => IO.pure(iri"storageId"))
 
     lazy val storages: Storages = Storages(
       fetchContext.mapRejection(StorageRejection.ProjectContextRejection),
