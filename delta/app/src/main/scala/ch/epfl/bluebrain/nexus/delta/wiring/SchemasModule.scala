@@ -16,6 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
@@ -89,6 +90,8 @@ object SchemasModule extends ModuleDef {
   }
 
   many[SseEncoder[_]].add { base: BaseUri => SchemaEvent.sseEncoder(base) }
+
+  many[ScopedEventMetricEncoder[_]].add { SchemaEvent.schemaEventMetricEncoder }
 
   many[ApiMappings].add(Schemas.mappings)
 

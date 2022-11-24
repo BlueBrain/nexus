@@ -23,6 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
@@ -34,7 +35,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projections
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeChain, ReferenceRegistry, Supervisor}
 import izumi.distage.model.definition.{Id, ModuleDef}
-import monix.bio.UIO
+import monix.bio.{Task, UIO}
 import monix.execution.Scheduler
 
 /**
@@ -113,6 +114,27 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         client,
         config.batch
       )(cr)
+  }
+
+  make[EventMetricsProjection].fromEffect {
+    (
+        metricEncoders: Set[ScopedEventMetricEncoder[_]],
+        xas: Transactors,
+        supervisor: Supervisor,
+        client: ElasticSearchClient,
+        config: ElasticSearchViewsConfig
+    ) =>
+      if (config.disableMetricsProjection)
+        Task.unit.as(new EventMetricsProjection {})
+      else
+        EventMetricsProjection(
+          metricEncoders,
+          supervisor,
+          client,
+          xas,
+          config.batch,
+          config.metricsQuery
+        )
   }
 
   make[ElasticSearchViewsQuery].from {
@@ -197,6 +219,8 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
     }
 
   many[SseEncoder[_]].add { base: BaseUri => ElasticSearchViewEvent.sseEncoder(base) }
+
+  many[ScopedEventMetricEncoder[_]].add { ElasticSearchViewEvent.esViewMetricEncoder }
 
   many[RemoteContextResolution].addEffect {
     (

@@ -78,4 +78,16 @@ package object model {
     .logAndDiscardErrors("loading empty elasticsearch results")
     .map(_.asJson)
     .memoize
+
+  /** Mapping for the event metrics index */
+  val metricsMapping: UIO[JsonObject] = ClasspathResourceUtils
+    .ioJsonObjectContentOf("metrics/metrics-mapping.json")
+    .logAndDiscardErrors("loading metrics mapping")
+    .memoize
+
+  /** Settings for the event metrics index */
+  val metricsSettings: UIO[JsonObject] = ClasspathResourceUtils
+    .ioJsonObjectContentOf("metrics/metrics-settings.json")
+    .logAndDiscardErrors("loading metrics settings")
+    .memoize
 }
