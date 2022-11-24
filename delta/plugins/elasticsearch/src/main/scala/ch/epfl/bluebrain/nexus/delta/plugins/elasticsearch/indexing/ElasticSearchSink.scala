@@ -42,11 +42,11 @@ final class ElasticSearchSink(
     val bulk = elements.foldLeft(List.empty[ElasticSearchBulk]) {
       case (acc, Elem.SuccessElem(_, id, _, _, _, json, _)) =>
         if (json.isEmpty()) {
-          ElasticSearchBulk.Delete(index, id) :: acc
+          ElasticSearchBulk.Delete(index, id.toString) :: acc
         } else
-          ElasticSearchBulk.Index(index, id, json) :: acc
+          ElasticSearchBulk.Index(index, id.toString, json) :: acc
       case (acc, Elem.DroppedElem(_, id, _, _, _, _))       =>
-        ElasticSearchBulk.Delete(index, id) :: acc
+        ElasticSearchBulk.Delete(index, id.toString) :: acc
       case (acc, _: Elem.FailedElem)                        => acc
     }
 

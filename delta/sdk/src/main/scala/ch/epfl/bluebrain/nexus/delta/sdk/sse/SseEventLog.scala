@@ -114,7 +114,7 @@ object SseEventLog {
   type ServerSentEventStream = Stream[Task, ServerSentEvent]
 
   private[sse] def toServerSentEvent(
-      envelope: Envelope[String, SseData],
+      envelope: Envelope[SseData],
       fetchUuids: ProjectRef => UIO[Option[(UUID, UUID)]]
   )(implicit jo: JsonKeyOrdering): UIO[ServerSentEvent] = {
     val data = envelope.value.data

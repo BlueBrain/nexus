@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.projections
 
 import akka.http.scaladsl.model.sse.ServerSentEvent
+import cats.syntax.all._
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils
@@ -153,12 +154,12 @@ trait Projections {
     * Retrieves the progress of the provided ''projectionId'' and uses the provided ''remaining elems'' to compute its
     * statistics.
     *
-    * @param remainingElems
-    *   a description of the remaining elements to stream
     * @param projectionId
     *   the projection id for which the statistics are computed
+    * @param remaining
+    *   a description of the remaining elements to stream
     */
-  def statistics(remainingElems: RemainingElems, projectionId: String): UIO[ProgressStatistics]
+  def statistics(projectionId: String, remaining: Option[RemainingElems]): UIO[ProgressStatistics]
 }
 
 object Projections {
@@ -223,29 +224,42 @@ object Projections {
 
       def statistics(project: ProjectRef, tag: Option[Tag], projectionId: String): UIO[ProgressStatistics] =
         for {
-          current   <- progress(projectionId).map(_.getOrElse(ProjectionProgress.NoProgress))
-          remaining <- StreamingQuery.remaining(project, tag.getOrElse(Tag.latest), current.offset, xas)
-        } yield ProgressStatistics(
-          current.processed,
-          current.discarded,
-          current.failed,
-          current.processed + remaining.fold(0L)(_.count),
-          remaining.map(_.maxInstant),
-          Some(current.instant)
-        )
+          current   <- progress(projectionId)
+          remaining <- current.flatTraverse { c =>
+            StreamingQuery.remaining(project, tag.getOrElse(Tag.latest), c.offset, xas)
+          }
+        } yield statistics(current, remaining)
 
-      def statistics(remainingElems: RemainingElems, projectionId: String): UIO[ProgressStatistics] =
-        progress(projectionId).map {
-          case None          => ProgressStatistics(0L, 0L, 0L, remainingElems.count, Some(remainingElems.maxInstant), None)
-          case Some(current) =>
-            ProgressStatistics(
-              current.processed,
-              current.discarded,
-              current.failed,
-              remainingElems.count,
-              Some(remainingElems.maxInstant),
-              Some(current.instant)
+      def statistics(projectionId: String, remaining: Option[RemainingElems]): UIO[ProgressStatistics] =
+        progress(projectionId).map(statistics(_, remaining))
+
+      private def statistics(current: Option[ProjectionProgress], remaining: Option[RemainingElems]) =
+        (current, remaining) match {
+          case (Some(c), Some (r)) => ProgressStatistics (
+                c.processed,
+              c.discarded,
+              c.failed,
+              r.count,
+              Some (r.maxInstant),
+            Some (c.instant)
             )
+          case (None, Some (r)) => ProgressStatistics (
+            0L,
+            0L,
+            0L,
+            r.count,
+            Some (r.maxInstant),
+            None
+          )
+          case (Some(c), None) => ProgressStatistics (
+            c.processed,
+            c.discarded,
+            c.failed,
+            c.processed,
+            Some (c.instant),
+            Some (c.instant)
+          )
+          case (None, None) => ProgressStatistics.empty
         }
     }
 }

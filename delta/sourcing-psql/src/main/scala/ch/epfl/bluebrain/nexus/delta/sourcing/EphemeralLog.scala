@@ -5,7 +5,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.EphemeralLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.EphemeralStateStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.EphemeralState
-import doobie._
 import doobie.implicits._
 import doobie.postgres.sqlstate
 import monix.bio.IO
@@ -54,7 +53,7 @@ object EphemeralLog {
   /**
     * Creates on a ephemeral log for the given definition and config
     */
-  def apply[Id: Put, S <: EphemeralState, Command, Rejection](
+  def apply[Id, S <: EphemeralState, Command, Rejection](
       definition: EphemeralDefinition[Id, S, Command, Rejection],
       config: EphemeralLogConfig,
       xas: Transactors

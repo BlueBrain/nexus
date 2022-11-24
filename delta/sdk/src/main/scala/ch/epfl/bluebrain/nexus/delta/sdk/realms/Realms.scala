@@ -4,12 +4,14 @@ import akka.http.scaladsl.model.Uri
 import cats.data.NonEmptySet
 import cats.effect.Clock
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.RealmResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.RealmSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Name, ResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.RealmCommand.{CreateRealm, DeprecateRealm, UpdateRealm}
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.RealmEvent.{RealmCreated, RealmDeprecated, RealmUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.RealmRejection.{IncorrectRev, RealmAlreadyDeprecated, RealmAlreadyExists, RealmNotFound, RealmOpenIdConfigAlreadyExists}
@@ -127,6 +129,11 @@ object Realms {
     */
   final val entityType: EntityType = EntityType("realm")
 
+  /**
+    * Encode the realm label as an [[Iri]]
+    */
+  def encodeId(l: Label): Iri = ResourceUris.realm(l).relativeAccessUri.toIri
+
   private[delta] def next(state: Option[RealmState], event: RealmEvent): Option[RealmState] = {
     // format: off
     def created(e: RealmCreated): Option[RealmState] =
@@ -200,8 +207,8 @@ object Realms {
     *
     * @param wellKnown
     *   how to extract the well known configuration
-    * @param existingRealms
-    *   the existing realms
+    * @param openIdExists
+    *   check if the openId configuration has already been registered in Nexus
     */
   def definition(
       wellKnown: Uri => IO[RealmRejection, WellKnown],

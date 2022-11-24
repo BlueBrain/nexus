@@ -224,7 +224,7 @@ object ResourceEvent {
     implicit val configuration: Configuration = Serializer.circeConfiguration
 
     implicit val coder: Codec.AsObject[ResourceEvent] = deriveConfiguredCodec[ResourceEvent]
-    Serializer(_.id)
+    Serializer()
   }
 
   val resourceEventMetricEncoder: ScopedEventMetricEncoder[ResourceEvent] =

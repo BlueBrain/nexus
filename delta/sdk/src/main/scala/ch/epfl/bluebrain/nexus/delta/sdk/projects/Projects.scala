@@ -3,7 +3,9 @@ package ch.epfl.bluebrain.nexus.delta.sdk.projects
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils.instant
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.ProjectResource
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceUris
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ProjectSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
@@ -13,13 +15,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectCommand.{CreatePr
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectEvent.{ProjectCreated, ProjectDeprecated, ProjectMarkedForDeletion, ProjectUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.{IncorrectRev, ProjectAlreadyExists, ProjectIsDeprecated, ProjectIsMarkedForDeletion, ProjectNotFound, WrappedOrganizationRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, EnvelopeStream, Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{ScopedEntityDefinition, StateMachine}
 import monix.bio.{IO, UIO}
-
-import java.util.UUID
 
 trait Projects {
 
@@ -127,23 +127,6 @@ trait Projects {
   ): UIO[UnscoredSearchResults[ProjectResource]]
 
   /**
-    * A non terminating stream of events for projects. After emitting all known events it sleeps until new events are
-    * recorded.
-    *
-    * @param offset
-    *   the last seen event offset; it will not be emitted by the stream
-    */
-  def events(offset: Offset): EnvelopeStream[ProjectRef, ProjectEvent]
-
-  /**
-    * The current project events. The stream stops after emitting all known events.
-    *
-    * @param offset
-    *   the last seen event offset; it will not be emitted by the stream
-    */
-  def currentEvents(offset: Offset): EnvelopeStream[ProjectRef, ProjectEvent]
-
-  /**
     * The default api mappings
     */
   def defaultApiMappings: ApiMappings
@@ -153,15 +136,16 @@ trait Projects {
 object Projects {
 
   type FetchOrganization = Label => IO[ProjectRejection, Organization]
-  type FetchUuids        = ProjectRef => UIO[Option[(UUID, UUID)]]
-
-  implicit def toFetchUuids(projects: Projects): FetchUuids =
-    projects.fetch(_).redeem(_ => None, r => Some(r.value.organizationUuid -> r.value.uuid))
 
   /**
     * The projects entity type.
     */
-  final val entityType: EntityType                          = EntityType("project")
+  final val entityType: EntityType = EntityType("project")
+
+  /**
+    * Encode the project reference as an [[Iri]]
+    */
+  def encodeId(project: ProjectRef): Iri = ResourceUris.project(project).relativeAccessUri.toIri
 
   private[delta] def next(state: Option[ProjectState], event: ProjectEvent): Option[ProjectState] =
     (state, event) match {

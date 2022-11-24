@@ -1,5 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.state
 
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sourcing.{DeleteExpired, Message}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Message.MessageState
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, User}
@@ -18,7 +20,7 @@ class EphemeralStateStoreSuite extends BioSuite with Doobie.Fixture with Doobie.
 
   private lazy val xas = doobie()
 
-  private lazy val store = EphemeralStateStore[String, MessageState](
+  private lazy val store = EphemeralStateStore[Iri, MessageState](
     Message.entityType,
     MessageState.serializer,
     5.seconds,
@@ -29,9 +31,11 @@ class EphemeralStateStoreSuite extends BioSuite with Doobie.Fixture with Doobie.
 
   private val alice = User("Alice", Label.unsafe("Wonderland"))
 
-  private val message1 = MessageState("m1", project1, "Hello, world !", alice, Instant.EPOCH, Anonymous)
+  private val m1       = nxv + "m1"
+  private val message1 = MessageState(m1, project1, "Hello, world !", alice, Instant.EPOCH, Anonymous)
 
-  private val message2 = MessageState("m2", project1, "Bye !", alice, Instant.EPOCH.plusSeconds(60L), Anonymous)
+  private val m2       = nxv + "m2"
+  private val message2 = MessageState(m2, project1, "Bye !", alice, Instant.EPOCH.plusSeconds(60L), Anonymous)
 
   private lazy val deleteExpired = new DeleteExpired(xas)(IOFixedClock.ioClock(Instant.EPOCH.plusSeconds(6L)))
 
@@ -44,17 +48,17 @@ class EphemeralStateStoreSuite extends BioSuite with Doobie.Fixture with Doobie.
 
   test("get the states") {
     for {
-      _ <- store.get(project1, "m1").assertSome(message1)
-      _ <- store.get(project1, "m2").assertSome(message2)
-      _ <- store.get(project1, "mx").assertNone
+      _ <- store.get(project1, m1).assertSome(message1)
+      _ <- store.get(project1, m2).assertSome(message2)
+      _ <- store.get(project1, nxv + "mx").assertNone
     } yield ()
   }
 
-  test("delete expired state m1") {
+  test("delete expired state " + m1) {
     for {
       _ <- deleteExpired()
-      _ <- store.get(project1, "m1").assertNone
-      _ <- store.get(project1, "m2").assertSome(message2)
+      _ <- store.get(project1, m1).assertNone
+      _ <- store.get(project1, m2).assertSome(message2)
     } yield ()
   }
 }

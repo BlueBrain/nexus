@@ -264,7 +264,7 @@ object FileEvent {
     implicit val fileAttributesCodec: Codec.AsObject[FileAttributes] =
       deriveConfiguredCodec[FileAttributes]
     implicit val coder: Codec.AsObject[FileEvent]                    = deriveConfiguredCodec[FileEvent]
-    Serializer(_.id)
+    Serializer()
   }
 
   val fileEventMetricEncoder: ScopedEventMetricEncoder[FileEvent] =

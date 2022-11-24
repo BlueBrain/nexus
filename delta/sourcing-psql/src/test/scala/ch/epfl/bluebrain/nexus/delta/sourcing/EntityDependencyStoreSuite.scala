@@ -1,11 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestState
+import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.IriInstances._
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestState.PullRequestActive
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityDependency, Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityDependency, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore
 import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
@@ -33,11 +35,11 @@ class EntityDependencyStoreSuite extends BioSuite with Doobie.Fixture {
     xas
   )
 
-  private val id1   = Label.unsafe("id1")
-  private val id2   = Label.unsafe("id2")
-  private val id3   = Label.unsafe("id3")
-  private val id4   = Label.unsafe("id4")
-  private val id5   = Label.unsafe("id5")
+  private val id1   = nxv + "id1"
+  private val id2   = nxv + "id2"
+  private val id3   = nxv + "id3"
+  private val id4   = nxv + "id4"
+  private val id5   = nxv + "id5"
   private val proj  = ProjectRef.unsafe("org", "proj")
   private val proj2 = ProjectRef.unsafe("org", "proj2")
 
@@ -46,11 +48,11 @@ class EntityDependencyStoreSuite extends BioSuite with Doobie.Fixture {
   private val state3 = PullRequestActive(id3, proj, 1, Instant.EPOCH, Anonymous, Instant.EPOCH, Anonymous)
   private val state5 = PullRequestActive(id5, proj2, 1, Instant.EPOCH, Anonymous, Instant.EPOCH, Anonymous)
 
-  private val dependencyId1 = EntityDependency(proj, id1.toString)
-  private val dependencyId2 = EntityDependency(proj, id2.toString)
-  private val dependencyId3 = EntityDependency(proj, id3.toString)
-  private val dependencyId4 = EntityDependency(proj2, id4.toString)
-  private val dependencyId5 = EntityDependency(proj2, id5.toString)
+  private val dependencyId1 = EntityDependency(proj, id1)
+  private val dependencyId2 = EntityDependency(proj, id2)
+  private val dependencyId3 = EntityDependency(proj, id3)
+  private val dependencyId4 = EntityDependency(proj2, id4)
+  private val dependencyId5 = EntityDependency(proj2, id5)
 
   test("Save the different states") {
     List(state1, state2, state3, state5).traverse(stateStore.save(_)).transact(xas.write)

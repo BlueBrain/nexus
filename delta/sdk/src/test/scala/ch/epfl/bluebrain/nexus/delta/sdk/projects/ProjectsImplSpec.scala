@@ -9,14 +9,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.{OrganizationIsDeprecated, OrganizationNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects.FetchOrganization
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectEvent.{ProjectCreated, ProjectDeprecated, ProjectMarkedForDeletion, ProjectUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.{IncorrectRev, ProjectAlreadyExists, ProjectIsDeprecated, ProjectNotFound, WrappedOrganizationRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, SSEUtils, ScopeInitializationLog}
+import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, ScopeInitializationLog}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.testkit.{DoobieScalaTestFixture, IOFixedClock, IOValues}
 import monix.bio.{IO, UIO}
 import org.scalatest.matchers.should.Matchers
@@ -261,56 +259,6 @@ class ProjectsImplSpec
           .accepted
 
       results shouldEqual SearchResults(1L, Vector(anotherProjResource))
-    }
-
-    val allEvents = SSEUtils.extract(
-      (ref, ProjectCreated, 1L),
-      (anotherRef, ProjectCreated, 2L),
-      (ref, ProjectUpdated, 3L),
-      (ref, ProjectDeprecated, 4L),
-      (ref, ProjectMarkedForDeletion, 5L)
-    )
-
-    "get the different events from start" in {
-      val events = projects
-        .events(Offset.Start)
-        .map { e => (e.value.project, e.valueClass, e.offset) }
-        .take(allEvents.size.toLong)
-        .compile
-        .toList
-
-      events.accepted shouldEqual allEvents
-    }
-
-    "get the different events from offset 2" in {
-      val events = projects
-        .events(Offset.at(2L))
-        .map { e => (e.value.project, e.valueClass, e.offset) }
-        .take(3L)
-        .compile
-        .toList
-
-      events.accepted shouldEqual allEvents.drop(2)
-    }
-
-    "get the different current events from start" in {
-      val events = projects
-        .currentEvents(Offset.Start)
-        .map { e => (e.value.project, e.valueClass, e.offset) }
-        .compile
-        .toList
-
-      events.accepted shouldEqual allEvents
-    }
-
-    "get the different current events from offset 2" in {
-      val events = projects
-        .currentEvents(Offset.at(2L))
-        .map { e => (e.value.project, e.valueClass, e.offset) }
-        .compile
-        .toList
-
-      events.accepted shouldEqual allEvents.drop(2)
     }
   }
 }

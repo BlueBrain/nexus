@@ -462,7 +462,7 @@ class BlazegraphViewsRoutesSpec
         response.asJson shouldEqual json"""{"@context": "${Vocabulary.contexts.offset}", "@type": "Start"}"""
         projections.restarts(Offset.start).compile.lastOrError.accepted shouldEqual SuccessElem(
           ProjectionRestart.entityType,
-          Offset.at(1L).toString,
+          ProjectionRestart.restartId(Offset.at(1L)),
           None,
           Instant.EPOCH,
           Offset.at(1L),
@@ -499,8 +499,9 @@ class BlazegraphViewsRoutesSpec
       val metadata = ProjectionMetadata("testModule", "testName", Some(projectRef), Some(indexingViewId))
       val error    = new Exception("boom")
       val rev      = 1
-      val fail1    = FailedElem(EntityType("ACL"), "myid", Some(projectRef), Instant.EPOCH, Offset.At(42L), error, rev)
-      val fail2    = FailedElem(EntityType("Schema"), "myid", None, Instant.EPOCH, Offset.At(42L), error, rev)
+      val fail1    =
+        FailedElem(EntityType("ACL"), nxv + "myid", Some(projectRef), Instant.EPOCH, Offset.At(42L), error, rev)
+      val fail2    = FailedElem(EntityType("Schema"), nxv + "myid", None, Instant.EPOCH, Offset.At(42L), error, rev)
       projections.saveFailedElems(metadata, List(fail1, fail2)).accepted
 
       Get("/v1/views/org/proj/indexing-view/failures") ~> routes ~> check {

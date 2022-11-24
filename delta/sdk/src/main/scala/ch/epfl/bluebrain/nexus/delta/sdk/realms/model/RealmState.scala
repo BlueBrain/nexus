@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.RealmResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.realms.Realms
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
@@ -84,6 +84,11 @@ final case class RealmState(
   private val uris = ResourceUris.realm(label)
 
   /**
+    * The relative [[Iri]] of the realm
+    */
+  def id: Iri = Realms.encodeId(label)
+
+  /**
     * @return
     *   the schema reference that realm conforms to
     */
@@ -122,7 +127,7 @@ final case class RealmState(
     */
   def toResource: RealmResource =
     ResourceF(
-      id = uris.relativeAccessUri.toIri,
+      id = id,
       uris = uris,
       rev = rev,
       types = types,
@@ -144,6 +149,6 @@ object RealmState {
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
     implicit val configuration: Configuration      = Serializer.circeConfiguration
     implicit val coder: Codec.AsObject[RealmState] = deriveConfiguredCodec[RealmState]
-    Serializer(_.label)
+    Serializer(Realms.encodeId)
   }
 }

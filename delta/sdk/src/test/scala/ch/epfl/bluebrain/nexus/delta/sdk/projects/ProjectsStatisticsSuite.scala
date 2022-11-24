@@ -2,6 +2,8 @@ package ch.epfl.bluebrain.nexus.delta.sdk.projects
 
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.ProjectsStatisticsSuite.{Cheese, Fruit}
@@ -31,14 +33,14 @@ class ProjectsStatisticsSuite extends BioSuite with Doobie.Fixture with ConfigFi
 
   private val epoch = Instant.EPOCH
 
-  private lazy val fruitStore = ScopedStateStore[String, Fruit](
+  private lazy val fruitStore = ScopedStateStore[Iri, Fruit](
     EntityType("fruit"),
     Fruit.serializer,
     queryConfig,
     xas
   )
 
-  private lazy val cheeseStore = ScopedStateStore[String, Cheese](
+  private lazy val cheeseStore = ScopedStateStore[Iri, Cheese](
     EntityType("cheese"),
     Cheese.serializer,
     queryConfig,
@@ -56,12 +58,12 @@ class ProjectsStatisticsSuite extends BioSuite with Doobie.Fixture with ConfigFi
 
   test("Insert some fruits and cheeses") {
     (
-      fruitStore.save(Fruit(proj, "banana", 3, epoch)) >>
-        fruitStore.save(Fruit(proj, "apple", 1, epoch.plusSeconds(10L))) >>
-        fruitStore.save(Fruit(proj, "banana", 1, epoch), UserTag.unsafe("v1")) >>
-        cheeseStore.save(Cheese(proj, "gruyere", 5, epoch.plusSeconds(15L))) >>
-        fruitStore.save(Fruit(proj2, "pineapple", 3, epoch)) >>
-        cheeseStore.save(Cheese(proj2, "morbier", 3, epoch))
+      fruitStore.save(Fruit(proj, nxv + "banana", 3, epoch)) >>
+        fruitStore.save(Fruit(proj, nxv + "apple", 1, epoch.plusSeconds(10L))) >>
+        fruitStore.save(Fruit(proj, nxv + "banana", 1, epoch), UserTag.unsafe("v1")) >>
+        cheeseStore.save(Cheese(proj, nxv + "gruyere", 5, epoch.plusSeconds(15L))) >>
+        fruitStore.save(Fruit(proj2, nxv + "pineapple", 3, epoch)) >>
+        cheeseStore.save(Cheese(proj2, nxv + "morbier", 3, epoch))
     ).transact(xas.write).assert(())
   }
 
@@ -80,7 +82,7 @@ class ProjectsStatisticsSuite extends BioSuite with Doobie.Fixture with ConfigFi
 
 object ProjectsStatisticsSuite {
 
-  final case class Fruit(project: ProjectRef, id: String, rev: Int, updatedAt: Instant) extends ScopedState {
+  final case class Fruit(project: ProjectRef, id: Iri, rev: Int, updatedAt: Instant) extends ScopedState {
 
     override def deprecated: Boolean = false
 
@@ -97,14 +99,14 @@ object ProjectsStatisticsSuite {
 
   object Fruit {
     @nowarn("cat=unused")
-    val serializer: Serializer[String, Fruit] = {
+    val serializer: Serializer[Iri, Fruit] = {
       implicit val configuration: Configuration = Serializer.circeConfiguration
       implicit val coder: Codec.AsObject[Fruit] = deriveConfiguredCodec[Fruit]
-      Serializer(_.id)
+      Serializer()
     }
   }
 
-  final case class Cheese(project: ProjectRef, id: String, rev: Int, updatedAt: Instant) extends ScopedState {
+  final case class Cheese(project: ProjectRef, id: Iri, rev: Int, updatedAt: Instant) extends ScopedState {
 
     override def deprecated: Boolean = false
 
@@ -121,10 +123,10 @@ object ProjectsStatisticsSuite {
 
   object Cheese {
     @nowarn("cat=unused")
-    val serializer: Serializer[String, Cheese] = {
+    val serializer: Serializer[Iri, Cheese] = {
       implicit val configuration: Configuration  = Serializer.circeConfiguration
       implicit val coder: Codec.AsObject[Cheese] = deriveConfiguredCodec[Cheese]
-      Serializer(_.id)
+      Serializer()
     }
   }
 

@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.organizations.model
 
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -26,6 +27,11 @@ import scala.annotation.nowarn
   * Enumeration of organization event states
   */
 sealed trait OrganizationEvent extends GlobalEvent {
+
+  /**
+    * The relative [[Iri]] of the organization
+    */
+  def id: Iri = Organizations.encodeId(label)
 
   /**
     * @return
@@ -128,7 +134,7 @@ object OrganizationEvent {
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
     implicit val configuration: Configuration             = Serializer.circeConfiguration
     implicit val coder: Codec.AsObject[OrganizationEvent] = deriveConfiguredCodec[OrganizationEvent]
-    Serializer(_.label)
+    Serializer(Organizations.encodeId)
   }
 
   @nowarn("cat=unused")

@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.acls.model
 
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -24,6 +25,11 @@ import scala.annotation.nowarn
   * Enumeration of ACL event types.
   */
 sealed trait AclEvent extends GlobalEvent {
+
+  /**
+    * The relative [[Iri]] of the acl
+    */
+  override def id: Iri = Acls.encodeId(address)
 
   /**
     * @return
@@ -128,7 +134,7 @@ object AclEvent {
         deriveConfiguredEncoder[AclEvent].mapJsonObject(_.add("address", ev.address.asJson)).encodeObject(ev)
       }
     )
-    Serializer(_.address)
+    Serializer(Acls.encodeId)
   }
 
   def sseEncoder(implicit base: BaseUri): SseEncoder[AclEvent] = new SseEncoder[AclEvent] {

@@ -15,8 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EnvelopeStream, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import monix.bio.{IO, UIO}
 
 final class ProjectsImpl private (
@@ -96,12 +95,6 @@ final class ProjectsImpl private (
       pagination,
       ordering
     ).span("listProjects")
-
-  override def currentEvents(offset: Offset): EnvelopeStream[ProjectRef, ProjectEvent] =
-    log.currentEvents(Predicate.root, offset)
-
-  override def events(offset: Offset): EnvelopeStream[ProjectRef, ProjectEvent] =
-    log.events(Predicate.root, offset)
 
   private def eval(cmd: ProjectCommand): IO[ProjectRejection, ProjectResource] =
     log.evaluate(cmd.ref, cmd.ref, cmd).map(_._2.toResource(defaultApiMappings))

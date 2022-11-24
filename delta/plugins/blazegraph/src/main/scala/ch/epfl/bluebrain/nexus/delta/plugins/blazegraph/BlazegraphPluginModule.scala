@@ -109,7 +109,8 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         registry: ReferenceRegistry,
         supervisor: Supervisor,
         client: BlazegraphClient @Id("blazegraph-indexing-client"),
-        config: BlazegraphViewsConfig
+        config: BlazegraphViewsConfig,
+        baseUri: BaseUri
     ) =>
       BlazegraphCoordinator(
         views,
@@ -118,7 +119,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         supervisor,
         client,
         config.batch
-      )
+      )(baseUri)
   }
 
   make[BlazegraphViewsQuery].fromEffect {
@@ -209,9 +210,10 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         views: BlazegraphViews,
         registry: ReferenceRegistry,
         client: BlazegraphClient @Id("blazegraph-indexing-client"),
-        config: BlazegraphViewsConfig
+        config: BlazegraphViewsConfig,
+        baseUri: BaseUri
     ) =>
-      BlazegraphIndexingAction(views, registry, client, config.syncIndexingTimeout)
+      BlazegraphIndexingAction(views, registry, client, config.syncIndexingTimeout)(baseUri)
   }
 
   make[BlazegraphView.Shift].from { (views: BlazegraphViews, base: BaseUri) =>

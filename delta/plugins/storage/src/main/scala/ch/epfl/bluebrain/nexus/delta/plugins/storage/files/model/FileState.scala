@@ -105,6 +105,6 @@ object FileState {
     implicit val fileAttributesCodec: Codec.AsObject[FileAttributes] =
       deriveConfiguredCodec[FileAttributes]
     implicit val codec: Codec.AsObject[FileState]                    = deriveConfiguredCodec[FileState]
-    Serializer(_.id)
+    Serializer()
   }
 }

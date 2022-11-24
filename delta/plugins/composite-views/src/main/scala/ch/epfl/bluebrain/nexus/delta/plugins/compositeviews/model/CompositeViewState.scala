@@ -104,6 +104,6 @@ object CompositeViewState {
     implicit val configuration: Configuration                       = Serializer.circeConfiguration
     implicit val compositeViewValueCodec: Codec[CompositeViewValue] = CompositeViewValue.databaseCodec(crypto)
     implicit val codec: Codec.AsObject[CompositeViewState]          = deriveConfiguredCodec[CompositeViewState]
-    Serializer(_.id)
+    Serializer()
   }
 }

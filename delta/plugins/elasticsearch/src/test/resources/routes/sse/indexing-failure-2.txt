@@ -1,3 +1,3 @@
-data:{"@context":"https://bluebrain.github.io/nexus/contexts/error.json","errorType":"java.lang.Exception","id":"myid","message":"boom","offset":{"@type":"At","value":42},"revision":1}
+data:{"@context":"https://bluebrain.github.io/nexus/contexts/error.json","errorType":"java.lang.Exception","id":"https://bluebrain.github.io/nexus/vocabulary/myid","message":"boom","offset":{"@type":"At","value":42},"revision":1}
 event:IndexingFailure
 id:2

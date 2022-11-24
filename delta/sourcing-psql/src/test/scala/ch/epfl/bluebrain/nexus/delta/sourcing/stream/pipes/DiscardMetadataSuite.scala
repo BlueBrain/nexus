@@ -21,7 +21,7 @@ class DiscardMetadataSuite extends BioSuite {
   private val instant = Instant.now()
   private val project = ProjectRef(Label.unsafe("org"), Label.unsafe("proj"))
   private val state   = PullRequestActive(
-    id = Label.unsafe("id"),
+    id = base / "id",
     project = project,
     rev = 1,
     createdAt = instant,

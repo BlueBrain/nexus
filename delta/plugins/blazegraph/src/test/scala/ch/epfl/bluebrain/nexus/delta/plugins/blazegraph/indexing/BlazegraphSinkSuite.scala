@@ -2,11 +2,13 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing
 
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphClientSetup
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.InvalidIri
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Graph, NTriples}
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
@@ -20,6 +22,8 @@ import scala.concurrent.duration._
 class BlazegraphSinkSuite extends BioSuite with BlazegraphClientSetup.Fixture with TestHelpers {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(blazegraphClient)
+
+  implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
 
   private lazy val client = blazegraphClient()
   private val namespace   = "test_sink"
@@ -87,7 +91,7 @@ class BlazegraphSinkSuite extends BioSuite with BlazegraphClientSetup.Fixture wi
 
   test("Report errors when the id is not a valid absolute iri") {
     val chunk = Chunk(
-      SuccessElem(entityType, "wrong", None, Instant.EPOCH, Offset.at(5L), resource1Ntriples, 1)
+      SuccessElem(entityType, nxv + "é-wrong", None, Instant.EPOCH, Offset.at(5L), resource1Ntriples, 1)
     )
 
     for {

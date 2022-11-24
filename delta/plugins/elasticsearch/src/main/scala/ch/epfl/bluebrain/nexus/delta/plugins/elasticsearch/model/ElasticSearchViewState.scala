@@ -138,6 +138,6 @@ object ElasticSearchViewState {
     implicit val elasticSearchValueDecoder: Decoder[ElasticSearchViewValue] =
       deriveConfiguredDecoder[ElasticSearchViewValue]
     implicit val codec: Codec.AsObject[ElasticSearchViewState]              = deriveConfiguredCodec[ElasticSearchViewState]
-    Serializer(_.id)
+    Serializer()
   }
 }

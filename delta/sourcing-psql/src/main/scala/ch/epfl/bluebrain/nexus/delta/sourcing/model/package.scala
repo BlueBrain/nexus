@@ -6,7 +6,7 @@ import monix.bio.Task
 
 package object model {
 
-  type EnvelopeStream[Id, Value] = Stream[Task, Envelope[Id, Value]]
+  type EnvelopeStream[Value] = Stream[Task, Envelope[Value]]
 
   type ElemStream[Value] = Stream[Task, Elem[Value]]
 

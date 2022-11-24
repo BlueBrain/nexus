@@ -5,6 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.IndexingViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.{BlazegraphSink, IndexingViewDef}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
@@ -61,7 +62,7 @@ object BlazegraphIndexingAction {
       registry: ReferenceRegistry,
       client: BlazegraphClient,
       timeout: FiniteDuration
-  ): BlazegraphIndexingAction = {
+  )(implicit baseUri: BaseUri): BlazegraphIndexingAction = {
     val batchConfig = BatchConfig.individual
     new BlazegraphIndexingAction(
       views.currentIndexingViews,

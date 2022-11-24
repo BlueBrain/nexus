@@ -1,8 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.state
 
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestState.{PullRequestActive, PullRequestClosed}
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.{entityType, PullRequestState}
+import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.IriInstances._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.{Latest, UserTag}
@@ -25,7 +28,7 @@ class ScopedStateStoreSuite extends BioSuite with Doobie.Fixture with Doobie.Ass
 
   private lazy val xas = doobie()
 
-  private lazy val store = ScopedStateStore[Label, PullRequestState](
+  private lazy val store = ScopedStateStore[Iri, PullRequestState](
     PullRequest.entityType,
     PullRequestState.serializer,
     QueryConfig(1, RefreshStrategy.Delay(500.millis)),
@@ -38,9 +41,9 @@ class ScopedStateStoreSuite extends BioSuite with Doobie.Fixture with Doobie.Ass
   private val project2 = ProjectRef.unsafe("org", "proj2")
   private val project3 = ProjectRef.unsafe("org2", "proj2")
 
-  private val id1 = Label.unsafe("1")
-  private val id2 = Label.unsafe("2")
-  private val id4 = Label.unsafe("4")
+  private val id1 = nxv + "1"
+  private val id2 = nxv + "2"
+  private val id4 = nxv + "4"
 
   private val customTag = UserTag.unsafe("v0.1")
 
@@ -138,7 +141,7 @@ class ScopedStateStoreSuite extends BioSuite with Doobie.Fixture with Doobie.Ass
 
   test("Check that the given ids does exist") {
     EntityCheck
-      .raiseMissingOrDeprecated[Label, Set[(ProjectRef, Label)]](
+      .raiseMissingOrDeprecated[Iri, Set[(ProjectRef, Iri)]](
         entityType,
         Set(project1 -> id2, project2 -> id1),
         identity,
@@ -148,10 +151,10 @@ class ScopedStateStoreSuite extends BioSuite with Doobie.Fixture with Doobie.Ass
   }
 
   test("Check that the non existing ids are returned") {
-    val unknowns: Set[(ProjectRef, Label)] =
-      Set(project1 -> id1, project1 -> Label.unsafe("xxx"), ProjectRef.unsafe("xxx", "xxx") -> id4)
+    val unknowns: Set[(ProjectRef, Iri)] =
+      Set(project1 -> id1, project1 -> (nxv + "xxx"), ProjectRef.unsafe("xxx", "xxx") -> id4)
     EntityCheck
-      .raiseMissingOrDeprecated[Label, Set[(ProjectRef, Label)]](
+      .raiseMissingOrDeprecated[Iri, Set[(ProjectRef, Iri)]](
         entityType,
         Set(project1 -> id1, project1 -> id2) ++ unknowns,
         identity,

@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphCoordinator.logger
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.IndexingViewDef.{ActiveViewDef, DeprecatedViewDef}
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
@@ -110,7 +111,7 @@ object BlazegraphCoordinator {
       supervisor: Supervisor,
       client: BlazegraphClient,
       batchConfig: BatchConfig
-  ): Task[BlazegraphCoordinator] =
+  )(implicit baseUri: BaseUri): Task[BlazegraphCoordinator] =
     apply(
       views.indexingViews,
       graphStream,

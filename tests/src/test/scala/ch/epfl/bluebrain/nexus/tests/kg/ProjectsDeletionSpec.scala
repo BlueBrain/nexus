@@ -10,12 +10,15 @@ import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Events, Organizations
 import ch.epfl.bluebrain.nexus.tests.{BaseSpec, Identity}
 import io.circe.Json
 import io.circe.optics.JsonPath.root
-import org.scalatest.AppendedClues
+import org.scalatest.{AppendedClues, DoNotDiscover}
 
 import java.io.File
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import scala.reflect.io.Directory
+
+//TODO Reenable when deletion is reimplemented
+@DoNotDiscover
 final class ProjectsDeletionSpec extends BaseSpec with CirceEq with EitherValuable with AppendedClues {
 
   private val org   = genId()

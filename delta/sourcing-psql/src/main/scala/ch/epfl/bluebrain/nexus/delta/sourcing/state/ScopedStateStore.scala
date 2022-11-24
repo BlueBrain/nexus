@@ -2,10 +2,12 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.state
 
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.IriInstances._
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.{RefreshStrategy, StreamingQuery}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore.StateNotFound
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore.StateNotFound.{TagNotFound, UnknownState}
@@ -56,7 +58,7 @@ trait ScopedStateStore[Id, S <: ScopedState] {
     * @param predicate
     *   to filter returned states
     */
-  def currentStates(predicate: Predicate): EnvelopeStream[Id, S] =
+  def currentStates(predicate: Predicate): EnvelopeStream[S] =
     currentStates(predicate, Offset.Start)
 
   /**
@@ -68,7 +70,7 @@ trait ScopedStateStore[Id, S <: ScopedState] {
     * @param tag
     *   only states with this tag will be selected
     */
-  def currentStates(predicate: Predicate, tag: Tag): EnvelopeStream[Id, S] =
+  def currentStates(predicate: Predicate, tag: Tag): EnvelopeStream[S] =
     currentStates(predicate, tag, Offset.Start)
 
   /**
@@ -80,7 +82,7 @@ trait ScopedStateStore[Id, S <: ScopedState] {
     * @param offset
     *   the offset
     */
-  def currentStates(predicate: Predicate, offset: Offset): EnvelopeStream[Id, S] =
+  def currentStates(predicate: Predicate, offset: Offset): EnvelopeStream[S] =
     currentStates(predicate, Latest, offset)
 
   /**
@@ -94,7 +96,7 @@ trait ScopedStateStore[Id, S <: ScopedState] {
     * @param offset
     *   the offset
     */
-  def currentStates(predicate: Predicate, tag: Tag, offset: Offset): EnvelopeStream[Id, S]
+  def currentStates(predicate: Predicate, tag: Tag, offset: Offset): EnvelopeStream[S]
 
   /**
     * Fetches latest states from the given type from the beginning
@@ -105,7 +107,7 @@ trait ScopedStateStore[Id, S <: ScopedState] {
     * @param predicate
     *   to filter returned states
     */
-  def states(predicate: Predicate): EnvelopeStream[Id, S] =
+  def states(predicate: Predicate): EnvelopeStream[S] =
     states(predicate, Latest, Offset.Start)
 
   /**
@@ -119,7 +121,7 @@ trait ScopedStateStore[Id, S <: ScopedState] {
     * @param tag
     *   only states with this tag will be selected
     */
-  def states(predicate: Predicate, tag: Tag): EnvelopeStream[Id, S] = states(predicate, tag, Offset.Start)
+  def states(predicate: Predicate, tag: Tag): EnvelopeStream[S] = states(predicate, tag, Offset.Start)
 
   /**
     * Fetches latest states from the given type from the provided offset
@@ -132,7 +134,7 @@ trait ScopedStateStore[Id, S <: ScopedState] {
     * @param offset
     *   the offset
     */
-  def states(predicate: Predicate, offset: Offset): EnvelopeStream[Id, S] =
+  def states(predicate: Predicate, offset: Offset): EnvelopeStream[S] =
     states(predicate, Latest, offset)
 
   /**
@@ -148,7 +150,7 @@ trait ScopedStateStore[Id, S <: ScopedState] {
     * @param offset
     *   the offset
     */
-  def states(predicate: Predicate, tag: Tag, offset: Offset): EnvelopeStream[Id, S]
+  def states(predicate: Predicate, tag: Tag, offset: Offset): EnvelopeStream[S]
 
 }
 
@@ -168,13 +170,12 @@ object ScopedStateStore {
       serializer: Serializer[Id, S],
       config: QueryConfig,
       xas: Transactors
-  )(implicit getId: Get[Id], putId: Put[Id]): ScopedStateStore[Id, S] = new ScopedStateStore[Id, S] {
+  ): ScopedStateStore[Id, S] = new ScopedStateStore[Id, S] {
 
     import serializer._
 
     override def save(state: S, tag: Tag): doobie.ConnectionIO[Unit] = {
-      val id = extractId(state)
-      sql"SELECT 1 FROM scoped_states WHERE type = $tpe AND org = ${state.organization} AND project = ${state.project.project}  AND id = $id AND tag = $tag"
+      sql"SELECT 1 FROM scoped_states WHERE type = $tpe AND org = ${state.organization} AND project = ${state.project.project}  AND id = ${state.id} AND tag = $tag"
         .query[Int]
         .option
         .flatMap {
@@ -194,7 +195,7 @@ object ScopedStateStore {
                       |  $tpe,
                       |  ${state.organization},
                       |  ${state.project.project},
-                      |  $id,
+                      |  ${state.id},
                       |  $tag,
                       |  ${state.rev},
                       |  ${state.asJson},
@@ -213,7 +214,7 @@ object ScopedStateStore {
                  |  type = $tpe AND
                  |  org = ${state.organization} AND
                  |  project = ${state.project.project} AND
-                 |  id = $id AND
+                 |  id =  ${state.id} AND
                  |  tag = $tag
             """.stripMargin
           }.update.run.void
@@ -230,7 +231,7 @@ object ScopedStateStore {
 
     private def exists(ref: ProjectRef, id: Id): ConnectionIO[Boolean] =
       sql"""SELECT id FROM scoped_states WHERE type = $tpe AND org = ${ref.organization} AND project = ${ref.project} AND id = $id LIMIT 1"""
-        .query[Id]
+        .query[Iri]
         .option
         .map(_.isDefined)
 
@@ -256,23 +257,23 @@ object ScopedStateStore {
         tag: Tag,
         offset: Offset,
         strategy: RefreshStrategy
-    ): EnvelopeStream[Id, S] =
-      StreamingQuery[Envelope[Id, S]](
+    ): EnvelopeStream[S] =
+      StreamingQuery[Envelope[S]](
         offset,
         offset =>
           // format: off
           sql"""SELECT type, id, value, rev, instant, ordering FROM public.scoped_states
                |${Fragments.whereAndOpt(Some(fr"type = $tpe"), predicate.asFragment, Some(fr"tag = $tag"), offset.asFragment)}
-               |ORDER BY ordering""".stripMargin.query[Envelope[Id, S]],
+               |ORDER BY ordering""".stripMargin.query[Envelope[S]],
         _.offset,
         config.copy(refreshStrategy = strategy),
         xas
       )
 
-    override def currentStates(predicate: Predicate, tag: Tag, offset: Offset): EnvelopeStream[Id, S] =
+    override def currentStates(predicate: Predicate, tag: Tag, offset: Offset): EnvelopeStream[S] =
       states(predicate, tag, offset, RefreshStrategy.Stop)
 
-    override def states(predicate: Predicate, tag: Tag, offset: Offset): EnvelopeStream[Id, S] =
+    override def states(predicate: Predicate, tag: Tag, offset: Offset): EnvelopeStream[S] =
       states(predicate, tag, offset, config.refreshStrategy)
   }
 

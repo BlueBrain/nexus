@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.ArithmeticCommand.{Add, Boom, Never, Subtract}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.ArithmeticEvent.{Minus, Plus}
@@ -61,42 +62,42 @@ object Arithmetic {
   }
 
   sealed trait ArithmeticEvent extends GlobalEvent {
-    def id: String
+    def id: Iri
   }
 
   object ArithmeticEvent {
-    final case class Plus(id: String, rev: Int, value: Int, instant: Instant, subject: Subject) extends ArithmeticEvent
+    final case class Plus(id: Iri, rev: Int, value: Int, instant: Instant, subject: Subject) extends ArithmeticEvent
 
     object Plus {
-      def apply(rev: Int, value: Int): Plus = Plus("id", rev, value, Instant.EPOCH, Anonymous)
+      def apply(rev: Int, value: Int): Plus = Plus(nxv + "id", rev, value, Instant.EPOCH, Anonymous)
     }
 
-    final case class Minus(id: String, rev: Int, value: Int, instant: Instant, subject: Subject) extends ArithmeticEvent
+    final case class Minus(id: Iri, rev: Int, value: Int, instant: Instant, subject: Subject) extends ArithmeticEvent
 
     object Minus {
-      def apply(rev: Int, value: Int): Minus = Minus("id", rev, value, Instant.EPOCH, Anonymous)
+      def apply(rev: Int, value: Int): Minus = Minus(nxv + "id", rev, value, Instant.EPOCH, Anonymous)
     }
 
     @nowarn("cat=unused")
-    val serializer: Serializer[String, ArithmeticEvent] = {
+    val serializer: Serializer[Iri, ArithmeticEvent] = {
       import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
       implicit val configuration: Configuration           = Configuration.default.withDiscriminator("@type")
       implicit val coder: Codec.AsObject[ArithmeticEvent] = deriveConfiguredCodec[ArithmeticEvent]
-      Serializer(_.id)
+      Serializer()
     }
   }
 
   sealed trait ArithmeticRejection extends Product with Serializable
 
   object ArithmeticRejection {
-    final case object NotFound                                             extends ArithmeticRejection
-    final case class RevisionNotFound(provided: Int, current: Int)         extends ArithmeticRejection
-    final case class AlreadyExists(id: String, command: ArithmeticCommand) extends ArithmeticRejection
-    final case class NegativeTotal(invalidValue: Int)                      extends ArithmeticRejection
+    final case object NotFound                                          extends ArithmeticRejection
+    final case class RevisionNotFound(provided: Int, current: Int)      extends ArithmeticRejection
+    final case class AlreadyExists(id: Iri, command: ArithmeticCommand) extends ArithmeticRejection
+    final case class NegativeTotal(invalidValue: Int)                   extends ArithmeticRejection
   }
 
   final case class Total(
-      id: String,
+      id: Iri,
       rev: Int,
       value: Int,
       createdAt: Instant,
@@ -113,14 +114,15 @@ object Arithmetic {
 
   object Total {
     @nowarn("cat=unused")
-    val serializer: Serializer[String, Total] = {
+    val serializer: Serializer[Iri, Total] = {
       import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
       implicit val configuration: Configuration = Configuration.default.withDiscriminator("@type")
       implicit val coder: Codec.AsObject[Total] = deriveConfiguredCodec[Total]
-      Serializer(_.id)
+      Serializer()
     }
 
-    def apply(rev: Int, value: Int): Total = Total("id", rev, value, Instant.EPOCH, Anonymous, Instant.EPOCH, Anonymous)
+    def apply(rev: Int, value: Int): Total =
+      Total(nxv + "id", rev, value, Instant.EPOCH, Anonymous, Instant.EPOCH, Anonymous)
 
   }
 }
