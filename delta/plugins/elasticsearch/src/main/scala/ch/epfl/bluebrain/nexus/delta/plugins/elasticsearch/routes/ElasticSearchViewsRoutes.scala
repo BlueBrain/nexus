@@ -26,6 +26,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
+import ch.epfl.bluebrain.nexus.delta.sourcing.ProgressStatistics
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projections
@@ -46,8 +47,6 @@ import monix.execution.Scheduler
   *   the elasticsearch views operations bundle
   * @param viewsQuery
   *   the elasticsearch views query operations bundle
-  * @param progresses
-  *   the statistics of the progresses for the elasticsearch views
   * @param projections
   *   the projections module
   * @param resourcesToSchemas
@@ -62,7 +61,6 @@ final class ElasticSearchViewsRoutes(
     aclCheck: AclCheck,
     views: ElasticSearchViews,
     viewsQuery: ElasticSearchViewsQuery,
-    progresses: ProgressesStatistics,
     projections: Projections,
     resourcesToSchemas: ResourceToSchemaMappings,
     schemeDirectives: DeltaSchemeDirectives,
@@ -176,7 +174,9 @@ final class ElasticSearchViewsRoutes(
                       emit(
                         views
                           .fetchIndexingView(id, ref)
-                          .flatMap(v => progresses.statistics(ref, ElasticSearchViews.projectionName(v)))
+                          .flatMap(v =>
+                            projections.statistics(ref, v.value.resourceTag, ElasticSearchViews.projectionName(v))
+                          )
                           .rejectWhen(decodingFailedOrViewNotFound)
                       )
                     }
@@ -208,7 +208,7 @@ final class ElasticSearchViewsRoutes(
                         emit(
                           views
                             .fetchIndexingView(id, ref)
-                            .flatMap(v => progresses.offset(ElasticSearchViews.projectionName(v)))
+                            .flatMap(v => projections.offset(ElasticSearchViews.projectionName(v)))
                             .rejectWhen(decodingFailedOrViewNotFound)
                         )
                       },
@@ -397,7 +397,6 @@ object ElasticSearchViewsRoutes {
       aclCheck: AclCheck,
       views: ElasticSearchViews,
       viewsQuery: ElasticSearchViewsQuery,
-      progresses: ProgressesStatistics,
       projections: Projections,
       resourcesToSchemas: ResourceToSchemaMappings,
       schemeDirectives: DeltaSchemeDirectives,
@@ -415,7 +414,6 @@ object ElasticSearchViewsRoutes {
       aclCheck,
       views,
       viewsQuery,
-      progresses,
       projections,
       resourcesToSchemas,
       schemeDirectives,

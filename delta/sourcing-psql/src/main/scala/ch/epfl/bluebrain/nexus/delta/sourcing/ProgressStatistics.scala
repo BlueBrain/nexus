@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.model
+package ch.epfl.bluebrain.nexus.delta.sourcing
 
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts

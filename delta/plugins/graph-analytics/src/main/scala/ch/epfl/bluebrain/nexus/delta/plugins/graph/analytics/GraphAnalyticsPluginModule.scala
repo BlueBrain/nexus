@@ -7,15 +7,15 @@ import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.routes.GraphAnalyti
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, ProjectsStatistics}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projections
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.execution.Scheduler
 
@@ -38,17 +38,12 @@ class GraphAnalyticsPluginModule(priority: Int) extends ModuleDef {
         )
     }
 
-  make[ProgressesStatistics].named("graph-analytics").from {
-    (cache: ProgressesCache @Id("graph-analytics-progresses"), projectsStatistics: ProjectsStatistics) =>
-      new ProgressesStatistics(cache, projectsStatistics.get)
-  }
-
   make[GraphAnalyticsRoutes].from {
     (
         identities: Identities,
         aclCheck: AclCheck,
         graphAnalytics: GraphAnalytics,
-        progresses: ProgressesStatistics @Id("graph-analytics"),
+        projections: Projections,
         schemeDirectives: DeltaSchemeDirectives,
         baseUri: BaseUri,
         s: Scheduler,
@@ -59,7 +54,7 @@ class GraphAnalyticsPluginModule(priority: Int) extends ModuleDef {
         identities,
         aclCheck,
         graphAnalytics,
-        progresses,
+        projections,
         schemeDirectives
       )(
         baseUri,

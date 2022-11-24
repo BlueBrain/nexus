@@ -171,7 +171,7 @@ class BlazegraphCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
       _ <- sv.describe(view1.projection)
              .map(_.map(_.status))
              .eventuallySome(ExecutionStatus.Completed)
-      _ <- projections.offset(view1.projection).assertSome(expectedViewProgress)
+      _ <- projections.progress(view1.projection).assertSome(expectedViewProgress)
       _  = assert(
              createdIndices.contains(view1.namespace),
              s"The index for '${view1.ref.viewId}' should have been created."
@@ -184,7 +184,7 @@ class BlazegraphCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
       _ <- sv.describe(view2.projection)
              .map(_.map(_.status))
              .eventuallySome(ExecutionStatus.Completed)
-      _ <- projections.offset(view2.projection).assertSome(expectedViewProgress)
+      _ <- projections.progress(view2.projection).assertSome(expectedViewProgress)
       _  = assert(
              createdIndices.contains(view2.namespace),
              s"The index for '${view2.ref.viewId}' should have been created."
@@ -195,7 +195,7 @@ class BlazegraphCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
   test("View 3 is invalid so it should not be started") {
     for {
       _ <- sv.describe(view3.projection).assertNone
-      _ <- projections.offset(view3.projection).assertNone
+      _ <- projections.progress(view3.projection).assertNone
       _  = assert(
              !createdIndices.contains(view3.namespace),
              s"The index for '${view3.ref.viewId}' should not have been created."
@@ -247,7 +247,7 @@ class BlazegraphCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
   test("View 1 is deprecated so it is stopped, the progress and the index should be deleted.") {
     for {
       _ <- sv.describe(view1.projection).eventuallyNone
-      _ <- projections.offset(view1.projection).assertNone
+      _ <- projections.progress(view1.projection).assertNone
       _  = assert(
              deletedIndices.contains(view1.namespace),
              s"The index for '${view1.ref.viewId}' should have been deleted."
@@ -260,7 +260,7 @@ class BlazegraphCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
   ) {
     for {
       _ <- sv.describe(view2.projection).eventuallyNone
-      _ <- projections.offset(view2.projection).assertNone
+      _ <- projections.progress(view2.projection).assertNone
       _  = assert(
              deletedIndices.contains(view2.namespace),
              s"The index for '${view2.ref.viewId}' should have been deleted."
@@ -273,7 +273,7 @@ class BlazegraphCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
       _ <- sv.describe(updatedView2.projection)
              .map(_.map(_.status))
              .eventuallySome(ExecutionStatus.Completed)
-      _ <- projections.offset(updatedView2.projection).assertSome(expectedViewProgress)
+      _ <- projections.progress(updatedView2.projection).assertSome(expectedViewProgress)
       _  = assert(
              createdIndices.contains(updatedView2.namespace),
              s"The new index for '${updatedView2.ref.viewId}' should have been created."

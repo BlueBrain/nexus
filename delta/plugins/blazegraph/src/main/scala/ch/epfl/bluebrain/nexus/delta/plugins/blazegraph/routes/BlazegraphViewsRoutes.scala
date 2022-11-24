@@ -27,8 +27,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, ProgressStatistics}
-import ch.epfl.bluebrain.nexus.delta.sdk.{IndexingAction, ProgressesStatistics}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment}
+import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction
+import ch.epfl.bluebrain.nexus.delta.sourcing.ProgressStatistics
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projections
@@ -48,8 +49,6 @@ import monix.execution.Scheduler
   *   the identity module
   * @param aclCheck
   *   to check the acls
-  * @param progresses
-  *   the statistics of the progresses for the blazegraph views
   * @param projections
   *   the projections module
   * @param schemeDirectives
@@ -62,7 +61,6 @@ class BlazegraphViewsRoutes(
     viewsQuery: BlazegraphViewsQuery,
     identities: Identities,
     aclCheck: AclCheck,
-    progresses: ProgressesStatistics,
     projections: Projections,
     schemeDirectives: DeltaSchemeDirectives,
     index: IndexingAction.Execute[BlazegraphView]
@@ -183,7 +181,9 @@ class BlazegraphViewsRoutes(
                           emit(
                             views
                               .fetchIndexingView(id, ref)
-                              .flatMap(v => progresses.statistics(ref, BlazegraphViews.projectionName(v)))
+                              .flatMap(v =>
+                                projections.statistics(ref, v.value.resourceTag, BlazegraphViews.projectionName(v))
+                              )
                               .rejectOn[ViewNotFound]
                           )
                         }
@@ -215,7 +215,7 @@ class BlazegraphViewsRoutes(
                             emit(
                               views
                                 .fetchIndexingView(id, ref)
-                                .flatMap(v => progresses.offset(BlazegraphViews.projectionName(v)))
+                                .flatMap(v => projections.offset(BlazegraphViews.projectionName(v)))
                                 .rejectOn[ViewNotFound]
                             )
                           },
@@ -334,7 +334,6 @@ object BlazegraphViewsRoutes {
       viewsQuery: BlazegraphViewsQuery,
       identities: Identities,
       aclCheck: AclCheck,
-      progresses: ProgressesStatistics,
       projections: Projections,
       schemeDirectives: DeltaSchemeDirectives,
       index: IndexingAction.Execute[BlazegraphView]
@@ -351,7 +350,6 @@ object BlazegraphViewsRoutes {
       viewsQuery,
       identities,
       aclCheck,
-      progresses,
       projections,
       schemeDirectives,
       index
