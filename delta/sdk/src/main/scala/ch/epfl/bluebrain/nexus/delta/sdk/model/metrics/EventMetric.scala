@@ -144,7 +144,7 @@ object EventMetric {
       )
   }
 
-  implicit def eventMetricEncoder[E <: EventMetric]: Encoder.AsObject[E] = {
+  implicit val eventMetricEncoder: Encoder.AsObject[EventMetric] = {
     @nowarn("cat=unused")
     implicit val configuration: Configuration   = Configuration.default.withDiscriminator(keywords.tpe)
     implicit val subjectCodec: Encoder[Subject] = deriveConfiguredEncoder[Subject]
@@ -178,5 +178,10 @@ object EventMetric {
       e.additionalFields.deepMerge(scoped).deepMerge(common)
     }
   }
+
+  implicit val projectScopedMetricEncoder: Encoder.AsObject[ProjectScopedMetric] =
+    eventMetricEncoder.contramapObject {
+      identity
+    }
 
 }
