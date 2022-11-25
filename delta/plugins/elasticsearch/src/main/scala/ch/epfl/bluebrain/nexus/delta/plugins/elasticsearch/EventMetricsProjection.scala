@@ -26,6 +26,19 @@ object EventMetricsProjection {
   val eventMetricsIndex: IndexLabel          = IndexLabel.unsafe("event_metrics_index")
 
   /**
+    * @param client
+    *   the elastic search client
+    * @return
+    *   creates the metrics index using the client
+    */
+  def initMetricsIndex(client: ElasticSearchClient): Task[Unit] =
+    for {
+      mappings <- metricsMapping
+      settings <- metricsSettings
+      _        <- client.createIndex(eventMetricsIndex, Some(mappings), Some(settings))
+    } yield ()
+
+  /**
     * @param metricEncoders
     *   a set of encoders for all entity
     * @param supervisor
@@ -63,14 +76,7 @@ object EventMetricsProjection {
     val sink =
       new ElasticSearchSink(client, batchConfig.maxElements, batchConfig.maxInterval, eventMetricsIndex, Refresh.False)
 
-    // create the ES index before running the projection
-    val init = for {
-      mappings <- metricsMapping
-      settings <- metricsSettings
-      _        <- client.createIndex(eventMetricsIndex, Some(mappings), Some(settings))
-    } yield ()
-
-    apply(sink, supervisor, metrics, init)
+    apply(sink, supervisor, metrics, initMetricsIndex(client))
   }
 
   /**

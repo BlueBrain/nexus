@@ -61,6 +61,15 @@ object StoragesStatistics {
     )
 
   def apply(
+      client: ElasticSearchClient,
+      fetchStorageId: (IdSegment, ProjectRef) => IO[StorageFetchRejection, Iri]
+  ): StoragesStatistics =
+    apply(
+      client.search(_, Set(EventMetricsProjection.eventMetricsIndex.value), Query.Empty)(),
+      fetchStorageId
+    )
+
+  def apply(
       search: JsonObject => HttpResult[Json],
       fetchStorageId: (IdSegment, ProjectRef) => IO[StorageFetchRejection, Iri]
   ): StoragesStatistics =

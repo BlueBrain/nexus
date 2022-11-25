@@ -1,17 +1,12 @@
-package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing
+package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.metrics
 
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.metrics.MetricsStream._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{EventMetricsProjection, Fixtures}
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
-import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric.{Created, ProjectScopedMetric, Updated}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Envelope, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{CacheSink, ProjectionProgress, SupervisorSetup}
 import ch.epfl.bluebrain.nexus.testkit.bio.{BioSuite, PatienceConfig}
-import fs2.Stream
+import io.circe.Json
 import io.circe.syntax.EncoderOps
-import io.circe.{Json, JsonObject}
 import monix.bio.Task
 import munit.AnyFixture
 
@@ -27,40 +22,12 @@ class EventMetricsProjectionSuite extends BioSuite with SupervisorSetup.Fixture 
   private lazy val (sv, _) = supervisor()
   private val sink         = new CacheSink[Json]
 
-  private val metric1 = ProjectScopedMetric(
-    Instant.EPOCH,
-    Anonymous,
-    1,
-    Created,
-    ProjectRef.unsafe("org", "project"),
-    Label.unsafe("org"),
-    iri"http://bbp.epfl.ch/1",
-    Set(iri"Entity"),
-    JsonObject.empty
-  )
-  private val metric2 = ProjectScopedMetric(
-    Instant.EPOCH,
-    Anonymous,
-    1,
-    Updated,
-    ProjectRef.unsafe("org", "project"),
-    Label.unsafe("org"),
-    iri"http://bbp.epfl.ch/2",
-    Set(iri"Entity"),
-    JsonObject.empty
-  )
-
-  private val envelopes = List(
-    Envelope(EntityType("entity"), nxv + "first", 1, metric1, Instant.EPOCH, Offset.At(1L)),
-    Envelope(EntityType("entity"), nxv + "second", 1, metric2, Instant.EPOCH, Offset.At(2L))
-  )
-
   test("Start the metrics projection") {
     for {
       _ <- EventMetricsProjection(
              sink,
              sv,
-             _ => Stream.emits(envelopes),
+             _ => metricsStream.take(2),
              Task.unit
            )
       _ <- sv.describe(EventMetricsProjection.projectionMetadata.name)
