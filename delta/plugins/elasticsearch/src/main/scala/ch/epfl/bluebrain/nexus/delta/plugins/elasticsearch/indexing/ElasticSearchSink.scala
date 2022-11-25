@@ -24,43 +24,32 @@ import scala.concurrent.duration.FiniteDuration
   *   the maximum window before a document is pushed
   * @param index
   *   the index to push into
+  * @param documentId
+  *   a function that maps an elem to a documentId
   * @param refresh
   *   the value for the `refresh` Elasticsearch parameter
   */
-final class ElasticSearchSink(
+final class ElasticSearchSink private (
     client: ElasticSearchClient,
     override val chunkSize: Int,
     override val maxWindow: FiniteDuration,
     index: IndexLabel,
+    documentId: Elem[Json] => String,
     refresh: Refresh
 ) extends Sink {
   override type In = Json
 
   override def inType: Typeable[Json] = Typeable[Json]
 
-  /**
-    * Creates an id to use for a bulk operation
-    * @param elem
-    *   the elem for which to create the ID
-    * @return
-    *   an id that incorporates the project (if available), the elem id, and the revision
-    */
-  private def bulkOpId(elem: Elem[_]): String = {
-    elem.project match {
-      case Some(project) => elem.id / project.toString / elem.revision.toString
-      case None          => elem.id / elem.revision.toString
-    }
-  }.toString
-
   override def apply(elements: Chunk[Elem[Json]]): Task[Chunk[Elem[Unit]]] = {
     val bulk = elements.foldLeft(List.empty[ElasticSearchBulk]) {
       case (acc, successElem @ Elem.SuccessElem(_, _, _, _, _, json, _)) =>
         if (json.isEmpty()) {
-          ElasticSearchBulk.Delete(index, bulkOpId(successElem)) :: acc
+          ElasticSearchBulk.Delete(index, documentId(successElem)) :: acc
         } else
-          ElasticSearchBulk.Index(index, bulkOpId(successElem), json) :: acc
+          ElasticSearchBulk.Index(index, documentId(successElem), json) :: acc
       case (acc, droppedElem: Elem.DroppedElem)                          =>
-        ElasticSearchBulk.Delete(index, bulkOpId(droppedElem)) :: acc
+        ElasticSearchBulk.Delete(index, documentId(droppedElem)) :: acc
       case (acc, _: Elem.FailedElem)                                     => acc
     }
 
@@ -83,5 +72,75 @@ final class ElasticSearchSink(
 object ElasticSearchSink {
 
   private val logger: Logger = Logger[ElasticSearchSink]
+
+  /**
+    * @return
+    *   a function that maps an elem to a documentId based on the project (if available), the elem id, and the revision
+    */
+  private val eventDocumentId: Elem[_] => String = elem =>
+    elem.project match {
+      case Some(project) => s"$project/${elem.id}/${elem.revision}"
+      case None          => s"${elem.id}/${elem.revision}"
+    }
+
+  /**
+    * @param client
+    *   the ES client
+    * @param chunkSize
+    *   the maximum number of documents to be pushed at once
+    * @param maxWindow
+    *   the maximum window before a document is pushed
+    * @param index
+    *   the index to push into
+    * @param refresh
+    *   the value for the `refresh` Elasticsearch parameter
+    * @return
+    *   an ElasticSearchSink for events
+    */
+  def events(
+      client: ElasticSearchClient,
+      chunkSize: Int,
+      maxWindow: FiniteDuration,
+      index: IndexLabel,
+      refresh: Refresh
+  ): ElasticSearchSink =
+    new ElasticSearchSink(
+      client,
+      chunkSize,
+      maxWindow,
+      index,
+      eventDocumentId,
+      refresh
+    )
+
+  /**
+    * @param client
+    *   the ES client
+    * @param chunkSize
+    *   the maximum number of documents to be pushed at once
+    * @param maxWindow
+    *   the maximum window before a document is pushed
+    * @param index
+    *   the index to push into
+    * @param refresh
+    *   the value for the `refresh` Elasticsearch parameter
+    * @return
+    *   an ElasticSearchSink for states
+    */
+  def states(
+      client: ElasticSearchClient,
+      chunkSize: Int,
+      maxWindow: FiniteDuration,
+      index: IndexLabel,
+      refresh: Refresh
+  ): ElasticSearchSink =
+    new ElasticSearchSink(
+      client,
+      chunkSize,
+      maxWindow,
+      index,
+      elem => elem.id.toString,
+      refresh
+    )
 
 }

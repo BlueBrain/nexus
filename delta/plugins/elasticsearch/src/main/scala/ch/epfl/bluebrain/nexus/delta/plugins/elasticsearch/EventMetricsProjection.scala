@@ -81,7 +81,7 @@ object EventMetricsProjection {
     val index = eventMetricsIndex(indexPrefix)
 
     val sink =
-      new ElasticSearchSink(client, batchConfig.maxElements, batchConfig.maxInterval, index, Refresh.False)
+      ElasticSearchSink.events(client, batchConfig.maxElements, batchConfig.maxInterval, index, Refresh.False)
 
     apply(sink, supervisor, metrics, initMetricsIndex(client, index))
   }

@@ -123,7 +123,7 @@ object ElasticSearchCoordinator {
       PipeChain.compile(_, registry),
       supervisor,
       (v: ActiveViewDef) =>
-        new ElasticSearchSink(client, batchConfig.maxElements, batchConfig.maxInterval, v.index, Refresh.False),
+        ElasticSearchSink.states(client, batchConfig.maxElements, batchConfig.maxInterval, v.index, Refresh.False),
       (v: ActiveViewDef) =>
         client
           .createIndex(v.index, Some(v.mapping), Some(v.settings))

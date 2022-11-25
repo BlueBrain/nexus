@@ -21,7 +21,7 @@ class ElasticSearchSinkSuite extends BioSuite with ElasticSearchClientSetup.Fixt
   override def munitFixtures: Seq[AnyFixture[_]] = List(esClient)
 
   private lazy val client = esClient()
-  private lazy val sink   = new ElasticSearchSink(client, 2, 50.millis, index, Refresh.True)
+  private lazy val sink   = ElasticSearchSink.events(client, 2, 50.millis, index, Refresh.True)
 
   private val membersEntity = EntityType("members")
   private val index         = IndexLabel.unsafe("test_members")
