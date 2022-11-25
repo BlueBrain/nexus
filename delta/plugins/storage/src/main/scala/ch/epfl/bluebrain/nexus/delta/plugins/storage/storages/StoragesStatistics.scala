@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 
 import akka.http.scaladsl.model.Uri.Query
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.ioJsonObjectContentOf
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.EventMetricsProjection.eventMetricsIndex
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageFetchRejection
@@ -9,11 +8,10 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageStatE
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.HttpResult
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import com.typesafe.scalalogging.Logger
-import io.circe.{Json, JsonObject}
-import monix.bio.{IO, UIO}
+import io.circe.literal._
+import io.circe.{DecodingFailure, Json, JsonObject}
+import monix.bio.IO
 
 trait StoragesStatistics {
 
@@ -25,34 +23,6 @@ trait StoragesStatistics {
 }
 
 object StoragesStatistics {
-
-  implicit private val classLoader: ClassLoader = getClass.getClassLoader
-  implicit private val logger: Logger           = Logger[StoragesStatistics]
-
-  private val storagesAggByIdAndProjectQuery =
-    ioJsonObjectContentOf(
-      "query/storages-statistics-aggregations-by-id-proj.json",
-      "project" -> "{{project}}",
-      "storage" -> "{{storage}}"
-    )
-      .logAndDiscardErrors("Storage 'storages-statistics-aggregations-by-id-proj.json' template not found")
-      .memoizeOnSuccess
-
-  /**
-    * @param storageId
-    *   the id of the storage on which to restrict the query
-    * @param projectRef
-    *   the project on which to restrict the query
-    * @return
-    *   an ES query as JsonObject that gets statistics for the given storage in the given project
-    */
-  def statsByIdAndProjectQuery(storageId: Iri, projectRef: ProjectRef): UIO[JsonObject] =
-    storagesAggByIdAndProjectQuery
-      .map(jsonObject =>
-        jsonObject
-          .replace("project" -> "{{project}}", projectRef)
-          .replace("storage" -> "{{storage}}", storageId)
-      )
 
   def apply(client: ElasticSearchClient, storages: Storages, indexPrefix: String): StoragesStatistics =
     apply(
@@ -77,10 +47,55 @@ object StoragesStatistics {
     (idSegment: IdSegment, project: ProjectRef) => {
       for {
         storageId <- fetchStorageId(idSegment, project)
-        query     <- statsByIdAndProjectQuery(storageId, project).hideErrors
+        query     <- queryJson(project, storageId).hideErrors
         result    <- search(query).hideErrors
         stats     <- IO.fromEither(result.as[StorageStatEntry]).hideErrors
       } yield stats
+    }
+
+  private def queryJson(projectRef: ProjectRef, storageId: Iri): IO[DecodingFailure, JsonObject] =
+    IO.fromEither {
+      json"""
+     {
+      "query": {
+        "bool": {
+          "filter": [
+            {
+              "term": {
+                "@type.short": "File"
+              }
+            },
+            {
+              "term": {
+                "project": $projectRef
+              }
+            },
+            {
+              "term": {
+                "storage": $storageId
+              }
+            }
+          ]
+        }
+      },
+      "aggs": {
+        "storageSize": {
+          "sum": {
+            "field": "bytes"
+          }
+        },
+        "filesCount": {
+          "sum": {
+            "field": "newFileWritten"
+          }
+        }
+      },
+      "size": 0
+    }
+        """.asObject match {
+        case Some(jsonObject) => Right(jsonObject)
+        case None             => Left(DecodingFailure("Failed to decode ES statistics query.", List.empty))
+      }
     }
 
 }
