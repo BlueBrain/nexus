@@ -29,14 +29,15 @@ class StoragesStatisticsSuite
   private lazy val (sv, _) = supervisor()
 
   private lazy val sink = new ElasticSearchSink(client, 2, 50.millis, index, Refresh.True)
-  private val index     = eventMetricsIndex
+  private val indexPrefix = "delta"
+  private val index     = eventMetricsIndex(indexPrefix)
 
   private val stats = (client: ElasticSearchClient) =>
-    StoragesStatistics.apply(client, (_, _) => IO.pure(Iri.unsafe("storageId")))
+    StoragesStatistics.apply(client, (_, _) => IO.pure(Iri.unsafe("storageId")), indexPrefix)
 
   test("Run the event metrics projection") {
     val metricsProjection =
-      EventMetricsProjection(sink, sv, _ => metricsStream, initMetricsIndex(client))
+      EventMetricsProjection(sink, sv, _ => metricsStream, initMetricsIndex(client, index))
     metricsProjection.accepted
   }
 

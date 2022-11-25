@@ -133,7 +133,8 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
           client,
           xas,
           config.batch,
-          config.metricsQuery
+          config.metricsQuery,
+          config.prefix
         )
   }
 

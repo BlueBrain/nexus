@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 
 import akka.http.scaladsl.model.Uri.Query
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.ioJsonObjectContentOf
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.EventMetricsProjection
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.EventMetricsProjection.eventMetricsIndex
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageFetchRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageStatEntry
@@ -54,18 +54,19 @@ object StoragesStatistics {
           .replace("storage" -> "{{storage}}", storageId)
       )
 
-  def apply(client: ElasticSearchClient, storages: Storages): StoragesStatistics =
+  def apply(client: ElasticSearchClient, storages: Storages, indexPrefix: String): StoragesStatistics =
     apply(
-      client.search(_, Set(EventMetricsProjection.eventMetricsIndex.value), Query.Empty)(),
+      client.search(_, Set(eventMetricsIndex(indexPrefix).value), Query.Empty)(),
       storages.fetch(_, _).map(_.id)
     )
 
   def apply(
       client: ElasticSearchClient,
-      fetchStorageId: (IdSegment, ProjectRef) => IO[StorageFetchRejection, Iri]
+      fetchStorageId: (IdSegment, ProjectRef) => IO[StorageFetchRejection, Iri],
+      indexPrefix: String
   ): StoragesStatistics =
     apply(
-      client.search(_, Set(EventMetricsProjection.eventMetricsIndex.value), Query.Empty)(),
+      client.search(_, Set(eventMetricsIndex(indexPrefix).value), Query.Empty)(),
       fetchStorageId
     )
 
