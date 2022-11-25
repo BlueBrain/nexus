@@ -28,9 +28,9 @@ class StoragesStatisticsSuite
   private lazy val client  = esClient()
   private lazy val (sv, _) = supervisor()
 
-  private lazy val sink = ElasticSearchSink.events(client, 2, 50.millis, index, Refresh.True)
+  private lazy val sink   = ElasticSearchSink.events(client, 2, 50.millis, index, Refresh.True)
   private val indexPrefix = "delta"
-  private val index     = eventMetricsIndex(indexPrefix)
+  private val index       = eventMetricsIndex(indexPrefix)
 
   private val stats = (client: ElasticSearchClient) =>
     StoragesStatistics.apply(client, (_, _) => IO.pure(Iri.unsafe("storageId")), indexPrefix)

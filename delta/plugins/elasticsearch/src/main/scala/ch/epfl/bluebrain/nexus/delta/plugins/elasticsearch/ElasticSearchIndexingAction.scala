@@ -70,7 +70,8 @@ object ElasticSearchIndexingAction {
       views.currentIndexingViews,
       PipeChain.compile(_, registry),
       (v: ActiveViewDef) =>
-        ElasticSearchSink.states(client, batchConfig.maxElements, batchConfig.maxInterval, v.index, syncIndexingRefresh),
+        ElasticSearchSink
+          .states(client, batchConfig.maxElements, batchConfig.maxInterval, v.index, syncIndexingRefresh),
       timeout
     )
   }
