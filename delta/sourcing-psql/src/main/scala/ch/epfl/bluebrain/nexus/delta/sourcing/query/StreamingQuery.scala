@@ -6,11 +6,11 @@ import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.Predicate.Project
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.IriInstances._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef, Tag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.IriInstances._
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, RemainingElems}
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
 import com.typesafe.scalalogging.Logger
 import doobie.Fragments
 import doobie.implicits._
@@ -57,10 +57,57 @@ object StreamingQuery {
   }
 
   /**
+    * Streams states and tombstones as [[Elem]] s without fetching the state value.
+    *
+    * Tombstones are translated as [[DroppedElem]].
+    *
+    * The stream termination depends on the provided [[QueryConfig]]
+    *
+    * @param project
+    *   the project of the states / tombstones
+    * @param tag
+    *   the tag to follow
+    * @param start
+    *   the offset to start with
+    * @param cfg
+    *   the query config
+    * @param xas
+    *   the transactors
+    */
+  def elems(
+      project: ProjectRef,
+      tag: Tag,
+      start: Offset,
+      cfg: QueryConfig,
+      xas: Transactors
+  ): Stream[Task, Elem[Unit]] = {
+    def query(offset: Offset): Query0[Elem[Unit]] = {
+      val where = Fragments.whereAndOpt(Project(project).asFragment, Some(fr"tag = $tag"), offset.asFragment)
+      sql"""((SELECT 'newState', type, id, org, project, instant, ordering, rev
+           |FROM public.scoped_states
+           |$where
+           |ORDER BY ordering)
+           |UNION
+           |(SELECT 'tombstone', type, id, org, project, instant, ordering, -1
+           |FROM public.scoped_tombstones
+           |$where
+           |ORDER BY ordering)
+           |ORDER BY ordering)
+           |""".stripMargin.query[(String, EntityType, Iri, Label, Label, Instant, Long, Int)].map {
+        case (`newState`, entityType, id, org, project, instant, offset, rev) =>
+          SuccessElem(entityType, id, Some(ProjectRef(org, project)), instant, Offset.at(offset), (), rev)
+        case (_, entityType, id, org, project, instant, offset, rev)          =>
+          DroppedElem(entityType, id, Some(ProjectRef(org, project)), instant, Offset.at(offset), rev)
+      }
+    }
+    StreamingQuery[Elem[Unit]](start, query, _.offset, cfg, xas)
+  }
+
+  /**
     * Streams states and tombstones as [[Elem]] s.
     *
     * State values are decoded via the provided function. If the function succeeds they will be streamed as
-    * [[SuccessElem[A]] ]. If the function fails, they will be streames as [[FailedElem]]
+    * [[SuccessElem[A]] ]. If the function fails, they will be streames as FailedElem
     *
     * Tombstones are translated as [[DroppedElem]].
     *
@@ -107,20 +154,17 @@ object StreamingQuery {
       }
     }
     StreamingQuery[Elem[Json]](start, query, _.offset, cfg, xas)
-      .evalMapChunk {
-        case success: SuccessElem[Json] =>
-          decodeValue(success.tpe, success.value).map(success.success).onErrorHandleWith { err =>
-            Task
-              .delay(
-                logger.error(
-                  s"An error occurred while decoding value with id '${success.id}' of type '${success.tpe}' in project '$project'.",
-                  err
-                )
+      .evalMapChunk { e =>
+        e.evalMap { value =>
+          decodeValue(e.tpe, value).tapError { err =>
+            Task.delay(
+              logger.error(
+                s"An error occurred while decoding value with id '${e.id}' of type '${e.tpe}' in '$project'.",
+                err
               )
-              .as(success.failed(err))
+            )
           }
-        case dropped: DroppedElem       => Task.pure(dropped)
-        case failed: FailedElem         => Task.pure(failed)
+        }
       }
   }
 

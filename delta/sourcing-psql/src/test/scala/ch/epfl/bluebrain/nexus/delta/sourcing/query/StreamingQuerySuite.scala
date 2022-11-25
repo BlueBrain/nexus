@@ -107,62 +107,73 @@ class StreamingQuerySuite extends BioSuite with Doobie.Fixture {
     }.transact(xas.write)
   }
 
-  test("Running a stream on latest states on project 1 from the beginning") {
+  /** Returns streams that returns elems of Iri and elem of unit */
+  private def stream(project: ProjectRef, tag: Tag, start: Offset) = (
+    StreamingQuery.elems[Iri](project, tag, start, qc, xas, decodeValue),
+    StreamingQuery.elems(project, tag, start, qc, xas)
+  )
 
-    val result = StreamingQuery.elems[Iri](project1, Tag.Latest, Offset.start, qc, xas, decodeValue)
-    result.compile.toList.assert(
-      List(
-        SuccessElem(PullRequest.entityType, id1, Some(project1), Instant.EPOCH, Offset.at(1L), id1, rev),
-        SuccessElem(PullRequest.entityType, id2, Some(project1), Instant.EPOCH, Offset.at(2L), id2, rev),
-        SuccessElem(Release.entityType, release11.id, Some(project1), Instant.EPOCH, Offset.at(3L), release11.id, rev),
-        SuccessElem(PullRequest.entityType, id3, Some(project1), Instant.EPOCH, Offset.at(7L), id3, rev),
-        SuccessElem(Release.entityType, release12.id, Some(project1), Instant.EPOCH, Offset.at(8L), release12.id, rev),
-        SuccessElem(PullRequest.entityType, id4, Some(project1), Instant.EPOCH, Offset.at(15L), id4, rev)
-      )
+  test("Running a stream on latest states on project 1 from the beginning") {
+    val (iri, void) = stream(project1, Tag.Latest, Offset.start)
+
+    val expected = List(
+      SuccessElem(PullRequest.entityType, id1, Some(project1), Instant.EPOCH, Offset.at(1L), id1, rev),
+      SuccessElem(PullRequest.entityType, id2, Some(project1), Instant.EPOCH, Offset.at(2L), id2, rev),
+      SuccessElem(Release.entityType, release11.id, Some(project1), Instant.EPOCH, Offset.at(3L), release11.id, rev),
+      SuccessElem(PullRequest.entityType, id3, Some(project1), Instant.EPOCH, Offset.at(7L), id3, rev),
+      SuccessElem(Release.entityType, release12.id, Some(project1), Instant.EPOCH, Offset.at(8L), release12.id, rev),
+      SuccessElem(PullRequest.entityType, id4, Some(project1), Instant.EPOCH, Offset.at(15L), id4, rev)
     )
+
+    iri.compile.toList.assert(expected)
+    void.compile.toList.assert(expected.map(_.void))
   }
 
   test("Running a stream on latest states on project 1 from offset 3") {
-    val result = StreamingQuery.elems[Iri](project1, Tag.Latest, Offset.at(3L), qc, xas, decodeValue)
-    result.compile.toList.assert(
-      List(
-        SuccessElem(PullRequest.entityType, id3, Some(project1), Instant.EPOCH, Offset.at(7L), id3, rev),
-        SuccessElem(Release.entityType, release12.id, Some(project1), Instant.EPOCH, Offset.at(8L), release12.id, rev),
-        SuccessElem(PullRequest.entityType, id4, Some(project1), Instant.EPOCH, Offset.at(15L), id4, rev)
-      )
+    val (iri, void) = stream(project1, Tag.Latest, Offset.at(3L))
+
+    val expected = List(
+      SuccessElem(PullRequest.entityType, id3, Some(project1), Instant.EPOCH, Offset.at(7L), id3, rev),
+      SuccessElem(Release.entityType, release12.id, Some(project1), Instant.EPOCH, Offset.at(8L), release12.id, rev),
+      SuccessElem(PullRequest.entityType, id4, Some(project1), Instant.EPOCH, Offset.at(15L), id4, rev)
     )
+
+    iri.compile.toList.assert(expected)
+    void.compile.toList.assert(expected.map(_.void))
   }
 
   test(s"Running a stream on states with tag '${customTag.value}' on project 1 from the beginning") {
-    val result = StreamingQuery.elems[Iri](project1, customTag, Offset.start, qc, xas, decodeValue)
-    result.compile.toList.assert(
-      List(
-        SuccessElem(PullRequest.entityType, id1, Some(project1), Instant.EPOCH, Offset.at(6L), id1, rev),
-        SuccessElem(Release.entityType, release12.id, Some(project1), Instant.EPOCH, Offset.at(9L), release12.id, rev),
-        SuccessElem(PullRequest.entityType, id3, Some(project1), Instant.EPOCH, Offset.at(10L), id3, rev),
-        DroppedElem(PullRequest.entityType, id3, Some(project1), Instant.EPOCH, Offset.at(11L), -1),
-        SuccessElem(PullRequest.entityType, id2, Some(project1), Instant.EPOCH, Offset.at(12L), id2, rev),
-        DroppedElem(PullRequest.entityType, id1, Some(project1), Instant.EPOCH, Offset.at(14L), -1),
-        DroppedElem(Release.entityType, release12.id, Some(project1), Instant.EPOCH, Offset.at(16L), -1),
-        SuccessElem(PullRequest.entityType, id4, Some(project1), Instant.EPOCH, Offset.at(17L), id4, rev)
-      )
+    val (iri, void) = stream(project1, customTag, Offset.start)
+
+    val expected = List(
+      SuccessElem(PullRequest.entityType, id1, Some(project1), Instant.EPOCH, Offset.at(6L), id1, rev),
+      SuccessElem(Release.entityType, release12.id, Some(project1), Instant.EPOCH, Offset.at(9L), release12.id, rev),
+      SuccessElem(PullRequest.entityType, id3, Some(project1), Instant.EPOCH, Offset.at(10L), id3, rev),
+      DroppedElem(PullRequest.entityType, id3, Some(project1), Instant.EPOCH, Offset.at(11L), -1),
+      SuccessElem(PullRequest.entityType, id2, Some(project1), Instant.EPOCH, Offset.at(12L), id2, rev),
+      DroppedElem(PullRequest.entityType, id1, Some(project1), Instant.EPOCH, Offset.at(14L), -1),
+      DroppedElem(Release.entityType, release12.id, Some(project1), Instant.EPOCH, Offset.at(16L), -1),
+      SuccessElem(PullRequest.entityType, id4, Some(project1), Instant.EPOCH, Offset.at(17L), id4, rev)
     )
+
+    iri.compile.toList.assert(expected)
+    void.compile.toList.assert(expected.map(_.void))
   }
 
   test(s"Running a stream on states with tag '${customTag.value}' on project 1 from offset 11") {
-    val result = StreamingQuery.elems[Iri](project1, customTag, Offset.at(11L), qc, xas, decodeValue)
-    result.compile.toList.assert(
-      List(
-        SuccessElem(PullRequest.entityType, id2, Some(project1), Instant.EPOCH, Offset.at(12L), id2, rev),
-        DroppedElem(PullRequest.entityType, id1, Some(project1), Instant.EPOCH, Offset.at(14L), -1),
-        DroppedElem(Release.entityType, release12.id, Some(project1), Instant.EPOCH, Offset.at(16L), -1),
-        SuccessElem(PullRequest.entityType, id4, Some(project1), Instant.EPOCH, Offset.at(17L), id4, rev)
-      )
+    val (iri, void) = stream(project1, customTag, Offset.at(11L))
+    val expected    = List(
+      SuccessElem(PullRequest.entityType, id2, Some(project1), Instant.EPOCH, Offset.at(12L), id2, rev),
+      DroppedElem(PullRequest.entityType, id1, Some(project1), Instant.EPOCH, Offset.at(14L), -1),
+      DroppedElem(Release.entityType, release12.id, Some(project1), Instant.EPOCH, Offset.at(16L), -1),
+      SuccessElem(PullRequest.entityType, id4, Some(project1), Instant.EPOCH, Offset.at(17L), id4, rev)
     )
+
+    iri.compile.toList.assert(expected)
+    void.compile.toList.assert(expected.map(_.void))
   }
 
   test("Running a stream on latest states on project 1 from the beginning with an incomplete decode function") {
-
     def decodingFailure(entityType: EntityType)              =
       DecodingFailure(s"No decoding is available for entity type $entityType", List.empty)
     def incompleteDecode(entityType: EntityType, json: Json) =
