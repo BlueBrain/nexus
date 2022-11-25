@@ -218,7 +218,7 @@ class ElasticSearchViewsSpec
 
         // Dependency to the referenced project should have been saved
         EntityDependencyStore.list(projectRef, aggregateViewId, xas).accepted shouldEqual Set(
-          EntityDependency(projectRef, viewId.toString)
+          EntityDependency(projectRef, viewId)
         )
       }
     }

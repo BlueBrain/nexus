@@ -14,7 +14,7 @@ abstract class SseEncoder[E <: Event](implicit c: ClassTag[E]) {
 
   def entityType: EntityType
 
-  def handlesScopedEvent: Boolean = c.runtimeClass.isAssignableFrom(classOf[ScopedEvent])
+  def handlesScopedEvent: Boolean = classOf[ScopedEvent].isAssignableFrom(c.runtimeClass)
 
   def selectors: Set[Label]
 

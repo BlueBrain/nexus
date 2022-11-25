@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.realms.model
 
 import akka.http.scaladsl.model.Uri
 import cats.data.NonEmptySet
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -26,6 +27,11 @@ import scala.annotation.nowarn
   * Enumeration of Realm event types.
   */
 sealed trait RealmEvent extends GlobalEvent {
+
+  /**
+    * The relative [[Iri]] of the realm
+    */
+  def id: Iri = Realms.encodeId(label)
 
   /**
     * @return
@@ -241,7 +247,7 @@ object RealmEvent {
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
     implicit val configuration: Configuration      = Serializer.circeConfiguration
     implicit val coder: Codec.AsObject[RealmEvent] = deriveConfiguredCodec[RealmEvent]
-    Serializer(_.label)
+    Serializer(Realms.encodeId)
   }
 
   def sseEncoder(implicit base: BaseUri): SseEncoder[RealmEvent] = new SseEncoder[RealmEvent] {

@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sourcing.PurgeElemFailures
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
@@ -75,10 +76,11 @@ class ProjectionStoreSuite extends BioSuite with IOFixedClock with Doobie.Fixtur
     } yield ()
   }
 
+  private val id    = nxv + "id"
   private val error = new RuntimeException("boom")
   private val rev   = 1
-  private val fail1 = FailedElem(EntityType("ACL"), "id", Some(project), Instant.EPOCH, Offset.At(42L), error, rev)
-  private val fail2 = FailedElem(EntityType("Schema"), "id", Some(project), Instant.EPOCH, Offset.At(42L), error, rev)
+  private val fail1 = FailedElem(EntityType("ACL"), id, Some(project), Instant.EPOCH, Offset.At(42L), error, rev)
+  private val fail2 = FailedElem(EntityType("Schema"), id, Some(project), Instant.EPOCH, Offset.At(42L), error, rev)
 
   test("Return no failed elem entries by name") {
     for {
@@ -113,7 +115,7 @@ class ProjectionStoreSuite extends BioSuite with IOFixedClock with Doobie.Fixtur
       elem     = r.failedElemData
       _        = assertEquals(elem.offset, Offset.At(42L))
       _        = assertEquals(elem.errorType, "java.lang.RuntimeException")
-      _        = assertEquals(elem.id, "id")
+      _        = assertEquals(elem.id, id)
       _        = assertEquals(elem.entityType, EntityType("ACL"))
       _        = assertEquals(elem.revision, rev)
       _        = assertEquals(elem.project, Some(project))

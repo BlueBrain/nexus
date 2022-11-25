@@ -5,6 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ResourceRef, Tag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
+import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.IriInstances._
 import doobie._
 import doobie.implicits._
 import doobie.postgres.circe.jsonb.implicits._
@@ -21,9 +22,7 @@ object TombstoneStore {
   /**
     * Saves a tombstone for the given entity for the provided tag so that indexing processes can take it into account
     */
-  def save[Id, S <: ScopedState](tpe: EntityType, id: Id, state: S, removedTag: UserTag)(implicit
-      putId: Put[Id]
-  ): ConnectionIO[Unit] =
+  def save[S <: ScopedState](tpe: EntityType, state: S, removedTag: UserTag): ConnectionIO[Unit] =
     sql"""
          | INSERT INTO public.scoped_tombstones (
          |  type,
@@ -38,7 +37,7 @@ object TombstoneStore {
          |  $tpe,
          |  ${state.organization},
          |  ${state.project.project},
-         |  $id,
+         |  ${state.id},
          |  ${removedTag.value},
          |  ${Json.obj()},
          |  ${state.updatedAt}
@@ -48,9 +47,7 @@ object TombstoneStore {
     * Saves a tombstone when an entity is updated and some of its types have been removed and/or it has been validated
     * against a new schema
     */
-  def save[Id, S <: ScopedState](tpe: EntityType, id: Id, original: Option[S], newState: S)(implicit
-      putId: Put[Id]
-  ): ConnectionIO[Unit] =
+  def save[S <: ScopedState](tpe: EntityType, original: Option[S], newState: S): ConnectionIO[Unit] =
     StateDiff.compute(original, newState).fold(().pure[ConnectionIO]) { diff =>
       sql"""
            | INSERT INTO public.scoped_tombstones (
@@ -66,7 +63,7 @@ object TombstoneStore {
            |  $tpe,
            |  ${newState.organization},
            |  ${newState.project.project},
-           |  $id,
+           |  ${newState.id},
            |  ${Tag.latest},
            |  ${diff.asJson},
            |  ${newState.updatedAt}

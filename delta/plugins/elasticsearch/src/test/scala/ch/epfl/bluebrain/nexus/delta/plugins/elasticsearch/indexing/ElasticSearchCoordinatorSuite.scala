@@ -98,7 +98,7 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
       ),
       DroppedElem(
         tpe = ElasticSearchViews.entityType,
-        id = "dropped",
+        id = nxv + "dropped",
         project = Some(project),
         Instant.EPOCH,
         Offset.at(2L),
@@ -125,7 +125,7 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
     ) ++ Stream.never[Task].interruptWhen(resumeSignal) ++ Stream(
       FailedElem(
         tpe = ElasticSearchViews.entityType,
-        id = "failed_coord",
+        id = nxv + "failed_coord",
         project = Some(project),
         Instant.EPOCH,
         Offset.at(5L),
@@ -214,7 +214,7 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
     for {
       entries <- projections.failedElemEntries(ElasticSearchCoordinator.metadata.name, Offset.start).compile.toList
       r        = entries.assertOneElem
-      _        = assertEquals(r.failedElemData.id, "https://bluebrain.github.io/nexus/vocabulary/view3")
+      _        = assertEquals(r.failedElemData.id, id3)
     } yield ()
   }
 
@@ -222,7 +222,7 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
     for {
       entries <- projections.failedElemEntries(view1.projection, Offset.start).compile.toList
       r        = entries.assertOneElem
-      _        = assertEquals(r.failedElemData.id, "failed")
+      _        = assertEquals(r.failedElemData.id, nxv + "failed")
       _        = assertEquals(r.failedElemData.entityType, PullRequest.entityType)
       _        = assertEquals(r.failedElemData.offset, Offset.At(4))
     } yield ()
@@ -286,7 +286,7 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
     for {
       entries <- projections.failedElemEntries(ElasticSearchCoordinator.metadata.name, Offset.At(3L)).compile.toList
       r        = entries.assertOneElem
-      _        = assertEquals(r.failedElemData.id, "failed_coord")
+      _        = assertEquals(r.failedElemData.id, nxv + "failed_coord")
     } yield ()
   }
 
@@ -294,7 +294,7 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
     for {
       entries <- projections.failedElemEntries(updatedView2.projection, Offset.At(4L)).compile.toList
       r        = entries.assertOneElem
-      _        = assertEquals(r.failedElemData.id, "failed")
+      _        = assertEquals(r.failedElemData.id, nxv + "failed")
     } yield ()
   }
 

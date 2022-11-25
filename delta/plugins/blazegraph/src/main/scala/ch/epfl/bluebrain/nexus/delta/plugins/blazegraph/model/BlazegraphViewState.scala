@@ -125,7 +125,7 @@ object BlazegraphViewState {
     implicit val valueDecoder: Decoder[BlazegraphViewValue] =
       deriveConfiguredDecoder[BlazegraphViewValue]
     implicit val codec: Codec.AsObject[BlazegraphViewState] = deriveConfiguredCodec[BlazegraphViewState]
-    Serializer(_.id)
+    Serializer()
   }
 
 }

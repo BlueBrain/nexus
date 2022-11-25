@@ -37,6 +37,11 @@ sealed trait ProjectEvent extends ScopedEvent {
   def project: ProjectRef = ProjectRef(organizationLabel, label)
 
   /**
+    * The relative [[Iri]] of the project
+    */
+  override def id: Iri = Projects.encodeId(project)
+
+  /**
     * @return
     *   the project label
     */
@@ -220,7 +225,7 @@ object ProjectEvent {
       Encoder.encodeMap[String, Iri].contramapObject(_.value)
 
     implicit val coder: Codec.AsObject[ProjectEvent] = deriveConfiguredCodec[ProjectEvent]
-    Serializer(_.project)
+    Serializer(Projects.encodeId)
   }
 
   def projectEventMetricEncoder(implicit base: BaseUri): ScopedEventMetricEncoder[ProjectEvent] =

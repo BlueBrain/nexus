@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContextDummy, Projects}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.IdentityResolution.{ProvidedIdentities, UseCurrentCaller}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.{DecodingFailed, IncorrectRev, InvalidIdentities, InvalidResolverId, NoIdentities, PriorityAlreadyExists, ProjectContextRejection, ResolverIsDeprecated, ResolverNotFound, ResourceAlreadyExists, RevisionNotFound, TagNotFound, UnexpectedResolverId}
@@ -122,7 +122,7 @@ class ResolversImplSpec
 
         // Dependency to the referenced project should have been saved
         EntityDependencyStore.list(projectRef, nxv + "cross-project", xas).accepted shouldEqual Set(
-          EntityDependency(referencedProject, referencedProject.toString)
+          EntityDependency(referencedProject, Projects.encodeId(referencedProject))
         )
       }
 

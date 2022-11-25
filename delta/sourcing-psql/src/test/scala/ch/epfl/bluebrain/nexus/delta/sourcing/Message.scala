@@ -22,10 +22,10 @@ object Message {
     IO.raiseWhen(c.text.length > 10)(MessageTooLong(c.id, c.project))
       .as(MessageState(c.id, c.project, c.text, c.from, Instant.EPOCH, Anonymous))
 
-  final case class CreateMessage(id: String, project: ProjectRef, text: String, from: Subject)
+  final case class CreateMessage(id: Iri, project: ProjectRef, text: String, from: Subject)
 
   final case class MessageState(
-      id: String,
+      id: Iri,
       project: ProjectRef,
       text: String,
       from: Subject,
@@ -40,18 +40,18 @@ object Message {
   sealed trait MessageRejection extends Product with Serializable
 
   object MessageRejection {
-    final case object NotFound                                       extends MessageRejection
-    final case class AlreadyExists(id: String, project: ProjectRef)  extends MessageRejection
-    final case class MessageTooLong(id: String, project: ProjectRef) extends MessageRejection
+    final case object NotFound                                    extends MessageRejection
+    final case class AlreadyExists(id: Iri, project: ProjectRef)  extends MessageRejection
+    final case class MessageTooLong(id: Iri, project: ProjectRef) extends MessageRejection
   }
 
   object MessageState {
     @nowarn("cat=unused")
-    val serializer: Serializer[String, MessageState] = {
+    val serializer: Serializer[Iri, MessageState] = {
       import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
       implicit val configuration: Configuration        = Configuration.default.withDiscriminator("@type")
       implicit val coder: Codec.AsObject[MessageState] = deriveConfiguredCodec[MessageState]
-      Serializer(_.id)
+      Serializer()
     }
   }
 

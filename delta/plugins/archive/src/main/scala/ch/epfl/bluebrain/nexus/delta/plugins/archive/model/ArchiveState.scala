@@ -72,7 +72,7 @@ object ArchiveState {
       deriveConfiguredEncoder[ArchiveValue].mapJson(_.deepDropNullValues)
     implicit val archiveValueDecoder: Decoder[ArchiveValue]                                   = deriveConfiguredDecoder[ArchiveValue]
     implicit val codec: Codec.AsObject[ArchiveState]                                          = deriveConfiguredCodec[ArchiveState]
-    Serializer(_.id)
+    Serializer()
   }
 
 }

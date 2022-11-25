@@ -2,12 +2,15 @@ package ch.epfl.bluebrain.nexus.delta.sdk.acls
 
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils.instant
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.AclResource
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclCommand.{AppendAcl, DeleteAcl, ReplaceAcl, SubtractAcl}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclEvent.{AclAppended, AclDeleted, AclReplaced, AclSubtracted}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclRejection._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceUris
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{IdentityRealm, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, EnvelopeStream, Label}
@@ -145,7 +148,7 @@ trait Acls {
     * @param offset
     *   the last seen event offset; it will not be emitted by the stream
     */
-  def events(offset: Offset = Offset.Start): EnvelopeStream[AclAddress, AclEvent]
+  def events(offset: Offset = Offset.Start): EnvelopeStream[AclEvent]
 
   /**
     * The current ACLs events. The stream stops after emitting all known events.
@@ -153,7 +156,7 @@ trait Acls {
     * @param offset
     *   the last seen event offset; it will not be emitted by the stream
     */
-  def currentEvents(offset: Offset = Offset.Start): EnvelopeStream[AclAddress, AclEvent]
+  def currentEvents(offset: Offset = Offset.Start): EnvelopeStream[AclEvent]
 
   /**
     * Overrides ''acl''.
@@ -206,6 +209,11 @@ object Acls {
     * The organizations module type.
     */
   final val entityType: EntityType = EntityType("acl")
+
+  /**
+    * Encode the acl address as an uri
+    */
+  def encodeId(address: AclAddress): Iri = ResourceUris.acl(address).relativeAccessUri.toIri
 
   def findUnknownRealms(labels: Set[Label], existing: Set[Label]): IO[UnknownRealms, Unit] = {
     val unknown = labels.diff(existing)

@@ -168,7 +168,7 @@ object ResolverEvent {
     implicit val configuration: Configuration                      = Serializer.circeConfiguration
     implicit val resolverValueCodec: Codec.AsObject[ResolverValue] = deriveConfiguredCodec[ResolverValue]
     implicit val coder: Codec.AsObject[ResolverEvent]              = deriveConfiguredCodec[ResolverEvent]
-    Serializer(_.id)
+    Serializer()
   }
 
   val resolverEventMetricEncoder: ScopedEventMetricEncoder[ResolverEvent] =

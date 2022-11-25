@@ -2,9 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.sdk.organizations.model
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
-import ch.epfl.bluebrain.nexus.delta.rdf.syntax.uriSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.OrganizationResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceUris}
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
@@ -35,6 +35,11 @@ final case class OrganizationState(
 ) extends GlobalState {
 
   /**
+    * The relative [[Iri]] of the organization
+    */
+  def id: Iri = Organizations.encodeId(label)
+
+  /**
     * @return
     *   the schema reference that organizations conforms to
     */
@@ -50,7 +55,7 @@ final case class OrganizationState(
 
   def toResource: OrganizationResource =
     ResourceF(
-      id = uris.relativeAccessUri.toIri,
+      id = id,
       uris = uris,
       rev = rev,
       types = types,
@@ -71,7 +76,7 @@ object OrganizationState {
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
     implicit val configuration: Configuration             = Serializer.circeConfiguration
     implicit val coder: Codec.AsObject[OrganizationState] = deriveConfiguredCodec[OrganizationState]
-    Serializer(_.label)
+    Serializer(Organizations.encodeId)
   }
 
 }

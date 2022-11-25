@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ElemStream
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionRestartStore.logger
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.model.ProjectionRestart
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.model.ProjectionRestart.entityType
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.model.ProjectionRestart.{entityType, restartId}
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.StreamingQuery
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{FailedElem, SuccessElem}
 import com.typesafe.scalalogging.Logger
@@ -64,8 +64,8 @@ final class ProjectionRestartStore(xas: Transactors, config: QueryConfig) {
         json
           .as[ProjectionRestart]
           .fold(
-            err => FailedElem(entityType, id.toString, None, instant, id, err, 1),
-            restart => SuccessElem(entityType, id.toString, None, instant, id, restart, 1)
+            err => FailedElem(entityType, restartId(id), None, instant, id, err, 1),
+            restart => SuccessElem(entityType, restartId(id), None, instant, id, restart, 1)
           )
       }
 }

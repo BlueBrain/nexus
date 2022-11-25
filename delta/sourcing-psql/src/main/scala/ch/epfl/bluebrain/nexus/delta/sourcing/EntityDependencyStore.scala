@@ -2,7 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.sourcing
 
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityDependency, Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.IriInstances._
 import doobie._
 import doobie.implicits._
 import doobie.postgres.circe.jsonb.implicits._
@@ -20,15 +22,13 @@ object EntityDependencyStore {
   /**
     * Delete dependencies for the provided id in the given project
     */
-  def delete[Id](ref: ProjectRef, id: Id)(implicit put: Put[Id]): ConnectionIO[Unit] =
+  def delete(ref: ProjectRef, id: Iri): ConnectionIO[Unit] =
     sql"""DELETE FROM entity_dependencies WHERE org = ${ref.organization} AND project = ${ref.project} AND id = $id""".stripMargin.update.run.void
 
   /**
     * Save dependencies for the provided id in the given project
     */
-  def save[Id](ref: ProjectRef, id: Id, dependencies: Set[EntityDependency])(implicit
-      put: Put[Id]
-  ): ConnectionIO[Unit] =
+  def save(ref: ProjectRef, id: Iri, dependencies: Set[EntityDependency]): ConnectionIO[Unit] =
     dependencies.foldLeft(noop) { case (acc, dependency) =>
       acc >>
         sql"""
@@ -61,7 +61,7 @@ object EntityDependencyStore {
          | WHERE org = ${ref.organization}
          | AND project = ${ref.project}
          | AND id = $id""".stripMargin
-      .query[(Label, Label, String)]
+      .query[(Label, Label, Iri)]
       .map { case (org, proj, id) =>
         EntityDependency(ProjectRef(org, proj), id)
       }
@@ -91,7 +91,7 @@ object EntityDependencyStore {
          | ${recursiveDependencies(ref, id)}
          | SELECT org, project, id  from recursive_dependencies
        """.stripMargin
-      .query[(Label, Label, String)]
+      .query[(Label, Label, Iri)]
       .map { case (org, proj, id) =>
         EntityDependency(ProjectRef(org, proj), id)
       }

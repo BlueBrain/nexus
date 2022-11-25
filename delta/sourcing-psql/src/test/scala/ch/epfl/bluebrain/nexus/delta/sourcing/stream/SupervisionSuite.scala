@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
 import cats.effect.concurrent.Ref
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
@@ -43,7 +44,9 @@ class SupervisionSuite extends BioSuite with SupervisorSetup.Fixture with Doobie
     (_: Offset) =>
       Stream.eval(start) >> Stream
         .range(1, 21)
-        .map { value => SuccessElem(EntityType("entity"), "id", None, Instant.EPOCH, Offset.at(value.toLong), (), rev) }
+        .map { value =>
+          SuccessElem(EntityType("entity"), nxv + "id", None, Instant.EPOCH, Offset.at(value.toLong), (), rev)
+        }
 
   private val expectedProgress = ProjectionProgress(Offset.at(20L), Instant.EPOCH, 20, 0, 0)
 

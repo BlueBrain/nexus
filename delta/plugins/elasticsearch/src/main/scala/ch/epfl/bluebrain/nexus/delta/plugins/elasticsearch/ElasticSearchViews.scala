@@ -354,7 +354,7 @@ final class ElasticSearchViews private (
       Task.pure(toIndexViewDef(envelope))
     }
 
-  private def toIndexViewDef(envelope: Envelope[Iri, ElasticSearchViewState]) =
+  private def toIndexViewDef(envelope: Envelope[ElasticSearchViewState]) =
     IndexingViewDef(envelope.value, defaultElasticsearchMapping, defaultElasticsearchSettings, prefix).map { viewDef =>
       SuccessElem(
         tpe = envelope.tpe,
@@ -564,7 +564,7 @@ object ElasticSearchViews {
       { s =>
         s.value match {
           case a: AggregateElasticSearchViewValue =>
-            Some(a.views.map { v => EntityDependency(v.project, v.viewId.toString) }.toSortedSet)
+            Some(a.views.map { v => EntityDependency(v.project, v.viewId) }.toSortedSet)
           case _                                  => None
         }
       },

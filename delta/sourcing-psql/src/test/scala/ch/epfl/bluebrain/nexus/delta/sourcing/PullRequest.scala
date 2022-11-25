@@ -72,35 +72,35 @@ object PullRequest {
     )
 
   sealed trait PullRequestCommand extends Product with Serializable {
-    def id: Label
+    def id: Iri
     def project: ProjectRef
   }
 
   object PullRequestCommand {
-    final case class Create(id: Label, project: ProjectRef)                          extends PullRequestCommand
-    final case class Update(id: Label, project: ProjectRef, rev: Int)                extends PullRequestCommand
-    final case class TagPR(id: Label, project: ProjectRef, rev: Int, targetRev: Int) extends PullRequestCommand
-    final case class Merge(id: Label, project: ProjectRef, rev: Int)                 extends PullRequestCommand
+    final case class Create(id: Iri, project: ProjectRef)                          extends PullRequestCommand
+    final case class Update(id: Iri, project: ProjectRef, rev: Int)                extends PullRequestCommand
+    final case class TagPR(id: Iri, project: ProjectRef, rev: Int, targetRev: Int) extends PullRequestCommand
+    final case class Merge(id: Iri, project: ProjectRef, rev: Int)                 extends PullRequestCommand
 
-    final case class Boom(id: Label, project: ProjectRef, message: String) extends PullRequestCommand
-    final case class Never(id: Label, project: ProjectRef)                 extends PullRequestCommand
+    final case class Boom(id: Iri, project: ProjectRef, message: String) extends PullRequestCommand
+    final case class Never(id: Iri, project: ProjectRef)                 extends PullRequestCommand
   }
 
   sealed trait PullRequestEvent extends ScopedEvent {
-    def id: Label
+    def id: Iri
   }
 
   object PullRequestEvent {
-    final case class PullRequestCreated(id: Label, project: ProjectRef, instant: Instant, subject: Subject)
+    final case class PullRequestCreated(id: Iri, project: ProjectRef, instant: Instant, subject: Subject)
         extends PullRequestEvent {
       override val rev: Int = 1
     }
 
-    final case class PullRequestUpdated(id: Label, project: ProjectRef, rev: Int, instant: Instant, subject: Subject)
+    final case class PullRequestUpdated(id: Iri, project: ProjectRef, rev: Int, instant: Instant, subject: Subject)
         extends PullRequestEvent
 
     final case class PullRequestTagged(
-        id: Label,
+        id: Iri,
         project: ProjectRef,
         rev: Int,
         targetRev: Int,
@@ -108,30 +108,30 @@ object PullRequest {
         subject: Subject
     ) extends PullRequestEvent
 
-    final case class PullRequestMerged(id: Label, project: ProjectRef, rev: Int, instant: Instant, subject: Subject)
+    final case class PullRequestMerged(id: Iri, project: ProjectRef, rev: Int, instant: Instant, subject: Subject)
         extends PullRequestEvent
 
     @nowarn("cat=unused")
-    val serializer: Serializer[Label, PullRequestEvent] = {
+    val serializer: Serializer[Iri, PullRequestEvent] = {
       import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
       implicit val configuration: Configuration            = Configuration.default.withDiscriminator("@type")
       implicit val coder: Codec.AsObject[PullRequestEvent] = deriveConfiguredCodec[PullRequestEvent]
-      Serializer(_.id)
+      Serializer()
     }
   }
 
   sealed trait PullRequestRejection extends Product with Serializable
 
   object PullRequestRejection {
-    final case object NotFound                                                extends PullRequestRejection
-    final case object TagNotFound                                             extends PullRequestRejection
-    final case class RevisionNotFound(provided: Int, current: Int)            extends PullRequestRejection
-    final case class AlreadyExists(id: Label, project: ProjectRef)            extends PullRequestRejection
-    final case class PullRequestAlreadyClosed(id: Label, project: ProjectRef) extends PullRequestRejection
+    final case object NotFound                                              extends PullRequestRejection
+    final case object TagNotFound                                           extends PullRequestRejection
+    final case class RevisionNotFound(provided: Int, current: Int)          extends PullRequestRejection
+    final case class AlreadyExists(id: Iri, project: ProjectRef)            extends PullRequestRejection
+    final case class PullRequestAlreadyClosed(id: Iri, project: ProjectRef) extends PullRequestRejection
   }
 
   sealed trait PullRequestState extends ScopedState {
-    def id: Label
+    def id: Iri
     def project: ProjectRef
     def rev: Int
     def createdAt: Instant
@@ -143,16 +143,16 @@ object PullRequest {
 
     override def types: Set[IriOrBNode.Iri] = Set(nxv + "PullRequest")
 
-    def graph(base: Iri): Graph = this match {
+    def graph: Graph = this match {
       case _: PullRequestActive =>
         Graph
-          .empty(base / id.value)
+          .empty(id)
           .add(Vocabulary.rdf.tpe, nxv + "PullRequest")
           .add(nxv + "status", "active")
           .add(rdfs.label, "active")
       case _: PullRequestClosed =>
         Graph
-          .empty(base / id.value)
+          .empty(id)
           .add(Vocabulary.rdf.tpe, nxv + "PullRequest")
           .add(nxv + "status", "closed")
           .add(rdfs.label, "closed")
@@ -164,7 +164,7 @@ object PullRequest {
         case Identity.User(subject, realm) => base / "realms" / realm.value / "users" / subject
       }
       Graph
-        .empty(base / id.value)
+        .empty(id)
         .add(nxv.project.iri, project.toString)
         .add(nxv.rev.iri, rev)
         .add(nxv.deprecated.iri, deprecated)
@@ -177,14 +177,14 @@ object PullRequest {
     def source: Json = this match {
       case _: PullRequestActive =>
         Json.obj(
-          "@id"    -> Json.fromString(id.value),
+          "@id"    -> Json.fromString(id.toString),
           "@type"  -> Json.fromString("PullRequest"),
           "status" -> Json.fromString("active"),
           "label"  -> Json.fromString("active")
         )
       case _: PullRequestClosed =>
         Json.obj(
-          "@id"    -> Json.fromString(id.value),
+          "@id"    -> Json.fromString(id.toString),
           "@type"  -> Json.fromString("PullRequest"),
           "status" -> Json.fromString("closed"),
           "label"  -> Json.fromString("closed")
@@ -195,7 +195,7 @@ object PullRequest {
   object PullRequestState {
 
     final case class PullRequestActive(
-        id: Label,
+        id: Iri,
         project: ProjectRef,
         rev: Int,
         createdAt: Instant,
@@ -207,7 +207,7 @@ object PullRequest {
     }
 
     final case class PullRequestClosed(
-        id: Label,
+        id: Iri,
         project: ProjectRef,
         rev: Int,
         createdAt: Instant,
@@ -219,23 +219,23 @@ object PullRequest {
     }
 
     @nowarn("cat=unused")
-    implicit val serializer: Serializer[Label, PullRequestState] = {
+    implicit val serializer: Serializer[Iri, PullRequestState] = {
       import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
       implicit val configuration: Configuration            = Configuration.default.withDiscriminator("@type")
       implicit val coder: Codec.AsObject[PullRequestState] = deriveConfiguredCodec[PullRequestState]
-      Serializer(_.id)
+      Serializer()
     }
 
     def toGraphResource(state: PullRequestState, base: Iri): GraphResource =
       GraphResource(
         PullRequest.entityType,
         state.project,
-        base / state.id.value,
+        state.id,
         state.rev,
         state.deprecated,
         state.schema,
         state.types,
-        state.graph(base),
+        state.graph,
         state.metadataGraph(base),
         state.source
       )

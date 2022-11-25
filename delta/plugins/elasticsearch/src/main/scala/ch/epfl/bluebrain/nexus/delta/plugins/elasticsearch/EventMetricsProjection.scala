@@ -79,7 +79,7 @@ object EventMetricsProjection {
   def apply(
       sink: Sink,
       supervisor: Supervisor,
-      metrics: Offset => EnvelopeStream[String, ProjectScopedMetric],
+      metrics: Offset => EnvelopeStream[ProjectScopedMetric],
       init: Task[Unit]
   ): Task[EventMetricsProjection] = {
 

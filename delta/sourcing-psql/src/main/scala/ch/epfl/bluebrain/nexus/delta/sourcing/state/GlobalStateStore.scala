@@ -2,9 +2,11 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.state
 
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Envelope, EnvelopeStream}
+import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.IriInstances._
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.{RefreshStrategy, StreamingQuery}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.GlobalState
@@ -46,7 +48,7 @@ trait GlobalStateStore[Id, S <: GlobalState] {
     * @param offset
     *   the offset
     */
-  def currentStates(offset: Offset): EnvelopeStream[Id, S]
+  def currentStates(offset: Offset): EnvelopeStream[S]
 
   /**
     * Fetches states from the given type from the provided offset
@@ -57,27 +59,26 @@ trait GlobalStateStore[Id, S <: GlobalState] {
     * @param offset
     *   the offset
     */
-  def states(offset: Offset): EnvelopeStream[Id, S]
+  def states(offset: Offset): EnvelopeStream[S]
 
 }
 
 object GlobalStateStore {
 
-  def listIds[Id](tpe: EntityType, xa: Transactor[Task])(implicit getId: Get[Id]): Stream[Task, Id] =
-    sql"SELECT id FROM global_states WHERE type = $tpe".query[Id].stream.transact(xa)
+  def listIds(tpe: EntityType, xa: Transactor[Task]): Stream[Task, Iri] =
+    sql"SELECT id FROM global_states WHERE type = $tpe".query[Iri].stream.transact(xa)
 
   def apply[Id, S <: GlobalState](
       tpe: EntityType,
       serializer: Serializer[Id, S],
       config: QueryConfig,
       xas: Transactors
-  )(implicit getId: Get[Id], putId: Put[Id]): GlobalStateStore[Id, S] = new GlobalStateStore[Id, S] {
+  ): GlobalStateStore[Id, S] = new GlobalStateStore[Id, S] {
 
     import serializer._
 
     override def save(state: S): ConnectionIO[Unit] = {
-      val id = extractId(state)
-      sql"SELECT 1 FROM global_states WHERE type = $tpe AND id = $id"
+      sql"SELECT 1 FROM global_states WHERE type = $tpe AND id = ${state.id}"
         .query[Int]
         .option
         .flatMap {
@@ -91,7 +92,7 @@ object GlobalStateStore {
               | )
               | VALUES (
               |  $tpe,
-              |  $id,
+              |  ${state.id},
               |  ${state.rev},
               |  ${state.asJson},
               |  ${state.updatedAt}
@@ -105,7 +106,7 @@ object GlobalStateStore {
                |  ordering = (select nextval('state_offset'))
                | WHERE
                |  type = $tpe AND
-               |  id = $id
+               |  id = ${state.id}
             """.stripMargin
           }.update.run.void
         }
@@ -125,20 +126,20 @@ object GlobalStateStore {
           case None       => UIO.none
         }
 
-    private def states(offset: Offset, strategy: RefreshStrategy): EnvelopeStream[Id, S] =
-      StreamingQuery[Envelope[Id, S]](
+    private def states(offset: Offset, strategy: RefreshStrategy): EnvelopeStream[S] =
+      StreamingQuery[Envelope[S]](
         offset,
         offset => sql"""SELECT type, id, value, rev, instant, ordering FROM public.global_states
                        |${Fragments.whereAndOpt(Some(fr"type = $tpe"), offset.asFragment)}
-                       |ORDER BY ordering""".stripMargin.query[Envelope[Id, S]],
+                       |ORDER BY ordering""".stripMargin.query[Envelope[S]],
         _.offset,
         config.copy(refreshStrategy = strategy),
         xas
       )
 
-    override def currentStates(offset: Offset): EnvelopeStream[Id, S] = states(offset, RefreshStrategy.Stop)
+    override def currentStates(offset: Offset): EnvelopeStream[S] = states(offset, RefreshStrategy.Stop)
 
-    override def states(offset: Offset): EnvelopeStream[Id, S] = states(offset, config.refreshStrategy)
+    override def states(offset: Offset): EnvelopeStream[S] = states(offset, config.refreshStrategy)
   }
 
 }

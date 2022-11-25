@@ -194,7 +194,7 @@ object ElasticSearchViewEvent {
     implicit val elasticSearchValueDecoder: Decoder[ElasticSearchViewValue] =
       deriveConfiguredDecoder[ElasticSearchViewValue]
     implicit val coder: Codec.AsObject[ElasticSearchViewEvent]              = deriveConfiguredCodec[ElasticSearchViewEvent]
-    Serializer(_.id)
+    Serializer()
   }
 
   val esViewMetricEncoder: ScopedEventMetricEncoder[ElasticSearchViewEvent] =

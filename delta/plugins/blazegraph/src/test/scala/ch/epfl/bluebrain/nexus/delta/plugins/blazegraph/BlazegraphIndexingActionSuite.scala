@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphIndexingActionSuite.{emptyAcc, IdAcc}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.IndexingViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.IndexingViewDef.{ActiveViewDef, DeprecatedViewDef}
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.NTriples
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
@@ -13,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestState
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestState.PullRequestActive
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionErr.CouldNotFindPipeErr
@@ -128,7 +129,7 @@ class BlazegraphIndexingActionSuite extends BioSuite with Fixtures {
 
   private val base = iri"http://localhost"
   private val pr   = PullRequestActive(
-    id = Label.unsafe("id1"),
+    id = nxv + "id1",
     project = project,
     rev = 1,
     createdAt = instant,
@@ -139,7 +140,7 @@ class BlazegraphIndexingActionSuite extends BioSuite with Fixtures {
 
   private val elem = SuccessElem(
     tpe = PullRequest.entityType,
-    id = pr.id.value,
+    id = pr.id,
     project = Some(project),
     instant = pr.updatedAt,
     offset = Offset.at(1L),
@@ -148,11 +149,7 @@ class BlazegraphIndexingActionSuite extends BioSuite with Fixtures {
   )
 
   test("Collect only the adequate views") {
-    val expected = IdAcc(
-      Set(id1.toString),
-      Set(id2.toString, id4.toString, id5.toString),
-      Set(id3.toString)
-    )
+    val expected = IdAcc(Set(id1), Set(id2, id4, id5), Set(id3))
 
     indexingAction
       .projections(project, elem)
@@ -173,7 +170,7 @@ class BlazegraphIndexingActionSuite extends BioSuite with Fixtures {
   test("A failed elem should be returned") {
     val failed = FailedElem(
       tpe = PullRequest.entityType,
-      id = pr.id.value,
+      id = pr.id,
       project = Some(project),
       instant = pr.updatedAt,
       offset = Offset.at(1L),
@@ -188,12 +185,12 @@ class BlazegraphIndexingActionSuite extends BioSuite with Fixtures {
 
 object BlazegraphIndexingActionSuite {
 
-  final private case class IdAcc(successes: Set[String], dropped: Set[String], failures: Set[String]) {
-    def success(id: String): IdAcc = this.copy(successes = successes + id)
-    def drop(id: String): IdAcc    = this.copy(dropped = dropped + id)
-    def failed(id: String): IdAcc  = this.copy(failures = failures + id)
+  final private case class IdAcc(successes: Set[Iri], dropped: Set[Iri], failures: Set[Iri]) {
+    def success(id: Iri): IdAcc = this.copy(successes = successes + id)
+    def drop(id: Iri): IdAcc    = this.copy(dropped = dropped + id)
+    def failed(id: Iri): IdAcc  = this.copy(failures = failures + id)
   }
 
-  private val emptyAcc = IdAcc(Set.empty[String], Set.empty[String], Set.empty[String])
+  private val emptyAcc = IdAcc(Set.empty, Set.empty, Set.empty)
 
 }

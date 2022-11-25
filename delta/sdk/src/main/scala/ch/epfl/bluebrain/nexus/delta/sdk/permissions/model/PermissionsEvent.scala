@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.permissions.model
 
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -23,7 +24,14 @@ import scala.annotation.nowarn
 /**
   * Enumeration of Permissions event types.
   */
-sealed trait PermissionsEvent extends GlobalEvent
+sealed trait PermissionsEvent extends GlobalEvent {
+
+  /**
+    * The relative [[Iri]] of the permission
+    */
+  override def id: Iri = Permissions.id
+
+}
 
 object PermissionsEvent {
 
@@ -105,7 +113,7 @@ object PermissionsEvent {
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
     implicit val configuration: Configuration            = Serializer.circeConfiguration
     implicit val coder: Codec.AsObject[PermissionsEvent] = deriveConfiguredCodec[PermissionsEvent]
-    Serializer(_ => Permissions.entityId)
+    Serializer(_ => Permissions.id)
   }
 
   def sseEncoder(implicit base: BaseUri): SseEncoder[PermissionsEvent] = new SseEncoder[PermissionsEvent] {

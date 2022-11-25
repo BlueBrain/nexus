@@ -322,7 +322,7 @@ final class BlazegraphViews(
       Task.pure(toIndexViewDef(envelope))
     }
 
-  private def toIndexViewDef(envelope: Envelope[Iri, BlazegraphViewState]) =
+  private def toIndexViewDef(envelope: Envelope[BlazegraphViewState]) =
     IndexingViewDef(envelope.value, prefix).map { viewDef =>
       SuccessElem(
         tpe = envelope.tpe,
@@ -523,7 +523,7 @@ object BlazegraphViews {
       { s =>
         s.value match {
           case a: AggregateBlazegraphViewValue =>
-            Some(a.views.map { v => EntityDependency(v.project, v.viewId.toString) }.toSortedSet)
+            Some(a.views.map { v => EntityDependency(v.project, v.viewId) }.toSortedSet)
           case _                               => None
         }
       },

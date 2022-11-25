@@ -72,9 +72,9 @@ final class AclsImpl private (
       .map(_.filter(caller.identities))
       .span("listSelfAcls", Map("withAncestors" -> filter.withAncestors))
 
-  override def events(offset: Offset): EnvelopeStream[AclAddress, AclEvent]                    = log.events(offset)
+  override def events(offset: Offset): EnvelopeStream[AclEvent]                                = log.events(offset)
 
-  override def currentEvents(offset: Offset): EnvelopeStream[AclAddress, AclEvent] = log.currentEvents(offset)
+  override def currentEvents(offset: Offset): EnvelopeStream[AclEvent] = log.currentEvents(offset)
 
   override def replace(acl: Acl, rev: Int)(implicit caller: Subject): IO[AclRejection, AclResource] =
     eval(ReplaceAcl(acl, rev, caller)).span("replaceAcls")
@@ -97,8 +97,11 @@ object AclsImpl {
   type AclsLog = GlobalEventLog[AclAddress, AclState, AclCommand, AclEvent, AclRejection]
 
   def findUnknownRealms(xas: Transactors)(labels: Set[Label]): IO[UnknownRealms, Unit] =
-    GlobalStateStore.listIds[Label](Realms.entityType, xas.read).compile.toList.hideErrors.flatMap { existing =>
-      Acls.findUnknownRealms(labels, existing.toSet)
+    GlobalStateStore.listIds(Realms.entityType, xas.read).compile.toList.hideErrors.flatMap { existing =>
+      val unknown = labels.filterNot { l =>
+        existing.contains(Realms.encodeId(l))
+      }
+      IO.raiseWhen(unknown.nonEmpty)(UnknownRealms(unknown))
     }
 
   /**

@@ -212,7 +212,7 @@ object BlazegraphViewEvent {
     implicit val valueDecoder: Decoder[BlazegraphViewValue] =
       deriveConfiguredDecoder[BlazegraphViewValue]
     implicit val coder: Codec.AsObject[BlazegraphViewEvent] = deriveConfiguredCodec[BlazegraphViewEvent]
-    Serializer(_.id)
+    Serializer()
   }
 
   val bgViewMetricEncoder: ScopedEventMetricEncoder[BlazegraphViewEvent] =

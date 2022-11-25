@@ -4,7 +4,7 @@ import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.sdk.PermissionsResource
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{entityId, entityType}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{entityType, labelId}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.PermissionsImpl.PermissionsLog
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.PermissionsCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.PermissionsRejection.{RevisionNotFound, UnexpectedState}
@@ -26,7 +26,7 @@ final class PermissionsImpl private (
 
   override def fetch: UIO[PermissionsResource] =
     log
-      .stateOr(entityId, UnexpectedState)
+      .stateOr(labelId, UnexpectedState)
       .onErrorHandle(_ => initial)
       .map(_.toResource(minimum))
       .span("fetchPermissions")
@@ -34,7 +34,7 @@ final class PermissionsImpl private (
   override def fetchAt(rev: Int): IO[PermissionsRejection, PermissionsResource] =
     log
       .stateOr(
-        entityId,
+        labelId,
         rev,
         UnexpectedState,
         RevisionNotFound
@@ -64,7 +64,7 @@ final class PermissionsImpl private (
     eval(DeletePermissions(rev, caller)).span("deletePermissions")
 
   private def eval(cmd: PermissionsCommand): IO[PermissionsRejection, PermissionsResource] =
-    log.evaluate(entityId, cmd).map(_._2.toResource(minimum))
+    log.evaluate(labelId, cmd).map(_._2.toResource(minimum))
 }
 
 object PermissionsImpl {

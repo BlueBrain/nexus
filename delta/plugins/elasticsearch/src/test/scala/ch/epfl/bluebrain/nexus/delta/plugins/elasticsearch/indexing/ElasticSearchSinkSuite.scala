@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing
 
 import akka.http.scaladsl.model.Uri.Query
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchClientSetup
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{IndexLabel, QueryBuilder}
@@ -25,10 +26,10 @@ class ElasticSearchSinkSuite extends BioSuite with ElasticSearchClientSetup.Fixt
   private val membersEntity = EntityType("members")
   private val index         = IndexLabel.unsafe("test_members")
 
-  private val alice = ("alice", json"""{"name": "Alice", "age": 25 }""")
-  private val bob   = ("bob", json"""{"name": "Bob", "age": 32 }""")
-  private val brian = ("brian", json"""{"name": "Brian", "age": 19 }""")
-  private val judy  = ("judy", json"""{"name": "Judy", "age": 47 }""")
+  private val alice = (nxv + "alice", json"""{"name": "Alice", "age": 25 }""")
+  private val bob   = (nxv + "bob", json"""{"name": "Bob", "age": 32 }""")
+  private val brian = (nxv + "brian", json"""{"name": "Brian", "age": 19 }""")
+  private val judy  = (nxv + "judy", json"""{"name": "Judy", "age": 47 }""")
 
   private val members = Set(alice, bob, brian, judy)
 
@@ -67,7 +68,7 @@ class ElasticSearchSinkSuite extends BioSuite with ElasticSearchClientSetup.Fixt
   }
 
   test("Report errors when a invalid json is submitted") {
-    val chunk = Chunk(("xxx", json"""{"name": 112, "age": "xxx"}"""), alice).map { case (id, json) =>
+    val chunk = Chunk((nxv + "xxx", json"""{"name": 112, "age": "xxx"}"""), alice).map { case (id, json) =>
       SuccessElem(membersEntity, id, None, Instant.EPOCH, Offset.at(members.size.toLong + 1), json, rev)
     }
 
