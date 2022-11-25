@@ -74,20 +74,13 @@ object StoragesStatistics {
       search: JsonObject => HttpResult[Json],
       fetchStorageId: (IdSegment, ProjectRef) => IO[StorageFetchRejection, Iri]
   ): StoragesStatistics =
-    new StoragesStatistics {
-
-      /**
-        * Retrieve the current statistics for a given storage in the given project
-        */
-      override def get(idSegment: IdSegment, project: ProjectRef): IO[StorageFetchRejection, StorageStatEntry] = {
-        for {
-          storageId <- fetchStorageId(idSegment, project)
-          query     <- statsByIdAndProjectQuery(storageId, project).hideErrors
-          result    <- search(query).hideErrors
-          stats     <- IO.fromEither(result.as[StorageStatEntry]).hideErrors
-        } yield stats
-      }
-
+    (idSegment: IdSegment, project: ProjectRef) => {
+      for {
+        storageId <- fetchStorageId(idSegment, project)
+        query     <- statsByIdAndProjectQuery(storageId, project).hideErrors
+        result    <- search(query).hideErrors
+        stats     <- IO.fromEither(result.as[StorageStatEntry]).hideErrors
+      } yield stats
     }
 
 }
