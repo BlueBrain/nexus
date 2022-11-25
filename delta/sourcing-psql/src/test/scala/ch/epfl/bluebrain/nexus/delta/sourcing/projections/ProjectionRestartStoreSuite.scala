@@ -4,7 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.model.ProjectionRestart
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.model.ProjectionRestart.entityType
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.model.ProjectionRestart.{entityType, restartId}
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.testkit.IOFixedClock
@@ -26,7 +26,7 @@ class ProjectionRestartStoreSuite extends BioSuite with IOFixedClock with Doobie
   private val pr2 = ProjectionRestart("proj2", Instant.EPOCH.plusSeconds(5L), Anonymous)
 
   private def toElem(id: Offset, restart: ProjectionRestart) =
-    SuccessElem(entityType, id.toString, None, restart.instant, id, restart, 1)
+    SuccessElem(entityType, restartId(id), None, restart.instant, id, restart, 1)
 
   test("Save a projection restart") {
     store.save(pr1).assert(())

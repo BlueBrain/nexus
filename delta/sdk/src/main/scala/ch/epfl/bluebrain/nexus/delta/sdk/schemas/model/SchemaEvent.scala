@@ -192,7 +192,7 @@ object SchemaEvent {
     implicit val configuration: Configuration = Serializer.circeConfiguration
 
     implicit val coder: Codec.AsObject[SchemaEvent] = deriveConfiguredCodec[SchemaEvent]
-    Serializer(_.id)
+    Serializer()
   }
 
   val schemaEventMetricEncoder: ScopedEventMetricEncoder[SchemaEvent] =

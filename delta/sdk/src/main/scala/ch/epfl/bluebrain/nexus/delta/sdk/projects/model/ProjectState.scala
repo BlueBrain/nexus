@@ -4,15 +4,15 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.ProjectResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
-import io.circe.{Codec, Decoder, Encoder}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredCodec
+import io.circe.{Codec, Decoder, Encoder}
 
 import java.time.Instant
 import java.util.UUID
@@ -72,6 +72,11 @@ final case class ProjectState(
 
   override val project: ProjectRef = ProjectRef(organizationLabel, label)
 
+  /**
+    * The relative [[Iri]] of the project
+    */
+  override def id: Iri = Projects.encodeId(project)
+
   private val uris = ResourceUris.project(project)
 
   /**
@@ -91,7 +96,7 @@ final case class ProjectState(
     */
   def toResource(defaultApiMappings: ApiMappings): ProjectResource =
     ResourceF(
-      id = uris.relativeAccessUri.toIri,
+      id = id,
       uris = uris,
       rev = rev,
       types = types,
@@ -129,7 +134,7 @@ object ProjectState {
       Encoder.encodeMap[String, Iri].contramapObject(_.value)
 
     implicit val coder: Codec.AsObject[ProjectState] = deriveConfiguredCodec[ProjectState]
-    Serializer(_.project)
+    Serializer(Projects.encodeId)
   }
 
 }

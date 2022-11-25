@@ -3,9 +3,9 @@ package ch.epfl.bluebrain.nexus.delta.sdk.acls.model
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.AclResource
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.Acls
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
@@ -45,6 +45,11 @@ final case class AclState(
 ) extends GlobalState {
 
   /**
+    * The relative [[Iri]] of the acl
+    */
+  override val id: Iri = Acls.encodeId(acl.address)
+
+  /**
     * @return
     *   the current deprecation status (always false for acls)
     */
@@ -65,7 +70,7 @@ final case class AclState(
   def toResource: AclResource = {
     val uris = ResourceUris.acl(acl.address)
     ResourceF(
-      id = uris.relativeAccessUri.toIri,
+      id = id,
       uris = uris,
       rev = rev,
       types = types,
@@ -94,7 +99,7 @@ object AclState {
         deriveConfiguredEncoder[AclState].mapJsonObject(_.add("address", state.acl.address.asJson)).encodeObject(state)
       }
     )
-    Serializer(_.acl.address)
+    Serializer(Acls.encodeId)
   }
 
   def initial(permissions: Set[Permission]): AclState = AclState(

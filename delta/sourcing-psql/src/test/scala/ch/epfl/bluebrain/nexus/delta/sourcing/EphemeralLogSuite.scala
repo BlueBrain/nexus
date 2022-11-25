@@ -1,6 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.Message.MessageRejection.{AlreadyExists, MessageTooLong, NotFound}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sourcing.Message.{CreateMessage, MessageRejection, MessageState}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EphemeralLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, User}
@@ -17,7 +19,7 @@ class EphemeralLogSuite extends BioSuite with Doobie.Fixture with Doobie.Asserti
 
   private lazy val xas = doobie()
 
-  private val definition: EphemeralDefinition[String, MessageState, CreateMessage, MessageRejection] =
+  private val definition: EphemeralDefinition[Iri, MessageState, CreateMessage, MessageRejection] =
     EphemeralDefinition(
       Message.entityType,
       Message.evaluate,
@@ -31,7 +33,7 @@ class EphemeralLogSuite extends BioSuite with Doobie.Fixture with Doobie.Asserti
     xas
   )
 
-  private val id      = "m1"
+  private val id      = nxv + "m1"
   private val proj    = ProjectRef.unsafe("org", "proj")
   private val text    = "Hello !"
   private val alice   = User("Alice", Label.unsafe("Wonderland"))
@@ -42,7 +44,7 @@ class EphemeralLogSuite extends BioSuite with Doobie.Fixture with Doobie.Asserti
   }
 
   test("Raise an error with a non-existent id") {
-    log.stateOr(proj, "xxx", NotFound).error(NotFound)
+    log.stateOr(proj, nxv + "xxx", NotFound).error(NotFound)
   }
 
   test("Raise an error if the text message is too long and save nothing") {

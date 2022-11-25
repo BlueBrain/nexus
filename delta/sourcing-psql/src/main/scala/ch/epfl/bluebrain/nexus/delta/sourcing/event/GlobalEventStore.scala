@@ -5,6 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.GlobalEvent
+import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.IriInstances._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Envelope, EnvelopeStream}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.{RefreshStrategy, StreamingQuery}
@@ -50,7 +51,7 @@ trait GlobalEventStore[Id, E <: GlobalEvent] {
     * @param offset
     *   the offset
     */
-  def currentEvents(offset: Offset): EnvelopeStream[Id, E]
+  def currentEvents(offset: Offset): EnvelopeStream[E]
 
   /**
     * Fetches events from the given type from the provided offset
@@ -61,7 +62,7 @@ trait GlobalEventStore[Id, E <: GlobalEvent] {
     * @param offset
     *   the offset
     */
-  def events(offset: Offset): EnvelopeStream[Id, E]
+  def events(offset: Offset): EnvelopeStream[E]
 
 }
 
@@ -72,7 +73,7 @@ object GlobalEventStore {
       serializer: Serializer[Id, E],
       config: QueryConfig,
       xas: Transactors
-  )(implicit getId: Get[Id], putId: Put[Id]): GlobalEventStore[Id, E] =
+  ): GlobalEventStore[Id, E] =
     new GlobalEventStore[Id, E] {
 
       import serializer._
@@ -88,7 +89,7 @@ object GlobalEventStore {
            | )
            | VALUES (
            |  $tpe,
-           |  ${extractId(event)},
+           |  ${event.id},
            |  ${event.rev},
            |  ${event.asJson},
            |  ${event.instant}
@@ -106,20 +107,20 @@ object GlobalEventStore {
         }
       }
 
-      private def events(offset: Offset, strategy: RefreshStrategy): Stream[Task, Envelope[Id, E]] =
-        StreamingQuery[Envelope[Id, E]](
+      private def events(offset: Offset, strategy: RefreshStrategy): Stream[Task, Envelope[E]] =
+        StreamingQuery[Envelope[E]](
           offset,
           offset => sql"""SELECT type, id, value, rev, instant, ordering FROM public.global_events
                          |${Fragments.whereAndOpt(Some(fr"type = $tpe"), offset.asFragment)}
-                         |ORDER BY ordering""".stripMargin.query[Envelope[Id, E]],
+                         |ORDER BY ordering""".stripMargin.query[Envelope[E]],
           _.offset,
           config.copy(refreshStrategy = strategy),
           xas
         )
 
-      override def currentEvents(offset: Offset): Stream[Task, Envelope[Id, E]] = events(offset, RefreshStrategy.Stop)
+      override def currentEvents(offset: Offset): Stream[Task, Envelope[E]] = events(offset, RefreshStrategy.Stop)
 
-      override def events(offset: Offset): Stream[Task, Envelope[Id, E]] = events(offset, config.refreshStrategy)
+      override def events(offset: Offset): Stream[Task, Envelope[E]] = events(offset, config.refreshStrategy)
     }
 
 }

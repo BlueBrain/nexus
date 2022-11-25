@@ -93,7 +93,7 @@ object ResourceState {
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
     implicit val configuration: Configuration         = Serializer.circeConfiguration
     implicit val codec: Codec.AsObject[ResourceState] = deriveConfiguredCodec[ResourceState]
-    Serializer(_.id)
+    Serializer()
   }
 
 }

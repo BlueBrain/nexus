@@ -1,7 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.event
 
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestEvent
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestEvent.{PullRequestCreated, PullRequestMerged, PullRequestUpdated}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, User}
@@ -23,7 +25,7 @@ class ScopedEventStoreSuite extends BioSuite with Doobie.Fixture with Doobie.Ass
 
   private lazy val xas = doobie()
 
-  private lazy val store = ScopedEventStore[Label, PullRequestEvent](
+  private lazy val store = ScopedEventStore[Iri, PullRequestEvent](
     PullRequest.entityType,
     PullRequestEvent.serializer,
     QueryConfig(10, RefreshStrategy.Delay(500.millis)),
@@ -34,9 +36,9 @@ class ScopedEventStoreSuite extends BioSuite with Doobie.Fixture with Doobie.Ass
   private val project2 = ProjectRef.unsafe("org", "proj2")
   private val project3 = ProjectRef.unsafe("org2", "proj3")
 
-  private val id1 = Label.unsafe("1")
-  private val id2 = Label.unsafe("2")
-  private val id3 = Label.unsafe("3")
+  private val id1 = nxv + "1"
+  private val id2 = nxv + "2"
+  private val id3 = nxv + "3"
 
   private val event1 = PullRequestCreated(id1, project1, Instant.EPOCH, Anonymous)
   private val event2 = PullRequestUpdated(id1, project1, 2, Instant.EPOCH, User("Alice", Label.unsafe("Wonderland")))

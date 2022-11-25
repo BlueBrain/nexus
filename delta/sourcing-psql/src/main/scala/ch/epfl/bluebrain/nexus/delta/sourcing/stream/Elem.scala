@@ -27,7 +27,7 @@ sealed trait Elem[+A] extends Product with Serializable {
     * @return
     *   the underlying entity id
     */
-  def id: String
+  def id: Iri
 
   /**
     * @return
@@ -144,26 +144,13 @@ object Elem {
     */
   final case class SuccessElem[+A](
       tpe: EntityType,
-      id: String,
+      id: Iri,
       project: Option[ProjectRef],
       instant: Instant,
       offset: Offset,
       value: A,
       revision: Int
   ) extends Elem[A]
-
-  object SuccessElem {
-    def apply[A](
-        tpe: EntityType,
-        id: Iri,
-        project: Option[ProjectRef],
-        instant: Instant,
-        offset: Offset,
-        value: A,
-        revision: Int
-    ): SuccessElem[A] =
-      SuccessElem(tpe, id.toString, project, instant, offset, value, revision)
-  }
 
   /**
     * An element that has suffered a processing failure.
@@ -180,7 +167,7 @@ object Elem {
     */
   final case class FailedElem(
       tpe: EntityType,
-      id: String,
+      id: Iri,
       project: Option[ProjectRef],
       instant: Instant,
       offset: Offset,
@@ -201,24 +188,12 @@ object Elem {
     */
   final case class DroppedElem(
       tpe: EntityType,
-      id: String,
+      id: Iri,
       project: Option[ProjectRef],
       instant: Instant,
       offset: Offset,
       revision: Int
   ) extends Elem[Nothing]
-
-  object DroppedElem {
-    def apply(
-        tpe: EntityType,
-        id: Iri,
-        project: Option[ProjectRef],
-        instant: Instant,
-        offset: Offset,
-        revision: Int
-    ): DroppedElem =
-      DroppedElem(tpe, id.toString, project, instant, offset, revision)
-  }
 
   implicit val traverseElem: Traverse[Elem] = new Traverse[Elem] {
     override def traverse[G[_]: Applicative, A, B](fa: Elem[A])(f: A => G[B]): G[Elem[B]] =

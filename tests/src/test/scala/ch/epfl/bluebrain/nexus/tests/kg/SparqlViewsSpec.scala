@@ -192,8 +192,8 @@ class SparqlViewsSpec extends BaseSpec with EitherValuable with CirceEq {
           "/kg/views/statistics.json",
           "total"     -> "12",
           "processed" -> "12",
-          "evaluated" -> "11",
-          "discarded" -> "1",
+          "evaluated" -> "12",
+          "discarded" -> "0",
           "remaining" -> "0"
         )
         filterNestedKeys("lastEventDateTime", "lastProcessedEventDateTime")(json) shouldEqual expected

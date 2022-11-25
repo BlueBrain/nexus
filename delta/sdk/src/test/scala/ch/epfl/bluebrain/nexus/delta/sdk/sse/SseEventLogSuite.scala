@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.sse
 
 import akka.http.scaladsl.model.sse.ServerSentEvent
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder.SseData
@@ -31,7 +32,7 @@ class SseEventLogSuite extends BioSuite with ConfigFixtures with IOFixedClock {
 
   private def makeEnvelope(sseData: SseData) = Envelope(
     EntityType("Person"),
-    "1",
+    nxv + "1",
     4,
     sseData,
     Instant.now(),
@@ -50,7 +51,7 @@ class SseEventLogSuite extends BioSuite with ConfigFixtures with IOFixedClock {
   test("Should not inject project uuids when the ref is unknown") {
     val envelope = Envelope(
       EntityType("Person"),
-      "1",
+      nxv + "1",
       4,
       SseData("Person", Some(ProjectRef.unsafe("xxx", "xxx")), JsonObject("name" -> "John Doe".asJson)),
       Instant.now(),
@@ -64,7 +65,7 @@ class SseEventLogSuite extends BioSuite with ConfigFixtures with IOFixedClock {
   test("Should inject project uuids when the ref is unknown") {
     val envelope = Envelope(
       EntityType("Person"),
-      "1",
+      nxv + "1",
       4,
       SseData("Person", Some(ref), JsonObject("name" -> "John Doe".asJson)),
       Instant.now(),

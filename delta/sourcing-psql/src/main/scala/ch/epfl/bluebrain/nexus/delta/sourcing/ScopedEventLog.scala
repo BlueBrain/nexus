@@ -119,7 +119,7 @@ trait ScopedEventLog[Id, S <: ScopedState, Command, E <: ScopedEvent, Rejection]
     * @param offset
     *   offset to start from
     */
-  def currentEvents(predicate: Predicate, offset: Offset): EnvelopeStream[Id, E]
+  def currentEvents(predicate: Predicate, offset: Offset): EnvelopeStream[E]
 
   /**
     * Allow to stream all current events within [[Envelope]] s
@@ -128,7 +128,7 @@ trait ScopedEventLog[Id, S <: ScopedState, Command, E <: ScopedEvent, Rejection]
     * @param offset
     *   offset to start from
     */
-  def events(predicate: Predicate, offset: Offset): EnvelopeStream[Id, E]
+  def events(predicate: Predicate, offset: Offset): EnvelopeStream[E]
 
   /**
     * Allow to stream all latest states within [[Envelope]] s without applying transformation
@@ -137,14 +137,14 @@ trait ScopedEventLog[Id, S <: ScopedState, Command, E <: ScopedEvent, Rejection]
     * @param offset
     *   offset to start from
     */
-  def currentStates(predicate: Predicate, offset: Offset): EnvelopeStream[Id, S]
+  def currentStates(predicate: Predicate, offset: Offset): EnvelopeStream[S]
 
   /**
     * Allow to stream all latest states from the beginning within [[Envelope]] s without applying transformation
     * @param predicate
     *   to filter returned states
     */
-  def currentStates(predicate: Predicate): EnvelopeStream[Id, S] = currentStates(predicate, Offset.Start)
+  def currentStates(predicate: Predicate): EnvelopeStream[S] = currentStates(predicate, Offset.Start)
 
   /**
     * Allow to stream all current states from the provided offset
@@ -173,7 +173,7 @@ trait ScopedEventLog[Id, S <: ScopedState, Command, E <: ScopedEvent, Rejection]
     * @param offset
     *   the start offset
     */
-  def states(predicate: Predicate, offset: Offset): EnvelopeStream[Id, S]
+  def states(predicate: Predicate, offset: Offset): EnvelopeStream[S]
 }
 
 object ScopedEventLog {
@@ -186,7 +186,7 @@ object ScopedEventLog {
       definition: ScopedEntityDefinition[Id, S, Command, E, Rejection],
       config: EventLogConfig,
       xas: Transactors
-  )(implicit get: Get[Id], put: Put[Id]): ScopedEventLog[Id, S, Command, E, Rejection] =
+  ): ScopedEventLog[Id, S, Command, E, Rejection] =
     apply(
       definition.tpe,
       ScopedEventStore(definition.tpe, definition.eventSerializer, config.queryConfig, xas),
@@ -209,7 +209,7 @@ object ScopedEventLog {
       extractDependencies: S => Option[Set[EntityDependency]],
       maxDuration: FiniteDuration,
       xas: Transactors
-  )(implicit putId: Put[Id]): ScopedEventLog[Id, S, Command, E, Rejection] =
+  ): ScopedEventLog[Id, S, Command, E, Rejection] =
     new ScopedEventLog[Id, S, Command, E, Rejection] {
 
       override def stateOr[R <: Rejection](ref: ProjectRef, id: Id, notFound: => R): IO[R, S] =
@@ -253,19 +253,19 @@ object ScopedEventLog {
 
         def deleteTag(event: E, state: S): ConnectionIO[Unit] = tagger.untagWhen(event).fold(noop) { tag =>
           stateStore.delete(ref, id, tag) >>
-            TombstoneStore.save(entityType, id, state, tag)
+            TombstoneStore.save(entityType, state, tag)
         }
 
         def updateDependencies(state: S) =
           extractDependencies(state).fold(noop) { dependencies =>
-            EntityDependencyStore.delete(ref, id) >> EntityDependencyStore.save(ref, id, dependencies)
+            EntityDependencyStore.delete(ref, state.id) >> EntityDependencyStore.save(ref, state.id, dependencies)
           }
 
         def persist(event: E, original: Option[S], newState: S): IO[Rejection, Unit] =
           saveTag(event, newState)
             .flatMap { tagQuery =>
               val queries = for {
-                _ <- TombstoneStore.save(entityType, id, original, newState)
+                _ <- TombstoneStore.save(entityType, original, newState)
                 _ <- eventStore.save(event)
                 _ <- stateStore.save(newState)
                 _ <- tagQuery
@@ -304,13 +304,13 @@ object ScopedEventLog {
           stateMachine.evaluate(state, command, maxDuration)
         }
 
-      override def currentEvents(predicate: Predicate, offset: Offset): EnvelopeStream[Id, E] =
+      override def currentEvents(predicate: Predicate, offset: Offset): EnvelopeStream[E] =
         eventStore.currentEvents(predicate, offset)
 
-      override def events(predicate: Predicate, offset: Offset): EnvelopeStream[Id, E] =
+      override def events(predicate: Predicate, offset: Offset): EnvelopeStream[E] =
         eventStore.events(predicate, offset)
 
-      override def currentStates(predicate: Predicate, offset: Offset): EnvelopeStream[Id, S] =
+      override def currentStates(predicate: Predicate, offset: Offset): EnvelopeStream[S] =
         stateStore.currentStates(predicate, offset)
 
       override def currentStates[T](predicate: Predicate, offset: Offset, f: S => T): Stream[Task, T] =
@@ -318,7 +318,7 @@ object ScopedEventLog {
           f(s.value)
         }
 
-      override def states(predicate: Predicate, offset: Offset): EnvelopeStream[Id, S] =
+      override def states(predicate: Predicate, offset: Offset): EnvelopeStream[S] =
         stateStore.states(predicate, offset)
     }
 

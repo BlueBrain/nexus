@@ -5,7 +5,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.PermissionsResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.{model, Permissions}
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
@@ -30,6 +29,11 @@ final case class PermissionsState(
     updatedBy: Subject
 ) extends GlobalState {
 
+  /**
+    * The relative [[Iri]] of the permission
+    */
+  override def id: Iri = Permissions.id
+
   override def deprecated: Boolean = false
 
   /**
@@ -46,7 +50,7 @@ final case class PermissionsState(
 
   def toResource(minimum: Set[Permission]): PermissionsResource = {
     ResourceF(
-      id = ResourceUris.permissions.relativeAccessUri.toIri,
+      id = id,
       uris = ResourceUris.permissions,
       rev = rev,
       types = types,
@@ -77,7 +81,7 @@ object PermissionsState {
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
     implicit val configuration: Configuration            = Serializer.circeConfiguration
     implicit val coder: Codec.AsObject[PermissionsState] = deriveConfiguredCodec[PermissionsState]
-    Serializer(_ => Permissions.entityId)
+    Serializer(_ => Permissions.id)
   }
 
 }

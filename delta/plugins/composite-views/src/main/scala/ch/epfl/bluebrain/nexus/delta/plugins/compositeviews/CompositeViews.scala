@@ -29,7 +29,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, Projects}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax.nonEmptySetSyntax
@@ -710,7 +710,7 @@ object CompositeViews {
       state =>
         Some(
           state.value.sources.value.foldLeft(Set.empty[EntityDependency]) {
-            case (acc, s: CrossProjectSource) => acc + EntityDependency(s.project, s.project.toString)
+            case (acc, s: CrossProjectSource) => acc + EntityDependency(s.project, Projects.encodeId(s.project))
             case (acc, _)                     => acc
           }
         ),

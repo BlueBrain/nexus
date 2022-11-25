@@ -12,6 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, IdSegmentRef, ResourceToSchemaMappings, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.IdentityResolution.{ProvidedIdentities, UseCurrentCaller}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverCommand.{CreateResolver, DeprecateResolver, TagResolver, UpdateResolver}
@@ -414,7 +415,7 @@ object Resolvers {
         case _: InProjectValue    => None
         case c: CrossProjectValue =>
           Some(
-            c.projects.map { ref => EntityDependency(ref, ref.toString) }.toList.toSet
+            c.projects.map { ref => EntityDependency(ref, Projects.encodeId(ref)) }.toList.toSet
           )
       },
       onUniqueViolation = (id: Iri, c: ResolverCommand) =>

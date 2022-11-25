@@ -2,9 +2,11 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing
 
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{BlazegraphClient, SparqlWriteQuery}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphSink.{logger, BlazegraphBulk}
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.InvalidIri
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.NTriples
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
 import com.typesafe.scalalogging.Logger
@@ -30,14 +32,17 @@ final class BlazegraphSink(
     override val chunkSize: Int,
     override val maxWindow: FiniteDuration,
     namespace: String
-) extends Sink {
+)(implicit base: BaseUri)
+    extends Sink {
 
   override type In = NTriples
 
   override def inType: Typeable[NTriples] = Typeable[NTriples]
 
+  private val endpoint: Iri = base.endpoint.toIri
+
   override def apply(elements: Chunk[Elem[NTriples]]): Task[Chunk[Elem[Unit]]] = {
-    val bulk = elements.foldLeft(BlazegraphBulk.empty) {
+    val bulk = elements.foldLeft(BlazegraphBulk(Set.empty, List.empty, endpoint)) {
       case (acc, Elem.SuccessElem(_, id, _, _, _, triples, _)) =>
         acc.replace(id, triples)
       case (acc, Elem.DroppedElem(_, id, _, _, _, _))          =>
@@ -59,7 +64,7 @@ final class BlazegraphSink(
       UIO.pure(markInvalidIdsAsFailed(elements, bulk.invalidIds))
   }
 
-  private def markInvalidIdsAsFailed(elements: Chunk[Elem[NTriples]], invalidIds: Set[String]) =
+  private def markInvalidIdsAsFailed(elements: Chunk[Elem[NTriples]], invalidIds: Set[Iri]) =
     elements.map { e =>
       if (invalidIds.contains(e.id))
         e.failed(InvalidIri)
@@ -73,26 +78,21 @@ object BlazegraphSink {
 
   private val logger: Logger = Logger[BlazegraphSink]
 
-  final case class BlazegraphBulk(invalidIds: Set[String], queries: List[SparqlWriteQuery]) {
+  final case class BlazegraphBulk(invalidIds: Set[Iri], queries: List[SparqlWriteQuery], endpoint: Iri) {
 
-    private def parseUri(id: String) = id.toUri.filterOrElse(_.isAbsolute, s"'$id' is not an absolute Uri")
+    private def parseUri(id: Iri) = id.resolvedAgainst(endpoint).toUri
 
-    def replace(id: String, triples: NTriples): BlazegraphBulk =
+    def replace(id: Iri, triples: NTriples): BlazegraphBulk =
       parseUri(id).fold(
         _ => copy(invalidIds = invalidIds + id),
         uri => copy(queries = SparqlWriteQuery.replace(uri, triples) :: queries)
       )
 
-    def drop(id: String): BlazegraphBulk =
+    def drop(id: Iri): BlazegraphBulk =
       parseUri(id).fold(
         _ => copy(invalidIds = invalidIds + id),
         uri => copy(queries = SparqlWriteQuery.drop(uri) :: queries)
       )
 
   }
-
-  object BlazegraphBulk {
-    val empty: BlazegraphBulk = BlazegraphBulk(Set.empty, List.empty)
-  }
-
 }

@@ -1,7 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.EvaluationError.{EvaluationFailure, EvaluationTimeout}
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestCommand._
+import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.IriInstances._
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestEvent.{PullRequestCreated, PullRequestMerged, PullRequestTagged}
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestRejection._
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestState.{PullRequestActive, PullRequestClosed}
@@ -51,8 +54,8 @@ class ScopedEventLogSuite extends BioSuite with Doobie.Fixture {
 
   private val maxDuration = 100.millis
 
-  private val id   = Label.unsafe("id")
-  private val id2  = Label.unsafe("id2")
+  private val id   = nxv + "id"
+  private val id2  = nxv + "id2"
   private val proj = ProjectRef.unsafe("org", "proj")
 
   private val opened = PullRequestCreated(id, proj, Instant.EPOCH, Anonymous)
@@ -66,7 +69,7 @@ class ScopedEventLogSuite extends BioSuite with Doobie.Fixture {
   private val tag = UserTag.unsafe("active")
 
   private lazy val eventLog: ScopedEventLog[
-    Label,
+    Iri,
     PullRequestState,
     PullRequestCommand,
     PullRequestEvent,
@@ -76,7 +79,7 @@ class ScopedEventLogSuite extends BioSuite with Doobie.Fixture {
     eventStore,
     stateStore,
     PullRequest.stateMachine,
-    (id: Label, c: PullRequestCommand) => AlreadyExists(id, c.project),
+    (id: Iri, c: PullRequestCommand) => AlreadyExists(id, c.project),
     Tagger[PullRequestEvent](
       {
         case t: PullRequestTagged => Some(tag -> t.targetRev)
@@ -88,7 +91,7 @@ class ScopedEventLogSuite extends BioSuite with Doobie.Fixture {
       }
     ),
     {
-      case s if s.id == id => Some(Set(EntityDependency(s.project, id2.toString)))
+      case s if s.id == id => Some(Set(EntityDependency(s.project, id2)))
       case _               => None
     },
     maxDuration,
@@ -97,7 +100,7 @@ class ScopedEventLogSuite extends BioSuite with Doobie.Fixture {
 
   test("Evaluate successfully a command and store both event and state for an initial state") {
     implicit val decoder: Decoder[PullRequestState] = PullRequestState.serializer.codec
-    val expectedDependencies                        = Set(EntityDependency(proj, id2.toString))
+    val expectedDependencies                        = Set(EntityDependency(proj, id2))
     for {
       _        <- eventLog.evaluate(proj, id, Create(id, proj)).assert((opened, state1))
       _        <- eventStore.history(proj, id).assert(opened)
@@ -119,7 +122,7 @@ class ScopedEventLogSuite extends BioSuite with Doobie.Fixture {
   }
 
   test("Raise an error with a non-existent id") {
-    eventLog.stateOr(proj, Label.unsafe("xxx"), NotFound).error(NotFound)
+    eventLog.stateOr(proj, nxv + "xxx", NotFound).error(NotFound)
   }
 
   test("Tag and check that the state has also been successfully tagged as well") {
@@ -149,7 +152,7 @@ class ScopedEventLogSuite extends BioSuite with Doobie.Fixture {
 
   test("Check that the tagged state has been successfully removed after") {
     val query = sql"""SELECT type, org, project, id, tag, instant FROM scoped_tombstones"""
-      .query[(EntityType, Label, Label, Label, Tag, Instant)]
+      .query[(EntityType, Label, Label, Iri, Tag, Instant)]
       .unique
       .transact(xas.read)
     for {
@@ -190,7 +193,7 @@ class ScopedEventLogSuite extends BioSuite with Doobie.Fixture {
   }
 
   test("Raise an error with a non-existent id") {
-    eventLog.stateOr(proj, Label.unsafe("xxx"), 1, NotFound, RevisionNotFound).error(NotFound)
+    eventLog.stateOr(proj, nxv + "xxx", 1, NotFound, RevisionNotFound).error(NotFound)
   }
 
   test("Raise an error when providing a nonexistent revision") {
@@ -199,7 +202,7 @@ class ScopedEventLogSuite extends BioSuite with Doobie.Fixture {
 
   test("Stream continuously the current states") {
     for {
-      queue <- Queue.unbounded[Task, Envelope[Label, PullRequestState]]
+      queue <- Queue.unbounded[Task, Envelope[PullRequestState]]
       _     <- eventLog.states(Predicate.root, Offset.Start).through(queue.enqueue).compile.drain.timeout(500.millis)
       elems <- queue.tryDequeueChunk1(Int.MaxValue).map(opt => opt.map(_.toList).getOrElse(Nil))
       _      = elems.assertSize(2)

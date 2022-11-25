@@ -3,10 +3,12 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.query
 import cats.effect.ExitCase
 import cats.effect.concurrent.Ref
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.Predicate.Project
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef, Tag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.IriInstances._
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, RemainingElems}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
 import com.typesafe.scalalogging.Logger
@@ -97,7 +99,7 @@ object StreamingQuery {
            |$where
            |ORDER BY ordering)
            |ORDER BY ordering)
-           |""".stripMargin.query[(String, EntityType, String, Label, Label, Option[Json], Instant, Long, Int)].map {
+           |""".stripMargin.query[(String, EntityType, Iri, Label, Label, Option[Json], Instant, Long, Int)].map {
         case (`newState`, entityType, id, org, project, Some(json), instant, offset, rev) =>
           SuccessElem(entityType, id, Some(ProjectRef(org, project)), instant, Offset.at(offset), json, rev)
         case (_, entityType, id, org, project, _, instant, offset, rev)                   =>

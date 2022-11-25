@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.metrics
 
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric.ProjectScopedMetric
@@ -77,6 +78,8 @@ class EventMetricSpec extends AnyWordSpecLike with Matchers with CirceLiteral {
 
 object EventMetricSpec {
 
-  final case class SimpleEvent(project: ProjectRef, rev: Int, instant: Instant, subject: Subject) extends ScopedEvent
+  final case class SimpleEvent(project: ProjectRef, rev: Int, instant: Instant, subject: Subject) extends ScopedEvent {
+    def id: Iri = nxv + "id"
+  }
 
 }

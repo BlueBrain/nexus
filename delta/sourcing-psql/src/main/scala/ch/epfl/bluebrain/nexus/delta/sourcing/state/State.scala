@@ -11,6 +11,8 @@ import java.time.Instant
   */
 sealed trait State extends Product with Serializable {
 
+  def id: Iri
+
   /**
     * @return
     *   the current state revision

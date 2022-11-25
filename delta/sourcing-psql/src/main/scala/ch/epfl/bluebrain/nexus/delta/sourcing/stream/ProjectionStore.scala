@@ -285,7 +285,7 @@ object ProjectionStore {
           Option[Iri],
           EntityType,
           Offset,
-          String,
+          Iri,
           Option[ProjectRef],
           Int,
           String,
@@ -298,7 +298,7 @@ object ProjectionStore {
       * Helper case class to structure FailedElemLogRow
       */
     final case class FailedElemData(
-        id: String,
+        id: Iri,
         project: Option[ProjectRef],
         entityType: EntityType,
         offset: Offset,

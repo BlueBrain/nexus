@@ -38,8 +38,6 @@ import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
 
-import scala.annotation.nowarn
-
 /**
   * Composite views routes.
   */
@@ -354,34 +352,29 @@ class CompositeViewsRoutes(
       source     <- viewRes.value.sources.toSortedSet
       projection <- viewRes.value.projections.toSortedSet
     } yield (source, projection)
-    statisticsFor(viewRes, entries)
+    statisticsFor(entries)
   }
 
   private def projectionStatistics(projRes: ViewProjectionResource) = {
     val (view, projection) = projRes.value
-    val viewRes            = projRes.map { case (view, _) => view }
     val entries            = view.sources.map(source => (source, projection))
-    statisticsFor(viewRes, entries.toSortedSet)
+    statisticsFor(entries.toSortedSet)
   }
 
   private def sourceStatistics(sourceRes: ViewSourceResource) = {
     val (view, source) = sourceRes.value
-    val viewRes        = sourceRes.map { case (view, _) => view }
     val entries        = view.projections.map(projection => (source, projection))
-    statisticsFor(viewRes, entries.toSortedSet)
+    statisticsFor(entries.toSortedSet)
   }
 
   private def statisticsFor(
-      viewRes: ViewResource,
       entries: Iterable[(CompositeViewSource, CompositeViewProjection)]
   ): IO[CompositeViewRejection, SearchResults[ProjectionStatistics]] =
     IO.traverse(entries) { case (source, projection) =>
-      statisticsFor(viewRes, source, projection)
+      statisticsFor(source, projection)
     }.map(list => SearchResults(list.size.toLong, list.sorted))
 
-  @nowarn("cat=unused")
   private def statisticsFor(
-      viewRes: ViewResource,
       source: CompositeViewSource,
       projection: CompositeViewProjection
   ): IO[CompositeViewRejection, ProjectionStatistics] = {

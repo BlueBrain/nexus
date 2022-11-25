@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem._
 import ch.epfl.bluebrain.nexus.testkit.bio.{BioSuite, PatienceConfig}
 import fs2.Stream
@@ -18,6 +19,7 @@ class FailedElemPersistenceSuite extends BioSuite {
   implicit private val patienceConfig: PatienceConfig = PatienceConfig(500.millis, 10.millis)
 
   private val projection1 = ProjectionMetadata("test", "name1", None, None)
+  private val id          = nxv + "id"
   private val rev         = 1
 
   private def failureStream =
@@ -27,7 +29,7 @@ class FailedElemPersistenceSuite extends BioSuite {
         .map { value =>
           FailedElem(
             EntityType("entity"),
-            "id",
+            id,
             None,
             Instant.EPOCH,
             Offset.at(value.toLong),
@@ -40,7 +42,7 @@ class FailedElemPersistenceSuite extends BioSuite {
     (_: Offset) =>
       Stream
         .range(1, 11)
-        .map { value => SuccessElem(EntityType("entity"), "id", None, Instant.EPOCH, Offset.at(value.toLong), (), rev) }
+        .map { value => SuccessElem(EntityType("entity"), id, None, Instant.EPOCH, Offset.at(value.toLong), (), rev) }
 
   private val saveFailedElems: MutableSet[FailedElem] => List[FailedElem] => UIO[Unit] =
     failedElemStore => failedElems => UIO.delay { failedElems.foreach(failedElemStore.add) }

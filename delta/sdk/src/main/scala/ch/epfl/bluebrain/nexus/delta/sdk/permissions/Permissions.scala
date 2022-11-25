@@ -1,11 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.permissions
 
 import cats.effect.Clock
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.PermissionsResource
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceUris
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.PermissionsCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.PermissionsEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.PermissionsRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{GlobalEntityDefinition, StateMachine}
@@ -114,9 +117,14 @@ object Permissions {
   final val entityType: EntityType = EntityType("permission")
 
   /**
+    * Id of the singleton permissions entity
+    */
+  val id: Iri = ResourceUris.permissions.relativeAccessUri.toIri
+
+  /**
     * The constant entity id.
     */
-  val entityId: Label = Label.unsafe("permission")
+  val labelId: Label = Label.unsafe("permission")
 
   /**
     * ACLs permissions.

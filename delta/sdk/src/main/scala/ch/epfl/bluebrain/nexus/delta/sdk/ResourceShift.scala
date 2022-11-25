@@ -9,8 +9,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
@@ -81,8 +83,7 @@ abstract class ResourceShift[State <: ScopedState, A, M](
   def toGraphResourceElem(project: ProjectRef, resource: ResourceF[A])(implicit
       cr: RemoteContextResolution
   ): UIO[Elem[GraphResource]] = toGraphResource(project, resource).redeem(
-    err =>
-      FailedElem(entityType, resource.id.toString, Some(project), resource.updatedAt, Offset.Start, err, resource.rev),
+    err => FailedElem(entityType, resource.id, Some(project), resource.updatedAt, Offset.Start, err, resource.rev),
     graph => SuccessElem(entityType, resource.id, Some(project), resource.updatedAt, Offset.Start, graph, resource.rev)
   )
 
@@ -110,7 +111,7 @@ abstract class ResourceShift[State <: ScopedState, A, M](
       types = resource.types,
       graph = finalRootGraph,
       metadataGraph = rootMetaGraph,
-      source = content.source
+      source = content.source.removeAllKeys(keywords.context)
     )
   }
 

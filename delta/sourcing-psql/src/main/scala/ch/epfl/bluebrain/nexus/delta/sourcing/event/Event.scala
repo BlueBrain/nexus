@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.event
 
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 
@@ -9,6 +10,11 @@ import java.time.Instant
   * Super type of all events.
   */
 sealed trait Event extends Product with Serializable {
+
+  /**
+    * The id of the event
+    */
+  def id: Iri
 
   /**
     * @return

@@ -1,11 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestState
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestState.{PullRequestActive, PullRequestClosed}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
@@ -20,7 +21,7 @@ object PullRequestStream {
     val instant = Instant.EPOCH
 
     val pr1 = PullRequestActive(
-      id = Label.unsafe("id1"),
+      id = nxv + "id1",
       project = projectRef,
       rev = 1,
       createdAt = instant,
@@ -30,7 +31,7 @@ object PullRequestStream {
     )
 
     val pr2 = PullRequestClosed(
-      id = Label.unsafe("id2"),
+      id = nxv + "id2",
       project = projectRef,
       rev = 1,
       createdAt = instant,
@@ -42,7 +43,7 @@ object PullRequestStream {
     Stream(
       SuccessElem(
         tpe = PullRequest.entityType,
-        id = pr1.id.value,
+        id = pr1.id,
         project = Some(projectRef),
         instant = pr1.updatedAt,
         offset = Offset.at(1L),
@@ -51,7 +52,7 @@ object PullRequestStream {
       ),
       DroppedElem(
         tpe = PullRequest.entityType,
-        id = "dropped",
+        id = nxv + "dropped",
         project = Some(projectRef),
         Instant.EPOCH,
         Offset.at(2L),
@@ -59,7 +60,7 @@ object PullRequestStream {
       ),
       SuccessElem(
         tpe = PullRequest.entityType,
-        id = pr2.id.value,
+        id = pr2.id,
         project = Some(projectRef),
         instant = pr2.updatedAt,
         offset = Offset.at(3L),
@@ -68,7 +69,7 @@ object PullRequestStream {
       ),
       FailedElem(
         tpe = PullRequest.entityType,
-        id = "failed",
+        id = nxv + "failed",
         project = Some(projectRef),
         Instant.EPOCH,
         Offset.at(4L),

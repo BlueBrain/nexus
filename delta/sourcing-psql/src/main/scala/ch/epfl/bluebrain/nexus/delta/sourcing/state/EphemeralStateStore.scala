@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.state
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
+import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.IriInstances._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.EphemeralState
 import doobie._
@@ -33,7 +34,7 @@ trait EphemeralStateStore[Id, S <: EphemeralState] {
 
 object EphemeralStateStore {
 
-  def apply[Id: Put, S <: EphemeralState](
+  def apply[Id, S <: EphemeralState](
       tpe: EntityType,
       serializer: Serializer[Id, S],
       ttl: FiniteDuration,
@@ -44,7 +45,6 @@ object EphemeralStateStore {
       import serializer._
 
       override def save(state: S): doobie.ConnectionIO[Unit] = {
-        val id = extractId(state)
         sql"""
            | INSERT INTO public.ephemeral_states (
            |  type,
@@ -59,7 +59,7 @@ object EphemeralStateStore {
            |  $tpe,
            |  ${state.organization},
            |  ${state.project.project},
-           |  $id,
+           |  ${state.id},
            |  ${state.asJson},
            |  ${state.updatedAt},
            |  ${state.updatedAt.plusMillis(ttl.toMillis)}
