@@ -1,7 +1,8 @@
-Bogdan Roman (maintainer)
 Simon Dumas (maintainer)
-Wojciech Wajerowicz (maintainer)
+Oliver Grabinski (maintainer)
 
+Bogdan Roman (author)
+Wojciech Wajerowicz (author)
 Alejandra Garcia Rojas Martinez (author)
 Alexander Ulbrich (author)
 Anna-Kristin Kaufmann (author)
