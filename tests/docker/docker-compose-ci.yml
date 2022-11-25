@@ -92,7 +92,7 @@ services:
       - 9999:9999
 
   postgres:
-    image: library/postgres:14.3
+    image: library/postgres:15.1
     environment:
       POSTGRES_USER: "postgres"
       POSTGRES_PASSWORD: "postgres"
