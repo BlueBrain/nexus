@@ -7,11 +7,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObje
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Pipe
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, PipeRef}
 import io.circe.Json
 import io.circe.syntax.EncoderOps
 import monix.bio.Task
@@ -25,7 +24,7 @@ import shapeless.Typeable
 final class GraphResourceToDocument(context: Option[ContextObject])(implicit cr: RemoteContextResolution) extends Pipe {
   override type In  = GraphResource
   override type Out = Json
-  override def label: Label                    = GraphResourceToDocument.label
+  override def ref: PipeRef                    = GraphResourceToDocument.ref
   override def inType: Typeable[GraphResource] = Typeable[GraphResource]
   override def outType: Typeable[Json]         = Typeable[Json]
 
@@ -56,6 +55,6 @@ final class GraphResourceToDocument(context: Option[ContextObject])(implicit cr:
 
 object GraphResourceToDocument {
 
-  val label: Label = Label.unsafe("graph-resource-to-document")
+  val ref: PipeRef = PipeRef.unsafe("graph-resource-to-document")
 
 }

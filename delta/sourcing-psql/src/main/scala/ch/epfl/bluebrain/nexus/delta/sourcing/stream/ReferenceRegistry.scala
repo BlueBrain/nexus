@@ -34,6 +34,6 @@ final class ReferenceRegistry {
   }
 
   def register(definition: PipeDef): Unit = {
-    val _ = pipes.put(definition.reference, definition)
+    val _ = pipes.put(definition.ref, definition)
   }
 }

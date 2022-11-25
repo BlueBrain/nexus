@@ -49,7 +49,7 @@ class FilterBySchemaSuite extends BioSuite {
 
   def pipe(schemas: Set[Iri]): FilterBySchema =
     registry
-      .lookupA[FilterBySchema.type](FilterBySchema.reference)
+      .lookupA[FilterBySchema.type](FilterBySchema.ref)
       .rightValue
       .withJsonLdConfig(FilterBySchemaConfig(schemas).toJsonLd)
       .rightValue

@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{Configuration, JsonLdDe
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{ExpandedJsonLd, ExpandedJsonLdCursor}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.PipeRef
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder}
 
@@ -30,15 +31,18 @@ final case class PipeStep(name: Label, description: Option[String], config: Opti
 @nowarn("cat=unused")
 object PipeStep {
 
+  def apply(value: (PipeRef, ExpandedJsonLd)): PipeStep =
+    apply(value._1.label, value._2)
+
   def apply(name: Label, cfg: ExpandedJsonLd): PipeStep =
     PipeStep(name, None, Some(cfg))
 
   /**
     * Create a pipe def without config
-    * @param name
-    *   the identifier of the pipe
+    * @param ref
+    *   the reference of the pipe
     */
-  def noConfig(name: Label): PipeStep = PipeStep(name, None, None)
+  def noConfig(ref: PipeRef): PipeStep = PipeStep(ref.label, None, None)
 
   /**
     * Create a pipe with the provided config

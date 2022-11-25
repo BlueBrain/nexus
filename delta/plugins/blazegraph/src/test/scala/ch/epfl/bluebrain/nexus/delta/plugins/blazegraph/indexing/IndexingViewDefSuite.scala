@@ -132,7 +132,7 @@ class IndexingViewDefSuite extends BioSuite {
       viewRef,
       s"blazegraph-$projectRef-$id-1",
       indexing.resourceTag,
-      Some(PipeChain(PipeRef(FilterDeprecated.label) -> ExpandedJsonLd.empty)),
+      Some(PipeChain(FilterDeprecated())),
       namespace
     )
 

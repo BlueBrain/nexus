@@ -187,25 +187,25 @@ object ElasticSearchView {
           ).deepMerge(
             i.pipeline
               .foldLeft(JsonObject.empty) {
-                case (obj, step) if step.name == FilterBySchema.label   =>
+                case (obj, step) if step.name == FilterBySchema.ref.label   =>
                   step.config.fold(obj) { ldConfig =>
                     FilterBySchema
                       .configDecoder(ldConfig)
                       .fold(_ => obj, cfg => obj.add("resourceSchemas", cfg.types.asJson))
                   }
-                case (obj, step) if step.name == FilterByType.label     =>
+                case (obj, step) if step.name == FilterByType.ref.label     =>
                   step.config.fold(obj) { ldConfig =>
                     FilterByType
                       .configDecoder(ldConfig)
                       .fold(_ => obj, cfg => obj.add("resourceTypes", cfg.types.asJson))
                   }
-                case (obj, step) if step.name == SourceAsText.label     =>
+                case (obj, step) if step.name == SourceAsText.ref.label     =>
                   obj.add("sourceAsText", Json.True)
-                case (obj, step) if step.name == DiscardMetadata.label  =>
+                case (obj, step) if step.name == DiscardMetadata.ref.label  =>
                   obj.add("includeMetadata", Json.False)
-                case (obj, step) if step.name == FilterDeprecated.label =>
+                case (obj, step) if step.name == FilterDeprecated.ref.label =>
                   obj.add("includeDeprecated", Json.False)
-                case (obj, _)                                           =>
+                case (obj, _)                                               =>
                   obj
               }
           )

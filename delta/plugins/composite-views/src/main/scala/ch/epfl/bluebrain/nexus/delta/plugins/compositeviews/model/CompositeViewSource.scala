@@ -10,9 +10,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.semiauto.deriveDefaultJsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.PipeChain
 import io.circe.{Encoder, Json}
 
 import java.util.UUID
@@ -65,6 +65,12 @@ sealed trait CompositeViewSource extends Product with Serializable {
     *   the type of the source
     */
   def tpe: SourceType
+
+  /**
+    * Translates the source into a [[PipeChain]]
+    */
+  def pipeChain: Option[PipeChain] =
+    PipeChain(resourceSchemas, resourceTypes, includeMetadata = true, includeDeprecated = includeDeprecated)
 }
 
 object CompositeViewSource {

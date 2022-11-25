@@ -2,7 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
 import cats.data.NonEmptyChain
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{DiscardMetadata, FilterBySchema, FilterByType, FilterDeprecated}
 
 /**
   * An identified collection of pipe references along with their configuration. It can be compiled into a single
@@ -37,5 +39,34 @@ object PipeChain {
 
   def validate(pipeChain: PipeChain, registry: ReferenceRegistry): Either[ProjectionErr, Unit] =
     compile(pipeChain, registry).void
+
+  /**
+    * Create a [[PipeChain]] from the given constraints
+    * @param resourceSchemas
+    *   filter on schemas if non empty
+    * @param resourceTypes
+    *   filter on resource types if non empty
+    * @param includeMetadata
+    *   include resource metadata if true
+    * @param includeDeprecated
+    *   include deprecated resources if true
+    * @return
+    */
+  def apply(
+      resourceSchemas: Set[Iri],
+      resourceTypes: Set[Iri],
+      includeMetadata: Boolean,
+      includeDeprecated: Boolean
+  ): Option[PipeChain] =
+    NonEmptyChain
+      .fromSeq {
+        List(
+          resourceSchemas.nonEmpty -> FilterBySchema(resourceSchemas),
+          resourceTypes.nonEmpty   -> FilterByType(resourceTypes),
+          !includeDeprecated       -> FilterDeprecated(),
+          !includeMetadata         -> DiscardMetadata()
+        ).mapFilter { case (b, p) => Option.when(b)(p) }
+      }
+      .map(PipeChain(_))
 
 }

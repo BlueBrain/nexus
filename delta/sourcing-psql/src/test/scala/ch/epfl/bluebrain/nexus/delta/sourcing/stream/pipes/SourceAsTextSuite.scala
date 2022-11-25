@@ -49,7 +49,7 @@ class SourceAsTextSuite extends BioSuite {
     val expected         = elem.copy(value = graph.copy(metadataGraph = newMetadataGraph, source = Json.obj()))
 
     val pipe = registry
-      .lookupA[SourceAsText.type](SourceAsText.reference)
+      .lookupA[SourceAsText.type](SourceAsText.ref)
       .rightValue
       .withJsonLdConfig(ExpandedJsonLd.empty)
       .rightValue

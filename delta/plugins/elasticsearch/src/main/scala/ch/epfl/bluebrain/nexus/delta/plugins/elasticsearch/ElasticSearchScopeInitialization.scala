@@ -41,7 +41,7 @@ class ElasticSearchScopeInitialization(
       name = Some(defaults.name),
       description = Some(defaults.description),
       resourceTag = None,
-      List(PipeStep.noConfig(DefaultLabelPredicates.label), PipeStep.noConfig(SourceAsText.label)),
+      List(PipeStep.noConfig(DefaultLabelPredicates.ref), PipeStep.noConfig(SourceAsText.ref)),
       mapping = None,
       settings = None,
       context = None,

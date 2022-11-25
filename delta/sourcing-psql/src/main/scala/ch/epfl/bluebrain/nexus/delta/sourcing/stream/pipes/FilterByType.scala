@@ -5,12 +5,11 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.semiauto.deriveDefaultJsonLdDecoder
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Pipe
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.FilterByType.FilterByTypeConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, PipeDef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, PipeDef, PipeRef}
 import io.circe.syntax.EncoderOps
 import io.circe.{Json, JsonObject}
 import monix.bio.Task
@@ -22,7 +21,7 @@ import shapeless.Typeable
 class FilterByType(config: FilterByTypeConfig) extends Pipe {
   override type In  = GraphResource
   override type Out = GraphResource
-  override def label: Label                     = FilterByType.label
+  override def ref: PipeRef                     = FilterByType.ref
   override def inType: Typeable[GraphResource]  = Typeable[GraphResource]
   override def outType: Typeable[GraphResource] = Typeable[GraphResource]
 
@@ -40,14 +39,14 @@ object FilterByType extends PipeDef {
   override type Config   = FilterByTypeConfig
   override def configType: Typeable[Config]                         = Typeable[FilterByTypeConfig]
   override def configDecoder: JsonLdDecoder[Config]                 = JsonLdDecoder[FilterByTypeConfig]
-  override def label: Label                                         = Label.unsafe("filterByType")
+  override def ref: PipeRef                                         = PipeRef.unsafe("filterByType")
   override def withConfig(config: FilterByTypeConfig): FilterByType = new FilterByType(config)
 
   final case class FilterByTypeConfig(types: Set[Iri]) {
     def toJsonLd: ExpandedJsonLd = ExpandedJsonLd(
       Seq(
         ExpandedJsonLd.unsafe(
-          nxv + label.value,
+          nxv + ref.toString,
           JsonObject(
             (nxv + "types").toString -> Json.arr(types.toList.map(iri => Json.obj("@id" -> iri.asJson)): _*)
           )
@@ -58,4 +57,9 @@ object FilterByType extends PipeDef {
   object FilterByTypeConfig                            {
     implicit val filterByTypeConfigJsonLdDecoder: JsonLdDecoder[FilterByTypeConfig] = deriveDefaultJsonLdDecoder
   }
+
+  /**
+    * Returns the pipe ref and config from the provided types
+    */
+  def apply(types: Set[Iri]): (PipeRef, ExpandedJsonLd) = ref -> FilterByTypeConfig(types).toJsonLd
 }

@@ -4,7 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Pipe
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, PipeDef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, PipeDef, PipeRef}
 import monix.bio.Task
 import shapeless.Typeable
 
@@ -20,9 +20,10 @@ import shapeless.Typeable
   *   the output element type
   */
 class GenericPipe[I: Typeable, O: Typeable] private[stream] (
-    override val label: Label,
+    label: Label,
     fn: SuccessElem[I] => Task[Elem[O]]
 ) extends Pipe {
+  override val ref: PipeRef = PipeRef(label)
   override type In  = I
   override type Out = O
   override def inType: Typeable[In]   = Typeable[In]
@@ -48,9 +49,10 @@ object GenericPipe {
     new GenericPipeDef(label, fn)
 
   private class GenericPipeDef[I: Typeable, O: Typeable] private[stream] (
-      override val label: Label,
+      label: Label,
       fn: SuccessElem[I] => Task[Elem[O]]
   ) extends PipeDef {
+    override val ref: PipeRef = PipeRef(label)
     override type PipeType = GenericPipe[I, O]
     override type Config   = Unit
     override def configType: Typeable[Unit]         = Typeable[Unit]

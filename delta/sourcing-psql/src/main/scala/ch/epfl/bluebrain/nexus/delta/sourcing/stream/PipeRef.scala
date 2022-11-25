@@ -8,7 +8,9 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
   * @param label
   *   the pipe label
   */
-final case class PipeRef(label: Label)
+final case class PipeRef(label: Label) {
+  override def toString: String = label.toString
+}
 
 object PipeRef {
 

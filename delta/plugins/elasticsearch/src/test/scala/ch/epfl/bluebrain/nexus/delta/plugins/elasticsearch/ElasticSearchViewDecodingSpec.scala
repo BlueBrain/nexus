@@ -15,8 +15,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionRepor
 import ch.epfl.bluebrain.nexus.delta.sdk.views.{PipeStep, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.FilterBySchema.FilterBySchemaConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.FilterByType.FilterByTypeConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes._
 import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
 import io.circe.literal._
@@ -98,11 +96,11 @@ class ElasticSearchViewDecodingSpec
           description = Some("viewDescription"),
           resourceTag = Some(UserTag.unsafe("release")),
           pipeline = List(
-            PipeStep(FilterBySchema.label, FilterBySchemaConfig(Set(context.vocab / "Person")).toJsonLd),
-            PipeStep(FilterByType.label, FilterByTypeConfig(Set(context.vocab / "Person")).toJsonLd),
-            PipeStep.noConfig(FilterDeprecated.label),
-            PipeStep.noConfig(DiscardMetadata.label),
-            PipeStep.noConfig(DefaultLabelPredicates.label)
+            PipeStep(FilterBySchema(Set(context.vocab / "Person"))),
+            PipeStep(FilterByType(Set(context.vocab / "Person"))),
+            PipeStep.noConfig(FilterDeprecated.ref),
+            PipeStep.noConfig(DiscardMetadata.ref),
+            PipeStep.noConfig(DefaultLabelPredicates.ref)
           ),
           mapping = Some(mapping),
           settings = Some(settings),
@@ -181,9 +179,8 @@ class ElasticSearchViewDecodingSpec
           description = Some("viewDescription"),
           resourceTag = Some(UserTag.unsafe("release")),
           pipeline = List(
-            PipeStep.noConfig(FilterDeprecated.label),
-            PipeStep(FilterByType.label, FilterByTypeConfig(Set(context.vocab / "Person")).toJsonLd)
-              .description("Keep only person type")
+            PipeStep.noConfig(FilterDeprecated.ref),
+            PipeStep(FilterByType(Set(context.vocab / "Person"))).description("Keep only person type")
           ),
           mapping = Some(mapping),
           settings = Some(settings),

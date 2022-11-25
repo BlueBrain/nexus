@@ -10,6 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.PipeChain
 import io.circe.{Encoder, JsonObject}
 
 import java.util.UUID
@@ -90,6 +91,11 @@ sealed trait CompositeViewProjection extends Product with Serializable {
     *   Some(projection) if the current projection is an [[ElasticSearchProjection]], None otherwise
     */
   def asElasticSearch: Option[ElasticSearchProjection]
+
+  /**
+    * Translates the projection into a [[PipeChain]]
+    */
+  def pipeChain: Option[PipeChain] = PipeChain(resourceSchemas, resourceTypes, includeMetadata, includeDeprecated)
 }
 
 object CompositeViewProjection {

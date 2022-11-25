@@ -6,12 +6,11 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.semiauto.deriveDefaultJsonLdDecoder
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Pipe
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.SelectPredicates.SelectPredicatesConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, PipeDef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, PipeDef, PipeRef}
 import io.circe.syntax.EncoderOps
 import io.circe.{Json, JsonObject}
 import monix.bio.Task
@@ -24,7 +23,7 @@ import shapeless.Typeable
 class SelectPredicates(config: SelectPredicatesConfig) extends Pipe {
   override type In  = GraphResource
   override type Out = GraphResource
-  override def label: Label                     = SelectPredicates.label
+  override def ref: PipeRef                     = SelectPredicates.ref
   override def inType: Typeable[GraphResource]  = Typeable[GraphResource]
   override def outType: Typeable[GraphResource] = Typeable[GraphResource]
 
@@ -45,7 +44,7 @@ object SelectPredicates extends PipeDef {
   override type Config   = SelectPredicatesConfig
   override def configType: Typeable[Config]                                 = Typeable[SelectPredicatesConfig]
   override def configDecoder: JsonLdDecoder[Config]                         = JsonLdDecoder[SelectPredicatesConfig]
-  override def label: Label                                                 = Label.unsafe("selectPredicates")
+  override def ref: PipeRef                                                 = PipeRef.unsafe("selectPredicates")
   override def withConfig(config: SelectPredicatesConfig): SelectPredicates = new SelectPredicates(config)
 
   final case class SelectPredicatesConfig(predicates: Set[Iri]) {
@@ -53,7 +52,7 @@ object SelectPredicates extends PipeDef {
     def toJsonLd: ExpandedJsonLd = ExpandedJsonLd(
       Seq(
         ExpandedJsonLd.unsafe(
-          nxv + label.value,
+          nxv + ref.toString,
           JsonObject(
             (nxv + "predicates").toString -> Json.arr(predicates.toList.map(iri => Json.obj("@id" -> iri.asJson)): _*)
           )

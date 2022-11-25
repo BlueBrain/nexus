@@ -57,8 +57,8 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
     Some("viewDescription"),
     Some(UserTag.unsafe("some.tag")),
     List(
-      PipeStep(FilterByType.label, filterByTypeConfig.toJsonLd),
-      PipeStep.noConfig(FilterDeprecated.label)
+      PipeStep(FilterByType.ref.label, filterByTypeConfig.toJsonLd),
+      PipeStep.noConfig(FilterDeprecated.ref)
     ),
     Some(customMapping),
     Some(customSettings),
@@ -182,7 +182,7 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
       viewRef,
       s"elasticsearch-$projectRef-$id-1",
       indexingDefault.resourceTag,
-      Some(PipeChain(PipeRef(FilterDeprecated.label) -> ExpandedJsonLd.empty)),
+      Some(PipeChain(FilterDeprecated())),
       IndexLabel.fromView("prefix", uuid, 1),
       defaultMapping,
       defaultSettings,

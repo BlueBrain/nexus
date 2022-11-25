@@ -91,7 +91,7 @@ class ElasticSearchViewsQuerySpec(override val docker: ElasticSearchDocker)
   private val indexingView: IndexingElasticSearchViewValue =
     IndexingElasticSearchViewValue(
       resourceTag = None,
-      pipeline = List(PipeStep.noConfig(FilterDeprecated.label), PipeStep.noConfig(DiscardMetadata.label)),
+      pipeline = List(PipeStep.noConfig(FilterDeprecated.ref), PipeStep.noConfig(DiscardMetadata.ref)),
       mapping = Some(mappings),
       settings = None,
       permission = queryPermission,
