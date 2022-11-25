@@ -54,7 +54,7 @@ class IndexingViewDefSuite extends BioSuite {
 
   private val aggregate =
     AggregateBlazegraphViewValue(Some("viewName"), Some("viewDescription"), NonEmptySet.of(viewRef))
-  private val sink      = new CacheSink[NTriples]()
+  private val sink      = CacheSink.states[NTriples]
 
   private def state(v: BlazegraphViewValue) = BlazegraphViewState(
     id,
