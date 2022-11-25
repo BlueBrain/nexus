@@ -79,7 +79,7 @@ object ElasticSearchSink {
     */
   private val eventDocumentId: Elem[_] => String = elem =>
     elem.project match {
-      case Some(project) => s"$project/${elem.id}/${elem.revision}"
+      case Some(project) => s"$project/${elem.id}:${elem.revision}"
       case None          => s"${elem.id}/${elem.revision}"
     }
 
