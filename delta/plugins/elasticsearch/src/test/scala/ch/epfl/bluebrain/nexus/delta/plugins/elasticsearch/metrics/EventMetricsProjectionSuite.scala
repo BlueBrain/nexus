@@ -20,7 +20,7 @@ class EventMetricsProjectionSuite extends BioSuite with SupervisorSetup.Fixture 
   implicit private val patienceConfig: PatienceConfig = PatienceConfig(2.seconds, 10.millis)
 
   private lazy val (sv, _) = supervisor()
-  private val sink         = new CacheSink[Json]
+  private val sink         = CacheSink.events[Json]
 
   test("Start the metrics projection") {
     for {
@@ -37,7 +37,7 @@ class EventMetricsProjectionSuite extends BioSuite with SupervisorSetup.Fixture 
   }
 
   test("Sink has the correct metrics") {
-    assert(sink.successes.size equals 2)
+    assertEquals(sink.successes.size, 2)
     assert(sink.dropped.isEmpty)
     assert(sink.failed.isEmpty)
     assert(sink.successes.values.toSet.contains(metric1.asJson))
