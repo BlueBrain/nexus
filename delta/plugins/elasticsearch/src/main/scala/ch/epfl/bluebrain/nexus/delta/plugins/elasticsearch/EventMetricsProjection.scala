@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{AsJson, CustomId}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.AsJson
 import ch.epfl.bluebrain.nexus.delta.sourcing.{MultiDecoder, Predicate}
 import monix.bio.Task
 
@@ -27,7 +27,7 @@ object EventMetricsProjection {
 
   /**
     * @param metricEncoders
-    *   a set of encoders for all entit
+    *   a set of encoders for all entity
     * @param supervisor
     *   the supervisor which will supervise the projection
     * @param client
@@ -104,7 +104,7 @@ object EventMetricsProjection {
         projectionMetadata,
         ExecutionStrategy.PersistentSingleNode,
         source,
-        NonEmptyChain(CustomId.pipe[ProjectScopedMetric], AsJson.pipe[ProjectScopedMetric]),
+        NonEmptyChain(AsJson.pipe[ProjectScopedMetric]),
         sink
       )
 

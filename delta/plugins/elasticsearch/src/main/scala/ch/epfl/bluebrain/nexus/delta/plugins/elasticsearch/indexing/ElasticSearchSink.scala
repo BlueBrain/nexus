@@ -38,16 +38,30 @@ final class ElasticSearchSink(
 
   override def inType: Typeable[Json] = Typeable[Json]
 
+  /**
+    * Creates an id to use for a bulk operation
+    * @param elem
+    *   the elem for which to create the ID
+    * @return
+    *   an id that incorporates the project (if available), the elem id, and the revision
+    */
+  private def bulkOpId(elem: Elem[_]): String = {
+    elem.project match {
+      case Some(project) => elem.id / project.toString / elem.revision.toString
+      case None          => elem.id / elem.revision.toString
+    }
+  }.toString
+
   override def apply(elements: Chunk[Elem[Json]]): Task[Chunk[Elem[Unit]]] = {
     val bulk = elements.foldLeft(List.empty[ElasticSearchBulk]) {
-      case (acc, Elem.SuccessElem(_, id, _, _, _, json, _)) =>
+      case (acc, successElem @ Elem.SuccessElem(_, _, _, _, _, json, _)) =>
         if (json.isEmpty()) {
-          ElasticSearchBulk.Delete(index, id.toString) :: acc
+          ElasticSearchBulk.Delete(index, bulkOpId(successElem)) :: acc
         } else
-          ElasticSearchBulk.Index(index, id.toString, json) :: acc
-      case (acc, Elem.DroppedElem(_, id, _, _, _, _))       =>
-        ElasticSearchBulk.Delete(index, id.toString) :: acc
-      case (acc, _: Elem.FailedElem)                        => acc
+          ElasticSearchBulk.Index(index, bulkOpId(successElem), json) :: acc
+      case (acc, droppedElem: Elem.DroppedElem)                          =>
+        ElasticSearchBulk.Delete(index, bulkOpId(droppedElem)) :: acc
+      case (acc, _: Elem.FailedElem)                                     => acc
     }
 
     if (bulk.nonEmpty) {
