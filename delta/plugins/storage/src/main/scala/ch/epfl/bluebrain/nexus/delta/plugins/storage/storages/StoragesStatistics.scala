@@ -62,24 +62,24 @@ object StoragesStatistics {
   private def storageStatisticsQuery(projectRef: ProjectRef, storageId: Iri): UIO[JsonObject] =
     IO.fromOption(
       json"""
-     {
-      "query": {
-        "bool": {
-          "filter": [
-            { "term": { "@type.short": "File" } },
-            { "term": { "project": $projectRef } },
-            { "term": { "storage": $storageId } }
-          ]
+         {
+          "query": {
+            "bool": {
+              "filter": [
+                { "term": { "@type.short": "File" } },
+                { "term": { "project": $projectRef } },
+                { "term": { "storage": $storageId } }
+              ]
+            }
+          },
+          "aggs": {
+            "storageSize": { "sum": { "field": "bytes" } },
+            "filesCount": { "sum": { "field": "newFileWritten" } }
+          },
+          "size": 0
         }
-      },
-      "aggs": {
-        "storageSize": { "sum": { "field": "bytes" } },
-        "filesCount": { "sum": { "field": "newFileWritten" } }
-      },
-      "size": 0
-    }
         """.asObject,
-      DecodingFailure("ab", List.empty)
+      DecodingFailure("Failed to decode ES statistics query.", List.empty)
     ).hideErrors
 
 }
