@@ -98,7 +98,7 @@ class FilesSpec(docker: RemoteStorageDocker)
     )
 
     val storageStatistics: StoragesStatistics =
-      (_, _) => IO.pure { StorageStatEntry(0, 0) }
+      (_, _) => IO.pure { StorageStatEntry(10L, 100L) }
 
     lazy val storages: Storages = Storages(
       fetchContext.mapRejection(StorageRejection.ProjectContextRejection),
