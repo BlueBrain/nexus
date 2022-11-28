@@ -47,13 +47,21 @@ object StoragesStatistics {
     (idSegment: IdSegment, project: ProjectRef) => {
       for {
         storageId <- fetchStorageId(idSegment, project)
-        query     <- queryJson(project, storageId).hideErrors
+        query     <- storagesStatisticsQuery(project, storageId).hideErrors
         result    <- search(query).hideErrors
         stats     <- IO.fromEither(result.as[StorageStatEntry]).hideErrors
       } yield stats
     }
 
-  private def queryJson(projectRef: ProjectRef, storageId: Iri): IO[DecodingFailure, JsonObject] =
+  /**
+    * @param projectRef
+    *   the project on which the statistics should be computed
+    * @param storageId
+    *   the ID of the storage on which the statistics should be computed
+    * @return
+    *   a query for the total number of files and the total size of a storage in a given project
+    */
+  private def storagesStatisticsQuery(projectRef: ProjectRef, storageId: Iri): IO[DecodingFailure, JsonObject] =
     IO.fromEither {
       json"""
      {
