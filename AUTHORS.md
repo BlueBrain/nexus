@@ -1,5 +1,5 @@
-Simon Dumas (maintainer)
 Oliver Grabinski (maintainer)
+Simon Dumas (maintainer)
 
 Alejandra Garcia Rojas Martinez (author)
 Alexander Ulbrich (author)
