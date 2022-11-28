@@ -6,6 +6,8 @@ import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.contexts.{files => fileCtxId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{File, FileEvent, FileRejection}
@@ -101,8 +103,18 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         )
     }
 
-  // TODO implement StoragesStatistics
-  make[StoragesStatistics].fromValue(StoragesStatistics())
+  make[StoragesStatistics].from {
+    (
+        client: ElasticSearchClient,
+        storages: Storages,
+        config: ElasticSearchViewsConfig
+    ) =>
+      StoragesStatistics(
+        client,
+        storages.fetch(_, _).map(_.id),
+        config.prefix
+      )
+  }
 
   make[StoragesRoutes].from {
     (

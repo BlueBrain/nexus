@@ -76,7 +76,7 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
   )
 
   private val aggregate = AggregateElasticSearchViewValue(NonEmptySet.of(viewRef))
-  private val sink      = new CacheSink[Json]()
+  private val sink      = CacheSink.states[Json]
 
   private def state(v: ElasticSearchViewValue) = ElasticSearchViewState(
     id,

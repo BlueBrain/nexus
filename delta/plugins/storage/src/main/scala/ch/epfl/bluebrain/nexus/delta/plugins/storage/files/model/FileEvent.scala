@@ -341,6 +341,20 @@ object FileEvent {
       }
     }
 
+  /**
+    * @param storage
+    *   the iri of the storage
+    * @param storageType
+    *   the storage type
+    * @param newFileWritten
+    *   indicates that a new (physical) file has been written
+    * @param bytes
+    *   the size of the file
+    * @param mediaType
+    *   the media type of the file
+    * @param origin
+    *   the file's origin
+    */
   final private case class FileExtraFields(
       storage: Iri,
       storageType: StorageType,
@@ -375,7 +389,7 @@ object FileEvent {
           FileExtraFields(
             u.storage.iri,
             u.storageType,
-            None,
+            Some(1),
             Some(u.attributes.bytes),
             u.attributes.mediaType,
             Some(u.attributes.origin)
@@ -384,7 +398,7 @@ object FileEvent {
           FileExtraFields(
             u.storage.iri,
             u.storageType,
-            None,
+            Some(1),
             None,
             None,
             Some(u.attributes.origin)

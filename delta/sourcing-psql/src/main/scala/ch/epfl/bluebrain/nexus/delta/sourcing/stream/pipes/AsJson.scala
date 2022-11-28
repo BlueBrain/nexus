@@ -15,7 +15,7 @@ object AsJson {
 
   private def elemValueToJson[A: Encoder]: SuccessElem[A] => Task[Elem[Json]] =
     elem =>
-      Task {
+      Task.pure {
         elem.copy(value = elem.value.asJson)
       }
 

@@ -79,7 +79,7 @@ class FileSerializationSuite extends SerializationSuite with StorageFixtures {
       Updated,
       expected(
         updated,
-        Json.Null,
+        Json.fromInt(1),
         Json.fromInt(12),
         Json.fromString("text/plain; charset=UTF-8"),
         Json.fromString("Client")

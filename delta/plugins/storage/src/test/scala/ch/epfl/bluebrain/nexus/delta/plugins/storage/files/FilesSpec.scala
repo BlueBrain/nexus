@@ -11,12 +11,11 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.NotCompu
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotFound
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageStatsCollection.StorageStatEntry
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.{RemoteDiskStorage => RemoteStorageType}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{StorageRejection, StorageStatEntry}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageFixtures, Storages, StoragesConfig, StoragesStatisticsSetup}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageFixtures, Storages, StoragesConfig, StoragesStatistics}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
@@ -40,8 +39,6 @@ import monix.execution.Scheduler
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{DoNotDiscover, Inspectors, OptionValues}
-
-import java.time.Instant
 
 @DoNotDiscover
 class FilesSpec(docker: RemoteStorageDocker)
@@ -100,8 +97,8 @@ class FilesSpec(docker: RemoteStorageDocker)
       remoteDisk = Some(config.remoteDisk.value.copy(defaultMaxFileSize = 500))
     )
 
-    val storageStatistics       =
-      StoragesStatisticsSetup.init(Map(project -> Map(diskId -> StorageStatEntry(10L, 100L, Some(Instant.EPOCH)))))
+    val storageStatistics: StoragesStatistics =
+      (_, _) => IO.pure { StorageStatEntry(10L, 100L) }
 
     lazy val storages: Storages = Storages(
       fetchContext.mapRejection(StorageRejection.ProjectContextRejection),

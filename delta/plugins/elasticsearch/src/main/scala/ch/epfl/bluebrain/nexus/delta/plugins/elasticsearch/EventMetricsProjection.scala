@@ -22,12 +22,27 @@ import monix.bio.Task
 trait EventMetricsProjection
 
 object EventMetricsProjection {
-  val projectionMetadata: ProjectionMetadata = ProjectionMetadata("system", "event-metrics", None, None)
-  private val eventMetricsIndex              = IndexLabel.unsafe("event_metrics_index")
+  val projectionMetadata: ProjectionMetadata  = ProjectionMetadata("system", "event-metrics", None, None)
+  val eventMetricsIndex: String => IndexLabel = prefix => IndexLabel.unsafe(s"${prefix}_project_metrics")
+
+  /**
+    * @param client
+    *   the elastic search client
+    * @param index
+    *   the index to be created at initialization
+    * @return
+    *   creates the metrics index using the client
+    */
+  def initMetricsIndex(client: ElasticSearchClient, index: IndexLabel): Task[Unit] =
+    for {
+      mappings <- metricsMapping
+      settings <- metricsSettings
+      _        <- client.createIndex(index, Some(mappings), Some(settings))
+    } yield ()
 
   /**
     * @param metricEncoders
-    *   a set of encoders for all entit
+    *   a set of encoders for all entity
     * @param supervisor
     *   the supervisor which will supervise the projection
     * @param client
@@ -38,6 +53,8 @@ object EventMetricsProjection {
     *   Elasticsearch batch config
     * @param queryConfig
     *   query config for fetching scoped events
+    * @param indexPrefix
+    *   the prefix to use for the index name
     * @return
     *   a Task that registers a projection with the supervisor which reads all scoped events and pushes their metrics to
     *   Elasticsearch. Events of implementations of ScopedEvents that do not have an instance of
@@ -49,7 +66,8 @@ object EventMetricsProjection {
       client: ElasticSearchClient,
       xas: Transactors,
       batchConfig: BatchConfig,
-      queryConfig: QueryConfig
+      queryConfig: QueryConfig,
+      indexPrefix: String
   ): Task[EventMetricsProjection] = {
     val allEntityTypes = metricEncoders.map(_.entityType).toList
 
@@ -60,17 +78,12 @@ object EventMetricsProjection {
     val metrics                                                  = (offset: Offset) =>
       EventStreaming.fetchScoped(Predicate.root, allEntityTypes, offset, queryConfig, xas)
 
+    val index = eventMetricsIndex(indexPrefix)
+
     val sink =
-      new ElasticSearchSink(client, batchConfig.maxElements, batchConfig.maxInterval, eventMetricsIndex, Refresh.False)
+      ElasticSearchSink.events(client, batchConfig.maxElements, batchConfig.maxInterval, index, Refresh.False)
 
-    // create the ES index before running the projection
-    val init = for {
-      mappings <- metricsMapping
-      settings <- metricsSettings
-      _        <- client.createIndex(eventMetricsIndex, Some(mappings), Some(settings))
-    } yield ()
-
-    apply(sink, supervisor, metrics, init)
+    apply(sink, supervisor, metrics, initMetricsIndex(client, index))
   }
 
   /**
@@ -104,7 +117,7 @@ object EventMetricsProjection {
         projectionMetadata,
         ExecutionStrategy.PersistentSingleNode,
         source,
-        NonEmptyChain.one(AsJson.pipe[ProjectScopedMetric]),
+        NonEmptyChain(AsJson.pipe[ProjectScopedMetric]),
         sink
       )
 

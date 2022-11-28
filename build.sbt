@@ -542,8 +542,9 @@ lazy val storagePlugin = project
   .in(file("delta/plugins/storage"))
   .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
   .dependsOn(
-    sdk     % "provided;test->test",
-    testkit % "test->compile"
+    sdk                 % "provided;test->test",
+    elasticsearchPlugin % "provided;test->compile;test->test",
+    testkit             % "test->compile"
   )
   .settings(
     name                       := "delta-storage-plugin",
