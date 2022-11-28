@@ -6,11 +6,10 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchC
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageFetchRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageStatEntry
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.HttpResult
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.literal._
-import io.circe.{DecodingFailure, Json, JsonObject}
+import io.circe.{DecodingFailure, JsonObject}
 import monix.bio.IO
 
 trait StoragesStatistics {
@@ -24,26 +23,24 @@ trait StoragesStatistics {
 
 object StoragesStatistics {
 
-  def apply(client: ElasticSearchClient, storages: Storages, indexPrefix: String): StoragesStatistics =
-    apply(
-      client.search(_, Set(eventMetricsIndex(indexPrefix).value), Query.Empty)(),
-      storages.fetch(_, _).map(_.id)
-    )
-
+  /**
+    * @param client
+    *   the Elasticsearch client
+    * @param fetchStorageId
+    *   the function to fetch the storage ID
+    * @param indexPrefix
+    *   the index prefix
+    * @return
+    *   StorageStatistics instance
+    */
   def apply(
       client: ElasticSearchClient,
       fetchStorageId: (IdSegment, ProjectRef) => IO[StorageFetchRejection, Iri],
       indexPrefix: String
-  ): StoragesStatistics =
-    apply(
-      client.search(_, Set(eventMetricsIndex(indexPrefix).value), Query.Empty)(),
-      fetchStorageId
-    )
+  ): StoragesStatistics = {
+    val search = (jsonObject: JsonObject) =>
+      client.search(jsonObject, Set(eventMetricsIndex(indexPrefix).value), Query.Empty)()
 
-  def apply(
-      search: JsonObject => HttpResult[Json],
-      fetchStorageId: (IdSegment, ProjectRef) => IO[StorageFetchRejection, Iri]
-  ): StoragesStatistics =
     (idSegment: IdSegment, project: ProjectRef) => {
       for {
         storageId <- fetchStorageId(idSegment, project)
@@ -52,6 +49,7 @@ object StoragesStatistics {
         stats     <- IO.fromEither(result.as[StorageStatEntry]).hideErrors
       } yield stats
     }
+  }
 
   /**
     * @param projectRef

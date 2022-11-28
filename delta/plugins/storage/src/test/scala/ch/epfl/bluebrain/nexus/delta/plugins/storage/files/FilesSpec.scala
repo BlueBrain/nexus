@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 
 import akka.actor.typed.scaladsl.adapter._
-import akka.actor.{typed, ActorSystem}
+import akka.actor.{ActorSystem, typed}
 import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
 import akka.http.scaladsl.model.Uri
 import akka.testkit.TestKit
@@ -11,9 +11,9 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.NotCompu
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotFound
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.{RemoteDiskStorage => RemoteStorageType}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{StorageRejection, StorageStatEntry}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageFixtures, Storages, StoragesConfig, StoragesStatistics}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -34,7 +34,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.testkit.remotestorage.RemoteStorageDocker
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, DoobieScalaTestFixture, IOFixedClock, IOValues}
-import io.circe.Json
 import monix.bio.IO
 import monix.execution.Scheduler
 import org.scalatest.concurrent.Eventually
@@ -98,8 +97,8 @@ class FilesSpec(docker: RemoteStorageDocker)
       remoteDisk = Some(config.remoteDisk.value.copy(defaultMaxFileSize = 500))
     )
 
-    val storageStatistics =
-      StoragesStatistics(_ => IO.pure(Json.Null), (_, _) => IO.pure(iri"storageId"))
+    val storageStatistics: StoragesStatistics =
+      (_, _) => IO.pure { StorageStatEntry(0, 0) }
 
     lazy val storages: Storages = Storages(
       fetchContext.mapRejection(StorageRejection.ProjectContextRejection),

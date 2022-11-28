@@ -109,7 +109,11 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         storages: Storages,
         config: ElasticSearchViewsConfig
     ) =>
-      StoragesStatistics(client, storages, config.prefix)
+      StoragesStatistics(
+        client,
+        storages.fetch(_, _).map(_.id),
+        config.prefix
+      )
   }
 
   make[StoragesRoutes].from {

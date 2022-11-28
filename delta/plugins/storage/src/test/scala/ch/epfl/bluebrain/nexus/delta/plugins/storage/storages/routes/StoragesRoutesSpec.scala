@@ -7,7 +7,7 @@ import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts => fileContexts}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.{ProjectContextRejection, StorageFetchRejection, StorageNotFound}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, Storage, StorageType}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, Storage, StorageStatEntry, StorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{contexts => storageContexts, _}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
@@ -31,7 +31,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionRepor
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
-import io.circe.{Json, JsonObject}
+import io.circe.Json
 import monix.bio.IO
 import org.scalatest._
 
@@ -94,22 +94,11 @@ class StoragesRoutesSpec extends BaseRouteSpec with TryValues with StorageFixtur
 
   implicit private val c: Crypto = crypto
 
-  val expectedStats = JsonObject(
-    "aggregations" -> Json.fromJsonObject {
-      JsonObject(
-        "filesCount"  -> Json.fromJsonObject(JsonObject("value" -> Json.fromInt(50))),
-        "storageSize" -> Json.fromJsonObject(JsonObject("value" -> Json.fromLong(5000L)))
-      )
-    }
-  )
-
-  private val storageStatistics =
-    StoragesStatistics(
-      _ => IO.pure(Json.fromJsonObject(expectedStats)),
-      (storage, proj) =>
-        if (proj.equals(projectRef) && storage.toString.equals("remote-disk-storage")) IO.pure(iri"remote")
-        else IO.raiseError(StorageNotFound(iri"https://bluebrain.github.io/nexus/vocabulary/$storage", proj))
-    )
+  private val storageStatistics: StoragesStatistics =
+    (storage, project) =>
+      if (project.equals(projectRef) && storage.toString.equals("remote-disk-storage"))
+        IO.pure(StorageStatEntry(50, 5000))
+      else IO.raiseError(StorageNotFound(iri"https://bluebrain.github.io/nexus/vocabulary/$storage", project))
 
   private val cfg = StoragesConfig(eventLogConfig, pagination, config)
 
