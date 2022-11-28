@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.resolvers
 
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.sdk.ScopeInitialization
+import ch.epfl.bluebrain.nexus.delta.sdk.{Defaults, ScopeInitialization}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{Caller, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
@@ -24,10 +24,15 @@ import monix.bio.{IO, UIO}
   * @param serviceAccount
   *   the subject that will be recorded when performing the initialization
   */
-class ResolverScopeInitialization(resolvers: Resolvers, serviceAccount: ServiceAccount) extends ScopeInitialization {
+class ResolverScopeInitialization(
+    resolvers: Resolvers,
+    serviceAccount: ServiceAccount,
+    defaults: Defaults
+) extends ScopeInitialization {
 
   private val logger: Logger                                = Logger[ResolverScopeInitialization]
-  private val defaultInProjectResolverValue: ResolverValue  = InProjectValue(Priority.unsafe(1))
+  private val defaultInProjectResolverValue: ResolverValue  =
+    InProjectValue(Some(defaults.name), Some(defaults.description), Priority.unsafe(1))
   implicit private val caller: Caller                       = serviceAccount.caller
   implicit private val kamonComponent: KamonMetricComponent = KamonMetricComponent(entityType.value)
 

@@ -23,20 +23,34 @@ class ResolverValueSpec
     with TestHelpers
     with Fixtures {
 
-  val realm = Label.unsafe("myrealm")
+  private val realm       = Label.unsafe("myrealm")
+  private val name        = Some("resolverName")
+  private val description = Some("resolverDescription")
 
   "InProject" should {
-    val json     = jsonContentOf("/resolvers/expanded/in-project-resolver.json")
-    val expanded = ExpandedJsonLd(json).accepted
 
     "be successfully decoded" in {
+      val json     = jsonContentOf("/resolvers/expanded/in-project-resolver.json")
+      val expanded = ExpandedJsonLd(json).accepted
+
       expanded.to[ResolverValue].rightValue shouldEqual InProjectValue(
         Priority.unsafe(42)
       )
     }
 
+    "be successfully decoded when a name and description are defined" in {
+      val json     = jsonContentOf("/resolvers/expanded/in-project-resolver-name-desc.json")
+      val expanded = ExpandedJsonLd(json).accepted
+
+      expanded.to[ResolverValue].rightValue shouldEqual InProjectValue(
+        name,
+        description,
+        Priority.unsafe(42)
+      )
+    }
+
     "generate the correct source from value" in {
-      val inProject = InProjectValue(Priority.unsafe(42))
+      val inProject = InProjectValue(name, description, Priority.unsafe(42))
       ResolverValue.generateSource(nxv + "generated", inProject) shouldEqual
         jsonContentOf("resolvers/in-project-from-value.json")
     }
@@ -71,6 +85,19 @@ class ResolverValueSpec
       )
     }
 
+    "be successfully decoded when using current caller resolution with name and description" in {
+      val json     = jsonContentOf("/resolvers/expanded/cross-project-resolver-use-caller-name-desc.json")
+      val expanded = ExpandedJsonLd(json).accepted
+      expanded.to[ResolverValue].rightValue shouldEqual CrossProjectValue(
+        name,
+        description,
+        Priority.unsafe(42),
+        Set(nxv.Schema),
+        NonEmptyList.of(ProjectRef.unsafe("org", "proj"), ProjectRef.unsafe("org", "proj2")),
+        UseCurrentCaller
+      )
+    }
+
     "result in an error when both resolutions are defined" in {
       val json     = jsonContentOf("/resolvers/expanded/cross-project-resolver-both-error.json")
       val expanded = ExpandedJsonLd(json).accepted
@@ -95,6 +122,8 @@ class ResolverValueSpec
 
     "generate the correct source from resolver using current caller resolution" in {
       val crossProjectProject = CrossProjectValue(
+        name,
+        description,
         Priority.unsafe(42),
         Set(nxv.Schema),
         NonEmptyList.of(

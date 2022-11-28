@@ -4,5 +4,7 @@
     "Resolver",
     "InProject"
   ],
+  "name": "resolverName",
+  "description": "resolverDescription",
   "priority": 42
 }

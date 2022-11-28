@@ -276,7 +276,7 @@ object Resolvers {
         caller: Caller
     ): IO[ResolverRejection, Unit] =
       (value match {
-        case CrossProjectValue(_, _, _, identityResolution) =>
+        case CrossProjectValue(_, _, _, _, _, identityResolution) =>
           identityResolution match {
             case UseCurrentCaller                           => IO.unit
             case ProvidedIdentities(value) if value.isEmpty => IO.raiseError(NoIdentities)

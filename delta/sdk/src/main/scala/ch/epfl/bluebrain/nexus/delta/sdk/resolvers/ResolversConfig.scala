@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resolvers
 
+import ch.epfl.bluebrain.nexus.delta.sdk.Defaults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import pureconfig.ConfigReader
@@ -15,7 +16,8 @@ import pureconfig.generic.semiauto.deriveReader
   */
 final case class ResolversConfig(
     eventLog: EventLogConfig,
-    pagination: PaginationConfig
+    pagination: PaginationConfig,
+    defaults: Defaults
 )
 
 object ResolversConfig {
