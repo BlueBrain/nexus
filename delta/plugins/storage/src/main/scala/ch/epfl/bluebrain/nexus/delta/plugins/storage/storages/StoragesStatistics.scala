@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.literal._
 import io.circe.{DecodingFailure, JsonObject}
-import monix.bio.IO
+import monix.bio.{IO, UIO}
 
 trait StoragesStatistics {
 
@@ -44,7 +44,7 @@ object StoragesStatistics {
     (idSegment: IdSegment, project: ProjectRef) => {
       for {
         storageId <- fetchStorageId(idSegment, project)
-        query     <- storagesStatisticsQuery(project, storageId).hideErrors
+        query     <- storageStatisticsQuery(project, storageId)
         result    <- search(query).hideErrors
         stats     <- IO.fromEither(result.as[StorageStatEntry]).hideErrors
       } yield stats
@@ -59,49 +59,27 @@ object StoragesStatistics {
     * @return
     *   a query for the total number of files and the total size of a storage in a given project
     */
-  private def storagesStatisticsQuery(projectRef: ProjectRef, storageId: Iri): IO[DecodingFailure, JsonObject] =
-    IO.fromEither {
+  private def storageStatisticsQuery(projectRef: ProjectRef, storageId: Iri): UIO[JsonObject] =
+    IO.fromOption(
       json"""
      {
       "query": {
         "bool": {
           "filter": [
-            {
-              "term": {
-                "@type.short": "File"
-              }
-            },
-            {
-              "term": {
-                "project": $projectRef
-              }
-            },
-            {
-              "term": {
-                "storage": $storageId
-              }
-            }
+            { "term": { "@type.short": "File" } },
+            { "term": { "project": $projectRef } },
+            { "term": { "storage": $storageId } }
           ]
         }
       },
       "aggs": {
-        "storageSize": {
-          "sum": {
-            "field": "bytes"
-          }
-        },
-        "filesCount": {
-          "sum": {
-            "field": "newFileWritten"
-          }
-        }
+        "storageSize": { "sum": { "field": "bytes" } },
+        "filesCount": { "sum": { "field": "newFileWritten" } }
       },
       "size": 0
     }
-        """.asObject match {
-        case Some(jsonObject) => Right(jsonObject)
-        case None             => Left(DecodingFailure("Failed to decode ES statistics query.", List.empty))
-      }
-    }
+        """.asObject,
+      DecodingFailure("ab", List.empty)
+    ).hideErrors
 
 }
