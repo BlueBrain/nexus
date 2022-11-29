@@ -5,12 +5,11 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.semiauto.deriveDefaultJsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Pipe
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.DataConstructQuery.DataConstructQueryConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, PipeDef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, PipeDef, PipeRef}
 import io.circe.{Json, JsonObject}
 import monix.bio.Task
 import shapeless.Typeable
@@ -21,7 +20,7 @@ import shapeless.Typeable
 class DataConstructQuery(config: DataConstructQueryConfig) extends Pipe {
   override type In  = GraphResource
   override type Out = GraphResource
-  override def label: Label                     = DataConstructQuery.label
+  override def ref: PipeRef                     = DataConstructQuery.ref
   override def inType: Typeable[GraphResource]  = Typeable[GraphResource]
   override def outType: Typeable[GraphResource] = Typeable[GraphResource]
 
@@ -41,14 +40,14 @@ object DataConstructQuery extends PipeDef {
   override type Config   = DataConstructQueryConfig
   override def configType: Typeable[Config]                                     = Typeable[DataConstructQueryConfig]
   override def configDecoder: JsonLdDecoder[Config]                             = JsonLdDecoder[DataConstructQueryConfig]
-  override def label: Label                                                     = Label.unsafe("dataConstructQuery")
+  override def ref: PipeRef                                                     = PipeRef.unsafe("dataConstructQuery")
   override def withConfig(config: DataConstructQueryConfig): DataConstructQuery = new DataConstructQuery(config)
 
   final case class DataConstructQueryConfig(query: SparqlConstructQuery) {
     def toJsonLd: ExpandedJsonLd = ExpandedJsonLd(
       Seq(
         ExpandedJsonLd.unsafe(
-          nxv + label.value,
+          nxv + ref.toString,
           JsonObject(
             (nxv + "query").toString -> Json.arr(Json.obj("@value" -> Json.fromString(query.value)))
           )

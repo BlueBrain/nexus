@@ -49,7 +49,7 @@ class DataConstructQuerySuite extends BioSuite {
 
   def pipe(query: String): DataConstructQuery =
     registry
-      .lookupA[pipes.DataConstructQuery.type](DataConstructQuery.reference)
+      .lookupA[pipes.DataConstructQuery.type](DataConstructQuery.ref)
       .rightValue
       .withJsonLdConfig(DataConstructQueryConfig(SparqlConstructQuery.unsafe(query)).toJsonLd)
       .rightValue

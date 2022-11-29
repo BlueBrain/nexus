@@ -48,7 +48,7 @@ class FilterByTypeSuite extends BioSuite {
 
   def pipe(types: Set[Iri]): FilterByType =
     registry
-      .lookupA[FilterByType.type](FilterByType.reference)
+      .lookupA[FilterByType.type](FilterByType.ref)
       .rightValue
       .withJsonLdConfig(FilterByTypeConfig(types).toJsonLd)
       .rightValue

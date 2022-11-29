@@ -11,8 +11,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.{PipeStep, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.FilterBySchema.FilterBySchemaConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.FilterByType.FilterByTypeConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes._
 import ch.epfl.bluebrain.nexus.testkit.{CirceEq, CirceLiteral, IOValues, TestHelpers}
 import org.scalatest.Inspectors
@@ -57,13 +55,13 @@ class ElasticSearchViewSpec
     "be converted to compacted Json-LD" in {
       forAll(
         List(
-          PipeStep(FilterBySchema.label, FilterBySchemaConfig(Set(nxv.Schema)).toJsonLd),
-          PipeStep(FilterByType.label, FilterByTypeConfig(Set(nxv + "Morphology")).toJsonLd),
-          PipeStep.noConfig(SourceAsText.label).description("Formatting source as text")
+          PipeStep(FilterBySchema(Set(nxv.Schema))),
+          PipeStep(FilterByType(Set(nxv + "Morphology"))),
+          PipeStep.noConfig(SourceAsText.ref).description("Formatting source as text")
         )        -> "jsonld/indexing-view-compacted-1.json" ::
           List(
-            PipeStep.noConfig(FilterDeprecated.label),
-            PipeStep.noConfig(DiscardMetadata.label)
+            PipeStep.noConfig(FilterDeprecated.ref),
+            PipeStep.noConfig(DiscardMetadata.ref)
           )      -> "jsonld/indexing-view-compacted-2.json" ::
           List() -> "jsonld/indexing-view-compacted-3.json" :: Nil
       ) { case (pipeline, expected) =>
@@ -73,9 +71,9 @@ class ElasticSearchViewSpec
     "be converted to expanded Json-LD" in {
       indexingView(
         List(
-          PipeStep(FilterBySchema.label, FilterBySchemaConfig(Set(nxv.Schema)).toJsonLd),
-          PipeStep(FilterByType.label, FilterByTypeConfig(Set(nxv + "Morphology")).toJsonLd),
-          PipeStep.noConfig(SourceAsText.label).description("Formatting source as text")
+          PipeStep(FilterBySchema(Set(nxv.Schema))),
+          PipeStep(FilterByType(Set(nxv + "Morphology"))),
+          PipeStep.noConfig(SourceAsText.ref).description("Formatting source as text")
         )
       ).toExpandedJsonLd.accepted.json shouldEqual jsonContentOf("jsonld/indexing-view-expanded.json")
     }

@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
 import cats.syntax.all._
 import cats.data.NonEmptyChain
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionErr.OperationInOutMatchErr
 import com.typesafe.scalalogging.Logger
@@ -116,11 +115,11 @@ object Operation {
 
     /**
       * @return
-      *   the label that represents the specific operation type
+      *   the reference that represents the specific operation type
       */
-    def label: Label
+    def ref: PipeRef
 
-    override def name: String = label.value
+    override def name: String = ref.label.value
 
     /**
       * The pipe behaviour left abstract to be implemented by each specific pipe. It takes an element of type In that up

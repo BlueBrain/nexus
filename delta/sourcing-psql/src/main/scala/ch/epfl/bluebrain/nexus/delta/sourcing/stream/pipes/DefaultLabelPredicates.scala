@@ -3,9 +3,8 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{rdf, rdfs, schema, skos}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.PipeDef
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.SelectPredicates.SelectPredicatesConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeDef, PipeRef}
 import shapeless.Typeable
 
 /**
@@ -17,7 +16,7 @@ object DefaultLabelPredicates extends PipeDef {
   override type Config   = Unit
   override def configType: Typeable[Config]         = Typeable[Unit]
   override def configDecoder: JsonLdDecoder[Config] = JsonLdDecoder[Unit]
-  override def label: Label                         = Label.unsafe("defaultLabelPredicates")
+  override def ref: PipeRef                         = PipeRef.unsafe("defaultLabelPredicates")
 
   override def withConfig(config: Unit): SelectPredicates = {
     val cfg = SelectPredicatesConfig(defaultLabelPredicates)

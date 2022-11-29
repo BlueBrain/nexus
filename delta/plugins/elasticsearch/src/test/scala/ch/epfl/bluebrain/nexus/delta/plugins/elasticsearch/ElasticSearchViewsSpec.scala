@@ -25,8 +25,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityDependency, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.PipeChain
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{FilterBySchema, FilterByType, FilterDeprecated}
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.FilterBySchema.FilterBySchemaConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.FilterByType.FilterByTypeConfig
 import ch.epfl.bluebrain.nexus.testkit.{DoobieScalaTestFixture, EitherValuable, IOFixedClock}
 import io.circe.Json
 import io.circe.literal._
@@ -187,9 +185,9 @@ class ElasticSearchViewsSpec
         val value = IndexingElasticSearchViewValue(
           resourceTag = Some(UserTag.unsafe("tag")),
           List(
-            PipeStep(FilterBySchema.label, FilterBySchemaConfig(Set(iri"http://localhost/schema")).toJsonLd),
-            PipeStep(FilterByType.label, FilterByTypeConfig(Set(iri"http://localhost/type")).toJsonLd),
-            PipeStep.noConfig(FilterDeprecated.label)
+            PipeStep(FilterBySchema(Set(iri"http://localhost/schema"))),
+            PipeStep(FilterByType(Set(iri"http://localhost/type"))),
+            PipeStep.noConfig(FilterDeprecated.ref)
           ),
           mapping = Some(mapping),
           settings = None,

@@ -3,11 +3,10 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Pipe
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, PipeDef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, PipeDef, PipeRef}
 import io.circe.Json
 import monix.bio.Task
 import shapeless.Typeable
@@ -21,7 +20,7 @@ class SourceAsText extends Pipe {
 
   override type In  = GraphResource
   override type Out = GraphResource
-  override def label: Label                     = SourceAsText.label
+  override def ref: PipeRef                     = SourceAsText.ref
   override def inType: Typeable[GraphResource]  = Typeable[GraphResource]
   override def outType: Typeable[GraphResource] = Typeable[GraphResource]
 
@@ -40,6 +39,6 @@ object SourceAsText extends PipeDef {
   override type Config   = Unit
   override def configType: Typeable[Config]           = Typeable[Unit]
   override def configDecoder: JsonLdDecoder[Config]   = JsonLdDecoder[Unit]
-  override def label: Label                           = Label.unsafe("sourceAsText")
+  override def ref: PipeRef                           = PipeRef.unsafe("sourceAsText")
   override def withConfig(config: Unit): SourceAsText = new SourceAsText
 }

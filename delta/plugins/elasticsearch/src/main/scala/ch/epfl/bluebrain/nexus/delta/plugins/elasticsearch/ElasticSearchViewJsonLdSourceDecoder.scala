@@ -24,8 +24,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.views.{PipeStep, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.FilterBySchema.FilterBySchemaConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.FilterByType.FilterByTypeConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes._
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
@@ -158,12 +156,12 @@ object ElasticSearchViewJsonLdSourceDecoder {
     case i: LegacyIndexingElasticSearchViewFields =>
       // Translate legacy fields into a pipeline
       val pipeline = List(
-        i.resourceSchemas.nonEmpty -> PipeStep(FilterBySchema.label, FilterBySchemaConfig(i.resourceSchemas).toJsonLd),
-        i.resourceTypes.nonEmpty   -> PipeStep(FilterByType.label, FilterByTypeConfig(i.resourceTypes).toJsonLd),
-        !i.includeDeprecated       -> PipeStep.noConfig(FilterDeprecated.label),
-        !i.includeMetadata         -> PipeStep.noConfig(DiscardMetadata.label),
-        true                       -> PipeStep.noConfig(DefaultLabelPredicates.label),
-        i.sourceAsText             -> PipeStep.noConfig(SourceAsText.label)
+        i.resourceSchemas.nonEmpty -> PipeStep(FilterBySchema(i.resourceSchemas)),
+        i.resourceTypes.nonEmpty   -> PipeStep(FilterByType(i.resourceTypes)),
+        !i.includeDeprecated       -> PipeStep.noConfig(FilterDeprecated.ref),
+        !i.includeMetadata         -> PipeStep.noConfig(DiscardMetadata.ref),
+        true                       -> PipeStep.noConfig(DefaultLabelPredicates.ref),
+        i.sourceAsText             -> PipeStep.noConfig(SourceAsText.ref)
       ).mapFilter { case (b, p) => Option.when(b)(p) }
 
       IndexingElasticSearchViewValue(

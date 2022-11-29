@@ -83,6 +83,9 @@ object ElasticSearchViewValue {
   ) extends ElasticSearchViewValue {
     override val tpe: ElasticSearchViewType = ElasticSearchViewType.ElasticSearch
 
+    /**
+      * Translates the view into a [[PipeChain]]
+      */
     def pipeChain: Option[PipeChain] =
       NonEmptyChain.fromSeq(pipeline).map { steps =>
         val pipes = steps.map { step =>
@@ -98,9 +101,9 @@ object ElasticSearchViewValue {
       * Default pipeline to apply if none is present in the payload
       */
     val defaultPipeline: List[PipeStep] = List(
-      PipeStep(FilterDeprecated.label, None, None),
-      PipeStep(DiscardMetadata.label, None, None),
-      PipeStep(DefaultLabelPredicates.label, None, None)
+      PipeStep(FilterDeprecated.ref.label, None, None),
+      PipeStep(DiscardMetadata.ref.label, None, None),
+      PipeStep(DefaultLabelPredicates.ref.label, None, None)
     )
 
     /**

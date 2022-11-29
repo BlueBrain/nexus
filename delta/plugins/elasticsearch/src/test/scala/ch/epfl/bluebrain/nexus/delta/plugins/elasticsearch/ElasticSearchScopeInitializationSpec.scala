@@ -79,8 +79,8 @@ class ElasticSearchScopeInitializationSpec
         case v: IndexingElasticSearchView  =>
           v.resourceTag shouldEqual None
           v.pipeline shouldEqual List(
-            PipeStep.noConfig(DefaultLabelPredicates.label),
-            PipeStep.noConfig(SourceAsText.label)
+            PipeStep.noConfig(DefaultLabelPredicates.ref),
+            PipeStep.noConfig(SourceAsText.ref)
           )
           v.mapping shouldEqual mapping
           v.settings shouldEqual settings

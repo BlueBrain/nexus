@@ -47,7 +47,7 @@ class DiscardMetadataSuite extends BioSuite {
     val expected = elem.copy(value = graph.copy(metadataGraph = Graph.empty(base / "id")))
 
     val pipe = registry
-      .lookupA[DiscardMetadata.type](DiscardMetadata.reference)
+      .lookupA[DiscardMetadata.type](DiscardMetadata.ref)
       .rightValue
       .withJsonLdConfig(ExpandedJsonLd.empty)
       .rightValue

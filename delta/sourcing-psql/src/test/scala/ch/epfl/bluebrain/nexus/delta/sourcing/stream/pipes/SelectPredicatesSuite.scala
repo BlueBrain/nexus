@@ -52,14 +52,14 @@ class SelectPredicatesSuite extends BioSuite {
 
   def pipe(predicates: Set[Iri]): SelectPredicates =
     registry
-      .lookupA[SelectPredicates.type](SelectPredicates.reference)
+      .lookupA[SelectPredicates.type](SelectPredicates.ref)
       .rightValue
       .withJsonLdConfig(SelectPredicatesConfig(predicates).toJsonLd)
       .rightValue
 
   def defaultPipe: SelectPredicates =
     registry
-      .lookupA[DefaultLabelPredicates.type](DefaultLabelPredicates.reference)
+      .lookupA[DefaultLabelPredicates.type](DefaultLabelPredicates.ref)
       .rightValue
       .withJsonLdConfig(ExpandedJsonLd.empty)
       .rightValue

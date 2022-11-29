@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Pipe
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionErr.CouldNotDecodePipeConfigErr
 import shapeless.Typeable
@@ -39,15 +38,9 @@ trait PipeDef {
 
   /**
     * @return
-    *   the label that represents the specific source type
-    */
-  def label: Label
-
-  /**
-    * @return
     *   the unique reference for a pipe of this type
     */
-  def reference: PipeRef = PipeRef(label)
+  def ref: PipeRef
 
   /**
     * Produces a [[Pipe]] instance given an expected configuration.
@@ -67,6 +60,6 @@ trait PipeDef {
   def withJsonLdConfig(jsonLd: ExpandedJsonLd): Either[CouldNotDecodePipeConfigErr, PipeType] =
     configDecoder(jsonLd)
       .map(c => withConfig(c))
-      .leftMap(e => CouldNotDecodePipeConfigErr(jsonLd, configType.describe, reference, e.reason))
+      .leftMap(e => CouldNotDecodePipeConfigErr(jsonLd, configType.describe, ref, e.reason))
 
 }

@@ -36,7 +36,7 @@ class FilterDeprecatedSuite extends BioSuite {
 
   def pipe: FilterDeprecated =
     registry
-      .lookupA[FilterDeprecated.type](FilterDeprecated.reference)
+      .lookupA[FilterDeprecated.type](FilterDeprecated.ref)
       .rightValue
       .withJsonLdConfig(ExpandedJsonLd.empty)
       .rightValue

@@ -1,11 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes
 
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Pipe
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, PipeDef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, PipeDef, PipeRef}
 import monix.bio.Task
 import shapeless.Typeable
 
@@ -15,7 +15,7 @@ import shapeless.Typeable
 class FilterDeprecated extends Pipe {
   override type In  = GraphResource
   override type Out = GraphResource
-  override def label: Label                     = FilterDeprecated.label
+  override def ref: PipeRef                     = FilterDeprecated.ref
   override def inType: Typeable[GraphResource]  = Typeable[GraphResource]
   override def outType: Typeable[GraphResource] = Typeable[GraphResource]
 
@@ -33,6 +33,11 @@ object FilterDeprecated extends PipeDef {
   override type Config   = Unit
   override def configType: Typeable[Config]               = Typeable[Unit]
   override def configDecoder: JsonLdDecoder[Config]       = JsonLdDecoder[Unit]
-  override def label: Label                               = Label.unsafe("filterDeprecated")
+  override def ref: PipeRef                               = PipeRef.unsafe("filterDeprecated")
   override def withConfig(config: Unit): FilterDeprecated = new FilterDeprecated
+
+  /**
+    * Returns the pipe ref and its empty config
+    */
+  def apply(): (PipeRef, ExpandedJsonLd) = ref -> ExpandedJsonLd.empty
 }
