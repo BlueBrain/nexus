@@ -321,6 +321,21 @@ lazy val sdk = project
     addCompilerPlugin(betterMonadicFor)
   )
 
+lazy val migration = project
+  .in(file("delta/migration"))
+  .settings(
+    name       := "delta-migration",
+    moduleName := "delta-migration"
+  )
+  .settings(shared, compilation, assertJavaVersion, coverage, release)
+  .dependsOn(sdk, testkit % "test->compile")
+  .settings(
+    libraryDependencies ++= Seq(
+      circeOptics,
+      "com.lightbend.akka" %% "akka-stream-alpakka-cassandra" % "4.0.0"
+    )
+  )
+
 lazy val app = project
   .in(file("delta/app"))
   .settings(
@@ -329,7 +344,7 @@ lazy val app = project
   )
   .enablePlugins(UniversalPlugin, JavaAppPackaging, JavaAgent, DockerPlugin, BuildInfoPlugin)
   .settings(shared, compilation, servicePackaging, assertJavaVersion, kamonSettings, coverage, release)
-  .dependsOn(sdk % "compile->compile;test->test", testkit % "test->compile")
+  .dependsOn(sdk % "compile->compile;test->test", testkit % "test->compile", migration)
   .settings(Test / compile := (Test / compile).dependsOn(testPlugin / assembly).value)
   .settings(
     libraryDependencies  ++= Seq(

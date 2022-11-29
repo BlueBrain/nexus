@@ -19,7 +19,7 @@ import scala.concurrent.duration.FiniteDuration
 final class StateMachine[State, Command, Event, Rejection] private (
     initialState: Option[State],
     evaluate: (Option[State], Command) => IO[Rejection, Event],
-    next: (Option[State], Event) => Option[State]
+    val next: (Option[State], Event) => Option[State]
 ) {
 
   /**
