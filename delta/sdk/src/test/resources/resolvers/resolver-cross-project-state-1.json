@@ -5,6 +5,8 @@
   "rev" : 1,
   "value" : {
     "@type" : "CrossProjectValue",
+    "name": null,
+    "description": null,
     "identityResolution" : {
       "@type" : "ProvidedIdentities",
       "value" : [

@@ -14,8 +14,8 @@
   },
   "value": {
     "@type": "InProjectValue",
-    "name": null,
-    "description": null,
+    "name": "resolverName",
+    "description": "resolverDescription",
     "priority": 42
   }
 }

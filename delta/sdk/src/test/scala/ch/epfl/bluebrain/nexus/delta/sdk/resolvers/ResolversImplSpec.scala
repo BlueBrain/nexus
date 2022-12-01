@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
+import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, Defaults}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ResolverGen.{resolverResourceFor, sourceFrom, sourceWithoutId}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
@@ -53,6 +53,8 @@ class ResolversImplSpec
 
   implicit private val api: JsonLdApi = JsonLdJavaApi.strict
 
+  private val defaults = Defaults("resolverName", "resolverDescription")
+
   private def res: RemoteContextResolution =
     RemoteContextResolution.fixed(
       contexts.resolvers         -> jsonContentOf("/contexts/resolvers.json").topContextValueOrEmpty,
@@ -87,7 +89,7 @@ class ResolversImplSpec
   private lazy val resolvers: Resolvers = ResolversImpl(
     fetchContext,
     resolverContextResolution,
-    ResolversConfig(eventLogConfig, pagination),
+    ResolversConfig(eventLogConfig, pagination, defaults),
     xas
   )
 

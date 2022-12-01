@@ -4,7 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
+import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, Defaults}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
@@ -44,6 +44,8 @@ class ResolverScopeInitializationSpec
   private val project  =
     ProjectGen.project("org", "project", uuid = uuid, orgUuid = uuid, base = projBase, mappings = am)
 
+  private val defaults = Defaults("resolverName", "resolverDescription")
+
   private lazy val resolvers: Resolvers = {
     implicit val api: JsonLdApi = JsonLdJavaApi.strict
     val resolution              = RemoteContextResolution.fixed(
@@ -53,18 +55,19 @@ class ResolverScopeInitializationSpec
     ResolversImpl(
       FetchContextDummy(List(project), ProjectContextRejection),
       rcr,
-      ResolversConfig(eventLogConfig, pagination),
+      ResolversConfig(eventLogConfig, pagination, defaults),
       xas
     )
   }
   "A ResolverScopeInitialization" should {
-    lazy val init = new ResolverScopeInitialization(resolvers, sa)
+    lazy val init = new ResolverScopeInitialization(resolvers, sa, defaults)
 
     "create a default resolver on newly created project" in {
       resolvers.fetch(defaultInProjectResolverId, project.ref).rejectedWith[ResolverNotFound]
       init.onProjectCreation(project, bob).accepted
       val resource = resolvers.fetch(defaultInProjectResolverId, project.ref).accepted
-      resource.value.value shouldEqual InProjectValue(Priority.unsafe(1))
+      resource.value.value shouldEqual
+        InProjectValue(Some(defaults.name), Some(defaults.description), Priority.unsafe(1))
       resource.rev shouldEqual 1L
       resource.createdBy shouldEqual sa.caller.subject
     }

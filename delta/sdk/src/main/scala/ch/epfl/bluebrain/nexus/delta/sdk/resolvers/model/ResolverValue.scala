@@ -20,6 +20,18 @@ sealed trait ResolverValue extends Product with Serializable {
 
   /**
     * @return
+    *   the resolver name
+    */
+  def name: Option[String]
+
+  /**
+    * @return
+    *   the resolver description
+    */
+  def description: Option[String]
+
+  /**
+    * @return
     *   resolution priority when attempting to find a resource
     */
   def priority: Priority
@@ -40,13 +52,27 @@ object ResolverValue {
     * @param priority
     *   resolution priority when attempting to find a resource
     */
-  final case class InProjectValue(priority: Priority) extends ResolverValue {
+  final case class InProjectValue(
+      name: Option[String],
+      description: Option[String],
+      priority: Priority
+  ) extends ResolverValue {
 
     /**
       * @return
       *   the resolver type
       */
     override def tpe: ResolverType = ResolverType.InProject
+  }
+
+  object InProjectValue {
+
+    /**
+      * @return
+      *   an [[InProjectValue]] without name and description
+      */
+    def apply(priority: Priority): InProjectValue =
+      InProjectValue(None, None, priority)
   }
 
   /**
@@ -63,6 +89,8 @@ object ResolverValue {
     *   identities allowed to use this resolver
     */
   final case class CrossProjectValue(
+      name: Option[String],
+      description: Option[String],
       priority: Priority,
       resourceTypes: Set[Iri],
       projects: NonEmptyList[ProjectRef],
@@ -74,6 +102,21 @@ object ResolverValue {
       *   the resolver type
       */
     override def tpe: ResolverType = ResolverType.CrossProject
+  }
+
+  object CrossProjectValue {
+
+    /**
+      * @return
+      *   an [[CrossProjectValue]] without name and description
+      */
+    def apply(
+        priority: Priority,
+        resourceTypes: Set[Iri],
+        projects: NonEmptyList[ProjectRef],
+        identityResolution: IdentityResolution
+    ): CrossProjectValue =
+      CrossProjectValue(None, None, priority, resourceTypes, projects, identityResolution)
   }
 
   /**
@@ -96,28 +139,40 @@ object ResolverValue {
 
   implicit private[resolvers] def resolverValueEncoder(implicit
       identityEncoder: Encoder[Identity]
-  ): Encoder.AsObject[ResolverValue] = Encoder.AsObject.instance {
-    case InProjectValue(priority)                                                 =>
-      JsonObject(
-        "priority" -> priority.asJson
-      )
-    case CrossProjectValue(priority, resourceTypes, projects, identityResolution) =>
-      JsonObject(
-        "priority"      -> priority.asJson,
-        "resourceTypes" -> resourceTypes.asJson,
-        "projects"      -> projects.asJson
-      ).deepMerge(identityResolution.asJsonObject)
-  }
+  ): Encoder.AsObject[ResolverValue] =
+    Encoder.AsObject.instance {
+      case InProjectValue(name, description, priority)                                                 =>
+        JsonObject(
+          "name"        -> name.asJson,
+          "description" -> description.asJson,
+          "priority"    -> priority.asJson
+        )
+      case CrossProjectValue(name, description, priority, resourceTypes, projects, identityResolution) =>
+        JsonObject(
+          "name"          -> name.asJson,
+          "description"   -> description.asJson,
+          "priority"      -> priority.asJson,
+          "resourceTypes" -> resourceTypes.asJson,
+          "projects"      -> projects.asJson
+        ).deepMerge(identityResolution.asJsonObject)
+    }
 
   sealed private trait Resolver
-  private case class InProject(priority: Priority) extends Resolver
+  private case class InProject(
+      name: Option[String],
+      description: Option[String],
+      priority: Priority
+  ) extends Resolver
+
   private case class CrossProject(
+      name: Option[String],
+      description: Option[String],
       priority: Priority,
       resourceTypes: Set[Iri] = Set.empty,
       projects: NonEmptyList[ProjectRef],
       useCurrentCaller: Boolean = false,
       identities: Option[Set[Identity]]
-  )                                                extends Resolver
+  ) extends Resolver
 
   @nowarn("cat=unused")
   implicit val resolverValueJsonLdDecoder: JsonLdDecoder[ResolverValue] = {
@@ -130,12 +185,13 @@ object ResolverValue {
 
     (cursor: ExpandedJsonLdCursor) =>
       resolverDecoder(cursor).flatMap {
-        case InProject(priority)                                                      => Right(InProjectValue(priority))
-        case CrossProject(priority, resourceTypes, projects, true, None)              =>
-          Right(CrossProjectValue(priority, resourceTypes, projects, UseCurrentCaller))
-        case CrossProject(priority, resourceTypes, projects, false, Some(identities)) =>
-          Right(CrossProjectValue(priority, resourceTypes, projects, ProvidedIdentities(identities)))
-        case CrossProject(_, _, _, _, _)                                              =>
+        case InProject(name, description, priority)                                                      =>
+          Right(InProjectValue(name, description, priority))
+        case CrossProject(name, description, priority, resourceTypes, projects, true, None)              =>
+          Right(CrossProjectValue(name, description, priority, resourceTypes, projects, UseCurrentCaller))
+        case CrossProject(name, description, priority, resourceTypes, projects, false, Some(identities)) =>
+          Right(CrossProjectValue(name, description, priority, resourceTypes, projects, ProvidedIdentities(identities)))
+        case CrossProject(_, _, _, _, _, _, _)                                                           =>
           Left(ParsingFailure("Only 'useCurrentCaller' or 'identities' should be defined"))
       }
   }
