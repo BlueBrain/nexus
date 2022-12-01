@@ -7,6 +7,8 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.sdk.migration.MigrationLog
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.{OrganizationCommand, OrganizationEvent, OrganizationRejection, OrganizationState}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.labelId
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.{PermissionsCommand, PermissionsEvent, PermissionsRejection, PermissionsState}
@@ -34,6 +36,18 @@ object MigrationModule extends ModuleDef {
     MigrationLog.global[Label, PermissionsState, PermissionsCommand, PermissionsEvent, PermissionsRejection](
       Permissions.definition(cfg.permissions.minimum)(clock),
       _ => labelId,
+      identity,
+      (e, _) => e,
+      cfg.permissions.eventLog,
+      xas
+    )
+  }
+
+  // Organizations
+  many[MigrationLog].add { (cfg: AppConfig, xas: Transactors, clock: Clock[UIO], uuidF: UUIDF) =>
+    MigrationLog.global[Label, OrganizationState, OrganizationCommand, OrganizationEvent, OrganizationRejection](
+      Organizations.definition(clock, uuidF),
+      e => e.label,
       identity,
       (e, _) => e,
       cfg.permissions.eventLog,
