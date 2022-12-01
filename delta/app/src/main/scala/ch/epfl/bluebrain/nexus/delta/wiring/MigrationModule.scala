@@ -5,6 +5,8 @@ import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.StoragePluginConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileCommand, FileEvent, FileRejection, FileState}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{StorageCommand, StorageEvent, StorageRejection, StorageState}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -150,6 +152,7 @@ object MigrationModule extends ModuleDef {
     )
   }
 
+  // Storages
   many[MigrationLog].add { (cfg: StoragePluginConfig, xas: Transactors, clock: Clock[UIO], crypto: Crypto) =>
     MigrationLog.scoped[Iri, StorageState, StorageCommand, StorageEvent, StorageRejection](
       Storages.definition(
@@ -162,6 +165,18 @@ object MigrationModule extends ModuleDef {
       identity,
       (e, _) => e,
       cfg.storages.eventLog,
+      xas
+    )
+  }
+
+  // Files
+  many[MigrationLog].add { (cfg: StoragePluginConfig, xas: Transactors, clock: Clock[UIO]) =>
+    MigrationLog.scoped[Iri, FileState, FileCommand, FileEvent, FileRejection](
+      Files.definition(clock),
+      e => e.id,
+      identity,
+      (e, _) => e,
+      cfg.files.eventLog,
       xas
     )
   }
