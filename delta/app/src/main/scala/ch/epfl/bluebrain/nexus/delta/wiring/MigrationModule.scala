@@ -6,6 +6,8 @@ import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.Acls
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.migration.MigrationLog
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.{OrganizationCommand, OrganizationEvent, OrganizationRejection, OrganizationState}
@@ -60,6 +62,21 @@ object MigrationModule extends ModuleDef {
     )
   }
 
+  // ACLs
+  many[MigrationLog].add { (cfg: AppConfig, xas: Transactors, clock: Clock[UIO]) =>
+    MigrationLog.global[AclAddress, AclState, AclCommand, AclEvent, AclRejection](
+      Acls.definition(
+        UIO.terminate(new IllegalStateException("ACL command evaluation should not happen")),
+        _ => IO.terminate(new IllegalStateException("ACL command evaluation should not happen"))
+      )(clock),
+      e => e.address,
+      identity,
+      (e, _) => e,
+      cfg.acls.eventLog,
+      xas
+    )
+  }
+
   // Organizations
   many[MigrationLog].add { (cfg: AppConfig, xas: Transactors, clock: Clock[UIO], uuidF: UUIDF) =>
     MigrationLog.global[Label, OrganizationState, OrganizationCommand, OrganizationEvent, OrganizationRejection](
@@ -75,7 +92,10 @@ object MigrationModule extends ModuleDef {
   // Projects
   many[MigrationLog].add { (cfg: AppConfig, xas: Transactors, clock: Clock[UIO], uuidF: UUIDF) =>
     MigrationLog.scoped[ProjectRef, ProjectState, ProjectCommand, ProjectEvent, ProjectRejection](
-      Projects.definition(_ => IO.terminate(new IllegalStateException("Should not happen")))(clock, uuidF),
+      Projects.definition(_ => IO.terminate(new IllegalStateException("Project command evaluation should not happen")))(
+        clock,
+        uuidF
+      ),
       e => e.project,
       identity,
       (e, _) => e,
@@ -100,7 +120,9 @@ object MigrationModule extends ModuleDef {
   // Resolvers
   many[MigrationLog].add { (cfg: AppConfig, xas: Transactors, clock: Clock[UIO]) =>
     MigrationLog.scoped[Iri, ResolverState, ResolverCommand, ResolverEvent, ResolverRejection](
-      Resolvers.definition((_, _, _) => IO.terminate(new IllegalStateException("Should not happen")))(clock),
+      Resolvers.definition((_, _, _) =>
+        IO.terminate(new IllegalStateException("Resolver command evaluation should not happen"))
+      )(clock),
       e => e.id,
       identity,
       (e, _) => e,
