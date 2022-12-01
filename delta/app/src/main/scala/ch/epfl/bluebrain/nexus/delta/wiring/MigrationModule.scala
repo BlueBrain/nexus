@@ -4,6 +4,15 @@ import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.config.BlazegraphViewsConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphViewCommand, BlazegraphViewEvent, BlazegraphViewRejection, BlazegraphViewState}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeViewCommand, CompositeViewEvent, CompositeViewRejection, CompositeViewState}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchViewCommand, ElasticSearchViewEvent, ElasticSearchViewRejection, ElasticSearchViewState}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.StoragePluginConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileCommand, FileEvent, FileRejection, FileState}
@@ -150,6 +159,58 @@ object MigrationModule extends ModuleDef {
       cfg.resources.eventLog,
       xas
     )
+  }
+
+  // Elasticsearch views
+  many[MigrationLog].add { (cfg: ElasticSearchViewsConfig, xas: Transactors, clock: Clock[UIO], uuidF: UUIDF) =>
+    MigrationLog.scoped[
+      Iri,
+      ElasticSearchViewState,
+      ElasticSearchViewCommand,
+      ElasticSearchViewEvent,
+      ElasticSearchViewRejection
+    ](
+      ElasticSearchViews.definition((_, _, _) =>
+        IO.terminate(new IllegalStateException("ElasticSearchView command evaluation should not happen"))
+      )(clock, uuidF),
+      e => e.id,
+      identity,
+      (e, _) => e,
+      cfg.eventLog,
+      xas
+    )
+  }
+
+  // Blazegraph views
+  many[MigrationLog].add { (cfg: BlazegraphViewsConfig, xas: Transactors, clock: Clock[UIO], uuidF: UUIDF) =>
+    MigrationLog.scoped[Iri, BlazegraphViewState, BlazegraphViewCommand, BlazegraphViewEvent, BlazegraphViewRejection](
+      BlazegraphViews.definition(_ =>
+        IO.terminate(new IllegalStateException("BlazegraphView command evaluation should not happen"))
+      )(clock, uuidF),
+      e => e.id,
+      identity,
+      (e, _) => e,
+      cfg.eventLog,
+      xas
+    )
+  }
+
+  // Composite views
+  many[MigrationLog].add {
+    (cfg: CompositeViewsConfig, xas: Transactors, crypto: Crypto, clock: Clock[UIO], uuidF: UUIDF) =>
+      MigrationLog.scoped[Iri, CompositeViewState, CompositeViewCommand, CompositeViewEvent, CompositeViewRejection](
+        CompositeViews
+          .definition(
+            (_, _, _) => IO.terminate(new IllegalStateException("CompositeView command evaluation should not happen")),
+            crypto
+          )(clock, uuidF),
+        e => e.id,
+        identity,
+        (e, _) => e,
+        cfg.eventLog,
+        xas
+      )
+
   }
 
   // Storages
