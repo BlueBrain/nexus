@@ -31,23 +31,35 @@ class ResolverSerializationSuite extends SerializationSuite {
   val group: Identity         = Group("group", realm)
   val authenticated: Identity = Authenticated(realm)
 
-  val org: Label  = Label.unsafe("myorg")
-  val proj: Label = Label.unsafe("myproj")
-  val projectRef  = ProjectRef(org, proj)
-  val myId        = nxv + "myId"
+  private val org        = Label.unsafe("myorg")
+  private val proj       = Label.unsafe("myproj")
+  private val projectRef = ProjectRef(org, proj)
+  private val myId       = nxv + "myId"
 
-  val inProjectValue: InProjectValue        = InProjectValue(Priority.unsafe(42))
-  val crossProjectValue1: CrossProjectValue = CrossProjectValue(
+  private val resolverName        = Some("resolverName")
+  private val resolverDescription = Some("resolverDescription")
+
+  val inProjectValue: InProjectValue            = InProjectValue(Priority.unsafe(42))
+  val namedInProjectValue: InProjectValue       = InProjectValue(resolverName, resolverDescription, Priority.unsafe(42))
+  val crossProjectValue1: CrossProjectValue     = CrossProjectValue(
     Priority.unsafe(42),
     Set(schemas.projects, schemas.resources),
     NonEmptyList.of(projectRef, ProjectRef.unsafe("org2", "proj2")),
     ProvidedIdentities(Set(subject, Anonymous, group, authenticated))
   )
-  val crossProjectValue2: CrossProjectValue = CrossProjectValue(
+  val crossProjectValue2: CrossProjectValue     = CrossProjectValue(
     Priority.unsafe(42),
     Set(schemas.projects, schemas.resources),
     NonEmptyList.of(projectRef, ProjectRef.unsafe("org2", "proj2")),
     UseCurrentCaller
+  )
+  val namedCrossProjectValue: CrossProjectValue = CrossProjectValue(
+    resolverName,
+    resolverDescription,
+    Priority.unsafe(42),
+    Set(schemas.projects, schemas.resources),
+    NonEmptyList.of(projectRef, ProjectRef.unsafe("org2", "proj2")),
+    ProvidedIdentities(Set(subject, Anonymous, group, authenticated))
   )
 
   private val created    =
@@ -131,6 +143,27 @@ class ResolverSerializationSuite extends SerializationSuite {
       subject
     )
 
+  private val createdNamedInProject    =
+    ResolverCreated(
+      myId,
+      projectRef,
+      namedInProjectValue,
+      Json.obj("resolver" -> Json.fromString("created")),
+      1,
+      instant,
+      subject
+    )
+  private val createdNamedCrossProject =
+    ResolverCreated(
+      myId,
+      projectRef,
+      namedCrossProjectValue,
+      Json.obj("resolver" -> Json.fromString("created")),
+      1,
+      instant,
+      subject
+    )
+
   private val resolversMapping = List(
     (created, loadEvents("resolvers", "resolver-in-project-created.json"), Created),
     (created1, loadEvents("resolvers", "resolver-cross-project-created-1.json"), Created),
@@ -139,7 +172,9 @@ class ResolverSerializationSuite extends SerializationSuite {
     (updated1, loadEvents("resolvers", "resolver-cross-project-updated-1.json"), Updated),
     (updated2, loadEvents("resolvers", "resolver-cross-project-updated-2.json"), Updated),
     (tagged, loadEvents("resolvers", "resolver-tagged.json"), Tagged),
-    (deprecated, loadEvents("resolvers", "resolver-deprecated.json"), Deprecated)
+    (deprecated, loadEvents("resolvers", "resolver-deprecated.json"), Deprecated),
+    (createdNamedInProject, loadEvents("resolvers", "resolver-in-project-created-named.json"), Created),
+    (createdNamedCrossProject, loadEvents("resolvers", "resolver-cross-project-created-named.json"), Created)
   )
 
   resolversMapping.foreach { case (event, (database, sse), action) =>
