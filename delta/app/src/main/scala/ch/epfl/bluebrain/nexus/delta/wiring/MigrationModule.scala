@@ -4,10 +4,14 @@ import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.StoragePluginConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{StorageCommand, StorageEvent, StorageRejection, StorageState}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.Acls
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.migration.MigrationLog
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.{OrganizationCommand, OrganizationEvent, OrganizationRejection, OrganizationState}
@@ -142,6 +146,22 @@ object MigrationModule extends ModuleDef {
       identity,
       (e, _) => e,
       cfg.resources.eventLog,
+      xas
+    )
+  }
+
+  many[MigrationLog].add { (cfg: StoragePluginConfig, xas: Transactors, clock: Clock[UIO], crypto: Crypto) =>
+    MigrationLog.scoped[Iri, StorageState, StorageCommand, StorageEvent, StorageRejection](
+      Storages.definition(
+        cfg.storages.storageTypeConfig,
+        (_, _) => IO.terminate(new IllegalStateException("Storage command evaluation should not happen")),
+        UIO.terminate(new IllegalStateException("Storage command evaluation should not happen")),
+        crypto
+      )(clock),
+      e => e.id,
+      identity,
+      (e, _) => e,
+      cfg.storages.eventLog,
       xas
     )
   }
