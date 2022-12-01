@@ -328,7 +328,7 @@ lazy val migration = project
     moduleName := "delta-migration"
   )
   .settings(shared, compilation, assertJavaVersion, coverage, release)
-  .dependsOn(sdk, testkit % "test->compile")
+  .dependsOn(sdk, storagePlugin, testkit % "test->compile")
   .settings(
     libraryDependencies ++= Seq(
       circeOptics,
