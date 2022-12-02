@@ -126,7 +126,7 @@ object MigrationModule extends ModuleDef {
       )(clock),
       e => e.id,
       identity,
-      MigrationLogHelpers.injectResolverDefaults(cfg.resolvers.defaults),
+      (e, _) => MigrationLogHelpers.injectResolverDefaults(cfg.resolvers.defaults)(e),
       cfg.resolvers.eventLog,
       xas
     )
