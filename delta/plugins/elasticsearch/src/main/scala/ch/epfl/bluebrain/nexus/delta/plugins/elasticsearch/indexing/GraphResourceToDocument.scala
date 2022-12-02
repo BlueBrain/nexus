@@ -30,8 +30,6 @@ final class GraphResourceToDocument(context: ContextValue, includeContext: Boole
 
   private val contextAsJson = context.contextObj.asJson
 
-  //private val defaultContext = ContextValue(contexts.elasticsearchIndexing, contexts.indexingMetadata)
-
   implicit private val api: JsonLdApi = JsonLdJavaApi.lenient
 
   override def apply(element: SuccessElem[GraphResource]): Task[Elem[Json]] = {
