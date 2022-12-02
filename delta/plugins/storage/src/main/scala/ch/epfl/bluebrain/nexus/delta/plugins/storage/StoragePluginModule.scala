@@ -8,9 +8,10 @@ import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.StoragePluginModule.injectStorageDefaults
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.StoragePluginModule.{injectFileStorageInfo, injectStorageDefaults}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.contexts.{files => fileCtxId}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{File, FileCommand, FileEvent, FileRejection, FileState}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.schemas.{files => filesSchemaId}
@@ -313,7 +314,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         Files.definition(clock),
         e => e.id,
         identity,
-        (e, _) => e,
+        injectFileStorageInfo,
         cfg.files.eventLog,
         xas
       )
@@ -322,6 +323,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
   }
 }
 
+// TODO: This object contains migration helpers, and should be deleted when the migration module is removed
 object StoragePluginModule {
 
   private def setStorageDefaults(name: Option[String], description: Option[String]): StorageValue => StorageValue = {
@@ -338,4 +340,17 @@ object StoragePluginModule {
     case event                                                                           => event
   }
 
+  def injectFileStorageInfo: (FileEvent, Option[FileState]) => FileEvent = (e, s) =>
+    s match {
+      case Some(state) =>
+        e match {
+          case f: FileCreated           => f.copy(storage = state.storage, storageType = state.storageType)
+          case f: FileUpdated           => f.copy(storage = state.storage, storageType = state.storageType)
+          case f: FileAttributesUpdated => f.copy(storage = state.storage, storageType = state.storageType)
+          case f: FileTagAdded          => f.copy(storage = state.storage, storageType = state.storageType)
+          case f: FileTagDeleted        => f.copy(storage = state.storage, storageType = state.storageType)
+          case f: FileDeprecated        => f.copy(storage = state.storage, storageType = state.storageType)
+        }
+      case None        => e
+    }
 }
