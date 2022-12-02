@@ -4,11 +4,14 @@ import akka.actor.typed.ActorSystem
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphPluginModule.injectBlazegraphViewDefaults
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.config.BlazegraphViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphCoordinator
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewEvent.{BlazegraphViewCreated, BlazegraphViewUpdated}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.ProjectContextRejection
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{contexts, schema => viewsSchemaId, BlazegraphView, BlazegraphViewCommand, BlazegraphViewEvent, BlazegraphViewRejection, BlazegraphViewState}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue._
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphView, BlazegraphViewCommand, BlazegraphViewEvent, BlazegraphViewRejection, BlazegraphViewState, BlazegraphViewValue, contexts, schema => viewsSchemaId}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.BlazegraphViewsRoutes
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
@@ -233,11 +236,32 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
           )(clock, uuidF),
           e => e.id,
           identity,
-          (e, _) => e,
+          (e, _) => injectBlazegraphViewDefaults(cfg.defaults)(e),
           cfg.eventLog,
           xas
         )
     }
   }
 
+}
+
+object BlazegraphPluginModule {
+
+  import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.defaultViewId
+
+  private def setViewDefaults(
+      name: Option[String],
+      description: Option[String]
+  ): BlazegraphViewValue => BlazegraphViewValue = {
+    case iv: IndexingBlazegraphViewValue  => iv.copy(name = name, description = description)
+    case av: AggregateBlazegraphViewValue => av.copy(name = name, description = description)
+  }
+
+  def injectBlazegraphViewDefaults(defaults: Defaults): BlazegraphViewEvent => BlazegraphViewEvent = {
+    case b @ BlazegraphViewCreated(id, _, _, value, _, _, _, _) if id == defaultViewId =>
+      b.copy(value = setViewDefaults(Some(defaults.name), Some(defaults.description))(value))
+    case b @ BlazegraphViewUpdated(id, _, _, value, _, _, _, _) if id == defaultViewId =>
+      b.copy(value = setViewDefaults(Some(defaults.name), Some(defaults.description))(value))
+    case event                                                                         => event
+  }
 }
