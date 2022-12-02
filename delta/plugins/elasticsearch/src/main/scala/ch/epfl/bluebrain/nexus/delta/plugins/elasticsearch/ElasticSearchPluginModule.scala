@@ -4,11 +4,14 @@ import akka.actor.typed.ActorSystem
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchPluginModule.injectElasticViewDefaults
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchCoordinator
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.ProjectContextRejection
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, defaultElasticsearchMapping, defaultElasticsearchSettings, schema => viewsSchemaId, ElasticSearchView, ElasticSearchViewCommand, ElasticSearchViewEvent, ElasticSearchViewRejection, ElasticSearchViewState}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue._
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchView, ElasticSearchViewCommand, ElasticSearchViewEvent, ElasticSearchViewRejection, ElasticSearchViewState, ElasticSearchViewValue, contexts, defaultElasticsearchMapping, defaultElasticsearchSettings, schema => viewsSchemaId}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.ElasticSearchViewsRoutes
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
@@ -290,11 +293,33 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         )(clock, uuidF),
         e => e.id,
         identity,
-        (e, _) => e,
+        (e, _) => injectElasticViewDefaults(cfg.defaults)(e),
         cfg.eventLog,
         xas
       )
     }
+  }
+
+}
+
+object ElasticSearchPluginModule {
+
+  import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.defaultViewId
+
+  private def setViewDefaults(
+      name: Option[String],
+      description: Option[String]
+  ): ElasticSearchViewValue => ElasticSearchViewValue = {
+    case iv: IndexingElasticSearchViewValue  => iv.copy(name = name, description = description)
+    case av: AggregateElasticSearchViewValue => av.copy(name = name, description = description)
+  }
+
+  def injectElasticViewDefaults(defaults: Defaults): ElasticSearchViewEvent => ElasticSearchViewEvent = {
+    case e @ ElasticSearchViewCreated(id, _, _, value, _, _, _, _) if id == defaultViewId =>
+      e.copy(value = setViewDefaults(Some(defaults.name), Some(defaults.description))(value))
+    case e @ ElasticSearchViewUpdated(id, _, _, value, _, _, _, _) if id == defaultViewId =>
+      e.copy(value = setViewDefaults(Some(defaults.name), Some(defaults.description))(value))
+    case event                                                                            => event
   }
 
 }
