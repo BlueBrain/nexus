@@ -26,6 +26,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{ResourceCommand, Resou
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.migration.MigrationLogHelpers
 import izumi.distage.model.definition.ModuleDef
 import monix.bio.{IO, UIO}
 
@@ -125,7 +126,7 @@ object MigrationModule extends ModuleDef {
       )(clock),
       e => e.id,
       identity,
-      (e, _) => e,
+      MigrationLogHelpers.injectResolverDefaults(cfg.resolvers.defaults),
       cfg.resolvers.eventLog,
       xas
     )
