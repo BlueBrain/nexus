@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.StoragePluginModule.injectStorageDefaults
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.contexts.{files => fileCtxId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{File, FileCommand, FileEvent, FileRejection, FileState}
@@ -15,7 +16,9 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.schemas.{files => filesSchemaId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.contexts.{storages => storageCtxId, storagesMetadata => storageMetaCtxId}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageCommand, StorageEvent, StorageRejection, StorageState}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageEvent.{StorageCreated, StorageUpdated}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageCommand, StorageEvent, StorageRejection, StorageState, StorageValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageAccess
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.routes.StoragesRoutes
@@ -298,7 +301,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         )(clock),
         e => e.id,
         identity,
-        (e, _) => e,
+        (e, _) => injectStorageDefaults(cfg.defaults)(e),
         cfg.storages.eventLog,
         xas
       )
@@ -317,4 +320,22 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
     }
 
   }
+}
+
+object StoragePluginModule {
+
+  private def setStorageDefaults(name: Option[String], description: Option[String]): StorageValue => StorageValue = {
+    case disk: DiskStorageValue         => disk.copy(name = name, description = description)
+    case s3: S3StorageValue             => s3.copy(name = name, description = description)
+    case remote: RemoteDiskStorageValue => remote.copy(name = name, description = description)
+  }
+
+  def injectStorageDefaults(defaults: Defaults): StorageEvent => StorageEvent = {
+    case s @ StorageCreated(id, _, value, _, _, _, _) if id == storages.defaultStorageId =>
+      s.copy(value = setStorageDefaults(Some(defaults.name), Some(defaults.description))(value))
+    case s @ StorageUpdated(id, _, value, _, _, _, _) if id == storages.defaultStorageId =>
+      s.copy(value = setStorageDefaults(Some(defaults.name), Some(defaults.description))(value))
+    case event                                                                           => event
+  }
+
 }
