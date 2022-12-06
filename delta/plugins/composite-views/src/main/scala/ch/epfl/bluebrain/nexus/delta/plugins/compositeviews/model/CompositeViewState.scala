@@ -99,7 +99,7 @@ final case class CompositeViewState(
 object CompositeViewState {
 
   @nowarn("cat=unused")
-  def serializer(crypto: Crypto): Serializer[Iri, CompositeViewState] = {
+  implicit def serializer(implicit crypto: Crypto): Serializer[Iri, CompositeViewState] = {
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
     implicit val configuration: Configuration                       = Serializer.circeConfiguration
     implicit val compositeViewValueCodec: Codec[CompositeViewValue] = CompositeViewValue.databaseCodec(crypto)
