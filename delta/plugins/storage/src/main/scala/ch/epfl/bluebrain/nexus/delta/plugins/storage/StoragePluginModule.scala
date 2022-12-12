@@ -8,18 +8,18 @@ import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.StoragePluginModule.{injectFileStorageInfo, injectStorageDefaults}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.StoragePluginModule.{enrichJsonFileEvent, injectFileStorageInfo, injectStorageDefaults}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.contexts.{files => fileCtxId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{File, FileCommand, FileEvent, FileRejection, FileState}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.schemas.{files => filesSchemaId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.contexts.{storages => storageCtxId, storagesMetadata => storageMetaCtxId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageEvent.{StorageCreated, StorageUpdated}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageCommand, StorageEvent, StorageRejection, StorageState, StorageValue}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageAccess
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.routes.StoragesRoutes
@@ -50,6 +50,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Supervisor
 import com.typesafe.config.Config
+import io.circe.syntax.EncoderOps
+import io.circe.{Json, JsonObject}
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
@@ -313,7 +315,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
       MigrationLog.scoped[Iri, FileState, FileCommand, FileEvent, FileRejection](
         Files.definition(clock),
         e => e.id,
-        identity,
+        enrichJsonFileEvent,
         injectFileStorageInfo,
         cfg.files.eventLog,
         xas
@@ -340,6 +342,14 @@ object StoragePluginModule {
     case event                                                                           => event
   }
 
+  def enrichJsonFileEvent: Json => Json = { input =>
+    val migrationFields = JsonObject(
+      "storage"     -> Json.fromString("https://bluebrain.github.io/nexus/vocabulary/migration-storage?rev=1"),
+      "storageType" -> Json.fromString("MigrationStorage")
+    )
+    migrationFields.asJson.deepMerge(input)
+  }
+
   def injectFileStorageInfo: (FileEvent, Option[FileState]) => FileEvent = (e, s) =>
     s match {
       case Some(state) =>
@@ -353,4 +363,5 @@ object StoragePluginModule {
         }
       case None        => e
     }
+
 }
