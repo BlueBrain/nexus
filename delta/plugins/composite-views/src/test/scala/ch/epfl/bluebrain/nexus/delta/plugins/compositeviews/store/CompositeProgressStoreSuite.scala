@@ -28,8 +28,8 @@ class CompositeProgressStoreSuite extends BioSuite with IOFixedClock with Doobie
   private val source  = nxv + "source"
   private val target  = nxv + "target"
 
-  private val mainBranch    = CompositeBranch(view, rev, source, target, Run.Main)
-  private val rebuildBranch = CompositeBranch(view, rev, source, target, Run.Main)
+  private val mainBranch    = CompositeBranch(source, target, Run.Main)
+  private val rebuildBranch = CompositeBranch(source, target, Run.Rebuild)
 
   private val mainProgress    = ProjectionProgress(Offset.At(42L), Instant.EPOCH, 5, 2, 1)
   private val rebuildProgress = ProjectionProgress(Offset.At(21L), Instant.EPOCH, 4, 1, 0)
@@ -40,35 +40,23 @@ class CompositeProgressStoreSuite extends BioSuite with IOFixedClock with Doobie
 
   test("Save progress for both branches") {
     for {
-      _ <- store.save(mainBranch, mainProgress)
-      _ <- store.save(rebuildBranch, rebuildProgress)
+      _ <- store.save(view, rev, mainBranch, mainProgress)
+      _ <- store.save(view, rev, rebuildBranch, rebuildProgress)
     } yield ()
   }
 
   test("Return new progress") {
-    store
-      .progress(view, rev)
-      .assert(
-        Map(
-          mainBranch    -> mainProgress,
-          rebuildBranch -> rebuildProgress
-        )
-      )
+    val expected = Map(mainBranch -> mainProgress, rebuildBranch -> rebuildProgress)
+    store.progress(view, rev).assert(expected)
   }
 
   test("Update progress for main branch") {
     val newProgress = mainProgress.copy(processed = 100L)
+    val expected    = Map(mainBranch -> newProgress, rebuildBranch -> rebuildProgress)
     for {
-      _ <- store.save(mainBranch, newProgress)
-      _ <- store.save(rebuildBranch, rebuildProgress)
-      _ <- store
-             .progress(view, rev)
-             .assert(
-               Map(
-                 mainBranch    -> newProgress,
-                 rebuildBranch -> rebuildProgress
-               )
-             )
+      _ <- store.save(view, rev, mainBranch, newProgress)
+      _ <- store.save(view, rev, rebuildBranch, rebuildProgress)
+      _ <- store.progress(view, rev).assert(expected)
     } yield ()
   }
 

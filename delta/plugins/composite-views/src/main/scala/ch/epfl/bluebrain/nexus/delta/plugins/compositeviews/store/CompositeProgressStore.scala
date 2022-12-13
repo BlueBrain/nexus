@@ -29,12 +29,12 @@ final class CompositeProgressStore(xas: Transactors)(implicit clock: Clock[UIO])
     * @param progress
     *   the offset to save
     */
-  def save(branch: CompositeBranch, progress: ProjectionProgress): UIO[Unit] =
+  def save(ref: ViewRef, rev: Int, branch: CompositeBranch, progress: ProjectionProgress): UIO[Unit] =
     IOUtils.instant.flatMap { instant =>
       sql"""INSERT INTO public.composite_offsets (project, view_id, rev, source_id, target_id, run, ordering,
            |processed, discarded, failed, created_at, updated_at)
            |VALUES (
-           |   ${branch.ref.project}, ${branch.ref.viewId} ,${branch.rev}, ${branch.source}, ${branch.target}, ${branch.run},
+           |   ${ref.project}, ${ref.viewId}, $rev, ${branch.source}, ${branch.target}, ${branch.run},
            |   ${progress.offset.value}, ${progress.processed}, ${progress.discarded}, ${progress.failed}, $instant, $instant
            |)
            |ON CONFLICT (project, view_id, rev, source_id, target_id, run)
@@ -87,16 +87,21 @@ final class CompositeProgressStore(xas: Transactors)(implicit clock: Clock[UIO])
 
 object CompositeProgressStore {
 
-  final private[store] case class CompositeProgressRow(branch: CompositeBranch, progress: ProjectionProgress)
+  final private[store] case class CompositeProgressRow(
+      ref: ViewRef,
+      rev: Int,
+      branch: CompositeBranch,
+      progress: ProjectionProgress
+  )
 
   object CompositeProgressRow {
     implicit val projectionProgressRowRead: Read[CompositeProgressRow] = {
       Read[(ProjectRef, Iri, Int, Iri, Iri, Run, Long, Long, Long, Long, Instant, Instant)].map {
         case (project, viewId, rev, source, target, run, offset, processed, discarded, failed, _, updatedAt) =>
           CompositeProgressRow(
+            ViewRef(project, viewId),
+            rev,
             CompositeBranch(
-              ViewRef(project, viewId),
-              rev,
               source,
               target,
               run

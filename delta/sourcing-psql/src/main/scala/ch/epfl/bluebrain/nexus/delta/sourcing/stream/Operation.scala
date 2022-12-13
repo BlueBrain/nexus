@@ -1,9 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
-import cats.syntax.all._
 import cats.data.NonEmptyChain
+import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionErr.OperationInOutMatchErr
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionErr.{LeapingNotAllowedErr, OperationInOutMatchErr}
 import com.typesafe.scalalogging.Logger
 import fs2.{Chunk, Pipe, Pull, Stream}
 import monix.bio.Task
@@ -60,15 +61,8 @@ sealed trait Operation { self =>
         override protected[stream] def asFs2: Pipe[Task, Elem[Operation.this.In], Elem[that.Out]] = { stream =>
           stream
             .through(self.asFs2)
-            .map { element =>
-              partitionSuccess[self.Out, that.In](element) match {
-                case Right(e)    =>
-                  that.inType.cast(e.value) match {
-                    case Some(value) => e.success(value)
-                    case None        => e.failed(OperationInOutMatchErr(self, that))
-                  }
-                case Left(value) => value
-              }
+            .map {
+              _.attempt { value => that.inType.cast(value).toRight(OperationInOutMatchErr(self, that)) }
             }
             .through(that.asFs2)
         }
@@ -77,18 +71,63 @@ sealed trait Operation { self =>
     )
 
   /**
-    * Checks if the provided envelope has a successful element value of type `I`. If true, it will return it in Right.
-    * Otherwise it will return it in Left with the type `O`. This is safe because [[Elem]] is covariant.
-    *
-    * @param element
-    *   an envelope with an Elem to be tested
+    * Send the values through the operation while returning original values
     */
-  protected def partitionSuccess[I, O](element: Elem[I]): Either[Elem[O], SuccessElem[I]] =
-    element match {
-      case _: SuccessElem[_]              => Right(element.asInstanceOf[SuccessElem[I]])
-      case _: FailedElem | _: DroppedElem => Left(element.asInstanceOf[Elem[O]])
+  def observe: Operation = new Operation {
+    override type In  = self.In
+    override type Out = self.In
+
+    override def inType: Typeable[In] = self.inType
+
+    override def outType: Typeable[Out] = self.inType
+
+    override protected[stream] def asFs2: Pipe[Task, Elem[Operation.this.In], Elem[this.Out]] =
+      _.observe(self.asFs2.andThen(_.void))
+
+  }
+
+  /**
+    * Do not apply the operation until the given offset is reached
+    * @param offset
+    *   the offset to reach before applying the operation
+    */
+  def leapUntil(offset: Offset): Either[LeapingNotAllowedErr, Operation] = {
+    val pipe: Operation = new Operation {
+      override type In  = self.In
+      override type Out = self.In
+
+      override def inType: Typeable[In] = self.inType
+
+      override def outType: Typeable[Out] = self.inType
+
+      override protected[stream] def asFs2: Pipe[Task, Elem[Operation.this.In], Elem[this.Out]] = {
+        def go(s: fs2.Stream[Task, Elem[In]]): Pull[Task, Elem[this.Out], Unit] = {
+          s.pull.peek.flatMap {
+            case Some((chunk, stream)) =>
+              val (before, after) = chunk.partitionEither { e =>
+                Either.cond(Offset.offsetOrder.gt(e.offset, offset), e, e)
+              }
+              for {
+                evaluated <- Pull.eval(Stream.chunk(after).through(self.asFs2).compile.to(Chunk))
+                all        = Chunk.concat(Seq(before, evaluated)).map {
+                               _.attempt { value => this.outType.cast(value).toRight(LeapingNotAllowedErr(self)) }
+                             }
+                _         <- Pull.output(all)
+                next      <- go(stream.tail)
+              } yield next
+            case None                  => Pull.done
+          }
+        }
+        in => go(in).stream
+      }
     }
 
+    Either.cond(
+      self.inType.describe == self.outType.describe,
+      pipe,
+      LeapingNotAllowedErr(self)
+    )
+  }
 }
 
 object Operation {
@@ -131,6 +170,19 @@ object Operation {
       */
     def apply(element: SuccessElem[In]): Task[Elem[Out]]
 
+    /**
+      * Checks if the provided envelope has a successful element value of type `I`. If true, it will return it in Right.
+      * Otherwise it will return it in Left with the type `O`. This is safe because [[Elem]] is covariant.
+      *
+      * @param element
+      *   an envelope with an Elem to be tested
+      */
+    protected def partitionSuccess[I, O](element: Elem[I]): Either[Elem[O], SuccessElem[I]] =
+      element match {
+        case _: SuccessElem[_]              => Right(element.asInstanceOf[SuccessElem[I]])
+        case _: FailedElem | _: DroppedElem => Left(element.asInstanceOf[Elem[O]])
+      }
+
     protected[stream] def asFs2: fs2.Pipe[Task, Elem[In], Elem[Out]] = {
       def go(s: fs2.Stream[Task, Elem[In]]): Pull[Task, Elem[Out], Unit] = {
         s.pull.uncons1.flatMap {
@@ -170,13 +222,12 @@ object Operation {
 
     def apply(elements: Chunk[Elem[In]]): Task[Chunk[Elem[Unit]]]
 
-    protected[stream] def asFs2: fs2.Pipe[Task, Elem[In], Elem[Unit]] = { in =>
-      in.groupWithin(chunkSize, maxWindow)
+    protected[stream] def asFs2: fs2.Pipe[Task, Elem[In], Elem[Unit]] =
+      _.groupWithin(chunkSize, maxWindow)
         .evalMapChunk { chunk =>
           apply(chunk)
         }
         .flatMap(Stream.chunk)
-    }
   }
 
   type Aux[I, O] = Operation {

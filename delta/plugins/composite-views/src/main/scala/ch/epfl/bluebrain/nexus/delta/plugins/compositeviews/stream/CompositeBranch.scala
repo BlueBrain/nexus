@@ -2,15 +2,10 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream
 
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.CompositeBranch.Run
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import doobie.{Get, Put}
 
 /**
   * Defines metadata for a sub projection in a composite view
-  * @param ref
-  *   the view reference
-  * @param rev
-  *   the view revision
   * @param source
   *   the source for the sub projection
   * @param target
@@ -18,7 +13,7 @@ import doobie.{Get, Put}
   * @param run
   *   if the
   */
-final case class CompositeBranch(ref: ViewRef, rev: Int, source: Iri, target: Iri, run: Run)
+final case class CompositeBranch(source: Iri, target: Iri, run: Run)
 
 object CompositeBranch {
 
