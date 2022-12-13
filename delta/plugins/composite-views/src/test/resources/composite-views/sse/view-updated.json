@@ -30,6 +30,7 @@
         },
         "includeDeprecated": false,
         "includeMetadata": false,
+        "includeContext" : false,
         "mapping": {
         },
         "permission": "views/query",

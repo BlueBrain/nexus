@@ -84,6 +84,18 @@ sealed trait Elem[+A] extends Product with Serializable {
   }
 
   /**
+    * Maps the underlying element value if this is a [[Elem.SuccessElem]] using f and marks the element as failed if it
+    * returns a left
+    * @param f
+    *   the mapping function
+    */
+  def attempt[B](f: A => Either[Throwable, B]): Elem[B] = this match {
+    case e: SuccessElem[A] => f(e.value).fold(e.failed, e.success)
+    case e: FailedElem     => e
+    case e: DroppedElem    => e
+  }
+
+  /**
     * Like `[[Elem#map]]`, but accepts a function returning a [[Task]]. If the task failed, the [[Elem.SuccessElem]]
     * will become a [[Elem.FailedElem]]
     * @param f

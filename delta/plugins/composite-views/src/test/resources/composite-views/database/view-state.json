@@ -30,6 +30,7 @@
         },
         "includeDeprecated": false,
         "includeMetadata": false,
+        "includeContext" : false,
         "mapping": {
         },
         "permission": "views/query",
@@ -117,6 +118,7 @@
         "id": "http://example.com/es-projection",
         "includeDeprecated": false,
         "includeMetadata": false,
+        "includeContext" : false,
         "mapping": {
         },
         "permission": "views/query",

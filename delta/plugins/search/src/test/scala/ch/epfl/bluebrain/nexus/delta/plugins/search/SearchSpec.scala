@@ -93,6 +93,7 @@ class SearchSpec
         None,
         false,
         false,
+        false,
         permissions.query,
         Some(IndexGroup.unsafe("search")),
         mappings,
