@@ -20,6 +20,8 @@ final case class PipeChain(
 
 object PipeChain {
 
+  type Compile = PipeChain => Either[ProjectionErr, Operation]
+
   def apply(first: (PipeRef, ExpandedJsonLd), others: (PipeRef, ExpandedJsonLd)*): PipeChain =
     new PipeChain(NonEmptyChain(first, others: _*))
 
@@ -50,7 +52,6 @@ object PipeChain {
     *   include resource metadata if true
     * @param includeDeprecated
     *   include deprecated resources if true
-    * @return
     */
   def apply(
       resourceSchemas: Set[Iri],

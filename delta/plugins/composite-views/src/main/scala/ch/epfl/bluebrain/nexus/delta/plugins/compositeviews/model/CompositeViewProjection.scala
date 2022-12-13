@@ -117,6 +117,7 @@ object CompositeViewProjection {
       resourceTag: Option[UserTag],
       includeMetadata: Boolean,
       includeDeprecated: Boolean,
+      includeContext: Boolean,
       permission: Permission,
       indexGroup: Option[IndexGroup],
       mapping: JsonObject,

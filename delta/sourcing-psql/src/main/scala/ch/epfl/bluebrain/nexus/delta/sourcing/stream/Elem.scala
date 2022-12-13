@@ -84,6 +84,18 @@ sealed trait Elem[+A] extends Product with Serializable {
   }
 
   /**
+    * Maps the underlying element value if this is a [[Elem.SuccessElem]] using f and marks the element as failed if it
+    * returns a left
+    * @param f
+    *   the mapping function
+    */
+  def attempt[B](f: A => Either[Throwable, B]): Elem[B] = this match {
+    case e: SuccessElem[A] => f(e.value).fold(e.failed, e.success)
+    case e: FailedElem     => e
+    case e: DroppedElem    => e
+  }
+
+  /**
     * Like `[[Elem#map]]`, but accepts a function returning a [[Task]]. If the task failed, the [[Elem.SuccessElem]]
     * will become a [[Elem.FailedElem]]
     * @param f
@@ -91,8 +103,8 @@ sealed trait Elem[+A] extends Product with Serializable {
     */
   def evalMap[B](f: A => Task[B]): UIO[Elem[B]] = this match {
     case e: SuccessElem[A] =>
-      f(e.value).redeem(
-        e.failed,
+      f(e.value).redeemCause(
+        c => e.failed(c.toThrowable),
         e.success
       )
     case e: FailedElem     => UIO.pure(e)
@@ -126,6 +138,37 @@ sealed trait Elem[+A] extends Product with Serializable {
 }
 
 object Elem {
+
+  /**
+    * Builds an [[Elem]] instance out of an [[Either]]
+    * @param tpe
+    *   the entity type
+    * @param id
+    *   the identifier
+    * @param project
+    *   the project
+    * @param instant
+    *   the instant
+    * @param offset
+    *   the offset
+    * @param either
+    *   the error/value
+    * @param rev
+    *   the revision
+    */
+  def fromEither[A](
+      tpe: EntityType,
+      id: Iri,
+      project: Option[ProjectRef],
+      instant: Instant,
+      offset: Offset,
+      either: Either[Throwable, A],
+      rev: Int
+  ): Elem[A] =
+    either.fold(
+      err => FailedElem(tpe, id, project, instant, offset, err, rev),
+      restart => SuccessElem(tpe, id, project, instant, offset, restart, rev)
+    )
 
   /**
     * An element that has a value of type [[A]] that has been previously successfully processed.

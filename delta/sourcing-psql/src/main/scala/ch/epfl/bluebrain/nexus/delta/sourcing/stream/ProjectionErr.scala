@@ -103,6 +103,14 @@ object ProjectionErr {
   }
 
   /**
+    * Leaping is only possible for an operation where the In and Out types are aligned
+    */
+  final case class LeapingNotAllowedErr(self: Operation) extends ProjectionErr {
+    override def reason: String =
+      s"Unable to leap on operation '${self.name}' as In type  '${self.inType.describe}' does not match Out type '${self.outType.describe}'."
+  }
+
+  /**
     * A source definition can be looked up in the [[ReferenceRegistry]] using a reference. This error signals a failed
     * lookup attempt.
     *

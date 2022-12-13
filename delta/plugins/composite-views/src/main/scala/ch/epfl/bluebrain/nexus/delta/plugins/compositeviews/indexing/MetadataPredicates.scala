@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.model
+package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing
 
 import org.apache.jena.graph.Node
 

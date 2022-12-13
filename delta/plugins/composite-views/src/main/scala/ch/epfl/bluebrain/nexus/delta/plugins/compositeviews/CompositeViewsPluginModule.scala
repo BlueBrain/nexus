@@ -7,9 +7,11 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.DeltaClient
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.MetadataPredicates
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{contexts, CompositeViewCommand, CompositeViewEvent, CompositeViewRejection, CompositeViewState}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.routes.CompositeViewsRoutes
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.store.CompositeRestartStore
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple
@@ -29,6 +31,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, Projects}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.ProjectionConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Supervisor
 import distage.ModuleDef
 import izumi.distage.model.definition.Id
 import monix.bio.{IO, UIO}
@@ -93,6 +97,11 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         clock,
         uuidF
       )
+  }
+
+  make[CompositeRestartStore].fromEffect {
+    (supervisor: Supervisor, xas: Transactors, projectionConfig: ProjectionConfig) =>
+      CompositeRestartStore(supervisor, xas, projectionConfig)
   }
 
   make[MetadataPredicates].fromEffect {
@@ -160,6 +169,12 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         schemeDirectives
       )(baseUri, s, cr, ordering, fusionConfig)
   }
+
+  make[CompositeView.Shift].from { (views: CompositeViews, base: BaseUri, crypto: Crypto) =>
+    CompositeView.shift(views)(base, crypto)
+  }
+
+  many[ResourceShift[_, _, _]].ref[CompositeView.Shift]
 
   many[PriorityRoute].add { (route: CompositeViewsRoutes) =>
     PriorityRoute(priority, route.routes, requiresStrictEntity = true)

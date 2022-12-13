@@ -132,11 +132,43 @@ CREATE INDEX IF NOT EXISTS projection_offsets_project_idx ON public.projection_o
 CREATE INDEX IF NOT EXISTS projection_offsets_resource_id_idx ON public.projection_offsets(resource_id);
 
 --
--- Table for projection offsets
+-- Table for composite offsets
+--
+CREATE TABLE IF NOT EXISTS public.composite_offsets(
+    project      text        NOT NULL,
+    view_id      text        NOT NULL,
+    rev          integer     NOT NULL,
+    source_id    text        NOT NULL,
+    target_id    text        NOT NULL,
+    run          text        NOT NULL,
+    ordering     bigint      NOT NULL,
+    processed    bigint      NOT NULL,
+    discarded    bigint      NOT NULL,
+    failed       bigint      NOT NULL,
+    created_at   timestamptz NOT NULL,
+    updated_at   timestamptz NOT NULL,
+    PRIMARY KEY(project, view_id, rev, source_id, target_id, run)
+);
+
+--
+-- Table for projection restarts
 --
 CREATE TABLE IF NOT EXISTS public.projection_restarts(
     ordering     bigserial,
     name         text         NOT NULL,
+    value        JSONB        NOT NULL,
+    instant      timestamptz  NOT NULL,
+    acknowledged boolean      NOT NULL,
+    PRIMARY KEY(ordering)
+);
+
+--
+-- Table for composite views restarts
+--
+CREATE TABLE IF NOT EXISTS public.composite_restarts(
+    ordering     bigserial,
+    project      text,
+    id           text         NOT NULL,
     value        JSONB        NOT NULL,
     instant      timestamptz  NOT NULL,
     acknowledged boolean      NOT NULL,

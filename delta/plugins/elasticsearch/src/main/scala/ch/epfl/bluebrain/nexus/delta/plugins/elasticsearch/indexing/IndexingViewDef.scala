@@ -4,9 +4,9 @@ import cats.data.NonEmptyChain
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewState
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, ElasticSearchViewState}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
@@ -33,6 +33,8 @@ sealed trait IndexingViewDef extends Product with Serializable {
 object IndexingViewDef {
 
   private val logger: Logger = Logger[IndexingViewDef]
+
+  private val defaultContext = ContextValue(contexts.elasticsearchIndexing, contexts.indexingMetadata)
 
   /**
     * Active view eligible to be run as a projection by the supervisor
@@ -109,7 +111,8 @@ object IndexingViewDef {
       Some(id)
     )
 
-    val postPipes: Operation = new GraphResourceToDocument(v.context)
+    val mergedContext        = v.context.fold(defaultContext) { defaultContext.merge(_) }
+    val postPipes: Operation = new GraphResourceToDocument(mergedContext, false)
 
     val compiled = for {
       pipes      <- v.pipeChain.traverse(compilePipeChain)
