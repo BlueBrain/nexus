@@ -103,7 +103,7 @@ object ProjectionErr {
   }
 
   /**
-    * Leaping is only possible for an operation here the In and Out types are aligned
+    * Leaping is only possible for an operation where the In and Out types are aligned
     */
   final case class LeapingNotAllowedErr(self: Operation) extends ProjectionErr {
     override def reason: String =

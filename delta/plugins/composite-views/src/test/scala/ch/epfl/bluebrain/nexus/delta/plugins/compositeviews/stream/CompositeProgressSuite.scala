@@ -11,10 +11,10 @@ import java.time.Instant
 class CompositeProgressSuite extends FunSuite {
 
   private val source1 = nxv + "source1"
-  private val source2 = nxv + "source1"
-  private val source3 = nxv + "source1"
+  private val source2 = nxv + "source2"
+  private val source3 = nxv + "source3"
 
-  private val target1 = nxv + "target3"
+  private val target1 = nxv + "target1"
   private val target2 = nxv + "target2"
 
   private val mainBranch11    = CompositeBranch(source1, target1, Run.Main)
