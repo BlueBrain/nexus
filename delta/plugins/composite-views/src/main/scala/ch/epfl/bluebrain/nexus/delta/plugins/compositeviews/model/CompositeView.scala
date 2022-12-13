@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 
 import cats.data.NonEmptySet
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.{Metadata, RebuildStrategy}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -11,7 +12,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.ResourceShift
+import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.generic.extras.Configuration
@@ -142,4 +146,14 @@ object CompositeView {
 
   implicit val compositeViewMetadataJsonLdEncoder: JsonLdEncoder[Metadata]      =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.compositeViewsMetadata))
+
+  type Shift = ResourceShift[CompositeViewState, CompositeView, Metadata]
+
+  def shift(views: CompositeViews)(implicit baseUri: BaseUri, crypto: Crypto): Shift =
+    ResourceShift.withMetadata[CompositeViewState, CompositeView, Metadata](
+      CompositeViews.entityType,
+      (ref, project) => views.fetch(IdSegmentRef(ref), project),
+      (context, state) => state.toResource(context.apiMappings, context.base),
+      value => JsonLdContent(value, value.value.source, Some(value.value.metadata))
+    )
 }

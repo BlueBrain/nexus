@@ -190,9 +190,9 @@ class SparqlViewsSpec extends BaseSpec with EitherValuable with CirceEq {
         response.status shouldEqual StatusCodes.OK
         val expected = jsonContentOf(
           "/kg/views/statistics.json",
-          "total"     -> "12",
-          "processed" -> "12",
-          "evaluated" -> "12",
+          "total"     -> "13",
+          "processed" -> "13",
+          "evaluated" -> "13",
           "discarded" -> "0",
           "remaining" -> "0"
         )

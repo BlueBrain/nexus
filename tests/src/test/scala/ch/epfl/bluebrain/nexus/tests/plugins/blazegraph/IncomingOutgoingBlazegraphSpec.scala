@@ -86,7 +86,7 @@ class IncomingOutgoingBlazegraphSpec extends BaseSpec with EitherValuable {
       eventually {
         deltaClient.get[Json](s"/views/$orgLabel/$projLabel/graph/statistics", Radar) { (json, response) =>
           response.status shouldEqual StatusCodes.OK
-          root.processedEvents.long.getOption(json).value shouldEqual 7L
+          root.processedEvents.long.getOption(json).value shouldEqual 8L
         }
       }
     }
