@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageEvent._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.{DiskStorage, MigrationStorage}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.DiskStorage
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
@@ -103,10 +103,10 @@ class StorageMigrationLogSuite extends BioSuite with StorageFixtures {
   // format: off
   private val created = FileCreated(fileId, projectRef, storageRef, DiskStorage, attributes.copy(digest = NotComputedDigest), 1, instant, subject)
   private val updated = FileUpdated(fileId, projectRef, storageRef, DiskStorage, attributes, 2, instant, subject)
-  private val updatedAttr = FileAttributesUpdated(fileId, projectRef, storageRef, MigrationStorage, Some(`text/plain(UTF-8)`), 12, digest, 3, instant, subject)
-  private val tagged = FileTagAdded(fileId, projectRef, storageRef, MigrationStorage, targetRev = 1, tag, 4, instant, subject)
-  private val tagDeleted = FileTagDeleted(fileId, projectRef, storageRef, MigrationStorage, tag, 4, instant, subject)
-  private val deprecated = FileDeprecated(fileId, projectRef, storageRef, MigrationStorage, 5, instant, subject)
+  private val updatedAttr = FileAttributesUpdated(fileId, projectRef, storageRef, DiskStorage, Some(`text/plain(UTF-8)`), 12, digest, 3, instant, subject)
+  private val tagged = FileTagAdded(fileId, projectRef, storageRef, DiskStorage, targetRev = 1, tag, 4, instant, subject)
+  private val tagDeleted = FileTagDeleted(fileId, projectRef, storageRef, DiskStorage, tag, 4, instant, subject)
+  private val deprecated = FileDeprecated(fileId, projectRef, storageRef, DiskStorage, 5, instant, subject)
   // format: on
 
   private val fileInjection   = StoragePluginModule.injectFileStorageInfo
@@ -116,7 +116,7 @@ class StorageMigrationLogSuite extends BioSuite with StorageFixtures {
     val enrichedJson = enrichFileEvent(JsonObject.empty.asJson)
     val expected     = JsonObject(
       "storage"     -> Json.fromString("https://bluebrain.github.io/nexus/vocabulary/migration-storage?rev=1"),
-      "storageType" -> Json.fromString("MigrationStorage")
+      "storageType" -> Json.fromString("DiskStorage")
     )
     assertEquals(enrichedJson, expected.asJson)
   }

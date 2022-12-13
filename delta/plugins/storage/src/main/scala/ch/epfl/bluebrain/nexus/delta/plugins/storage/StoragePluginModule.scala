@@ -345,7 +345,7 @@ object StoragePluginModule {
   def enrichJsonFileEvent: Json => Json = { input =>
     val migrationFields = JsonObject(
       "storage"     -> Json.fromString("https://bluebrain.github.io/nexus/vocabulary/migration-storage?rev=1"),
-      "storageType" -> Json.fromString("MigrationStorage")
+      "storageType" -> Json.fromString("DiskStorage")
     )
     migrationFields.asJson.deepMerge(input)
   }

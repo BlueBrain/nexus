@@ -58,19 +58,11 @@ object StorageType {
     case DiskStorage       => Json.fromString("DiskStorage")
     case S3Storage         => Json.fromString("S3Storage")
     case RemoteDiskStorage => Json.fromString("RemoteDiskStorage")
-    case MigrationStorage  => Json.fromString("MigrationStorage")
   }
 
   implicit final val storageTypeDecoder: Decoder[StorageType] = Decoder.decodeString.emap {
     case "DiskStorage"       => Right(DiskStorage)
     case "S3Storage"         => Right(S3Storage)
     case "RemoteDiskStorage" => Right(RemoteDiskStorage)
-    case "MigrationStorage"  => Right(MigrationStorage)
-  }
-
-  // TODO: Remove after migration
-  final case object MigrationStorage extends StorageType {
-    override val toString: String = "MigrationStorage"
-    override val iri: Iri         = nxv + toString
   }
 }
