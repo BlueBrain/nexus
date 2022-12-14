@@ -342,20 +342,30 @@ object StoragePluginModule {
     case event                                                                           => event
   }
 
+  /**
+    * Enriches a json with the storage and storage type, only if both fields are not present. This is to ensure that the
+    * json can be decoded into a FileEvent later.
+    */
   def enrichJsonFileEvent: Json => Json = { input =>
     val migrationFields = JsonObject(
-      "storage"     -> Json.fromString("https://bluebrain.github.io/nexus/vocabulary/migration-storage?rev=1"),
+      "storage"     -> Json.fromString("https://bluebrain.github.io/nexus/vocabulary/migration-storage"),
       "storageType" -> Json.fromString("DiskStorage")
     )
-    migrationFields.asJson.deepMerge(input)
+
+    input.asObject match {
+      case Some(eventObject) =>
+        if (eventObject.contains("storage") && eventObject.contains("storageType")) input
+        else migrationFields.asJson.deepMerge(input)
+      case None              => input
+    }
   }
 
   def injectFileStorageInfo: (FileEvent, Option[FileState]) => FileEvent = (e, s) =>
     s match {
       case Some(state) =>
         e match {
-          case f: FileCreated           => f.copy(storage = state.storage, storageType = state.storageType)
-          case f: FileUpdated           => f.copy(storage = state.storage, storageType = state.storageType)
+          case f: FileCreated           => f
+          case f: FileUpdated           => f
           case f: FileAttributesUpdated => f.copy(storage = state.storage, storageType = state.storageType)
           case f: FileTagAdded          => f.copy(storage = state.storage, storageType = state.storageType)
           case f: FileTagDeleted        => f.copy(storage = state.storage, storageType = state.storageType)

@@ -115,7 +115,7 @@ class StorageMigrationLogSuite extends BioSuite with StorageFixtures {
   test("An empty JSON has a storage and storageType added") {
     val enrichedJson = enrichFileEvent(JsonObject.empty.asJson)
     val expected     = JsonObject(
-      "storage"     -> Json.fromString("https://bluebrain.github.io/nexus/vocabulary/migration-storage?rev=1"),
+      "storage"     -> Json.fromString("https://bluebrain.github.io/nexus/vocabulary/migration-storage"),
       "storageType" -> Json.fromString("DiskStorage")
     )
     assertEquals(enrichedJson, expected.asJson)
