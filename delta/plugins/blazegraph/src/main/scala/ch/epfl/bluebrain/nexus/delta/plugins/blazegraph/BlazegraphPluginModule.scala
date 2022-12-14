@@ -245,6 +245,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
 
 }
 
+// TODO: This object contains migration helpers, and should be deleted when the migration module is removed
 object BlazegraphPluginModule {
 
   import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.defaultViewId
