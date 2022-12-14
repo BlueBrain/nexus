@@ -48,7 +48,7 @@ trait Source { self =>
     */
   def apply(offset: Offset): Stream[Task, Elem[Out]]
 
-  private[stream] def through(operation: Operation): Either[SourceOutPipeInMatchErr, Source] =
+  def through(operation: Operation): Either[SourceOutPipeInMatchErr, Source] =
     Either.cond(
       outType.describe == operation.inType.describe,
       new Source {
@@ -93,7 +93,7 @@ trait Source { self =>
       SourceOutMatchErr(self, that)
     )
 
-  private[stream] def broadcastThrough(
+  def broadcastThrough(
       operations: NonEmptyChain[Operation]
   ): Either[SourceOutPipeInMatchErr, Source.Aux[Unit]] =
     operations

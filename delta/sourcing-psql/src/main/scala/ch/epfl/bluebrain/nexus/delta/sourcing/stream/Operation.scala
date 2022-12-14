@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
 import cats.data.NonEmptyChain
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ElemPipe
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionErr.{LeapingNotAllowedErr, OperationInOutMatchErr}
@@ -132,6 +133,15 @@ sealed trait Operation { self =>
 
 object Operation {
 
+  def fromPipe[I: Typeable](elemPipe: ElemPipe[I, Unit]): Operation = new Operation {
+    override type In  = I
+    override type Out = Unit
+    override def inType: Typeable[In]   = Typeable[In]
+    override def outType: Typeable[Out] = Typeable[Out]
+
+    override protected[stream] def asFs2: fs2.Pipe[Task, Elem[In], Elem[Out]] = elemPipe
+  }
+
   def merge(first: Operation, others: Operation*): Either[ProjectionErr, Operation] =
     merge(NonEmptyChain(first, others: _*))
 
@@ -209,6 +219,25 @@ object Operation {
       }
       in => go(in).stream
     }
+  }
+
+  object Pipe {
+
+    /**
+      * Create an identity pipe that just pass along the elem
+      */
+    def identity[A: Typeable]: Pipe = new Pipe {
+      override def ref: PipeRef = PipeRef.unsafe("identity")
+
+      override type In  = A
+      override type Out = A
+
+      override def inType: Typeable[In]   = Typeable[In]
+      override def outType: Typeable[Out] = Typeable[Out]
+
+      override def apply(element: SuccessElem[In]): Task[Elem[Out]] = Task.pure(element)
+    }
+
   }
 
   trait Sink extends Operation {

@@ -2,10 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
 import cats.effect.ExitCase
 import cats.effect.concurrent.Ref
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ElemPipe
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.FailedElem
-import fs2.Chunk
 import fs2.concurrent.SignallingRef
 import monix.bio.{Fiber, Task, UIO}
 
@@ -84,6 +83,33 @@ final class Projection private[stream] (
 
 object Projection {
 
+  private val persistInit: (List[FailedElem], Option[ProjectionProgress]) = (List.empty[FailedElem], None)
+
+  def persist[A](
+      progress: ProjectionProgress,
+      saveProgress: ProjectionProgress => UIO[Unit],
+      saveFailedElems: List[FailedElem] => UIO[Unit],
+      ifEmpty: UIO[Unit]
+  )(implicit batch: BatchConfig): ElemPipe[A, Unit] =
+    _.mapAccumulate(progress) {
+      case (acc, elem) if elem.offset.value > progress.offset.value => (acc + elem, elem)
+      case (acc, elem)                                              => (acc, elem)
+    }.groupWithin(batch.maxElements, batch.maxInterval)
+      .evalTap { chunk =>
+        val (errors, last) = chunk.foldLeft(persistInit) {
+          case ((acc, _), (newProgress, elem: FailedElem)) => (elem :: acc, Some(newProgress))
+          case ((acc, _), (newProgress, _))                => (acc, Some(newProgress))
+        }
+
+        last
+          .fold(ifEmpty) { newProgress =>
+            saveProgress(newProgress) >>
+              UIO.when(errors.nonEmpty)(saveFailedElems(errors))
+          }
+          .void
+      }
+      .drain
+
   def apply(
       projection: CompiledProjection,
       fetchProgress: UIO[Option[ProjectionProgress]],
@@ -103,45 +129,24 @@ object Projection {
                          case ExitCase.Completed => Task.unit // streams stopped through a signal still finish as Completed
                          case ExitCase.Canceled  => Task.unit // the status is updated by the logic that cancels the stream
                        }
-                       .mapAccumulate(progress) {
-                         case (acc, msg) if msg.offset.value > progress.offset.value => (acc + msg, msg)
-                         case (acc, msg)                                             => (acc, msg)
-                       }
-                       .groupWithin(batch.maxElements, batch.maxInterval)
-                       .evalTap(chunk => saveProgressAndFailedElems(chunk, progressRef, saveProgress, saveFailedElems))
-                       .compile
-                       .drain
+      persisted    =
+        stream
+          .through(
+            persist(
+              progress,
+              (progress: ProjectionProgress) => progressRef.set(progress).hideErrors >> saveProgress(progress),
+              saveFailedElems,
+              UIO.unit
+            )
+          )
+          .compile
+          .drain
       // update status to Running at the beginning and to Completed at the end if it's still running
-      task         = status.update(_ => ExecutionStatus.Running) >> stream >> status.update(s =>
+      task         = status.update(_ => ExecutionStatus.Running) >> persisted >> status.update(s =>
                        if (s.isRunning) ExecutionStatus.Completed else s
                      )
       fiber       <- task.start
       fiberRef    <- Ref[Task].of(fiber)
     } yield new Projection(projection.metadata.name, status, progressRef, signal, fiberRef)
 
-  /**
-    * Given a chunk of (progress, elem) saves the last progress and any failed elems.
-    * @param chunk
-    *   a fs2.Chunk of (progress, elem) tuples
-    * @param progressRef
-    *   progress reference
-    * @param saveProgress
-    *   function to save the progress
-    * @param saveFailedElems
-    *   function to save failed elems
-    */
-  private def saveProgressAndFailedElems(
-      chunk: Chunk[(ProjectionProgress, Elem[Unit])],
-      progressRef: Ref[Task, ProjectionProgress],
-      saveProgress: ProjectionProgress => UIO[Unit],
-      saveFailedElems: List[FailedElem] => UIO[Unit]
-  ): Task[Unit] = {
-    val failedElems = chunk.collect { case (_, elem: FailedElem) => elem }.toList
-
-    chunk.last.traverse { case (newProgress, _) =>
-      progressRef.set(newProgress) >>
-        saveProgress(newProgress) >>
-        UIO.when(failedElems.nonEmpty)(saveFailedElems(failedElems))
-    }.void
-  }
 }
