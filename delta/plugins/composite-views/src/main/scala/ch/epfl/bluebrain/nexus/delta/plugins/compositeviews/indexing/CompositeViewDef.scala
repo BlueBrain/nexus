@@ -55,13 +55,28 @@ object CompositeViewDef {
         state.value
       )
 
+  /**
+    * Compile the composite views into a unique stream
+    * @param view
+    *   the view
+    * @param fetchProgress
+    *   how to fetch the progress
+    * @param compileSource
+    *   how to compile a composite view source
+    * @param compileTarget
+    *   how to compile a composite view projection
+    * @param rebuild
+    *   the rebuild method to apply to the rebuild branches
+    * @param closeBBranch
+    *   the operation to apply at the end of the branches
+    */
   def compile(
       view: ActiveViewDef,
       fetchProgress: UIO[CompositeProgress],
       compileSource: CompositeViewSource => Task[(Iri, Source, Source, Operation)],
       compileTarget: CompositeViewProjection => Task[(Iri, Operation)],
       rebuild: ElemStream[Unit] => ElemStream[Unit],
-      endBranch: (CompositeBranch, ProjectionProgress) => Operation
+      closeBBranch: (CompositeBranch, ProjectionProgress) => Operation
   ): Task[ElemStream[Unit]] = {
     implicit val monoidInstance: Monoid[ElemStream[Unit]] =
       new Monoid[ElemStream[Unit]] {
@@ -77,13 +92,13 @@ object CompositeViewDef {
       targetOperations <- targets.traverse(compileTarget)
       // Main branches
       mains             = compiledSources.reduceMap { case (sourceId, sourceMain, _, sourceOperation) =>
-                            compileMain(sourceId, sourceMain, sourceOperation, targetOperations, fetchProgress, endBranch)
+                            compileMain(sourceId, sourceMain, sourceOperation, targetOperations, fetchProgress, closeBBranch)
                           }
       // Rebuild branches
       rebuilds          = rebuild(
                             compiledSources
                               .reduceMap { case (sourceId, _, sourceRebuild, _) =>
-                                compileRebuild(sourceId, sourceRebuild, targetOperations, fetchProgress, endBranch)
+                                compileRebuild(sourceId, sourceRebuild, targetOperations, fetchProgress, closeBBranch)
                               }
                           )
     } yield mains |+| rebuilds
@@ -99,7 +114,6 @@ object CompositeViewDef {
     *   the strategy
     * @param rebuildWhen
     *   the stream which
-    * @return
     */
   def rebuild[A](
       stream: Stream[Task, A],
@@ -116,28 +130,40 @@ object CompositeViewDef {
         Stream.empty[Task]
     }
 
+  /**
+    * Compile the main branch for a given source
+    * @param sourceId
+    *   the id of the composite view source
+    * @param source
+    *   the source providing the elements
+    * @param sourceOperation
+    *   the operation to apply to the source
+    * @param targets
+    *   the operations for each target
+    * @param fetchProgress
+    *   how to fetch the progress
+    * @param closeBranch
+    *   the operation to apply at the end of a branch
+    */
   private def compileMain(
       sourceId: Iri,
       source: Source,
       sourceOperation: Operation,
       targets: NonEmptyChain[(Iri, Operation)],
       fetchProgress: UIO[CompositeProgress],
-      endBranch: (CompositeBranch, ProjectionProgress) => Operation
+      closeBranch: (CompositeBranch, ProjectionProgress) => Operation
   ): ElemStream[Unit] =
     Stream.eval(fetchProgress).flatMap { progress =>
       val sourceOffset = progress.sources.get(sourceId)
       val main         = for {
         leapedSource <- sourceOffset.map(sourceOperation.leapUntil).getOrElse(Right(sourceOperation))
         mainTargets  <- targets.traverse { case (id, operation) =>
-                          val branch         = CompositeBranch.main(sourceId, id)
-                          val branchProgress = progress.branches.get(branch)
-                          branchProgress
-                            .map { p => operation.leapUntil(p.offset) }
-                            .getOrElse(Right(operation))
-                            .flatMap(
-                              Operation
-                                .merge(_, endBranch(branch, branchProgress.getOrElse(ProjectionProgress.NoProgress)))
-                            )
+                          targetOperation(
+                            progress,
+                            CompositeBranch.rebuild(sourceId, id),
+                            operation,
+                            closeBranch
+                          )
                         }
         result       <- source.through(leapedSource).flatMap(_.broadcastThrough(mainTargets))
       } yield result
@@ -147,26 +173,36 @@ object CompositeViewDef {
       }
     }
 
+  /**
+    * Compile the rebuild branch for a given source
+    * @param sourceId
+    *   the id of the composite view source
+    * @param source
+    *   the source providing the elements
+    * @param targets
+    *   the operations for each target
+    * @param fetchProgress
+    *   how to fetch the progress
+    * @param closeBranch
+    *   the operation to apply at the end of a branch
+    */
   private def compileRebuild(
       sourceId: Iri,
       source: Source,
       targets: NonEmptyChain[(Iri, Operation)],
       fetchProgress: UIO[CompositeProgress],
-      endBranch: (CompositeBranch, ProjectionProgress) => Operation
+      closeBranch: (CompositeBranch, ProjectionProgress) => Operation
   ): ElemStream[Unit] =
     Stream.eval(fetchProgress).flatMap { progress =>
       val sourceOffset = progress.sources.get(sourceId)
       val rebuild      = for {
         rebuildTargets <- targets.traverse { case (id, operation) =>
-                            val branch         = CompositeBranch.rebuild(sourceId, id)
-                            val branchProgress = progress.branches.get(branch)
-                            branchProgress
-                              .map { p => operation.leapUntil(p.offset) }
-                              .getOrElse(Right(operation))
-                              .flatMap(
-                                Operation
-                                  .merge(_, endBranch(branch, branchProgress.getOrElse(ProjectionProgress.NoProgress)))
-                              )
+                            targetOperation(
+                              progress,
+                              CompositeBranch.rebuild(sourceId, id),
+                              operation,
+                              closeBranch
+                            )
                           }
         result         <- source.broadcastThrough(rebuildTargets)
       } yield result
@@ -176,6 +212,46 @@ object CompositeViewDef {
       }
     }
 
+  /**
+    * Complete and compiles the operation for the branch applying a leap depending on the current offset and the final
+    * operation
+    *
+    * @param progress
+    *   the composite progress
+    * @param branch
+    *   the current branch
+    * @param operation
+    *   the current operation for this target
+    * @param closeBranch
+    *   the final operation to apply to this branch
+    */
+  private def targetOperation(
+      progress: CompositeProgress,
+      branch: CompositeBranch,
+      operation: Operation,
+      closeBranch: (CompositeBranch, ProjectionProgress) => Operation
+  ) = {
+    val branchProgress = progress.branches.get(branch)
+    branchProgress
+      .map { p => operation.leapUntil(p.offset) }
+      .getOrElse(Right(operation))
+      .flatMap(
+        Operation
+          .merge(_, closeBranch(branch, branchProgress.getOrElse(ProjectionProgress.NoProgress)))
+      )
+  }
+
+  /**
+    * Compiles a composite view source into the main and rebuild sources and the operation to apply after it
+    * @param source
+    *   the composite view source
+    * @param compilePipeChain
+    *   how to compile the pipe chain of the composite view source
+    * @param toElemStream
+    *   generates the element stream for the source in the context of a branch
+    * @param sink
+    *   the intermediate sink
+    */
   def compileSource(
       source: CompositeViewSource,
       compilePipeChain: PipeChain.Compile,
@@ -184,14 +260,29 @@ object CompositeViewDef {
   ): Task[(Iri, Source, Source, Operation)] = Task.fromEither {
     for {
       pipes        <- source.pipeChain.traverse(compilePipeChain)
+      // We apply `Operation.observe` as we want to keep the GraphResource for the rest of the stream
       tail         <- Operation.merge(GraphResourceToNTriples, sink).map(_.observe)
       chain         = pipes.fold(NonEmptyChain.one(tail))(NonEmptyChain(_, tail))
       operation    <- Operation.merge(chain)
+      // We create the elem stream for the two types of branch
       mainSource    = toElemStream(source, CompositeBranch.Run.Main)
       rebuildSource = toElemStream(source, CompositeBranch.Run.Rebuild)
     } yield (source.id, mainSource, rebuildSource, operation)
   }
 
+  /**
+    * Compiles a composite projection into an operation
+    * @param target
+    *   the composite view projection
+    * @param compilePipeChain
+    *   how to compile the pipe chain of the composite view projection
+    * @param queryPipe
+    *   how to instantiate the query pipe at the beginning of the projection
+    * @param targetSink
+    *   how to instantiate the target sink
+    * @param cr
+    *   the remote context resolution for ES projections
+    */
   def compileTarget(
       target: CompositeViewProjection,
       compilePipeChain: PipeChain.Compile,
@@ -207,6 +298,7 @@ object CompositeViewDef {
     }
   }
 
+  // Compiling an Elasticsearch projection of a composite view
   private def compileElasticsearch(
       elasticsearch: ElasticSearchProjection,
       compilePipeChain: PipeChain.Compile,
@@ -215,6 +307,7 @@ object CompositeViewDef {
   )(implicit cr: RemoteContextResolution) = {
 
     val head = query
+    // Transforming to json and push to the sink
     val tail = NonEmptyChain(new GraphResourceToDocument(elasticsearch.context, elasticsearch.includeContext), sink)
 
     for {
@@ -224,6 +317,7 @@ object CompositeViewDef {
     } yield elasticsearch.id -> result
   }
 
+  // Compiling an Elasticsearch projection of a composite view
   private def compileSparql(
       sparql: SparqlProjection,
       compilePipeChain: PipeChain.Compile,
@@ -232,6 +326,7 @@ object CompositeViewDef {
   ) = {
 
     val head = query
+    // Transforming to n-triples and push to the sink
     val tail = NonEmptyChain(GraphResourceToNTriples, sink)
 
     for {
