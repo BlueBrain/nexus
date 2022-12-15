@@ -33,7 +33,7 @@ final class Migration private (replay: ReplayEvents, blacklisted: Set[String], l
   private val logMap =  logs.map { log => log.entityType -> log }.toMap
 
   private def saveProgress(progress: MigrationProgress) =
-    sql"""INSERT INTO migration_offset (akka_offset, processed, discarded, failed, instant)
+    sql"""INSERT INTO migration_offset (name, akka_offset, processed, discarded, failed, instant)
          |VALUES ('migration',${progress.offset.toString}, ${progress.processed}, ${progress.discarded}, ${progress.failed}, ${progress.instant})
          |ON CONFLICT (name)
          |DO UPDATE set
