@@ -12,29 +12,29 @@ import java.util.UUID
 class MigrationSuite extends BioSuite with TestHelpers {
 
   private val projectsToIgnore = Set("dummy", "myorg/test")
-  private val uuid  = UUID.randomUUID()
+  private val uuid             = UUID.randomUUID()
 
   test("A global event should not be ignored") {
-    val payload  = jsonContentOf("events/acl-appended.json")
-    val event = ToMigrateEvent(Acls.entityType, "id", 1L, payload, Instant.EPOCH, uuid)
+    val payload = jsonContentOf("events/acl-appended.json")
+    val event   = ToMigrateEvent(Acls.entityType, "id", 1L, payload, Instant.EPOCH, uuid)
     assert(!Migration.toIgnore(event, projectsToIgnore))
   }
 
   test("A global event whose address contains a blacklisted project should be ignored") {
-    val payload  = jsonContentOf("events/acl-appended-blacklist.json")
-    val event = ToMigrateEvent(Acls.entityType, "id", 1L, payload, Instant.EPOCH, uuid)
+    val payload = jsonContentOf("events/acl-appended-blacklist.json")
+    val event   = ToMigrateEvent(Acls.entityType, "id", 1L, payload, Instant.EPOCH, uuid)
     assert(Migration.toIgnore(event, projectsToIgnore))
   }
 
   test("A scoped event that is not in a blacklisted project should not be ignored") {
-    val payload  = jsonContentOf("events/resolver-created.json")
-    val event = ToMigrateEvent(Resolvers.entityType, "id", 1L, payload, Instant.EPOCH, uuid)
+    val payload = jsonContentOf("events/resolver-created.json")
+    val event   = ToMigrateEvent(Resolvers.entityType, "id", 1L, payload, Instant.EPOCH, uuid)
     assert(!Migration.toIgnore(event, projectsToIgnore))
   }
 
   test("A scoped event that is in a blacklisted project should be ignored") {
     val payload = jsonContentOf("events/resolver-created-blacklist.json")
-    val event = ToMigrateEvent(Resolvers.entityType, "id", 1L, payload, Instant.EPOCH, uuid)
+    val event   = ToMigrateEvent(Resolvers.entityType, "id", 1L, payload, Instant.EPOCH, uuid)
     assert(Migration.toIgnore(event, projectsToIgnore))
   }
 
