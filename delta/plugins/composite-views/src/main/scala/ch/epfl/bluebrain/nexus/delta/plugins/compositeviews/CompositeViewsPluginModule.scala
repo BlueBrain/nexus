@@ -9,10 +9,11 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.DeltaClient
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.MetadataPredicates
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.ProjectContextRejection
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{contexts, CompositeView}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.routes.CompositeViewsRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.store.CompositeRestartStore
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, JsonLdContext, RemoteContextResolution}
@@ -24,6 +25,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
+import ch.epfl.bluebrain.nexus.delta.sdk.migration.{MigrationLog, MigrationState}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
@@ -33,7 +35,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.ProjectionConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Supervisor
 import distage.ModuleDef
 import izumi.distage.model.definition.Id
-import monix.bio.UIO
+import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
 
 class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
@@ -176,5 +178,22 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
 
   many[PriorityRoute].add { (route: CompositeViewsRoutes) =>
     PriorityRoute(priority, route.routes, requiresStrictEntity = true)
+  }
+
+  if (MigrationState.isRunning) {
+    many[MigrationLog].add {
+      (cfg: CompositeViewsConfig, xas: Transactors, crypto: Crypto, clock: Clock[UIO], uuidF: UUIDF) =>
+        MigrationLog.scoped[Iri, CompositeViewState, CompositeViewCommand, CompositeViewEvent, CompositeViewRejection](
+          CompositeViews.definition(
+            (_, _, _) => IO.terminate(new IllegalStateException("CompositeView command evaluation should not happen")),
+            crypto
+          )(clock, uuidF),
+          e => e.id,
+          identity,
+          (e, _) => e,
+          cfg.eventLog,
+          xas
+        )
+    }
   }
 }
