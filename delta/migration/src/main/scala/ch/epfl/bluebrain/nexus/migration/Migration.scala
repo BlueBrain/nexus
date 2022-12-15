@@ -91,10 +91,13 @@ object Migration {
     }
   }
 
-  private def toIgnore(toMigrateEvent: ToMigrateEvent, projects: Set[String]) = {
+  def toIgnore(toMigrateEvent: ToMigrateEvent, projects: Set[String]): Boolean = {
     val payload = toMigrateEvent.payload
-    root.project.string.all(projects.contains)(payload) ||
-      (toMigrateEvent.entityType == Acls.entityType && root.address.string.all { address => projects.contains(address.substring(1)) }(payload))
+    val project = root.project.string
+
+    (if (project.nonEmpty(payload)) project.all(projects.contains)(payload) else false) ||
+    (toMigrateEvent.entityType == Acls.entityType &&
+      root.address.string.all { address => projects.contains(address.substring(1)) }(payload))
   }
 
   def apply(logs: Set[MigrationLog], xas: Transactors, supervisor: Supervisor, system: ActorSystem): Task[Migration] = {
