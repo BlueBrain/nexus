@@ -107,24 +107,26 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         )(api, clock, uuidF)
     }
 
-  make[BlazegraphCoordinator].fromEffect {
-    (
+  if (!MigrationState.isIndexingDisabled) {
+    make[BlazegraphCoordinator].fromEffect {
+      (
         views: BlazegraphViews,
         graphStream: GraphResourceStream,
         registry: ReferenceRegistry,
         supervisor: Supervisor,
-        client: BlazegraphClient @Id("blazegraph-indexing-client"),
+        client: BlazegraphClient@Id("blazegraph-indexing-client"),
         config: BlazegraphViewsConfig,
         baseUri: BaseUri
-    ) =>
-      BlazegraphCoordinator(
-        views,
-        graphStream,
-        registry,
-        supervisor,
-        client,
-        config.batch
-      )(baseUri)
+      ) =>
+        BlazegraphCoordinator(
+          views,
+          graphStream,
+          registry,
+          supervisor,
+          client,
+          config.batch
+        )(baseUri)
+    }
   }
 
   make[BlazegraphViewsQuery].fromEffect {

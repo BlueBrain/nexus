@@ -101,24 +101,26 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
       )(api, clock, uuidF)
   }
 
-  make[ElasticSearchCoordinator].fromEffect {
-    (
+  if (!MigrationState.isIndexingDisabled) {
+    make[ElasticSearchCoordinator].fromEffect {
+      (
         views: ElasticSearchViews,
         graphStream: GraphResourceStream,
         registry: ReferenceRegistry,
         supervisor: Supervisor,
         client: ElasticSearchClient,
         config: ElasticSearchViewsConfig,
-        cr: RemoteContextResolution @Id("aggregate")
-    ) =>
-      ElasticSearchCoordinator(
-        views,
-        graphStream,
-        registry,
-        supervisor,
-        client,
-        config.batch
-      )(cr)
+        cr: RemoteContextResolution@Id("aggregate")
+      ) =>
+        ElasticSearchCoordinator(
+          views,
+          graphStream,
+          registry,
+          supervisor,
+          client,
+          config.batch
+        )(cr)
+    }
   }
 
   make[EventMetricsProjection].fromEffect {
