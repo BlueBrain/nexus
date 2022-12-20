@@ -11,7 +11,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.PipeChain
-import io.circe.{Encoder, JsonObject}
+import io.circe.generic.extras.Configuration
+import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
+import io.circe.{Decoder, Encoder, JsonObject}
 
 import java.util.UUID
 import scala.annotation.nowarn
@@ -117,7 +119,7 @@ object CompositeViewProjection {
       resourceTag: Option[UserTag],
       includeMetadata: Boolean,
       includeDeprecated: Boolean,
-      includeContext: Boolean,
+      includeContext: Boolean = false,
       permission: Permission,
       indexGroup: Option[IndexGroup],
       mapping: JsonObject,
@@ -152,7 +154,6 @@ object CompositeViewProjection {
 
   @nowarn("cat=unused")
   implicit final val projectionEncoder: Encoder.AsObject[CompositeViewProjection] = {
-    import io.circe.generic.extras.Configuration
     import io.circe.generic.extras.semiauto._
     implicit val config: Configuration = Configuration(
       transformMemberNames = {
@@ -165,6 +166,17 @@ object CompositeViewProjection {
       strictDecoding = false
     )
     deriveConfiguredEncoder[CompositeViewProjection]
+  }
+
+  @nowarn("cat=unused")
+  implicit final val projectionDecoder: Decoder[CompositeViewProjection] = {
+    implicit val config: Configuration = Configuration(
+      transformMemberNames = identity,
+      transformConstructorNames = identity,
+      useDefaults = true,
+      discriminator = Some(keywords.tpe)
+    )
+    deriveConfiguredDecoder[CompositeViewProjection]
   }
 
   implicit final def compositeViewProjectionOrdering[A <: CompositeViewProjection]: Ordering[A] =
