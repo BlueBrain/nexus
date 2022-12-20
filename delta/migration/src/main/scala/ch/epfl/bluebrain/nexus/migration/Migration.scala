@@ -43,7 +43,9 @@ final class Migration private (
 
   private val processEvent: ToMigrateEvent => Task[Int] = event =>
     logMap.get(event.entityType) match {
-      case Some(migrationLog) => migrationLog(event)
+      case Some(migrationLog) => migrationLog(event).tapError { e =>
+        Task.delay { logger.error(s"[${event.persistenceId}] $e") }
+      }
       case None               =>
         val message = s"The logMap has no entry for ${event.entityType}"
         Task.delay { logger.error(message) } >>
