@@ -104,13 +104,13 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
   if (!MigrationState.isIndexingDisabled) {
     make[ElasticSearchCoordinator].fromEffect {
       (
-        views: ElasticSearchViews,
-        graphStream: GraphResourceStream,
-        registry: ReferenceRegistry,
-        supervisor: Supervisor,
-        client: ElasticSearchClient,
-        config: ElasticSearchViewsConfig,
-        cr: RemoteContextResolution@Id("aggregate")
+          views: ElasticSearchViews,
+          graphStream: GraphResourceStream,
+          registry: ReferenceRegistry,
+          supervisor: Supervisor,
+          client: ElasticSearchClient,
+          config: ElasticSearchViewsConfig,
+          cr: RemoteContextResolution @Id("aggregate")
       ) =>
         ElasticSearchCoordinator(
           views,
