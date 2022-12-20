@@ -15,14 +15,14 @@ import com.typesafe.scalalogging.Logger
 import doobie.ConnectionIO
 import doobie.implicits._
 import doobie.postgres.sqlstate
-import io.circe.Json
+import io.circe.{DecodingFailure, Json}
 import monix.bio.{IO, Task, UIO}
 
 trait MigrationLog {
 
   def entityType: EntityType
 
-  def apply(event: ToMigrateEvent): Task[Unit]
+  def apply(event: ToMigrateEvent): Task[Int]
 
 }
 
@@ -67,7 +67,7 @@ object MigrationLog {
                       )
         } yield (enriched, newState)
 
-      override def apply(migrate: ToMigrateEvent): Task[Unit] =
+      override def apply(migrate: ToMigrateEvent): Task[Int] = {
         for {
           _     <- Task.delay(logger.debug(s"[{} MigrationLog (Global)]", entityType))
           event <- Task.fromEither(definition.eventSerializer.codec.decodeJson(enrichJson(migrate.payload)))
@@ -75,7 +75,8 @@ object MigrationLog {
             Task.delay(logger.debug(s"[{} MigrationLog (Global)] Will try to append the global event", entityType))
           _     <- Task.delay(logger.debug(s"[{} MigrationLog (Global)] Event info: {}", entityType, event.id))
           _     <- append(event)
-        } yield ()
+        } yield 0
+      }.onErrorHandleWith(recovery)
     }
 
   }
@@ -155,7 +156,7 @@ object MigrationLog {
         } yield (enriched, newState)
       }
 
-      override def apply(migrate: ToMigrateEvent): Task[Unit] =
+      override def apply(migrate: ToMigrateEvent): Task[Int] = {
         for {
           _     <- Task.delay(logger.debug(s"[{} MigrationLog (Scoped)]", entityType))
           event <- Task.fromEither(definition.eventSerializer.codec.decodeJson(enrichJson(migrate.payload)))
@@ -165,8 +166,19 @@ object MigrationLog {
                    )
           _     <- append(event)
           _     <- Task.delay(logger.debug(s"[{} MigrationLog (Scoped)] Appended the scoped event", entityType))
-        } yield ()
+        } yield 0
+      }.onErrorRecoverWith(recovery)
+
     }
+  }
+
+  def recovery: PartialFunction[Throwable, Task[Int]] = {
+    case e @ InvalidState(_, _) =>
+      Task.delay { logger.error(e.toString) } >>
+        Task.pure(0)
+    case e: DecodingFailure     =>
+      Task.delay { logger.error(e.toString) } >>
+        Task.pure(1)
   }
 
 }

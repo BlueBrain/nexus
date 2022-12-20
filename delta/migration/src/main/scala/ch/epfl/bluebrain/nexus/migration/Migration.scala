@@ -12,10 +12,11 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
-import ch.epfl.bluebrain.nexus.migration.Migration.MigrationProgress
+import ch.epfl.bluebrain.nexus.migration.Migration.{logger, MigrationProgress}
 import ch.epfl.bluebrain.nexus.migration.config.ReplayConfig
 import ch.epfl.bluebrain.nexus.migration.replay.ReplayEvents
 import com.typesafe.config.ConfigFactory
+import com.typesafe.scalalogging.Logger
 import doobie._
 import doobie.implicits._
 import doobie.postgres.circe.jsonb.implicits._
@@ -28,9 +29,24 @@ import pureconfig.ConfigSource
 import java.time.Instant
 import java.util.UUID
 
-final class Migration private (replay: ReplayEvents, blacklisted: Set[String], logs: Set[MigrationLog], batch: BatchConfig, xas: Transactors) {
+final class Migration private (
+    replay: ReplayEvents,
+    blacklisted: Set[String],
+    logs: Set[MigrationLog],
+    batch: BatchConfig,
+    xas: Transactors
+) {
 
-  private val logMap =  logs.map { log => log.entityType -> log }.toMap
+  private val logMap = logs.map { log => log.entityType -> log }.toMap
+
+  private val processEvent: ToMigrateEvent => Task[Int] = event =>
+    logMap.get(event.entityType) match {
+      case Some(migrationLog) => migrationLog(event)
+      case None               =>
+        val message = s"The logMap has no entry for ${event.entityType}"
+        Task.delay { logger.error(message) } >>
+          Task.raiseError(new NoSuchElementException(message))
+    }
 
   private def saveProgress(progress: MigrationProgress) =
     sql"""INSERT INTO migration_offset (name, akka_offset, processed, discarded, failed, instant)
@@ -53,40 +69,65 @@ final class Migration private (replay: ReplayEvents, blacklisted: Set[String], l
 
   private def fetchProgress =
     sql"""SELECT akka_offset, processed, discarded, failed, instant FROM migration_offset where name = 'migration'"""
-      .query[MigrationProgress].option.transact(xas.read)
+      .query[MigrationProgress]
+      .option
+      .transact(xas.read)
 
-  def start: Stream[Task, Elem[Unit]]  =
-    Stream.eval(fetchProgress).flatMap { progress =>
-      replay.run(progress.map(_.offset)).groupWithin(batch.maxElements, batch.maxInterval).evalTapChunk { chunk =>
-        chunk.last.traverse { last =>
-          val (toIgnore, toProcess) = chunk.partitionEither { e => Either.cond(!Migration.toIgnore(e, blacklisted), e, e) }
-          val migrated = toProcess.traverse { event => logMap(event.entityType)(event) }
-          val ignored = saveIgnored(toIgnore).transact(xas.write)
-          val updateProgress = saveProgress(MigrationProgress(last.offset, last.instant, toProcess.size.toLong, toIgnore.size.toLong, 0L)).transact(xas.write)
-          (migrated >> ignored >> updateProgress)
+  def start: Stream[Task, Elem[Unit]] =
+    Stream
+      .eval(fetchProgress)
+      .flatMap { progress =>
+        replay.run(progress.map(_.offset)).groupWithin(batch.maxElements, batch.maxInterval).evalTapChunk { chunk =>
+          chunk.last.traverse { last =>
+            val (toIgnore, toProcess) = chunk.partitionEither { e =>
+              Either.cond(!Migration.toIgnore(e, blacklisted), e, e)
+            }
+            val migrated              = toProcess.traverse(processEvent)
+            val ignored               = saveIgnored(toIgnore).transact(xas.write)
+            val updateProgress        = (mp: MigrationProgress) => saveProgress(mp).transact(xas.write)
+
+            for {
+              processed <- migrated.tapError { e => Task.delay { logger.error(e.toString) } }
+              failures   = processed.count(_ == 1)
+              _         <- ignored
+              progress   =
+                MigrationProgress(last.offset, last.instant, processed.size.toLong, toIgnore.size.toLong, failures)
+              _         <- updateProgress(progress)
+            } yield ()
+          }
         }
       }
-    }.flatMap(Stream.chunk).map { e =>
-      // Forging a bogus elem to run migration in the supervisor
-      SuccessElem(e.entityType, iri"https://bbp.epfl.ch/migration", None, e.instant, Offset.start, (), e.sequenceNr.toInt)
-    }
+      .flatMap(Stream.chunk)
+      .map { e =>
+        // Forging a bogus elem to run migration in the supervisor
+        SuccessElem(
+          e.entityType,
+          iri"https://bbp.epfl.ch/migration",
+          None,
+          e.instant,
+          Offset.start,
+          (),
+          e.sequenceNr.toInt
+        )
+      }
 }
 
 object Migration {
+
+  private val logger = Logger[Migration]
 
   final case class MigrationProgress(offset: UUID, instant: Instant, processed: Long, discarded: Long, failed: Long)
 
   object MigrationProgress {
     implicit val projectionProgressRowRead: Read[MigrationProgress] = {
-      Read[(String,  Long, Long, Long, Instant)].map {
-        case (offset, processed, discarded, failed, instant) =>
-          MigrationProgress(
-            UUID.fromString(offset),
-            instant,
-            processed,
-            discarded,
-            failed
-          )
+      Read[(String, Long, Long, Long, Instant)].map { case (offset, processed, discarded, failed, instant) =>
+        MigrationProgress(
+          UUID.fromString(offset),
+          instant,
+          processed,
+          discarded,
+          failed
+        )
       }
     }
   }
@@ -101,14 +142,16 @@ object Migration {
   }
 
   def apply(logs: Set[MigrationLog], xas: Transactors, supervisor: Supervisor, system: ActorSystem): Task[Migration] = {
-    val config = ConfigFactory.load("migration.conf")
-    val batch  = ConfigSource.fromConfig(config).at("migration.batch").loadOrThrow[BatchConfig]
-    val replay = ReplayConfig.from(config)
+    val config           = ConfigFactory.load("migration.conf")
+    val batch            = ConfigSource.fromConfig(config).at("migration.batch").loadOrThrow[BatchConfig]
+    val replay           = ReplayConfig.from(config)
     val cassandraSession = CassandraSessionRegistry.get(system).sessionFor(CassandraSessionSettings())
-    val replayEvents = ReplayEvents(cassandraSession, replay)
-    val migration = new Migration(replayEvents, Set.empty, logs, batch, xas)
-    val metadata = ProjectionMetadata("migration", "migrate-from-cassandra", None, None)
-    supervisor.run(CompiledProjection.fromStream(metadata, ExecutionStrategy.TransientSingleNode, _ => migration.start)).as(migration)
+    val replayEvents     = ReplayEvents(cassandraSession, replay)
+    val migration        = new Migration(replayEvents, Set.empty, logs, batch, xas)
+    val metadata         = ProjectionMetadata("migration", "migrate-from-cassandra", None, None)
+    supervisor
+      .run(CompiledProjection.fromStream(metadata, ExecutionStrategy.TransientSingleNode, _ => migration.start))
+      .as(migration)
   }
 
 }
