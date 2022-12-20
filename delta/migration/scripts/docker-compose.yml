@@ -12,6 +12,7 @@ services:
       DISABLE_INDEXING: "true"
       DELTA_PLUGINS: "/opt/docker/plugins/"
       DELTA_EXTERNAL_CONF: "/config/delta-postgres.conf"
+      MIGRATION_CONF: "/config/migration.conf"
     entrypoint: [ "bin/wait-for-it.sh", "-s", "-t", "0", "cassandra:9042", "--",
                   "bin/wait-for-it.sh", "-s", "-t", "0", "postgres:5432", "--",
                   "bin/wait-for-it.sh", "-s", "-t", "0", "elasticsearch:9200", "--",

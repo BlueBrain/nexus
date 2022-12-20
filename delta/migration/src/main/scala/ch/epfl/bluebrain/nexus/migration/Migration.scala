@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
 import ch.epfl.bluebrain.nexus.migration.Migration.{logger, MigrationProgress}
 import ch.epfl.bluebrain.nexus.migration.config.ReplayConfig
 import ch.epfl.bluebrain.nexus.migration.replay.ReplayEvents
-import com.typesafe.config.ConfigFactory
+import com.typesafe.config.{ConfigFactory, ConfigParseOptions}
 import com.typesafe.scalalogging.Logger
 import doobie._
 import doobie.implicits._
@@ -24,8 +24,10 @@ import doobie.postgres.implicits._
 import fs2.{Chunk, Stream}
 import io.circe.optics.JsonPath.root
 import monix.bio.Task
-import pureconfig.ConfigSource
+import pureconfig.generic.semiauto.deriveReader
+import pureconfig.{ConfigReader, ConfigSource}
 
+import java.io.File
 import java.time.Instant
 import java.util.UUID
 
@@ -87,7 +89,7 @@ final class Migration private (
             val updateProgress        = (mp: MigrationProgress) => saveProgress(mp).transact(xas.write)
 
             for {
-              processed <- migrated.tapError { e => Task.delay { logger.error(e.toString) } }
+              processed <- migrated
               failures   = processed.count(_ == 1)
               _         <- ignored
               progress   =
@@ -141,13 +143,26 @@ object Migration {
       root.address.string.all { address => projects.contains(address.substring(1)) }(payload))
   }
 
+  private case class IgnoreConfig(blacklisted: Set[String])
+  private object IgnoreConfig {
+    implicit final val ignoreConfigReader: ConfigReader[IgnoreConfig] =
+      deriveReader[IgnoreConfig]
+  }
+
   def apply(logs: Set[MigrationLog], xas: Transactors, supervisor: Supervisor, system: ActorSystem): Task[Migration] = {
-    val config           = ConfigFactory.load("migration.conf")
+    val migrationConfigEnvVariable = "MIGRATION_CONF"
+    val parseOptions               = ConfigParseOptions.defaults().setAllowMissing(false)
+    val externalMigrationConfig    = sys.env.get(migrationConfigEnvVariable).fold(ConfigFactory.empty()) { p =>
+      ConfigFactory.parseFile(new File(p), parseOptions)
+    }
+
+    val config           = externalMigrationConfig.withFallback(ConfigFactory.load("migration.conf"))
     val batch            = ConfigSource.fromConfig(config).at("migration.batch").loadOrThrow[BatchConfig]
+    val ignore           = ConfigSource.fromConfig(config).at("migration.ignore").loadOrThrow[IgnoreConfig]
     val replay           = ReplayConfig.from(config)
     val cassandraSession = CassandraSessionRegistry.get(system).sessionFor(CassandraSessionSettings())
     val replayEvents     = ReplayEvents(cassandraSession, replay)
-    val migration        = new Migration(replayEvents, Set.empty, logs, batch, xas)
+    val migration        = new Migration(replayEvents, ignore.blacklisted, logs, batch, xas)
     val metadata         = ProjectionMetadata("migration", "migrate-from-cassandra", None, None)
     supervisor
       .run(CompiledProjection.fromStream(metadata, ExecutionStrategy.TransientSingleNode, _ => migration.start))
