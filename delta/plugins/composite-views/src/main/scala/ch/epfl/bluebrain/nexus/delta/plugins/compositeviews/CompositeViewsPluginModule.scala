@@ -5,10 +5,12 @@ import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViewsPluginModule.enrichCompositeViewEvent
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.DeltaClient
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.MetadataPredicates
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.ProjectContextRejection
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.ProjectionType.ElasticSearchProjectionType
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.routes.CompositeViewsRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.store.CompositeRestartStore
@@ -34,6 +36,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ProjectionConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Supervisor
 import distage.ModuleDef
+import io.circe.syntax.EncoderOps
+import io.circe.{Json, JsonObject}
 import izumi.distage.model.definition.Id
 import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
@@ -189,11 +193,52 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
             crypto
           )(clock, uuidF),
           e => e.id,
-          identity,
+          enrichCompositeViewEvent,
           (e, _) => e,
           cfg.eventLog,
           xas
         )
     }
   }
+}
+
+// TODO: This object contains migration helpers, and should be deleted when the migration module is removed
+object CompositeViewsPluginModule {
+
+  def enrichCompositeViewEvent: Json => Json = { input =>
+    val projections = input.hcursor.downField("value").downField("projections")
+    projections.withFocus(ps => injectIncludeContextInArray(ps.asArray)).top match {
+      case Some(updatedJson) => updatedJson
+      case None              => input
+    }
+  }
+
+  /** Json used to inject the includeContext field to [[CompositeViewProjection]]s via merging */
+  private val includeContextJson                                        =
+    JsonObject("includeContext" -> Json.fromBoolean(false)).asJson
+
+  /**
+    * Function to modify an array of [[CompositeViewProjection]] s by injecting a default [[includeContext]] to
+    * [[ElasticSearchProjection]] that do not have it.
+    */
+  private def injectIncludeContextInArray: Option[Vector[Json]] => Json = {
+    // None case should not happen as projections are a NonEmptySet
+    case None              => JsonObject.fromIterable(List.empty).asJson
+    case Some(projections) =>
+      {
+        for {
+          projection <- projections
+        } yield {
+          projection.hcursor.get[String]("@type") match {
+            case Left(_)         => projection
+            case Right(projType) =>
+              if (projType == ElasticSearchProjectionType.toString)
+                includeContextJson.deepMerge(projection)
+              else
+                projection
+          }
+        }
+      }.asJson
+  }
+
 }
