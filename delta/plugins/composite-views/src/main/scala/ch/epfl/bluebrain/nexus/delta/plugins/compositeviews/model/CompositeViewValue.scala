@@ -100,11 +100,8 @@ object CompositeViewValue {
     implicit val compositeViewProjectionTypeCodec: Codec.AsObject[ProjectionType] =
       deriveConfiguredCodec[ProjectionType]
 
-    implicit val compositeViewProjectionEncoder: Encoder.AsObject[CompositeViewProjection] =
-      deriveConfiguredEncoder[CompositeViewProjection]
-
-    implicit val compositeViewProjectionDecoder: Decoder[CompositeViewProjection] =
-      CompositeViewProjection.projectionDecoder
+    implicit val compositeViewProjectionCodec: Codec.AsObject[CompositeViewProjection] =
+      deriveConfiguredCodec[CompositeViewProjection]
 
     implicit val compositeViewSourceCodec: Codec.AsObject[CompositeViewSource] =
       deriveConfiguredCodec[CompositeViewSource]
