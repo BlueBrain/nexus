@@ -41,11 +41,12 @@ final class Migration private (
 
   private val logMap = logs.map { log => log.entityType -> log }.toMap
 
-  private val processEvent: ToMigrateEvent => Task[Int] = event =>
+  private val processEvent: ToMigrateEvent => Task[Unit] = event =>
     logMap.get(event.entityType) match {
-      case Some(migrationLog) => migrationLog(event).tapError { e =>
-        Task.delay { logger.error(s"[${event.persistenceId}] $e") }
-      }
+      case Some(migrationLog) =>
+        migrationLog(event).tapError { e =>
+          Task.delay { logger.error(s"[${event.persistenceId}] $e") }
+        }
       case None               =>
         val message = s"The logMap has no entry for ${event.entityType}"
         Task.delay { logger.error(message) } >>
@@ -88,16 +89,11 @@ final class Migration private (
             }
             val migrated              = toProcess.traverse(processEvent)
             val ignored               = saveIgnored(toIgnore).transact(xas.write)
-            val updateProgress        = (mp: MigrationProgress) => saveProgress(mp).transact(xas.write)
+            val migrationProgress     =
+              MigrationProgress(last.offset, last.instant, toProcess.size.toLong, toIgnore.size.toLong, 0L)
+            val updateProgress        = saveProgress(migrationProgress).transact(xas.write)
 
-            for {
-              processed <- migrated
-              failures   = processed.count(_ == 1)
-              _         <- ignored
-              progress   =
-                MigrationProgress(last.offset, last.instant, processed.size.toLong, toIgnore.size.toLong, failures)
-              _         <- updateProgress(progress)
-            } yield ()
+            migrated >> ignored >> updateProgress
           }
         }
       }
