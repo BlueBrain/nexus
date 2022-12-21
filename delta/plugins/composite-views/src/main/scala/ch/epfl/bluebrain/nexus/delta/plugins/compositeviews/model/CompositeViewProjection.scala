@@ -170,8 +170,12 @@ object CompositeViewProjection {
 
   @nowarn("cat=unused")
   implicit final val projectionDecoder: Decoder[CompositeViewProjection] = {
-    implicit val config: Configuration =
-      Configuration.default.withDiscriminator(keywords.tpe).withDefaults
+    implicit val config: Configuration = Configuration(
+      transformMemberNames = identity,
+      transformConstructorNames = identity,
+      useDefaults = true,
+      discriminator = Some(keywords.tpe)
+    )
     deriveConfiguredDecoder[CompositeViewProjection]
   }
 
