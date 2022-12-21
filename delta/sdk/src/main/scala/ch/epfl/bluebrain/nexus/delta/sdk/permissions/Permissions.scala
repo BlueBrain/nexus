@@ -114,7 +114,7 @@ trait Permissions {
 
 object Permissions {
 
-  final val entityType: EntityType = EntityType("permission")
+  final val entityType: EntityType = EntityType("permissions")
 
   /**
     * Id of the singleton permissions entity
@@ -124,7 +124,7 @@ object Permissions {
   /**
     * The constant entity id.
     */
-  val labelId: Label = Label.unsafe("permission")
+  val labelId: Label = Label.unsafe("permissions")
 
   /**
     * ACLs permissions.

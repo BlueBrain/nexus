@@ -1,6 +1,6 @@
-CREATE MATERIALIZED VIEW IF NOT EXISTS delta.ordered_messages AS
+CREATE MATERIALIZED VIEW IF NOT EXISTS delta_1_5.ordered_messages AS
   SELECT ser_manifest, ser_id, event
-  FROM delta.messages
+  FROM delta_1_5.messages
   WHERE timebucket is not null
   AND persistence_id is not null
   AND partition_nr is not null

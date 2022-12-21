@@ -69,11 +69,14 @@ object MigrationLog {
 
       override def apply(migrate: ToMigrateEvent): Task[Unit] =
         for {
+          _     <- Task.delay(logger.debug(s"[{} MigrationLog (Global)]", entityType))
           event <- Task.fromEither(definition.eventSerializer.codec.decodeJson(enrichJson(migrate.payload)))
+          _     <-
+            Task.delay(logger.debug(s"[{} MigrationLog (Global)] Will try to append the global event", entityType))
+          _     <- Task.delay(logger.debug(s"[{} MigrationLog (Global)] Event info: {}", entityType, event.id))
           _     <- append(event)
         } yield ()
     }
-
   }
 
   def scoped[Id, S <: ScopedState, Command, E <: ScopedEvent, Rejection](
@@ -153,8 +156,14 @@ object MigrationLog {
 
       override def apply(migrate: ToMigrateEvent): Task[Unit] =
         for {
+          _     <- Task.delay(logger.debug(s"[{} MigrationLog (Scoped)]", entityType))
           event <- Task.fromEither(definition.eventSerializer.codec.decodeJson(enrichJson(migrate.payload)))
+          _     <- Task.delay(logger.debug(s"[{} MigrationLog (Scoped)] Will try to append the scoped event", entityType))
+          _     <- Task.delay(
+                     logger.debug(s"[{} MigrationLog (Scoped)] Event info: {} {}", entityType, event.project, event.id)
+                   )
           _     <- append(event)
+          _     <- Task.delay(logger.debug(s"[{} MigrationLog (Scoped)] Appended the scoped event", entityType))
         } yield ()
     }
   }
