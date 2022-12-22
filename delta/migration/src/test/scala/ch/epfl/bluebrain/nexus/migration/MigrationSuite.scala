@@ -15,13 +15,13 @@ class MigrationSuite extends BioSuite with TestHelpers {
   private val projectsToIgnore = Set("dummy", "myorg/test")
   private val uuid             = UUID.randomUUID()
 
-  test("A global event should not be ignored") {
+  test("An ACL event should not be ignored") {
     val payload = jsonContentOf("events/acl-appended.json")
     val event   = ToMigrateEvent(Acls.entityType, "id", 1L, payload, Instant.EPOCH, uuid)
     assert(!Migration.toIgnore(event, projectsToIgnore))
   }
 
-  test("A global event whose address contains a blacklisted project should be ignored") {
+  test("An ACL event whose address contains a blacklisted project should be ignored") {
     val payload = jsonContentOf("events/acl-appended-blacklist.json")
     val event   = ToMigrateEvent(Acls.entityType, "id", 1L, payload, Instant.EPOCH, uuid)
     assert(Migration.toIgnore(event, projectsToIgnore))
