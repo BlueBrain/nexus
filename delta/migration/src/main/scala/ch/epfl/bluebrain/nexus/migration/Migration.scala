@@ -132,11 +132,25 @@ object Migration {
     }
   }
 
+  /**
+    * @param toMigrateEvent
+    *   the event that the check is performed upon
+    * @param projects
+    *   a set of strings defining the ProjectRefs to ignore
+    * @return
+    *   true if the event is to be ignored, false otherwise
+    */
   def toIgnore(toMigrateEvent: ToMigrateEvent, projects: Set[String]): Boolean = {
     val payload = toMigrateEvent.payload
     val project = root.project.string
 
-    (if (project.nonEmpty(payload)) project.all(projects.contains)(payload) else false) ||
+    // ProjectEvents do not have a project field
+    val label                 = root.label.string
+    val organizationLabel     = root.organizationLabel.string
+    val projectEventCondition =
+      label.exist(project => organizationLabel.exist(org => projects.contains(s"$org/$project"))(payload))(payload)
+
+    project.exist(projects.contains)(payload) || projectEventCondition ||
     (toMigrateEvent.entityType == Acls.entityType &&
       root.address.string.all { address => projects.contains(address.substring(1)) }(payload))
   }
