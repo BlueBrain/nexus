@@ -156,12 +156,13 @@ trait CompositeViewsFixture extends ConfigFixtures with EitherValuable {
     permissions.query
   )
 
-  val viewValue    = CompositeViewValue(
+  val viewValue      = CompositeViewValue(
     NonEmptySet.of(projectSource, crossProjectSource, remoteProjectSource),
     NonEmptySet.of(esProjection, blazegraphProjection),
     Some(Interval(1.minute))
   )
-  val updatedValue = viewValue.copy(rebuildStrategy = Some(Interval(2.minutes)))
+  val viewValueNamed = viewValue.copy(name = Some("viewName"), description = Some("viewDescription"))
+  val updatedValue   = viewValue.copy(rebuildStrategy = Some(Interval(2.minutes)))
 
   val config: CompositeViewsConfig = CompositeViewsConfig(
     SourcesConfig(1, 1.second, 3, ConstantStrategyConfig(1.second, 10)),
