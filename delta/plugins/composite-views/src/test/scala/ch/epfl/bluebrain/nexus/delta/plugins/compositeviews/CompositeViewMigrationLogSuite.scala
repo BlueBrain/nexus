@@ -27,14 +27,14 @@ class CompositeViewMigrationLogSuite extends SerializationSuite with CompositeVi
     enrichedJson.equalsIgnoreArrayOrder(json)
   }
 
-  private val viewSource          = Json.Null
-  private val viewId              = iri"http://example.com/composite-view"
-  private val tag                 = UserTag.unsafe("mytag")
+  private val viewSource = Json.Null
+  private val viewId     = iri"http://example.com/composite-view"
+  private val tag        = UserTag.unsafe("mytag")
 
-  private val defaultSearchViewId =
+  private val defaultSearchViewId          =
     iri"https://bluebrain.github.io/nexus/vocabulary/searchView"
   // Name and description need to match the values in the search config!
-  private val defaultSearchViewName = "Default search view"
+  private val defaultSearchViewName        = "Default search view"
   private val defaultSearchViewDescription =
     "A search view of all resources in the project."
 
@@ -63,13 +63,31 @@ class CompositeViewMigrationLogSuite extends SerializationSuite with CompositeVi
 
   test("CompositeViewCreated has name/desc injected for the default SearchView") {
     val injectedEvent = injection(created(defaultSearchViewId))
-    val expectedEvent = CompositeViewCreated(defaultSearchViewId, projectRef, uuid, expectedCompositeViewValue, viewSource, 1, epoch, subject)
+    val expectedEvent = CompositeViewCreated(
+      defaultSearchViewId,
+      projectRef,
+      uuid,
+      expectedCompositeViewValue,
+      viewSource,
+      1,
+      epoch,
+      subject
+    )
     assertEquals(injectedEvent, expectedEvent)
   }
 
   test("CompositeViewUpdated has name/desc injected for the default SearchView") {
     val injectedEvent = injection(updated(defaultSearchViewId))
-    val expectedEvent = CompositeViewUpdated(defaultSearchViewId, projectRef, uuid, expectedCompositeViewValue, viewSource, 2, epoch, subject)
+    val expectedEvent = CompositeViewUpdated(
+      defaultSearchViewId,
+      projectRef,
+      uuid,
+      expectedCompositeViewValue,
+      viewSource,
+      2,
+      epoch,
+      subject
+    )
     assertEquals(injectedEvent, expectedEvent)
   }
 
