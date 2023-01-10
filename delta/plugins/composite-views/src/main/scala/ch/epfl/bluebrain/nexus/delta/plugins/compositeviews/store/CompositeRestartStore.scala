@@ -77,7 +77,8 @@ final class CompositeRestartStore private[store] (xas: Transactors, config: Quer
         offset,
         o => sql"""SELECT ordering, project, id, value, instant from public.composite_restarts
                   |WHERE ordering > $o and project = ${view.project} and id = ${view.viewId}  and acknowledged = false
-                  |ORDER BY ordering ASC""".stripMargin.query,
+                  |ORDER BY ordering ASC
+                  |LIMIT ${config.batchSize}""".stripMargin.query,
         _._1,
         config,
         xas

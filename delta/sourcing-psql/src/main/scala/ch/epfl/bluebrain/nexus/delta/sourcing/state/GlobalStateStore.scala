@@ -131,7 +131,8 @@ object GlobalStateStore {
         offset,
         offset => sql"""SELECT type, id, value, rev, instant, ordering FROM public.global_states
                        |${Fragments.whereAndOpt(Some(fr"type = $tpe"), offset.asFragment)}
-                       |ORDER BY ordering""".stripMargin.query[Envelope[S]],
+                       |ORDER BY ordering
+                       |LIMIT ${config.batchSize}""".stripMargin.query[Envelope[S]],
         _.offset,
         config.copy(refreshStrategy = strategy),
         xas

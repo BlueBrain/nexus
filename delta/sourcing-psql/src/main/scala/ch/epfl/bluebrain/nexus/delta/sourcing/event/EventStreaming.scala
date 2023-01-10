@@ -28,7 +28,8 @@ object EventStreaming {
         predicate match {
           case Root =>
             sql"""(${globalEvents(typeIn, offset)}) UNION ALL (${scopedEvents(typeIn, predicate, offset)})
-                 |ORDER BY ordering""".stripMargin.query[Envelope[Json]]
+                 |ORDER BY ordering
+                 |LIMIT ${config.batchSize}""".stripMargin.query[Envelope[Json]]
           case _    => scopedEvents(typeIn, predicate, offset).query[Envelope[Json]]
         },
       xas,
@@ -47,7 +48,7 @@ object EventStreaming {
 
     Envelope.streamA(
       offset,
-      offset => scopedEvents(typeIn, predicate, offset).query[Envelope[Json]],
+      offset => scopedEventsLimited(typeIn, predicate, offset, config).query[Envelope[Json]],
       xas,
       config
     )
@@ -62,5 +63,11 @@ object EventStreaming {
     fr"""SELECT type, id, value, rev, instant, ordering FROM public.scoped_events
         |${Fragments.whereAndOpt(typeIn, predicate.asFragment, o.asFragment)}
         |ORDER BY ordering""".stripMargin
+
+  private def scopedEventsLimited(typeIn: Option[Fragment], predicate: Predicate, o: Offset, cfg: QueryConfig) =
+    fr"""SELECT type, id, value, rev, instant, ordering FROM public.scoped_events
+        |${Fragments.whereAndOpt(typeIn, predicate.asFragment, o.asFragment)}
+        |ORDER BY ordering
+        |LIMIT ${cfg.batchSize}""".stripMargin
 
 }

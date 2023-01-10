@@ -55,7 +55,8 @@ final class ProjectionRestartStore(xas: Transactors, config: QueryConfig) {
         offset,
         o => sql"""SELECT ordering, value, instant from public.projection_restarts
                   |WHERE ordering > $o and acknowledged = false
-                  |ORDER BY ordering ASC""".stripMargin.query[(Offset, Json, Instant)],
+                  |ORDER BY ordering ASC
+                  |LIMIT ${config.batchSize}""".stripMargin.query[(Offset, Json, Instant)],
         _._1,
         config,
         xas
