@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.kernel.database
 import cats.effect.{Blocker, Resource}
 import ch.epfl.bluebrain.nexus.delta.kernel.database.DatabaseConfig.DatabaseAccess
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
-import com.zaxxer.hikari.HikariDataSource
+import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
 import doobie.Fragment
 import doobie.hikari.HikariTransactor
 import doobie.implicits._
@@ -60,24 +60,31 @@ object Transactors {
     } yield Transactors.shared(t)
 
   def init(config: DatabaseConfig)(implicit classLoader: ClassLoader): Resource[Task, Transactors] = {
-    def transactor(access: DatabaseAccess) =
+    def transactor(access: DatabaseAccess, readOnly: Boolean) = {
+      val hikariConfig = new HikariConfig()
+      hikariConfig.setDriverClassName("org.postgresql.Driver")
+      hikariConfig.setJdbcUrl(s"jdbc:postgresql://${config.streaming.host}:${config.streaming.port}/")
+      hikariConfig.setUsername(config.username)
+      hikariConfig.setPassword(config.password.value)
+      hikariConfig.setMaximumPoolSize(access.poolSize)
+      hikariConfig.setAutoCommit(false)
+      hikariConfig.setReadOnly(readOnly)
+
       for {
-        ce      <- ExecutionContexts.fixedThreadPool[Task](access.poolSize)
+        ce      <- ExecutionContexts.fixedThreadPool[Task](access.poolSize) // our connect EC
         blocker <- Blocker[Task]
-        xa      <- HikariTransactor.newHikariTransactor[Task](
-                     "org.postgresql.Driver",
-                     s"jdbc:postgresql://${access.host}:${access.port}/${config.name}?reWriteBatchedInserts=true&stringtype=unspecified",
-                     config.username,
-                     config.password.value,
+        xa      <- HikariTransactor.fromHikariConfig[Task](
+                     hikariConfig,
                      ce,
                      blocker
                    )
       } yield xa
+    }
 
     for {
-      read      <- transactor(config.read)
-      write     <- transactor(config.write)
-      streaming <- transactor(config.streaming)
+      read      <- transactor(config.read, readOnly = true)
+      write     <- transactor(config.write, readOnly = false)
+      streaming <- transactor(config.streaming, readOnly = true)
     } yield Transactors(read, write, streaming)
   }.evalTap { xas =>
     Task.when(config.tablesAutocreate)(xas.execDDL("/scripts/schema.ddl"))
