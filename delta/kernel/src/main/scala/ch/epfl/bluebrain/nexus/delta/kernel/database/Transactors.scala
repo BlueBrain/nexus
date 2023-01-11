@@ -76,7 +76,7 @@ object Transactors {
 
     def transactor(access: DatabaseAccess, readOnly: Boolean) = {
       for {
-        ce      <- ExecutionContexts.fixedThreadPool[Task](access.poolSize) // our connect EC
+        ce      <- ExecutionContexts.fixedThreadPool[Task](access.poolSize)
         blocker <- Blocker[Task]
         cfg     <- hikariConfig(access, readOnly)
         xa      <- HikariTransactor.fromHikariConfig[Task](
