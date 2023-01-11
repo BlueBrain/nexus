@@ -70,7 +70,7 @@ object Transactors {
           ds.setUsername(config.username)
           ds.setPassword(config.password.value)
           ds.setDriverClassName("org.postgresql.Driver")
-          ds.setMaximumPoolSize(15)
+          ds.setMaximumPoolSize(access.poolSize)
           ds.setAutoCommit(false)
           ds.setReadOnly(readOnly)
           ds
