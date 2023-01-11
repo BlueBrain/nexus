@@ -158,7 +158,8 @@ This projection executes the following steps:
          "resourceTag": "{tag}",
          "includeMetadata": {includeMetadata},
          "includeDeprecated": {includeDeprecated},
-         "permission": {permission}
+         "permission": {permission},
+         "includeContext": {includeContext}
       }
    ],
    ...
@@ -186,6 +187,7 @@ where...
   included in the ElasticSearch document. The default value is `false`.
 - `{includeDeprecated}`: Boolean - If true, deprecated resources are also indexed. The default value is `false`.
 - `{permission}`: String - the permission necessary to query this projection. Defaults to `views/query`.
+- `{includeContext}`: Boolean - If true, the JSON-LD context object is also added to the document indexed by ElasticSearch. The default value is `false`.
 
 ### SparqlProjection
 

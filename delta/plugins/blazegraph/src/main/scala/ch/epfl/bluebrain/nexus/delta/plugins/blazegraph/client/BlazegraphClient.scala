@@ -2,8 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.client.RequestBuilding.{Delete, Get, Post}
+import akka.http.scaladsl.model.MediaTypes.`application/json`
 import akka.http.scaladsl.model.StatusCodes._
-import akka.http.scaladsl.model.headers.{BasicHttpCredentials, HttpCredentials, RawHeader}
+import akka.http.scaladsl.model.headers.{Accept, BasicHttpCredentials, HttpCredentials, RawHeader}
 import akka.http.scaladsl.model.{HttpEntity, HttpHeader, Uri}
 import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
 import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers.stringUnmarshaller
@@ -116,7 +117,7 @@ class BlazegraphClient(
     *   ''true'' wrapped in ''F'' when namespace has been deleted and ''false'' wrapped in ''F'' when it does not existe
     */
   def deleteNamespace(namespace: String): IO[SparqlClientError, Boolean] =
-    client(Delete(endpoint / "namespace" / namespace)) {
+    client(Delete(endpoint / "namespace" / namespace).withHttpCredentials) {
       case resp if resp.status == OK       => UIO.delay(resp.discardEntityBytes()) >> IO.pure(true)
       case resp if resp.status == NotFound => UIO.delay(resp.discardEntityBytes()) >> IO.pure(false)
     }.mapError(WrappedHttpClientError)
@@ -128,6 +129,45 @@ class BlazegraphClient(
         case Some(version) => ServiceDescription(serviceName, version)
       }
     }
+
+  /**
+    * List all namespaces created by Delta
+    * @return
+    */
+  def listNamespaces(): IO[SparqlClientError, DeltaNamespaceSet] =
+    client
+      .fromJsonTo[DeltaNamespaceSet](
+        Get(endpoint / "namespace").withHeaders(Accept(`application/json`)).withHttpCredentials
+      )
+      .mapError(WrappedHttpClientError)
+
+  /**
+    * Returns outdated namepaces (aka namespaces with an revision which is not the latest one)
+    */
+  def listOutdatedNamespaces(): IO[SparqlClientError, DeltaNamespaceSet] = {
+
+    def revisionedNamespace(namespace: String) =
+      Option(namespace.lastIndexOf("_") + 1)
+        .filter(_ > 0)
+        .map(namespace.splitAt)
+        .flatMap { case (prefix, revision) =>
+          revision.toIntOption.map { prefix -> _ }
+        }
+
+    listNamespaces().map { namespaces =>
+      val (toDelete, _) = namespaces.value.foldLeft((Set.empty[String], Map.empty[String, Int])) {
+        case ((toDelete, maxRev), namespace) =>
+          revisionedNamespace(namespace) match {
+            case Some((prefix, rev)) if maxRev.get(prefix).exists(_ > rev) =>
+              (toDelete + namespace, maxRev)
+            case Some((prefix, rev))                                       =>
+              (toDelete ++ maxRev.get(prefix).map { r => s"$prefix$r" }, maxRev + (prefix -> rev))
+            case None                                                      => (toDelete, maxRev)
+          }
+      }
+      DeltaNamespaceSet(toDelete)
+    }
+  }
 
 }
 

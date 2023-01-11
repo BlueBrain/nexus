@@ -103,6 +103,7 @@ class BlazegraphQuerySpec
       None,
       false,
       false,
+      false,
       permissions.query,
       None,
       JsonObject.empty,

@@ -51,4 +51,22 @@ class EventSerializerSpec
   "An EventSerializer" should behave like eventToJsonSerializer("compositeviews", mapping)
   "An EventSerializer" should behave like jsonToEventDeserializer("compositeviews", mapping)
 
+  "An EventSerializer" should
+    "deserialize CompositeViewCreated without the includeContext field" in {
+      val source = viewSource.removeAllKeys("includeContext")
+      val event  = CompositeViewCreated(viewId, project.ref, uuid, viewValue, source, 1L, epoch, subject)
+      val json   = jsonContentOf("serialization/view-created-no-include-context.json", "uuid" -> uuid)
+      val binary = json.noSpaces.getBytes
+      serializer.fromBinary(binary, "compositeviews") shouldEqual event
+    }
+
+  "An EventSerializer" should
+    "deserialize CompositeViewUpdated without the includeContext field" in {
+      val source = viewSource.removeAllKeys("includeContext")
+      val event  = CompositeViewUpdated(viewId, project.ref, uuid, viewValue, source, 2L, epoch, subject)
+      val json   = jsonContentOf("serialization/view-updated-no-include-context.json", "uuid" -> uuid)
+      val binary = json.noSpaces.getBytes
+      serializer.fromBinary(binary, "compositeviews") shouldEqual event
+    }
+
 }
