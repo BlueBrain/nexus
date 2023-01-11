@@ -60,7 +60,7 @@ object Transactors {
     } yield Transactors.shared(t)
 
   def init(config: DatabaseConfig)(implicit classLoader: ClassLoader): Resource[Task, Transactors] = {
-    def transactor(access: DatabaseAccess, readOnly: Boolean) = {
+    def transactor(access: DatabaseAccess, readOnly: Boolean, poolName: String) = {
       for {
         ce        <- ExecutionContexts.fixedThreadPool[Task](access.poolSize)
         blocker   <- Blocker[Task]
@@ -71,6 +71,7 @@ object Transactors {
           ds.setPassword(config.password.value)
           ds.setDriverClassName("org.postgresql.Driver")
           ds.setMaximumPoolSize(access.poolSize)
+          ds.setPoolName(poolName)
           ds.setAutoCommit(false)
           ds.setReadOnly(readOnly)
           ds
@@ -79,9 +80,9 @@ object Transactors {
     }
 
     for {
-      read      <- transactor(config.read, readOnly = true)
-      write     <- transactor(config.write, readOnly = false)
-      streaming <- transactor(config.streaming, readOnly = true)
+      read      <- transactor(config.read, readOnly = true, poolName = "ReadPool")
+      write     <- transactor(config.write, readOnly = false, poolName = "WritePool")
+      streaming <- transactor(config.streaming, readOnly = true, poolName = "StreamingPool")
     } yield Transactors(read, write, streaming)
   }.evalTap { xas =>
     Task.when(config.tablesAutocreate)(xas.execDDL("/scripts/schema.ddl"))
