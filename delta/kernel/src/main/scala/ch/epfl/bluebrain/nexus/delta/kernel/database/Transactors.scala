@@ -60,21 +60,27 @@ object Transactors {
     } yield Transactors.shared(t)
 
   def init(config: DatabaseConfig)(implicit classLoader: ClassLoader): Resource[Task, Transactors] = {
-    def transactor(access: DatabaseAccess, readOnly: Boolean) = {
-      val hikariConfig = new HikariConfig()
-      hikariConfig.setDriverClassName("org.postgresql.Driver")
-      hikariConfig.setJdbcUrl(s"jdbc:postgresql://${config.streaming.host}:${config.streaming.port}/")
-      hikariConfig.setUsername(config.username)
-      hikariConfig.setPassword(config.password.value)
-      hikariConfig.setMaximumPoolSize(access.poolSize)
-      hikariConfig.setAutoCommit(false)
-      hikariConfig.setReadOnly(readOnly)
+    def hikariConfig(access: DatabaseAccess, readOnly: Boolean) = Resource.make {
+      Task.delay {
+        val hikariConfig = new HikariConfig()
+        hikariConfig.setDriverClassName("org.postgresql.Driver")
+        hikariConfig.setJdbcUrl(s"jdbc:postgresql://${config.streaming.host}:${config.streaming.port}/")
+        hikariConfig.setUsername(config.username)
+        hikariConfig.setPassword(config.password.value)
+        hikariConfig.setMaximumPoolSize(access.poolSize)
+        hikariConfig.setAutoCommit(false)
+        hikariConfig.setReadOnly(readOnly)
+        hikariConfig
+      }
+    } { _ => Task.unit }
 
+    def transactor(access: DatabaseAccess, readOnly: Boolean) = {
       for {
         ce      <- ExecutionContexts.fixedThreadPool[Task](access.poolSize) // our connect EC
         blocker <- Blocker[Task]
+        cfg     <- hikariConfig(access, readOnly)
         xa      <- HikariTransactor.fromHikariConfig[Task](
-                     hikariConfig,
+                     cfg,
                      ce,
                      blocker
                    )
