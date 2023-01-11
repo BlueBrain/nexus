@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.kernel.database
 import cats.effect.{Blocker, Resource}
 import ch.epfl.bluebrain.nexus.delta.kernel.database.DatabaseConfig.DatabaseAccess
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
-import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
+import com.zaxxer.hikari.HikariDataSource
 import doobie.Fragment
 import doobie.hikari.HikariTransactor
 import doobie.implicits._
@@ -60,31 +60,22 @@ object Transactors {
     } yield Transactors.shared(t)
 
   def init(config: DatabaseConfig)(implicit classLoader: ClassLoader): Resource[Task, Transactors] = {
-    def hikariConfig(access: DatabaseAccess, readOnly: Boolean) = Resource.make {
-      Task.delay {
-        val hikariConfig = new HikariConfig()
-        hikariConfig.setDriverClassName("org.postgresql.Driver")
-        hikariConfig.setJdbcUrl(s"jdbc:postgresql://${config.streaming.host}:${config.streaming.port}/")
-        hikariConfig.setUsername(config.username)
-        hikariConfig.setPassword(config.password.value)
-        hikariConfig.setMaximumPoolSize(access.poolSize)
-        hikariConfig.setAutoCommit(false)
-        hikariConfig.setReadOnly(readOnly)
-        hikariConfig
-      }
-    } { _ => Task.unit }
-
     def transactor(access: DatabaseAccess, readOnly: Boolean) = {
       for {
-        ce      <- ExecutionContexts.fixedThreadPool[Task](access.poolSize)
-        blocker <- Blocker[Task]
-        cfg     <- hikariConfig(access, readOnly)
-        xa      <- HikariTransactor.fromHikariConfig[Task](
-                     cfg,
-                     ce,
-                     blocker
-                   )
-      } yield xa
+        ce        <- ExecutionContexts.fixedThreadPool[Task](access.poolSize)
+        blocker   <- Blocker[Task]
+        dataSource = {
+          val ds = new HikariDataSource
+          ds.setJdbcUrl(s"jdbc:postgresql://${access.host}:${access.port}/")
+          ds.setUsername(config.username)
+          ds.setPassword(config.password.value)
+          ds.setDriverClassName("org.postgresql.Driver")
+          ds.setMaximumPoolSize(15)
+          ds.setAutoCommit(false)
+          ds.setReadOnly(readOnly)
+          ds
+        }
+      } yield HikariTransactor[Task](dataSource, ce, blocker)
     }
 
     for {
