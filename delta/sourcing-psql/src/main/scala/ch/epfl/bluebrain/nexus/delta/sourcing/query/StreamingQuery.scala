@@ -179,7 +179,7 @@ object StreamingQuery {
     * @param query
     *   the query to execute depending on the offset
     * @param extractOffset
-    *   how to extract the offset from an [[Json]] to be able to pursue the stream
+    *   how to extract the offset from an [[A]] to be able to pursue the stream
     * @param cfg
     *   the query config
     * @param xas
