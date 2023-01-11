@@ -254,9 +254,9 @@ object CompositeViewsPluginModule {
   private val defaultSearchViewId          =
     iri"https://bluebrain.github.io/nexus/vocabulary/searchView"
   // Name and description need to match the values in the search config!
-  private val defaultSearchViewName        = "Default search view"
+  private val defaultSearchViewName        = "Default global search view"
   private val defaultSearchViewDescription =
-    "A search view of all resources in the project."
+    "An Elasticsearch view of configured resources for the global search."
 
   private def setSearchViewDefaults: CompositeViewValue => CompositeViewValue =
     _.copy(
