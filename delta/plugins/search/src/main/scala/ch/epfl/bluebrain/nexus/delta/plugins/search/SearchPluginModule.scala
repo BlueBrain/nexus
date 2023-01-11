@@ -26,7 +26,7 @@ class SearchPluginModule(priority: Int) extends ModuleDef {
 
   make[SearchScopeInitialization].from {
     (views: CompositeViews, config: SearchConfig, serviceAccount: ServiceAccount, baseUri: BaseUri) =>
-      new SearchScopeInitialization(views, config.indexing, serviceAccount)(baseUri)
+      new SearchScopeInitialization(views, config.indexing, serviceAccount, config.defaults)(baseUri)
   }
 
   many[ScopeInitialization].ref[SearchScopeInitialization]

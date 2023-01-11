@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewS
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel.IndexGroup
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchConfig.IndexingConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model.{defaultProjectionId, defaultSourceId, defaultViewId}
-import ch.epfl.bluebrain.nexus.delta.sdk.ScopeInitialization
+import ch.epfl.bluebrain.nexus.delta.sdk.{Defaults, ScopeInitialization}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
@@ -25,7 +25,8 @@ import monix.bio.{IO, UIO}
 final class SearchScopeInitialization(
     views: CompositeViews,
     config: IndexingConfig,
-    serviceAccount: ServiceAccount
+    serviceAccount: ServiceAccount,
+    defaults: Defaults
 )(implicit baseUri: BaseUri)
     extends ScopeInitialization {
 
@@ -43,6 +44,8 @@ final class SearchScopeInitialization(
         defaultViewId,
         project.ref,
         CompositeViewFields(
+          Some(defaults.name),
+          Some(defaults.description),
           NonEmptySet.of(ProjectSourceFields(id = Some(defaultSourceId))),
           NonEmptySet.of(
             ElasticSearchProjectionFields(

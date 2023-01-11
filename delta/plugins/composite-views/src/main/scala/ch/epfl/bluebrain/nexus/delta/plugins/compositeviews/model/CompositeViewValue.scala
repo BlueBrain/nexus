@@ -31,6 +31,8 @@ import scala.concurrent.duration.{Duration, FiniteDuration}
   *   the rebuild strategy of the view
   */
 final case class CompositeViewValue(
+    name: Option[String],
+    description: Option[String],
     sources: NonEmptySet[CompositeViewSource],
     projections: NonEmptySet[CompositeViewProjection],
     rebuildStrategy: Option[RebuildStrategy]
@@ -65,11 +67,21 @@ object CompositeViewValue {
       s <- sources
       p <- projections
     } yield CompositeViewValue(
+      fields.name,
+      fields.description,
       NonEmptySet.fromSetUnsafe(SortedSet.from(s)),
       NonEmptySet.fromSetUnsafe(SortedSet.from(p)),
       fields.rebuildStrategy
     )
   }
+
+  /** Construct a [[CompositeViewValue]] without name and description */
+  def apply(
+      sources: NonEmptySet[CompositeViewSource],
+      projections: NonEmptySet[CompositeViewProjection],
+      rebuildStrategy: Option[RebuildStrategy]
+  ): CompositeViewValue =
+    CompositeViewValue(None, None, sources, projections, rebuildStrategy)
 
   @SuppressWarnings(Array("TryGet"))
   @nowarn("cat=unused")
