@@ -54,6 +54,7 @@ final case class ElasticSearchViewState(
     source: Json,
     tags: Tags,
     rev: Int,
+    indexingRev: Int,
     deprecated: Boolean,
     createdAt: Instant,
     createdBy: Subject,

@@ -86,6 +86,7 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
     Json.obj("elastic" -> Json.fromString("value")),
     Tags(tag           -> 3),
     rev = 1,
+    indexingRev = 1,
     deprecated = false,
     createdAt = instant,
     createdBy = subject,
