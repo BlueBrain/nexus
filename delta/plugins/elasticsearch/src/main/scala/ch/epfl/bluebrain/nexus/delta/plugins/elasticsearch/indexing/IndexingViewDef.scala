@@ -94,7 +94,7 @@ object IndexingViewDef {
       graphStream: GraphResourceStream,
       sink: Sink
   )(implicit cr: RemoteContextResolution): Task[CompiledProjection] =
-    compile(v, compilePipeChain, graphStream(v.ref.project, v.resourceTag.getOrElse(Tag.latest), _), sink)
+    compile(v, compilePipeChain, graphStream.continuous(v.ref.project, v.resourceTag.getOrElse(Tag.latest), _), sink)
 
   private def compile(
       v: ActiveViewDef,

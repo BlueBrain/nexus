@@ -74,7 +74,7 @@ sealed trait Operation { self =>
   /**
     * Send the values through the operation while returning original values
     */
-  def observe: Operation = new Operation {
+  def tap: Operation = new Operation {
     override type In  = self.In
     override type Out = self.In
 
@@ -83,7 +83,28 @@ sealed trait Operation { self =>
     override def outType: Typeable[Out] = self.inType
 
     override protected[stream] def asFs2: Pipe[Task, Elem[Operation.this.In], Elem[this.Out]] =
-      _.observe(self.asFs2.andThen(_.void))
+      _.chunks.evalTap { chunk =>
+        Stream.chunk(chunk).through(self.asFs2).compile.drain
+      }.flatMap(Stream.chunk)
+  }
+
+  /**
+    * Logs the elements of this stream as they are pulled.
+    *
+    * Logging is not done in `F` because this operation is intended for debugging,
+    * including pure streams.
+    */
+  def debug(formatter: Elem[Out] => String = (elem: Elem[Out]) => elem.toString,
+            logger: String => Unit = println(_)): Operation = new Operation {
+    override type In  = self.In
+    override type Out = self.Out
+
+    override def inType: Typeable[In] = self.inType
+
+    override def outType: Typeable[Out] = self.outType
+
+    override protected[stream] def asFs2: Pipe[Task, Elem[Operation.this.In], Elem[this.Out]] =
+      _.through(self.asFs2).debug(formatter, logger)
 
   }
 
@@ -91,15 +112,19 @@ sealed trait Operation { self =>
     * Do not apply the operation until the given offset is reached
     * @param offset
     *   the offset to reach before applying the operation
+    *  @param mapSkip
+    *   the function to apply when skipping an element
     */
-  def leapUntil(offset: Offset): Either[LeapingNotAllowedErr, Operation] = {
-    val pipe: Operation = new Operation {
+  def leap[A](offset: Offset, mapSkip: self.In => A)(implicit ta: Typeable[A]): Either[ProjectionErr, Operation] = {
+    val pipe = new Operation {
       override type In  = self.In
-      override type Out = self.In
+      override type Out = self.Out
+
+      override def name: String = "Leap"
 
       override def inType: Typeable[In] = self.inType
 
-      override def outType: Typeable[Out] = self.inType
+      override def outType: Typeable[Out] = self.outType
 
       override protected[stream] def asFs2: Pipe[Task, Elem[Operation.this.In], Elem[this.Out]] = {
         def go(s: fs2.Stream[Task, Elem[In]]): Pull[Task, Elem[this.Out], Unit] = {
@@ -110,8 +135,8 @@ sealed trait Operation { self =>
               }
               for {
                 evaluated <- Pull.eval(Stream.chunk(after).through(self.asFs2).compile.to(Chunk))
-                all        = Chunk.concat(Seq(before, evaluated)).map {
-                               _.attempt { value => this.outType.cast(value).toRight(LeapingNotAllowedErr(self)) }
+                all        = Chunk.concat(Seq(before.map(_.map(mapSkip)), evaluated)).map {
+                               _.attempt { value => this.outType.cast(value).toRight(LeapingNotAllowedErr(self, ta)) }
                              }
                 _         <- Pull.output(all)
                 next      <- go(stream.tail)
@@ -124,16 +149,26 @@ sealed trait Operation { self =>
     }
 
     Either.cond(
-      self.inType.describe == self.outType.describe,
+      ta.describe == self.outType.describe,
       pipe,
-      LeapingNotAllowedErr(self)
+      LeapingNotAllowedErr(self, ta)
     )
   }
+
+  /**
+    * Leap applying the identity function to skipped elements
+    * @param offset the offset to reach before applying the operation
+    */
+  def identityLeap(offset: Offset): Either[ProjectionErr, Operation] = leap(offset, identity[self.In])(inType)
 }
 
 object Operation {
 
-  def fromPipe[I: Typeable](elemPipe: ElemPipe[I, Unit]): Operation = new Operation {
+  /**
+    * Creates an operation from an fs2 Pipe
+    * @param elemPipe fs2 pipe
+    */
+  def fromFs2Pipe[I: Typeable](elemPipe: ElemPipe[I, Unit]): Operation = new Operation {
     override type In  = I
     override type Out = Unit
     override def inType: Typeable[In]   = Typeable[In]

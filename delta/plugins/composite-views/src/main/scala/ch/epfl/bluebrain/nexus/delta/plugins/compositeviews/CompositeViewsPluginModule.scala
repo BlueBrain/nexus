@@ -7,11 +7,13 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.DeltaClient
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.MetadataPredicates
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.{CompositeSpaces, CompositeViewsCoordinator, MetadataPredicates}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{contexts, CompositeView}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.projections.CompositeProjections
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.routes.CompositeViewsRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.store.CompositeRestartStore
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.CompositeGraphStream
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
@@ -29,8 +31,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, Projects}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ProjectionConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Supervisor
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeChain, ReferenceRegistry, Supervisor}
 import distage.ModuleDef
 import izumi.distage.model.definition.Id
 import monix.bio.UIO
@@ -97,9 +100,50 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
       )
   }
 
-  make[CompositeRestartStore].fromEffect {
-    (supervisor: Supervisor, xas: Transactors, projectionConfig: ProjectionConfig) =>
-      CompositeRestartStore(supervisor, xas, projectionConfig)
+  make[CompositeProjections].fromEffect {
+    (supervisor: Supervisor, xas: Transactors, projectionConfig: ProjectionConfig, clock: Clock[UIO]) =>
+      val compositeRestartStore = new CompositeRestartStore(xas)
+      val compositeProjections  =
+        CompositeProjections(compositeRestartStore, xas, projectionConfig.query, projectionConfig.batch)(clock)
+
+      CompositeRestartStore
+        .deleteExpired(compositeRestartStore, supervisor, projectionConfig)(clock)
+        .as(compositeProjections)
+  }
+
+  make[CompositeSpaces.Builder].from {
+    (
+        esClient: ElasticSearchClient,
+        blazeClient: BlazegraphClient @Id("blazegraph-indexing-client"),
+        cfg: CompositeViewsConfig,
+        baseUri: BaseUri
+    ) =>
+      CompositeSpaces.Builder(cfg.prefix, esClient, cfg.elasticsearchBatch, blazeClient, cfg.blazegraphBatch)(baseUri)
+  }
+
+  // TODO implement the remote one
+  make[CompositeGraphStream].from { (graphStream: GraphResourceStream) =>
+    CompositeGraphStream(graphStream, graphStream)
+  }
+
+  make[CompositeViewsCoordinator].fromEffect {
+    (
+        compositeViews: CompositeViews,
+        supervisor: Supervisor,
+        registry: ReferenceRegistry,
+        graphStream: CompositeGraphStream,
+        buildSpaces: CompositeSpaces.Builder,
+        compositeProjections: CompositeProjections,
+        cr: RemoteContextResolution @Id("aggregate")
+    ) =>
+      CompositeViewsCoordinator(
+        compositeViews,
+        supervisor,
+        PipeChain.compile(_, registry),
+        graphStream,
+        buildSpaces.apply,
+        compositeProjections
+      )(cr)
   }
 
   make[MetadataPredicates].fromEffect {

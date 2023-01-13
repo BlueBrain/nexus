@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
 import io.circe.Codec
 import io.circe.generic.extras.Configuration
@@ -42,17 +42,37 @@ object CompositeRestart {
   val entityType: EntityType = EntityType("composite-restart")
 
   /**
-    * Restart indexing for all sources and projections
+    * Restarts the view indexing process. It does not delete the created indices/namespaces but it overrides the
+    * graphs/documents when going through the log.
     */
-  final case class Full(project: ProjectRef, id: Iri, instant: Instant, subject: Subject) extends CompositeRestart
+  final case class FullRestart(project: ProjectRef, id: Iri, instant: Instant, subject: Subject)
+      extends CompositeRestart
 
   /**
-    * Restarts indexing process for the provided projection(s) while keeping the sources (and the intermediate Sparql
-    * space) progress
-    * @param projection
+    * Restarts indexing process for all targets while keeping the sources (and the intermediate Sparql space) progress
+    */
+  final case class FullRebuild(project: ProjectRef, id: Iri, instant: Instant, subject: Subject)
+      extends CompositeRestart
+
+  object FullRebuild {
+
+    /**
+      * Generates a full rebuild eve
+      * @param project
+      *   The project of the composite view
+      * @param id
+      *   The id of the composite view
+      */
+    def auto(project: ProjectRef, id: Iri): FullRebuild = FullRebuild(project, id, Instant.EPOCH, Anonymous)
+  }
+
+  /**
+    * Restarts indexing process for the provided target while keeping the sources (and the intermediate Sparql space)
+    * progress
+    * @param target
     *   the projection to restart
     */
-  final case class PartialRestart(project: ProjectRef, id: Iri, projection: Iri, instant: Instant, subject: Subject)
+  final case class PartialRebuild(project: ProjectRef, id: Iri, target: Iri, instant: Instant, subject: Subject)
       extends CompositeRestart
 
   @nowarn("cat=unused")

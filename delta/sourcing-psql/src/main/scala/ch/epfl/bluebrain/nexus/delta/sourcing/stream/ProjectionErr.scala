@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
+import shapeless.Typeable
 
 /**
   * Enumeration of recoverable errors for projection/stream definitions and compositions.
@@ -103,11 +104,11 @@ object ProjectionErr {
   }
 
   /**
-    * Leaping is only possible for an operation where the In and Out types are aligned
+    * Leaping is only possible for an operation when we provide a skip function that aligns to the out type
     */
-  final case class LeapingNotAllowedErr(self: Operation) extends ProjectionErr {
+  final case class LeapingNotAllowedErr[A](self: Operation, skip: Typeable[A]) extends ProjectionErr {
     override def reason: String =
-      s"Unable to leap on operation '${self.name}' as In type  '${self.inType.describe}' does not match Out type '${self.outType.describe}'."
+      s"Unable to leap on operation '${self.name}' as skip type  '${skip.describe}' does not match Out type '${self.outType.describe}'."
   }
 
   /**

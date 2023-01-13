@@ -5,9 +5,10 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.IndexingView
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, Fixtures}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
+import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef, Tag}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionErr.CouldNotFindPipeErr
@@ -166,7 +167,7 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
     for {
       _ <- ElasticSearchCoordinator(
              (_: Offset) => viewStream,
-             (project: ProjectRef, _: Tag, _: Offset) => PullRequestStream.generate(project),
+             GraphResourceStream.unsafeFromStream(PullRequestStream.generate(project)),
              (_: PipeChain) => Left(CouldNotFindPipeErr(unknownPipe)),
              sv,
              (_: ActiveViewDef) => new NoopSink[Json],

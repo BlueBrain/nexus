@@ -88,8 +88,7 @@ object Projection {
   def persist[A](
       progress: ProjectionProgress,
       saveProgress: ProjectionProgress => UIO[Unit],
-      saveFailedElems: List[FailedElem] => UIO[Unit],
-      ifEmpty: UIO[Unit]
+      saveFailedElems: List[FailedElem] => UIO[Unit]
   )(implicit batch: BatchConfig): ElemPipe[A, Unit] =
     _.mapAccumulate(progress) {
       case (acc, elem) if elem.offset.value > progress.offset.value => (acc + elem, elem)
@@ -102,7 +101,7 @@ object Projection {
         }
 
         last
-          .fold(ifEmpty) { newProgress =>
+          .fold(UIO.unit) { newProgress =>
             saveProgress(newProgress) >>
               UIO.when(errors.nonEmpty)(saveFailedElems(errors))
           }
@@ -135,8 +134,7 @@ object Projection {
             persist(
               progress,
               (progress: ProjectionProgress) => progressRef.set(progress).hideErrors >> saveProgress(progress),
-              saveFailedElems,
-              UIO.unit
+              saveFailedElems
             )
           )
           .compile

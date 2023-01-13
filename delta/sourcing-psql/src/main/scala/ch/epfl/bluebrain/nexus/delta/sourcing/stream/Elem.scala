@@ -134,7 +134,7 @@ sealed trait Elem[+A] extends Product with Serializable {
   def void: Elem[Unit] =
     map(_ => ())
 
-  override def toString: String = s"${project.fold("")(_.toString)}/$id:$revision"
+  override def toString: String = s"${this.getClass.getSimpleName}[${project.fold("")(_.toString)}/$id:$revision]{${offset.value}}"
 }
 
 object Elem {
