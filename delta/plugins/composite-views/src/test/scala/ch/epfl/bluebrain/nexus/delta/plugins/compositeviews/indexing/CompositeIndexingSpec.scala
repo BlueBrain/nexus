@@ -173,6 +173,7 @@ class CompositeIndexingSpec
   private val cache: ProgressesCache = ProgressesStatistics.cache("CompositeViewsProgress")
 
   private val viewId              = iri"https://example.com"
+  private val viewWithContextId   = iri"https://context.example.com"
   private val context             = jsonContentOf("indexing/music-context.json").topContextValueOrEmpty.asInstanceOf[ContextObject]
   private val source1Id           = iri"https://example.com/source1"
   private val source2Id           = iri"https://example.com/source2"
@@ -428,6 +429,25 @@ class CompositeIndexingSpec
         result,
         jsonContentOf("indexing/result_muse.json"),
         jsonContentOf("indexing/result_red_hot.json")
+      )
+      checkBlazegraphTriples(result, contentOf("indexing/result.nt"))
+    }
+
+    "index resources with included JSON-LD context" in {
+      val view   = CompositeViewFields(
+        NonEmptySet.of(projectSource, crossProjectSource, remoteProjectSource),
+        NonEmptySet.of(elasticSearchProjection.copy(includeContext = true), blazegraphProjection),
+        None
+      )
+      val result = views.create(viewWithContextId, project1.ref, view).accepted
+      checkElasticSearchDocuments(
+        result,
+        jsonContentOf("indexing/result_muse.json")
+          .removeAllKeys(keywords.context)
+          .deepMerge(jsonContentOf("indexing/music-context.json").removeKeys(keywords.id)),
+        jsonContentOf("indexing/result_red_hot.json")
+          .removeAllKeys(keywords.context)
+          .deepMerge(jsonContentOf("indexing/music-context.json").removeKeys(keywords.id))
       )
       checkBlazegraphTriples(result, contentOf("indexing/result.nt"))
     }

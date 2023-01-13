@@ -75,7 +75,7 @@ class EventSerializer(system: ExtendedActorSystem) extends SerializerWithStringM
   }
 
   implicit final private val configuration: Configuration =
-    Configuration.default.withDiscriminator(keywords.tpe)
+    Configuration.default.withDiscriminator(keywords.tpe).withDefaults
 
   implicit private val stringSecretEncryptEncoder: Encoder[Secret[String]] = Encoder.encodeString.contramap {
     case Secret(value) => crypto.encrypt(value).get
