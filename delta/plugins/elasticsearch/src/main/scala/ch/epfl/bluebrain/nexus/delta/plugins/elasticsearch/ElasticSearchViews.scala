@@ -1,19 +1,17 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import cats.effect.Clock
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.IndexingViewDef
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.{AggregateElasticSearchView, IndexingElasticSearchView}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.IndexingViewDef.{ActiveViewDef, DeprecatedViewDef}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewCommand._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection._
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewType.{AggregateElasticSearch => ElasticSearchAggregate, ElasticSearch => ElasticSearchIndexing}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.AggregateElasticSearchViewValue
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
@@ -293,14 +291,16 @@ final class ElasticSearchViews private (
   def fetchIndexingView(
       id: IdSegmentRef,
       project: ProjectRef
-  ): IO[ElasticSearchViewRejection, IndexingViewResource] =
-    fetch(id, project)
-      .flatMap { res =>
-        res.value match {
-          case v: IndexingElasticSearchView  =>
-            IO.pure(res.as(v))
-          case _: AggregateElasticSearchView =>
-            IO.raiseError(DifferentElasticSearchViewType(res.id, ElasticSearchAggregate, ElasticSearchIndexing))
+  ): IO[ElasticSearchViewRejection, ActiveViewDef] =
+    fetchState(id, project)
+      .flatMap { case (_, state) =>
+        IndexingViewDef(state, defaultElasticsearchMapping, defaultElasticsearchSettings, prefix) match {
+          case Right(viewDef)  =>
+            viewDef match {
+              case v: ActiveViewDef     => IO.pure(v)
+              case v: DeprecatedViewDef => IO.raiseError(ViewIsDeprecated(v.ref.viewId))
+            }
+          case Left(rejection) => IO.raiseError(rejection)
         }
       }
 
@@ -365,7 +365,7 @@ final class ElasticSearchViews private (
         value = viewDef,
         revision = envelope.rev
       )
-    }
+    }.toOption
 
   private def eval(
       cmd: ElasticSearchViewCommand,
@@ -399,14 +399,14 @@ object ElasticSearchViews {
     */
   val mappings: ApiMappings = ApiMappings("view" -> schema.original, "documents" -> defaultViewId)
 
-  def projectionName(resource: IndexingViewResource): String =
-    projectionName(resource.value.project, resource.id, resource.rev)
+  def projectionName(viewDef: ActiveViewDef): String =
+    projectionName(viewDef.ref.project, viewDef.ref.viewId, viewDef.indexingRev)
 
   def projectionName(state: ElasticSearchViewState): String =
-    projectionName(state.project, state.id, state.rev)
+    projectionName(state.project, state.id, state.indexingRev)
 
-  def projectionName(project: ProjectRef, id: Iri, rev: Int): String = {
-    s"elasticsearch-$project-$id-$rev"
+  def projectionName(project: ProjectRef, id: Iri, indexingRev: Int): String = {
+    s"elasticsearch-$project-$id-$indexingRev"
   }
 
   def index(uuid: UUID, rev: Int, prefix: String): IndexLabel =
@@ -449,7 +449,23 @@ object ElasticSearchViews {
       }
       
     def updated(e: ElasticSearchViewUpdated): Option[ElasticSearchViewState] = state.map { s =>
-        s.copy(rev = e.rev, value = e.value, source = e.source, updatedAt = e.instant, updatedBy = e.subject)
+
+      val reindex = e.value match {
+        case IndexingElasticSearchViewValue(_, _, eventResourceTag, eventPipeline, eventMapping, eventSettings, eventContext, _) =>
+          s.value match {
+            case IndexingElasticSearchViewValue(_, _, stateResourceTag, statePipeline, stateMapping, stateSettings, stateContext, _) =>
+              eventResourceTag != stateResourceTag ||
+                eventPipeline != statePipeline ||
+                eventMapping != stateMapping ||
+                eventSettings != stateSettings ||
+                eventContext != stateContext
+            case _ => false
+          }
+        case _ => false
+      }
+      val newIndexingRev = if (reindex) s.indexingRev + 1 else s.indexingRev
+
+      s.copy(rev = e.rev, indexingRev = newIndexingRev, value = e.value, source = e.source, updatedAt = e.instant, updatedBy = e.subject)
     }
 
     def tagAdded(e: ElasticSearchViewTagAdded): Option[ElasticSearchViewState] = state.map { s =>
@@ -494,7 +510,7 @@ object ElasticSearchViews {
       case Some(s) if s.deprecated               =>
         IO.raiseError(ViewIsDeprecated(c.id))
       case Some(s) if c.value.tpe != s.value.tpe =>
-        IO.raiseError(DifferentElasticSearchViewType(s.id, c.value.tpe, s.value.tpe))
+        IO.raiseError(DifferentElasticSearchViewType(Some(s.id), c.value.tpe, s.value.tpe))
       case Some(s)                               =>
         for {
           _ <- validate(s.uuid, s.rev + 1, c.value)

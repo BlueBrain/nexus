@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.IndexingElasticSearchView
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts => nxvContexts, nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
@@ -20,11 +19,6 @@ package object model {
     * Type alias for a view specific resource.
     */
   type ViewResource = ResourceF[ElasticSearchView]
-
-  /**
-    * Type alias for a indexing view specific resource.
-    */
-  type IndexingViewResource = ResourceF[IndexingElasticSearchView]
 
   /**
     * The fixed virtual schema of an ElasticSearchView.

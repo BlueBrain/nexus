@@ -4,7 +4,7 @@ import cats.data.NonEmptyChain
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, ElasticSearchViewState}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, ElasticSearchViewRejection, ElasticSearchViewState}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
@@ -47,7 +47,8 @@ object IndexingViewDef {
       index: IndexLabel,
       mapping: JsonObject,
       settings: JsonObject,
-      context: Option[ContextObject]
+      context: Option[ContextObject],
+      indexingRev: Int
   ) extends IndexingViewDef
 
   /**
@@ -60,7 +61,7 @@ object IndexingViewDef {
       defaultMapping: JsonObject,
       defaultSettings: JsonObject,
       prefix: String
-  ): Option[IndexingViewDef] =
+  ): Either[ElasticSearchViewRejection, IndexingViewDef] =
     state.value.asIndexingValue.map { indexing =>
       if (state.deprecated)
         DeprecatedViewDef(
@@ -72,10 +73,11 @@ object IndexingViewDef {
           ElasticSearchViews.projectionName(state),
           indexing.resourceTag,
           indexing.pipeChain,
-          ElasticSearchViews.index(state.uuid, state.rev, prefix),
+          ElasticSearchViews.index(state.uuid, state.indexingRev, prefix),
           indexing.mapping.getOrElse(defaultMapping),
           indexing.settings.getOrElse(defaultSettings),
-          indexing.context
+          indexing.context,
+          state.indexingRev
         )
 
     }

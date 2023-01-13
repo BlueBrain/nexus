@@ -471,7 +471,8 @@ class ElasticSearchViewsRoutesSpec
           Instant.EPOCH,
           Offset.at(1L),
           ProjectionRestart(
-            "elasticsearch-myorg/myproject-https://bluebrain.github.io/nexus/vocabulary/myid2-2",
+            // view has be created and then only tagged, thus the indexing revision is 1
+            "elasticsearch-myorg/myproject-https://bluebrain.github.io/nexus/vocabulary/myid2-1",
             Instant.EPOCH,
             Anonymous
           ),

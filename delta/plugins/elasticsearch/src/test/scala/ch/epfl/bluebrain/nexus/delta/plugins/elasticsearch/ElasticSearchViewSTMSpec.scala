@@ -54,8 +54,11 @@ class ElasticSearchViewSTMSpec
     val source2     = Json.obj("key" -> Json.fromInt(1))
 
     // format: off
-    val indexingValue = IndexingElasticSearchViewValue(None, List(), None, None, None, Permission.unsafe("my/permission"))
-    val aggregateValue = AggregateElasticSearchViewValue(NonEmptySet.of(viewRef))
+    val indexingValue            =
+      IndexingElasticSearchViewValue(None, List(), None, None, None, Permission.unsafe("my/permission"))
+    val indexingValueWithUserTag = indexingValue.copy(resourceTag = Some(UserTag.unsafe("tag")))
+    val indexingValueWithName    = indexingValue.copy(name = Some("viewName"))
+    val aggregateValue           = AggregateElasticSearchViewValue(NonEmptySet.of(viewRef))
     // format: on
 
     val invalidView: ValidateElasticSearchView =
@@ -225,12 +228,37 @@ class ElasticSearchViewSTMSpec
           ElasticSearchViewUpdated(id, project, uuid, indexingValue, source, 2, epoch, subject)
         ) shouldEqual None
       }
-      "change the state" in {
+      "change the state (aggregate view)" in {
         next(
           Some(current()),
           ElasticSearchViewUpdated(id, project, uuid, aggregateValue, source2, 2, epochPlus10, subject)
         ).value shouldEqual current(
           value = aggregateValue,
+          source = source2,
+          rev = 2,
+          updatedAt = epochPlus10,
+          updatedBy = subject
+        )
+      }
+      "change the state (indexing view, indexing revision)" in {
+        next(
+          Some(current()),
+          ElasticSearchViewUpdated(id, project, uuid, indexingValueWithUserTag, source2, 2, epochPlus10, subject)
+        ).value shouldEqual current(
+          value = indexingValueWithUserTag,
+          source = source2,
+          rev = 2,
+          indexingRev = 2,
+          updatedAt = epochPlus10,
+          updatedBy = subject
+        )
+      }
+      "change the state (indexing view, non-indexing revision)" in {
+        next(
+          Some(current()),
+          ElasticSearchViewUpdated(id, project, uuid, indexingValueWithName, source2, 2, epochPlus10, subject)
+        ).value shouldEqual current(
+          value = indexingValueWithName,
           source = source2,
           rev = 2,
           updatedAt = epochPlus10,

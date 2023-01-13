@@ -50,23 +50,29 @@ final class ElasticSearchCoordinator private (
       elem
         .traverse {
           case active: ActiveViewDef =>
-            IndexingViewDef
-              .compile(
-                active,
-                compilePipeChain,
-                graphStream,
-                sink(active)
-              )
-              .flatMap { projection =>
-                cleanupCurrent(active.ref) >>
-                  supervisor.run(
-                    projection,
-                    for {
-                      _ <- createIndex(active)
-                      _ <- cache.put(active.ref, active)
-                    } yield ()
+            cache.get(active.ref).flatMap { cachedViewRef =>
+              if (cachedViewRef.exists(_.index == active.index)) {
+                Task.pure(ExecutionStatus.Running)
+              } else {
+                IndexingViewDef
+                  .compile(
+                    active,
+                    compilePipeChain,
+                    graphStream,
+                    sink(active)
                   )
+                  .flatMap { projection =>
+                    cleanupCurrent(active.ref) >>
+                      supervisor.run(
+                        projection,
+                        for {
+                          _ <- createIndex(active)
+                          _ <- cache.put(active.ref, active)
+                        } yield ()
+                      )
+                  }
               }
+            }
           case d: DeprecatedViewDef  => cleanupCurrent(d.ref)
         }
         .onErrorRecover {

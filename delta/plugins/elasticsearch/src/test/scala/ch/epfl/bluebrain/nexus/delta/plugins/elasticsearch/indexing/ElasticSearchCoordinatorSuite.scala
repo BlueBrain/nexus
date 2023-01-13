@@ -30,6 +30,8 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
 
   implicit private val patienceConfig: PatienceConfig = PatienceConfig(5.seconds, 10.millis)
 
+  private val indexingRev = 1
+
   private lazy val (sv, projections) = supervisor()
   private val project                = ProjectRef.unsafe("org", "proj")
   private val id1                    = nxv + "view1"
@@ -41,7 +43,8 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
     index = IndexLabel.unsafe("view1"),
     mapping = jobj"""{"properties": { }}""",
     settings = jobj"""{"analysis": { }}""",
-    None
+    None,
+    indexingRev
   )
 
   private val id2   = nxv + "view2"
@@ -53,7 +56,8 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
     index = IndexLabel.unsafe("view2"),
     mapping = jobj"""{"properties": { }}""",
     settings = jobj"""{"analysis": { }}""",
-    None
+    None,
+    indexingRev
   )
 
   private val id3         = nxv + "view3"
@@ -66,7 +70,8 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
     index = IndexLabel.unsafe("view3"),
     mapping = jobj"""{"properties": { }}""",
     settings = jobj"""{"analysis": { }}""",
-    None
+    None,
+    indexingRev
   )
 
   private val deprecatedView1 = DeprecatedViewDef(
@@ -80,7 +85,8 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
     index = IndexLabel.unsafe("view2_2"),
     mapping = jobj"""{"properties": { }}""",
     settings = jobj"""{"analysis": { }}""",
-    None
+    None,
+    indexingRev
   )
   private val resumeSignal    = SignallingRef[Task, Boolean](false).runSyncUnsafe()
 

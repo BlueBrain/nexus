@@ -3,8 +3,9 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing
 import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.IndexingViewDef.{ActiveViewDef, DeprecatedViewDef}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.DifferentElasticSearchViewType
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchViewState, ElasticSearchViewValue}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchViewState, ElasticSearchViewType, ElasticSearchViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, Fixtures}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
@@ -78,6 +79,8 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
   private val aggregate = AggregateElasticSearchViewValue(NonEmptySet.of(viewRef))
   private val sink      = CacheSink.states[Json]
 
+  private val indexingRev = 1
+
   private def state(v: ElasticSearchViewValue) = ElasticSearchViewState(
     id,
     projectRef,
@@ -86,7 +89,7 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
     Json.obj("elastic" -> Json.fromString("value")),
     Tags(tag           -> 3),
     rev = 1,
-    indexingRev = 1,
+    indexingRev = indexingRev,
     deprecated = false,
     createdAt = instant,
     createdBy = subject,
@@ -97,16 +100,17 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
   test("Build an active view def with a custom mapping and settings") {
     assertEquals(
       IndexingViewDef(state(indexingCustom), defaultMapping, defaultSettings, prefix),
-      Some(
+      Right(
         ActiveViewDef(
           viewRef,
-          s"elasticsearch-$projectRef-$id-1",
+          s"elasticsearch-$projectRef-$id-$indexingRev",
           indexingCustom.resourceTag,
           indexingCustom.pipeChain,
-          IndexLabel.fromView("prefix", uuid, 1),
+          IndexLabel.fromView("prefix", uuid, indexingRev),
           customMapping,
           customSettings,
-          indexingCustom.context
+          indexingCustom.context,
+          indexingRev
         )
       )
     )
@@ -115,16 +119,17 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
   test("Build an active view def with no mapping and settings defined") {
     assertEquals(
       IndexingViewDef(state(indexingDefault), defaultMapping, defaultSettings, prefix),
-      Some(
+      Right(
         ActiveViewDef(
           viewRef,
-          s"elasticsearch-$projectRef-$id-1",
+          s"elasticsearch-$projectRef-$id-$indexingRev",
           indexingDefault.resourceTag,
           indexingDefault.pipeChain,
-          IndexLabel.fromView("prefix", uuid, 1),
+          IndexLabel.fromView("prefix", uuid, indexingRev),
           defaultMapping,
           defaultSettings,
-          indexingDefault.context
+          indexingDefault.context,
+          indexingRev
         )
       )
     )
@@ -133,7 +138,7 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
   test("Build an deprecated view def") {
     assertEquals(
       IndexingViewDef(state(indexingDefault).copy(deprecated = true), defaultMapping, defaultSettings, prefix),
-      Some(
+      Right(
         DeprecatedViewDef(
           viewRef
         )
@@ -144,20 +149,27 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
   test("Ignore aggregate views") {
     assertEquals(
       IndexingViewDef(state(aggregate), defaultMapping, defaultSettings, prefix),
-      None
+      Left(
+        DifferentElasticSearchViewType(
+          None,
+          ElasticSearchViewType.AggregateElasticSearch,
+          ElasticSearchViewType.ElasticSearch
+        )
+      )
     )
   }
 
   test("Fail if the pipe chain does not compile") {
     val v = ActiveViewDef(
       viewRef,
-      s"elasticsearch-$projectRef-$id-1",
+      s"elasticsearch-$projectRef-$id-$indexingRev",
       indexingDefault.resourceTag,
       Some(PipeChain(PipeRef.unsafe("xxx") -> ExpandedJsonLd.empty)),
-      IndexLabel.fromView("prefix", uuid, 1),
+      IndexLabel.fromView("prefix", uuid, indexingRev),
       defaultMapping,
       defaultSettings,
-      indexingDefault.context
+      indexingDefault.context,
+      1
     )
 
     val expectedError = CouldNotFindTypedPipeErr(PipeRef.unsafe("xxx"), "xxx")
@@ -181,13 +193,14 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
   test("Success and be able to process the different elements") {
     val v = ActiveViewDef(
       viewRef,
-      s"elasticsearch-$projectRef-$id-1",
+      s"elasticsearch-$projectRef-$id-$indexingRev",
       indexingDefault.resourceTag,
       Some(PipeChain(FilterDeprecated())),
-      IndexLabel.fromView("prefix", uuid, 1),
+      IndexLabel.fromView("prefix", uuid, indexingRev),
       defaultMapping,
       defaultSettings,
-      indexingDefault.context
+      indexingDefault.context,
+      indexingRev
     )
 
     val expectedProgress: ProjectionProgress = ProjectionProgress(

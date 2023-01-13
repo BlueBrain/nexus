@@ -1,7 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 
 import cats.data.{NonEmptyChain, NonEmptySet}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.IndexingElasticSearchViewValue
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.DifferentElasticSearchViewType
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.IndexingElasticSearchViewValue.defaultPipeline
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
@@ -45,11 +46,14 @@ sealed trait ElasticSearchViewValue extends Product with Serializable {
     this.asJsonObject.add(keywords.id, iri.asJson).asJson.deepDropNullValues
   }
 
-  def asIndexingValue: Option[IndexingElasticSearchViewValue] = this match {
-    case v: IndexingElasticSearchViewValue => Some(v)
-    case _                                 => None
-  }
-
+  def asIndexingValue: Either[ElasticSearchViewRejection, IndexingElasticSearchViewValue] =
+    this match {
+      case v: IndexingElasticSearchViewValue  => Right(v)
+      case v: AggregateElasticSearchViewValue =>
+        Left(
+          DifferentElasticSearchViewType(None, v.tpe, ElasticSearchViewType.ElasticSearch)
+        )
+    }
 }
 
 object ElasticSearchViewValue {
