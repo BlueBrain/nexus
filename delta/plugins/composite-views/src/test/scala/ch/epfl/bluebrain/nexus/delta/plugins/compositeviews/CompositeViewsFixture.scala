@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewP
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjectionFields.{ElasticSearchProjectionFields, SparqlProjectionFields}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.{AccessToken, CrossProjectSource, ProjectSource, RemoteProjectSource}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSourceFields.{CrossProjectSourceFields, ProjectSourceFields, RemoteProjectSourceFields}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeViewFields, CompositeViewValue, TemplateSparqlConstructQuery, permissions}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{permissions, CompositeViewFields, CompositeViewValue, TemplateSparqlConstructQuery}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
@@ -156,12 +156,13 @@ trait CompositeViewsFixture extends ConfigFixtures with EitherValuable {
     permissions.query
   )
 
-  val viewValue    = CompositeViewValue(
+  val viewValue      = CompositeViewValue(
     NonEmptySet.of(projectSource, crossProjectSource, remoteProjectSource),
     NonEmptySet.of(esProjection, blazegraphProjection),
     Some(Interval(1.minute))
   )
-  val updatedValue = viewValue.copy(rebuildStrategy = Some(Interval(2.minutes)))
+  val viewValueNamed = viewValue.copy(name = Some("viewName"), description = Some("viewDescription"))
+  val updatedValue   = viewValue.copy(rebuildStrategy = Some(Interval(2.minutes)))
 
   val batchConfig = BatchConfig(10, 10.seconds)
 

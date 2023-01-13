@@ -83,19 +83,22 @@ sealed trait Operation { self =>
     override def outType: Typeable[Out] = self.inType
 
     override protected[stream] def asFs2: Pipe[Task, Elem[Operation.this.In], Elem[this.Out]] =
-      _.chunks.evalTap { chunk =>
-        Stream.chunk(chunk).through(self.asFs2).compile.drain
-      }.flatMap(Stream.chunk)
+      _.chunks
+        .evalTap { chunk =>
+          Stream.chunk(chunk).through(self.asFs2).compile.drain
+        }
+        .flatMap(Stream.chunk)
   }
 
   /**
     * Logs the elements of this stream as they are pulled.
     *
-    * Logging is not done in `F` because this operation is intended for debugging,
-    * including pure streams.
+    * Logging is not done in `F` because this operation is intended for debugging, including pure streams.
     */
-  def debug(formatter: Elem[Out] => String = (elem: Elem[Out]) => elem.toString,
-            logger: String => Unit = println(_)): Operation = new Operation {
+  def debug(
+      formatter: Elem[Out] => String = (elem: Elem[Out]) => elem.toString,
+      logger: String => Unit = println(_)
+  ): Operation = new Operation {
     override type In  = self.In
     override type Out = self.Out
 
@@ -112,7 +115,7 @@ sealed trait Operation { self =>
     * Do not apply the operation until the given offset is reached
     * @param offset
     *   the offset to reach before applying the operation
-    *  @param mapSkip
+    * @param mapSkip
     *   the function to apply when skipping an element
     */
   def leap[A](offset: Offset, mapSkip: self.In => A)(implicit ta: Typeable[A]): Either[ProjectionErr, Operation] = {
@@ -157,7 +160,8 @@ sealed trait Operation { self =>
 
   /**
     * Leap applying the identity function to skipped elements
-    * @param offset the offset to reach before applying the operation
+    * @param offset
+    *   the offset to reach before applying the operation
     */
   def identityLeap(offset: Offset): Either[ProjectionErr, Operation] = leap(offset, identity[self.In])(inType)
 }
@@ -166,7 +170,8 @@ object Operation {
 
   /**
     * Creates an operation from an fs2 Pipe
-    * @param elemPipe fs2 pipe
+    * @param elemPipe
+    *   fs2 pipe
     */
   def fromFs2Pipe[I: Typeable](elemPipe: ElemPipe[I, Unit]): Operation = new Operation {
     override type In  = I

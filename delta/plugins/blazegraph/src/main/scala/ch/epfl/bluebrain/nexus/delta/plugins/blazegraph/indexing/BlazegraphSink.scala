@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing
 
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{BlazegraphClient, SparqlWriteQuery}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphSink.{BlazegraphBulk, logger}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphSink.{logger, BlazegraphBulk}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.InvalidIri
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.NTriples
@@ -79,10 +79,8 @@ object BlazegraphSink {
 
   private val logger: Logger = Logger[BlazegraphSink]
 
-  def apply(client: BlazegraphClient,
-            batchConfig: BatchConfig,
-            namespace: String
-  )(implicit base: BaseUri) = new BlazegraphSink(client, batchConfig.maxElements, batchConfig.maxInterval, namespace = namespace)
+  def apply(client: BlazegraphClient, batchConfig: BatchConfig, namespace: String)(implicit base: BaseUri) =
+    new BlazegraphSink(client, batchConfig.maxElements, batchConfig.maxInterval, namespace = namespace)
 
   final case class BlazegraphBulk(invalidIds: Set[Iri], queries: List[SparqlWriteQuery], endpoint: Iri) {
 

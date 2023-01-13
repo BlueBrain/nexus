@@ -53,7 +53,7 @@ class OperationSuite extends BioSuite with StreamAssertions {
     val sink2 = CacheSink.states[Int]
 
     val tap = Operation.merge(double, sink1).rightValue.tap
-    val all      = Operation.merge(tap, sink2).rightValue
+    val all = Operation.merge(tap, sink2).rightValue
 
     for {
       _ <- until(5).through(all).rightValue.apply(Offset.Start).assertSize(5)

@@ -10,7 +10,7 @@ trait TextAssertions { self: Assertions =>
   implicit class TextAssertionsOps(value: String)(implicit loc: Location) {
 
     def equalLinesUnordered(expected: String): Unit = {
-      val valueSorted  = value.split("\n").filterNot(_.trim.isEmpty).sorted.toSeq
+      val valueSorted    = value.split("\n").filterNot(_.trim.isEmpty).sorted.toSeq
       val expectedSorted = expected.split("\n").filterNot(_.trim.isEmpty).sorted.toSeq
       assertEquals(
         valueSorted,

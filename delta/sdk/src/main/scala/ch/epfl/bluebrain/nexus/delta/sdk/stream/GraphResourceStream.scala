@@ -66,8 +66,9 @@ object GraphResourceStream {
     * Creates an empty graph resource stream
     */
   val empty: GraphResourceStream = new GraphResourceStream {
-    override def continuous(project: ProjectRef, tag: Tag, start: Offset): ElemStream[GraphResource] = Stream.never[Task]
-    override def currents(project: ProjectRef, tag: Tag, start: Offset): ElemStream[GraphResource] = Stream.empty
+    override def continuous(project: ProjectRef, tag: Tag, start: Offset): ElemStream[GraphResource]  =
+      Stream.never[Task]
+    override def currents(project: ProjectRef, tag: Tag, start: Offset): ElemStream[GraphResource]    = Stream.empty
     override def remaining(project: ProjectRef, tag: Tag, start: Offset): UIO[Option[RemainingElems]] = UIO.none
   }
 
@@ -110,7 +111,14 @@ object GraphResourceStream {
       StreamingQuery.elems(project, tag, start, qc, xas, shifts.decodeGraphResource(fetchContext))
 
     override def currents(project: ProjectRef, tag: Tag, start: Offset): ElemStream[GraphResource] =
-      StreamingQuery.elems(project, tag, start, qc.copy(refreshStrategy = RefreshStrategy.Stop), xas, shifts.decodeGraphResource(fetchContext))
+      StreamingQuery.elems(
+        project,
+        tag,
+        start,
+        qc.copy(refreshStrategy = RefreshStrategy.Stop),
+        xas,
+        shifts.decodeGraphResource(fetchContext)
+      )
 
     override def remaining(project: ProjectRef, tag: Tag, start: Offset): UIO[Option[RemainingElems]] =
       StreamingQuery.remaining(project, tag, start, xas)
@@ -121,8 +129,8 @@ object GraphResourceStream {
     */
   def unsafeFromStream(stream: ElemStream[GraphResource]): GraphResourceStream =
     new GraphResourceStream {
-      override def continuous(project: ProjectRef, tag: Tag, start: Offset): ElemStream[GraphResource] = stream
-      override def currents(project: ProjectRef, tag: Tag, start: Offset): ElemStream[GraphResource] = stream
+      override def continuous(project: ProjectRef, tag: Tag, start: Offset): ElemStream[GraphResource]  = stream
+      override def currents(project: ProjectRef, tag: Tag, start: Offset): ElemStream[GraphResource]    = stream
       override def remaining(project: ProjectRef, tag: Tag, start: Offset): UIO[Option[RemainingElems]] = UIO.none
     }
 
