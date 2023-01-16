@@ -43,6 +43,7 @@ class IndexingViewDefSuite extends BioSuite {
   private val viewRef          = ViewRef(projectRef, id)
   private val subject: Subject = Anonymous
   private val tag              = UserTag.unsafe("mytag")
+  private val indexingRev      = 1
 
   private val namespace = s"${prefix}_${uuid}_1"
 
@@ -81,7 +82,8 @@ class IndexingViewDefSuite extends BioSuite {
           s"blazegraph-$projectRef-$id-1",
           indexing.resourceTag,
           indexing.pipeChain,
-          namespace
+          namespace,
+          indexingRev
         )
       )
     )
@@ -107,7 +109,8 @@ class IndexingViewDefSuite extends BioSuite {
       s"blazegraph-$projectRef-$id-1",
       indexing.resourceTag,
       Some(PipeChain(PipeRef.unsafe("xxx") -> ExpandedJsonLd.empty)),
-      namespace
+      namespace,
+      indexingRev
     )
 
     val expectedError = CouldNotFindTypedPipeErr(PipeRef.unsafe("xxx"), "xxx")
@@ -134,7 +137,8 @@ class IndexingViewDefSuite extends BioSuite {
       s"blazegraph-$projectRef-$id-1",
       indexing.resourceTag,
       Some(PipeChain(FilterDeprecated())),
-      namespace
+      namespace,
+      indexingRev
     )
 
     val expectedProgress: ProjectionProgress = ProjectionProgress(

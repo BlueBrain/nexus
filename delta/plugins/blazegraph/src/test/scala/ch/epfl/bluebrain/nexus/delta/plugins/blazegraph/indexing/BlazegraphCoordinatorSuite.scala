@@ -28,6 +28,8 @@ class BlazegraphCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
 
   implicit private val patienceConfig: PatienceConfig = PatienceConfig(5.seconds, 10.millis)
 
+  private val indexingRev = 1
+
   private lazy val (sv, projections) = supervisor()
   private val project                = ProjectRef.unsafe("org", "proj")
   private val id1                    = nxv + "view1"
@@ -36,7 +38,8 @@ class BlazegraphCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
     projection = id1.toString,
     None,
     None,
-    namespace = "view1"
+    namespace = "view1",
+    indexingRev
   )
 
   private val id2   = nxv + "view2"
@@ -45,7 +48,8 @@ class BlazegraphCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
     projection = id2.toString,
     None,
     None,
-    namespace = "view2"
+    namespace = "view2",
+    indexingRev
   )
 
   private val id3         = nxv + "view3"
@@ -55,7 +59,8 @@ class BlazegraphCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
     projection = id3.toString,
     None,
     Some(PipeChain(PipeRef.unsafe("xxx") -> ExpandedJsonLd.empty)),
-    namespace = "view3"
+    namespace = "view3",
+    indexingRev
   )
 
   private val deprecatedView1 = DeprecatedViewDef(
@@ -66,7 +71,8 @@ class BlazegraphCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
     projection = id2.toString + "_2",
     None,
     None,
-    namespace = "view2_2"
+    namespace = "view2_2",
+    indexingRev
   )
 
   private val resumeSignal = SignallingRef[Task, Boolean](false).runSyncUnsafe()
