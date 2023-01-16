@@ -233,7 +233,6 @@ class CompositeIndexingSuite
   private val bob   = User("Bob", realm)
 
   private val viewId              = iri"https://bbp.epfl.ch/composite"
-  //private val viewWithContextId   = iri"https://bbp.epfl.ch/composite-context"
   private val source1Id           = iri"https://bbp.epfl.ch/source1"
   private val source2Id           = iri"https://bbp.epfl.ch/source2"
   private val source3Id           = iri"https://bbp.epfl.ch/source3"

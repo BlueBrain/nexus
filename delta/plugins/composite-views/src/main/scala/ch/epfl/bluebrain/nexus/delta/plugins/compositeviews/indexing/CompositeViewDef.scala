@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing
 import cats.data.NonEmptyChain
 import cats.effect.ExitCase
 import cats.effect.ExitCase.{Canceled, Completed, Error}
+import cats.effect.concurrent.Ref
 import cats.kernel.Semigroup
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.GraphResourceToNTriples
@@ -72,7 +73,30 @@ object CompositeViewDef {
       )
 
   /**
-    * Compile the definition with all the required dependencies
+    * Compile the definition with all the required dependencies into a single stream.
+    *
+    * This stream is divided into two branches, the main and rebuild branches
+    *
+    * ===Main branch===
+    *
+    * A non-terminating stream is build for every source which applies its pipe chain to each resource before pushing
+    * them to the common Blazegraph namespace.
+    *
+    * Each of these source stream is then broadcast to every projection defined in the composite view where the common
+    * namespace is queried and the result indexed in the associated index/namespace.
+    *
+    * All the source streams are merged to form the main branch.
+    *
+    * ===Rebuild branch===
+    *
+    * When a rebuild strategy is set, an additional stream is built and run following a defined interval when the main
+    * branch has processed new resources.
+    *
+    * A stream that fetches all current resources (that terminates after processing hem) is built for every source.
+    *
+    * It broadcasts immediately the resouces to every projection where it follows the same process as the second part of
+    * the main branch.
+    *
     * @param view
     *   the definition
     * @param spaces
@@ -104,32 +128,41 @@ object CompositeViewDef {
 
     def compileTarget = CompositeViewDef.compileTarget(compilePipeChain, spaces.queryPipe, spaces.targetSink)(_)
 
-    def rebuild: ElemPipe[Unit, Unit] = CompositeViewDef.rebuild(
-      view.ref,
-      view.value.rebuildStrategy,
-      CompositeViewDef.rebuildWhen(view, fetchProgress, graphStream),
-      compositeProjections.resetRebuild(view.ref, view.rev)
-    )
-
-    compile(
-      view,
-      fetchProgress,
-      compileSource,
-      compileTarget,
-      rebuild,
-      compositeProjections.handleRestarts(view.ref),
-      compositeProjections.saveOperation(metadata, view.ref, view.rev, _, _)
-    ).map { stream =>
-      CompiledProjection.fromStream(
-        metadata,
-        ExecutionStrategy.TransientSingleNode,
-        _ => stream
+    def compileAll(progressRef: Ref[Task, CompositeProgress]) = {
+      def rebuild: ElemPipe[Unit, Unit] = CompositeViewDef.rebuild(
+        view.ref,
+        view.value.rebuildStrategy,
+        CompositeViewDef.rebuildWhen(view, progressRef, fetchProgress, graphStream),
+        compositeProjections.resetRebuild(view.ref, view.rev)
       )
+
+      compile(
+        view,
+        fetchProgress,
+        compileSource,
+        compileTarget,
+        rebuild,
+        compositeProjections.handleRestarts(view.ref),
+        compositeProjections.saveOperation(metadata, view.ref, view.rev, _, _)
+      ).map { stream =>
+        CompiledProjection.fromStream(
+          metadata,
+          ExecutionStrategy.TransientSingleNode,
+          _ => stream
+        )
+      }
     }
+
+    for {
+      initProgress <- fetchProgress.absorb
+      progressRef  <- Ref.of[Task, CompositeProgress](initProgress)
+      projection   <- compileAll(progressRef)
+    } yield projection
   }
 
   /**
-    * Compile the composite views into a unique stream
+    * Compile the composite views into a unique stream.
+    *
     * @param view
     *   the view
     * @param fetchProgress
@@ -231,40 +264,54 @@ object CompositeViewDef {
   /**
     * Defines the condition to be met to trigger the rebuild of a composite view
     *
-    * The condition is: * At least one of the main branches indexed at least a new element * All the main branches
-    * consumed all existing elements
+    * The conditions are:
+    *
+    *   - At least one of the main branches indexed at least a new element
+    *   - All the main branches consumed all existing elements
     */
   def rebuildWhen(
       view: ActiveViewDef,
+      progressRef: Ref[Task, CompositeProgress],
       fetchProgress: UIO[CompositeProgress],
       graphStream: CompositeGraphStream
   ): UIO[Boolean] = {
     def logWhen(condition: Boolean, message: String, args: Any*) =
       UIO.when(condition)(UIO.delay(logger.debug(message, args)))
 
-    def checkSource(progress: CompositeProgress, s: CompositeViewSource): UIO[RebuildCondition] =
+    def checkSource(
+        s: CompositeViewSource,
+        progress: CompositeProgress,
+        previousProgress: CompositeProgress
+    ): UIO[RebuildCondition] =
       progress.sourceMainOffset(s.id).fold(UIO.pure(RebuildCondition.start)) { offset =>
         for {
-          diffOffset  <- UIO.pure(!progress.sourceRebuildOffset(s.id).contains(offset)).tapEval {
-                           def message = "An offset difference has been spotted for source '{}' in view '{}'."
+          diffMain    <- UIO.pure(!previousProgress.sourceMainOffset(s.id).contains(offset)).tapEval {
+                           def message =
+                             "An offset difference has been spotted with previous progress for source '{}' in view '{}'."
+                           logWhen(_, message, s.id, view.ref)
+                         }
+          diffRebuild <- UIO.pure(!progress.sourceRebuildOffset(s.id).contains(offset)).tapEval {
+                           def message =
+                             "An offset difference has been spotted between main and rebuild for source '{}' in view '{}'."
                            logWhen(_, message, s.id, view.ref)
                          }
           noRemaining <- graphStream.remaining(s, view.ref.project)(offset).map(_.exists(_.count == 0L)).tapEval {
                            def message = "The main branch for source '{}' in view '{}' completed indexing."
                            logWhen(_, message, s.id, view.ref)
                          }
-        } yield RebuildCondition(diffOffset, noRemaining)
+        } yield RebuildCondition(diffMain || diffRebuild, noRemaining)
       }
 
-    fetchProgress.flatMap { progress =>
-      // For all the sources
-      view.value.sources
-        .reduceMapM(checkSource(progress, _))
-        .map { r => r.diffOffset && r.diffOffset }
-        .tapEval {
-          logWhen(_, "All conditions are met to trigger the rebuild for view '{}'.", view.ref)
-        }
-    }
+    for {
+      newProgress      <- fetchProgress
+      previousProgress <- progressRef.getAndSet(newProgress).hideErrors
+      condition        <- view.value.sources
+                            .reduceMapM(checkSource(_, newProgress, previousProgress))
+                            .map { r => r.diffOffset && r.diffOffset }
+                            .tapEval {
+                              logWhen(_, "All conditions are met to trigger the rebuild for view '{}'.", view.ref)
+                            }
+    } yield condition
   }
 
   /**
@@ -306,16 +353,15 @@ object CompositeViewDef {
     Stream.eval(fetchProgress).flatMap { progress =>
       val sourceOffset = progress.sourceMainOffset(sourceId)
       val main         = for {
-        leapedSource <- sourceOffset.map(sourceOperation.identityLeap).getOrElse(Right(sourceOperation))
-        mainTargets  <- targets.traverse { case (id, operation) =>
-                          targetOperation(
-                            progress,
-                            CompositeBranch.main(sourceId, id),
-                            operation,
-                            closeBranch
-                          )
-                        }
-        result       <- source.through(leapedSource).flatMap(_.broadcastThrough(mainTargets))
+        mainTargets <- targets.traverse { case (id, operation) =>
+                         targetOperation(
+                           progress,
+                           CompositeBranch.main(sourceId, id),
+                           operation,
+                           closeBranch
+                         )
+                       }
+        result      <- source.through(sourceOperation).flatMap(_.broadcastThrough(mainTargets))
       } yield result
       main match {
         case Left(e)       => Stream.raiseError[Task](e)
