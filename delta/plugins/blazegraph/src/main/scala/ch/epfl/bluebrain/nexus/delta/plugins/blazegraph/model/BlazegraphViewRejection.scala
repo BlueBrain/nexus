@@ -149,18 +149,18 @@ object BlazegraphViewRejection {
     *   the view id
     */
   final case class DifferentBlazegraphViewType(
-      id: Iri,
+      id: Option[Iri],
       provided: BlazegraphViewType,
       expected: BlazegraphViewType
   ) extends BlazegraphViewRejection(
-        s"Incorrect Blazegraph View '$id' type: '$provided' provided, expected '$expected'."
+        s"Incorrect Blazegraph View '${id.getOrElse("")}' type: '$provided' provided, expected '$expected'."
       )
 
   /**
     * Rejection returned when one of the provided view references for an AggregateBlazegraphView does not exist or is
     * deprecated.
     *
-    * @param view
+    * @param views
     *   the offending view reference
     */
   final case class InvalidViewReferences(views: Set[ViewRef])

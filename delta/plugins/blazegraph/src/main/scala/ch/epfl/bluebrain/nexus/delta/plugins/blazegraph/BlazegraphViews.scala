@@ -8,11 +8,11 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.IndexingViewDef
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.{AggregateBlazegraphView, IndexingBlazegraphView}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.IndexingViewDef.{ActiveViewDef, DeprecatedViewDef}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.IndexingBlazegraphView
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewCommand._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection._
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewType.{AggregateBlazegraphView => AggregateBlazegraphViewType, IndexingBlazegraphView => IndexingBlazegraphViewType}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -261,13 +261,16 @@ final class BlazegraphViews(
   def fetchIndexingView(
       id: IdSegmentRef,
       project: ProjectRef
-  ): IO[BlazegraphViewRejection, IndexingViewResource] =
-    fetch(id, project).flatMap { res =>
-      res.value match {
-        case v: IndexingBlazegraphView  =>
-          IO.pure(res.as(v))
-        case _: AggregateBlazegraphView =>
-          IO.raiseError(DifferentBlazegraphViewType(res.id, AggregateBlazegraphViewType, IndexingBlazegraphViewType))
+  ): IO[BlazegraphViewRejection, ActiveViewDef] =
+    fetchState(id, project).flatMap { case (_, state) =>
+      IndexingViewDef(state, prefix) match {
+        case Left(rejection) => IO.raiseError(rejection)
+        case Right(viewDef)  =>
+          viewDef match {
+            case v: ActiveViewDef     => IO.pure(v)
+            case v: DeprecatedViewDef =>
+              IO.raiseError(ViewIsDeprecated(v.ref.viewId))
+          }
       }
     }
 
@@ -333,7 +336,7 @@ final class BlazegraphViews(
         value = viewDef,
         revision = envelope.rev
       )
-    }
+    }.toOption
 
   private def eval(cmd: BlazegraphViewCommand, pc: ProjectContext): IO[BlazegraphViewRejection, ViewResource] =
     log
@@ -358,11 +361,11 @@ object BlazegraphViews {
   /**
     * Constructs a projectionId for a blazegraph view
     */
-  def projectionName(view: IndexingViewResource): String =
-    projectionName(view.value.project, view.id, view.rev)
+  def projectionName(viewDef: ActiveViewDef): String =
+    projectionName(viewDef.ref.project, viewDef.ref.viewId, viewDef.indexingRev)
 
   def projectionName(state: BlazegraphViewState): String =
-    projectionName(state.project, state.id, state.rev)
+    projectionName(state.project, state.id, state.indexingRev)
 
   /**
     * Constructs a projectionId for a blazegraph view
@@ -412,11 +415,12 @@ object BlazegraphViews {
       }
 
     def updated(e: BlazegraphViewUpdated): Option[BlazegraphViewState] = state.map { s =>
-      s.copy(rev = e.rev, value = e.value, source = e.source, updatedAt = e.instant, updatedBy = e.subject)
+      s.copy(rev = e.rev, indexingRev = e.rev, value = e.value, source = e.source, updatedAt = e.instant, updatedBy = e.subject)
     }
 
+    // TODO: Indexing revision when updating
     def tagAdded(e: BlazegraphViewTagAdded): Option[BlazegraphViewState] = state.map { s =>
-      s.copy(rev = e.rev, tags = s.tags + (e.tag -> e.targetRev), updatedAt = e.instant, updatedBy = e.subject)
+      s.copy(rev = e.rev, indexingRev = e.rev, tags = s.tags + (e.tag -> e.targetRev), updatedAt = e.instant, updatedBy = e.subject)
     }
 
     def deprecated(e: BlazegraphViewDeprecated): Option[BlazegraphViewState] = state.map { s =>
@@ -456,7 +460,7 @@ object BlazegraphViews {
       case Some(s) if s.deprecated               =>
         IO.raiseError(ViewIsDeprecated(c.id))
       case Some(s) if c.value.tpe != s.value.tpe =>
-        IO.raiseError(DifferentBlazegraphViewType(s.id, c.value.tpe, s.value.tpe))
+        IO.raiseError(DifferentBlazegraphViewType(Some(s.id), c.value.tpe, s.value.tpe))
       case Some(s)                               =>
         for {
           _ <- validate(c.value)

@@ -3,6 +3,8 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing
 import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.IndexingViewDef.{ActiveViewDef, DeprecatedViewDef}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.DifferentBlazegraphViewType
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewType.{AggregateBlazegraphView, IndexingBlazegraphView}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.{AggregateBlazegraphViewValue, IndexingBlazegraphViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphViewState, BlazegraphViewValue}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -76,7 +78,7 @@ class IndexingViewDefSuite extends BioSuite {
   test("Build an active view def") {
     assertEquals(
       IndexingViewDef(state(indexing), prefix),
-      Some(
+      Right(
         ActiveViewDef(
           viewRef,
           s"blazegraph-$projectRef-$id-1",
@@ -92,14 +94,16 @@ class IndexingViewDefSuite extends BioSuite {
   test("Build an deprecated view def") {
     assertEquals(
       IndexingViewDef(state(indexing).copy(deprecated = true), prefix),
-      Some(DeprecatedViewDef(viewRef))
+      Right(DeprecatedViewDef(viewRef))
     )
   }
 
   test("Ignore aggregate views") {
     assertEquals(
       IndexingViewDef(state(aggregate), prefix),
-      None
+      Left(
+        DifferentBlazegraphViewType(None, AggregateBlazegraphView, IndexingBlazegraphView)
+      )
     )
   }
 

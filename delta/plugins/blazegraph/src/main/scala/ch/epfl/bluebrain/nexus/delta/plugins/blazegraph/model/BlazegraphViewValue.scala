@@ -1,7 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model
 
 import cats.data.NonEmptySet
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.IndexingBlazegraphViewValue
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.DifferentBlazegraphViewType
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.{AggregateBlazegraphViewValue, IndexingBlazegraphViewValue}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.configuration.semiauto.deriveConfigJsonLdDecoder
@@ -41,10 +42,14 @@ sealed trait BlazegraphViewValue extends Product with Serializable {
 
   def toJson(iri: Iri): Json = this.asJsonObject.add(keywords.id, iri.asJson).asJson.dropNullValues
 
-  def asIndexingValue: Option[IndexingBlazegraphViewValue] = this match {
-    case v: IndexingBlazegraphViewValue => Some(v)
-    case _                              => None
-  }
+  def asIndexingValue: Either[BlazegraphViewRejection, IndexingBlazegraphViewValue] =
+    this match {
+      case v: IndexingBlazegraphViewValue  => Right(v)
+      case v: AggregateBlazegraphViewValue =>
+        Left(
+          DifferentBlazegraphViewType(None, v.tpe, BlazegraphViewType.IndexingBlazegraphView)
+        )
+    }
 }
 
 @nowarn("cat=unused")

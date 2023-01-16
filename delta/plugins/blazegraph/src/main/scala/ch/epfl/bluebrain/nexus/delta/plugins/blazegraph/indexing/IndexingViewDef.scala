@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing
 import cats.data.NonEmptyChain
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewState
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphViewRejection, BlazegraphViewState}
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
@@ -48,7 +48,7 @@ object IndexingViewDef {
   def apply(
       state: BlazegraphViewState,
       prefix: String
-  ): Option[IndexingViewDef] =
+  ): Either[BlazegraphViewRejection, IndexingViewDef] =
     state.value.asIndexingValue.map { indexing =>
       if (state.deprecated)
         DeprecatedViewDef(
