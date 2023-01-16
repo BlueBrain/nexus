@@ -64,6 +64,7 @@ class IndexingViewDefSuite extends BioSuite {
     Json.obj("blazegraph" -> Json.fromString("value")),
     Tags(tag              -> 3),
     rev = 1,
+    indexingRev = 1,
     deprecated = false,
     createdAt = instant,
     createdBy = subject,

@@ -402,6 +402,7 @@ object BlazegraphViews {
           e.source,
           Tags.empty,
           e.rev,
+          e.rev,
           deprecated = false,
           e.instant,
           e.subject,
