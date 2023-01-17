@@ -11,6 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.IndexingView
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewCommand._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection._
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewType.{AggregateElasticSearch, ElasticSearch}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.AggregateElasticSearchViewValue
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -295,12 +296,13 @@ final class ElasticSearchViews private (
     fetchState(id, project)
       .flatMap { case (_, state) =>
         IndexingViewDef(state, defaultElasticsearchMapping, defaultElasticsearchSettings, prefix) match {
-          case Right(viewDef)  =>
+          case Some(viewDef) =>
             viewDef match {
               case v: ActiveViewDef     => IO.pure(v)
               case v: DeprecatedViewDef => IO.raiseError(ViewIsDeprecated(v.ref.viewId))
             }
-          case Left(rejection) => IO.raiseError(rejection)
+          case None          =>
+            IO.raiseError(DifferentElasticSearchViewType(Some(state.id), AggregateElasticSearch, ElasticSearch))
         }
       }
 
@@ -365,7 +367,7 @@ final class ElasticSearchViews private (
         value = viewDef,
         revision = envelope.rev
       )
-    }.toOption
+    }
 
   private def eval(
       cmd: ElasticSearchViewCommand,
@@ -450,7 +452,7 @@ object ElasticSearchViews {
       
     def updated(e: ElasticSearchViewUpdated): Option[ElasticSearchViewState] = state.map { s =>
 
-      val reindex = (e.value.asIndexingValue.toOption, s.value.asIndexingValue.toOption) match {
+      val reindex = (e.value.asIndexingValue, s.value.asIndexingValue) match {
         case (Some(esViewValueFromEvent), Some(esViewValueFromState)) => 
           !esViewValueFromEvent.hasSameReindexingFields(esViewValueFromState)
         case _ => false

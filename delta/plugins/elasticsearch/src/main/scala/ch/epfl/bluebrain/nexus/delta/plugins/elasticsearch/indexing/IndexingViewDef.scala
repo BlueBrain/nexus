@@ -4,7 +4,7 @@ import cats.data.NonEmptyChain
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, ElasticSearchViewRejection, ElasticSearchViewState}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, ElasticSearchViewState}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
@@ -61,7 +61,7 @@ object IndexingViewDef {
       defaultMapping: JsonObject,
       defaultSettings: JsonObject,
       prefix: String
-  ): Either[ElasticSearchViewRejection, IndexingViewDef] =
+  ): Option[IndexingViewDef] =
     state.value.asIndexingValue.map { indexing =>
       if (state.deprecated)
         DeprecatedViewDef(
