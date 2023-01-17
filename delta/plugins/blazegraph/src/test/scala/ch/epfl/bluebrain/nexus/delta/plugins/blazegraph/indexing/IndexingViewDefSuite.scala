@@ -67,7 +67,7 @@ class IndexingViewDefSuite extends BioSuite {
     Json.obj("blazegraph" -> Json.fromString("value")),
     Tags(tag              -> 3),
     rev = 1,
-    indexingRev = 1,
+    indexingRev = indexingRev,
     deprecated = false,
     createdAt = instant,
     createdBy = subject,
@@ -81,7 +81,7 @@ class IndexingViewDefSuite extends BioSuite {
       Right(
         ActiveViewDef(
           viewRef,
-          s"blazegraph-$projectRef-$id-1",
+          s"blazegraph-$projectRef-$id-$indexingRev",
           indexing.resourceTag,
           indexing.pipeChain,
           namespace,

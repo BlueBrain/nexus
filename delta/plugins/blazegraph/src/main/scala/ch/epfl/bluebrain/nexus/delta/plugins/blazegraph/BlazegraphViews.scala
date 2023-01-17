@@ -358,12 +358,6 @@ object BlazegraphViews {
 
   val expandIri: ExpandIri[InvalidBlazegraphViewId] = new ExpandIri(InvalidBlazegraphViewId.apply)
 
-  /**
-    * Constructs a projectionId for a blazegraph view
-    */
-  def projectionName(viewDef: ActiveViewDef): String =
-    projectionName(viewDef.ref.project, viewDef.ref.viewId, viewDef.indexingRev)
-
   def projectionName(state: BlazegraphViewState): String =
     projectionName(state.project, state.id, state.indexingRev)
 
@@ -415,12 +409,52 @@ object BlazegraphViews {
       }
 
     def updated(e: BlazegraphViewUpdated): Option[BlazegraphViewState] = state.map { s =>
-      s.copy(rev = e.rev, indexingRev = e.rev, value = e.value, source = e.source, updatedAt = e.instant, updatedBy = e.subject)
+      val reindex = e.value match {
+        case IndexingBlazegraphViewValue(
+              _,
+              _,
+              eventResourceSchemas,
+              eventResourceTypes,
+              eventResourceTag,
+              eventIncludeMetadata,
+              eventIncludeDeprecated,
+              _
+            ) =>
+          s.value match {
+            case IndexingBlazegraphViewValue(
+                  _,
+                  _,
+                  resourceSchemas,
+                  resourceTypes,
+                  resourceTag,
+                  includeMetadata,
+                  includeDeprecated,
+                  _
+                ) =>
+              eventResourceSchemas != resourceSchemas ||
+                eventResourceTypes != resourceTypes ||
+                eventResourceTag != resourceTag ||
+                eventIncludeMetadata != includeMetadata ||
+                eventIncludeDeprecated != includeDeprecated
+            case _ => false
+          }
+        case _ => false
+      }
+
+      val newIndexingRev = if (reindex) s.indexingRev + 1 else s.indexingRev
+
+      s.copy(
+        rev = e.rev,
+        indexingRev = newIndexingRev,
+        value = e.value,
+        source = e.source,
+        updatedAt = e.instant,
+        updatedBy = e.subject
+      )
     }
 
-    // TODO: Indexing revision when updating
     def tagAdded(e: BlazegraphViewTagAdded): Option[BlazegraphViewState] = state.map { s =>
-      s.copy(rev = e.rev, indexingRev = e.rev, tags = s.tags + (e.tag -> e.targetRev), updatedAt = e.instant, updatedBy = e.subject)
+      s.copy(rev = e.rev, tags = s.tags + (e.tag -> e.targetRev), updatedAt = e.instant, updatedBy = e.subject)
     }
 
     def deprecated(e: BlazegraphViewDeprecated): Option[BlazegraphViewState] = state.map { s =>

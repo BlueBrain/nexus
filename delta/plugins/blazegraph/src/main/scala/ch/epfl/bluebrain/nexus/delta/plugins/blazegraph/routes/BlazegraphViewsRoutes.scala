@@ -181,9 +181,7 @@ class BlazegraphViewsRoutes(
                           emit(
                             views
                               .fetchIndexingView(id, ref)
-                              .flatMap(v =>
-                                projections.statistics(ref, v.resourceTag, BlazegraphViews.projectionName(v))
-                              )
+                              .flatMap(v => projections.statistics(ref, v.resourceTag, v.projection))
                               .rejectOn[ViewNotFound]
                           )
                         }
@@ -215,7 +213,7 @@ class BlazegraphViewsRoutes(
                             emit(
                               views
                                 .fetchIndexingView(id, ref)
-                                .flatMap(v => projections.offset(BlazegraphViews.projectionName(v)))
+                                .flatMap(v => projections.offset(v.projection))
                                 .rejectOn[ViewNotFound]
                             )
                           },
@@ -224,7 +222,7 @@ class BlazegraphViewsRoutes(
                             emit(
                               views
                                 .fetchIndexingView(id, ref)
-                                .flatMap { r => projections.scheduleRestart(BlazegraphViews.projectionName(r)) }
+                                .flatMap { r => projections.scheduleRestart(r.projection) }
                                 .as(Offset.start)
                                 .rejectOn[ViewNotFound]
                             )
