@@ -97,6 +97,17 @@ object ElasticSearchViewValue {
         }
         PipeChain(pipes)
       }
+
+    /**
+      * Returns true if both this [[ElasticSearchViewValue]] is equal to the provided [[ElasticSearchViewValue]] on the
+      * fields which should trigger a reindexing of the view.
+      */
+    def hasSameReindexingFields(that: IndexingElasticSearchViewValue): Boolean =
+      resourceTag == that.resourceTag &&
+        pipeline == that.pipeline &&
+        mapping == that.mapping &&
+        settings == that.settings &&
+        context == that.context
   }
 
   object IndexingElasticSearchViewValue {

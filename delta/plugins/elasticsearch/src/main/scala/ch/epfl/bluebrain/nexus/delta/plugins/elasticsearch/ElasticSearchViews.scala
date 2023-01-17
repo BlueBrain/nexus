@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.IndexingView
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewCommand._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection._
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.AggregateElasticSearchViewValue
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
@@ -450,17 +450,9 @@ object ElasticSearchViews {
       
     def updated(e: ElasticSearchViewUpdated): Option[ElasticSearchViewState] = state.map { s =>
 
-      val reindex = e.value match {
-        case IndexingElasticSearchViewValue(_, _, eventResourceTag, eventPipeline, eventMapping, eventSettings, eventContext, _) =>
-          s.value match {
-            case IndexingElasticSearchViewValue(_, _, stateResourceTag, statePipeline, stateMapping, stateSettings, stateContext, _) =>
-              eventResourceTag != stateResourceTag ||
-                eventPipeline != statePipeline ||
-                eventMapping != stateMapping ||
-                eventSettings != stateSettings ||
-                eventContext != stateContext
-            case _ => false
-          }
+      val reindex = (e.value.asIndexingValue.toOption, s.value.asIndexingValue.toOption) match {
+        case (Some(esViewValueFromEvent), Some(esViewValueFromState)) => 
+          !esViewValueFromEvent.hasSameReindexingFields(esViewValueFromState)
         case _ => false
       }
       val newIndexingRev = if (reindex) s.indexingRev + 1 else s.indexingRev
