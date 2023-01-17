@@ -47,47 +47,18 @@ final class ElasticSearchCoordinator private (
 
   def run(offset: Offset): Stream[Task, Elem[Unit]] = {
     fetchViews(offset).evalMap { elem =>
-      elem.traverse { v =>
-        cache.get(v.ref).flatMap { cachedView =>
-          (cachedView, v) match {
-            case (Some(cached), active: ActiveViewDef) if cached.index == active.index =>
-              for {
-                _ <- cache.put(active.ref, active)
-                _ <- Task.delay(
-                       logger.info(s"Index ${active.index} already exists and will not be recreated.")
-                     )
-              } yield ()
-            case (_, active: ActiveViewDef)                                            =>
-              IndexingViewDef
-                .compile(
-                  active,
-                  compilePipeChain,
-                  graphStream,
-                  sink(active)
-                )
-                .flatMap { projection =>
-                  cleanupCurrent(active.ref) >>
-                    supervisor.run(
-                      projection,
-                      for {
-                        _ <- createIndex(active)
-                        _ <- cache.put(active.ref, active)
-                      } yield ()
-                    )
-                }
-            case (_, deprecated: DeprecatedViewDef)                                    =>
-              cleanupCurrent(deprecated.ref)
-          }
-        }
-      }
-
       elem
-        .traverse {
-          case active: ActiveViewDef =>
-            cache.get(active.ref).flatMap { cachedViewRef =>
-              if (cachedViewRef.exists(_.index == active.index)) {
-                Task.pure(ExecutionStatus.Running)
-              } else {
+        .traverse { v =>
+          cache.get(v.ref).flatMap { cachedView =>
+            (cachedView, v) match {
+              case (Some(cached), active: ActiveViewDef) if cached.index == active.index =>
+                for {
+                  _ <- cache.put(active.ref, active)
+                  _ <- Task.delay(
+                         logger.info(s"Index ${active.index} already exists and will not be recreated.")
+                       )
+                } yield ()
+              case (_, active: ActiveViewDef)                                            =>
                 IndexingViewDef
                   .compile(
                     active,
@@ -105,9 +76,10 @@ final class ElasticSearchCoordinator private (
                         } yield ()
                       )
                   }
-              }
+              case (_, deprecated: DeprecatedViewDef)                                    =>
+                cleanupCurrent(deprecated.ref)
             }
-          case d: DeprecatedViewDef  => cleanupCurrent(d.ref)
+          }
         }
         .onErrorRecover {
           // If the current view does not translate to a projection or if there is a problem
