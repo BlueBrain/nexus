@@ -100,7 +100,7 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
   test("Build an active view def with a custom mapping and settings") {
     assertEquals(
       IndexingViewDef(state(indexingCustom), defaultMapping, defaultSettings, prefix),
-      Right(
+      Some(
         ActiveViewDef(
           viewRef,
           s"elasticsearch-$projectRef-$id-$indexingRev",
@@ -119,7 +119,7 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
   test("Build an active view def with no mapping and settings defined") {
     assertEquals(
       IndexingViewDef(state(indexingDefault), defaultMapping, defaultSettings, prefix),
-      Right(
+      Some(
         ActiveViewDef(
           viewRef,
           s"elasticsearch-$projectRef-$id-$indexingRev",
@@ -138,7 +138,7 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
   test("Build an deprecated view def") {
     assertEquals(
       IndexingViewDef(state(indexingDefault).copy(deprecated = true), defaultMapping, defaultSettings, prefix),
-      Right(
+      Some(
         DeprecatedViewDef(
           viewRef
         )
@@ -149,13 +149,7 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
   test("Ignore aggregate views") {
     assertEquals(
       IndexingViewDef(state(aggregate), defaultMapping, defaultSettings, prefix),
-      Left(
-        DifferentElasticSearchViewType(
-          None,
-          ElasticSearchViewType.AggregateElasticSearch,
-          ElasticSearchViewType.ElasticSearch
-        )
-      )
+      None
     )
   }
 
