@@ -209,9 +209,8 @@ class ElasticSearchViewsQuerySpec(override val docker: ElasticSearchDocker)
       indexingViews
         .foldLeftM(Seq.empty[ElasticSearchBulk]) { case (bulk, ref) =>
           views.fetchIndexingView(ref.viewId, ref.project).flatMap { view =>
-            val index = IndexLabel.unsafe(view.index.value)
             createDocuments(ref).map { docs =>
-              docs.map(ElasticSearchBulk.Index(index, genString(), _)) ++ bulk
+              docs.map(ElasticSearchBulk.Index(view.index, genString(), _)) ++ bulk
             }
           }
         }
