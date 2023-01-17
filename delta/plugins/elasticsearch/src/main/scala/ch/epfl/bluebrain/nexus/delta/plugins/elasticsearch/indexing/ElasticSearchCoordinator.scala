@@ -47,6 +47,40 @@ final class ElasticSearchCoordinator private (
 
   def run(offset: Offset): Stream[Task, Elem[Unit]] = {
     fetchViews(offset).evalMap { elem =>
+      elem.traverse { v =>
+        cache.get(v.ref).flatMap { cachedView =>
+          (cachedView, v) match {
+            case (Some(cached), active: ActiveViewDef) if cached.index == active.index =>
+              for {
+                _ <- cache.put(active.ref, active)
+                _ <- Task.delay(
+                       logger.info(s"Index ${active.index} already exists and will not be recreated.")
+                     )
+              } yield ()
+            case (_, active: ActiveViewDef)                                            =>
+              IndexingViewDef
+                .compile(
+                  active,
+                  compilePipeChain,
+                  graphStream,
+                  sink(active)
+                )
+                .flatMap { projection =>
+                  cleanupCurrent(active.ref) >>
+                    supervisor.run(
+                      projection,
+                      for {
+                        _ <- createIndex(active)
+                        _ <- cache.put(active.ref, active)
+                      } yield ()
+                    )
+                }
+            case (_, deprecated: DeprecatedViewDef)                                    =>
+              cleanupCurrent(deprecated.ref)
+          }
+        }
+      }
+
       elem
         .traverse {
           case active: ActiveViewDef =>
