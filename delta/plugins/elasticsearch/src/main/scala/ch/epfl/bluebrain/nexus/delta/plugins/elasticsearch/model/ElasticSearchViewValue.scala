@@ -41,7 +41,6 @@ sealed trait ElasticSearchViewValue extends Product with Serializable {
   def tpe: ElasticSearchViewType
 
   def toJson(iri: Iri): Json = {
-    import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.Source._
     this.asJsonObject.add(keywords.id, iri.asJson).asJson.deepDropNullValues
   }
 
@@ -155,6 +154,15 @@ object ElasticSearchViewValue {
       */
     def apply(views: NonEmptySet[ViewRef]): AggregateElasticSearchViewValue =
       AggregateElasticSearchViewValue(None, None, views)
+  }
+
+  def nextIndexingRev(v1: ElasticSearchViewValue, v2: ElasticSearchViewValue, currentRev: Int): Int = {
+    (v1.asIndexingValue, v2.asIndexingValue) match {
+      case (Some(value1), Some(value2)) if value1.hasSameReindexingFields(value2) =>
+        currentRev + 1
+      case _                                                                      =>
+        currentRev
+    }
   }
 
   object Source {
