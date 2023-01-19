@@ -95,7 +95,7 @@ object ElasticSearchViewValue {
       }
 
     /**
-      * Returns true if both this [[ElasticSearchViewValue]] is equal to the provided [[ElasticSearchViewValue]] on the
+      * Returns true if this [[ElasticSearchViewValue]] is equal to the provided [[ElasticSearchViewValue]] on the
       * fields which should trigger a reindexing of the view when modified.
       */
     def hasSameIndexingFields(that: IndexingElasticSearchViewValue): Boolean =

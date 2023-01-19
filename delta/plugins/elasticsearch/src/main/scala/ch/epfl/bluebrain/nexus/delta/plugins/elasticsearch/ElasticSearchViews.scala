@@ -453,7 +453,7 @@ object ElasticSearchViews {
       
     def updated(e: ElasticSearchViewUpdated): Option[ElasticSearchViewState] = state.map { s =>
       val newIndexingRev = (e.value.asIndexingValue, s.value.asIndexingValue)
-        .mapN((v1, v2) => nextIndexingRev(v1, v2, s.indexingRev))
+        .mapN(nextIndexingRev(_, _, s.indexingRev))
         .getOrElse(s.indexingRev)
       
       s.copy(rev = e.rev, indexingRev = newIndexingRev, value = e.value, source = e.source, updatedAt = e.instant, updatedBy = e.subject)
