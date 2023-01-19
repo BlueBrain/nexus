@@ -119,7 +119,8 @@ object BlazegraphView {
       includeDeprecated: Boolean,
       permission: Permission,
       tags: Tags,
-      source: Json
+      source: Json,
+      indexingRev: Int
   ) extends BlazegraphView {
     override def metadata: Metadata = Metadata(Some(uuid))
 

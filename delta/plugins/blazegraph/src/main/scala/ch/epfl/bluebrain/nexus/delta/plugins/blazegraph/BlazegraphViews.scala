@@ -368,14 +368,14 @@ object BlazegraphViews {
   /**
     * Constructs a projectionId for a blazegraph view
     */
-  def projectionName(project: ProjectRef, id: Iri, rev: Int): String =
-    s"blazegraph-$project-$id-$rev"
+  def projectionName(project: ProjectRef, id: Iri, indexingRev: Int): String =
+    s"blazegraph-$project-$id-$indexingRev"
 
   /**
     * Constructs the namespace for a Blazegraph view
     */
-  def namespace(view: IndexingViewResource, prefix: String): String =
-    namespace(view.value.uuid, view.rev, prefix)
+  def namespace(view: IndexingBlazegraphView, prefix: String): String =
+    namespace(view.uuid, view.indexingRev, prefix)
 
   /**
     * Constructs the namespace for a Blazegraph view
@@ -568,7 +568,7 @@ object BlazegraphViews {
       v.value match {
         case i: IndexingBlazegraphView =>
           client
-            .createNamespace(BlazegraphViews.namespace(v.as(i), prefix))
+            .createNamespace(BlazegraphViews.namespace(i, prefix))
             .mapError(WrappedBlazegraphClientError.apply)
             .void
         case _                         => IO.unit

@@ -17,11 +17,6 @@ package object model {
   type ViewResource = ResourceF[BlazegraphView]
 
   /**
-    * Type alias for a indexing view specific resource.
-    */
-  type IndexingViewResource = ResourceF[IndexingBlazegraphView]
-
-  /**
     * The fixed virtual schema of a BlazegraphView.
     */
   final val schema: ResourceRef = Latest(schemas + "views.json")
