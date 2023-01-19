@@ -98,7 +98,7 @@ object ElasticSearchViewValue {
       * Returns true if this [[ElasticSearchViewValue]] is equal to the provided [[ElasticSearchViewValue]] on the
       * fields which should trigger a reindexing of the view when modified.
       */
-    def hasSameIndexingFields(that: IndexingElasticSearchViewValue): Boolean =
+    private def hasSameIndexingFields(that: IndexingElasticSearchViewValue): Boolean =
       resourceTag == that.resourceTag &&
         pipeline == that.pipeline &&
         mapping == that.mapping &&
@@ -131,6 +131,12 @@ object ElasticSearchViewValue {
     ): IndexingElasticSearchViewValue =
       IndexingElasticSearchViewValue(None, None, resourceTag, pipeline, mapping, settings, context, permission)
 
+    /**
+     * @return
+     * the next indexing revision for the two given [[IndexingElasticSearchViewValue]]
+     */
+    def nextIndexingRev(v1: IndexingElasticSearchViewValue, v2: IndexingElasticSearchViewValue, currentRev: Int): Int =
+      if (!v1.hasSameIndexingFields(v2)) currentRev + 1 else currentRev
   }
 
   /**
@@ -156,13 +162,6 @@ object ElasticSearchViewValue {
     def apply(views: NonEmptySet[ViewRef]): AggregateElasticSearchViewValue =
       AggregateElasticSearchViewValue(None, None, views)
   }
-
-  /**
-    * @return
-    *   the next indexing revision for the two given [[IndexingElasticSearchViewValue]]
-    */
-  def nextIndexingRev(v1: IndexingElasticSearchViewValue, v2: IndexingElasticSearchViewValue, currentRev: Int): Int =
-    if (v1.hasSameIndexingFields(v2)) currentRev + 1 else currentRev
 
   object Source {
     @nowarn("cat=unused")

@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.IndexingElasticSearchViewValue
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.IndexingElasticSearchViewValue.nextIndexingRev
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.permissions
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.sdk.views.PipeStep
@@ -20,7 +21,7 @@ class ElasticSearchViewValueSuite extends FunSuite {
       IndexingElasticSearchViewValue(Some("name"), Some("description")),
       viewValue.copy(permission = permissions.read)
     )
-    viewValues.foreach(v => assert(v.hasSameIndexingFields(viewValue)))
+    viewValues.foreach(v => assertEquals(nextIndexingRev(v, viewValue, 1), 1))
   }
 
   test("Views with different reindexing fields") {
@@ -31,7 +32,7 @@ class ElasticSearchViewValueSuite extends FunSuite {
       viewValue.copy(settings = Some(JsonObject.empty)),
       viewValue.copy(context = Some(ContextObject.apply(JsonObject.empty)))
     )
-    viewValues.foreach(v => assert(!v.hasSameIndexingFields(viewValue)))
+    viewValues.foreach(v => assertEquals(nextIndexingRev(v, viewValue, 1), 2))
   }
 
 }
