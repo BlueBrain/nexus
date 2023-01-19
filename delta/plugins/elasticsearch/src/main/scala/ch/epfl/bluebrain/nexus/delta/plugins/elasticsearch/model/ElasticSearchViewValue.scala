@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 
 import cats.data.{NonEmptyChain, NonEmptySet}
+import cats.implicits.catsSyntaxTuple2Semigroupal
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.IndexingElasticSearchViewValue
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.IndexingElasticSearchViewValue.defaultPipeline
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -157,13 +158,12 @@ object ElasticSearchViewValue {
       AggregateElasticSearchViewValue(None, None, views)
   }
 
-  def nextIndexingRev(v1: ElasticSearchViewValue, v2: ElasticSearchViewValue, currentRev: Int): Int =
-    (v1.asIndexingValue, v2.asIndexingValue) match {
-      case (Some(value1), Some(value2)) if value1.hasSameIndexingFields(value2) =>
-        currentRev + 1
-      case _                                                                    =>
-        currentRev
-    }
+  /**
+    * @return
+    *   the next indexing revision for the two given [[IndexingElasticSearchViewValue]]
+    */
+  def nextIndexingRev(v1: IndexingElasticSearchViewValue, v2: IndexingElasticSearchViewValue, currentRev: Int): Int =
+    if (v1.hasSameIndexingFields(v2)) currentRev + 1 else currentRev
 
   object Source {
     @nowarn("cat=unused")

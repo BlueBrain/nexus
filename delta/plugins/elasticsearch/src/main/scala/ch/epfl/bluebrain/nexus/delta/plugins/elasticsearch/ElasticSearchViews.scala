@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import cats.effect.Clock
+import cats.implicits.catsSyntaxTuple2Semigroupal
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
@@ -12,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchVi
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewType.{AggregateElasticSearch, ElasticSearch}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, nextIndexingRev}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{nextIndexingRev, AggregateElasticSearchViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
@@ -451,16 +452,10 @@ object ElasticSearchViews {
       }
       
     def updated(e: ElasticSearchViewUpdated): Option[ElasticSearchViewState] = state.map { s =>
-
-      nextIndexingRev(e.value, s.value, s.indexingRev)
-
-      val reindex = (e.value.asIndexingValue, s.value.asIndexingValue) match {
-        case (Some(esViewValueFromEvent), Some(esViewValueFromState)) => 
-          !esViewValueFromEvent.hasSameIndexingFields(esViewValueFromState)
-        case _ => false
-      }
-      val newIndexingRev = if (reindex) s.indexingRev + 1 else s.indexingRev
-
+      val newIndexingRev = (e.value.asIndexingValue, s.value.asIndexingValue)
+        .mapN((v1, v2) => nextIndexingRev(v1, v2, s.indexingRev))
+        .getOrElse(s.indexingRev)
+      
       s.copy(rev = e.rev, indexingRev = newIndexingRev, value = e.value, source = e.source, updatedAt = e.instant, updatedBy = e.subject)
     }
 
