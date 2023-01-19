@@ -96,9 +96,9 @@ object ElasticSearchViewValue {
 
     /**
       * Returns true if both this [[ElasticSearchViewValue]] is equal to the provided [[ElasticSearchViewValue]] on the
-      * fields which should trigger a reindexing of the view.
+      * fields which should trigger a reindexing of the view when modified.
       */
-    def hasSameReindexingFields(that: IndexingElasticSearchViewValue): Boolean =
+    def hasSameIndexingFields(that: IndexingElasticSearchViewValue): Boolean =
       resourceTag == that.resourceTag &&
         pipeline == that.pipeline &&
         mapping == that.mapping &&
@@ -157,14 +157,13 @@ object ElasticSearchViewValue {
       AggregateElasticSearchViewValue(None, None, views)
   }
 
-  def nextIndexingRev(v1: ElasticSearchViewValue, v2: ElasticSearchViewValue, currentRev: Int): Int = {
+  def nextIndexingRev(v1: ElasticSearchViewValue, v2: ElasticSearchViewValue, currentRev: Int): Int =
     (v1.asIndexingValue, v2.asIndexingValue) match {
-      case (Some(value1), Some(value2)) if value1.hasSameReindexingFields(value2) =>
+      case (Some(value1), Some(value2)) if value1.hasSameIndexingFields(value2) =>
         currentRev + 1
-      case _                                                                      =>
+      case _                                                                    =>
         currentRev
     }
-  }
 
   object Source {
     @nowarn("cat=unused")

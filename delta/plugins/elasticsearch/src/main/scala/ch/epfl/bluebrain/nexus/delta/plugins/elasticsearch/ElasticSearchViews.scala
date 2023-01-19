@@ -456,7 +456,7 @@ object ElasticSearchViews {
 
       val reindex = (e.value.asIndexingValue, s.value.asIndexingValue) match {
         case (Some(esViewValueFromEvent), Some(esViewValueFromState)) => 
-          !esViewValueFromEvent.hasSameReindexingFields(esViewValueFromState)
+          !esViewValueFromEvent.hasSameIndexingFields(esViewValueFromState)
         case _ => false
       }
       val newIndexingRev = if (reindex) s.indexingRev + 1 else s.indexingRev

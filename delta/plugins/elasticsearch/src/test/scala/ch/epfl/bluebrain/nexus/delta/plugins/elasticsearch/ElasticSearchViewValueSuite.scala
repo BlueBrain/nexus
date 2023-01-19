@@ -20,7 +20,7 @@ class ElasticSearchViewValueSuite extends FunSuite {
       IndexingElasticSearchViewValue(Some("name"), Some("description")),
       viewValue.copy(permission = permissions.read)
     )
-    viewValues.foreach(v => assert(v.hasSameReindexingFields(viewValue)))
+    viewValues.foreach(v => assert(v.hasSameIndexingFields(viewValue)))
   }
 
   test("Views with different reindexing fields") {
@@ -31,7 +31,7 @@ class ElasticSearchViewValueSuite extends FunSuite {
       viewValue.copy(settings = Some(JsonObject.empty)),
       viewValue.copy(context = Some(ContextObject.apply(JsonObject.empty)))
     )
-    viewValues.foreach(v => assert(!v.hasSameReindexingFields(viewValue)))
+    viewValues.foreach(v => assert(!v.hasSameIndexingFields(viewValue)))
   }
 
 }
