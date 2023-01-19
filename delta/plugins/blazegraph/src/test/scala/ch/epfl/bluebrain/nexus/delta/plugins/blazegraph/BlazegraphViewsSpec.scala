@@ -172,6 +172,7 @@ class BlazegraphViewsSpec
           uuid,
           updatedIndexingSource,
           2,
+          indexingRev = 2,
           createdBy = bob,
           updatedBy = bob
         )
@@ -343,6 +344,7 @@ class BlazegraphViewsSpec
           uuid,
           updatedIndexingSource,
           2,
+          indexingRev = 2,
           createdBy = bob,
           updatedBy = bob
         )
