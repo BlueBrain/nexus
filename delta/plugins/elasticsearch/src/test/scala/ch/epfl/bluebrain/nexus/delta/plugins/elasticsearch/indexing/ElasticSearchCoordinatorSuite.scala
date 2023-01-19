@@ -155,6 +155,15 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
         offset = Offset.at(7L),
         value = updatedView2,
         revision = 1
+      ),
+      SuccessElem(
+        tpe = ElasticSearchViews.entityType,
+        id = updatedView2.ref.viewId,
+        project = Some(project),
+        instant = Instant.EPOCH,
+        offset = Offset.at(8L),
+        value = updatedView2,
+        revision = 1
       )
     )
 
@@ -253,7 +262,7 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
       _ <- resumeSignal.set(true)
       _ <- sv.describe(ElasticSearchCoordinator.metadata.name)
              .map(_.map(_.progress))
-             .eventuallySome(ProjectionProgress(Offset.at(7L), Instant.EPOCH, 7, 1, 2))
+             .eventuallySome(ProjectionProgress(Offset.at(8L), Instant.EPOCH, 8, 1, 2))
     } yield ()
   }
 
@@ -302,6 +311,10 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
       r        = entries.assertOneElem
       _        = assertEquals(r.failedElemData.id, nxv + "failed")
     } yield ()
+  }
+
+  test("Delete indices should not contain view2_2 as it was not restarted") {
+    assert(!deletedIndices.contains(updatedView2.index))
   }
 
 }
