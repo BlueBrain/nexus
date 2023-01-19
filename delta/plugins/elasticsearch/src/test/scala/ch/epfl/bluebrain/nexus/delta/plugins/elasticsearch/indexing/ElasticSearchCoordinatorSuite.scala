@@ -156,6 +156,7 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
         value = updatedView2,
         revision = 1
       ),
+      // Elem at offset 8 represents a view update that does not require reindexing
       SuccessElem(
         tpe = ElasticSearchViews.entityType,
         id = updatedView2.ref.viewId,
