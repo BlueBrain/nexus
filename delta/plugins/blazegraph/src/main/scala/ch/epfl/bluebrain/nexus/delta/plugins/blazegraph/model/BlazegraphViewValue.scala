@@ -90,11 +90,11 @@ object BlazegraphViewValue {
       * the fields which should trigger a reindexing of the view when modified.
       */
     def hasSameIndexingFields(that: IndexingBlazegraphViewValue): Boolean =
-      resourceSchemas != that.resourceSchemas ||
-        resourceTypes != that.resourceTypes ||
-        resourceTag != that.resourceTag ||
-        includeMetadata != that.includeMetadata ||
-        includeDeprecated != that.includeDeprecated
+      resourceSchemas == that.resourceSchemas &&
+        resourceTypes == that.resourceTypes &&
+        resourceTag == that.resourceTag &&
+        includeMetadata == that.includeMetadata &&
+        includeDeprecated == that.includeDeprecated
   }
 
   /**
@@ -102,7 +102,7 @@ object BlazegraphViewValue {
     *   the next indexing revision for the two given [[IndexingBlazegraphViewValue]]
     */
   def nextIndexingRev(v1: IndexingBlazegraphViewValue, v2: IndexingBlazegraphViewValue, currentRev: Int): Int =
-    if (v1.hasSameIndexingFields(v2)) currentRev + 1 else currentRev
+    if (!v1.hasSameIndexingFields(v2)) currentRev + 1 else currentRev
 
   /**
     * The configuration of the Blazegraph view that delegates queries to multiple namespaces.
