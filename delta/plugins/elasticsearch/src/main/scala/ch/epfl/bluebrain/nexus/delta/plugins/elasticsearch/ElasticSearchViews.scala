@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import cats.effect.Clock
-import cats.implicits.catsSyntaxTuple2Semigroupal
+import cats.implicits.catsSyntaxTuple3Semigroupal
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
@@ -453,17 +453,18 @@ object ElasticSearchViews {
       }
       
     def updated(e: ElasticSearchViewUpdated): Option[ElasticSearchViewState] = state.map { s =>
-      val newIndexingRev = (e.value.asIndexingValue, s.value.asIndexingValue)
-        .mapN(nextIndexingRev(_, _, s.indexingRev))
-        .getOrElse(s.indexingRev)
-      
+      val newIndexingRev =
+        (e.value.asIndexingValue, s.value.asIndexingValue, Option(s.indexingRev))
+          .mapN(nextIndexingRev)
+          .getOrElse(s.indexingRev)
+
       s.copy(rev = e.rev, indexingRev = newIndexingRev, value = e.value, source = e.source, updatedAt = e.instant, updatedBy = e.subject)
     }
+    // format: on
 
     def tagAdded(e: ElasticSearchViewTagAdded): Option[ElasticSearchViewState] = state.map { s =>
       s.copy(rev = e.rev, tags = s.tags + (e.tag -> e.targetRev), updatedAt = e.instant, updatedBy = e.subject)
     }
-    // format: on
 
     def deprecated(e: ElasticSearchViewDeprecated): Option[ElasticSearchViewState] = state.map { s =>
       s.copy(rev = e.rev, deprecated = true, updatedAt = e.instant, updatedBy = e.subject)

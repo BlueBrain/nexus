@@ -95,8 +95,8 @@ object ElasticSearchViewValue {
       }
 
     /**
-      * Returns true if this [[ElasticSearchViewValue]] is equal to the provided [[ElasticSearchViewValue]] on the
-      * fields which should trigger a reindexing of the view when modified.
+      * Returns true if this [[IndexingElasticSearchViewValue]] is equal to the provided
+      * [[IndexingElasticSearchViewValue]] on the fields which should trigger a reindexing of the view when modified.
       */
     private def hasSameIndexingFields(that: IndexingElasticSearchViewValue): Boolean =
       resourceTag == that.resourceTag &&
@@ -132,11 +132,16 @@ object ElasticSearchViewValue {
       IndexingElasticSearchViewValue(None, None, resourceTag, pipeline, mapping, settings, context, permission)
 
     /**
-     * @return
-     * the next indexing revision for the two given [[IndexingElasticSearchViewValue]]
-     */
-    def nextIndexingRev(v1: IndexingElasticSearchViewValue, v2: IndexingElasticSearchViewValue, currentRev: Int): Int =
-      if (!v1.hasSameIndexingFields(v2)) currentRev + 1 else currentRev
+      * @return
+      *   the next indexing revision based on the differences between the given views
+      */
+    def nextIndexingRev(
+        view1: IndexingElasticSearchViewValue,
+        view2: IndexingElasticSearchViewValue,
+        currentRev: Int
+    ): Int =
+      if (!view1.hasSameIndexingFields(view2)) currentRev + 1
+      else currentRev
   }
 
   /**
