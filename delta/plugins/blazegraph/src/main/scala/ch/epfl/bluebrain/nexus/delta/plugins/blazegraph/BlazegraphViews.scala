@@ -413,39 +413,10 @@ object BlazegraphViews {
       }
 
     def updated(e: BlazegraphViewUpdated): Option[BlazegraphViewState] = state.map { s =>
-      val reindex = e.value match {
-        case IndexingBlazegraphViewValue(
-              _,
-              _,
-              eventResourceSchemas,
-              eventResourceTypes,
-              eventResourceTag,
-              eventIncludeMetadata,
-              eventIncludeDeprecated,
-              _
-            ) =>
-          s.value match {
-            case IndexingBlazegraphViewValue(
-                  _,
-                  _,
-                  resourceSchemas,
-                  resourceTypes,
-                  resourceTag,
-                  includeMetadata,
-                  includeDeprecated,
-                  _
-                ) =>
-              eventResourceSchemas != resourceSchemas ||
-                eventResourceTypes != resourceTypes ||
-                eventResourceTag != resourceTag ||
-                eventIncludeMetadata != includeMetadata ||
-                eventIncludeDeprecated != includeDeprecated
-            case _ => false
-          }
-        case _ => false
-      }
-
-      val newIndexingRev = if (reindex) s.indexingRev + 1 else s.indexingRev
+      val newIndexingRev =
+        (e.value.asIndexingValue, s.value.asIndexingValue)
+          .mapN(nextIndexingRev(_, _, s.indexingRev))
+          .getOrElse(s.indexingRev)
 
       s.copy(
         rev = e.rev,

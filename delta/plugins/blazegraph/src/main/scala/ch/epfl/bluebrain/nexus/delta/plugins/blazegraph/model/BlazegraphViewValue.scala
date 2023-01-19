@@ -84,7 +84,25 @@ object BlazegraphViewValue {
       * Translates the view into a [[PipeChain]]
       */
     def pipeChain: Option[PipeChain] = PipeChain(resourceSchemas, resourceTypes, includeMetadata, includeDeprecated)
+
+    /**
+      * Returns true if this [[IndexingBlazegraphViewValue]] is equal to the provided [[IndexingBlazegraphViewValue]] on
+      * the fields which should trigger a reindexing of the view when modified.
+      */
+    def hasSameIndexingFields(that: IndexingBlazegraphViewValue): Boolean =
+      resourceSchemas != that.resourceSchemas ||
+        resourceTypes != that.resourceTypes ||
+        resourceTag != that.resourceTag ||
+        includeMetadata != that.includeMetadata ||
+        includeDeprecated != that.includeDeprecated
   }
+
+  /**
+    * @return
+    *   the next indexing revision for the two given [[IndexingBlazegraphViewValue]]
+    */
+  def nextIndexingRev(v1: IndexingBlazegraphViewValue, v2: IndexingBlazegraphViewValue, currentRev: Int): Int =
+    if (v1.hasSameIndexingFields(v2)) currentRev + 1 else currentRev
 
   /**
     * The configuration of the Blazegraph view that delegates queries to multiple namespaces.
