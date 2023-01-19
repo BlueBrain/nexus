@@ -45,14 +45,17 @@ final class BlazegraphCoordinator private (
   def run(offset: Offset): Stream[Task, Elem[Unit]] = {
     fetchViews(offset).evalMap { elem =>
       elem
-        .traverse {
-          case active: ActiveViewDef =>
-            cache.get(active.ref).flatMap { cachedViewRef =>
-              if (cachedViewRef.exists(_.projection == active.projection)) {
-                // projection is already running, do nothing
-                Task.pure(ExecutionStatus.Running)
-              } else {
-                // start or restart projection
+        .traverse { v =>
+          cache.get(v.ref).flatMap { cachedView =>
+            (cachedView, v) match {
+              case (Some(cached), active: ActiveViewDef) if cached.projection == active.projection =>
+                for {
+                  _ <- cache.put(active.ref, active)
+                  _ <- Task.delay {
+                         logger.info(s"Index ${active.projection} already exists and will not be recreated.")
+                       }
+                } yield ()
+              case (_, active: ActiveViewDef)                                                      =>
                 IndexingViewDef
                   .compile(
                     active,
@@ -70,9 +73,10 @@ final class BlazegraphCoordinator private (
                         } yield ()
                       )
                   }
-              }
+              case (_, deprecated: DeprecatedViewDef)                                              =>
+                cleanupCurrent(deprecated.ref)
             }
-          case d: DeprecatedViewDef  => cleanupCurrent(d.ref)
+          }
         }
         .onErrorRecover {
           // If the current view does not translate to a projection then we mark it as failed and move along
