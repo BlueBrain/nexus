@@ -208,7 +208,7 @@ class BlazegraphViewsSpec
         views
           .update(indexingViewId, projectRef, 2, aggregateValue)
           .rejected shouldEqual DifferentBlazegraphViewType(
-          Some(indexingViewId),
+          indexingViewId,
           BlazegraphViewType.AggregateBlazegraphView,
           BlazegraphViewType.IndexingBlazegraphView
         )

@@ -13,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.Ind
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewCommand._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection._
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewType.AggregateBlazegraphView
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -264,13 +265,16 @@ final class BlazegraphViews(
   ): IO[BlazegraphViewRejection, ActiveViewDef] =
     fetchState(id, project).flatMap { case (_, state) =>
       IndexingViewDef(state, prefix) match {
-        case Left(rejection) => IO.raiseError(rejection)
-        case Right(viewDef)  =>
+        case Some(viewDef) =>
           viewDef match {
             case v: ActiveViewDef     => IO.pure(v)
             case v: DeprecatedViewDef =>
               IO.raiseError(ViewIsDeprecated(v.ref.viewId))
           }
+        case None          =>
+          IO.raiseError(
+            DifferentBlazegraphViewType(state.id, AggregateBlazegraphView, BlazegraphViewType.IndexingBlazegraphView)
+          )
       }
     }
 
@@ -336,7 +340,7 @@ final class BlazegraphViews(
         value = viewDef,
         revision = envelope.rev
       )
-    }.toOption
+    }
 
   private def eval(cmd: BlazegraphViewCommand, pc: ProjectContext): IO[BlazegraphViewRejection, ViewResource] =
     log
@@ -494,7 +498,7 @@ object BlazegraphViews {
       case Some(s) if s.deprecated               =>
         IO.raiseError(ViewIsDeprecated(c.id))
       case Some(s) if c.value.tpe != s.value.tpe =>
-        IO.raiseError(DifferentBlazegraphViewType(Some(s.id), c.value.tpe, s.value.tpe))
+        IO.raiseError(DifferentBlazegraphViewType(s.id, c.value.tpe, s.value.tpe))
       case Some(s)                               =>
         for {
           _ <- validate(c.value)

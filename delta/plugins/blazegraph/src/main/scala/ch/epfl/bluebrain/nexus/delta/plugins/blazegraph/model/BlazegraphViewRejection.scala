@@ -149,11 +149,11 @@ object BlazegraphViewRejection {
     *   the view id
     */
   final case class DifferentBlazegraphViewType(
-      id: Option[Iri],
+      id: Iri,
       provided: BlazegraphViewType,
       expected: BlazegraphViewType
   ) extends BlazegraphViewRejection(
-        s"Incorrect Blazegraph View '${id.getOrElse("")}' type: '$provided' provided, expected '$expected'."
+        s"Incorrect Blazegraph View '$id' type: '$provided' provided, expected '$expected'."
       )
 
   /**
