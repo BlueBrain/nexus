@@ -303,7 +303,7 @@ final class ElasticSearchViews private (
               case v: DeprecatedViewDef => IO.raiseError(ViewIsDeprecated(v.ref.viewId))
             }
           case None          =>
-            IO.raiseError(DifferentElasticSearchViewType(Some(state.id), AggregateElasticSearch, ElasticSearch))
+            IO.raiseError(DifferentElasticSearchViewType(state.id, AggregateElasticSearch, ElasticSearch))
         }
       }
 
@@ -501,7 +501,7 @@ object ElasticSearchViews {
       case Some(s) if s.deprecated               =>
         IO.raiseError(ViewIsDeprecated(c.id))
       case Some(s) if c.value.tpe != s.value.tpe =>
-        IO.raiseError(DifferentElasticSearchViewType(Some(s.id), c.value.tpe, s.value.tpe))
+        IO.raiseError(DifferentElasticSearchViewType(s.id, c.value.tpe, s.value.tpe))
       case Some(s)                               =>
         for {
           _ <- validate(s.uuid, s.rev + 1, c.value)

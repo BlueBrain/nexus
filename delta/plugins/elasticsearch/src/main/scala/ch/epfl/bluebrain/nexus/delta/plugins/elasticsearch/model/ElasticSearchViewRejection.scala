@@ -126,11 +126,11 @@ object ElasticSearchViewRejection {
     *   the view id
     */
   final case class DifferentElasticSearchViewType(
-      id: Option[Iri],
+      id: Iri,
       provided: ElasticSearchViewType,
       expected: ElasticSearchViewType
   ) extends ElasticSearchViewRejection(
-        s"Incorrect ElasticSearch view '${id.getOrElse("")}' type: '$provided' provided, expected '$expected'."
+        s"Incorrect ElasticSearch view '$id' type: '$provided' provided, expected '$expected'."
       )
 
   /**

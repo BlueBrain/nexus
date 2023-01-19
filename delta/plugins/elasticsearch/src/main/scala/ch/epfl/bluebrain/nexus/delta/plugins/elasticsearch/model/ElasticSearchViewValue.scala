@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 
 import cats.data.{NonEmptyChain, NonEmptySet}
-import cats.implicits.catsSyntaxTuple2Semigroupal
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.IndexingElasticSearchViewValue
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.IndexingElasticSearchViewValue.defaultPipeline
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
