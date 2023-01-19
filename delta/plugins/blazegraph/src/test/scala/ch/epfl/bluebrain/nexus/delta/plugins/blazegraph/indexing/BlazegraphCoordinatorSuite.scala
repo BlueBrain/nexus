@@ -142,6 +142,16 @@ class BlazegraphCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
         offset = Offset.at(7L),
         value = updatedView2,
         revision = 1
+      ),
+      // Elem at offset 8 represents a view update that does not require reindexing
+      SuccessElem(
+        tpe = BlazegraphViews.entityType,
+        id = updatedView2.ref.viewId,
+        project = Some(project),
+        instant = Instant.EPOCH,
+        offset = Offset.at(8L),
+        value = updatedView2,
+        revision = 1
       )
     )
 
@@ -246,7 +256,7 @@ class BlazegraphCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
       _ <- resumeSignal.set(true)
       _ <- sv.describe(BlazegraphCoordinator.metadata.name)
              .map(_.map(_.progress))
-             .eventuallySome(ProjectionProgress(Offset.at(7L), Instant.EPOCH, 7, 1, 2))
+             .eventuallySome(ProjectionProgress(Offset.at(8L), Instant.EPOCH, 8, 1, 2))
     } yield ()
   }
 
@@ -301,6 +311,10 @@ class BlazegraphCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
       r        = entries.assertOneElem
       _        = assertEquals(r.failedElemData.id, nxv + "failed")
     } yield ()
+  }
+
+  test("Delete indices should not contain view2_2 as it was not restarted") {
+    assert(!deletedIndices.contains(updatedView2.projection))
   }
 
 }
