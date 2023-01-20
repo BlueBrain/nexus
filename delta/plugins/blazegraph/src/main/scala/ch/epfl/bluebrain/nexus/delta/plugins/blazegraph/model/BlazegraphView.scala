@@ -122,7 +122,7 @@ object BlazegraphView {
       source: Json,
       indexingRev: Int
   ) extends BlazegraphView {
-    override def metadata: Metadata = Metadata(Some(uuid))
+    override def metadata: Metadata = Metadata(Some(uuid), Some(indexingRev))
 
     override def tpe: BlazegraphViewType = BlazegraphViewType.IndexingBlazegraphView
   }
@@ -150,7 +150,7 @@ object BlazegraphView {
       tags: Tags,
       source: Json
   ) extends BlazegraphView {
-    override def metadata: Metadata      = Metadata(None)
+    override def metadata: Metadata      = Metadata(None, None)
     override def tpe: BlazegraphViewType = BlazegraphViewType.AggregateBlazegraphView
 
   }
@@ -161,7 +161,7 @@ object BlazegraphView {
     * @param uuid
     *   the optionally available unique view identifier
     */
-  final case class Metadata(uuid: Option[UUID])
+  final case class Metadata(uuid: Option[UUID], indexingRev: Option[Int])
 
   @nowarn("cat=unused")
   implicit private val blazegraphViewsEncoder: Encoder.AsObject[BlazegraphView] = {
@@ -182,7 +182,11 @@ object BlazegraphView {
     JsonLdEncoder.computeFromCirce(_.id, ContextValue(contexts.blazegraph))
 
   implicit private val blazegraphMetadataEncoder: Encoder.AsObject[Metadata] =
-    Encoder.encodeJsonObject.contramapObject(meta => JsonObject.empty.addIfExists("_uuid", meta.uuid))
+    Encoder.encodeJsonObject.contramapObject(meta =>
+      JsonObject.empty
+        .addIfExists("_uuid", meta.uuid)
+        .addIfExists("_indexingRev", meta.indexingRev)
+    )
 
   implicit val blazegraphMetadataJsonLdEncoder: JsonLdEncoder[Metadata] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.blazegraphMetadata))
