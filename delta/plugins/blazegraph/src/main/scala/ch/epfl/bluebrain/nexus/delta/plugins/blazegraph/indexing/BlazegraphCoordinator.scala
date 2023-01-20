@@ -55,16 +55,10 @@ final class BlazegraphCoordinator private (
                          logger.info(s"Index ${active.projection} already exists and will not be recreated.")
                        }
                 } yield ()
-              case (_, active: ActiveViewDef)                                                      =>
-                IndexingViewDef
-                  .compile(
-                    active,
-                    compilePipeChain,
-                    graphStream,
-                    sink(active)
-                  )
+              case (cached, active: ActiveViewDef)                                                 =>
+                compile(active)
                   .flatMap { projection =>
-                    cleanupCurrent(active.ref) >>
+                    cleanupCurrent(cached, active.ref) >>
                       supervisor.run(
                         projection,
                         for {
@@ -73,8 +67,8 @@ final class BlazegraphCoordinator private (
                         } yield ()
                       )
                   }
-              case (_, deprecated: DeprecatedViewDef)                                              =>
-                cleanupCurrent(deprecated.ref)
+              case (cached, deprecated: DeprecatedViewDef)                                         =>
+                cleanupCurrent(cached, deprecated.ref)
             }
           }
         }
@@ -86,8 +80,8 @@ final class BlazegraphCoordinator private (
     }
   }
 
-  private def cleanupCurrent(ref: ViewRef): Task[Unit] =
-    cache.get(ref).flatMap {
+  private def cleanupCurrent(cached: Option[ActiveViewDef], ref: ViewRef): Task[Unit] =
+    cached match {
       case Some(v) =>
         supervisor
           .destroy(
@@ -109,6 +103,9 @@ final class BlazegraphCoordinator private (
           logger.debug(s"View '${ref.project}/${ref.viewId}' is not referenced yet, cleaning is aborted.")
         )
     }
+
+  private def compile(active: ActiveViewDef): Task[CompiledProjection] =
+    IndexingViewDef.compile(active, compilePipeChain, graphStream, sink(active))
 
 }
 
