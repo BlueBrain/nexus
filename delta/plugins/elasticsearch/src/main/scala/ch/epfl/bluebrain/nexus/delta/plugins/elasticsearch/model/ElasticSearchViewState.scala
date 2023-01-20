@@ -95,7 +95,8 @@ final case class ElasticSearchViewState(
         context = context,
         permission = permission,
         tags = tags,
-        source = source
+        source = source,
+        indexingRev = indexingRev
       )
     case AggregateElasticSearchViewValue(name, description, views) =>
       AggregateElasticSearchView(
