@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.Uri.Query
 import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.permissions
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.projectionIndex
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{AuthorizationFailed, ProjectionNotFound, ViewIsDeprecated}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.ProjectSource
@@ -174,8 +175,8 @@ class ElasticSearchQuerySpec
   private val prefix = "prefix"
 
   // projection namespaces
-  private val esP1Idx = CompositeViews.index(esProjection1, compositeView, 1, prefix).value
-  private val esP2Idx = CompositeViews.index(esProjection2, compositeView, 1, prefix).value
+  private val esP1Idx = projectionIndex(esProjection1, compositeView.uuid, 1, prefix).value
+  private val esP2Idx = projectionIndex(esProjection2, compositeView.uuid, 1, prefix).value
 
   private val indexResults = Map(esP1Idx -> document(), esP2Idx -> document())
 

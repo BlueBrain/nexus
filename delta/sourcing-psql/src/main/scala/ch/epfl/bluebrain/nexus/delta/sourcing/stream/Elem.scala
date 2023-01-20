@@ -134,6 +134,15 @@ sealed trait Elem[+A] extends Product with Serializable {
   def void: Elem[Unit] =
     map(_ => ())
 
+  /**
+    * Returns the value as an option
+    */
+  def toOption: Option[A] = this match {
+    case e: SuccessElem[A] => Some(e.value)
+    case _: FailedElem     => None
+    case _: DroppedElem    => None
+  }
+
   override def toString: String =
     s"${this.getClass.getSimpleName}[${project.fold("")(_.toString)}/$id:$revision]{${offset.value}}"
 }

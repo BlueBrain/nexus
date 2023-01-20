@@ -36,7 +36,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Sort, SortList}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{BatchConfig, QueryConfig}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, EntityType, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
@@ -73,7 +73,7 @@ class CompositeIndexingSuite
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(compositeIndexing)
 
-  implicit private val patienceConfig: PatienceConfig = PatienceConfig(5.seconds, 100.millis)
+  implicit private val patienceConfig: PatienceConfig = PatienceConfig(10.seconds, 100.millis)
 
   private val prefix                                                = "delta"
   private lazy val (esClient, bgClient, projections, spacesBuilder) = compositeIndexing()
@@ -232,7 +232,6 @@ class CompositeIndexingSuite
   private val realm = Label.unsafe("myrealm")
   private val bob   = User("Bob", realm)
 
-  private val viewId              = iri"https://bbp.epfl.ch/composite"
   private val source1Id           = iri"https://bbp.epfl.ch/source1"
   private val source2Id           = iri"https://bbp.epfl.ch/source2"
   private val source3Id           = iri"https://bbp.epfl.ch/source3"
@@ -334,8 +333,9 @@ class CompositeIndexingSuite
   }
 
   test("Indexing resources without rebuild") {
-    val uuid = UUID.randomUUID()
-    val rev  = 1
+    val uuid   = UUID.randomUUID()
+    val viewId = iri"https://bbp.epfl.ch/composite"
+    val rev    = 1
 
     val view = ActiveViewDef(ViewRef(project1, viewId), uuid, rev, noRebuild)
 
@@ -394,8 +394,9 @@ class CompositeIndexingSuite
       None
     )
 
-    val uuid = UUID.randomUUID()
-    val rev  = 2
+    val uuid   = UUID.randomUUID()
+    val viewId = iri"https://bbp.epfl.ch/composite2"
+    val rev    = 1
 
     val view = ActiveViewDef(ViewRef(project1, viewId), uuid, rev, value)
 
@@ -418,13 +419,14 @@ class CompositeIndexingSuite
     } yield ()
   }
 
-  test("Indexing resources without interval restart") {
+  test("Indexing resources with interval restart") {
     val uuid = UUID.randomUUID()
-    val rev  = 3
 
     val rebuild = noRebuild.copy(rebuildStrategy = Some(CompositeView.Interval(2.seconds)))
 
-    val view = ActiveViewDef(ViewRef(project1, viewId), uuid, rev, rebuild)
+    val viewId = iri"https://bbp.epfl.ch/composite3"
+    val rev    = 1
+    val view   = ActiveViewDef(ViewRef(project1, viewId), uuid, rev, rebuild)
 
     val elasticIndex    = projectionIndex(elasticSearchProjection, uuid, rev, prefix)
     val sparqlNamespace = projectionNamespace(blazegraphProjection, uuid, rev, prefix)
@@ -450,6 +452,17 @@ class CompositeIndexingSuite
       }
     )
 
+    def checkIndexingState =
+      for {
+        _ <- projections.progress(view.ref, rev).eventually(expectedProgress)
+        _ <- checkElasticSearchDocuments(
+               elasticIndex,
+               jsonContentOf("indexing/result_muse.json"),
+               jsonContentOf("indexing/result_red_hot.json")
+             ).eventually(())
+        _ <- checkBlazegraphTriples(sparqlNamespace, contentOf("indexing/result.nt")).eventually(())
+      } yield ()
+
     for {
       _ <- resetCompleted
       _ <- start(view)
@@ -459,13 +472,15 @@ class CompositeIndexingSuite
       _ <- rebuildCompleted.get.map(_.get(project1)).eventuallySome(1)
       _ <- rebuildCompleted.get.map(_.get(project2)).eventuallySome(1)
       _ <- rebuildCompleted.get.map(_.get(project3)).eventuallySome(1)
-      _ <- projections.progress(view.ref, rev).eventually(expectedProgress)
-      _ <- checkElasticSearchDocuments(
-             elasticIndex,
-             jsonContentOf("indexing/result_muse.json"),
-             jsonContentOf("indexing/result_red_hot.json")
-           ).eventually(())
-      _ <- checkBlazegraphTriples(sparqlNamespace, contentOf("indexing/result.nt")).eventually(())
+      _ <- checkIndexingState
+      _ <- projections.fullRestart(project1, viewId)(Anonymous)
+      _ <- mainCompleted.get.map(_.get(project1)).eventuallySome(2)
+      _ <- mainCompleted.get.map(_.get(project2)).eventuallySome(2)
+      _ <- mainCompleted.get.map(_.get(project3)).eventuallySome(2)
+      _ <- rebuildCompleted.get.map(_.get(project1)).eventuallySome(2)
+      _ <- rebuildCompleted.get.map(_.get(project2)).eventuallySome(2)
+      _ <- rebuildCompleted.get.map(_.get(project3)).eventuallySome(2)
+      _ <- checkIndexingState
     } yield ()
   }
 
@@ -477,8 +492,9 @@ class CompositeIndexingSuite
     )
 
     val uuid = UUID.randomUUID()
-    val rev  = 4
 
+    val viewId       = iri"https://bbp.epfl.ch/composite4"
+    val rev          = 1
     val view         = ActiveViewDef(ViewRef(project1, viewId), uuid, rev, value)
     val elasticIndex = projectionIndex(elasticSearchProjection, uuid, rev, prefix)
 

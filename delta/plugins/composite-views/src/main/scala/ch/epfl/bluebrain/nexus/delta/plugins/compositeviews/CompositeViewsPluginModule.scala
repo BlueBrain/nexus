@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewE
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.ProjectionType.ElasticSearchProjectionType
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model._
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.projections.CompositeProjections
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.projections.{CompositeIndexingDetails, CompositeProjections}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.routes.CompositeViewsRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.store.CompositeRestartStore
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.CompositeGraphStream
@@ -196,9 +196,10 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         identities: Identities,
         aclCheck: AclCheck,
         views: CompositeViews,
+        projections: CompositeProjections,
+        graphStream: CompositeGraphStream,
         blazegraphQuery: BlazegraphQuery,
         elasticSearchQuery: ElasticSearchQuery,
-        deltaClient: DeltaClient,
         schemeDirectives: DeltaSchemeDirectives,
         baseUri: BaseUri,
         s: Scheduler,
@@ -210,12 +211,10 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         identities,
         aclCheck,
         views,
-        // TODO add the way to restart composite views
-        (_, _) => UIO.unit,
-        (_, _, _) => UIO.unit,
+        CompositeIndexingDetails(projections, graphStream),
+        projections,
         blazegraphQuery,
         elasticSearchQuery,
-        deltaClient,
         schemeDirectives
       )(baseUri, s, cr, ordering, fusionConfig)
   }

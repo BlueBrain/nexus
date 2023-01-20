@@ -5,6 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryClientDummy
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.SparqlNTriples
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.permissions
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.projectionNamespace
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{AuthorizationFailed, ProjectionNotFound, ViewIsDeprecated}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.ProjectSource
@@ -169,8 +170,8 @@ class BlazegraphQuerySpec
   private val prefix = "prefix"
 
   // projection namespaces
-  private val blazeP1Ns     = CompositeViews.namespace(blazeProjection1, compositeView, 1, prefix)
-  private val blazeP2Ns     = CompositeViews.namespace(blazeProjection2, compositeView, 1, prefix)
+  private val blazeP1Ns     = projectionNamespace(blazeProjection1, compositeView.uuid, 1, prefix)
+  private val blazeP2Ns     = projectionNamespace(blazeProjection2, compositeView.uuid, 1, prefix)
   private val blazeCommonNs = BlazegraphViews.namespace(compositeView.uuid, 1, prefix)
 
   private val views              = new CompositeViewsDummy(compositeViewResource, deprecatedCompositeViewResource)

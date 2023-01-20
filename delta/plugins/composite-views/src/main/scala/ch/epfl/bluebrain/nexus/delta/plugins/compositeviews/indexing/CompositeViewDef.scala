@@ -92,10 +92,10 @@ object CompositeViewDef {
     * When a rebuild strategy is set, an additional stream is built and run following a defined interval when the main
     * branch has processed new resources.
     *
-    * A stream that fetches all current resources (that terminates after processing hem) is built for every source.
+    * A stream that fetches all current resources (that terminates after processing them) is built for every source.
     *
-    * It broadcasts immediately the resouces to every projection where it follows the same process as the second part of
-    * the main branch.
+    * It broadcasts immediately the resources to every projection where it follows the same process as the second part
+    * of the main branch.
     *
     * @param view
     *   the definition
@@ -187,6 +187,7 @@ object CompositeViewDef {
       restarts: ElemPipe[Unit, Unit],
       closeBranch: (CompositeBranch, ProjectionProgress) => Operation
   ): Task[ElemStream[Unit]] = {
+    // We override the default implementation in FS2 (where it appends the two streams)
     implicit val semigroup: Semigroup[ElemStream[Unit]] = (x: ElemStream[Unit], y: ElemStream[Unit]) => x.merge(y)
 
     val sources = NonEmptyChain.fromNonEmptyList(view.value.sources.toNonEmptyList)
@@ -196,20 +197,14 @@ object CompositeViewDef {
       Task.delay(logger.debug(s"Running '$branch' branch for source '{}' of composite view '{}'.", sourceId, view.ref))
     def finalizeLog[E](sourceId: Iri, branch: String): ExitCase[E] => Task[Unit] = {
       case Completed =>
-        Task.delay(
-          logger.debug(s"Completed '{} branch' for source '{}' of composite view '{}'.", branch, sourceId, view.ref)
-        )
+        val message = "Completed '{}' branch for source '{}' of composite view '{}'."
+        Task.delay(logger.debug(message, branch, sourceId, view.ref))
       case Error(e)  =>
-        Task.delay(
-          logger.error(
-            s"Error raised running '$branch' branch for source '$sourceId' of composite view '${view.ref}'.",
-            e
-          )
-        )
+        val message = s"Error raised running '$branch' branch for source '$sourceId' of composite view '${view.ref}'."
+        Task.delay(logger.error(message, e))
       case Canceled  =>
-        Task.delay(
-          logger.debug(s"Cancelled '{} branch' for source '{}' of composite view '{}'.", branch, sourceId, view.ref)
-        )
+        val message = "Cancelled '{}' branch for source '{}' of composite view '{}'."
+        Task.delay(logger.debug(message, branch, sourceId, view.ref))
     }
 
     for {
@@ -230,7 +225,12 @@ object CompositeViewDef {
                                     .onFinalizeCase(finalizeLog(sourceId, "rebuild"))
                               }
                           )
-    } yield restarts(mains |+| rebuilds)
+      start             = Stream.eval(
+                            fetchProgress.tapEval { progress =>
+                              UIO.delay(logger.info(s"Starting composite view '${view.ref}' with offset $progress."))
+                            }
+                          )
+    } yield restarts(start >> (mains |+| rebuilds))
   }
 
   /**
@@ -275,8 +275,9 @@ object CompositeViewDef {
       fetchProgress: UIO[CompositeProgress],
       graphStream: CompositeGraphStream
   ): UIO[Boolean] = {
-    def logWhen(condition: Boolean, message: String, args: Any*) =
-      UIO.when(condition)(UIO.delay(logger.debug(message, args)))
+
+    def test(condition: Boolean, message: String): UIO[Boolean] =
+      UIO.when(condition)(UIO.delay(logger.info(message))).as(condition)
 
     def checkSource(
         s: CompositeViewSource,
@@ -285,21 +286,20 @@ object CompositeViewDef {
     ): UIO[RebuildCondition] =
       progress.sourceMainOffset(s.id).fold(UIO.pure(RebuildCondition.start)) { offset =>
         for {
-          diffMain    <- UIO.pure(!previousProgress.sourceMainOffset(s.id).contains(offset)).tapEval {
-                           def message =
-                             "An offset difference has been spotted with previous progress for source '{}' in view '{}'."
-                           logWhen(_, message, s.id, view.ref)
-                         }
-          diffRebuild <- UIO.pure(!progress.sourceRebuildOffset(s.id).contains(offset)).tapEval {
-                           def message =
-                             "An offset difference has been spotted between main and rebuild for source '{}' in view '{}'."
-                           logWhen(_, message, s.id, view.ref)
-                         }
-          noRemaining <- graphStream.remaining(s, view.ref.project)(offset).map(_.exists(_.count == 0L)).tapEval {
-                           def message = "The main branch for source '{}' in view '{}' completed indexing."
-                           logWhen(_, message, s.id, view.ref)
-                         }
-        } yield RebuildCondition(diffMain || diffRebuild, noRemaining)
+          diffMain    <- test(
+                           !previousProgress.sourceMainOffset(s.id).contains(offset),
+                           s"An offset difference has been spotted with previous progress for source '${s.id}' in view '${view.ref}'."
+                         )
+          diffRebuild <- test(
+                           !progress.sourceRebuildOffset(s.id).contains(offset),
+                           s"An offset difference has been spotted between main and rebuild for source '${s.id}' in view '${view.ref}'."
+                         )
+          diffOffset   = diffMain || diffRebuild
+          noRemaining <- if (diffOffset)
+                           graphStream.remaining(s, view.ref.project)(offset).map(_.exists(_.count == 0L))
+                         else UIO.pure(false)
+          _           <- test(noRemaining, s"The main branch for source '${s.id}' in view '${view.ref}' completed indexing.")
+        } yield RebuildCondition(diffOffset, noRemaining)
       }
 
     for {
@@ -307,10 +307,8 @@ object CompositeViewDef {
       previousProgress <- progressRef.getAndSet(newProgress).hideErrors
       condition        <- view.value.sources
                             .reduceMapM(checkSource(_, newProgress, previousProgress))
-                            .map { r => r.diffOffset && r.diffOffset }
-                            .tapEval {
-                              logWhen(_, "All conditions are met to trigger the rebuild for view '{}'.", view.ref)
-                            }
+                            .map { r => r.diffOffset && r.noRemaining }
+      _                <- test(condition, s"All conditions are met to trigger the rebuild for view '${view.ref}'.")
     } yield condition
   }
 
@@ -428,14 +426,10 @@ object CompositeViewDef {
       operation: Operation,
       closeBranch: (CompositeBranch, ProjectionProgress) => Operation
   ): Either[ProjectionErr, Operation] = {
+    //TODO Add leap on target
     val branchProgress = progress.branches.get(branch)
-    branchProgress
-      .map { p => operation.leap(p.offset, _ => ()) }
-      .getOrElse(Right(operation))
-      .flatMap(
-        Operation
-          .merge(_, closeBranch(branch, branchProgress.getOrElse(ProjectionProgress.NoProgress)))
-      )
+    Operation
+      .merge(operation, closeBranch(branch, branchProgress.getOrElse(ProjectionProgress.NoProgress)))
   }
 
   /**
@@ -466,7 +460,7 @@ object CompositeViewDef {
       // We create the elem stream for the two types of branch
       // The main source produces an infinite stream and waits for new elements
       mainSource    = graphStream.main(source, project)
-      // The rebuild one a finite one with obly the current ellements
+      // The rebuild one a finite one with only the current elements
       rebuildSource = graphStream.rebuild(source, project)
     } yield (source.id, mainSource, rebuildSource, operation)
   }

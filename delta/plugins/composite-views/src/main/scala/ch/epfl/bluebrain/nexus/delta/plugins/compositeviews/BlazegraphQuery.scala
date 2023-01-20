@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.Aux
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client._
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.projectionNamespace
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.SparqlProjection
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{AuthorizationFailed, ViewIsDeprecated, WrappedBlazegraphClientError}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeView, CompositeViewRejection, ViewResource, ViewSparqlProjectionResource}
@@ -137,7 +138,7 @@ object BlazegraphQuery {
           _                 <- IO.raiseWhen(viewRes.deprecated)(ViewIsDeprecated(viewRes.id))
           (view, projection) = viewRes.value
           _                 <- aclCheck.authorizeForOr(project, projection.permission)(AuthorizationFailed)
-          namespace          = CompositeViews.namespace(projection, view, viewRes.rev, prefix)
+          namespace          = projectionNamespace(projection, view.uuid, viewRes.rev, prefix)
           result            <- client.query(Set(namespace), query, responseType).mapError(WrappedBlazegraphClientError)
         } yield result
 
@@ -165,7 +166,7 @@ object BlazegraphQuery {
             view.projections.value.collect { case p: SparqlProjection => p },
             project,
             p => p.permission,
-            p => CompositeViews.namespace(p, view, rev, prefix)
+            p => projectionNamespace(p, view.uuid, rev, prefix)
           )
           .tapEval { namespaces => IO.raiseWhen(namespaces.isEmpty)(AuthorizationFailed) }
     }
