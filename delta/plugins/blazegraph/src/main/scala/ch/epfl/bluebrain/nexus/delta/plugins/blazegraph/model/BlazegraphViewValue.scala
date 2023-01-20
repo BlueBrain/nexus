@@ -99,10 +99,15 @@ object BlazegraphViewValue {
 
   /**
     * @return
-    *   the next indexing revision for the two given [[IndexingBlazegraphViewValue]]
+    *   the next indexing revision based on the differences between the given views
     */
-  def nextIndexingRev(v1: IndexingBlazegraphViewValue, v2: IndexingBlazegraphViewValue, currentRev: Int): Int =
-    if (!v1.hasSameIndexingFields(v2)) currentRev + 1 else currentRev
+  def nextIndexingRev(
+      view1: IndexingBlazegraphViewValue,
+      view2: IndexingBlazegraphViewValue,
+      currentRev: Int
+  ): Int =
+    if (!view1.hasSameIndexingFields(view2)) currentRev + 1
+    else currentRev
 
   /**
     * The configuration of the Blazegraph view that delegates queries to multiple namespaces.
