@@ -262,7 +262,11 @@ object ElasticSearchView {
   }
 
   implicit private val elasticSearchMetadataEncoder: Encoder.AsObject[Metadata] =
-    Encoder.encodeJsonObject.contramapObject(meta => JsonObject.empty.addIfExists("_uuid", meta.uuid))
+    Encoder.encodeJsonObject.contramapObject(meta =>
+      JsonObject.empty
+        .addIfExists("_uuid", meta.uuid)
+        .addIfExists("_indexingRev", meta.indexingRev)
+    )
 
   implicit val elasticSearchMetadataJsonLdEncoder: JsonLdEncoder[Metadata] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.elasticsearchMetadata))
