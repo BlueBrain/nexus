@@ -120,6 +120,11 @@
         "@value": "f85d862a-9ec0-4b9a-8aed-2938d7ca9981"
       }
     ],
+    "https://bluebrain.github.io/nexus/vocabulary/indexingRev" : [
+      {
+        "@value" : 1
+      }
+    ],
     "@id": "https://bluebrain.github.io/nexus/vocabulary/myview"
   }
 ]

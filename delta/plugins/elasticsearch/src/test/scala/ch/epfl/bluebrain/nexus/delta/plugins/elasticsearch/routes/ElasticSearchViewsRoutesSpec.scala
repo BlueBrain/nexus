@@ -332,7 +332,14 @@ class ElasticSearchViewsRoutesSpec
       aclCheck.append(AclAddress.Root, Anonymous -> Set(esPermissions.read)).accepted
       Get("/v1/views/myorg/myproject/myid") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual elasticSearchView(myId, includeDeprecated = false, rev = 4, deprecated = true)
+        response.asJson shouldEqual elasticSearchView(
+          myId,
+          includeDeprecated = false,
+          rev = 4,
+          // indexing rev stays one as the update concerned non-indexing fields
+          indexingRev = 1,
+          deprecated = true
+        )
       }
     }
 
@@ -631,26 +638,29 @@ class ElasticSearchViewsRoutesSpec
   private def elasticSearchViewMetadata(
       id: Iri,
       rev: Int = 1,
+      indexingRev: Int = 1,
       deprecated: Boolean = false,
       createdBy: Subject = Anonymous,
       updatedBy: Subject = Anonymous
   ): Json =
     jsonContentOf(
       "/routes/elasticsearch-view-write-response.json",
-      "project"    -> projectRef,
-      "id"         -> id,
-      "rev"        -> rev,
-      "uuid"       -> uuid,
-      "deprecated" -> deprecated,
-      "createdBy"  -> createdBy.asIri,
-      "updatedBy"  -> updatedBy.asIri,
-      "label"      -> lastSegment(id)
+      "project"     -> projectRef,
+      "id"          -> id,
+      "rev"         -> rev,
+      "indexingRev" -> indexingRev,
+      "uuid"        -> uuid,
+      "deprecated"  -> deprecated,
+      "createdBy"   -> createdBy.asIri,
+      "updatedBy"   -> updatedBy.asIri,
+      "label"       -> lastSegment(id)
     )
 
   private def elasticSearchView(
       id: Iri,
       includeDeprecated: Boolean = false,
       rev: Int = 1,
+      indexingRev: Int = 1,
       deprecated: Boolean = false,
       createdBy: Subject = Anonymous,
       updatedBy: Subject = Anonymous
@@ -661,6 +671,7 @@ class ElasticSearchViewsRoutesSpec
       "id"                -> id,
       "rev"               -> rev,
       "uuid"              -> uuid,
+      "indexingRev"       -> indexingRev,
       "deprecated"        -> deprecated,
       "createdBy"         -> createdBy.asIri,
       "updatedBy"         -> updatedBy.asIri,
