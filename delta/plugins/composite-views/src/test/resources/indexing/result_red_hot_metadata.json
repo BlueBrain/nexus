@@ -1,5 +1,6 @@
 {
   "@id": "red_hot_chili_peppers",
+  "_project" : "org/proj2",
   "@type": "Band",
   "album": [
     {
@@ -19,18 +20,7 @@
     "funk rock",
     "rap rock"
   ],
+  "label" : "Red Hot Chilli Peppers",
   "name": "Red Hot Chilli Peppers",
-  "start": 1983,
-  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/unconstrained.json",
-  "_createdAt": "1970-01-01T00:00:00Z",
-  "_createdBy": "http://localhost/v1/realms/myrealm/users/Bob",
-  "_deprecated": false,
-  "_incoming": "http://localhost/v1/resources/org/proj2/http:%2F%2Fmusic.com%2Fred_hot_chili_peppers/incoming",
-  "_outgoing": "http://localhost/v1/resources/org/proj2/http:%2F%2Fmusic.com%2Fred_hot_chili_peppers/outgoing",
-  "_project": "http://localhost/v1/projects/org/proj2",
-  "_rev": 2,
-  "_self": "http://localhost/v1/resources/org/proj2/http:%2F%2Fmusic.com%2Fred_hot_chili_peppers",
-  "_updatedAt": "1970-01-01T00:00:00Z",
-  "_updatedBy": "http://localhost/v1/realms/myrealm/users/Bob",
-  "_uuid": "{{uuid}}"
+  "start": 1983
 }

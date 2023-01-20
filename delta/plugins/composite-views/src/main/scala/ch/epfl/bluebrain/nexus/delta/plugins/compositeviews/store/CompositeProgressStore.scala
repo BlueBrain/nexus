@@ -3,6 +3,8 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.store
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeRestart
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeRestart.{FullRebuild, FullRestart, PartialRebuild}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.store.CompositeProgressStore.CompositeProgressRow
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.CompositeBranch
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.CompositeBranch.Run
@@ -67,6 +69,39 @@ final class CompositeProgressStore(xas: Transactors)(implicit clock: Clock[UIO])
       .toMap
       .transact(xas.streaming)
       .hideErrors
+
+  /**
+    * Reset the offset according to the provided restart
+    * @param restart
+    *   the restart to apply
+    */
+  def restart(restart: CompositeRestart): UIO[Unit] = IOUtils.instant.flatMap { instant =>
+    val reset = ProjectionProgress.NoProgress
+    val where = restart match {
+      case f: FullRestart    => Fragments.whereAnd(fr"project = ${f.project}", fr"view_id = ${f.id}")
+      case f: FullRebuild    =>
+        Fragments.whereAnd(fr"project = ${f.project}", fr"view_id = ${f.id}", fr"run = ${Run.Rebuild.value}")
+      case p: PartialRebuild =>
+        Fragments.whereAnd(
+          fr"project = ${p.project}",
+          fr"view_id = ${p.id}",
+          fr"target_id = ${p.target}",
+          fr"run = ${Run.Rebuild.value}"
+        )
+    }
+    sql"""UPDATE public.composite_offsets
+         |SET
+         |  ordering   = ${reset.offset.value},
+         |  processed  = ${reset.processed},
+         |  discarded  = ${reset.discarded},
+         |  failed     = ${reset.failed},
+         |  updated_at = $instant
+         |$where
+         |""".stripMargin.update.run
+      .transact(xas.write)
+      .void
+      .hideErrors
+  }
 
   /**
     * Delete all entries for the given view

@@ -26,12 +26,10 @@ object ElasticSearchClientSetup extends CirceLiteral {
                                  }
                                }"""
 
-  private def resource(
-      elasticsearch: Resource[Task, ElasticSearchContainer]
-  )(implicit s: Scheduler): Resource[Task, ElasticSearchClient] = {
+  def resource()(implicit s: Scheduler): Resource[Task, ElasticSearchClient] = {
     for {
       (httpClient, actorSystem) <- HttpClientSetup()
-      container                 <- elasticsearch
+      container                 <- ElasticSearchContainer.resource()
     } yield {
       implicit val as: ActorSystem                           = actorSystem
       implicit val credentials: Option[BasicHttpCredentials] = ElasticSearchContainer.credentials
@@ -42,7 +40,7 @@ object ElasticSearchClientSetup extends CirceLiteral {
   }
 
   def suiteLocalFixture(name: String)(implicit s: Scheduler): TaskFixture[ElasticSearchClient] =
-    ResourceFixture.suiteLocal(name, resource(ElasticSearchContainer.resource()))
+    ResourceFixture.suiteLocal(name, resource())
 
   trait Fixture { self: BioSuite =>
     val esClient: ResourceFixture.TaskFixture[ElasticSearchClient] =

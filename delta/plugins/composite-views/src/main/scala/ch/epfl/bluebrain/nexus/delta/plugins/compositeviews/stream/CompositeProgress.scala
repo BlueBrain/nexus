@@ -9,28 +9,59 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionProgress
 /**
   * Describes the overall indexing progress of a composite views
   * @param sources
-  *   the offset reached by each source
+  *   the offset reached by each source in each run
   * @param branches
   *   the progress for each projection branch
   */
-final case class CompositeProgress(sources: Map[Iri, Offset], branches: Map[CompositeBranch, ProjectionProgress])
+final case class CompositeProgress private (
+    sources: Map[(Iri, Run), Offset],
+    branches: Map[CompositeBranch, ProjectionProgress]
+) {
+
+  /**
+    * Returns the offset for the given source for the main branch
+    * @param source
+    *   the source identifier
+    */
+  def sourceMainOffset(source: Iri): Option[Offset] = sources.get(source -> Run.Main)
+
+  /**
+    * Returns the offset for the given source for the rebuild branch
+    * @param source
+    *   the source identifier
+    */
+  def sourceRebuildOffset(source: Iri): Option[Offset] = sources.get(source -> Run.Rebuild)
+
+  /**
+    * Update the progress for the given branch
+    */
+  def update(branch: CompositeBranch, progress: ProjectionProgress): CompositeProgress = {
+    val updatedBranches = branches.updated(branch, progress)
+    val updatedSources  = sources.updatedWith(branch.source -> branch.run)(_.min(Some(progress.offset)))
+    branch.run match {
+      case Run.Main    =>
+        copy(sources = updatedSources, branches = updatedBranches)
+      case Run.Rebuild =>
+        copy(sources = updatedSources, branches = updatedBranches)
+    }
+  }
+
+}
 
 object CompositeProgress {
 
   /**
     * Construct a composite progress from the branches, deducing the source progress from them
     * @param branches
+    *   the progress per branch
     */
   def apply(branches: Map[CompositeBranch, ProjectionProgress]): CompositeProgress =
-    CompositeProgress(
-      branches.foldLeft(Map.empty[Iri, Offset]) {
-        // We only care about the main branch
-        case (acc, (branch, branchProgress)) if branch.run == Run.Main =>
-          acc.updatedWith(branch.source) {
-            case Some(sourceOffset) => Some(branchProgress.offset.max(sourceOffset))
-            case None               => Some(branchProgress.offset)
-          }
-        case (acc, (_, _))                                             => acc
+    new CompositeProgress(
+      branches.foldLeft(Map.empty[(Iri, Run), Offset]) { case (acc, (branch, branchProgress)) =>
+        acc.updatedWith((branch.source, branch.run)) {
+          case Some(sourceOffset) => Some(branchProgress.offset.min(sourceOffset))
+          case None               => Some(branchProgress.offset)
+        }
       },
       branches
     )

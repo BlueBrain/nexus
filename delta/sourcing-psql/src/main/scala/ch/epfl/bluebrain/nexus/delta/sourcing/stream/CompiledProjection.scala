@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
 import cats.data.NonEmptyChain
 import cats.effect.concurrent.Ref
-import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
 import fs2.Stream
@@ -33,23 +32,6 @@ object CompiledProjection {
       stream: Offset => Stream[Task, Elem[Unit]]
   ): CompiledProjection =
     CompiledProjection(metadata, executionStrategy, offset => _ => _ => stream(offset))
-
-  /**
-    * Attempts to compile the projection definition that can be later managed.
-    * @param registry
-    *   the registry for looking up source and pipe references
-    */
-  def compile(
-      definition: ProjectionDef,
-      executionStrategy: ExecutionStrategy,
-      registry: ReferenceRegistry
-  ): Either[ProjectionErr, CompiledProjection] =
-    for {
-      compiledSources <- definition.sources.traverse(_.compile(registry))
-      mergedSources   <- compiledSources.tail.foldLeftM(compiledSources.head)((acc, e) => acc.merge(e))
-      compiledPipes   <- definition.pipes.traverse(pc => PipeChain.compile(pc, registry))
-      source          <- mergedSources.broadcastThrough(compiledPipes)
-    } yield CompiledProjection(definition.metadata, executionStrategy, offset => _ => _ => source.apply(offset))
 
   /**
     * Attempts to compile the projection definition that can be later managed.

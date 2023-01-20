@@ -5,11 +5,13 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Pipe
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.OperationSuite.{double, half, until}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionErr.{LeapingNotAllowedErr, OperationInOutMatchErr}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.GenericPipe
 import ch.epfl.bluebrain.nexus.testkit.bio.{BioSuite, StreamAssertions}
 import fs2.Stream
 import monix.bio.Task
+import shapeless.Typeable
 
 import java.time.Instant
 
@@ -17,10 +19,10 @@ class OperationSuite extends BioSuite with StreamAssertions {
 
   test("Run the double stream") {
     val sink       = CacheSink.states[Int]
-    val operations = Operation.merge(OperationSuite.double, sink).rightValue
+    val operations = Operation.merge(double, sink).rightValue
 
     for {
-      _ <- OperationSuite.until(5).through(operations).rightValue.apply(Offset.Start).assertSize(5)
+      _ <- until(5).through(operations).rightValue.apply(Offset.Start).assertSize(5)
       _  = assert(sink.failed.isEmpty, "No failure should be detected.")
       _  = assert(sink.dropped.isEmpty, "No dropped should be detected.")
       _  = assertEquals(sink.successes.values.toList.sorted, List(0, 2, 4, 6, 8))
@@ -29,10 +31,10 @@ class OperationSuite extends BioSuite with StreamAssertions {
 
   test("Run the half stream") {
     val sink       = CacheSink.states[Double]
-    val operations = Operation.merge(OperationSuite.half, sink).rightValue
+    val operations = Operation.merge(half, sink).rightValue
 
     for {
-      _ <- OperationSuite.until(5).through(operations).rightValue.apply(Offset.at(1L)).assertSize(4)
+      _ <- until(5).through(operations).rightValue.apply(Offset.at(1L)).assertSize(4)
       _  = assert(sink.failed.isEmpty, "No failure should be detected.")
       _  = assert(sink.dropped.isEmpty, "No dropped should be detected.")
       _  = assertEquals(sink.successes.values.toList.sorted, List(0.5, 1.0, 1.5, 2.0))
@@ -41,20 +43,20 @@ class OperationSuite extends BioSuite with StreamAssertions {
 
   test("Fail as the input and output types don't match") {
     val sink = CacheSink.states[Int]
-    Operation.merge(OperationSuite.half, sink).assertLeft(OperationInOutMatchErr(OperationSuite.half, sink))
+    Operation.merge(half, sink).assertLeft(OperationInOutMatchErr(half, sink))
   }
 
-  test("Run the double stream as an observed operation") {
+  test("Run the double stream as an tap operation") {
     // The values should be doubled in the first sink
     val sink1 = CacheSink.states[Int]
     // We should have the originals here
     val sink2 = CacheSink.states[Int]
 
-    val observed = Operation.merge(OperationSuite.double, sink1).rightValue.observe
-    val all      = Operation.merge(observed, sink2).rightValue
+    val tap = Operation.merge(double, sink1).rightValue.tap
+    val all = Operation.merge(tap, sink2).rightValue
 
     for {
-      _ <- OperationSuite.until(5).through(all).rightValue.apply(Offset.Start).assertSize(5)
+      _ <- until(5).through(all).rightValue.apply(Offset.Start).assertSize(5)
       _  = assert(sink1.failed.isEmpty, "No failure should be detected.")
       _  = assert(sink1.dropped.isEmpty, "No dropped should be detected.")
       _  = assertEquals(sink1.successes.values.toList.sorted, List(0, 2, 4, 6, 8))
@@ -67,12 +69,12 @@ class OperationSuite extends BioSuite with StreamAssertions {
   test("Run the double stream with a leaped part") {
     val sink = CacheSink.states[Int]
 
-    val first  = OperationSuite.double.leapUntil(Offset.at(2L)).rightValue
-    val second = Operation.merge(OperationSuite.double, sink).rightValue
+    val first  = double.identityLeap(Offset.at(2L)).rightValue
+    val second = Operation.merge(double, sink).rightValue
     val all    = Operation.merge(first, second).rightValue
 
     for {
-      _ <- OperationSuite.until(5).through(all).rightValue.apply(Offset.Start).assertSize(5)
+      _ <- until(5).through(all).rightValue.apply(Offset.Start).assertSize(5)
       _  = assert(sink.failed.isEmpty, "No failure should be detected.")
       _  = assert(sink.dropped.isEmpty, "No dropped should be detected.")
       _  = assertEquals(sink.successes.values.toList.sorted, List(0, 2, 4, 12, 16))
@@ -80,7 +82,7 @@ class OperationSuite extends BioSuite with StreamAssertions {
   }
 
   test("Leaping is not possible for an operation where in and out are not aligned") {
-    OperationSuite.half.leapUntil(Offset.at(2L)).assertLeft(LeapingNotAllowedErr(OperationSuite.half))
+    half.identityLeap(Offset.at(2L)).assertLeft(LeapingNotAllowedErr(half, Typeable[Int]))
   }
 
 }

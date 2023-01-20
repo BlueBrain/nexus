@@ -21,6 +21,16 @@ object CompositeBranch {
     def value: String
   }
 
+  /**
+    * Create a main branch for the given source and target
+    */
+  def main(source: Iri, target: Iri): CompositeBranch = CompositeBranch(source, target, Run.Main)
+
+  /**
+    * Create a rebuild branch for the given source and target
+    */
+  def rebuild(source: Iri, target: Iri): CompositeBranch = CompositeBranch(source, target, Run.Rebuild)
+
   object Run {
     implicit val runGet: Get[Run] = Get[String].temap {
       case Main.value    => Right(Main)

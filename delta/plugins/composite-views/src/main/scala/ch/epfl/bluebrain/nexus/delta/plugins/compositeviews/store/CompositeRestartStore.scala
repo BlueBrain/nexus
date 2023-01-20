@@ -8,11 +8,10 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeResta
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.store.CompositeRestartStore.logger
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.{ProjectionConfig, QueryConfig}
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.ProjectionConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.IriInstances._
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.query.StreamingQuery
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
 import com.typesafe.scalalogging.Logger
 import doobie.implicits._
@@ -28,7 +27,7 @@ import java.time.Instant
 /**
   * Store to handle composite views restarts
   */
-final class CompositeRestartStore private[store] (xas: Transactors, config: QueryConfig) {
+final class CompositeRestartStore(xas: Transactors) {
 
   /**
     * Save a composite restart
@@ -65,26 +64,22 @@ final class CompositeRestartStore private[store] (xas: Transactors, config: Quer
       .void
 
   /**
-    * Stream composite restarts for a given composite view
+    * Get the first non-available restart for a composite view
     * @param view
     *   the view reference
-    * @param offset
-    *   the offset
     */
-  def stream(view: ViewRef, offset: Offset): ElemStream[CompositeRestart] =
-    StreamingQuery
-      .apply[(Offset, ProjectRef, Iri, Json, Instant)](
-        offset,
-        o => sql"""SELECT ordering, project, id, value, instant from public.composite_restarts
-                  |WHERE ordering > $o and project = ${view.project} and id = ${view.viewId}  and acknowledged = false
-                  |ORDER BY ordering ASC""".stripMargin.query,
-        _._1,
-        config,
-        xas
-      )
+  def head(view: ViewRef): UIO[Option[Elem[CompositeRestart]]] =
+    sql"""SELECT ordering, project, id, value, instant from public.composite_restarts
+         |WHERE project = ${view.project} and id = ${view.viewId} and acknowledged = false
+         |ORDER BY ordering ASC
+         |LIMIT 1""".stripMargin
+      .query[(Offset, ProjectRef, Iri, Json, Instant)]
       .map { case (offset, project, id, json, instant) =>
         Elem.fromEither(entityType, id, Some(project), instant, offset, json.as[CompositeRestart], 1)
       }
+      .option
+      .transact(xas.streaming)
+      .hideErrors
 
 }
 
@@ -94,25 +89,21 @@ object CompositeRestartStore {
   private val purgeCompositeRestartMetadata = ProjectionMetadata("composite-views", "purge-composite-restarts")
 
   /**
-    * Create a [[CompositeRestartStore]] and register the task to delete expired restarts in the supervisor
-    *
+    * Register the task to delete expired restarts in the supervisor
+    * @param store
+    *   the store
     * @param supervisor
     *   the supervisor
-    * @param xas
-    *   the transactors
     * @param config
     *   the projection config
     */
-  def apply(supervisor: Supervisor, xas: Transactors, config: ProjectionConfig)(implicit
+  def deleteExpired(store: CompositeRestartStore, supervisor: Supervisor, config: ProjectionConfig)(implicit
       clock: Clock[UIO]
-  ): Task[CompositeRestartStore] = {
-    val store = new CompositeRestartStore(xas, config.query)
-
+  ): Task[Unit] = {
     val deleteExpiredRestarts =
       IOUtils.instant.flatMap { now =>
         store.deleteExpired(now.minusMillis(config.restartTtl.toMillis))
       }
-
     supervisor
       .run(
         CompiledProjection.fromStream(
@@ -125,6 +116,6 @@ object CompositeRestartStore {
               .drain
         )
       )
-      .as(store)
+      .void
   }
 }
