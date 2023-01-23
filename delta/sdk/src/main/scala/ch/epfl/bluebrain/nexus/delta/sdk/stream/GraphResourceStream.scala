@@ -2,10 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk.stream
 
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceShifts
-import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
-import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.FetchContextFailed
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef, Tag}
@@ -13,11 +9,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.{RefreshStrategy, StreamingQuery}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.RemainingElems
-import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import monix.bio.{Task, UIO}
-
-import scala.concurrent.duration._
 
 trait GraphResourceStream {
 
@@ -60,8 +53,6 @@ trait GraphResourceStream {
 
 object GraphResourceStream {
 
-  private val logger: Logger = Logger[GraphResourceStream]
-
   /**
     * Creates an empty graph resource stream
     */
@@ -75,27 +66,6 @@ object GraphResourceStream {
   /**
     * Create a graph resource stream
     */
-  def apply(
-      fetchContext: FetchContext[ContextRejection],
-      qc: QueryConfig,
-      xas: Transactors,
-      shifts: ResourceShifts
-  ): Task[GraphResourceStream] = {
-    // TODO make the cache configurable
-    KeyValueStore.localLRU[ProjectRef, ProjectContext](500, 2.minutes).map { kv =>
-      def f(projectRef: ProjectRef): UIO[ProjectContext] = kv.getOrElseUpdate(
-        projectRef,
-        fetchContext
-          .onRead(projectRef)
-          .tapError { err =>
-            Task.delay(logger.error(s"An error occurred while fetching the context for project '$projectRef': $err."))
-          }
-          .hideErrorsWith(_ => FetchContextFailed(projectRef))
-      )
-      apply(f, qc, xas, shifts)
-    }
-  }
-
   def apply(
       fetchContext: ProjectRef => UIO[ProjectContext],
       qc: QueryConfig,

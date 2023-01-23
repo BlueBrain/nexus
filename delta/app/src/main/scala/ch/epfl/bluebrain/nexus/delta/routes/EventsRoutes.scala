@@ -85,27 +85,42 @@ class EventsRoutes(
                 // SSE for all events with a given selector
                 (resolveSelector & pathPrefix("events") & pathEndOrSingleSlash) { selector =>
                   operationName(s"$prefixSegment/$selector/{org}/events") {
-                    authorizeFor(AclAddress.Root, events.read).apply {
-                      emit(sseEventLog.streamBy(selector, offset))
-                    }
+                    concat(
+                      authorizeFor(AclAddress.Root, events.read).apply {
+                        emit(sseEventLog.streamBy(selector, offset))
+                      },
+                      (head & authorizeFor(AclAddress.Root, events.read)) {
+                        complete(OK)
+                      }
+                    )
                   }
                 },
                 // SSE for events with a given selector within a given organization
                 (resolveScopedSelector & resolveOrg & pathPrefix("events") & pathEndOrSingleSlash) { (selector, org) =>
                   operationName(s"$prefixSegment/$selector/{org}/events") {
-                    authorizeFor(org, events.read).apply {
-                      emit(sseEventLog.streamBy(selector, org, offset))
-                    }
+                    concat(
+                      authorizeFor(org, events.read).apply {
+                        emit(sseEventLog.streamBy(selector, org, offset))
+                      },
+                      (head & authorizeFor(org, events.read)) {
+                        complete(OK)
+                      }
+                    )
                   }
                 },
                 // SSE for events with a given selector within a given project
                 (resolveScopedSelector & resolveProjectRef & pathPrefix("events") & pathEndOrSingleSlash) {
                   (selector, projectRef) =>
-                    operationName(s"$prefixSegment/$selector/{org}/{proj}/events") {
-                      authorizeFor(projectRef, events.read).apply {
-                        emit(sseEventLog.streamBy(selector, projectRef, offset))
+                    concat(
+                      operationName(s"$prefixSegment/$selector/{org}/{proj}/events") {
+                        authorizeFor(projectRef, events.read).apply {
+                          emit(sseEventLog.streamBy(selector, projectRef, offset))
+                        }
+                      },
+                      (head & authorizeFor(projectRef, events.read)) {
+                        complete(OK)
                       }
-                    }
+                    )
                 }
               )
             }

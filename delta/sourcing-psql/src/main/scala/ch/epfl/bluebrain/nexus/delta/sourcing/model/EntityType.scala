@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.model
 
 import doobie.{Get, Put}
-import io.circe.Encoder
+import io.circe.{Decoder, Encoder}
 
 /**
   * Entity type
@@ -16,4 +16,7 @@ object EntityType {
 
   implicit val entityTypeEncoder: Encoder[EntityType] =
     Encoder.encodeString.contramap(_.value)
+
+  implicit val entityTypeDecoder: Decoder[EntityType] =
+    Decoder.decodeString.map(EntityType(_))
 }

@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.emit
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.Response.{Complete, Reject}
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
-import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEventLog.ServerSentEventStream
+import ch.epfl.bluebrain.nexus.delta.sdk.sse.ServerSentEventStream
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.StreamConverter
 import monix.bio.{IO, UIO}
 import monix.execution.Scheduler

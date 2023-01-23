@@ -20,8 +20,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects._
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, Project, ProjectEvent}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.WrappedOrganizationRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, Project, ProjectEvent}
 import ch.epfl.bluebrain.nexus.delta.sdk.provisioning.ProjectProvisioning
 import ch.epfl.bluebrain.nexus.delta.sdk.quotas.Quotas
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
@@ -79,6 +79,10 @@ object ProjectsModule extends ModuleDef {
   make[FetchContext[ContextRejection]].fromEffect {
     (organizations: Organizations, projects: Projects, quotas: Quotas) =>
       Task.pure(FetchContext(organizations, projects, quotas))
+  }
+
+  make[ProjectContextCache].fromEffect { (fetchContext: FetchContext[ContextRejection]) =>
+    ProjectContextCache(fetchContext)
   }
 
   make[UUIDCache].fromEffect { (config: AppConfig, xas: Transactors) =>

@@ -15,8 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.ProjectNotFound
-import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEventLog
-import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEventLog.ServerSentEventStream
+import ch.epfl.bluebrain.nexus.delta.sdk.sse.{ServerSentEventStream, SseEventLog}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
@@ -41,9 +40,9 @@ class EventsRoutesSpec extends BaseRouteSpec {
   private val identities = IdentitiesDummy(caller)
   private val asAlice    = addCredentials(OAuth2BearerToken("alice"))
 
-  private val acl      = Label.unsafe("acl")
-  private val project  = Label.unsafe("project")
-  private val resource = Label.unsafe("resource")
+  private val acl       = Label.unsafe("acl")
+  private val project   = Label.unsafe("project")
+  private val resources = Label.unsafe("resources")
 
   private val event1 = ServerSentEvent("""{"action":"Add"}""", "Acl", "1")
   private val event2 = ServerSentEvent("""{"action":"Create"}""", "Project", "2")
@@ -84,9 +83,9 @@ class EventsRoutesSpec extends BaseRouteSpec {
     ): IO[ProjectRejection, ServerSentEventStream] =
       IO.raiseWhen(project != projectRef)(ProjectNotFound(project)).as(streamBy(selector, offset))
 
-    override def allSelectors: Set[Label] = Set(acl, project, resource)
+    override def allSelectors: Set[Label] = Set(acl, project, resources)
 
-    override def scopedSelectors: Set[Label] = Set(project, resource)
+    override def scopedSelectors: Set[Label] = Set(project, resources)
   }
 
   private val routes = Route.seal(
@@ -115,11 +114,11 @@ class EventsRoutesSpec extends BaseRouteSpec {
         "/v1/events",
         "/v1/acl/events",
         "/v1/project/events",
-        "/v1/resource/events",
-        "/v1/resource/org/events",
-        s"/v1/resource/$uuid/events",
-        "/v1/resource/org/proj/events",
-        s"/v1/resource/$uuid/$uuid/events"
+        "/v1/resources/events",
+        "/v1/resources/org/events",
+        s"/v1/resources/$uuid/events",
+        "/v1/resources/org/proj/events",
+        s"/v1/resources/$uuid/$uuid/events"
       )
 
       forAll(endpoints) { endpoint =>
@@ -194,7 +193,13 @@ class EventsRoutesSpec extends BaseRouteSpec {
       }
     }
 
-    "check access to SSEs" in {
+    "check access to all SSEs" in {
+      Head("/v1/events") ~> asAlice ~> routes ~> check {
+        response.status shouldEqual StatusCodes.OK
+      }
+    }
+
+    "check access to 'org/proj' SSEs" in {
       Head("/v1/events") ~> asAlice ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
       }
