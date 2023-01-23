@@ -85,12 +85,14 @@ object StreamingQuery {
       sql"""((SELECT 'newState', type, id, org, project, instant, ordering, rev
            |FROM public.scoped_states
            |$where
-           |ORDER BY ordering)
+           |ORDER BY ordering
+           |LIMIT ${cfg.batchSize})
            |UNION
            |(SELECT 'tombstone', type, id, org, project, instant, ordering, -1
            |FROM public.scoped_tombstones
            |$where
-           |ORDER BY ordering)
+           |ORDER BY ordering
+           |LIMIT ${cfg.batchSize})
            |ORDER BY ordering)
            |LIMIT ${cfg.batchSize}
            |""".stripMargin.query[(String, EntityType, Iri, Label, Label, Instant, Long, Int)].map {
@@ -139,12 +141,14 @@ object StreamingQuery {
       sql"""((SELECT 'newState', type, id, org, project, value, instant, ordering, rev
            |FROM public.scoped_states
            |$where
-           |ORDER BY ordering)
+           |ORDER BY ordering
+           |LIMIT ${cfg.batchSize})
            |UNION
            |(SELECT 'tombstone', type, id, org, project, null, instant, ordering, -1
            |FROM public.scoped_tombstones
            |$where
-           |ORDER BY ordering)
+           |ORDER BY ordering
+           |LIMIT ${cfg.batchSize})
            |ORDER BY ordering)
            |LIMIT ${cfg.batchSize}
            |""".stripMargin.query[(String, EntityType, Iri, Label, Label, Option[Json], Instant, Long, Int)].map {
