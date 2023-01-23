@@ -9,7 +9,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling.defaultPrint
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder.SseData
-import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEventLog.ServerSentEventStream
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.EventStreaming
 import ch.epfl.bluebrain.nexus.delta.sourcing.model._
@@ -111,8 +110,6 @@ trait SseEventLog {
 }
 
 object SseEventLog {
-
-  type ServerSentEventStream = Stream[Task, ServerSentEvent]
 
   private val logger: Logger = Logger[SseEventLog]
 

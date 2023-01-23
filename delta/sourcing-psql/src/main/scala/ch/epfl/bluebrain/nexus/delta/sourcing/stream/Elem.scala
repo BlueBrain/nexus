@@ -2,12 +2,18 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
 import cats.{Applicative, Eval, Traverse}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
+import io.circe.{Decoder, Encoder}
+import io.circe.generic.extras.Configuration
+import io.circe.generic.extras.semiauto.{deriveConfiguredDecoder, deriveConfiguredEncoder}
+import io.circe.syntax.EncoderOps
 import monix.bio.{Task, UIO}
 
 import java.time.Instant
+import scala.annotation.nowarn
 
 /**
   * Enumeration of projection element states.
@@ -267,5 +273,20 @@ object Elem {
         case s: SuccessElem[A] => f(s.value, lb)
         case _                 => lb
       }
+  }
+
+  @nowarn("cat=unused")
+  implicit private val config: Configuration = Configuration.default.withDiscriminator(keywords.tpe)
+
+  @nowarn("cat=unused")
+  implicit val elemUnitEncoder: Encoder.AsObject[Elem[Unit]] = {
+    implicit val throwableEncoder: Encoder[Throwable] = Encoder.instance[Throwable](_.getMessage.asJson)
+    deriveConfiguredEncoder[Elem[Unit]]
+  }
+
+  @nowarn("cat=unused")
+  implicit val elemUnitDecoder: Decoder[Elem[Unit]] = {
+    implicit val throwableDecoder: Decoder[Throwable] = Decoder.decodeString.map(new Exception(_))
+    deriveConfiguredDecoder[Elem[Unit]]
   }
 }
