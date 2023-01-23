@@ -25,6 +25,8 @@ import scala.concurrent.duration.FiniteDuration
   *   retry strategy
   */
 final case class CompositeViewFields(
+    name: Option[String],
+    description: Option[String],
     sources: NonEmptySet[CompositeViewSourceFields],
     projections: NonEmptySet[CompositeViewProjectionFields],
     rebuildStrategy: Option[RebuildStrategy]
@@ -34,6 +36,14 @@ final case class CompositeViewFields(
 }
 
 object CompositeViewFields {
+
+  /** Construct a [[CompositeViewFields]] without name and description */
+  def apply(
+      sources: NonEmptySet[CompositeViewSourceFields],
+      projections: NonEmptySet[CompositeViewProjectionFields],
+      rebuildStrategy: Option[RebuildStrategy]
+  ): CompositeViewFields =
+    CompositeViewFields(None, None, sources, projections, rebuildStrategy)
 
   @nowarn("cat=unused")
   implicit final def compositeViewFieldsEncoder(implicit base: BaseUri): Encoder.AsObject[CompositeViewFields] = {

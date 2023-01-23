@@ -1,18 +1,16 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config
 
-import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig.{RemoteSourceClientConfig, SourcesConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.{BatchConfig, EventLogConfig}
 import com.typesafe.config.Config
 import monix.bio.UIO
-import pureconfig.error.FailureReason
 import pureconfig.generic.auto._
 import pureconfig.generic.semiauto.deriveReader
 import pureconfig.{ConfigReader, ConfigSource}
 
-import scala.concurrent.duration.{DurationInt, FiniteDuration}
+import scala.concurrent.duration.FiniteDuration
 
 /**
   * The composite view configuration.
@@ -31,8 +29,10 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration}
   *   the HTTP client configuration for a remote source
   * @param minIntervalRebuild
   *   the minimum allowed value for periodic rebuild strategy
-  * @param idleTimeout
-  *   the idle duration after which an indexing stream will be stopped
+  * @param blazegraphBatch
+  *   the batch configuration for indexing into the blazegraph common space and the blazegraph projections
+  * @param elasticsearchBatch
+  *   the batch configuration for indexing into the elasticsearch projections
   */
 final case class CompositeViewsConfig(
     sources: SourcesConfig,
@@ -42,7 +42,8 @@ final case class CompositeViewsConfig(
     pagination: PaginationConfig,
     remoteSourceClient: RemoteSourceClientConfig,
     minIntervalRebuild: FiniteDuration,
-    idleTimeout: FiniteDuration
+    blazegraphBatch: BatchConfig,
+    elasticsearchBatch: BatchConfig
 )
 
 object CompositeViewsConfig {
@@ -50,21 +51,11 @@ object CompositeViewsConfig {
   /**
     * The sources configuration
     *
-    * @param maxBatchSize
-    *   the maximum batching size, corresponding to the maximum number of Elasticsearch documents uploaded on a bulk
-    *   request. In this window, duplicated persistence ids are discarded
-    * @param maxTimeWindow
-    *   the maximum batching duration. In this window, duplicated persistence ids are discarded
     * @param maxSources
     *   maximum number of sources allowed
-    * @param retry
-    *   configuration for source retry strategy
     */
   final case class SourcesConfig(
-      maxBatchSize: Int,
-      maxTimeWindow: FiniteDuration,
-      maxSources: Int,
-      retry: RetryStrategyConfig
+      maxSources: Int
   )
 
   /**
@@ -98,11 +89,5 @@ object CompositeViewsConfig {
     }
 
   implicit final val compositeViewsConfigReader: ConfigReader[CompositeViewsConfig] =
-    deriveReader[CompositeViewsConfig].emap { c =>
-      Either.cond(
-        c.idleTimeout.gteq(10.minutes),
-        c,
-        new FailureReason { override def description: String = "'idle-timeout' must be greater than 10 minutes" }
-      )
-    }
+    deriveReader[CompositeViewsConfig]
 }

@@ -14,12 +14,10 @@ import scala.concurrent.duration._
 
 object BlazegraphClientSetup {
 
-  private def resource(
-      blazegraph: Resource[Task, BlazegraphContainer]
-  )(implicit s: Scheduler): Resource[Task, BlazegraphClient] = {
+  def resource()(implicit s: Scheduler): Resource[Task, BlazegraphClient] = {
     for {
       (httpClient, actorSystem) <- HttpClientSetup()
-      container                 <- blazegraph
+      container                 <- BlazegraphContainer.resource()
     } yield {
       implicit val as: ActorSystem = actorSystem
       BlazegraphClient(
@@ -32,7 +30,7 @@ object BlazegraphClientSetup {
   }
 
   def suiteLocalFixture(name: String)(implicit s: Scheduler): TaskFixture[BlazegraphClient] =
-    ResourceFixture.suiteLocal(name, resource(BlazegraphContainer.resource()))
+    ResourceFixture.suiteLocal(name, resource())
 
   trait Fixture { self: BioSuite =>
     val blazegraphClient: ResourceFixture.TaskFixture[BlazegraphClient] =

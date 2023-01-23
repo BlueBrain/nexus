@@ -16,9 +16,14 @@ import io.circe.generic.semiauto.deriveCodec
   * @param viewId
   *   the view id
   */
-final case class ViewRef(project: ProjectRef, viewId: Iri)
+final case class ViewRef(project: ProjectRef, viewId: Iri) {
+  override def toString: String = s"$project/$viewId"
+}
 
 object ViewRef {
+
+  def unsafe(org: String, project: String, viewId: Iri): ViewRef =
+    ViewRef(ProjectRef.unsafe(org, project), viewId)
 
   implicit final val viewRefEncoder: Codec.AsObject[ViewRef] = deriveCodec[ViewRef]
 

@@ -77,7 +77,7 @@ object IndexingViewDef {
       graphStream: GraphResourceStream,
       sink: Sink
   ): Task[CompiledProjection] =
-    compile(v, compilePipeChain, graphStream(v.ref.project, v.resourceTag.getOrElse(Tag.latest), _), sink)
+    compile(v, compilePipeChain, graphStream.continuous(v.ref.project, v.resourceTag.getOrElse(Tag.latest), _), sink)
 
   private def compile(
       v: ActiveViewDef,

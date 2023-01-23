@@ -23,10 +23,14 @@ class CompositeViewsSerializationSuite extends SerializationSuite with Composite
 
   private val eventsMapping = loadEvents(
     "composite-views",
-    CompositeViewCreated(viewId, project.ref, uuid, viewValue, viewSource, 1, epoch, subject) -> "view-created.json",
-    CompositeViewUpdated(viewId, project.ref, uuid, viewValue, viewSource, 2, epoch, subject) -> "view-updated.json",
-    CompositeViewTagAdded(viewId, projectRef, uuid, targetRev = 1, tag, 3, epoch, subject)    -> "view-tag-added.json",
-    CompositeViewDeprecated(viewId, projectRef, uuid, 4, epoch, subject)                      -> "view-deprecated.json"
+    // format: off
+    CompositeViewCreated(viewId, project.ref, uuid, viewValue, viewSource, 1, epoch, subject)      -> "view-created.json",
+    CompositeViewCreated(viewId, project.ref, uuid, viewValueNamed, viewSource, 1, epoch, subject) -> "named-view-created.json",
+    CompositeViewUpdated(viewId, project.ref, uuid, viewValue, viewSource, 2, epoch, subject)      -> "view-updated.json",
+    CompositeViewUpdated(viewId, project.ref, uuid, viewValueNamed, viewSource, 2, epoch, subject) -> "named-view-updated.json",
+    CompositeViewTagAdded(viewId, projectRef, uuid, targetRev = 1, tag, 3, epoch, subject)         -> "view-tag-added.json",
+    CompositeViewDeprecated(viewId, projectRef, uuid, 4, epoch, subject)                           -> "view-deprecated.json"
+    // format: on
   )
 
   private val eventSerializer = CompositeViewEvent.serializer(crypto)

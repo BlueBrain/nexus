@@ -26,7 +26,7 @@ class CompositeProgressSuite extends FunSuite {
   private val mainProgress11    = ProjectionProgress(Offset.At(42L), Instant.EPOCH, 5, 2, 1)
   private val mainProgress12    = ProjectionProgress(Offset.At(54L), Instant.EPOCH, 4, 1, 0)
   private val mainProgress21    = ProjectionProgress(Offset.At(78L), Instant.EPOCH, 7, 1, 0)
-  private val mainProgress32    = ProjectionProgress(Offset.At(12L), Instant.EPOCH, 7, 1, 0)
+  private val rebuildProgress32 = ProjectionProgress(Offset.At(12L), Instant.EPOCH, 7, 1, 0)
   private val rebuildProgress11 = ProjectionProgress(Offset.At(99L), Instant.EPOCH, 4, 1, 0)
 
   test("Build an empty progress if no branches are provided") {
@@ -38,13 +38,15 @@ class CompositeProgressSuite extends FunSuite {
       mainBranch11    -> mainProgress11,
       mainBranch12    -> mainProgress12,
       mainBranch21    -> mainProgress21,
-      mainBranch32    -> mainProgress32,
+      mainBranch32    -> rebuildProgress32,
       rebuildBranch11 -> rebuildProgress11
     )
 
     val expectedSources = Map(
-      source1 -> mainProgress12.offset,
-      source2 -> mainProgress21.offset
+      (source1, Run.Main)    -> mainProgress11.offset,
+      (source1, Run.Rebuild) -> rebuildProgress11.offset,
+      (source2, Run.Main)    -> mainProgress21.offset,
+      (source3, Run.Rebuild) -> rebuildProgress32.offset
     )
 
     assertEquals(CompositeProgress(branches), CompositeProgress(expectedSources, branches))

@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
 import akka.http.scaladsl.model.Uri
 import cats.data.NonEmptySet
-import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig.ConstantStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
@@ -18,6 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.EitherValuable
@@ -156,22 +156,26 @@ trait CompositeViewsFixture extends ConfigFixtures with EitherValuable {
     permissions.query
   )
 
-  val viewValue    = CompositeViewValue(
+  val viewValue      = CompositeViewValue(
     NonEmptySet.of(projectSource, crossProjectSource, remoteProjectSource),
     NonEmptySet.of(esProjection, blazegraphProjection),
     Some(Interval(1.minute))
   )
-  val updatedValue = viewValue.copy(rebuildStrategy = Some(Interval(2.minutes)))
+  val viewValueNamed = viewValue.copy(name = Some("viewName"), description = Some("viewDescription"))
+  val updatedValue   = viewValue.copy(rebuildStrategy = Some(Interval(2.minutes)))
+
+  val batchConfig = BatchConfig(10, 10.seconds)
 
   val config: CompositeViewsConfig = CompositeViewsConfig(
-    SourcesConfig(1, 1.second, 3, ConstantStrategyConfig(1.second, 10)),
+    SourcesConfig(1),
     "prefix",
     3,
     eventLogConfig,
     pagination,
     RemoteSourceClientConfig(httpClientConfig, 1.second, 1, 500.milliseconds),
     1.minute,
-    1.minute
+    batchConfig,
+    batchConfig
   )
 }
 

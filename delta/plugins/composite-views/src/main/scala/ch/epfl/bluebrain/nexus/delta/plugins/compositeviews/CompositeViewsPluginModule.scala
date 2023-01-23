@@ -5,20 +5,24 @@ import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViewsPluginModule.enrichCompositeViewEvent
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViewsPluginModule.{enrichCompositeViewEvent, injectSearchViewDefaults}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.DeltaClient
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.MetadataPredicates
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.{CompositeSpaces, CompositeViewsCoordinator, MetadataPredicates}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.ProjectionType.ElasticSearchProjectionType
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model._
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.projections.CompositeProjections
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.routes.CompositeViewsRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.store.CompositeRestartStore
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.CompositeGraphStream
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, JsonLdContext, RemoteContextResolution}
+import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
@@ -33,8 +37,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, Projects}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ProjectionConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Supervisor
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeChain, ReferenceRegistry, Supervisor}
 import distage.ModuleDef
 import io.circe.syntax.EncoderOps
 import io.circe.{Json, JsonObject}
@@ -103,9 +108,50 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
       )
   }
 
-  make[CompositeRestartStore].fromEffect {
-    (supervisor: Supervisor, xas: Transactors, projectionConfig: ProjectionConfig) =>
-      CompositeRestartStore(supervisor, xas, projectionConfig)
+  make[CompositeProjections].fromEffect {
+    (supervisor: Supervisor, xas: Transactors, projectionConfig: ProjectionConfig, clock: Clock[UIO]) =>
+      val compositeRestartStore = new CompositeRestartStore(xas)
+      val compositeProjections  =
+        CompositeProjections(compositeRestartStore, xas, projectionConfig.query, projectionConfig.batch)(clock)
+
+      CompositeRestartStore
+        .deleteExpired(compositeRestartStore, supervisor, projectionConfig)(clock)
+        .as(compositeProjections)
+  }
+
+  make[CompositeSpaces.Builder].from {
+    (
+        esClient: ElasticSearchClient,
+        blazeClient: BlazegraphClient @Id("blazegraph-indexing-client"),
+        cfg: CompositeViewsConfig,
+        baseUri: BaseUri
+    ) =>
+      CompositeSpaces.Builder(cfg.prefix, esClient, cfg.elasticsearchBatch, blazeClient, cfg.blazegraphBatch)(baseUri)
+  }
+
+  // TODO implement the remote one
+  make[CompositeGraphStream].from { (graphStream: GraphResourceStream) =>
+    CompositeGraphStream(graphStream, graphStream)
+  }
+
+  make[CompositeViewsCoordinator].fromEffect {
+    (
+        compositeViews: CompositeViews,
+        supervisor: Supervisor,
+        registry: ReferenceRegistry,
+        graphStream: CompositeGraphStream,
+        buildSpaces: CompositeSpaces.Builder,
+        compositeProjections: CompositeProjections,
+        cr: RemoteContextResolution @Id("aggregate")
+    ) =>
+      CompositeViewsCoordinator(
+        compositeViews,
+        supervisor,
+        PipeChain.compile(_, registry),
+        graphStream,
+        buildSpaces.apply,
+        compositeProjections
+      )(cr)
   }
 
   make[MetadataPredicates].fromEffect {
@@ -194,7 +240,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
           )(clock, uuidF),
           e => e.id,
           enrichCompositeViewEvent,
-          (e, _) => e,
+          (e, _) => injectSearchViewDefaults(e),
           cfg.eventLog,
           xas
         )
@@ -218,8 +264,8 @@ object CompositeViewsPluginModule {
     JsonObject("includeContext" -> Json.fromBoolean(false)).asJson
 
   /**
-    * Function to modify an array of [[CompositeViewProjection]] s by injecting a default [[includeContext]] to
-    * [[ElasticSearchProjection]] that do not have it.
+    * Function to modify an array of [[CompositeViewProjection]] s by injecting a default includeContext to
+    * ElasticSearchProjection that do not have it.
     */
   private def injectIncludeContextInArray: Option[Vector[Json]] => Json = {
     // None case should not happen as projections are a NonEmptySet
@@ -241,4 +287,24 @@ object CompositeViewsPluginModule {
       }.asJson
   }
 
+  def injectSearchViewDefaults: CompositeViewEvent => CompositeViewEvent = {
+    case c @ CompositeViewCreated(id, _, _, value, _, _, _, _) if id == defaultSearchViewId =>
+      c.copy(value = setSearchViewDefaults(value))
+    case c @ CompositeViewUpdated(id, _, _, value, _, _, _, _) if id == defaultSearchViewId =>
+      c.copy(value = setSearchViewDefaults(value))
+    case event                                                                              => event
+  }
+
+  private val defaultSearchViewId          =
+    iri"https://bluebrain.github.io/nexus/vocabulary/searchView"
+  // Name and description need to match the values in the search config!
+  private val defaultSearchViewName        = "Default global search view"
+  private val defaultSearchViewDescription =
+    "An Elasticsearch view of configured resources for the global search."
+
+  private def setSearchViewDefaults: CompositeViewValue => CompositeViewValue =
+    _.copy(
+      name = Some(defaultSearchViewName),
+      description = Some(defaultSearchViewDescription)
+    )
 }

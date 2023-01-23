@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.search.model
 
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchConfigError.{InvalidJsonError, InvalidSparqlConstructQuery, LoadingFileError}
+import ch.epfl.bluebrain.nexus.delta.sdk.Defaults
 import ch.epfl.bluebrain.nexus.testkit.IOValues
 import com.typesafe.config.ConfigFactory
 import org.scalatest.Inspectors
@@ -16,13 +17,15 @@ class SearchConfigSpec extends AnyWordSpecLike with Matchers with Inspectors wit
   private val validQuery    = getAbsolutePath("/construct-query.sparql")
   private val resourceTypes = getAbsolutePath("/resource-types.json")
   private val missingFile   = "/path/to/nowhere"
+  private val defaults      = Defaults("name", "description")
 
   private def config(
       fields: String,
       mappings: String,
       settings: Option[String],
       query: String,
-      context: Option[String]
+      context: Option[String],
+      defaults: Defaults
   ) =
     ConfigFactory.parseString(
       s"""
@@ -35,6 +38,11 @@ class SearchConfigSpec extends AnyWordSpecLike with Matchers with Inspectors wit
         |    query = $query
         |    context = ${context.orNull}
         |    resource-types = $resourceTypes
+        |  }
+        |
+        |  defaults {
+        |    name = ${defaults.name}
+        |    description = ${defaults.description}
         |  }
         |}
         |""".stripMargin
@@ -49,7 +57,8 @@ class SearchConfigSpec extends AnyWordSpecLike with Matchers with Inspectors wit
             validJson,
             Some(validJson),
             validQuery,
-            Some(validJson)
+            Some(validJson),
+            defaults
           )
         )
         .accepted
@@ -63,35 +72,40 @@ class SearchConfigSpec extends AnyWordSpecLike with Matchers with Inspectors wit
             validJson,
             Some(validJson),
             validQuery,
-            Some(validJson)
+            Some(validJson),
+            defaults
           ),
           config(
             validJson,
             missingFile,
             Some(validJson),
             validQuery,
-            Some(validJson)
+            Some(validJson),
+            defaults
           ),
           config(
             validJson,
             validJson,
             Some(missingFile),
             validQuery,
-            Some(validJson)
+            Some(validJson),
+            defaults
           ),
           config(
             validJson,
             validJson,
             Some(validJson),
             missingFile,
-            Some(validJson)
+            Some(validJson),
+            defaults
           ),
           config(
             validJson,
             validJson,
             Some(validJson),
             validQuery,
-            Some(missingFile)
+            Some(missingFile),
+            defaults
           )
         )
       ) { c =>
@@ -107,28 +121,32 @@ class SearchConfigSpec extends AnyWordSpecLike with Matchers with Inspectors wit
             validJson,
             Some(validJson),
             validQuery,
-            Some(validJson)
+            Some(validJson),
+            defaults
           ),
           config(
             validJson,
             emptyFile,
             Some(validJson),
             validQuery,
-            Some(validJson)
+            Some(validJson),
+            defaults
           ),
           config(
             validJson,
             validJson,
             Some(emptyFile),
             validQuery,
-            Some(validJson)
+            Some(validJson),
+            defaults
           ),
           config(
             validJson,
             validJson,
             Some(validJson),
             validQuery,
-            Some(emptyFile)
+            Some(emptyFile),
+            defaults
           )
         )
       ) { c =>
@@ -144,7 +162,8 @@ class SearchConfigSpec extends AnyWordSpecLike with Matchers with Inspectors wit
             validJson,
             Some(validJson),
             emptyFile,
-            Some(validJson)
+            Some(validJson),
+            defaults
           )
         )
         .rejectedWith[InvalidSparqlConstructQuery]

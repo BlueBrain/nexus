@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchConfig.IndexingC
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model.defaultViewId
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
+import ch.epfl.bluebrain.nexus.delta.sdk.Defaults
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
@@ -46,7 +47,8 @@ class SearchScopeInitializationSpec
   private val indexingConfig =
     IndexingConfig(Set.empty, JsonObject.empty, None, SparqlConstructQuery.unsafe(""), ContextObject(JsonObject.empty))
 
-  lazy val scopeInit = new SearchScopeInitialization(views, indexingConfig, sa)
+  private val defaults = Defaults("viewName", "viewDescription")
+  lazy val scopeInit   = new SearchScopeInitialization(views, indexingConfig, sa, defaults)
 
   "An SearchScopeInitialization" should {
 
