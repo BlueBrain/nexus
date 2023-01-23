@@ -112,7 +112,8 @@ object GlobalEventStore {
           offset,
           offset => sql"""SELECT type, id, value, rev, instant, ordering FROM public.global_events
                          |${Fragments.whereAndOpt(Some(fr"type = $tpe"), offset.asFragment)}
-                         |ORDER BY ordering""".stripMargin.query[Envelope[E]],
+                         |ORDER BY ordering
+                         |LIMIT ${config.batchSize}""".stripMargin.query[Envelope[E]],
           _.offset,
           config.copy(refreshStrategy = strategy),
           xas

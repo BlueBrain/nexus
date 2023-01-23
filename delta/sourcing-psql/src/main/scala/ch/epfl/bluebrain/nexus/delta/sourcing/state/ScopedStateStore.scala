@@ -264,7 +264,8 @@ object ScopedStateStore {
           // format: off
           sql"""SELECT type, id, value, rev, instant, ordering FROM public.scoped_states
                |${Fragments.whereAndOpt(Some(fr"type = $tpe"), predicate.asFragment, Some(fr"tag = $tag"), offset.asFragment)}
-               |ORDER BY ordering""".stripMargin.query[Envelope[S]],
+               |ORDER BY ordering
+               |LIMIT ${config.batchSize}""".stripMargin.query[Envelope[S]],
         _.offset,
         config.copy(refreshStrategy = strategy),
         xas

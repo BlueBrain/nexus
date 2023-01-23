@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.query
 
 import cats.effect.ExitCase
-import cats.effect.concurrent.Ref
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.Predicate.Project
@@ -17,7 +16,7 @@ import doobie.implicits._
 import doobie.postgres.circe.jsonb.implicits._
 import doobie.postgres.implicits._
 import doobie.util.query.Query0
-import fs2.Stream
+import fs2.{Chunk, Stream}
 import io.circe.Json
 import monix.bio.{Task, UIO}
 
@@ -93,6 +92,7 @@ object StreamingQuery {
            |$where
            |ORDER BY ordering)
            |ORDER BY ordering)
+           |LIMIT ${cfg.batchSize}
            |""".stripMargin.query[(String, EntityType, Iri, Label, Label, Instant, Long, Int)].map {
         case (`newState`, entityType, id, org, project, instant, offset, rev) =>
           SuccessElem(entityType, id, Some(ProjectRef(org, project)), instant, Offset.at(offset), (), rev)
@@ -107,7 +107,7 @@ object StreamingQuery {
     * Streams states and tombstones as [[Elem]] s.
     *
     * State values are decoded via the provided function. If the function succeeds they will be streamed as
-    * [[SuccessElem[A]] ]. If the function fails, they will be streames as FailedElem
+    * [[SuccessElem[A]] ]. If the function fails, they will be streamed as FailedElem
     *
     * Tombstones are translated as [[DroppedElem]].
     *
@@ -146,6 +146,7 @@ object StreamingQuery {
            |$where
            |ORDER BY ordering)
            |ORDER BY ordering)
+           |LIMIT ${cfg.batchSize}
            |""".stripMargin.query[(String, EntityType, Iri, Label, Label, Option[Json], Instant, Long, Int)].map {
         case (`newState`, entityType, id, org, project, Some(json), instant, offset, rev) =>
           SuccessElem(entityType, id, Some(ProjectRef(org, project)), instant, Offset.at(offset), json, rev)
@@ -209,37 +210,22 @@ object StreamingQuery {
       )
     )
 
-    cfg.refreshStrategy match {
-      case RefreshStrategy.Stop         =>
-        query(start)
-          .streamWithChunkSize(cfg.batchSize)
-          .transact(xas.streaming)
-          .onFinalizeCase {
-            case ExitCase.Completed => onComplete()
-            case ExitCase.Error(th) => onError(th)
-            case ExitCase.Canceled  => onCancel()
-          }
-      case RefreshStrategy.Delay(delay) =>
-        Stream.eval(Ref.of[Task, Offset](start)).flatMap { ref =>
-          Stream
-            .eval(ref.get)
-            .flatMap { offset =>
-              query(offset)
-                .streamWithChunkSize(cfg.batchSize)
-                .transact(xas.streaming)
-                .evalTapChunk { a => ref.set(extractOffset(a)) }
-                .onFinalizeCase {
-                  case ExitCase.Completed =>
-                    onComplete() >> Task.sleep(delay) // delay for success
-                  case ExitCase.Error(th) =>
-                    onError(th) >> Task.sleep(delay) // delay for failure
-                  case ExitCase.Canceled =>
-                    onCancel()
-                }
+    Stream
+      .unfoldChunkEval[Task, Offset, A](start) { offset =>
+        query(offset).to[List].transact(xas.streaming).flatMap { elems =>
+          elems.lastOption.fold {
+            cfg.refreshStrategy match {
+              case RefreshStrategy.Stop         => Task.none
+              case RefreshStrategy.Delay(value) =>
+                Task.sleep(value) >> Task.some((Chunk.empty[A], offset))
             }
-            .repeat
+          } { last => Task.some((Chunk.seq(elems), extractOffset(last))) }
         }
-    }
+      }
+      .onFinalizeCase {
+        case ExitCase.Completed => onComplete()
+        case ExitCase.Error(e)  => onError(e)
+        case ExitCase.Canceled  => onCancel()
+      }
   }
-
 }
