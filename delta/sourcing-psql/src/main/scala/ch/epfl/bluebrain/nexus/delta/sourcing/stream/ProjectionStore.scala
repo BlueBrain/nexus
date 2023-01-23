@@ -134,7 +134,7 @@ object ProjectionStore {
                |  failed = EXCLUDED.failed,
                |  updated_at = EXCLUDED.updated_at;
                |""".stripMargin.update.run
-            .transact(xas.streaming)
+            .transact(xas.write)
             .void
             .hideErrors
         }
@@ -146,14 +146,14 @@ object ProjectionStore {
           .query[ProjectionProgressRow]
           .map(_.progress)
           .option
-          .transact(xas.streaming)
+          .transact(xas.read)
           .hideErrors
 
       override def delete(name: String): UIO[Unit] =
         sql"""DELETE FROM projection_offsets
              |WHERE name = $name;
              |""".stripMargin.update.run
-          .transact(xas.streaming)
+          .transact(xas.write)
           .void
           .hideErrors
 
@@ -161,7 +161,7 @@ object ProjectionStore {
         sql"""SELECT * from projection_offsets;"""
           .query[ProjectionProgressRow]
           .streamWithChunkSize(config.batchSize)
-          .transact(xas.streaming)
+          .transact(xas.read)
 
       override def failedElemEntries(
           projectionProject: ProjectRef,
@@ -175,7 +175,7 @@ object ProjectionStore {
              |ORDER BY ordering ASC""".stripMargin
           .query[FailedElemLogRow]
           .streamWithChunkSize(config.batchSize)
-          .transact(xas.streaming)
+          .transact(xas.read)
 
       override def failedElemEntries(
           projectionName: String,
@@ -187,7 +187,7 @@ object ProjectionStore {
              |ORDER BY ordering ASC""".stripMargin
           .query[FailedElemLogRow]
           .streamWithChunkSize(config.batchSize)
-          .transact(xas.streaming)
+          .transact(xas.read)
 
       override def saveFailedElems(
           metadata: ProjectionMetadata,

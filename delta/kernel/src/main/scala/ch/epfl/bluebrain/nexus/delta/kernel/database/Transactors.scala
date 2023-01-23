@@ -60,24 +60,29 @@ object Transactors {
     } yield Transactors.shared(t)
 
   def init(config: DatabaseConfig)(implicit classLoader: ClassLoader): Resource[Task, Transactors] = {
-    def transactor(access: DatabaseAccess) =
+    def transactor(access: DatabaseAccess, readOnly: Boolean, poolName: String) = {
       for {
-        ce      <- ExecutionContexts.fixedThreadPool[Task](access.poolSize)
-        blocker <- Blocker[Task]
-        xa      <- HikariTransactor.newHikariTransactor[Task](
-                     "org.postgresql.Driver",
-                     s"jdbc:postgresql://${access.host}:${access.port}/${config.name}?reWriteBatchedInserts=true&stringtype=unspecified",
-                     config.username,
-                     config.password.value,
-                     ce,
-                     blocker
-                   )
-      } yield xa
+        ce        <- ExecutionContexts.fixedThreadPool[Task](access.poolSize)
+        blocker   <- Blocker[Task]
+        dataSource = {
+          val ds = new HikariDataSource
+          ds.setJdbcUrl(s"jdbc:postgresql://${access.host}:${access.port}/")
+          ds.setUsername(config.username)
+          ds.setPassword(config.password.value)
+          ds.setDriverClassName("org.postgresql.Driver")
+          ds.setMaximumPoolSize(access.poolSize)
+          ds.setPoolName(poolName)
+          ds.setAutoCommit(false)
+          ds.setReadOnly(readOnly)
+          ds
+        }
+      } yield HikariTransactor[Task](dataSource, ce, blocker)
+    }
 
     for {
-      read      <- transactor(config.read)
-      write     <- transactor(config.write)
-      streaming <- transactor(config.streaming)
+      read      <- transactor(config.read, readOnly = true, poolName = "ReadPool")
+      write     <- transactor(config.write, readOnly = false, poolName = "WritePool")
+      streaming <- transactor(config.streaming, readOnly = true, poolName = "StreamingPool")
     } yield Transactors(read, write, streaming)
   }.evalTap { xas =>
     Task.when(config.tablesAutocreate)(xas.execDDL("/scripts/schema.ddl"))
