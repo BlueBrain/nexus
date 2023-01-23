@@ -90,7 +90,7 @@ final class CompositeRestartStore(xas: Transactors) {
         Elem.fromEither(entityType, id, Some(project), instant, offset, json.as[CompositeRestart], 1)
       }
       .option
-      .transact(xas.streaming)
+      .transact(xas.read)
       .hideErrors
   }
 
