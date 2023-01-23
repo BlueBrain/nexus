@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeRestart
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeRestart.{FullRebuild, FullRestart, PartialRebuild}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.store.CompositeProgressStore.CompositeProgressRow
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.store.CompositeProgressStore.{logger, CompositeProgressRow}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.CompositeBranch
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.CompositeBranch.Run
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -14,6 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.IriInstances._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionProgress
+import com.typesafe.scalalogging.Logger
 import doobie._
 import doobie.implicits._
 import doobie.postgres.implicits._
@@ -31,9 +32,10 @@ final class CompositeProgressStore(xas: Transactors)(implicit clock: Clock[UIO])
     * @param progress
     *   the offset to save
     */
-  def save(ref: ViewRef, rev: Int, branch: CompositeBranch, progress: ProjectionProgress): UIO[Unit] =
-    IOUtils.instant.flatMap { instant =>
-      sql"""INSERT INTO public.composite_offsets (project, view_id, rev, source_id, target_id, run, ordering,
+  def save(ref: ViewRef, rev: Int, branch: CompositeBranch, progress: ProjectionProgress): UIO[Unit] = {
+    UIO.delay(logger.debug("Saving progress {} for branch {} of view {}", progress, branch, ref)) >>
+      IOUtils.instant.flatMap { instant =>
+        sql"""INSERT INTO public.composite_offsets (project, view_id, rev, source_id, target_id, run, ordering,
            |processed, discarded, failed, created_at, updated_at)
            |VALUES (
            |   ${ref.project}, ${ref.viewId}, $rev, ${branch.source}, ${branch.target}, ${branch.run},
@@ -47,10 +49,11 @@ final class CompositeProgressStore(xas: Transactors)(implicit clock: Clock[UIO])
            |  failed = EXCLUDED.failed,
            |  updated_at = EXCLUDED.updated_at;
            |""".stripMargin.update.run
-        .transact(xas.streaming)
-        .void
-        .hideErrors
-    }
+          .transact(xas.streaming)
+          .void
+          .hideErrors
+      }
+  }
 
   /**
     * Retrieves a projection offset if found.
@@ -121,6 +124,8 @@ final class CompositeProgressStore(xas: Transactors)(implicit clock: Clock[UIO])
 }
 
 object CompositeProgressStore {
+
+  private val logger: Logger = Logger[CompositeProgressStore]
 
   final private[store] case class CompositeProgressRow(
       ref: ViewRef,

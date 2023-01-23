@@ -57,7 +57,7 @@ object CompositeRestart {
   object FullRebuild {
 
     /**
-      * Generates a full rebuild eve
+      * Generates a full rebuild event
       * @param project
       *   The project of the composite view
       * @param id

@@ -7,17 +7,14 @@ import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax.kamonSyntax
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews._
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.ProjectionId.{CompositeViewProjectionId, SourceProjectionId, ViewProjectionId}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewCommand._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewEvent._
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.ProjectionType.{ElasticSearchProjectionType, SparqlProjectionType}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.serialization.CompositeViewFieldsJsonLdSourceDecoder
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
@@ -29,8 +26,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, Projects}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, Projects}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax.nonEmptySetSyntax
 import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
@@ -42,8 +39,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Predicate, ScopedEntityDefinition, ScopedEventLog, StateMachine}
 import io.circe.Json
 import monix.bio.{IO, Task, UIO}
-
-import java.util.UUID
 
 /**
   * Composite views resource lifecycle operations.
@@ -556,156 +551,6 @@ object CompositeViews {
       case c: DeprecateCompositeView => deprecate(c)
     }
   }
-
-  /**
-    * The [[SourceProjectionId]] of a view source
-    *
-    * @param view
-    *   the view
-    * @param rev
-    *   the revision of the view
-    * @param sourceId
-    *   the source Iri
-    */
-  def sourceProjection(view: CompositeView, rev: Int, sourceId: Iri): Option[SourceProjectionId] =
-    view.sources.value.find(_.id == sourceId).map(sourceProjection(_, rev))
-
-  /**
-    * The [[SourceProjectionId]] of a view source
-    *
-    * @param source
-    *   the view source
-    * @param rev
-    *   the revision of the view
-    */
-  def sourceProjection(source: CompositeViewSource, rev: Int): SourceProjectionId =
-    SourceProjectionId(s"${source.uuid}_$rev")
-
-  /**
-    * All projection ids
-    *
-    * @param view
-    *   the view
-    * @param rev
-    *   the revision of the view
-    */
-  def projectionIds(view: CompositeView, rev: Int): Set[(Iri, Iri, CompositeViewProjectionId)] =
-    for {
-      s <- view.sources.toSortedSet
-      p <- view.projections.toSortedSet
-    } yield (s.id, p.id, projectionId(sourceProjection(s, rev), p, rev))
-
-  import cats.implicits.catsKernelStdOrderForTuple2
-
-  /**
-    * The [[CompositeViewProjectionId]] s of a view projection.
-    *
-    * @param view
-    *   the view
-    * @param source
-    *   the view source
-    * @param rev
-    *   the revision of the view
-    */
-  def projectionIds(
-      view: CompositeView,
-      source: CompositeViewSource,
-      rev: Int
-  ): Set[(Iri, CompositeViewProjectionId)] =
-    view.projections.map(projection => projection.id -> projectionId(source, projection, rev)).toSortedSet
-
-  /**
-    * The [[CompositeViewProjectionId]] s of a view projection.
-    *
-    * @param view
-    *   the view
-    * @param projection
-    *   the view projection
-    * @param rev
-    *   the revision of the view
-    */
-  def projectionIds(
-      view: CompositeView,
-      projection: CompositeViewProjection,
-      rev: Int
-  ): Set[(Iri, CompositeViewProjectionId)] =
-    view.sources.value.map(source => source.id -> projectionId(source, projection, rev)).toSortedSet
-
-  /**
-    * The [[CompositeViewProjectionId]] of a view projection.
-    *
-    * @param source
-    *   the view source
-    * @param projection
-    *   the view projection
-    * @param rev
-    *   the revision of the view
-    */
-  def projectionId(
-      source: CompositeViewSource,
-      projection: CompositeViewProjection,
-      rev: Int
-  ): CompositeViewProjectionId = {
-    val sourceProjectionId = sourceProjection(source, rev)
-    projectionId(sourceProjectionId, projection, rev)
-  }
-
-  /**
-    * The [[CompositeViewProjectionId]] of a view projection
-    *
-    * @param sourceId
-    *   the source projection id
-    * @param projection
-    *   the view projection
-    * @param rev
-    *   the revision of the view
-    */
-  def projectionId(
-      sourceId: SourceProjectionId,
-      projection: CompositeViewProjection,
-      rev: Int
-  ): CompositeViewProjectionId =
-    projection match {
-      case _: ElasticSearchProjection =>
-        CompositeViewProjectionId(sourceId, ViewProjectionId(s"TODO_$rev"))
-      case _: SparqlProjection        =>
-        CompositeViewProjectionId(sourceId, ViewProjectionId(s"TODO_$rev"))
-    }
-
-  /**
-    * The Elasticsearch index for the passed projection
-    *
-    * @param projection
-    *   the views' Elasticsearch projection
-    * @param view
-    *   the view
-    * @param rev
-    *   the view revision
-    * @param prefix
-    *   the index prefix
-    */
-  def index(projection: ElasticSearchProjection, view: CompositeView, rev: Int, prefix: String): IndexLabel =
-    index(projection, view.uuid, rev, prefix)
-
-  def index(projection: ElasticSearchProjection, uuid: UUID, rev: Int, prefix: String): IndexLabel = {
-    val completePrefix = projection.indexGroup.fold(prefix) { i => s"${prefix}_$i" }
-    IndexLabel.unsafe(s"${completePrefix}_${uuid}_${projection.uuid}_$rev")
-  }
-
-  /**
-    * The Blazegraph namespace for the passed projection
-    *
-    * @param projection
-    *   the views' Blazegraph projection
-    * @param view
-    *   the view
-    * @param rev
-    *   the view revision
-    * @param prefix
-    *   the namespace prefix
-    */
-  def namespace(projection: SparqlProjection, view: CompositeView, rev: Int, prefix: String): String =
-    s"${prefix}_${view.uuid}_${projection.uuid}_$rev"
 
   def definition(validate: ValidateCompositeView, crypto: Crypto)(implicit
       clock: Clock[UIO],

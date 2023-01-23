@@ -4,6 +4,7 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{ProjectionProgress, RemainingElems}
 import io.circe.Encoder
 import io.circe.generic.semiauto.deriveEncoder
 
@@ -70,6 +71,38 @@ object ProgressStatistics {
         lastInstant.minusMillis(lastProcessedInstant.toEpochMilli).getEpochSecond
       }
     )
+
+  final def apply(progress: Option[ProjectionProgress], remaining: Option[RemainingElems]): ProgressStatistics =
+    (progress, remaining) match {
+      case (Some(c), Some(r)) =>
+        ProgressStatistics(
+          c.processed,
+          c.discarded,
+          c.failed,
+          c.processed + r.count,
+          Some(r.maxInstant),
+          Some(c.instant)
+        )
+      case (None, Some(r))    =>
+        ProgressStatistics(
+          0L,
+          0L,
+          0L,
+          r.count,
+          Some(r.maxInstant),
+          None
+        )
+      case (Some(c), None)    =>
+        ProgressStatistics(
+          c.processed,
+          c.discarded,
+          c.failed,
+          c.processed,
+          Some(c.instant),
+          Some(c.instant)
+        )
+      case (None, None)       => ProgressStatistics.empty
+    }
 
   implicit val progressStatisticEncoder: Encoder.AsObject[ProgressStatistics] = deriveEncoder
 

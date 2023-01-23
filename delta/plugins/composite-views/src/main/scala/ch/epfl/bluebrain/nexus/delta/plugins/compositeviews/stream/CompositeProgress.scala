@@ -38,12 +38,7 @@ final case class CompositeProgress private (
   def update(branch: CompositeBranch, progress: ProjectionProgress): CompositeProgress = {
     val updatedBranches = branches.updated(branch, progress)
     val updatedSources  = sources.updatedWith(branch.source -> branch.run)(_.min(Some(progress.offset)))
-    branch.run match {
-      case Run.Main    =>
-        copy(sources = updatedSources, branches = updatedBranches)
-      case Run.Rebuild =>
-        copy(sources = updatedSources, branches = updatedBranches)
-    }
+    copy(sources = updatedSources, branches = updatedBranches)
   }
 
 }

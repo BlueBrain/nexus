@@ -64,14 +64,26 @@ final class CompositeRestartStore(xas: Transactors) {
       .void
 
   /**
-    * Get the first non-available restart for a composite view
+    * Get the first non-processed restart for a composite view
     * @param view
     *   the view reference
     */
   def head(view: ViewRef): UIO[Option[Elem[CompositeRestart]]] =
+    fetchOne(view, asc = true)
+
+  /**
+    * Get the last non-processed restart for a composite view
+    * @param view
+    *   the view reference
+    */
+  def last(view: ViewRef): UIO[Option[Elem[CompositeRestart]]] =
+    fetchOne(view, asc = false)
+
+  private def fetchOne(view: ViewRef, asc: Boolean) = {
+    val direction = if (asc) fr"ASC" else fr"DESC"
     sql"""SELECT ordering, project, id, value, instant from public.composite_restarts
          |WHERE project = ${view.project} and id = ${view.viewId} and acknowledged = false
-         |ORDER BY ordering ASC
+         |ORDER BY ordering $direction
          |LIMIT 1""".stripMargin
       .query[(Offset, ProjectRef, Iri, Json, Instant)]
       .map { case (offset, project, id, json, instant) =>
@@ -80,6 +92,7 @@ final class CompositeRestartStore(xas: Transactors) {
       .option
       .transact(xas.streaming)
       .hideErrors
+  }
 
 }
 

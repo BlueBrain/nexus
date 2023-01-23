@@ -49,11 +49,11 @@ trait GraphResourceStream {
   /**
     * Get information about the remaining elements to stream
     * @param project
-    *   the project of the states / tombstones
+    *   the project to stream from
     * @param tag
-    *   the tag to follow
-    * @param xas
-    *   the transactors
+    *   the tag to retain
+    * @param start
+    *   the offset to start with
     */
   def remaining(project: ProjectRef, tag: Tag, start: Offset): UIO[Option[RemainingElems]]
 }
@@ -74,10 +74,6 @@ object GraphResourceStream {
 
   /**
     * Create a graph resource stream
-    * @param fetchContext
-    * @param qc
-    * @param xas
-    * @param shifts
     */
   def apply(
       fetchContext: FetchContext[ContextRejection],

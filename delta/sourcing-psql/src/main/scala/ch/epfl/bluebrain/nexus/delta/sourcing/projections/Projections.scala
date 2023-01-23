@@ -226,42 +226,9 @@ object Projections {
           current   <- progress(projectionId)
           remaining <-
             StreamingQuery.remaining(project, tag.getOrElse(Tag.latest), current.fold(Offset.start)(_.offset), xas)
-        } yield statistics(current, remaining)
+        } yield ProgressStatistics(current, remaining)
 
       def statistics(projectionId: String, remaining: Option[RemainingElems]): UIO[ProgressStatistics] =
-        progress(projectionId).map(statistics(_, remaining))
-
-      private def statistics(current: Option[ProjectionProgress], remaining: Option[RemainingElems]) = {
-        (current, remaining) match {
-          case (Some(c), Some(r)) =>
-            ProgressStatistics(
-              c.processed,
-              c.discarded,
-              c.failed,
-              c.processed + r.count,
-              Some(r.maxInstant),
-              Some(c.instant)
-            )
-          case (None, Some(r))    =>
-            ProgressStatistics(
-              0L,
-              0L,
-              0L,
-              r.count,
-              Some(r.maxInstant),
-              None
-            )
-          case (Some(c), None)    =>
-            ProgressStatistics(
-              c.processed,
-              c.discarded,
-              c.failed,
-              c.processed,
-              Some(c.instant),
-              Some(c.instant)
-            )
-          case (None, None)       => ProgressStatistics.empty
-        }
-      }
+        progress(projectionId).map(ProgressStatistics(_, remaining))
     }
 }

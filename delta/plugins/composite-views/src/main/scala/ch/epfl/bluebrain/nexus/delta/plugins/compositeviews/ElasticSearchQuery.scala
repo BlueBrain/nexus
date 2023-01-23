@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
 import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.Uri.Query
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.projectionIndex
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.ElasticSearchProjection
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{AuthorizationFailed, ViewIsDeprecated, WrappedElasticSearchClientError}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeView, CompositeViewRejection, ViewElasticSearchProjectionResource, ViewResource}
@@ -100,7 +101,7 @@ object ElasticSearchQuery {
           _                 <- IO.raiseWhen(viewRes.deprecated)(ViewIsDeprecated(viewRes.id))
           (view, projection) = viewRes.value
           _                 <- aclCheck.authorizeForOr(project, projection.permission)(AuthorizationFailed)
-          index              = CompositeViews.index(projection, view, viewRes.rev, prefix).value
+          index              = projectionIndex(projection, view.uuid, viewRes.rev, prefix).value
           search            <- elasticSearchQuery(query, Set(index), qp).mapError(WrappedElasticSearchClientError)
         } yield search
 
@@ -128,7 +129,7 @@ object ElasticSearchQuery {
             view.projections.collect { case p: ElasticSearchProjection => p },
             project,
             p => p.permission,
-            p => CompositeViews.index(p, view, rev, prefix).value
+            p => projectionIndex(p, view.uuid, rev, prefix).value
           )
           .tapEval { indices => IO.raiseWhen(indices.isEmpty)(AuthorizationFailed) }
     }
