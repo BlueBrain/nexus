@@ -70,7 +70,7 @@ object ValidateCompositeView {
         }
         .void
 
-    val checkRemoteEvent: RemoteProjectSource => IO[HttpClientError, Unit] = deltaClient.checkEvents
+    val checkRemoteEvent: RemoteProjectSource => IO[HttpClientError, Unit] = deltaClient.checkElems
 
     val validateSource: CompositeViewSource => IO[CompositeViewRejection, Unit] = {
       case _: ProjectSource             => IO.unit

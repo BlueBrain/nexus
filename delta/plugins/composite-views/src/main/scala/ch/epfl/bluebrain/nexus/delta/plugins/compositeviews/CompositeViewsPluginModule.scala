@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.projections.{CompositeIndexingDetails, CompositeProjections}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.routes.CompositeViewsRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.store.CompositeRestartStore
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.CompositeGraphStream
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.{CompositeGraphStream, RemoteGraphStream}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple
@@ -129,9 +129,24 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
       CompositeSpaces.Builder(cfg.prefix, esClient, cfg.elasticsearchBatch, blazeClient, cfg.blazegraphBatch)(baseUri)
   }
 
-  // TODO implement the remote one
-  make[CompositeGraphStream].from { (graphStream: GraphResourceStream) =>
-    CompositeGraphStream(graphStream, graphStream)
+  make[MetadataPredicates].fromEffect {
+    (
+        listingsMetadataCtx: MetadataContextValue @Id("search-metadata"),
+        api: JsonLdApi,
+        cr: RemoteContextResolution @Id("aggregate")
+    ) =>
+      JsonLdContext(listingsMetadataCtx.value)(api, cr, JsonLdOptions.defaults)
+        .map(_.aliasesInv.keySet.map(Triple.predicate))
+        .map(MetadataPredicates)
+  }
+
+  make[RemoteGraphStream].from {
+    (deltaClient: DeltaClient, config: CompositeViewsConfig, metadataPredicates: MetadataPredicates) =>
+      new RemoteGraphStream(deltaClient, config.remoteSourceClient, metadataPredicates)
+  }
+
+  make[CompositeGraphStream].from { (local: GraphResourceStream, remote: RemoteGraphStream) =>
+    CompositeGraphStream(local, remote)
   }
 
   make[CompositeViewsCoordinator].fromEffect {
@@ -152,17 +167,6 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         buildSpaces.apply,
         compositeProjections
       )(cr)
-  }
-
-  make[MetadataPredicates].fromEffect {
-    (
-        listingsMetadataCtx: MetadataContextValue @Id("search-metadata"),
-        api: JsonLdApi,
-        cr: RemoteContextResolution @Id("aggregate")
-    ) =>
-      JsonLdContext(listingsMetadataCtx.value)(api, cr, JsonLdOptions.defaults)
-        .map(_.aliasesInv.keySet.map(Triple.predicate))
-        .map(MetadataPredicates)
   }
 
   many[MetadataContextValue].addEffect(MetadataContextValue.fromFile("contexts/composite-views-metadata.json"))

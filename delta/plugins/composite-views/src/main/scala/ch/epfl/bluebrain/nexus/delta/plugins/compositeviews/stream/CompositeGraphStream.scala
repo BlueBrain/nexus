@@ -46,36 +46,37 @@ trait CompositeGraphStream {
 
 object CompositeGraphStream {
 
-  def apply(local: GraphResourceStream, remote: GraphResourceStream): CompositeGraphStream = new CompositeGraphStream {
+  def apply(local: GraphResourceStream, remote: RemoteGraphStream): CompositeGraphStream = new CompositeGraphStream {
 
     // For composite views, we don't need the source for indexing
     private val empty                                               = Json.obj()
     private def drainSource: ElemPipe[GraphResource, GraphResource] = _.map(_.map(_.copy(source = empty)))
 
     override def main(source: CompositeViewSource, project: ProjectRef): Source = {
-      val stream = source match {
-        case p: ProjectSource       => local.continuous(project, p.resourceTag.getOrElse(Tag.Latest), _)
-        case c: CrossProjectSource  => local.continuous(c.project, c.resourceTag.getOrElse(Tag.Latest), _)
-        case r: RemoteProjectSource => remote.continuous(r.project, r.resourceTag.getOrElse(Tag.Latest), _)
+      source match {
+        case p: ProjectSource       =>
+          Source(local.continuous(project, p.resourceTag.getOrElse(Tag.Latest), _).through(drainSource))
+        case c: CrossProjectSource  =>
+          Source(local.continuous(c.project, c.resourceTag.getOrElse(Tag.Latest), _).through(drainSource))
+        case r: RemoteProjectSource => remote.main(r)
       }
-
-      Source(stream(_).through(drainSource))
     }
 
     override def rebuild(source: CompositeViewSource, project: ProjectRef): Source = {
-      val stream = source match {
-        case p: ProjectSource       => local.currents(project, p.resourceTag.getOrElse(Tag.Latest), _)
-        case c: CrossProjectSource  => local.currents(c.project, c.resourceTag.getOrElse(Tag.Latest), _)
-        case r: RemoteProjectSource => remote.currents(r.project, r.resourceTag.getOrElse(Tag.Latest), _)
+      source match {
+        case p: ProjectSource       =>
+          Source(local.currents(project, p.resourceTag.getOrElse(Tag.Latest), _).through(drainSource))
+        case c: CrossProjectSource  =>
+          Source(local.currents(c.project, c.resourceTag.getOrElse(Tag.Latest), _).through(drainSource))
+        case r: RemoteProjectSource => remote.rebuild(r)
       }
-      Source(stream(_).through(drainSource))
     }
 
     override def remaining(source: CompositeViewSource, project: ProjectRef): Offset => UIO[Option[RemainingElems]] =
       source match {
         case p: ProjectSource       => local.remaining(project, p.resourceTag.getOrElse(Tag.Latest), _)
         case c: CrossProjectSource  => local.remaining(c.project, c.resourceTag.getOrElse(Tag.Latest), _)
-        case r: RemoteProjectSource => remote.remaining(r.project, r.resourceTag.getOrElse(Tag.Latest), _)
+        case r: RemoteProjectSource => remote.remaining(r, _).map(Some(_))
       }
   }
 
