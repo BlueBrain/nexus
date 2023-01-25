@@ -175,7 +175,7 @@ final class ElasticSearchViewsRoutes(
                         views
                           .fetchIndexingView(id, ref)
                           .flatMap(v =>
-                            projections.statistics(ref, v.value.resourceTag, ElasticSearchViews.projectionName(v))
+                            projections.statistics(ref, v.resourceTag, ElasticSearchViews.projectionName(v))
                           )
                           .rejectWhen(decodingFailedOrViewNotFound)
                       )

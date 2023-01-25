@@ -6,7 +6,7 @@ import akka.testkit.TestKit
 import cats.data.NonEmptySet
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchBulk, IndexLabel}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchBulk
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{AuthorizationFailed, ProjectContextRejection, ViewIsDeprecated}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.Type.{ExcludedType, IncludedType}
@@ -209,9 +209,8 @@ class ElasticSearchViewsQuerySpec(override val docker: ElasticSearchDocker)
       indexingViews
         .foldLeftM(Seq.empty[ElasticSearchBulk]) { case (bulk, ref) =>
           views.fetchIndexingView(ref.viewId, ref.project).flatMap { view =>
-            val index = IndexLabel.unsafe(ElasticSearchViews.index(view.value.uuid, view.rev, prefix).value)
             createDocuments(ref).map { docs =>
-              docs.map(ElasticSearchBulk.Index(index, genString(), _)) ++ bulk
+              docs.map(ElasticSearchBulk.Index(view.index, genString(), _)) ++ bulk
             }
           }
         }

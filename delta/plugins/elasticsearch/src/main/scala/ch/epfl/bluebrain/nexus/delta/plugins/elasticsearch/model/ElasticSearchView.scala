@@ -110,6 +110,8 @@ object ElasticSearchView {
     *   the collection of tags for this resource
     * @param source
     *   the original json value provided by the caller
+    * @param indexingRev
+    *   the indexing revision
     */
   final case class IndexingElasticSearchView(
       id: Iri,
@@ -124,9 +126,10 @@ object ElasticSearchView {
       context: Option[ContextObject],
       permission: Permission,
       tags: Tags,
-      source: Json
+      source: Json,
+      indexingRev: Int
   ) extends ElasticSearchView {
-    override def metadata: Metadata = Metadata(Some(uuid))
+    override def metadata: Metadata = Metadata(Some(uuid), Some(indexingRev))
 
     override def tpe: ElasticSearchViewType = ElasticSearchViewType.ElasticSearch
   }
@@ -154,7 +157,7 @@ object ElasticSearchView {
       tags: Tags,
       source: Json
   ) extends ElasticSearchView {
-    override def metadata: Metadata         = Metadata(None)
+    override def metadata: Metadata         = Metadata(None, None)
     override def tpe: ElasticSearchViewType = ElasticSearchViewType.AggregateElasticSearch
   }
 
@@ -163,8 +166,10 @@ object ElasticSearchView {
     *
     * @param uuid
     *   the optionally available unique view identifier
+    * @param indexingRev
+    *   the optionally available indexing revision
     */
-  final case class Metadata(uuid: Option[UUID])
+  final case class Metadata(uuid: Option[UUID], indexingRev: Option[Int])
 
   val context: ContextValue = ContextValue(contexts.elasticsearch)
 
@@ -257,7 +262,11 @@ object ElasticSearchView {
   }
 
   implicit private val elasticSearchMetadataEncoder: Encoder.AsObject[Metadata] =
-    Encoder.encodeJsonObject.contramapObject(meta => JsonObject.empty.addIfExists("_uuid", meta.uuid))
+    Encoder.encodeJsonObject.contramapObject(meta =>
+      JsonObject.empty
+        .addIfExists("_uuid", meta.uuid)
+        .addIfExists("_indexingRev", meta.indexingRev)
+    )
 
   implicit val elasticSearchMetadataJsonLdEncoder: JsonLdEncoder[Metadata] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.elasticsearchMetadata))

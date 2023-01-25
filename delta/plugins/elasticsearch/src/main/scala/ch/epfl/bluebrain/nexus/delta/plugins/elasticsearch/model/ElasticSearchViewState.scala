@@ -35,6 +35,8 @@ import scala.annotation.nowarn
   *   the collection of tags
   * @param rev
   *   the current revision of the view
+  * @param indexingRev
+  *   the current indexing revision of the view
   * @param deprecated
   *   the deprecation status of the view
   * @param createdAt
@@ -54,6 +56,7 @@ final case class ElasticSearchViewState(
     source: Json,
     tags: Tags,
     rev: Int,
+    indexingRev: Int,
     deprecated: Boolean,
     createdAt: Instant,
     createdBy: Subject,
@@ -92,7 +95,8 @@ final case class ElasticSearchViewState(
         context = context,
         permission = permission,
         tags = tags,
-        source = source
+        source = source,
+        indexingRev = indexingRev
       )
     case AggregateElasticSearchViewValue(name, description, views) =>
       AggregateElasticSearchView(

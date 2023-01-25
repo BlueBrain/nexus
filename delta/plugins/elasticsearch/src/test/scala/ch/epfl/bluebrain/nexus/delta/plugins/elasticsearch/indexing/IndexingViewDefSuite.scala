@@ -78,6 +78,8 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
   private val aggregate = AggregateElasticSearchViewValue(NonEmptySet.of(viewRef))
   private val sink      = CacheSink.states[Json]
 
+  private val indexingRev = 1
+
   private def state(v: ElasticSearchViewValue) = ElasticSearchViewState(
     id,
     projectRef,
@@ -86,6 +88,7 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
     Json.obj("elastic" -> Json.fromString("value")),
     Tags(tag           -> 3),
     rev = 1,
+    indexingRev = indexingRev,
     deprecated = false,
     createdAt = instant,
     createdBy = subject,
@@ -99,13 +102,14 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
       Some(
         ActiveViewDef(
           viewRef,
-          s"elasticsearch-$projectRef-$id-1",
+          s"elasticsearch-$projectRef-$id-$indexingRev",
           indexingCustom.resourceTag,
           indexingCustom.pipeChain,
-          IndexLabel.fromView("prefix", uuid, 1),
+          IndexLabel.fromView("prefix", uuid, indexingRev),
           customMapping,
           customSettings,
-          indexingCustom.context
+          indexingCustom.context,
+          indexingRev
         )
       )
     )
@@ -117,13 +121,14 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
       Some(
         ActiveViewDef(
           viewRef,
-          s"elasticsearch-$projectRef-$id-1",
+          s"elasticsearch-$projectRef-$id-$indexingRev",
           indexingDefault.resourceTag,
           indexingDefault.pipeChain,
-          IndexLabel.fromView("prefix", uuid, 1),
+          IndexLabel.fromView("prefix", uuid, indexingRev),
           defaultMapping,
           defaultSettings,
-          indexingDefault.context
+          indexingDefault.context,
+          indexingRev
         )
       )
     )
@@ -150,13 +155,14 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
   test("Fail if the pipe chain does not compile") {
     val v = ActiveViewDef(
       viewRef,
-      s"elasticsearch-$projectRef-$id-1",
+      s"elasticsearch-$projectRef-$id-$indexingRev",
       indexingDefault.resourceTag,
       Some(PipeChain(PipeRef.unsafe("xxx") -> ExpandedJsonLd.empty)),
-      IndexLabel.fromView("prefix", uuid, 1),
+      IndexLabel.fromView("prefix", uuid, indexingRev),
       defaultMapping,
       defaultSettings,
-      indexingDefault.context
+      indexingDefault.context,
+      1
     )
 
     val expectedError = CouldNotFindTypedPipeErr(PipeRef.unsafe("xxx"), "xxx")
@@ -180,13 +186,14 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
   test("Success and be able to process the different elements") {
     val v = ActiveViewDef(
       viewRef,
-      s"elasticsearch-$projectRef-$id-1",
+      s"elasticsearch-$projectRef-$id-$indexingRev",
       indexingDefault.resourceTag,
       Some(PipeChain(FilterDeprecated())),
-      IndexLabel.fromView("prefix", uuid, 1),
+      IndexLabel.fromView("prefix", uuid, indexingRev),
       defaultMapping,
       defaultSettings,
-      indexingDefault.context
+      indexingDefault.context,
+      indexingRev
     )
 
     val expectedProgress: ProjectionProgress = ProjectionProgress(

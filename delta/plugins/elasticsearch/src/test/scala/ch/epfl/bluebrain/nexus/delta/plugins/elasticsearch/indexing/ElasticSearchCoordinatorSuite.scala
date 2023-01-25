@@ -31,6 +31,8 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
 
   implicit private val patienceConfig: PatienceConfig = PatienceConfig(5.seconds, 10.millis)
 
+  private val indexingRev = 1
+
   private lazy val (sv, projections) = supervisor()
   private val project                = ProjectRef.unsafe("org", "proj")
   private val id1                    = nxv + "view1"
@@ -42,7 +44,8 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
     index = IndexLabel.unsafe("view1"),
     mapping = jobj"""{"properties": { }}""",
     settings = jobj"""{"analysis": { }}""",
-    None
+    None,
+    indexingRev
   )
 
   private val id2   = nxv + "view2"
@@ -54,7 +57,8 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
     index = IndexLabel.unsafe("view2"),
     mapping = jobj"""{"properties": { }}""",
     settings = jobj"""{"analysis": { }}""",
-    None
+    None,
+    indexingRev
   )
 
   private val id3         = nxv + "view3"
@@ -67,7 +71,8 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
     index = IndexLabel.unsafe("view3"),
     mapping = jobj"""{"properties": { }}""",
     settings = jobj"""{"analysis": { }}""",
-    None
+    None,
+    indexingRev
   )
 
   private val deprecatedView1 = DeprecatedViewDef(
@@ -81,7 +86,8 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
     index = IndexLabel.unsafe("view2_2"),
     mapping = jobj"""{"properties": { }}""",
     settings = jobj"""{"analysis": { }}""",
-    None
+    None,
+    indexingRev
   )
   private val resumeSignal    = SignallingRef[Task, Boolean](false).runSyncUnsafe()
 
@@ -148,6 +154,16 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
         project = Some(project),
         instant = Instant.EPOCH,
         offset = Offset.at(7L),
+        value = updatedView2,
+        revision = 1
+      ),
+      // Elem at offset 8 represents a view update that does not require reindexing
+      SuccessElem(
+        tpe = ElasticSearchViews.entityType,
+        id = updatedView2.ref.viewId,
+        project = Some(project),
+        instant = Instant.EPOCH,
+        offset = Offset.at(8L),
         value = updatedView2,
         revision = 1
       )
@@ -248,7 +264,7 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
       _ <- resumeSignal.set(true)
       _ <- sv.describe(ElasticSearchCoordinator.metadata.name)
              .map(_.map(_.progress))
-             .eventuallySome(ProjectionProgress(Offset.at(7L), Instant.EPOCH, 7, 1, 2))
+             .eventuallySome(ProjectionProgress(Offset.at(8L), Instant.EPOCH, 8, 1, 2))
     } yield ()
   }
 
@@ -297,6 +313,10 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
       r        = entries.assertOneElem
       _        = assertEquals(r.failedElemData.id, nxv + "failed")
     } yield ()
+  }
+
+  test("Delete indices should not contain view2_2 as it was not restarted") {
+    assert(!deletedIndices.contains(updatedView2.index))
   }
 
 }

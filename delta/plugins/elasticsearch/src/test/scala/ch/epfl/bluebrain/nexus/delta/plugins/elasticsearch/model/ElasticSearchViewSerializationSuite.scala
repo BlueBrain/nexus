@@ -57,13 +57,13 @@ class ElasticSearchViewSerializationSuite extends SerializationSuite {
   private val defaultIndexingSource = defaultIndexingValue.toJson(indexingId)
 
   // format: off
-  private val created = ElasticSearchViewCreated(indexingId, projectRef, uuid, defaultIndexingValue, defaultIndexingSource, 1, instant, subject)
-  private val created1 = ElasticSearchViewCreated(indexingId, projectRef, uuid, indexingValue, indexingSource, 1, instant, subject)
-  private val created2 = ElasticSearchViewCreated(aggregateId, projectRef, uuid, aggregateValue, aggregateSource, 1, instant, subject)
-  private val updated = ElasticSearchViewUpdated(indexingId, projectRef, uuid, defaultIndexingValue, defaultIndexingSource, 2, instant, subject)
-  private val updated1 = ElasticSearchViewUpdated(indexingId, projectRef, uuid, indexingValue, indexingSource, 2, instant, subject)
-  private val updated2 = ElasticSearchViewUpdated(aggregateId, projectRef, uuid, aggregateValue, aggregateSource, 2, instant, subject)
-  private val tagged = ElasticSearchViewTagAdded(indexingId, projectRef, ElasticSearchType, uuid, targetRev = 1, tag, 3, instant, subject)
+  private val created    = ElasticSearchViewCreated(indexingId, projectRef, uuid, defaultIndexingValue, defaultIndexingSource, 1, instant, subject)
+  private val created1   = ElasticSearchViewCreated(indexingId, projectRef, uuid, indexingValue, indexingSource, 1, instant, subject)
+  private val created2   = ElasticSearchViewCreated(aggregateId, projectRef, uuid, aggregateValue, aggregateSource, 1, instant, subject)
+  private val updated    = ElasticSearchViewUpdated(indexingId, projectRef, uuid, defaultIndexingValue, defaultIndexingSource, 2, instant, subject)
+  private val updated1   = ElasticSearchViewUpdated(indexingId, projectRef, uuid, indexingValue, indexingSource, 2, instant, subject)
+  private val updated2   = ElasticSearchViewUpdated(aggregateId, projectRef, uuid, aggregateValue, aggregateSource, 2, instant, subject)
+  private val tagged     = ElasticSearchViewTagAdded(indexingId, projectRef, ElasticSearchType, uuid, targetRev = 1, tag, 3, instant, subject)
   private val deprecated = ElasticSearchViewDeprecated(indexingId, projectRef, ElasticSearchType, uuid, 4, instant, subject)
   // format: on
 
@@ -125,6 +125,7 @@ class ElasticSearchViewSerializationSuite extends SerializationSuite {
       Json.obj("elastic" -> Json.fromString("value")),
       Tags(tag           -> 3),
       rev = 1,
+      indexingRev = 1,
       deprecated = false,
       createdAt = instant,
       createdBy = subject,

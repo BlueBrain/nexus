@@ -50,7 +50,8 @@ class ElasticSearchViewSpec
       context = Some(ContextObject(jobj"""{"@vocab": "http://schema.org/"}""")),
       perm,
       tagsMap,
-      source
+      source,
+      1
     )
     "be converted to compacted Json-LD" in {
       forAll(

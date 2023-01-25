@@ -47,7 +47,8 @@ object IndexingViewDef {
       index: IndexLabel,
       mapping: JsonObject,
       settings: JsonObject,
-      context: Option[ContextObject]
+      context: Option[ContextObject],
+      indexingRev: Int
   ) extends IndexingViewDef
 
   /**
@@ -72,10 +73,11 @@ object IndexingViewDef {
           ElasticSearchViews.projectionName(state),
           indexing.resourceTag,
           indexing.pipeChain,
-          ElasticSearchViews.index(state.uuid, state.rev, prefix),
+          ElasticSearchViews.index(state.uuid, state.indexingRev, prefix),
           indexing.mapping.getOrElse(defaultMapping),
           indexing.settings.getOrElse(defaultSettings),
-          indexing.context
+          indexing.context,
+          state.indexingRev
         )
 
     }

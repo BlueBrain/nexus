@@ -49,7 +49,6 @@ sealed trait ElasticSearchViewValue extends Product with Serializable {
     case v: IndexingElasticSearchViewValue => Some(v)
     case _                                 => None
   }
-
 }
 
 object ElasticSearchViewValue {
@@ -93,6 +92,17 @@ object ElasticSearchViewValue {
         }
         PipeChain(pipes)
       }
+
+    /**
+      * Returns true if this [[IndexingElasticSearchViewValue]] is equal to the provided
+      * [[IndexingElasticSearchViewValue]] on the fields which should trigger a reindexing of the view when modified.
+      */
+    private def hasSameIndexingFields(that: IndexingElasticSearchViewValue): Boolean =
+      resourceTag == that.resourceTag &&
+        pipeline == that.pipeline &&
+        mapping == that.mapping &&
+        settings == that.settings &&
+        context == that.context
   }
 
   object IndexingElasticSearchViewValue {
@@ -120,6 +130,17 @@ object ElasticSearchViewValue {
     ): IndexingElasticSearchViewValue =
       IndexingElasticSearchViewValue(None, None, resourceTag, pipeline, mapping, settings, context, permission)
 
+    /**
+      * @return
+      *   the next indexing revision based on the differences between the given views
+      */
+    def nextIndexingRev(
+        view1: IndexingElasticSearchViewValue,
+        view2: IndexingElasticSearchViewValue,
+        currentRev: Int
+    ): Int =
+      if (!view1.hasSameIndexingFields(view2)) currentRev + 1
+      else currentRev
   }
 
   /**
