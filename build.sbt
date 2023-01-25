@@ -34,6 +34,7 @@ val distageVersion          = "1.0.10"
 val doobieVersion           = "0.13.4"
 val fs2Version              = "2.5.11"
 val googleAuthClientVersion = "1.33.3"
+val handleBarsVersion       = "4.3.1"
 val jenaVersion             = "4.2.0"
 val jsonldjavaVersion       = "0.13.4"
 val kamonVersion            = "2.5.1"
@@ -48,7 +49,6 @@ val munitVersion            = "1.0.0-M6"
 val nimbusJoseJwtVersion    = "9.22"
 val pureconfigVersion       = "0.17.1"
 val scalaLoggingVersion     = "3.9.4"
-val scalateVersion          = "1.9.6" // scala-parser-combinators_2.13:2.0.0 ... is selected over 1.1.2
 val scalaTestVersion        = "3.2.10"
 val slickVersion            = "3.3.3"
 val topBraidVersion         = "1.3.2" // 1.4.1 fails to validate some test schemas
@@ -98,6 +98,7 @@ lazy val doobie             = Seq(
 lazy val fs2                = "co.fs2"                       %% "fs2-core"                 % fs2Version
 lazy val fs2io              = "co.fs2"                       %% "fs2-io"                   % fs2Version
 lazy val googleAuthClient   = "com.google.oauth-client"       % "google-oauth-client"      % googleAuthClientVersion
+lazy val handleBars         = "com.github.jknack"             % "handlebars"               % handleBarsVersion
 lazy val jenaArq            = "org.apache.jena"               % "jena-arq"                 % jenaVersion
 lazy val jsonldjava         = "com.github.jsonld-java"        % "jsonld-java"              % jsonldjavaVersion
 lazy val kamonAkkaHttp      = "io.kamon"                     %% "kamon-akka-http"          % kamonVersion
@@ -113,7 +114,6 @@ lazy val munit              = "org.scalameta"                %% "munit"         
 lazy val nimbusJoseJwt      = "com.nimbusds"                  % "nimbus-jose-jwt"          % nimbusJoseJwtVersion
 lazy val pureconfig         = "com.github.pureconfig"        %% "pureconfig"               % pureconfigVersion
 lazy val scalaLogging       = "com.typesafe.scala-logging"   %% "scala-logging"            % scalaLoggingVersion
-lazy val scalate            = "org.scalatra.scalate"         %% "scalate-core"             % scalateVersion
 lazy val scalaTest          = "org.scalatest"                %% "scalatest"                % scalaTestVersion
 lazy val topBraidShacl      = "org.topbraid"                  % "shacl"                    % topBraidVersion
 lazy val testContainers     = "org.testcontainers"            % "testcontainers"           % testContainersVersion
@@ -202,11 +202,11 @@ lazy val kernel = project
     libraryDependencies     ++= Seq(
       catsRetry,
       circeParser,
+      handleBars,
       monixBio,
       kamonCore,
       pureconfig,
       scalaLogging,
-      scalate,
       scalaTest % Test
     ) ++ doobie,
     addCompilerPlugin(kindProjector),

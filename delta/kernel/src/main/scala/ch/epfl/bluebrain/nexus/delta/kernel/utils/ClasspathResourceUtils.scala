@@ -1,11 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.kernel.utils
 
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassPathResourceUtilsStatic.templateEngine
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassPathResourceUtilsStatic.handleBars
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceError.{InvalidJson, InvalidJsonObject, ResourcePathNotFound}
+import com.github.jknack.handlebars.Handlebars
 import io.circe.parser.parse
 import io.circe.{Json, JsonObject, ParsingFailure}
 import monix.bio.IO
-import org.fusesource.scalate.TemplateEngine
 
 import java.io.InputStream
 import java.util.Properties
@@ -52,7 +52,7 @@ trait ClasspathResourceUtils {
   )(implicit classLoader: ClassLoader): IO[ClasspathResourceError, String] =
     resourceAsTextFrom(resourcePath).map {
       case text if attributes.isEmpty => text
-      case text                       => templateEngine.layout("dummy.template", templateEngine.compileMoustache(text), attributes.toMap)
+      case text                       => handleBars.compileInline(text).apply(attributes.toMap.asJava)
     }
 
   /**
@@ -118,7 +118,7 @@ trait ClasspathResourceUtils {
 }
 
 object ClassPathResourceUtilsStatic {
-  private[utils] val templateEngine = new TemplateEngine(mode = "dev")
+  private[utils] val handleBars = new Handlebars()
 }
 
 object ClasspathResourceUtils extends ClasspathResourceUtils
