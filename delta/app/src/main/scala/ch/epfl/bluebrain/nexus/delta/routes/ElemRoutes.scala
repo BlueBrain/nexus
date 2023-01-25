@@ -8,7 +8,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.routes.ElemRoutes.NotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.{emit, lastEventId}
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.UriDirectives.baseUriPrefix
@@ -24,7 +23,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.RemainingElems
 import io.circe.syntax.EncoderOps
 import io.circe.{Encoder, JsonObject}
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
-import monix.bio.IO
 import monix.execution.Scheduler
 
 import java.time.Instant
