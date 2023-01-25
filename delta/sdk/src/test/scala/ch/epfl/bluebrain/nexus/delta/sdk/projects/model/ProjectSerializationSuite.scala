@@ -81,7 +81,7 @@ class ProjectSerializationSuite extends SerializationSuite {
 
   projectsMapping.foreach { case (event, (database, sse), action) =>
     test(s"Correctly serialize ${event.getClass.getName}") {
-      assertEquals(ProjectEvent.serializer.codec(event), database)
+      assertOutput(ProjectEvent.serializer, event, database)
     }
 
     test(s"Correctly deserialize ${event.getClass.getName}") {
@@ -132,7 +132,7 @@ class ProjectSerializationSuite extends SerializationSuite {
   private val jsonState = jsonContentOf("/projects/project-state.json")
 
   test(s"Correctly serialize a ProjectState") {
-    assertEquals(ProjectState.serializer.codec(state), jsonState)
+    assertOutput(ProjectState.serializer, state, jsonState)
   }
 
   test(s"Correctly deserialize a ProjectState") {

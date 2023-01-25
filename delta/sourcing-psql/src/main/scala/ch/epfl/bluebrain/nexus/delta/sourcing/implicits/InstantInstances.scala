@@ -4,7 +4,7 @@ import cats.Order
 
 import java.time.Instant
 
-object InstantInstances {
+trait InstantInstances {
 
   implicit final val instantInstances: Order[Instant] =
     (x: Instant, y: Instant) => x.compareTo(y)

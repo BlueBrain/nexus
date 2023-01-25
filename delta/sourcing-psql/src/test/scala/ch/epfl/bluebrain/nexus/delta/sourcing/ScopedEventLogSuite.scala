@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.EvaluationError.{EvaluationFailure, EvaluationTimeout}
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestCommand._
-import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.IriInstances._
+import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestEvent.{PullRequestCreated, PullRequestMerged, PullRequestTagged}
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestRejection._

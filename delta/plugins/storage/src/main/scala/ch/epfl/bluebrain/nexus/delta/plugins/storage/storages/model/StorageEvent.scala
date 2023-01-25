@@ -177,7 +177,7 @@ object StorageEvent {
 
     implicit val storageValueCodec: Codec.AsObject[StorageValue] = StorageValue.databaseCodec(crypto)
     implicit val coder: Codec.AsObject[StorageEvent]             = deriveConfiguredCodec[StorageEvent]
-    Serializer()
+    Serializer.dropNulls()
   }
 
   def storageEventMetricEncoder(crypto: Crypto): ScopedEventMetricEncoder[StorageEvent] =

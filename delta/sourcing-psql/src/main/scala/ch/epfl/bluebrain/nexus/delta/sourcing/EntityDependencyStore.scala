@@ -4,10 +4,9 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityDependency, Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.IriInstances._
+import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import doobie._
 import doobie.implicits._
-import doobie.postgres.circe.jsonb.implicits._
 import doobie.util.Put
 import io.circe.{Decoder, Json}
 import monix.bio.{Task, UIO}

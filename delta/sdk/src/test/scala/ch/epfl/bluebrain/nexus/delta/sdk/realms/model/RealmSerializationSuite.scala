@@ -84,7 +84,7 @@ class RealmSerializationSuite extends SerializationSuite {
 
   realmMapping.foreach { case (event, (database, sse)) =>
     test(s"Correctly serialize ${event.getClass.getName}") {
-      assertEquals(RealmEvent.serializer.codec(event), database)
+      assertOutput(RealmEvent.serializer, event, database)
     }
 
     test(s"Correctly deserialize ${event.getClass.getName}") {
@@ -121,7 +121,7 @@ class RealmSerializationSuite extends SerializationSuite {
   private val jsonState = jsonContentOf("/realms/realm-state.json")
 
   test(s"Correctly serialize an RealmState") {
-    assertEquals(RealmState.serializer.codec(state), jsonState)
+    assertOutput(RealmState.serializer, state, jsonState)
   }
 
   test(s"Correctly deserialize an RealmState") {

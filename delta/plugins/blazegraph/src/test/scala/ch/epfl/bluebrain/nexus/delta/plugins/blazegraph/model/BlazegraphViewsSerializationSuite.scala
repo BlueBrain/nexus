@@ -75,7 +75,7 @@ class BlazegraphViewsSerializationSuite extends SerializationSuite {
 
   blazegraphViewsMapping.foreach { case (event, (database, sse), action) =>
     test(s"Correctly serialize ${event.getClass.getName}") {
-      assertEquals(BlazegraphViewEvent.serializer.codec(event), database)
+      assertOutput(BlazegraphViewEvent.serializer, event, database)
     }
 
     test(s"Correctly deserialize ${event.getClass.getName}") {
@@ -127,7 +127,7 @@ class BlazegraphViewsSerializationSuite extends SerializationSuite {
 
   statesMapping.foreach { case (state, json) =>
     test(s"Correctly serialize state ${state.value.tpe}") {
-      BlazegraphViewState.serializer.codec(state).equalsIgnoreArrayOrder(json)
+      assertOutputIgnoreOrder(BlazegraphViewState.serializer, state, json)
     }
 
     test(s"Correctly deserialize ${state.value.tpe}") {

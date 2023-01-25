@@ -92,7 +92,7 @@ class SchemaSerializationSuite extends SerializationSuite {
 
   schemasMapping.foreach { case (event, json, action) =>
     test(s"Correctly serialize ${event.getClass.getName}") {
-      assertEquals(SchemaEvent.serializer.codec(event), json)
+      assertOutput(SchemaEvent.serializer, event, json)
     }
 
     test(s"Correctly deserialize ${event.getClass.getName}") {
@@ -134,7 +134,7 @@ class SchemaSerializationSuite extends SerializationSuite {
   private val jsonState = jsonContentOf("/schemas/schema-state.json")
 
   test(s"Correctly serialize a SchemaState") {
-    assertEquals(SchemaState.serializer.codec(state), jsonState)
+    assertOutput(SchemaState.serializer, state, jsonState)
   }
 
   test(s"Correctly deserialize a SchemaState") {

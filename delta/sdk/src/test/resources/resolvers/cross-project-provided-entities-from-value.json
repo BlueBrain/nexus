@@ -4,8 +4,6 @@
     "Resolver",
     "CrossProject"
   ],
-  "name": null,
-  "description": null,
   "priority": 42,
   "projects": [
     "org/project1",

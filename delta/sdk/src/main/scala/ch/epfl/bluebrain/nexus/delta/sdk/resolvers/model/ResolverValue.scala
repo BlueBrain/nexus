@@ -135,6 +135,7 @@ object ResolverValue {
           keywords.tpe -> resolverValue.tpe.types.map(_.stripPrefix(nxv.base)).asJson
         )
       )
+      .deepDropNullValues
   }
 
   implicit private[resolvers] def resolverValueEncoder(implicit

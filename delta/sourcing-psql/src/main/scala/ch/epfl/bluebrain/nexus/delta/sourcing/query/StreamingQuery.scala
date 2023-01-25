@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.Predicate.Project
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.IriInstances._
+import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef, Tag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, SuccessElem}
@@ -13,7 +13,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, RemainingElems}
 import com.typesafe.scalalogging.Logger
 import doobie.Fragments
 import doobie.implicits._
-import doobie.postgres.circe.jsonb.implicits._
 import doobie.postgres.implicits._
 import doobie.util.query.Query0
 import fs2.{Chunk, Stream}

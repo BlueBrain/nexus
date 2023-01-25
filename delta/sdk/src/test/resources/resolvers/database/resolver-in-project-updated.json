@@ -14,8 +14,6 @@
   },
   "value": {
     "@type": "InProjectValue",
-    "name": null,
-    "description": null,
     "priority": 42
   }
 }

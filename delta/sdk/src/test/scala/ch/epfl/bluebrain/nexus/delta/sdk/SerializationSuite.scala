@@ -3,9 +3,11 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.bio.{EitherAssertions, JsonAssertions}
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
+import io.circe.parser._
 import io.circe.{Json, JsonObject}
 import monix.execution.Scheduler
 import munit.{Assertions, FunSuite}
@@ -39,5 +41,21 @@ abstract class SerializationSuite
 
   def loadEvents(module: String, fileName: String): (Json, JsonObject) =
     (jsonContentOf(s"/$module/database/$fileName"), jsonObjectContentOf(s"/$module/sse/$fileName"))
+
+  private def generateOutput[Id, Value](serializer: Serializer[Id, Value], obtained: Value) =
+    parse(serializer.printer.print(serializer.codec(obtained)))
+      .getOrElse(fail(s"$obtained could not be parsed back as a json"))
+
+  def assertOutput[Id, Value](serializer: Serializer[Id, Value], obtained: Value, expected: Json): Unit = {
+    assertEquals(
+      generateOutput(serializer, obtained),
+      expected
+    )
+
+  }
+
+  def assertOutputIgnoreOrder[Id, Value](serializer: Serializer[Id, Value], obtained: Value, expected: Json): Unit =
+    generateOutput(serializer, obtained)
+      .equalsIgnoreArrayOrder(expected)
 
 }

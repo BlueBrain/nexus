@@ -6,7 +6,7 @@ import munit.{Assertions, Location}
 
 trait JsonAssertions { self: Assertions =>
 
-  implicit private val printer: Printer = Printer.spaces2.copy(dropNullValues = true)
+  implicit private val printer: Printer = Printer.spaces2
 
   implicit class JsonAssertionsOps(json: Json)(implicit loc: Location) {
 

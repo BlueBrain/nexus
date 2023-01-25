@@ -36,7 +36,7 @@ class OrganizationSerializationSuite extends SerializationSuite {
 
   orgsEventMapping.foreach { case (event, (database, sse)) =>
     test(s"Correctly serialize ${event.getClass.getName}") {
-      assertEquals(OrganizationEvent.serializer.codec(event), database)
+      assertOutput(OrganizationEvent.serializer, event, database)
     }
 
     test(s"Correctly deserialize ${event.getClass.getName}") {
@@ -63,7 +63,7 @@ class OrganizationSerializationSuite extends SerializationSuite {
   private val jsonState = jsonContentOf("/organizations/org-state.json")
 
   test(s"Correctly serialize an OrganizationState") {
-    assertEquals(OrganizationState.serializer.codec(state), jsonState)
+    assertOutput(OrganizationState.serializer, state, jsonState)
   }
 
   test(s"Correctly deserialize an OrganizationState") {

@@ -17,7 +17,7 @@ trait ConfigFixtures {
 
   def queryConfig: QueryConfig = QueryConfig(5, RefreshStrategy.Stop)
 
-  def eventLogConfig: EventLogConfig = EventLogConfig(queryConfig, 3.seconds)
+  def eventLogConfig: EventLogConfig = EventLogConfig(queryConfig, 5.seconds)
 
   def pagination: PaginationConfig =
     PaginationConfig(

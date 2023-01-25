@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestState.{PullRequestActive, PullRequestClosed}
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.{entityType, PullRequestState}
-import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.IriInstances._
+import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.{Latest, UserTag}

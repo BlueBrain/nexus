@@ -14,8 +14,6 @@
   },
   "value": {
     "@type": "CrossProjectValue",
-    "name": null,
-    "description": null,
     "identityResolution": {
       "@type": "ProvidedIdentities",
       "value": [

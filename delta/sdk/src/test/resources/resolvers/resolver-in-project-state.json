@@ -5,8 +5,6 @@
   "rev" : 1,
   "value" : {
     "@type" : "InProjectValue",
-    "name": null,
-    "description": null,
     "priority" : 42
   },
   "source" : {

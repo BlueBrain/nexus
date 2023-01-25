@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
 import io.circe._
 import io.circe.generic.extras.Configuration
-import io.circe.generic.extras.semiauto.{deriveConfiguredCodec, deriveConfiguredDecoder, deriveConfiguredEncoder}
+import io.circe.generic.extras.semiauto.deriveConfiguredCodec
 
 import java.time.Instant
 import java.util.UUID
@@ -132,12 +132,9 @@ object ElasticSearchViewState {
   @nowarn("cat=unused")
   implicit val serializer: Serializer[Iri, ElasticSearchViewState] = {
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
-    implicit val configuration: Configuration                               = Serializer.circeConfiguration
-    implicit val elasticSearchValueEncoder: Encoder[ElasticSearchViewValue] =
-      deriveConfiguredEncoder[ElasticSearchViewValue].mapJson(_.deepDropNullValues)
-    implicit val elasticSearchValueDecoder: Decoder[ElasticSearchViewValue] =
-      deriveConfiguredDecoder[ElasticSearchViewValue]
-    implicit val codec: Codec.AsObject[ElasticSearchViewState]              = deriveConfiguredCodec[ElasticSearchViewState]
-    Serializer()
+    implicit val configuration: Configuration                       = Serializer.circeConfiguration
+    implicit val valueCodec: Codec.AsObject[ElasticSearchViewValue] = deriveConfiguredCodec[ElasticSearchViewValue]
+    implicit val codec: Codec.AsObject[ElasticSearchViewState]      = deriveConfiguredCodec[ElasticSearchViewState]
+    Serializer.dropNulls()
   }
 }

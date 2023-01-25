@@ -175,7 +175,7 @@ object CompositeViewEvent {
     implicit val configuration: Configuration                       = Serializer.circeConfiguration
     implicit val compositeViewValueCodec: Codec[CompositeViewValue] = CompositeViewValue.databaseCodec(crypto)
     implicit val codec: Codec.AsObject[CompositeViewEvent]          = deriveConfiguredCodec[CompositeViewEvent]
-    Serializer()
+    Serializer.dropNulls()
   }
 
   def compositeViewMetricEncoder(crypto: Crypto): ScopedEventMetricEncoder[CompositeViewEvent] =

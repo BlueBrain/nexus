@@ -5,19 +5,17 @@ import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Envelope, EnvelopeStream}
-import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.IriInstances._
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.{RefreshStrategy, StreamingQuery}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.GlobalState
 import doobie._
 import doobie.implicits._
-import doobie.postgres.circe.jsonb.implicits._
 import doobie.postgres.implicits._
 import doobie.util.transactor.Transactor
 import fs2.Stream
-import io.circe.Json
-import io.circe.syntax.EncoderOps
+import io.circe.Decoder
 import monix.bio.{Task, UIO}
 
 /**
@@ -75,7 +73,11 @@ object GlobalStateStore {
       xas: Transactors
   ): GlobalStateStore[Id, S] = new GlobalStateStore[Id, S] {
 
-    import serializer._
+    import IriInstances._
+    implicit val putId: Put[Id]      = serializer.putId
+    implicit val getValue: Get[S]    = serializer.getValue
+    implicit val putValue: Put[S]    = serializer.putValue
+    implicit val decoder: Decoder[S] = serializer.codec
 
     override def save(state: S): ConnectionIO[Unit] = {
       sql"SELECT 1 FROM global_states WHERE type = $tpe AND id = ${state.id}"
@@ -94,14 +96,14 @@ object GlobalStateStore {
               |  $tpe,
               |  ${state.id},
               |  ${state.rev},
-              |  ${state.asJson},
+              |  $state,
               |  ${state.updatedAt}
               | )
             """.stripMargin) { _ =>
             sql"""
                | UPDATE global_states SET
                |  rev = ${state.rev},
-               |  value = ${state.asJson},
+               |  value = $state,
                |  instant = ${state.updatedAt},
                |  ordering = (select nextval('state_offset'))
                | WHERE
@@ -117,14 +119,10 @@ object GlobalStateStore {
 
     override def get(id: Id): UIO[Option[S]] =
       sql"""SELECT value FROM global_states WHERE type = $tpe AND id = $id"""
-        .query[Json]
+        .query[S]
         .option
         .transact(xas.read)
         .hideErrors
-        .flatMap {
-          case Some(json) => Task.fromEither(json.as[S]).map(Some(_)).hideErrors
-          case None       => UIO.none
-        }
 
     private def states(offset: Offset, strategy: RefreshStrategy): EnvelopeStream[S] =
       StreamingQuery[Envelope[S]](

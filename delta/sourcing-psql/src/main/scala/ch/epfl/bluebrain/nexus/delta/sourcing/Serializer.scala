@@ -1,10 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.IriInstances._
-import doobie.Put
-import io.circe.Codec
+import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
+import doobie.{Get, Put}
 import io.circe.generic.extras.Configuration
+import io.circe.{Codec, Printer}
 
 /**
   * Defines how to extract an id from an event/state and how to serialize and deserialize it
@@ -13,19 +14,48 @@ import io.circe.generic.extras.Configuration
   * @param codec
   *   the Circe codec to serialize/deserialize the event/state from the database
   */
-final class Serializer[Id, Value] private (val encodeId: Id => Iri)(implicit val codec: Codec.AsObject[Value]) {
+final class Serializer[Id, Value] private (
+    encodeId: Id => Iri,
+    val codec: Codec.AsObject[Value],
+    val printer: Printer
+) {
 
-  implicit val put: Put[Id] = Put[Iri].contramap(encodeId)
+  def putId: Put[Id] = Put[Iri].contramap(encodeId)
 
+  def getValue: Get[Value] = jsonbGet.temap(v => codec.decodeJson(v).leftMap(_.message))
+
+  def putValue: Put[Value] = jsonbPut(printer).contramap(codec(_))
 }
 
 object Serializer {
   val circeConfiguration: Configuration = Configuration.default.withDiscriminator("@type")
 
-  def apply[Id, Value](extractId: Id => Iri)(implicit codec: Codec.AsObject[Value]): Serializer[Id, Value] =
-    new Serializer(extractId)
+  private val defaultPrinter: Printer = Printer.noSpaces
 
+  private val dropNullsPrinter: Printer = Printer.noSpaces.copy(dropNullValues = true)
+
+  /**
+    * Defines a serializer with the default printer serializing null values with a custom [[Id]] type
+    */
+  def apply[Id, Value](extractId: Id => Iri)(implicit codec: Codec.AsObject[Value]): Serializer[Id, Value] =
+    new Serializer(extractId, codec, defaultPrinter)
+
+  /**
+    * Defines a serializer with the default printer serializing null values with an [[Iri]] id
+    */
   def apply[Value]()(implicit codec: Codec.AsObject[Value]): Serializer[Iri, Value] =
-    new Serializer(identity)
+    apply(identity[Iri])(codec)
+
+  /**
+    * Defines a serializer with the default printer ignoring null values with a custom [[Id]] type
+    */
+  def dropNulls[Id, Value](extractId: Id => Iri)(implicit codec: Codec.AsObject[Value]): Serializer[Id, Value] =
+    new Serializer(extractId, codec, dropNullsPrinter)
+
+  /**
+    * Defines a serializer with the default printer ignoring null values with an [[Iri]] id
+    */
+  def dropNulls[Value]()(implicit codec: Codec.AsObject[Value]): Serializer[Iri, Value] =
+    dropNulls(identity[Iri])(codec)
 
 }

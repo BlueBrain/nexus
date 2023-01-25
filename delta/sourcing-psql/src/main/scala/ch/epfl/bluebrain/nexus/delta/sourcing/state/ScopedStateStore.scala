@@ -4,10 +4,10 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.IriInstances
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.IriInstances._
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.{RefreshStrategy, StreamingQuery}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore.StateNotFound
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore.StateNotFound.{TagNotFound, UnknownState}
@@ -15,10 +15,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Predicate, Serializer}
 import doobie._
 import doobie.implicits._
-import doobie.postgres.circe.jsonb.implicits._
 import doobie.postgres.implicits._
-import io.circe.Json
-import io.circe.syntax.EncoderOps
+import io.circe.Decoder
 import monix.bio.IO
 
 /**
@@ -172,7 +170,11 @@ object ScopedStateStore {
       xas: Transactors
   ): ScopedStateStore[Id, S] = new ScopedStateStore[Id, S] {
 
-    import serializer._
+    import IriInstances._
+    implicit val putId: Put[Id]      = serializer.putId
+    implicit val getValue: Get[S]    = serializer.getValue
+    implicit val putValue: Put[S]    = serializer.putValue
+    implicit val decoder: Decoder[S] = serializer.codec
 
     override def save(state: S, tag: Tag): doobie.ConnectionIO[Unit] = {
       sql"SELECT 1 FROM scoped_states WHERE type = $tpe AND org = ${state.organization} AND project = ${state.project.project}  AND id = ${state.id} AND tag = $tag"
@@ -198,7 +200,7 @@ object ScopedStateStore {
                       |  ${state.id},
                       |  $tag,
                       |  ${state.rev},
-                      |  ${state.asJson},
+                      |  $state,
                       |  ${state.deprecated},
                       |  ${state.updatedAt}
                       | )
@@ -206,7 +208,7 @@ object ScopedStateStore {
             sql"""
                  | UPDATE scoped_states SET
                  |  rev = ${state.rev},
-                 |  value = ${state.asJson},
+                 |  value = $state,
                  |  deprecated = ${state.deprecated},
                  |  instant = ${state.updatedAt},
                  |  ordering = (select nextval('state_offset'))
@@ -224,9 +226,9 @@ object ScopedStateStore {
     override def delete(ref: ProjectRef, id: Id, tag: Tag): ConnectionIO[Unit] =
       sql"""DELETE FROM scoped_states WHERE type = $tpe AND org = ${ref.organization} AND project = ${ref.project}  AND id = $id AND tag = $tag""".stripMargin.update.run.void
 
-    private def getValue(ref: ProjectRef, id: Id, tag: Tag): ConnectionIO[Option[Json]] =
+    private def getValue(ref: ProjectRef, id: Id, tag: Tag): ConnectionIO[Option[S]] =
       sql"""SELECT value FROM scoped_states WHERE type = $tpe AND org = ${ref.organization} AND project = ${ref.project}  AND id = $id AND tag = $tag"""
-        .query[Json]
+        .query[S]
         .option
 
     private def exists(ref: ProjectRef, id: Id): ConnectionIO[Boolean] =
@@ -236,9 +238,8 @@ object ScopedStateStore {
         .map(_.isDefined)
 
     override def get(ref: ProjectRef, id: Id): IO[UnknownState, S] =
-      getValue(ref, id, Latest).transact(xas.read).hideErrors.flatMap {
-        case Some(json) => IO.fromEither(json.as[S]).hideErrors
-        case None       => IO.raiseError(UnknownState)
+      getValue(ref, id, Latest).transact(xas.read).hideErrors.flatMap { s =>
+        IO.fromOption(s, UnknownState)
       }
 
     override def get(ref: ProjectRef, id: Id, tag: Tag): IO[StateNotFound, S] = {
@@ -246,10 +247,9 @@ object ScopedStateStore {
         value  <- getValue(ref, id, tag)
         exists <- value.fold(exists(ref, id))(_ => true.pure[ConnectionIO])
       } yield value -> exists
-    }.transact(xas.read).hideErrors.flatMap {
-      case (Some(json), _) => IO.fromEither(json.as[S]).hideErrors
-      case (None, true)    => IO.raiseError(TagNotFound)
-      case (None, false)   => IO.raiseError(UnknownState)
+    }.transact(xas.read).hideErrors.flatMap { case (s, exists) =>
+      val error = if (exists) TagNotFound else UnknownState
+      IO.fromOption(s, error)
     }
 
     private def states(

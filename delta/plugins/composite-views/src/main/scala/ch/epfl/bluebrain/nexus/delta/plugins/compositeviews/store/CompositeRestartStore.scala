@@ -9,13 +9,12 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.store.CompositeResta
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ProjectionConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.IriInstances._
+import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
 import com.typesafe.scalalogging.Logger
 import doobie.implicits._
-import doobie.postgres.circe.jsonb.implicits._
 import doobie.postgres.implicits._
 import fs2.Stream
 import io.circe.Json

@@ -16,7 +16,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef
 import io.circe.{Json, JsonObject}
 
 import java.time.Instant
-import scala.collection.immutable.Set
 
 class ResolverSerializationSuite extends SerializationSuite {
 
@@ -179,7 +178,7 @@ class ResolverSerializationSuite extends SerializationSuite {
 
   resolversMapping.foreach { case (event, (database, sse), action) =>
     test(s"Correctly serialize ${event.getClass.getName}") {
-      ResolverEvent.serializer.codec(event).equalsIgnoreArrayOrder(database)
+      assertOutputIgnoreOrder(ResolverEvent.serializer, event, database)
     }
 
     test(s"Correctly deserialize ${event.getClass.getName}") {
@@ -231,7 +230,7 @@ class ResolverSerializationSuite extends SerializationSuite {
 
   statesMapping.foreach { case (state, json) =>
     test(s"Correctly serialize state ${state.value.tpe}") {
-      ResolverState.serializer.codec(state).equalsIgnoreArrayOrder(json)
+      assertOutputIgnoreOrder(ResolverState.serializer, state, json)
     }
 
     test(s"Correctly deserialize ${state.value.tpe}") {
