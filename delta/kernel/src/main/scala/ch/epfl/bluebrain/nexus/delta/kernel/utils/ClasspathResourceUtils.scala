@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.kernel.utils
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassPathResourceUtilsStatic.handleBars
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceError.{InvalidJson, InvalidJsonObject, ResourcePathNotFound}
-import com.github.jknack.handlebars.Handlebars
+import com.github.jknack.handlebars.{EscapingStrategy, Handlebars}
 import io.circe.parser.parse
 import io.circe.{Json, JsonObject, ParsingFailure}
 import monix.bio.IO
@@ -118,7 +118,7 @@ trait ClasspathResourceUtils {
 }
 
 object ClassPathResourceUtilsStatic {
-  private[utils] val handleBars = new Handlebars()
+  private[utils] val handleBars = new Handlebars().`with`(EscapingStrategy.NOOP)
 }
 
 object ClasspathResourceUtils extends ClasspathResourceUtils
