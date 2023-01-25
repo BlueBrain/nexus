@@ -20,11 +20,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseElemStream
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, Tag}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.RemainingElems
 import io.circe.syntax.EncoderOps
 import io.circe.{Encoder, JsonObject}
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.bio.IO
 import monix.execution.Scheduler
+
+import java.time.Instant
 
 /**
   * Route to stream elems as SSEs
@@ -66,8 +69,8 @@ class ElemRoutes(
                   (get & pathPrefix("remaining") & parameter("tag".as[UserTag].?)) { tag =>
                     operationName(s"$prefixSegment/$project/elems/remaining") {
                       emit(
-                        sseElemStream.remaining(project, tag.getOrElse(Tag.latest), offset).flatMap { r =>
-                          IO.fromOption(r, NotFound(project, tag))
+                        sseElemStream.remaining(project, tag.getOrElse(Tag.latest), offset).map { r =>
+                          r.getOrElse(RemainingElems(0L, Instant.EPOCH))
                         }
                       )
                     }
