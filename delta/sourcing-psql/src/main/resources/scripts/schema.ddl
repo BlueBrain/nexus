@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS public.global_events(
     instant  timestamptz  NOT NULL,
     PRIMARY KEY(type, id, rev)
 );
-CREATE INDEX IF NOT EXISTS global_events_ordering_idx ON public.global_events USING BRIN (ordering);
+CREATE INDEX IF NOT EXISTS global_events_ordering_idx ON public.global_events (ordering);
 
 --
 -- Table for global states (ex: ACLs, permissions, orgs)
@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS public.global_states (
     instant  timestamptz NOT NULL,
     PRIMARY KEY(type, id)
 );
-CREATE INDEX IF NOT EXISTS global_states_ordering_idx ON public.global_states USING BRIN (ordering);
+CREATE INDEX IF NOT EXISTS global_states_ordering_idx ON public.global_states (ordering);
 CREATE INDEX IF NOT EXISTS org_uuid_idx ON public.global_states((value->>'uuid')) WHERE type = 'organization';
 
 --
@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS public.scoped_events(
     PRIMARY KEY(type, org, project, id, rev),
     UNIQUE (org, project, id, rev)
 );
-CREATE INDEX IF NOT EXISTS scoped_events_ordering_idx ON public.scoped_events USING BRIN (ordering);
+CREATE INDEX IF NOT EXISTS scoped_events_ordering_idx ON public.scoped_events (ordering);
 
 --
 -- Table for scoped states that belongs to a project
@@ -66,7 +66,7 @@ CREATE TABLE IF NOT EXISTS public.scoped_states(
     PRIMARY KEY(type, org, project, tag, id),
     UNIQUE (org, project, tag, id)
 );
-CREATE INDEX IF NOT EXISTS scoped_states_ordering_idx ON public.scoped_states USING BRIN (ordering);
+CREATE INDEX IF NOT EXISTS scoped_states_ordering_idx ON public.scoped_states (ordering);
 CREATE INDEX IF NOT EXISTS project_uuid_idx ON public.scoped_states((value->>'uuid')) WHERE type = 'project';
 
 CREATE TABLE IF NOT EXISTS public.scoped_tombstones(

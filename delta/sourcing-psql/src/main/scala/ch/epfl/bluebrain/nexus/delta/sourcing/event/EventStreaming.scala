@@ -27,10 +27,10 @@ object EventStreaming {
       offset =>
         predicate match {
           case Root =>
-            sql"""(${globalEvents(typeIn, offset)}) UNION ALL (${scopedEvents(typeIn, predicate, offset)})
+            sql"""(${globalEvents(typeIn, offset, config)}) UNION ALL (${scopedEvents(typeIn, predicate, offset, config)})
                  |ORDER BY ordering
                  |LIMIT ${config.batchSize}""".stripMargin.query[Envelope[Json]]
-          case _    => scopedEvents(typeIn, predicate, offset).query[Envelope[Json]]
+          case _    => scopedEvents(typeIn, predicate, offset, config).query[Envelope[Json]]
         },
       xas,
       config
@@ -48,23 +48,19 @@ object EventStreaming {
 
     Envelope.streamA(
       offset,
-      offset => scopedEventsLimited(typeIn, predicate, offset, config).query[Envelope[Json]],
+      offset => scopedEvents(typeIn, predicate, offset, config).query[Envelope[Json]],
       xas,
       config
     )
   }
 
-  private def globalEvents(typeIn: Option[Fragment], o: Offset) =
+  private def globalEvents(typeIn: Option[Fragment], o: Offset, cfg: QueryConfig) =
     fr"""SELECT type, id, value, rev, instant, ordering FROM public.global_events
         |${Fragments.whereAndOpt(typeIn, o.asFragment)}
-        |ORDER BY ordering""".stripMargin
+        |ORDER BY ordering
+        |LIMIT ${cfg.batchSize}""".stripMargin
 
-  private def scopedEvents(typeIn: Option[Fragment], predicate: Predicate, o: Offset) =
-    fr"""SELECT type, id, value, rev, instant, ordering FROM public.scoped_events
-        |${Fragments.whereAndOpt(typeIn, predicate.asFragment, o.asFragment)}
-        |ORDER BY ordering""".stripMargin
-
-  private def scopedEventsLimited(typeIn: Option[Fragment], predicate: Predicate, o: Offset, cfg: QueryConfig) =
+  private def scopedEvents(typeIn: Option[Fragment], predicate: Predicate, o: Offset, cfg: QueryConfig) =
     fr"""SELECT type, id, value, rev, instant, ordering FROM public.scoped_events
         |${Fragments.whereAndOpt(typeIn, predicate.asFragment, o.asFragment)}
         |ORDER BY ordering

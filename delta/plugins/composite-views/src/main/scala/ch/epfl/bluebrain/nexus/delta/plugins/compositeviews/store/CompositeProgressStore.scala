@@ -49,7 +49,7 @@ final class CompositeProgressStore(xas: Transactors)(implicit clock: Clock[UIO])
            |  failed = EXCLUDED.failed,
            |  updated_at = EXCLUDED.updated_at;
            |""".stripMargin.update.run
-          .transact(xas.streaming)
+          .transact(xas.write)
           .void
           .hideErrors
       }
@@ -70,7 +70,7 @@ final class CompositeProgressStore(xas: Transactors)(implicit clock: Clock[UIO])
       .query[CompositeProgressRow]
       .map { row => row.branch -> row.progress }
       .toMap
-      .transact(xas.streaming)
+      .transact(xas.read)
       .hideErrors
 
   /**
@@ -118,7 +118,7 @@ final class CompositeProgressStore(xas: Transactors)(implicit clock: Clock[UIO])
     sql"""DELETE FROM public.composite_offsets
          |WHERE project = ${view.project} and view_id = ${view.viewId} and rev = $rev;
          |""".stripMargin.update.run
-      .transact(xas.streaming)
+      .transact(xas.write)
       .void
       .hideErrors
 }
