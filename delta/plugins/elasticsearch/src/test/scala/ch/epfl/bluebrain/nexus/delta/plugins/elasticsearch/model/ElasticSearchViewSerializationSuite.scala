@@ -82,7 +82,7 @@ class ElasticSearchViewSerializationSuite extends SerializationSuite {
 
   elasticsearchViewsMapping.foreach { case (event, (database, sse), action) =>
     test(s"Correctly serialize ${event.getClass.getName}") {
-      assertEquals(ElasticSearchViewEvent.serializer.codec(event), database)
+      assertOutput(ElasticSearchViewEvent.serializer, event, database)
     }
 
     test(s"Correctly deserialize ${event.getClass.getName}") {
@@ -136,7 +136,7 @@ class ElasticSearchViewSerializationSuite extends SerializationSuite {
 
   statesMapping.foreach { case (state, json) =>
     test(s"Correctly serialize state ${state.value.tpe}") {
-      ElasticSearchViewState.serializer.codec(state).equalsIgnoreArrayOrder(json)
+      assertOutputIgnoreOrder(ElasticSearchViewState.serializer, state, json)
     }
 
     test(s"Correctly deserialize ${state.value.tpe}") {

@@ -4,6 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ElemStream
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionRestartStore.logger
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.model.ProjectionRestart
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.model.ProjectionRestart.{entityType, restartId}
@@ -11,7 +12,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.query.StreamingQuery
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
 import com.typesafe.scalalogging.Logger
 import doobie.implicits._
-import doobie.postgres.circe.jsonb.implicits._
 import doobie.postgres.implicits._
 import io.circe.Json
 import io.circe.syntax.EncoderOps

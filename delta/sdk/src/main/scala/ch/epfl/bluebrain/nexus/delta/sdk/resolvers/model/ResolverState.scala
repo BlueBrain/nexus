@@ -107,6 +107,6 @@ object ResolverState {
     implicit val configuration: Configuration                      = Serializer.circeConfiguration
     implicit val resolverValueCodec: Codec.AsObject[ResolverValue] = deriveConfiguredCodec[ResolverValue]
     implicit val codec: Codec.AsObject[ResolverState]              = deriveConfiguredCodec[ResolverState]
-    Serializer()
+    Serializer.dropNulls()
   }
 }

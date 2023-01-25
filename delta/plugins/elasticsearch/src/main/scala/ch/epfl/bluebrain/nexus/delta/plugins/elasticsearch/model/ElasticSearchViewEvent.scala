@@ -18,9 +18,9 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef}
 import io.circe.generic.extras.Configuration
-import io.circe.generic.extras.semiauto.{deriveConfiguredCodec, deriveConfiguredDecoder, deriveConfiguredEncoder}
+import io.circe.generic.extras.semiauto.{deriveConfiguredCodec, deriveConfiguredEncoder}
 import io.circe.syntax._
-import io.circe.{Codec, Decoder, Encoder, Json, JsonObject}
+import io.circe._
 
 import java.time.Instant
 import java.util.UUID
@@ -188,13 +188,10 @@ object ElasticSearchViewEvent {
   @nowarn("cat=unused")
   val serializer: Serializer[Iri, ElasticSearchViewEvent] = {
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
-    implicit val configuration: Configuration                               = Serializer.circeConfiguration
-    implicit val elasticSearchValueEncoder: Encoder[ElasticSearchViewValue] =
-      deriveConfiguredEncoder[ElasticSearchViewValue].mapJson(_.deepDropNullValues)
-    implicit val elasticSearchValueDecoder: Decoder[ElasticSearchViewValue] =
-      deriveConfiguredDecoder[ElasticSearchViewValue]
-    implicit val coder: Codec.AsObject[ElasticSearchViewEvent]              = deriveConfiguredCodec[ElasticSearchViewEvent]
-    Serializer()
+    implicit val configuration: Configuration                       = Serializer.circeConfiguration
+    implicit val valueCodec: Codec.AsObject[ElasticSearchViewValue] = deriveConfiguredCodec[ElasticSearchViewValue]
+    implicit val codec: Codec.AsObject[ElasticSearchViewEvent]      = deriveConfiguredCodec[ElasticSearchViewEvent]
+    Serializer.dropNulls()
   }
 
   val esViewMetricEncoder: ScopedEventMetricEncoder[ElasticSearchViewEvent] =

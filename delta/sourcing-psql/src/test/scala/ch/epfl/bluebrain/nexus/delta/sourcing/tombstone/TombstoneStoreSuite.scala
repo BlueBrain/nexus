@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.IriInstances._
+import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
 import ch.epfl.bluebrain.nexus.delta.sourcing.tombstone.TombstoneStore.StateDiff
@@ -13,7 +13,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.tombstone.TombstoneStoreSuite.{ent
 import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
 import ch.epfl.bluebrain.nexus.testkit.postgres.Doobie
 import doobie.implicits._
-import doobie.postgres.circe.jsonb.implicits._
 import io.circe.Json
 import monix.bio.Task
 import munit.AnyFixture

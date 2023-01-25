@@ -101,7 +101,7 @@ class ResourceSerializationSuite extends SerializationSuite {
 
   resourcesMapping.foreach { case (event, (database, sse), action) =>
     test(s"Correctly serialize ${event.getClass.getName}") {
-      assertEquals(ResourceEvent.serializer.codec(event), database)
+      assertOutput(ResourceEvent.serializer, event, database)
     }
 
     test(s"Correctly deserialize ${event.getClass.getName}") {
@@ -152,7 +152,7 @@ class ResourceSerializationSuite extends SerializationSuite {
   private val jsonState = jsonContentOf("/resources/resource-state.json")
 
   test(s"Correctly serialize a ResourceState") {
-    assertEquals(ResourceState.serializer.codec(state), jsonState)
+    assertOutput(ResourceState.serializer, state, jsonState)
   }
 
   test(s"Correctly deserialize a ResourceState") {

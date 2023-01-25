@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.InstantInstances._
+import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset.Start
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}

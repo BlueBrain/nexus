@@ -29,7 +29,7 @@ class PermissionsSerializationSuite extends SerializationSuite {
 
   permissionsMapping.foreach { case (event, (database, sse)) =>
     test(s"Correctly serialize ${event.getClass.getName}") {
-      assertEquals(PermissionsEvent.serializer.codec(event), database)
+      assertOutput(PermissionsEvent.serializer, event, database)
     }
 
     test(s"Correctly deserialize ${event.getClass.getName}") {
@@ -53,7 +53,7 @@ class PermissionsSerializationSuite extends SerializationSuite {
   private val jsonState = jsonContentOf("/permissions/permissions-state.json")
 
   test(s"Correctly serialize a PermissionsState") {
-    assertEquals(PermissionsState.serializer.codec(state), jsonState)
+    assertOutput(PermissionsState.serializer, state, jsonState)
   }
 
   test(s"Correctly deserialize a PermissionsState") {

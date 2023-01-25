@@ -12,7 +12,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.{EntityDependencyStore, Predicate,
 import com.typesafe.scalalogging.Logger
 import doobie._
 import doobie.implicits._
-import doobie.postgres.circe.jsonb.implicits._
 import io.circe.{Decoder, Json}
 import monix.bio.{IO, UIO}
 
@@ -41,6 +40,8 @@ trait ViewsStore[Rejection] {
 object ViewsStore {
 
   private val logger: Logger = Logger[ViewsStore.type]
+
+  import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 
   def apply[Rejection, Value](
       entityType: EntityType,

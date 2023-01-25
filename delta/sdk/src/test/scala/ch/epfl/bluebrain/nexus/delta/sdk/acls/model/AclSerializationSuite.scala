@@ -40,7 +40,7 @@ class AclSerializationSuite extends SerializationSuite {
 
   aclsMapping.foreach { case (event, (database, sse)) =>
     test(s"Correctly serialize ${event.getClass.getName}") {
-      assertEquals(AclEvent.serializer.codec(event), database)
+      assertOutput(AclEvent.serializer, event, database)
     }
 
     test(s"Correctly deserialize ${event.getClass.getName}") {
@@ -64,7 +64,7 @@ class AclSerializationSuite extends SerializationSuite {
   private val jsonState = jsonContentOf("/acls/acl-state.json")
 
   test(s"Correctly serialize an AclState") {
-    assertEquals(AclState.serializer.codec(state), jsonState)
+    assertOutput(AclState.serializer, state, jsonState)
   }
 
   test(s"Correctly deserialize an AclState") {

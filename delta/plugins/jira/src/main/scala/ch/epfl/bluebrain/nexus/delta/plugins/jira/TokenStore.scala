@@ -4,12 +4,12 @@ import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.{ioContentOf => resourceFrom}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils.instant
+import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import com.typesafe.scalalogging.Logger
 import doobie.implicits._
 import doobie.postgres.implicits._
-import doobie.postgres.circe.jsonb.implicits._
 import doobie.util.fragment.Fragment
 import io.circe.Json
 import io.circe.syntax._

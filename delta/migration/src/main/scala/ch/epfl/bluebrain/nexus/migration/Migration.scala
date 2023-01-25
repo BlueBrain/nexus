@@ -12,6 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
+import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.migration.Migration.{logger, MigrationProgress}
 import ch.epfl.bluebrain.nexus.migration.config.ReplayConfig
 import ch.epfl.bluebrain.nexus.migration.replay.ReplayEvents
@@ -19,7 +20,6 @@ import com.typesafe.config.{ConfigFactory, ConfigParseOptions}
 import com.typesafe.scalalogging.Logger
 import doobie._
 import doobie.implicits._
-import doobie.postgres.circe.jsonb.implicits._
 import doobie.postgres.implicits._
 import fs2.{Chunk, Stream}
 import io.circe.optics.JsonPath.root

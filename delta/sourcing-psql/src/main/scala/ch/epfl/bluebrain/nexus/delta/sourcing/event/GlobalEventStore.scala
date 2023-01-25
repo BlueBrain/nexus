@@ -5,17 +5,15 @@ import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.GlobalEvent
-import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.IriInstances._
+import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.IriInstances
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Envelope, EnvelopeStream}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.{RefreshStrategy, StreamingQuery}
 import doobie._
 import doobie.implicits._
-import doobie.postgres.circe.jsonb.implicits._
 import doobie.postgres.implicits._
 import fs2.Stream
-import io.circe.Json
-import io.circe.syntax.EncoderOps
+import io.circe.Decoder
 import monix.bio.Task
 
 /**
@@ -76,7 +74,11 @@ object GlobalEventStore {
   ): GlobalEventStore[Id, E] =
     new GlobalEventStore[Id, E] {
 
-      import serializer._
+      import IriInstances._
+      implicit val putId: Put[Id]      = serializer.putId
+      implicit val getValue: Get[E]    = serializer.getValue
+      implicit val putValue: Put[E]    = serializer.putValue
+      implicit val decoder: Decoder[E] = serializer.codec
 
       override def save(event: E): ConnectionIO[Unit] =
         sql"""
@@ -91,7 +93,7 @@ object GlobalEventStore {
            |  $tpe,
            |  ${event.id},
            |  ${event.rev},
-           |  ${event.asJson},
+           |  $event,
            |  ${event.instant}
            | )
          """.stripMargin.update.run.void
@@ -102,9 +104,7 @@ object GlobalEventStore {
             Fragments.whereAndOpt(Some(fr"type = $tpe"), Some(fr"id = $id"), to.map { t => fr" rev <= $t" }) ++
             fr"ORDER BY rev"
 
-        select.query[Json].streamWithChunkSize(config.batchSize).transact(xas.read).flatMap { json =>
-          Stream.fromEither[Task](json.as[E])
-        }
+        select.query[E].streamWithChunkSize(config.batchSize).transact(xas.read)
       }
 
       private def events(offset: Offset, strategy: RefreshStrategy): Stream[Task, Envelope[E]] =

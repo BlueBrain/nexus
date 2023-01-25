@@ -15,12 +15,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.sse.{resourcesSelector, SseEncoder}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.ScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef}
 import io.circe.generic.extras.Configuration
-import io.circe.generic.extras.semiauto.{deriveConfiguredCodec, deriveConfiguredDecoder, deriveConfiguredEncoder}
+import io.circe.generic.extras.semiauto.{deriveConfiguredCodec, deriveConfiguredEncoder}
 import io.circe.syntax._
-import io.circe.{Codec, Decoder, Encoder, Json, JsonObject}
+import io.circe._
 
 import java.time.Instant
 import java.util.UUID
@@ -206,13 +206,10 @@ object BlazegraphViewEvent {
   @nowarn("cat=unused")
   val serializer: Serializer[Iri, BlazegraphViewEvent] = {
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
-    implicit val configuration: Configuration               = Serializer.circeConfiguration
-    implicit val valueEncoder: Encoder[BlazegraphViewValue] =
-      deriveConfiguredEncoder[BlazegraphViewValue].mapJson(_.deepDropNullValues)
-    implicit val valueDecoder: Decoder[BlazegraphViewValue] =
-      deriveConfiguredDecoder[BlazegraphViewValue]
-    implicit val coder: Codec.AsObject[BlazegraphViewEvent] = deriveConfiguredCodec[BlazegraphViewEvent]
-    Serializer()
+    implicit val configuration: Configuration                    = Serializer.circeConfiguration
+    implicit val valueCodec: Codec.AsObject[BlazegraphViewValue] = deriveConfiguredCodec[BlazegraphViewValue]
+    implicit val codec: Codec.AsObject[BlazegraphViewEvent]      = deriveConfiguredCodec[BlazegraphViewEvent]
+    Serializer.dropNulls()
   }
 
   val bgViewMetricEncoder: ScopedEventMetricEncoder[BlazegraphViewEvent] =

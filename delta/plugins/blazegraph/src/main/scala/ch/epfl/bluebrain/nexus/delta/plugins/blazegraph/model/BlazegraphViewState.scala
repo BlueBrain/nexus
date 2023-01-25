@@ -11,8 +11,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
 import io.circe.generic.extras.Configuration
-import io.circe.generic.extras.semiauto.{deriveConfiguredCodec, deriveConfiguredDecoder, deriveConfiguredEncoder}
-import io.circe.{Codec, Decoder, Encoder, Json}
+import io.circe.generic.extras.semiauto.deriveConfiguredCodec
+import io.circe.{Codec, Json}
 
 import java.time.Instant
 import java.util.UUID
@@ -121,13 +121,10 @@ object BlazegraphViewState {
   @nowarn("cat=unused")
   implicit val serializer: Serializer[Iri, BlazegraphViewState] = {
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
-    implicit val configuration: Configuration               = Serializer.circeConfiguration
-    implicit val valueEncoder: Encoder[BlazegraphViewValue] =
-      deriveConfiguredEncoder[BlazegraphViewValue].mapJson(_.deepDropNullValues)
-    implicit val valueDecoder: Decoder[BlazegraphViewValue] =
-      deriveConfiguredDecoder[BlazegraphViewValue]
-    implicit val codec: Codec.AsObject[BlazegraphViewState] = deriveConfiguredCodec[BlazegraphViewState]
-    Serializer()
+    implicit val configuration: Configuration                    = Serializer.circeConfiguration
+    implicit val valueCodec: Codec.AsObject[BlazegraphViewValue] = deriveConfiguredCodec[BlazegraphViewValue]
+    implicit val codec: Codec.AsObject[BlazegraphViewState]      = deriveConfiguredCodec[BlazegraphViewState]
+    Serializer.dropNulls()
   }
 
 }
