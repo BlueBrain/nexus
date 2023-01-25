@@ -29,6 +29,8 @@ class BlazegraphCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
 
   implicit private val patienceConfig: PatienceConfig = PatienceConfig(5.seconds, 10.millis)
 
+  private val indexingRev = 1
+
   private lazy val (sv, projections) = supervisor()
   private val project                = ProjectRef.unsafe("org", "proj")
   private val id1                    = nxv + "view1"
@@ -37,7 +39,8 @@ class BlazegraphCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
     projection = id1.toString,
     None,
     None,
-    namespace = "view1"
+    namespace = "view1",
+    indexingRev
   )
 
   private val id2   = nxv + "view2"
@@ -46,7 +49,8 @@ class BlazegraphCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
     projection = id2.toString,
     None,
     None,
-    namespace = "view2"
+    namespace = "view2",
+    indexingRev
   )
 
   private val id3         = nxv + "view3"
@@ -56,7 +60,8 @@ class BlazegraphCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
     projection = id3.toString,
     None,
     Some(PipeChain(PipeRef.unsafe("xxx") -> ExpandedJsonLd.empty)),
-    namespace = "view3"
+    namespace = "view3",
+    indexingRev
   )
 
   private val deprecatedView1 = DeprecatedViewDef(
@@ -67,7 +72,8 @@ class BlazegraphCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
     projection = id2.toString + "_2",
     None,
     None,
-    namespace = "view2_2"
+    namespace = "view2_2",
+    indexingRev
   )
 
   private val resumeSignal = SignallingRef[Task, Boolean](false).runSyncUnsafe()
@@ -135,6 +141,16 @@ class BlazegraphCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
         project = Some(project),
         instant = Instant.EPOCH,
         offset = Offset.at(7L),
+        value = updatedView2,
+        revision = 1
+      ),
+      // Elem at offset 8 represents a view update that does not require reindexing
+      SuccessElem(
+        tpe = BlazegraphViews.entityType,
+        id = updatedView2.ref.viewId,
+        project = Some(project),
+        instant = Instant.EPOCH,
+        offset = Offset.at(8L),
         value = updatedView2,
         revision = 1
       )
@@ -241,7 +257,7 @@ class BlazegraphCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
       _ <- resumeSignal.set(true)
       _ <- sv.describe(BlazegraphCoordinator.metadata.name)
              .map(_.map(_.progress))
-             .eventuallySome(ProjectionProgress(Offset.at(7L), Instant.EPOCH, 7, 1, 2))
+             .eventuallySome(ProjectionProgress(Offset.at(8L), Instant.EPOCH, 8, 1, 2))
     } yield ()
   }
 
@@ -296,6 +312,10 @@ class BlazegraphCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
       r        = entries.assertOneElem
       _        = assertEquals(r.failedElemData.id, nxv + "failed")
     } yield ()
+  }
+
+  test("Delete indices should not contain view2_2 as it was not restarted") {
+    assert(!deletedIndices.contains(updatedView2.projection))
   }
 
 }

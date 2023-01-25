@@ -160,7 +160,7 @@ object BlazegraphViewRejection {
     * Rejection returned when one of the provided view references for an AggregateBlazegraphView does not exist or is
     * deprecated.
     *
-    * @param view
+    * @param views
     *   the offending view reference
     */
   final case class InvalidViewReferences(views: Set[ViewRef])

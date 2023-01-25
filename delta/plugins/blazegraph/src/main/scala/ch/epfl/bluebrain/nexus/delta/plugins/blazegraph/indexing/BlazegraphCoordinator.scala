@@ -45,26 +45,32 @@ final class BlazegraphCoordinator private (
   def run(offset: Offset): Stream[Task, Elem[Unit]] = {
     fetchViews(offset).evalMap { elem =>
       elem
-        .traverse {
-          case active: ActiveViewDef =>
-            IndexingViewDef
-              .compile(
-                active,
-                compilePipeChain,
-                graphStream,
-                sink(active)
-              )
-              .flatMap { projection =>
-                cleanupCurrent(active.ref) >>
-                  supervisor.run(
-                    projection,
-                    for {
-                      _ <- createNamespace(active)
-                      _ <- cache.put(active.ref, active)
-                    } yield ()
-                  )
-              }
-          case d: DeprecatedViewDef  => cleanupCurrent(d.ref)
+        .traverse { v =>
+          cache.get(v.ref).flatMap { cachedView =>
+            (cachedView, v) match {
+              case (Some(cached), active: ActiveViewDef) if cached.projection == active.projection =>
+                for {
+                  _ <- cache.put(active.ref, active)
+                  _ <- Task.delay {
+                         logger.info(s"Index ${active.projection} already exists and will not be recreated.")
+                       }
+                } yield ()
+              case (cached, active: ActiveViewDef)                                                 =>
+                compile(active)
+                  .flatMap { projection =>
+                    cleanupCurrent(cached, active.ref) >>
+                      supervisor.run(
+                        projection,
+                        for {
+                          _ <- createNamespace(active)
+                          _ <- cache.put(active.ref, active)
+                        } yield ()
+                      )
+                  }
+              case (cached, deprecated: DeprecatedViewDef)                                         =>
+                cleanupCurrent(cached, deprecated.ref)
+            }
+          }
         }
         .onErrorRecover {
           // If the current view does not translate to a projection then we mark it as failed and move along
@@ -74,8 +80,8 @@ final class BlazegraphCoordinator private (
     }
   }
 
-  private def cleanupCurrent(ref: ViewRef): Task[Unit] =
-    cache.get(ref).flatMap {
+  private def cleanupCurrent(cached: Option[ActiveViewDef], ref: ViewRef): Task[Unit] =
+    cached match {
       case Some(v) =>
         supervisor
           .destroy(
@@ -97,6 +103,9 @@ final class BlazegraphCoordinator private (
           logger.debug(s"View '${ref.project}/${ref.viewId}' is not referenced yet, cleaning is aborted.")
         )
     }
+
+  private def compile(active: ActiveViewDef): Task[CompiledProjection] =
+    IndexingViewDef.compile(active, compilePipeChain, graphStream, sink(active))
 
 }
 

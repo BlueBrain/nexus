@@ -205,7 +205,7 @@ class BlazegraphViewsQuerySpec(docker: BlazegraphDocker)
           val bulk = createTriples(ref).map { triples =>
             SparqlWriteQuery.replace(namedGraph(triples), triples)
           }
-          client.bulk(BlazegraphViews.namespace(view, "prefix"), bulk)
+          client.bulk(view.namespace, bulk)
         }
       }.accepted
     }
@@ -251,7 +251,7 @@ class BlazegraphViewsQuerySpec(docker: BlazegraphDocker)
       {
         for {
           defaultIndex <- views.fetchIndexingView(defaultView.viewId, defaultView.project).map { v =>
-                            BlazegraphViews.namespace(v, "prefix")
+                            v.namespace
                           }
           _            <- client.replace(defaultIndex, resource1Id.toUri.rightValue, resource1Ntriples)
           _            <- client.replace(defaultIndex, resource2Id.toUri.rightValue, resource2Ntriples)

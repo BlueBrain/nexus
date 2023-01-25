@@ -29,7 +29,8 @@ class BlazegraphIndexingActionSuite extends BioSuite with Fixtures {
 
   implicit private val patienceConfig: PatienceConfig = PatienceConfig(5.seconds, 10.millis)
 
-  private val instant = Instant.EPOCH
+  private val instant     = Instant.EPOCH
+  private val indexingRev = 1
 
   private val project = ProjectRef.unsafe("org", "proj")
   private val id1     = nxv + "view1"
@@ -38,7 +39,8 @@ class BlazegraphIndexingActionSuite extends BioSuite with Fixtures {
     projection = id1.toString,
     None,
     None,
-    namespace = "view1"
+    namespace = "view1",
+    indexingRev
   )
 
   private val id2   = nxv + "view2"
@@ -47,7 +49,8 @@ class BlazegraphIndexingActionSuite extends BioSuite with Fixtures {
     projection = id2.toString,
     Some(UserTag.unsafe("tag")),
     None,
-    namespace = "view2"
+    namespace = "view2",
+    indexingRev
   )
 
   private val id3         = nxv + "view3"
@@ -57,7 +60,8 @@ class BlazegraphIndexingActionSuite extends BioSuite with Fixtures {
     projection = id3.toString,
     None,
     Some(PipeChain(PipeRef.unsafe("xxx") -> ExpandedJsonLd.empty)),
-    namespace = "view3"
+    namespace = "view3",
+    indexingRev
   )
 
   private val id4   = nxv + "view4"

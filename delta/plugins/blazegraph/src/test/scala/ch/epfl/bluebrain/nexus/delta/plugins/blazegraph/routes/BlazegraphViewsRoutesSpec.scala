@@ -16,7 +16,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, IndexingAction}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
@@ -30,9 +29,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
+import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, IndexingAction}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, User}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projections
@@ -84,10 +83,11 @@ class BlazegraphViewsRoutesSpec
   private val identities                = IdentitiesDummy(caller)
   private val asBob                     = addCredentials(OAuth2BearerToken("Bob"))
 
-  val indexingSource          = jsonContentOf("indexing-view-source.json")
+  private val indexingSource  = jsonContentOf("indexing-view-source.json")
+  private val indexingSource2 = jsonContentOf("indexing-view-source-2.json")
   private val aggregateSource = jsonContentOf("aggregate-view-source.json")
 
-  val updatedIndexingSource = indexingSource.mapObject(_.add("resourceTag", Json.fromString("v1.5")))
+  private val updatedIndexingSource = indexingSource.mapObject(_.add("resourceTag", Json.fromString("v1.5")))
 
   private val indexingViewId = nxv + "indexing-view"
 
@@ -103,10 +103,6 @@ class BlazegraphViewsRoutesSpec
     )
   implicit val rejectionHandler: RejectionHandler = RdfRejectionHandler.apply
   implicit val exceptionHandler: ExceptionHandler = RdfExceptionHandler.apply
-
-  val tag = UserTag.unsafe("v1.5")
-
-  val doesntExistId = nxv + "doesntexist"
 
   implicit val paginationConfig        = pagination
   implicit private val f: FusionConfig = fusionConfig
@@ -164,9 +160,10 @@ class BlazegraphViewsRoutesSpec
         response.status shouldEqual StatusCodes.Created
         response.asJson shouldEqual jsonContentOf(
           "routes/responses/indexing-view-metadata.json",
-          "uuid"       -> uuid,
-          "rev"        -> 1,
-          "deprecated" -> false
+          "uuid"        -> uuid,
+          "rev"         -> 1,
+          "indexingRev" -> 1,
+          "deprecated"  -> false
         )
       }
     }
@@ -254,9 +251,10 @@ class BlazegraphViewsRoutesSpec
         response.status shouldEqual StatusCodes.OK
         response.asJson shouldEqual jsonContentOf(
           "routes/responses/indexing-view-metadata.json",
-          "uuid"       -> uuid,
-          "rev"        -> 2,
-          "deprecated" -> false
+          "uuid"        -> uuid,
+          "rev"         -> 2,
+          "indexingRev" -> 2,
+          "deprecated"  -> false
         )
 
       }
@@ -275,9 +273,10 @@ class BlazegraphViewsRoutesSpec
         status shouldEqual StatusCodes.Created
         response.asJson shouldEqual jsonContentOf(
           "routes/responses/indexing-view-metadata.json",
-          "uuid"       -> uuid,
-          "rev"        -> 3,
-          "deprecated" -> false
+          "uuid"        -> uuid,
+          "rev"         -> 3,
+          "indexingRev" -> 2,
+          "deprecated"  -> false
         )
       }
     }
@@ -299,9 +298,10 @@ class BlazegraphViewsRoutesSpec
         response.status shouldEqual StatusCodes.OK
         response.asJson shouldEqual jsonContentOf(
           "routes/responses/indexing-view-metadata.json",
-          "uuid"       -> uuid,
-          "rev"        -> 4,
-          "deprecated" -> true
+          "uuid"        -> uuid,
+          "rev"         -> 4,
+          "indexingRev" -> 2,
+          "deprecated"  -> true
         )
 
       }
@@ -327,9 +327,10 @@ class BlazegraphViewsRoutesSpec
         response.status shouldEqual StatusCodes.OK
         response.asJson shouldEqual jsonContentOf(
           "routes/responses/indexing-view.json",
-          "uuid"       -> uuid,
-          "deprecated" -> true,
-          "rev"        -> 4
+          "uuid"        -> uuid,
+          "deprecated"  -> true,
+          "rev"         -> 4,
+          "indexingRev" -> 2
         )
       }
     }
@@ -347,9 +348,10 @@ class BlazegraphViewsRoutesSpec
           response.status shouldEqual StatusCodes.OK
           response.asJson shouldEqual jsonContentOf(
             "routes/responses/indexing-view.json",
-            "uuid"       -> uuid,
-            "deprecated" -> false,
-            "rev"        -> 1
+            "uuid"        -> uuid,
+            "deprecated"  -> false,
+            "rev"         -> 1,
+            "indexingRev" -> 1
           ).mapObject(_.remove("resourceTag"))
         }
       }
@@ -455,9 +457,12 @@ class BlazegraphViewsRoutesSpec
     }
 
     "restart offset from view" in {
+      // Creating a new view, as indexing-view is deprecated and cannot be restarted
+      Post("/v1/views/org/proj", indexingSource2.toEntity) ~> asBob ~> routes
+
       aclCheck.append(AclAddress.Root, Anonymous -> Set(permissions.write)).accepted
       projections.restarts(Offset.start).compile.toList.accepted.size shouldEqual 0
-      Delete("/v1/views/org/proj/indexing-view/offset") ~> routes ~> check {
+      Delete("/v1/views/org/proj/indexing-view-2/offset") ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
         response.asJson shouldEqual json"""{"@context": "${Vocabulary.contexts.offset}", "@type": "Start"}"""
         projections.restarts(Offset.start).compile.lastOrError.accepted shouldEqual SuccessElem(
@@ -467,7 +472,7 @@ class BlazegraphViewsRoutesSpec
           Instant.EPOCH,
           Offset.at(1L),
           ProjectionRestart(
-            "blazegraph-org/proj-https://bluebrain.github.io/nexus/vocabulary/indexing-view-4",
+            "blazegraph-org/proj-https://bluebrain.github.io/nexus/vocabulary/indexing-view-2-1",
             Instant.EPOCH,
             Anonymous
           ),

@@ -9,6 +9,7 @@
   "id": "https://bluebrain.github.io/nexus/vocabulary/aggregate-view",
   "project": "myorg/myproj",
   "rev": 1,
+  "indexingRev": 1,
   "source": {
     "elastic": "value"
   },

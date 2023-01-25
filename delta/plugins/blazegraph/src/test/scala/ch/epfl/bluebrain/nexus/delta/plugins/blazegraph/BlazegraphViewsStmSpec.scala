@@ -50,7 +50,7 @@ class BlazegraphViewsStmSpec
     val source      = Json.obj()
     val source2     = Json.obj("key" -> Json.fromInt(1))
 
-    val indexingValue  = IndexingBlazegraphViewValue(
+    val indexingValue            = IndexingBlazegraphViewValue(
       None,
       None,
       Set.empty,
@@ -60,7 +60,10 @@ class BlazegraphViewsStmSpec
       includeDeprecated = false,
       Permission.unsafe("my/permission")
     )
-    val aggregateValue = AggregateBlazegraphViewValue(None, None, NonEmptySet.of(viewRef))
+    val indexingValueWithUserTag =
+      indexingValue.copy(resourceTag = Some(UserTag.unsafe("tag")))
+    val indexingValueWithName    = indexingValue.copy(name = Some("name"))
+    val aggregateValue           = AggregateBlazegraphViewValue(None, None, NonEmptySet.of(viewRef))
 
     def current(
         id: Iri = id,
@@ -70,6 +73,7 @@ class BlazegraphViewsStmSpec
         source: Json = source,
         tags: Tags = Tags.empty,
         rev: Int = 1,
+        indexingRev: Int = 1,
         deprecated: Boolean = false,
         createdAt: Instant = epoch,
         createdBy: Subject = Anonymous,
@@ -84,6 +88,7 @@ class BlazegraphViewsStmSpec
         source,
         tags,
         rev,
+        indexingRev,
         deprecated,
         createdAt,
         createdBy,
@@ -233,12 +238,37 @@ class BlazegraphViewsStmSpec
           BlazegraphViewUpdated(id, project, uuid, indexingValue, source, 2, epoch, subject)
         ) shouldEqual None
       }
-      "change the state" in {
+      "change the state (aggregate view)" in {
         next(
           Some(current()),
           BlazegraphViewUpdated(id, project, uuid, aggregateValue, source2, 2, epochPlus10, subject)
         ).value shouldEqual current(
           value = aggregateValue,
+          source = source2,
+          rev = 2,
+          updatedAt = epochPlus10,
+          updatedBy = subject
+        )
+      }
+      "change the state (indexing view, indexing revision)" in {
+        next(
+          Some(current()),
+          BlazegraphViewUpdated(id, project, uuid, indexingValueWithUserTag, source2, 2, epochPlus10, subject)
+        ).value shouldEqual current(
+          value = indexingValueWithUserTag,
+          source = source2,
+          rev = 2,
+          indexingRev = 2,
+          updatedAt = epochPlus10,
+          updatedBy = subject
+        )
+      }
+      "change the state (indexing view, non-indexing revision)" in {
+        next(
+          Some(current()),
+          BlazegraphViewUpdated(id, project, uuid, indexingValueWithName, source2, 2, epochPlus10, subject)
+        ).value shouldEqual current(
+          value = indexingValueWithName,
           source = source2,
           rev = 2,
           updatedAt = epochPlus10,

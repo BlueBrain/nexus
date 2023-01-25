@@ -54,6 +54,7 @@ final case class BlazegraphViewState(
     source: Json,
     tags: Tags,
     rev: Int,
+    indexingRev: Int,
     deprecated: Boolean,
     createdAt: Instant,
     createdBy: Subject,
@@ -92,7 +93,8 @@ final case class BlazegraphViewState(
         includeDeprecated,
         permission,
         tags,
-        source
+        source,
+        indexingRev
       )
     case AggregateBlazegraphViewValue(name, description, views) =>
       AggregateBlazegraphView(id, name, description, project, views, tags, source)

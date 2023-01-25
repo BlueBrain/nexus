@@ -8,11 +8,12 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.IndexingViewDef
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.{AggregateBlazegraphView, IndexingBlazegraphView}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.IndexingViewDef.{ActiveViewDef, DeprecatedViewDef}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.IndexingBlazegraphView
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewCommand._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection._
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewType.{AggregateBlazegraphView => AggregateBlazegraphViewType, IndexingBlazegraphView => IndexingBlazegraphViewType}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewType.AggregateBlazegraphView
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -261,13 +262,19 @@ final class BlazegraphViews(
   def fetchIndexingView(
       id: IdSegmentRef,
       project: ProjectRef
-  ): IO[BlazegraphViewRejection, IndexingViewResource] =
-    fetch(id, project).flatMap { res =>
-      res.value match {
-        case v: IndexingBlazegraphView  =>
-          IO.pure(res.as(v))
-        case _: AggregateBlazegraphView =>
-          IO.raiseError(DifferentBlazegraphViewType(res.id, AggregateBlazegraphViewType, IndexingBlazegraphViewType))
+  ): IO[BlazegraphViewRejection, ActiveViewDef] =
+    fetchState(id, project).flatMap { case (_, state) =>
+      IndexingViewDef(state, prefix) match {
+        case Some(viewDef) =>
+          viewDef match {
+            case v: ActiveViewDef     => IO.pure(v)
+            case v: DeprecatedViewDef =>
+              IO.raiseError(ViewIsDeprecated(v.ref.viewId))
+          }
+        case None          =>
+          IO.raiseError(
+            DifferentBlazegraphViewType(state.id, AggregateBlazegraphView, BlazegraphViewType.IndexingBlazegraphView)
+          )
       }
     }
 
@@ -355,26 +362,20 @@ object BlazegraphViews {
 
   val expandIri: ExpandIri[InvalidBlazegraphViewId] = new ExpandIri(InvalidBlazegraphViewId.apply)
 
-  /**
-    * Constructs a projectionId for a blazegraph view
-    */
-  def projectionName(view: IndexingViewResource): String =
-    projectionName(view.value.project, view.id, view.rev)
-
   def projectionName(state: BlazegraphViewState): String =
-    projectionName(state.project, state.id, state.rev)
+    projectionName(state.project, state.id, state.indexingRev)
 
   /**
     * Constructs a projectionId for a blazegraph view
     */
-  def projectionName(project: ProjectRef, id: Iri, rev: Int): String =
-    s"blazegraph-$project-$id-$rev"
+  def projectionName(project: ProjectRef, id: Iri, indexingRev: Int): String =
+    s"blazegraph-$project-$id-$indexingRev"
 
   /**
     * Constructs the namespace for a Blazegraph view
     */
-  def namespace(view: IndexingViewResource, prefix: String): String =
-    namespace(view.value.uuid, view.rev, prefix)
+  def namespace(view: IndexingBlazegraphView, prefix: String): String =
+    namespace(view.uuid, view.indexingRev, prefix)
 
   /**
     * Constructs the namespace for a Blazegraph view
@@ -402,6 +403,7 @@ object BlazegraphViews {
           e.source,
           Tags.empty,
           e.rev,
+          e.rev,
           deprecated = false,
           e.instant,
           e.subject,
@@ -411,7 +413,19 @@ object BlazegraphViews {
       }
 
     def updated(e: BlazegraphViewUpdated): Option[BlazegraphViewState] = state.map { s =>
-      s.copy(rev = e.rev, value = e.value, source = e.source, updatedAt = e.instant, updatedBy = e.subject)
+      val newIndexingRev =
+        (e.value.asIndexingValue, s.value.asIndexingValue)
+          .mapN(nextIndexingRev(_, _, s.indexingRev))
+          .getOrElse(s.indexingRev)
+
+      s.copy(
+        rev = e.rev,
+        indexingRev = newIndexingRev,
+        value = e.value,
+        source = e.source,
+        updatedAt = e.instant,
+        updatedBy = e.subject
+      )
     }
 
     def tagAdded(e: BlazegraphViewTagAdded): Option[BlazegraphViewState] = state.map { s =>
@@ -554,7 +568,7 @@ object BlazegraphViews {
       v.value match {
         case i: IndexingBlazegraphView =>
           client
-            .createNamespace(BlazegraphViews.namespace(v.as(i), prefix))
+            .createNamespace(BlazegraphViews.namespace(i, prefix))
             .mapError(WrappedBlazegraphClientError.apply)
             .void
         case _                         => IO.unit

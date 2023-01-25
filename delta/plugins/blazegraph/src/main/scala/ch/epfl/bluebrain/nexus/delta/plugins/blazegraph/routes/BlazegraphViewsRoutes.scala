@@ -16,6 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
+import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaDirectives, DeltaSchemeDirectives}
@@ -28,7 +29,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment}
-import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction
 import ch.epfl.bluebrain.nexus.delta.sourcing.ProgressStatistics
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
@@ -181,9 +181,7 @@ class BlazegraphViewsRoutes(
                           emit(
                             views
                               .fetchIndexingView(id, ref)
-                              .flatMap(v =>
-                                projections.statistics(ref, v.value.resourceTag, BlazegraphViews.projectionName(v))
-                              )
+                              .flatMap(v => projections.statistics(ref, v.resourceTag, v.projection))
                               .rejectOn[ViewNotFound]
                           )
                         }
@@ -215,7 +213,7 @@ class BlazegraphViewsRoutes(
                             emit(
                               views
                                 .fetchIndexingView(id, ref)
-                                .flatMap(v => projections.offset(BlazegraphViews.projectionName(v)))
+                                .flatMap(v => projections.offset(v.projection))
                                 .rejectOn[ViewNotFound]
                             )
                           },
@@ -224,7 +222,7 @@ class BlazegraphViewsRoutes(
                             emit(
                               views
                                 .fetchIndexingView(id, ref)
-                                .flatMap { r => projections.scheduleRestart(BlazegraphViews.projectionName(r)) }
+                                .flatMap { r => projections.scheduleRestart(r.projection) }
                                 .as(Offset.start)
                                 .rejectOn[ViewNotFound]
                             )

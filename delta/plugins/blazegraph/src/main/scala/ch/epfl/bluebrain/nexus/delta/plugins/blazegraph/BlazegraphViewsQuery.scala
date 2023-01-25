@@ -116,7 +116,7 @@ object BlazegraphViewsQuery {
                                              Right(
                                                IndexingView(
                                                  ViewRef(view.project, view.id),
-                                                 BlazegraphViews.namespace(view.uuid, view.rev, prefix),
+                                                 BlazegraphViews.namespace(view.uuid, view.indexingRev, prefix),
                                                  i.permission
                                                )
                                              )

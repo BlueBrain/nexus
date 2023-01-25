@@ -41,10 +41,11 @@ sealed trait BlazegraphViewValue extends Product with Serializable {
 
   def toJson(iri: Iri): Json = this.asJsonObject.add(keywords.id, iri.asJson).asJson.dropNullValues
 
-  def asIndexingValue: Option[IndexingBlazegraphViewValue] = this match {
-    case v: IndexingBlazegraphViewValue => Some(v)
-    case _                              => None
-  }
+  def asIndexingValue: Option[IndexingBlazegraphViewValue] =
+    this match {
+      case v: IndexingBlazegraphViewValue => Some(v)
+      case _                              => None
+    }
 }
 
 @nowarn("cat=unused")
@@ -83,7 +84,30 @@ object BlazegraphViewValue {
       * Translates the view into a [[PipeChain]]
       */
     def pipeChain: Option[PipeChain] = PipeChain(resourceSchemas, resourceTypes, includeMetadata, includeDeprecated)
+
+    /**
+      * Returns true if this [[IndexingBlazegraphViewValue]] is equal to the provided [[IndexingBlazegraphViewValue]] on
+      * the fields which should trigger a reindexing of the view when modified.
+      */
+    def hasSameIndexingFields(that: IndexingBlazegraphViewValue): Boolean =
+      resourceSchemas == that.resourceSchemas &&
+        resourceTypes == that.resourceTypes &&
+        resourceTag == that.resourceTag &&
+        includeMetadata == that.includeMetadata &&
+        includeDeprecated == that.includeDeprecated
   }
+
+  /**
+    * @return
+    *   the next indexing revision based on the differences between the given views
+    */
+  def nextIndexingRev(
+      view1: IndexingBlazegraphViewValue,
+      view2: IndexingBlazegraphViewValue,
+      currentRev: Int
+  ): Int =
+    if (!view1.hasSameIndexingFields(view2)) currentRev + 1
+    else currentRev
 
   /**
     * The configuration of the Blazegraph view that delegates queries to multiple namespaces.
