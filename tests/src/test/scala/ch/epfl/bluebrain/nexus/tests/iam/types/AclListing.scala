@@ -11,7 +11,8 @@ final case class Acl(acl: List[AclEntry], _path: String, _rev: Int)
 final case class AclEntry(identity: Identity, permissions: Set[Permission])
 
 final case class Permission(name: String, action: String) {
-  def value: String = s"$name/$action"
+  def value: String             = s"$name/$action"
+  override def toString: String = value
 }
 
 sealed trait Identity

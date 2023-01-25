@@ -18,7 +18,7 @@
       "requiredActions": [],
       "notBefore": 0
     }
-    {{#users}},
+    {{#each users}},
     {
       "id" : "{{username}}",
       "createdTimestamp" : 1578311988958,
@@ -40,8 +40,8 @@
       },
       "notBefore" : 0,
       "groups" : [ ]
-    }{{#_separator}},{{/_separator}}
-    {{/users}}
+    }
+    {{/each}}
   ],
   "clients":[
     {

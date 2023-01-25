@@ -16,7 +16,6 @@ import ch.epfl.bluebrain.nexus.tests.config.ConfigLoader._
 import ch.epfl.bluebrain.nexus.tests.config.TestsConfig
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission
 import ch.epfl.bluebrain.nexus.tests.iam.{AclDsl, PermissionDsl}
-import ch.epfl.bluebrain.nexus.tests.kg.VersionSpec.VersionBundle
 import ch.epfl.bluebrain.nexus.tests.kg.{ElasticSearchViewsDsl, KgDsl}
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.Logger
@@ -61,13 +60,6 @@ trait BaseSpec
   val adminDsl              = new AdminDsl(deltaClient, config)
   val kgDsl                 = new KgDsl(config)
   val elasticsearchViewsDsl = new ElasticSearchViewsDsl(deltaClient)
-
-  lazy val isCassandra: Boolean = deltaClient
-    .getJson[VersionBundle]("/version", Identity.ServiceAccount)
-    .map { version =>
-      version.dependencies.cassandra.isDefined
-    }
-    .runSyncUnsafe()
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(config.patience, 300.millis)
 

@@ -7,6 +7,7 @@ import io.circe.Json
 import monix.bio.Task
 import org.scalatest.Assertion
 import org.scalatest.matchers.should.Matchers
+import scala.jdk.CollectionConverters._
 
 final class ElasticSearchViewsDsl(deltaClient: HttpClient)
     extends TestHelpers
@@ -20,13 +21,12 @@ final class ElasticSearchViewsDsl(deltaClient: HttpClient)
   def aggregate(id: String, projectRef: String, identity: Identity, views: (String, String)*): Task[Assertion] = {
     val payload = jsonContentOf(
       "/kg/views/elasticsearch/aggregate.json",
-      "views" -> views.zipWithIndex.map { case ((project, view), index) =>
+      "views" -> views.map { case ((project, view)) =>
         Map(
-          "project"    -> project,
-          "viewId"     -> view,
-          "_separator" -> (index != views.size - 1)
-        )
-      }
+          "project" -> project,
+          "viewId"  -> view
+        ).asJava
+      }.asJava
     )
 
     deltaClient.put[Json](s"/views/$projectRef/$id", payload, identity) { (_, response) =>
