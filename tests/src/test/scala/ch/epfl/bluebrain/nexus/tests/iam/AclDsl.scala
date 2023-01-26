@@ -13,6 +13,7 @@ import monix.bio.Task
 import monix.execution.Scheduler.Implicits.global
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{Assertion, OptionValues}
+import scala.jdk.CollectionConverters._
 
 class AclDsl(cl: HttpClient) extends TestHelpers with CirceUnmarshalling with OptionValues with Matchers {
 
@@ -32,10 +33,12 @@ class AclDsl(cl: HttpClient) extends TestHelpers with CirceUnmarshalling with Op
     addPermissions(path, target, Set(permission))
 
   def addPermissions(path: String, target: Authenticated, permissions: Set[Permission]): Task[Assertion] = {
-    val permissionsRepl =
-      Seq("realm" -> target.realm.name, "sub" -> target.name, "perms" -> permissions.map(_.value).mkString("""",""""))
-
-    val json            = jsonContentOf("/iam/add.json", permissionsRepl: _*)
+    val json = jsonContentOf(
+      "/iam/add.json",
+      "realm" -> target.realm.name,
+      "sub"   -> target.name,
+      "perms" -> permissions.asJava
+    )
 
     addPermissions(path, json, target.name)
   }
@@ -46,7 +49,7 @@ class AclDsl(cl: HttpClient) extends TestHelpers with CirceUnmarshalling with Op
   def addPermissionsAnonymous(path: String, permissions: Set[Permission]): Task[Assertion] = {
     val json = jsonContentOf(
       "/iam/add_annon.json",
-      "perms" -> permissions.map(_.value).mkString("""","""")
+      "perms" -> permissions.asJava
     )
 
     addPermissions(path, json, "Anonymous")
@@ -104,7 +107,7 @@ class AclDsl(cl: HttpClient) extends TestHelpers with CirceUnmarshalling with Op
             "/iam/subtract-permissions.json",
             "realm" -> target.realm.name,
             "sub"   -> target.name,
-            "perms" -> acl.acl.head.permissions.map(_.value).mkString("""","""")
+            "perms" -> acl.acl.head.permissions.asJava
           )
           cl.patch[Json](s"/acls${acl._path}?rev=${acl._rev}", payload, Identity.ServiceAccount) { (_, response) =>
             response.status shouldEqual StatusCodes.OK
@@ -130,7 +133,7 @@ class AclDsl(cl: HttpClient) extends TestHelpers with CirceUnmarshalling with Op
         .parTraverse { acl =>
           val payload = jsonContentOf(
             "/iam/subtract-permissions-anon.json",
-            "perms" -> acl.acl.head.permissions.map(_.value).mkString("""","""")
+            "perms" -> acl.acl.head.permissions.asJava
           )
           cl.patch[Json](s"/acls${acl._path}?rev=${acl._rev}", payload, Identity.ServiceAccount) { (_, response) =>
             response.status shouldEqual StatusCodes.OK
@@ -167,7 +170,7 @@ class AclDsl(cl: HttpClient) extends TestHelpers with CirceUnmarshalling with Op
       "/iam/subtract-permissions.json",
       "realm" -> target.realm.name,
       "sub"   -> target.name,
-      "perms" -> permissions.map(_.value).mkString("""","""")
+      "perms" -> permissions.asJava
     )
     cl.patch[Json](s"/acls$path?rev=$rev", body, Identity.ServiceAccount) { (_, response) =>
       response.status shouldEqual StatusCodes.OK

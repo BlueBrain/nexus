@@ -3,11 +3,11 @@
     "AggregateElasticSearchView"
   ],
   "views": [
-    {{#views}}
+    {{#each views}}
     {
       "project": "{{project}}",
       "viewId": "{{viewId}}"
-    }{{#_separator}},{{/_separator}}
-    {{/views}}
+    }{{#unless @last}},{{/unless}}
+    {{/each}}
   ]
 }

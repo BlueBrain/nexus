@@ -30,6 +30,4 @@
     <logger name="org.eclipse.jetty" level="INFO"/>
     <logger name="com.datastax.oss.driver" level="WARN" />
     <logger name="org.apache.jena" level="WARN" />
-    <!-- silent warnings: https://github.com/scalate/scalate/issues/218 -->
-    <logger name="org.fusesource.scalate.util.ClassPathBuilder" level="ERROR" />
 </configuration>

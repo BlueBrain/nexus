@@ -480,7 +480,7 @@ object FilesRoutesSpec extends TestHelpers with RouteFixtures {
       "digest"      -> attributes.digest.asInstanceOf[ComputedDigest].value,
       "algorithm"   -> attributes.digest.asInstanceOf[ComputedDigest].algorithm,
       "filename"    -> attributes.filename,
-      "mediaType"   -> attributes.mediaType,
+      "mediaType"   -> attributes.mediaType.fold("")(_.value),
       "origin"      -> attributes.origin,
       "uuid"        -> attributes.uuid,
       "deprecated"  -> deprecated,

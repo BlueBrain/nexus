@@ -8,7 +8,9 @@
         "subject": "{{sub}}"
       },
       "permissions": [
-        "{{{perms}}}"
+        {{#each perms}}
+          "{{this}}"{{#unless @last}},{{/unless}}
+        {{/each}}
       ]
     }
   ]
