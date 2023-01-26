@@ -912,7 +912,7 @@ lazy val compilation = {
       javaSpecificationVersion.value,
       "-target",
       javaSpecificationVersion.value,
-      "-Xlint:_,-infer-any"
+      "-Xlint"
     ),
     excludeDependencies                   ++= Seq(
       ExclusionRule("log4j", "log4j"),
