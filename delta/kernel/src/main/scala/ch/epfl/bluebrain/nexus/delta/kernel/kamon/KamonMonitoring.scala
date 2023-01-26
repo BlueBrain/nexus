@@ -82,8 +82,8 @@ object KamonMonitoring {
 
   private def finishSpan(span: Span, takeSamplingDecision: Boolean): UIO[Unit] =
     UIO.delay {
-      if (takeSamplingDecision) span.takeSamplingDecision()
-      span.finish()
+      val s = if (takeSamplingDecision) span.takeSamplingDecision() else span
+      s.finish()
     }
 
   private def failSpan[E](span: Span, cause: Cause[E], takeSamplingDecision: Boolean): UIO[Unit] =

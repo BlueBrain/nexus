@@ -12,48 +12,49 @@ scalafmt: {
 }
  */
 
-val scalacScapegoatVersion = "1.4.13"
-val scalaCompilerVersion   = "2.13.8"
+val scalacScapegoatVersion = "2.1.0"
+val scalaCompilerVersion   = "2.13.10"
 
-val akkaHttpVersion         = "10.2.9"
+val akkaHttpVersion         = "10.2.10"
 val akkaHttpCirceVersion    = "1.39.2"
 val akkaCorsVersion         = "1.1.3"
-val akkaVersion             = "2.6.19"
+val akkaVersion             = "2.6.20"
 val alpakkaVersion          = "3.0.4"
-val apacheCompressVersion   = "1.21"
+val apacheCompressVersion   = "1.22"
 val awsSdkVersion           = "2.17.184"
 val byteBuddyAgentVersion   = "1.10.17"
 val betterMonadicForVersion = "0.3.1"
-val caffeineVersion         = "3.1.0"
-val catsEffectVersion       = "2.5.4"
+val caffeineVersion         = "3.1.2"
+val catsEffectVersion       = "2.5.5"
 val catsRetryVersion        = "2.1.1"
-val catsVersion             = "2.7.0"
-val circeVersion            = "0.14.1"
-val classgraphVersion       = "4.8.146"
+val catsVersion             = "2.9.0"
+val circeVersion            = "0.14.3"
+val circeOpticsVersion      = "0.14.1"
+val classgraphVersion       = "4.8.154"
 val distageVersion          = "1.0.10"
 val doobieVersion           = "0.13.4"
 val fs2Version              = "2.5.11"
-val googleAuthClientVersion = "1.33.3"
+val googleAuthClientVersion = "1.34.1"
 val handleBarsVersion       = "4.3.1"
+val hikariVersion           = "5.0.1"
 val jenaVersion             = "4.2.0"
 val jsonldjavaVersion       = "0.13.4"
-val kamonVersion            = "2.5.1"
-val kanelaAgentVersion      = "1.0.13"
+val kamonVersion            = "2.5.12"
+val kanelaAgentVersion      = "1.0.17"
 val kindProjectorVersion    = "0.13.2"
-val logbackVersion          = "1.2.11"
+val logbackVersion          = "1.4.5"
 val magnoliaVersion         = "0.17.0"
-val mockitoVersion          = "1.17.5"
-val monixVersion            = "3.4.0"
+val mockitoVersion          = "1.17.12"
+val monixVersion            = "3.4.1"
 val monixBioVersion         = "1.2.0"
-val munitVersion            = "1.0.0-M6"
-val nimbusJoseJwtVersion    = "9.22"
-val pureconfigVersion       = "0.17.1"
-val scalaLoggingVersion     = "3.9.4"
-val scalaTestVersion        = "3.2.10"
-val slickVersion            = "3.3.3"
+val munitVersion            = "1.0.0-M7"
+val nimbusJoseJwtVersion    = "9.29"
+val postgresJdbcVersion     = "42.5.1"
+val pureconfigVersion       = "0.17.2"
+val scalaLoggingVersion     = "3.9.5"
+val scalaTestVersion        = "3.2.15"
 val topBraidVersion         = "1.3.2" // 1.4.1 fails to validate some test schemas
-val testContainersVersion   = "1.17.1"
-val uuidGeneratorVersion    = "4.0.1"
+val testContainersVersion   = "1.17.6"
 
 lazy val akkaActorTyped = "com.typesafe.akka" %% "akka-actor-typed" % akkaVersion
 
@@ -84,15 +85,16 @@ lazy val circeCore          = "io.circe"                     %% "circe-core"    
 lazy val circeGeneric       = "io.circe"                     %% "circe-generic"            % circeVersion
 lazy val circeGenericExtras = "io.circe"                     %% "circe-generic-extras"     % circeVersion
 lazy val circeLiteral       = "io.circe"                     %% "circe-literal"            % circeVersion
-lazy val circeOptics        = "io.circe"                     %% "circe-optics"             % circeVersion
+lazy val circeOptics        = "io.circe"                     %% "circe-optics"             % circeOpticsVersion
 lazy val circeParser        = "io.circe"                     %% "circe-parser"             % circeVersion
 lazy val classgraph         = "io.github.classgraph"          % "classgraph"               % classgraphVersion
 lazy val distageCore        = "io.7mind.izumi"               %% "distage-core"             % distageVersion
 lazy val doobiePostgres     = "org.tpolecat"                 %% "doobie-postgres"          % doobieVersion
 lazy val doobie             = Seq(
   doobiePostgres,
-  "org.tpolecat" %% "doobie-hikari" % doobieVersion,
-  "com.zaxxer"    % "HikariCP"      % "4.0.3" exclude ("org.slf4j", "slf4j-api")
+  "org.tpolecat"  %% "doobie-hikari" % doobieVersion,
+  "com.zaxxer"     % "HikariCP"      % hikariVersion exclude ("org.slf4j", "slf4j-api"),
+  "org.postgresql" % "postgresql"    % postgresJdbcVersion
 )
 lazy val fs2                = "co.fs2"                       %% "fs2-core"                 % fs2Version
 lazy val fs2io              = "co.fs2"                       %% "fs2-io"                   % fs2Version
@@ -116,7 +118,6 @@ lazy val scalaLogging       = "com.typesafe.scala-logging"   %% "scala-logging" 
 lazy val scalaTest          = "org.scalatest"                %% "scalatest"                % scalaTestVersion
 lazy val topBraidShacl      = "org.topbraid"                  % "shacl"                    % topBraidVersion
 lazy val testContainers     = "org.testcontainers"            % "testcontainers"           % testContainersVersion
-lazy val uuidGenerator      = "com.fasterxml.uuid"            % "java-uuid-generator"      % uuidGeneratorVersion
 
 val javaSpecificationVersion = SettingKey[String](
   "java-specification-version",
@@ -200,6 +201,7 @@ lazy val kernel = project
     javaSpecificationVersion := "1.8",
     libraryDependencies     ++= Seq(
       catsRetry,
+      circeCore,
       circeParser,
       handleBars,
       monixBio,
@@ -798,8 +800,7 @@ lazy val tests = project
       awsSdk          % Test,
       scalaTest       % Test,
       akkaSlf4j       % Test,
-      alpakkaSse      % Test,
-      uuidGenerator   % Test
+      alpakkaSse      % Test
     ),
     Test / parallelExecution           := false,
     Test / testOptions                 += Tests.Argument(TestFrameworks.ScalaTest, "-o", "-u", "target/test-reports"),
@@ -904,14 +905,14 @@ lazy val compilation = {
 
   Seq(
     scalaVersion                           := scalaCompilerVersion,
-    scalacOptions                          ~= { options: Seq[String] => options.filterNot(Set("-Wself-implicit")) },
+    scalacOptions                          ~= { options: Seq[String] => options.filterNot(Set("-Wself-implicit", "-Xlint:infer-any", "-Wnonunit-statement")) },
     javaSpecificationVersion               := "11",
     javacOptions                          ++= Seq(
       "-source",
       javaSpecificationVersion.value,
       "-target",
       javaSpecificationVersion.value,
-      "-Xlint"
+      "-Xlint:_,-infer-any"
     ),
     excludeDependencies                   ++= Seq(
       ExclusionRule("log4j", "log4j"),
@@ -970,7 +971,7 @@ lazy val servicePackaging = {
       else version.value
     },
     Docker / daemonUser  := "nexus",
-    dockerBaseImage      := "adoptopenjdk:11-jre-hotspot",
+    dockerBaseImage      := "eclipse-temurin:11-jre",
     dockerExposedPorts   := Seq(8080, 25520),
     dockerUsername       := Some("bluebrain"),
     dockerUpdateLatest   := false,

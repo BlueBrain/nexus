@@ -3,15 +3,15 @@ package ch.epfl.bluebrain.nexus.delta.plugins.archive.model
 import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectBase}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.EphemeralState
-import io.circe.{Codec, Decoder, Encoder}
+import io.circe.Codec
 import io.circe.generic.extras.Configuration
-import io.circe.generic.extras.semiauto.{deriveConfiguredCodec, deriveConfiguredDecoder, deriveConfiguredEncoder}
+import io.circe.generic.extras.semiauto.deriveConfiguredCodec
 
 import java.time.Instant
 import scala.annotation.nowarn
@@ -68,9 +68,6 @@ object ArchiveState {
     implicit val archiveResourceRepresentation: Codec.AsObject[ArchiveResourceRepresentation] =
       deriveConfiguredCodec[ArchiveResourceRepresentation]
     implicit val archiveReferenceCodec: Codec.AsObject[ArchiveReference]                      = deriveConfiguredCodec[ArchiveReference]
-    implicit val archiveValueEncoder: Encoder[ArchiveValue]                                   =
-      deriveConfiguredEncoder[ArchiveValue].mapJson(_.deepDropNullValues)
-    implicit val archiveValueDecoder: Decoder[ArchiveValue]                                   = deriveConfiguredDecoder[ArchiveValue]
     implicit val codec: Codec.AsObject[ArchiveState]                                          = deriveConfiguredCodec[ArchiveState]
     Serializer()
   }
