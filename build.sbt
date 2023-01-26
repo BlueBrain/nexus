@@ -307,6 +307,7 @@ lazy val sdk = project
     libraryDependencies  ++= Seq(
       akkaStream,
       akkaHttp,
+      akkaHttpXml exclude ("org.scala-lang.modules", "scala-xml_2.13"),
       caffeine,
       circeLiteral,
       circeGenericExtras,
@@ -476,7 +477,6 @@ lazy val blazegraphPlugin = project
     name                       := "delta-blazegraph-plugin",
     moduleName                 := "delta-blazegraph-plugin",
     libraryDependencies       ++= Seq(
-      akkaHttpXml exclude ("org.scala-lang.modules", "scala-xml_2.13"),
       scalaXml,
       kamonAkkaHttp % Provided,
       akkaSlf4j     % Test,
@@ -572,6 +572,7 @@ lazy val storagePlugin = project
       alpakkaS3 excludeAll (
         ExclusionRule(organization = "com.typesafe.akka", name = "akka-stream_2.13"),
         ExclusionRule(organization = "com.typesafe.akka", name = "akka-http_2.13"),
+        ExclusionRule(organization = "com.typesafe.akka", name = "akka-http-xml_2.13"),
         ExclusionRule(organization = "org.slf4j", name = "slf4j-api")
       ),
       kamonAkkaHttp    % Provided,
