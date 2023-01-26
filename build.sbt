@@ -53,6 +53,7 @@ val postgresJdbcVersion     = "42.5.1"
 val pureconfigVersion       = "0.17.2"
 val scalaLoggingVersion     = "3.9.5"
 val scalaTestVersion        = "3.2.15"
+val scalaXmlVersion         = "2.1.0"
 val topBraidVersion         = "1.3.2" // 1.4.1 fails to validate some test schemas
 val testContainersVersion   = "1.17.6"
 
@@ -116,6 +117,7 @@ lazy val nimbusJoseJwt      = "com.nimbusds"                  % "nimbus-jose-jwt
 lazy val pureconfig         = "com.github.pureconfig"        %% "pureconfig"               % pureconfigVersion
 lazy val scalaLogging       = "com.typesafe.scala-logging"   %% "scala-logging"            % scalaLoggingVersion
 lazy val scalaTest          = "org.scalatest"                %% "scalatest"                % scalaTestVersion
+lazy val scalaXml           = "org.scala-lang.modules"       %% "scala-xml"                % scalaXmlVersion
 lazy val topBraidShacl      = "org.topbraid"                  % "shacl"                    % topBraidVersion
 lazy val testContainers     = "org.testcontainers"            % "testcontainers"           % testContainersVersion
 
@@ -474,7 +476,8 @@ lazy val blazegraphPlugin = project
     name                       := "delta-blazegraph-plugin",
     moduleName                 := "delta-blazegraph-plugin",
     libraryDependencies       ++= Seq(
-      akkaHttpXml exclude ("org.scala-lang.modules", "scala-xml"),
+      akkaHttpXml exclude ("org.scala-lang.modules", "scala-xml_2.13"),
+      scalaXml,
       kamonAkkaHttp % Provided,
       akkaSlf4j     % Test,
       logback       % Test,
