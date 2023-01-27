@@ -2,9 +2,7 @@
   "@context": {
     "@vocab": "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/"
   },
-  "@type": [
-    "SparqlView"
-  ],
+  "@type": ["SparqlView"],
   "resourceSchemas": [
     "https://bluebrain.github.io/nexus/schemas/unconstrained.json"
   ],

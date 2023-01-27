@@ -51,6 +51,7 @@ object Optics extends Optics {
   val _total = root._total.long
 
   val hits       = root.hits.hits
+  val totalHits  = root.hits.total.value.int
   val hitsSource = hits.each._source.json
 
   val location = root._location.string

@@ -13,7 +13,7 @@ Yes, Nexus is a free, Open Source platform released under @link:[Apache Licence 
 
 ### How do I run Blue Brain Nexus?
 
-There are many ways to run Nexus. Our public Sandbox is running @link:[here](https://sandbox.bluebrainnexus.io/web/){ open=new } 
+There are many ways to run Nexus. Our public Sandbox is running @link:[here](https://sandbox.bluebrainnexus.io){ open=new } 
 and you can use it to test Nexus on small, non-sensitive data. Our @ref:[tutorial](getting-started/try-nexus.md) can 
 help you to run Nexus step by step.
 
@@ -24,7 +24,7 @@ Blue Brain Nexus has also been deployed and tested on AWS using @link:[Kubernete
 
 ### How can I try Blue Brain Nexus without installing it? 
 
-The @link:[Sandbox](https://sandbox.bluebrainnexus.io/web/){ open=new } provides a public instance that can serve as a 
+The @link:[Sandbox](https://sandbox.bluebrainnexus.io){ open=new } provides a public instance that can serve as a 
 testbed. Be aware that the content of the Sandbox is regularly purged.
 
 ### What is the difference with a relational database like PostgreSQL?
