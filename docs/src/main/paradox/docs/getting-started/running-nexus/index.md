@@ -13,7 +13,7 @@ For a production deployment on your in-house or cloud infrastructure, please ref
 
 ## Using the public sandbox
 
-A public instance of Nexus is running at @link:[https://sandbox.bluebrainnexus.io/web](https://sandbox.bluebrainnexus.io/web){ open=new }. 
+A public instance of Nexus is running at @link:[https://sandbox.bluebrainnexus.io](https://sandbox.bluebrainnexus.io){ open=new }. 
 You can log in with a GitHub account. It's provided for evaluation purposes only, without any guarantees.
 
 The API root is @link:[https://sandbox.bluebrainnexus.io/v1](https://sandbox.bluebrainnexus.io/v1){ open=new }.

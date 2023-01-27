@@ -1,5 +1,8 @@
 {
   "@type": "ElasticSearchView",
+  {{#withTag}}
+  "resourceTag": "one",
+  {{/withTag}}
   "pipeline" : [
     {
       "config" : {

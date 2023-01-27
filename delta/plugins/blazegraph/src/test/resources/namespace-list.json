@@ -1,0 +1,84 @@
+{
+  "head": {
+    "vars": [
+      "subject",
+      "predicate",
+      "object",
+      "context"
+    ]
+  },
+  "results": {
+    "bindings": [
+      {
+        "subject": {
+          "type": "bnode",
+          "value": "node1g8anj0qvx60518"
+        },
+        "predicate": {
+          "type": "uri",
+          "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type"
+        },
+        "object": {
+          "type": "uri",
+          "value": "http://rdfs.org/ns/void#Dataset"
+        }
+      },
+      {
+        "subject": {
+          "type": "bnode",
+          "value": "node1g8anj0qvx60518"
+        },
+        "predicate": {
+          "type": "uri",
+          "value": "http://purl.org/dc/terms/title"
+        },
+        "object": {
+          "type": "literal",
+          "value": "delta_00_2"
+        }
+      },
+      {
+        "subject": {
+          "type": "bnode",
+          "value": "node1g8anj0qvx60518"
+        },
+        "predicate": {
+          "type": "uri",
+          "value": "http://www.bigdata.com/rdf#/features/KB/Namespace"
+        },
+        "object": {
+          "type": "literal",
+          "value": "delta_01_6"
+        }
+      },
+      {
+        "subject": {
+          "type": "bnode",
+          "value": "node1g8anj0qvx60518"
+        },
+        "predicate": {
+          "type": "uri",
+          "value": "http://www.bigdata.com/rdf#/features/KB/Namespace"
+        },
+        "object": {
+          "type": "literal",
+          "value": "kb"
+        }
+      },
+      {
+        "subject": {
+          "type": "bnode",
+          "value": "node1g8anj0qvx60518"
+        },
+        "predicate": {
+          "type": "uri",
+          "value": "http://www.bigdata.com/rdf#/features/KB/Namespace"
+        },
+        "object": {
+          "type": "literal",
+          "value": "delta_02_3"
+        }
+      }
+    ]
+  }
+}
