@@ -308,6 +308,7 @@ lazy val sdk = project
       akkaStream,
       akkaHttp,
       akkaHttpXml exclude ("org.scala-lang.modules", "scala-xml_2.13"),
+      scalaXml,
       caffeine,
       circeLiteral,
       circeGenericExtras,
@@ -477,7 +478,6 @@ lazy val blazegraphPlugin = project
     name                       := "delta-blazegraph-plugin",
     moduleName                 := "delta-blazegraph-plugin",
     libraryDependencies       ++= Seq(
-      scalaXml,
       kamonAkkaHttp % Provided,
       akkaSlf4j     % Test,
       logback       % Test,
