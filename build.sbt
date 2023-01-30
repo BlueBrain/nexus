@@ -336,7 +336,8 @@ lazy val migration = project
   .settings(
     libraryDependencies ++= Seq(
       circeOptics,
-      "com.lightbend.akka" %% "akka-stream-alpakka-cassandra" % "4.0.0"
+      "com.lightbend.akka" %% "akka-stream-alpakka-cassandra" % "4.0.0",
+      "org.lz4" % "lz4-java" % "1.4.1"
     )
   )
 
