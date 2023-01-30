@@ -3,47 +3,47 @@ package ch.epfl.bluebrain.nexus.delta.routes
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive1, Route}
+import cats.data.NonEmptySet
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.RealmsRoutes.RealmInput
 import ch.epfl.bluebrain.nexus.delta.routes.RealmsRoutes.RealmInput._
-import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, realms => realmsPermissions}
-import ch.epfl.bluebrain.nexus.delta.sdk.Projects.FetchUuids
+import ch.epfl.bluebrain.nexus.delta.sdk.RealmResource
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.{Realm, RealmRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.RealmSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Name, NonEmptySet}
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, RealmResource, Realms}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Name}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{realms => realmsPermissions}
+import ch.epfl.bluebrain.nexus.delta.sdk.realms.Realms
+import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.{Realm, RealmRejection}
 import io.circe.Decoder
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
-import monix.bio.UIO
 import monix.execution.Scheduler
 
 import scala.annotation.nowarn
 
-class RealmsRoutes(identities: Identities, realms: Realms, acls: Acls)(implicit
+class RealmsRoutes(identities: Identities, realms: Realms, aclCheck: AclCheck)(implicit
     baseUri: BaseUri,
     paginationConfig: PaginationConfig,
     s: Scheduler,
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering
-) extends AuthDirectives(identities, acls)
+) extends AuthDirectives(identities, aclCheck)
     with CirceUnmarshalling {
 
   import baseUri.prefixSegment
 
-  implicit private val fetchProjectUuids: FetchUuids            = _ => UIO.none
   private def realmsSearchParams: Directive1[RealmSearchParams] =
     searchParams.tmap { case (deprecated, rev, createdBy, updatedBy) =>
       RealmSearchParams(None, deprecated, rev, createdBy, updatedBy)
@@ -66,25 +66,13 @@ class RealmsRoutes(identities: Identities, realms: Realms, acls: Acls)(implicit
                   }
                 }
             },
-            // SSE realms
-            (pathPrefix("events") & pathEndOrSingleSlash) {
-              get {
-                operationName(s"$prefixSegment/realms/events") {
-                  authorizeFor(AclAddress.Root, events.read).apply {
-                    lastEventId { offset =>
-                      emit(realms.events(offset))
-                    }
-                  }
-                }
-              }
-            },
             (label & pathEndOrSingleSlash) { id =>
               operationName(s"$prefixSegment/realms/{label}") {
                 concat(
                   // Create or update a realm
                   put {
                     authorizeFor(AclAddress.Root, realmsPermissions.write).apply {
-                      parameter("rev".as[Long].?) {
+                      parameter("rev".as[Int].?) {
                         case Some(rev) =>
                           // Update a realm
                           entity(as[RealmInput]) { case RealmInput(name, openIdConfig, logo, acceptedAudiences) =>
@@ -106,7 +94,7 @@ class RealmsRoutes(identities: Identities, realms: Realms, acls: Acls)(implicit
                   // Fetch a realm
                   get {
                     authorizeFor(AclAddress.Root, realmsPermissions.read).apply {
-                      parameter("rev".as[Long].?) {
+                      parameter("rev".as[Int].?) {
                         case Some(rev) => // Fetch realm at specific revision
                           emit(realms.fetchAt(id, rev).leftWiden[RealmRejection])
                         case None      => // Fetch realm
@@ -117,7 +105,7 @@ class RealmsRoutes(identities: Identities, realms: Realms, acls: Acls)(implicit
                   // Deprecate realm
                   delete {
                     authorizeFor(AclAddress.Root, realmsPermissions.write).apply {
-                      parameter("rev".as[Long]) { rev => emit(realms.deprecate(id, rev).mapValue(_.metadata)) }
+                      parameter("rev".as[Int]) { rev => emit(realms.deprecate(id, rev).mapValue(_.metadata)) }
                     }
                   }
                 )
@@ -130,7 +118,6 @@ class RealmsRoutes(identities: Identities, realms: Realms, acls: Acls)(implicit
 }
 
 object RealmsRoutes {
-  import ch.epfl.bluebrain.nexus.delta.rdf.instances._
 
   @nowarn("cat=unused")
   implicit final private val configuration: Configuration = Configuration.default.withStrictDecoding
@@ -149,13 +136,13 @@ object RealmsRoutes {
     * @return
     *   the [[Route]] for realms
     */
-  def apply(identities: Identities, realms: Realms, acls: Acls)(implicit
+  def apply(identities: Identities, realms: Realms, aclCheck: AclCheck)(implicit
       baseUri: BaseUri,
       paginationConfig: PaginationConfig,
       s: Scheduler,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering
   ): Route =
-    new RealmsRoutes(identities, realms, acls).routes
+    new RealmsRoutes(identities, realms, aclCheck).routes
 
 }

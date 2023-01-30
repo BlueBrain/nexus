@@ -20,6 +20,11 @@ final case class NTriples(value: String, rootNode: IriOrBNode) {
   def ++(that: NTriples): NTriples =
     that.copy(value = s"$value\n${that.value}".split("\n").filter(_.trim.nonEmpty).toSet.mkString("\n"))
 
+  /**
+    * Returns true if the value of the NTriples is empty
+    */
+  def isEmpty: Boolean = value.trim.isEmpty
+
   override def toString: String = value
 }
 

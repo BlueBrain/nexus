@@ -154,8 +154,8 @@ class ElasticSearchViewsSpec extends BaseSpec with EitherValuable with CirceEq {
     }
 
     "wait until in project view is indexed" in eventually {
-      deltaClient.get[Json](s"/views/$fullId", ScoobyDoo) { (json, response) =>
-        _total.getOption(json).value shouldEqual 5
+      deltaClient.get[Json](s"/views/$fullId?type=nxv%3AElasticSearchView", ScoobyDoo) { (json, response) =>
+        _total.getOption(json).value shouldEqual 3
         response.status shouldEqual StatusCodes.OK
       }
     }
@@ -273,13 +273,15 @@ class ElasticSearchViewsSpec extends BaseSpec with EitherValuable with CirceEq {
       deltaClient.get[Json](s"/views/$fullId/test-resource:cell-view-tagged/statistics", ScoobyDoo) {
         (json, response) =>
           response.status shouldEqual StatusCodes.OK
-          val expected = jsonContentOf(
-            "/kg/views/statistics.json",
-            "total"     -> "14",
-            "processed" -> "14",
-            "evaluated" -> "0",
-            "discarded" -> "14",
-            "remaining" -> "0"
+          val expected = filterNestedKeys("delayInSeconds")(
+            jsonContentOf(
+              "/kg/views/statistics.json",
+              "total"     -> "0",
+              "processed" -> "0",
+              "evaluated" -> "0",
+              "discarded" -> "0",
+              "remaining" -> "0"
+            )
           )
           filterNestedKeys("lastEventDateTime", "lastProcessedEventDateTime")(json) shouldEqual expected
       }
@@ -292,7 +294,7 @@ class ElasticSearchViewsSpec extends BaseSpec with EitherValuable with CirceEq {
         val unprefixedId = id.stripPrefix("https://bbp.epfl.ch/nexus/v0/data/bbp/experiment/patchedcell/v0.1.0/")
         deltaClient.post[Json](
           s"/resources/$fullId/resource/patchedcell:$unprefixedId/tags?rev=1",
-          Json.obj("rev" -> Json.fromLong(1L), "tag" -> Json.fromString("one")),
+          Json.obj("rev" -> Json.fromInt(1), "tag" -> Json.fromString("one")),
           ScoobyDoo
         ) { (_, response) =>
           response.status shouldEqual StatusCodes.Created
@@ -315,10 +317,10 @@ class ElasticSearchViewsSpec extends BaseSpec with EitherValuable with CirceEq {
           response.status shouldEqual StatusCodes.OK
           val expected = jsonContentOf(
             "/kg/views/statistics.json",
-            "total"     -> "19",
-            "processed" -> "19",
+            "total"     -> "5",
+            "processed" -> "5",
             "evaluated" -> "5",
-            "discarded" -> "14",
+            "discarded" -> "0",
             "remaining" -> "0"
           )
           filterNestedKeys("lastEventDateTime", "lastProcessedEventDateTime")(json) shouldEqual expected
@@ -379,5 +381,15 @@ class ElasticSearchViewsSpec extends BaseSpec with EitherValuable with CirceEq {
             .runSyncUnsafe()
       }
     }
+
+    "restart the view indexing" in eventually {
+      deltaClient.delete[Json](s"/views/$fullId/test-resource:cell-view/offset", ScoobyDoo) { (json, response) =>
+        response.status shouldEqual StatusCodes.OK
+        val expected =
+          json"""{ "@context" : "https://bluebrain.github.io/nexus/contexts/offset.json", "@type" : "Start" }"""
+        json shouldEqual expected
+      }
+    }
+
   }
 }

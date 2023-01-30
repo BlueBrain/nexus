@@ -1,0 +1,14 @@
+{
+  "@context" : "https://bluebrain.github.io/nexus/contexts/storages.json",
+  "@id" : "https://bluebrain.github.io/nexus/vocabulary/disk",
+  "@type" : "DiskStorage",
+  "_algorithm" : "SHA-256",
+  "name": "diskName",
+  "description": "diskDescription",
+  "volume": "/tmp",
+  "default": true,
+  "readPermission": "disk/read",
+  "writePermission": "disk/write",
+  "capacity": 1000,
+  "maxFileSize": 50
+}

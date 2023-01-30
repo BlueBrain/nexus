@@ -137,7 +137,7 @@ class ProjectsSpec extends BaseSpec {
       deltaClient.get[Json](s"/projects/$id", Bojack) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
         admin.validateProject(json, createJson)
-        admin.validate(json, "Project", "projects", id, description, 1L, projId)
+        admin.validate(json, "Project", "projects", id, description, 1, projId)
       }
     }
 
@@ -195,34 +195,34 @@ class ProjectsSpec extends BaseSpec {
                projId,
                updateRev2Json,
                Bojack,
-               1L
+               1
              )
         _ <- adminDsl.updateProject(
                orgId,
                projId,
                updateRev3Json,
                Bojack,
-               2L
+               2
              )
         _ <- deltaClient.get[Json](s"/projects/$id", Bojack) { (json, response) =>
                response.status shouldEqual StatusCodes.OK
                admin.validateProject(json, updateRev3Json)
-               admin.validate(json, "Project", "projects", id, descRev3, 3L, projId)
+               admin.validate(json, "Project", "projects", id, descRev3, 3, projId)
              }
         _ <- deltaClient.get[Json](s"/projects/$id?rev=3", Bojack) { (json, response) =>
                response.status shouldEqual StatusCodes.OK
                admin.validateProject(json, updateRev3Json)
-               admin.validate(json, "Project", "projects", id, descRev3, 3L, projId)
+               admin.validate(json, "Project", "projects", id, descRev3, 3, projId)
              }
         _ <- deltaClient.get[Json](s"/projects/$id?rev=2", Bojack) { (json, response) =>
                response.status shouldEqual StatusCodes.OK
                admin.validateProject(json, updateRev2Json)
-               admin.validate(json, "Project", "projects", id, descRev2, 2L, projId)
+               admin.validate(json, "Project", "projects", id, descRev2, 2, projId)
              }
         _ <- deltaClient.get[Json](s"/projects/$id?rev=1", Bojack) { (json, response) =>
                response.status shouldEqual StatusCodes.OK
                admin.validateProject(json, createJson)
-               admin.validate(json, "Project", "projects", id, description, 1L, projId)
+               admin.validate(json, "Project", "projects", id, description, 1, projId)
              }
       } yield succeed
     }
@@ -241,7 +241,7 @@ class ProjectsSpec extends BaseSpec {
                filterProjectMetadataKeys(json) shouldEqual adminDsl.createProjectRespJson(
                  projId,
                  orgId,
-                 4L,
+                 4,
                  authenticated = Bojack,
                  schema = "projects",
                  deprecated = true
@@ -249,11 +249,11 @@ class ProjectsSpec extends BaseSpec {
              }
         _ <- deltaClient.get[Json](s"/projects/$id", Bojack) { (json, response) =>
                response.status shouldEqual StatusCodes.OK
-               admin.validate(json, "Project", "projects", id, s"$description update 2", 4L, projId, deprecated = true)
+               admin.validate(json, "Project", "projects", id, s"$description update 2", 4, projId, deprecated = true)
              }
         _ <- deltaClient.get[Json](s"/projects/$id?rev=1", Bojack) { (json, response) =>
                response.status shouldEqual StatusCodes.OK
-               admin.validate(json, "Project", "projects", id, description, 1L, projId)
+               admin.validate(json, "Project", "projects", id, description, 1, projId)
              }
       } yield succeed
     }

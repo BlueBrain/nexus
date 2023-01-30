@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils.simpleName
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClientError
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -15,19 +14,17 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.{RdfError, Vocabulary}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.UnexpectedId
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
-import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, TagLabel}
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
-
-import scala.reflect.ClassTag
 
 /**
   * Enumeration of composite view rejection types.
@@ -107,7 +104,7 @@ object CompositeViewRejection {
     * @param expected
     *   the expected revision
     */
-  final case class IncorrectRev(provided: Long, expected: Long)
+  final case class IncorrectRev(provided: Int, expected: Int)
       extends CompositeViewRejection(
         s"Incorrect revision '$provided' provided, expected '$expected', the view may have been updated since last seen."
       )
@@ -121,7 +118,7 @@ object CompositeViewRejection {
     * @param current
     *   the last known revision
     */
-  final case class RevisionNotFound(provided: Long, current: Long)
+  final case class RevisionNotFound(provided: Int, current: Int)
       extends CompositeViewRejection(
         s"Revision requested '$provided' not found, last known revision is '$current'."
       )
@@ -181,7 +178,7 @@ object CompositeViewRejection {
     */
   final case class CrossProjectSourceForbidden(crossProjectSource: CrossProjectSource)(implicit val baseUri: BaseUri)
       extends CompositeViewSourceRejection(
-        s"None of the identities  ${crossProjectSource.identities.map(_.id).mkString(",")} has permissions for project ${crossProjectSource.project}"
+        s"None of the identities  ${crossProjectSource.identities.map(_.asIri).mkString(",")} has permissions for project ${crossProjectSource.project}"
       )
 
   /**
@@ -228,12 +225,6 @@ object CompositeViewRejection {
       )
 
   /**
-    * Rejection returned when attempting to evaluate a command but the evaluation failed
-    */
-  final case class CompositeViewEvaluationError(err: EvaluationError)
-      extends CompositeViewRejection("Unexpected evaluation error")
-
-  /**
     * Rejection returned when attempting to interact with a composite while providing an id that cannot be resolved to
     * an Iri.
     *
@@ -244,18 +235,10 @@ object CompositeViewRejection {
       extends CompositeViewRejection(s"Composite view identifier '$id' cannot be expanded to an Iri.")
 
   /**
-    * Signals a rejection caused when interacting with the projects API
+    * Signals a rejection caused when interacting with other APIs when fetching a view
     */
-  final case class WrappedProjectRejection(rejection: ProjectRejection) extends CompositeViewRejection(rejection.reason)
-
-  /**
-    * Rejection returned when the associated organization is invalid
-    *
-    * @param rejection
-    *   the rejection which occurred with the organization
-    */
-  final case class WrappedOrganizationRejection(rejection: OrganizationRejection)
-      extends CompositeViewRejection(rejection.reason)
+  final case class ProjectContextRejection(rejection: ContextRejection)
+      extends CompositeViewRejection("Something went wrong while interacting with another module.")
 
   /**
     * Rejection returned when a subject intends to retrieve a view at a specific tag, but the provided tag does not
@@ -264,15 +247,7 @@ object CompositeViewRejection {
     * @param tag
     *   the provided tag
     */
-  final case class TagNotFound(tag: TagLabel) extends CompositeViewRejection(s"Tag requested '$tag' not found.")
-
-  /**
-    * Rejection returned when the returned state is the initial state after a successful command evaluation. Note: This
-    * should never happen since the evaluation method already guarantees that the next function returns a non initial
-    * state.
-    */
-  final case class UnexpectedInitialState(id: Iri, project: ProjectRef)
-      extends CompositeViewRejection(s"Unexpected initial state for composite view '$id' of project '$project'.")
+  final case class TagNotFound(tag: UserTag) extends CompositeViewRejection(s"Tag requested '$tag' not found.")
 
   /**
     * Rejection returned when attempting to create a composite view where the passed id does not match the id on the
@@ -322,49 +297,29 @@ object CompositeViewRejection {
   final case class WrappedElasticSearchClientError(error: HttpClientError)
       extends CompositeViewProjectionRejection("Error while interacting with the underlying ElasticSearch index")
 
-  implicit final val projectToElasticSearchRejectionMapper: Mapper[ProjectRejection, CompositeViewRejection] =
-    WrappedProjectRejection.apply
-
-  implicit val orgToElasticSearchRejectionMapper: Mapper[OrganizationRejection, CompositeViewRejection] =
-    WrappedOrganizationRejection.apply
-
-  implicit final val evaluationErrorMapper: Mapper[EvaluationError, CompositeViewRejection] =
-    CompositeViewEvaluationError.apply
-
   implicit val jsonLdRejectionMapper: Mapper[JsonLdRejection, CompositeViewRejection] = {
     case UnexpectedId(id, payloadIri)                      => UnexpectedCompositeViewId(id, payloadIri)
     case JsonLdRejection.InvalidJsonLdFormat(id, rdfError) => InvalidJsonLdFormat(id, rdfError)
     case JsonLdRejection.DecodingFailed(error)             => DecodingFailed(error)
   }
 
-  implicit private[plugins] def compositeViewRejectionEncoder(implicit
-      C: ClassTag[CompositeViewCommand]
-  ): Encoder.AsObject[CompositeViewRejection] =
+  implicit private[plugins] val compositeViewRejectionEncoder: Encoder.AsObject[CompositeViewRejection] =
     Encoder.AsObject.instance { r =>
       val tpe = ClassUtils.simpleName(r)
       val obj = JsonObject(keywords.tpe -> tpe.asJson, "reason" -> r.reason.asJson)
       r match {
-        case CompositeViewEvaluationError(EvaluationFailure(C(cmd), _)) =>
-          val reason =
-            s"Unexpected failure while evaluating the command '${simpleName(cmd)}' for composite view '${cmd.id}'"
-          JsonObject(keywords.tpe -> "CompositeViewEvaluationFailure".asJson, "reason" -> reason.asJson)
-        case CompositeViewEvaluationError(EvaluationTimeout(C(cmd), t)) =>
-          val reason =
-            s"Timeout while evaluating the command '${simpleName(cmd)}' for composite view '${cmd.id}' after '$t'"
-          JsonObject(keywords.tpe -> "CompositeViewEvaluationTimeout".asJson, "reason" -> reason.asJson)
-        case WrappedOrganizationRejection(rejection)                    => rejection.asJsonObject
-        case WrappedProjectRejection(rejection)                         => rejection.asJsonObject
-        case WrappedBlazegraphClientError(rejection)                    =>
+        case ProjectContextRejection(rejection)                  => rejection.asJsonObject
+        case WrappedBlazegraphClientError(rejection)             =>
           obj.add(keywords.tpe, "SparqlClientError".asJson).add("details", rejection.toString().asJson)
-        case WrappedElasticSearchClientError(rejection)                 =>
+        case WrappedElasticSearchClientError(rejection)          =>
           rejection.jsonBody.flatMap(_.asObject).getOrElse(obj.add(keywords.tpe, "ElasticSearchClientError".asJson))
-        case IncorrectRev(provided, expected)                           => obj.add("provided", provided.asJson).add("expected", expected.asJson)
-        case InvalidJsonLdFormat(_, ConversionError(details, _))        => obj.add("details", details.asJson)
-        case InvalidJsonLdFormat(_, rdf)                                => obj.add("rdf", rdf.asJson)
-        case InvalidElasticSearchProjectionPayload(details)             => obj.addIfExists("details", details)
-        case InvalidRemoteProjectSource(_, httpError)                   => obj.add("details", httpError.reason.asJson)
-        case _: ViewNotFound                                            => obj.add(keywords.tpe, "ResourceNotFound".asJson)
-        case _                                                          => obj
+        case IncorrectRev(provided, expected)                    => obj.add("provided", provided.asJson).add("expected", expected.asJson)
+        case InvalidJsonLdFormat(_, ConversionError(details, _)) => obj.add("details", details.asJson)
+        case InvalidJsonLdFormat(_, rdf)                         => obj.add("rdf", rdf.asJson)
+        case InvalidElasticSearchProjectionPayload(details)      => obj.addIfExists("details", details)
+        case InvalidRemoteProjectSource(_, httpError)            => obj.add("details", httpError.reason.asJson)
+        case _: ViewNotFound                                     => obj.add(keywords.tpe, "ResourceNotFound".asJson)
+        case _                                                   => obj
       }
     }
 
@@ -381,10 +336,7 @@ object CompositeViewRejection {
       case ViewAlreadyExists(_, _)                => StatusCodes.Conflict
       case ResourceAlreadyExists(_, _)            => StatusCodes.Conflict
       case IncorrectRev(_, _)                     => StatusCodes.Conflict
-      case WrappedProjectRejection(rej)           => rej.status
-      case WrappedOrganizationRejection(rej)      => rej.status
-      case UnexpectedInitialState(_, _)           => StatusCodes.InternalServerError
-      case CompositeViewEvaluationError(_)        => StatusCodes.InternalServerError
+      case ProjectContextRejection(rej)           => rej.status
       case AuthorizationFailed                    => StatusCodes.Forbidden
       case WrappedElasticSearchClientError(error) => error.errorCode.getOrElse(StatusCodes.InternalServerError)
       case _                                      => StatusCodes.BadRequest

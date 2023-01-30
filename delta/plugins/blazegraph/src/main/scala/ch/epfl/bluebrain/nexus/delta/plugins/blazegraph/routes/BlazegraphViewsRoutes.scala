@@ -3,13 +3,10 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes
 import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive0, Route}
-import akka.persistence.query.NoOffset
-import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.permissions.{read => Read, write => Write}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.BlazegraphViewsRoutes.RestartView
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{BlazegraphViews, BlazegraphViewsQuery}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
@@ -19,18 +16,23 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaDirectives}
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaDirectives, DeltaSchemeDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{Tag, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, ProgressStatistics}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment}
+import ch.epfl.bluebrain.nexus.delta.sourcing.ProgressStatistics
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projections
 import io.circe.generic.semiauto.deriveEncoder
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
@@ -45,14 +47,12 @@ import monix.execution.Scheduler
   *   the blazegraph views operations bundle
   * @param identities
   *   the identity module
-  * @param acls
-  *   the ACLs module
-  * @param projects
-  *   the projects module
-  * @param progresses
-  *   the statistics of the progresses for the blazegraph views
-  * @param restartView
-  *   the action to restart a view indexing process triggered by a client
+  * @param aclCheck
+  *   to check the acls
+  * @param projections
+  *   the projections module
+  * @param schemeDirectives
+  *   directives related to orgs and projects
   * @param index
   *   the indexing action on write operations
   */
@@ -60,11 +60,10 @@ class BlazegraphViewsRoutes(
     views: BlazegraphViews,
     viewsQuery: BlazegraphViewsQuery,
     identities: Identities,
-    acls: Acls,
-    projects: Projects,
-    progresses: ProgressesStatistics,
-    restartView: RestartView,
-    index: IndexingAction
+    aclCheck: AclCheck,
+    projections: Projections,
+    schemeDirectives: DeltaSchemeDirectives,
+    index: IndexingAction.Execute[BlazegraphView]
 )(implicit
     baseUri: BaseUri,
     s: Scheduler,
@@ -72,13 +71,14 @@ class BlazegraphViewsRoutes(
     ordering: JsonKeyOrdering,
     pc: PaginationConfig,
     fusionConfig: FusionConfig
-) extends AuthDirectives(identities, acls)
+) extends AuthDirectives(identities, aclCheck)
     with CirceUnmarshalling
     with DeltaDirectives
     with RdfMarshalling
     with BlazegraphViewsDirectives {
 
   import baseUri.prefixSegment
+  import schemeDirectives._
 
   implicit private val viewStatisticEncoder: Encoder.AsObject[ProgressStatistics] =
     deriveEncoder[ProgressStatistics].mapJsonObject(_.add(keywords.tpe, "ViewStatistics".asJson))
@@ -86,14 +86,12 @@ class BlazegraphViewsRoutes(
   implicit private val viewStatisticJsonLdEncoder: JsonLdEncoder[ProgressStatistics] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.statistics))
 
-  implicit private val eventExchangeMapper = Mapper(BlazegraphViews.eventExchangeValue(_))
-
   def routes: Route =
-    (baseUriPrefix(baseUri.prefix) & replaceUri("views", schema.iri, projects)) {
+    (baseUriPrefix(baseUri.prefix) & replaceUri("views", schema.iri)) {
       concat(
         pathPrefix("views") {
           extractCaller { implicit caller =>
-            projectRef(projects).apply { implicit ref =>
+            resolveProjectRef.apply { implicit ref =>
               // Create a view without id segment
               concat(
                 (post & entity(as[Json]) & noParameter("rev") & pathEndOrSingleSlash & indexingMode) { (source, mode) =>
@@ -116,7 +114,7 @@ class BlazegraphViewsRoutes(
                       concat(
                         put {
                           authorizeFor(ref, Write).apply {
-                            (parameter("rev".as[Long].?) & pathEndOrSingleSlash & entity(as[Json])) {
+                            (parameter("rev".as[Int].?) & pathEndOrSingleSlash & entity(as[Json])) {
                               case (None, source)      =>
                                 // Create a view with id segment
                                 emit(
@@ -139,7 +137,7 @@ class BlazegraphViewsRoutes(
                             }
                           }
                         },
-                        (delete & parameter("rev".as[Long])) { rev =>
+                        (delete & parameter("rev".as[Int])) { rev =>
                           // Deprecate a view
                           authorizeFor(ref, Write).apply {
                             emit(
@@ -183,9 +181,26 @@ class BlazegraphViewsRoutes(
                           emit(
                             views
                               .fetchIndexingView(id, ref)
-                              .flatMap(v => progresses.statistics(ref, BlazegraphViews.projectionId(v)))
+                              .flatMap(v => projections.statistics(ref, v.resourceTag, v.projection))
                               .rejectOn[ViewNotFound]
                           )
+                        }
+                      }
+                    },
+                    // Fetch blazegraph view indexing failures
+                    lastEventId { offset =>
+                      (pathPrefix("failures") & get & pathEndOrSingleSlash) {
+                        operationName(s"$prefixSegment/views/{org}/{project}/{id}/failures") {
+                          authorizeFor(ref, Write).apply {
+                            emit(
+                              views
+                                .fetch(id, ref)
+                                .map { view =>
+                                  projections
+                                    .failedElemSses(view.value.project, view.value.id, offset)
+                                }
+                            )
+                          }
                         }
                       }
                     },
@@ -198,7 +213,7 @@ class BlazegraphViewsRoutes(
                             emit(
                               views
                                 .fetchIndexingView(id, ref)
-                                .flatMap(v => progresses.offset(BlazegraphViews.projectionId(v)))
+                                .flatMap(v => projections.offset(v.projection))
                                 .rejectOn[ViewNotFound]
                             )
                           },
@@ -207,8 +222,8 @@ class BlazegraphViewsRoutes(
                             emit(
                               views
                                 .fetchIndexingView(id, ref)
-                                .flatMap { r => restartView(r.value.id, r.value.project) }
-                                .as(NoOffset)
+                                .flatMap { r => projections.scheduleRestart(r.projection) }
+                                .as(Offset.start)
                                 .rejectOn[ViewNotFound]
                             )
                           }
@@ -220,10 +235,10 @@ class BlazegraphViewsRoutes(
                         concat(
                           // Fetch tags for a view
                           (get & idSegmentRef(id) & authorizeFor(ref, Read)) { id =>
-                            emit(views.fetch(id, ref).map(res => Tags(res.value.tags)).rejectOn[ViewNotFound])
+                            emit(views.fetch(id, ref).map(_.value.tags).rejectOn[ViewNotFound])
                           },
                           // Tag a view
-                          (post & parameter("rev".as[Long])) { rev =>
+                          (post & parameter("rev".as[Int])) { rev =>
                             authorizeFor(ref, Write).apply {
                               entity(as[Tag]) { case Tag(tagRev, tag) =>
                                 emit(
@@ -259,7 +274,7 @@ class BlazegraphViewsRoutes(
         //Handle all other incoming and outgoing links
         pathPrefix(Segment) { segment =>
           extractCaller { implicit caller =>
-            projectRef(projects).apply { ref =>
+            resolveProjectRef.apply { ref =>
               // if we are on the path /resources/{org}/{proj}/ we need to consume the {schema} segment before consuming the {id}
               consumeIdSegmentIf(segment == "resources") {
                 idSegment { id =>
@@ -316,11 +331,10 @@ object BlazegraphViewsRoutes {
       views: BlazegraphViews,
       viewsQuery: BlazegraphViewsQuery,
       identities: Identities,
-      acls: Acls,
-      projects: Projects,
-      progresses: ProgressesStatistics,
-      restartView: RestartView,
-      index: IndexingAction
+      aclCheck: AclCheck,
+      projections: Projections,
+      schemeDirectives: DeltaSchemeDirectives,
+      index: IndexingAction.Execute[BlazegraphView]
   )(implicit
       baseUri: BaseUri,
       s: Scheduler,
@@ -333,10 +347,9 @@ object BlazegraphViewsRoutes {
       views,
       viewsQuery,
       identities,
-      acls,
-      projects,
-      progresses,
-      restartView,
+      aclCheck,
+      projections,
+      schemeDirectives,
       index
     ).routes
   }

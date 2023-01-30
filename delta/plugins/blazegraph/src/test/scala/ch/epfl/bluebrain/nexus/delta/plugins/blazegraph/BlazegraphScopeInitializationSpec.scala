@@ -2,16 +2,19 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.{AggregateBlazegraphView, IndexingBlazegraphView}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.ViewNotFound
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{ProjectContextRejection, ViewNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schema => schemaorg}
+import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, Defaults}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Subject, User}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures}
-import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.testkit.{DoobieScalaTestFixture, IOFixedClock, IOValues, TestHelpers}
+import monix.bio.UIO
 import monix.execution.Scheduler
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
@@ -19,7 +22,7 @@ import org.scalatest.matchers.should.Matchers
 import java.util.UUID
 
 class BlazegraphScopeInitializationSpec
-    extends AbstractDBSpec
+    extends DoobieScalaTestFixture
     with Matchers
     with Inspectors
     with IOFixedClock
@@ -32,22 +35,39 @@ class BlazegraphScopeInitializationSpec
   implicit private val uuidF: UUIDF  = UUIDF.fixed(uuid)
   implicit private val sc: Scheduler = Scheduler.global
 
+  private val prefix = "prefix"
+
   private val saRealm: Label              = Label.unsafe("service-accounts")
   private val usersRealm: Label           = Label.unsafe("users")
   implicit private val sa: ServiceAccount = ServiceAccount(User("nexus-sa", saRealm))
   implicit private val bob: Subject       = User("bob", usersRealm)
 
-  private val org               = Label.unsafe("org")
-  private val am                = ApiMappings("nxv" -> nxv.base, "Person" -> schemaorg.Person)
-  private val projBase          = nxv.base
-  private val project           =
+  private val am       = ApiMappings("nxv" -> nxv.base, "Person" -> schemaorg.Person)
+  private val projBase = nxv.base
+  private val project  =
     ProjectGen.project("org", "project", uuid = uuid, orgUuid = uuid, base = projBase, mappings = am)
-  implicit val baseUri: BaseUri = BaseUri.withoutPrefix("http://localhost")
 
-  val views: BlazegraphViews = BlazegraphViewsSetup.init(org, project, permissions.query)
+  private val fetchContext = FetchContextDummy[BlazegraphViewRejection](
+    List(project),
+    ProjectContextRejection
+  )
+
+  private lazy val views: BlazegraphViews = BlazegraphViews(
+    fetchContext,
+    ResolverContextResolution(rcr),
+    alwaysValidate,
+    _ => UIO.unit,
+    eventLogConfig,
+    prefix,
+    xas
+  ).accepted
+
+  private val defaultViewName        = "defaultName"
+  private val defaultViewDescription = "defaultDescription"
+  private val defaults               = Defaults(defaultViewName, defaultViewDescription)
 
   "A BlazegraphScopeInitialization" should {
-    val init = new BlazegraphScopeInitialization(views, sa)
+    lazy val init = new BlazegraphScopeInitialization(views, sa, defaults)
 
     "create a default SparqlView on newly created project" in {
       views.fetch(defaultViewId, project.ref).rejectedWith[ViewNotFound]
@@ -61,6 +81,8 @@ class BlazegraphScopeInitializationSpec
           v.includeDeprecated shouldEqual true
           v.includeMetadata shouldEqual true
           v.permission shouldEqual permissions.query
+          v.name should contain(defaultViewName)
+          v.description should contain(defaultViewDescription)
         case _: AggregateBlazegraphView => fail("Expected an IndexingBlazegraphView to be created")
       }
       resource.rev shouldEqual 1L

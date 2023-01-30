@@ -11,8 +11,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
+import fs2.Stream
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
+import monix.bio.{Task, UIO}
 
 /**
   * Defines the signature for a collection of search results with their metadata including pagination
@@ -127,6 +129,19 @@ object SearchResults {
     */
   final def apply[A](total: Long, results: Seq[A]): UnscoredSearchResults[A] =
     UnscoredSearchResults[A](total, results.map(UnscoredResultEntry(_)))
+
+  final def apply[A](
+      stream: Stream[Task, A],
+      pagination: Pagination.FromPagination,
+      ordering: Ordering[A]
+  ): UIO[UnscoredSearchResults[A]] =
+    stream.compile.toList.hideErrors
+      .map { resources =>
+        SearchResults(
+          resources.size.toLong,
+          resources.sorted(ordering).slice(pagination.from, pagination.from + pagination.size)
+        )
+      }
 
   /**
     * Builds an [[JsonLdEncoder]] of [[SearchResults]] of ''A'' where the next link is computed using the passed

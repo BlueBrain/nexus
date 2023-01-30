@@ -1,0 +1,27 @@
+{
+  "createdAt": "1970-01-01T00:00:00Z",
+  "createdBy": {
+    "@type": "User",
+    "realm": "myrealm",
+    "subject": "username"
+  },
+  "id": "https://bluebrain.github.io/nexus/vocabulary/archive",
+  "project": "myorg/myproj",
+  "resources": [
+    {
+      "@type": "ResourceReference",
+      "path": "/path/in/archive",
+      "project": "myorg/another",
+      "ref": "https://bluebrain.github.io/nexus/vocabulary/resource?rev=1",
+      "representation": {
+        "@type": "CompactedJsonLd"
+      }
+    },
+    {
+      "@type": "FileReference",
+      "path": "/path/in/archive",
+      "project": "myorg/another",
+      "ref": "https://bluebrain.github.io/nexus/vocabulary/file?rev=1"
+    }
+  ]
+}

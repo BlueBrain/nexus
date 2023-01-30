@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri
 import akka.testkit.TestKit
-import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.PatchStrategy._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClientError.WrappedHttpClientError
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponse.SparqlResultsResponse
@@ -16,12 +15,12 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
+import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.{HttpClientStatusError, HttpServerStatusError}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ConfigFixtures
 import ch.epfl.bluebrain.nexus.testkit.blazegraph.BlazegraphDocker
 import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOValues, TestHelpers, TestMatchers}
 import io.circe.Json
@@ -123,12 +122,6 @@ class BlazegraphClientSpec(docker: BlazegraphDocker)
 
   "A Blazegraph Client" should {
 
-    "delete existing namespaces" in {
-      val existingNamespaces = client.listNamespaces().accepted
-      existingNamespaces.value.toList.traverse(client.deleteNamespace).accepted
-      client.listNamespaces().accepted shouldEqual DeltaNamespaceSet(Set.empty)
-    }
-
     "fetch the service description" in {
       client.serviceDescription.accepted shouldEqual ServiceDescription(Name.unsafe("blazegraph"), "2.1.6-SNAPSHOT")
     }
@@ -149,26 +142,6 @@ class BlazegraphClientSpec(docker: BlazegraphDocker)
       val props = propertiesOf("/sparql/wrong.properties")
       val err   = client.createNamespace("other", props).rejectedWith[WrappedHttpClientError]
       err.http shouldBe a[HttpServerStatusError]
-    }
-
-    "gives the list of all existing namespaces" in {
-      client.createNamespace("another").accepted shouldEqual true
-      client.createNamespace("another2").accepted shouldEqual true
-
-      client.listNamespaces().accepted shouldEqual DeltaNamespaceSet(Set("some", "another", "another2"))
-    }
-
-    "gives the list of outdated namespaces" in {
-      client.createNamespace("delta_001_1").accepted shouldEqual true
-      client.createNamespace("delta_002_1").accepted shouldEqual true
-      client.createNamespace("delta_002_2").accepted shouldEqual true
-      client.createNamespace("delta_003_1").accepted shouldEqual true
-      client.createNamespace("delta_003_2").accepted shouldEqual true
-      client.createNamespace("delta_003_3").accepted shouldEqual true
-
-      client.listOutdatedNamespaces().accepted shouldEqual DeltaNamespaceSet(
-        Set("delta_002_1", "delta_003_1", "delta_003_2")
-      )
     }
 
     "create a new named graph" in {

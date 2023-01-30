@@ -1,57 +1,63 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
 
-import akka.actor.ActorSystem
-import akka.http.scaladsl.model.MediaTypes.{`text/event-stream`, `text/html`}
-import akka.http.scaladsl.model.{StatusCodes, Uri}
+import akka.http.scaladsl.model.MediaTypes.`text/html`
 import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept, Location, OAuth2BearerToken}
+import akka.http.scaladsl.model.{MediaTypes, StatusCodes, Uri}
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
-import akka.persistence.query.Sequence
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewEvent.{ElasticSearchViewDeprecated, ElasticSearchViewTagAdded}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewType.{ElasticSearch => ElasticSearchType}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.contexts.searchMetadata
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{permissions => esPermissions, schema => elasticSearchSchema, ElasticSearchViewEvent}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{permissions => esPermissions, schema => elasticSearchSchema, ElasticSearchViewRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.DummyElasticSearchViewsQuery._
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViewsSetup, Fixtures}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, Fixtures, ValidateElasticSearchView}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts.search
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
-import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceMarshalling
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, Subject, User}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Identity}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
-import ch.epfl.bluebrain.nexus.delta.sdk.{JsonValue, ProgressesStatistics, ProjectsCountsDummy, SseEventLog}
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionId, ProjectionProgress}
+import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, IndexingAction}
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject, User}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label}
+import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projections
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.model.ProjectionRestart
+import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{FailedElem, SuccessElem}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeChain, ProjectionMetadata}
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
-import monix.bio.UIO
+import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
-import slick.jdbc.JdbcBackend
 
 import java.time.Instant
 import java.util.UUID
+import scala.concurrent.duration._
 
 class ElasticSearchViewsRoutesSpec
     extends RouteHelpers
+    with DoobieScalaTestFixture
     with Matchers
     with CirceLiteral
     with CirceEq
@@ -68,9 +74,6 @@ class ElasticSearchViewsRoutesSpec
 
   import akka.actor.typed.scaladsl.adapter._
   implicit val typedSystem = system.toTyped
-
-  override protected def createActorSystem(): ActorSystem =
-    ActorSystem("ElasticSearchRoutersSpec", AbstractDBSpec.config)
 
   private val uuid                  = UUID.randomUUID()
   implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
@@ -90,15 +93,12 @@ class ElasticSearchViewsRoutesSpec
   private val realm: Label = Label.unsafe("wonderland")
   private val alice: User  = User("alice", realm)
 
-  implicit private val subject: Subject = Identity.Anonymous
-
   private val caller = Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
 
-  private val identities = IdentitiesDummy(Map(AuthToken("alice") -> caller))
+  private val identities = IdentitiesDummy(caller)
 
   private val asAlice = addCredentials(OAuth2BearerToken("alice"))
 
-  private val org        = Label.unsafe("myorg")
   private val project    = ProjectGen.resourceFor(
     ProjectGen.project(
       "myorg",
@@ -124,78 +124,57 @@ class ElasticSearchViewsRoutesSpec
   private val payloadNoId    = payload.removeKeys(keywords.id)
   private val payloadUpdated = payloadNoId deepMerge json"""{"includeDeprecated": false}"""
 
-  private val (orgs, projs)       = ProjectSetup.init(org :: Nil, project.value :: Nil).accepted
-  private val allowedPerms        = Set(esPermissions.write, esPermissions.read, esPermissions.query, events.read)
-  private val (acls, permissions) = AclSetup.initWithPerms(allowedPerms, Set(realm)).accepted
-  private val views               = ElasticSearchViewsSetup.init(orgs, projs, permissions)
+  private val allowedPerms = Set(esPermissions.write, esPermissions.read, esPermissions.query, events.read)
 
-  private val now          = Instant.now()
-  private val nowMinus5    = now.minusSeconds(5)
-  private val projectStats = ProjectCount(10, 10, now)
-
-  private val projectsCounts = ProjectsCountsDummy(projectRef -> projectStats)
-
-  private val viewsQuery = new DummyElasticSearchViewsQuery(views)
-
-  var restartedView: Option[(ProjectRef, Iri)] = None
-
-  private def restart(id: Iri, projectRef: ProjectRef) = UIO { restartedView = Some(projectRef -> id) }.void
-
-  private val resourceToSchemaMapping = ResourceToSchemaMappings(Label.unsafe("views") -> elasticSearchSchema.iri)
-  private val viewsProgressesCache    =
-    KeyValueStore.localLRU[ProjectionId, ProjectionProgress[Unit]](10L).accepted
-
-  private val statisticsProgress = new ProgressesStatistics(viewsProgressesCache, projectsCounts)
-
-  private val sseEventLog: SseEventLog = new SseEventLogDummy(
-    List(
-      Envelope(
-        ElasticSearchViewTagAdded(
-          myId,
-          projectRef,
-          ElasticSearchType,
-          uuid,
-          1,
-          TagLabel.unsafe("mytag"),
-          1,
-          Instant.EPOCH,
-          subject
-        ),
-        Sequence(1),
-        "p1",
-        1
-      ),
-      Envelope(
-        ElasticSearchViewDeprecated(myId, projectRef, ElasticSearchType, uuid, 1, Instant.EPOCH, subject),
-        Sequence(2),
-        "p1",
-        2
-      )
-    ),
-    { case ev: ElasticSearchViewEvent => JsonValue(ev).asInstanceOf[JsonValue.Aux[Event]] }
+  private val fetchContext = FetchContextDummy[ElasticSearchViewRejection](
+    Map(project.value.ref -> project.value.context),
+    ProjectContextRejection
   )
 
-  private val routes =
+  private val resourceToSchemaMapping = ResourceToSchemaMappings(Label.unsafe("views") -> elasticSearchSchema.iri)
+
+  private val aclCheck                       = AclSimpleCheck().accepted
+  private val groupDirectives                =
+    DeltaSchemeDirectives(fetchContext, ioFromMap(uuid -> projectRef.organization), ioFromMap(uuid -> projectRef))
+
+  private lazy val views: ElasticSearchViews = ElasticSearchViews(
+    fetchContext,
+    ResolverContextResolution(rcr),
+    ValidateElasticSearchView(
+      PipeChain.validate(_, registry),
+      UIO.pure(allowedPerms),
+      (_, _, _) => IO.unit,
+      "prefix",
+      5,
+      xas
+    ),
+    eventLogConfig,
+    "prefix",
+    xas
+  ).accepted
+
+  private lazy val viewsQuery = new DummyElasticSearchViewsQuery(views)
+
+  private lazy val projections = Projections(xas, QueryConfig(10, RefreshStrategy.Stop), 1.hour)
+
+  private lazy val routes =
     Route.seal(
       ElasticSearchViewsRoutes(
         identities,
-        acls,
-        orgs,
-        projs,
+        aclCheck,
         views,
         viewsQuery,
-        statisticsProgress,
-        restart,
+        projections,
         resourceToSchemaMapping,
-        sseEventLog,
-        IndexingActionDummy()
+        groupDirectives,
+        IndexingAction.noop
       )
     )
 
   "Elasticsearch views routes" should {
 
     "fail to create a view without views/write permission" in {
-      acls.append(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 0L).accepted
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(events.read)).accepted
       Post("/v1/views/myorg/myproject", payload.toEntity) ~> routes ~> check {
         response.status shouldEqual StatusCodes.Forbidden
         response.asJson shouldEqual jsonContentOf("/routes/errors/authorization-failed.json")
@@ -203,11 +182,8 @@ class ElasticSearchViewsRoutesSpec
     }
 
     "create a view" in {
-      acls
-        .append(
-          Acl(AclAddress.Root, Anonymous -> Set(esPermissions.write), caller.subject -> Set(esPermissions.write)),
-          1L
-        )
+      aclCheck
+        .append(AclAddress.Root, Anonymous -> Set(esPermissions.write), caller.subject -> Set(esPermissions.write))
         .accepted
       Post("/v1/views/myorg/myproject", payload.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
@@ -253,7 +229,7 @@ class ElasticSearchViewsRoutesSpec
     }
 
     "fail to update a view without views/write permission" in {
-      acls.subtract(Acl(AclAddress.Root, Anonymous -> Set(esPermissions.write)), 2L).accepted
+      aclCheck.subtract(AclAddress.Root, Anonymous -> Set(esPermissions.write)).accepted
       Put(s"/v1/views/myorg/myproject/myid?rev=1", payload.toEntity) ~> routes ~> check {
         response.status shouldEqual StatusCodes.Forbidden
         response.asJson shouldEqual jsonContentOf("/routes/errors/authorization-failed.json")
@@ -261,7 +237,7 @@ class ElasticSearchViewsRoutesSpec
     }
 
     "update a view" in {
-      acls.append(Acl(AclAddress.Root, Anonymous -> Set(esPermissions.write)), 3L).accepted
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(esPermissions.write)).accepted
       val endpoints = List(
         "/v1/views/myorg/myproject/myid",
         s"/v1/views/myorg/myproject/$myIdEncoded"
@@ -269,7 +245,7 @@ class ElasticSearchViewsRoutesSpec
       forAll(endpoints.zipWithIndex) { case (endpoint, idx) =>
         Put(s"$endpoint?rev=${idx + 1}", payloadUpdated.toEntity) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
-          response.asJson shouldEqual elasticSearchViewMetadata(myId, rev = idx + 2L)
+          response.asJson shouldEqual elasticSearchViewMetadata(myId, rev = idx + 2)
         }
       }
     }
@@ -287,12 +263,12 @@ class ElasticSearchViewsRoutesSpec
       Put("/v1/views/myorg/myproject/myid?rev=10", payloadUpdated.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.Conflict
         response.asJson shouldEqual
-          jsonContentOf("/routes/errors/incorrect-rev.json", "provided" -> 10L, "expected" -> 3L)
+          jsonContentOf("/routes/errors/incorrect-rev.json", "provided" -> 10, "expected" -> 3)
       }
     }
 
     "fail to deprecate a view without views/write permission" in {
-      acls.subtract(Acl(AclAddress.Root, Anonymous -> Set(esPermissions.write)), 4L).accepted
+      aclCheck.subtract(AclAddress.Root, Anonymous -> Set(esPermissions.write)).accepted
       Delete("/v1/views/myorg/myproject/myid?rev=3") ~> routes ~> check {
         response.status shouldEqual StatusCodes.Forbidden
         response.asJson shouldEqual jsonContentOf("/routes/errors/authorization-failed.json")
@@ -300,10 +276,10 @@ class ElasticSearchViewsRoutesSpec
     }
 
     "deprecate a view" in {
-      acls.append(Acl(AclAddress.Root, Anonymous -> Set(esPermissions.write)), 5L).accepted
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(esPermissions.write)).accepted
       Delete("/v1/views/myorg/myproject/myid?rev=3") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual elasticSearchViewMetadata(myId, rev = 4L, deprecated = true)
+        response.asJson shouldEqual elasticSearchViewMetadata(myId, rev = 4, deprecated = true)
       }
     }
 
@@ -353,10 +329,17 @@ class ElasticSearchViewsRoutesSpec
     }
 
     "fetch a view" in {
-      acls.append(Acl(AclAddress.Root, Anonymous -> Set(esPermissions.read)), 6L).accepted
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(esPermissions.read)).accepted
       Get("/v1/views/myorg/myproject/myid") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual elasticSearchView(myId, includeDeprecated = false, rev = 4, deprecated = true)
+        response.asJson shouldEqual elasticSearchView(
+          myId,
+          includeDeprecated = false,
+          rev = 4,
+          // indexing rev stays one as the update concerned non-indexing fields
+          indexingRev = 1,
+          deprecated = true
+        )
       }
     }
 
@@ -440,7 +423,7 @@ class ElasticSearchViewsRoutesSpec
     }
 
     "fail to fetch statistics and offset from view without resources/read permission" in {
-      acls.subtract(Acl(AclAddress.Root, Anonymous -> Set(esPermissions.read)), 7L).accepted
+      aclCheck.subtract(AclAddress.Root, Anonymous -> Set(esPermissions.read)).accepted
 
       val endpoints = List(
         "/v1/views/myorg/myproject/myid2/statistics",
@@ -455,15 +438,13 @@ class ElasticSearchViewsRoutesSpec
     }
 
     "fetch statistics from view" in {
-      acls.append(Acl(AclAddress.Root, Anonymous -> Set(esPermissions.read)), 8L).accepted
-      val projectionId = ViewProjectionId(s"elasticsearch-${uuid}_2")
-      viewsProgressesCache.put(projectionId, ProjectionProgress(Sequence(2), nowMinus5, 2, 0, 0, 0)).accepted
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(esPermissions.read)).accepted
       Get("/v1/views/myorg/myproject/myid2/statistics") ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
         response.asJson shouldEqual jsonContentOf(
           "/routes/statistics.json",
-          "projectLatestInstant" -> now,
-          "viewLatestInstant"    -> nowMinus5
+          "projectLatestInstant" -> Instant.EPOCH,
+          "viewLatestInstant"    -> Instant.EPOCH
         )
       }
     }
@@ -475,8 +456,8 @@ class ElasticSearchViewsRoutesSpec
       }
     }
 
-    "fail to restart offset from view without resources/write permission" in {
-      acls.subtract(Acl(AclAddress.Root, Anonymous -> Set(esPermissions.write)), 9L).accepted
+    "fail to restart offset from view without views/write permission" in {
+      aclCheck.subtract(AclAddress.Root, Anonymous -> Set(esPermissions.write)).accepted
 
       Delete("/v1/views/myorg/myproject/myid2/offset") ~> routes ~> check {
         response.status shouldEqual StatusCodes.Forbidden
@@ -485,12 +466,25 @@ class ElasticSearchViewsRoutesSpec
     }
 
     "restart offset from view" in {
-      acls.append(Acl(AclAddress.Root, Anonymous -> Set(esPermissions.write)), 10L).accepted
-      restartedView shouldEqual None
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(esPermissions.write)).accepted
+      projections.restarts(Offset.start).compile.toList.accepted.size shouldEqual 0
       Delete("/v1/views/myorg/myproject/myid2/offset") ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual json"""{"@context": "${Vocabulary.contexts.offset}", "@type": "NoOffset"}"""
-        restartedView shouldEqual Some(projectRef -> myId2)
+        response.asJson shouldEqual json"""{"@context": "${Vocabulary.contexts.offset}", "@type": "Start"}"""
+        projections.restarts(Offset.start).compile.lastOrError.accepted shouldEqual SuccessElem(
+          ProjectionRestart.entityType,
+          ProjectionRestart.restartId(Offset.at(1L)),
+          None,
+          Instant.EPOCH,
+          Offset.at(1L),
+          ProjectionRestart(
+            // view has be created and then only tagged, thus the indexing revision is 1
+            "elasticsearch-myorg/myproject-https://bluebrain.github.io/nexus/vocabulary/myid2-1",
+            Instant.EPOCH,
+            Anonymous
+          ),
+          1
+        )
       }
     }
 
@@ -504,7 +498,7 @@ class ElasticSearchViewsRoutesSpec
     }
 
     "fail to do listings from view without resources/read permission" in {
-      acls.subtract(Acl(AclAddress.Root, Anonymous -> Set(esPermissions.read)), 11L).accepted
+      aclCheck.subtract(AclAddress.Root, Anonymous -> Set(esPermissions.read)).accepted
 
       val endpoints = List(
         "/v1/views/myorg/myproject",
@@ -519,7 +513,7 @@ class ElasticSearchViewsRoutesSpec
     }
 
     "list on project scope" in {
-      acls.append(Acl(AclAddress.Root, Anonymous -> Set(esPermissions.read)), 12L).accepted
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(esPermissions.read)).accepted
 
       val endpoints: Seq[(String, IdSegment)] = List(
         "/v1/views/myorg/myproject"                    -> elasticSearchSchema,
@@ -588,36 +582,6 @@ class ElasticSearchViewsRoutesSpec
       }
     }
 
-    "fail to get the events stream without events/read permission" in {
-      acls.subtract(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 13L).accepted
-
-      Head("/v1/views/myorg/myproject/events") ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-      }
-
-      Get("/v1/views/myorg/myproject/events") ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("/routes/errors/authorization-failed.json")
-      }
-    }
-
-    "get the events stream" in {
-      acls.append(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 14L).accepted
-      val endpoints = List("/v1/views/events", "/v1/views/myorg/events", "/v1/views/myorg/myproject/events")
-      forAll(endpoints) { endpoint =>
-        Get(endpoint) ~> `Last-Event-ID`("0") ~> routes ~> check {
-          mediaType shouldBe `text/event-stream`
-          response.asString.strip shouldEqual contentOf("/routes/eventstream-0-2.txt", "uuid" -> uuid).strip
-        }
-      }
-    }
-
-    "check access to SSEs" in {
-      Head("/v1/views/myorg/myproject/events") ~> routes ~> check {
-        response.status shouldEqual StatusCodes.OK
-      }
-    }
-
     "redirect to fusion for the latest version if the Accept header is set to text/html" in {
       Get("/v1/views/myorg/myproject/myid") ~> Accept(`text/html`) ~> routes ~> check {
         response.status shouldEqual StatusCodes.SeeOther
@@ -626,31 +590,77 @@ class ElasticSearchViewsRoutesSpec
         )
       }
     }
+
+    "return no elasticsearch projection failures without write permission" in {
+      aclCheck.subtract(AclAddress.Root, Anonymous -> Set(esPermissions.write)).accepted
+
+      Get("/v1/views/myorg/myproject/myid/failures") ~> routes ~> check {
+        response.status shouldBe StatusCodes.Forbidden
+        response.asJson shouldEqual jsonContentOf("/routes/errors/authorization-failed.json")
+      }
+    }
+
+    "not return any failures if there aren't any" in {
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(esPermissions.write)).accepted
+
+      Get("/v1/views/myorg/myproject/myid/failures") ~> routes ~> check {
+        mediaType shouldBe MediaTypes.`text/event-stream`
+        response.status shouldBe StatusCodes.OK
+        chunksStream.asString(2).strip shouldBe ""
+      }
+    }
+
+    "return all available failures when no LastEventID is provided" in {
+      val metadata = ProjectionMetadata("testModule", "testName", Some(projectRef), Some(myId))
+      val error    = new Exception("boom")
+      val rev      = 1
+      val fail1    = FailedElem(EntityType("ACL"), myId, Some(projectRef), Instant.EPOCH, Offset.At(42L), error, rev)
+      val fail2    = FailedElem(EntityType("Schema"), myId, None, Instant.EPOCH, Offset.At(42L), error, rev)
+      projections.saveFailedElems(metadata, List(fail1, fail2)).accepted
+
+      Get("/v1/views/myorg/myproject/myid/failures") ~> routes ~> check {
+        mediaType shouldBe MediaTypes.`text/event-stream`
+        response.status shouldBe StatusCodes.OK
+        chunksStream.asString(2).strip shouldEqual contentOf("/routes/sse/indexing-failures-1-2.txt")
+      }
+    }
+
+    "return failures only from the given LastEventID" in {
+      Get("/v1/views/myorg/myproject/myid/failures") ~> `Last-Event-ID`("1") ~> routes ~> check {
+        mediaType shouldBe MediaTypes.`text/event-stream`
+        response.status shouldBe StatusCodes.OK
+        chunksStream.asString(3).strip shouldEqual contentOf("/routes/sse/indexing-failure-2.txt")
+      }
+    }
+
   }
 
   private def elasticSearchViewMetadata(
       id: Iri,
-      rev: Long = 1L,
+      rev: Int = 1,
+      indexingRev: Int = 1,
       deprecated: Boolean = false,
       createdBy: Subject = Anonymous,
       updatedBy: Subject = Anonymous
   ): Json =
     jsonContentOf(
       "/routes/elasticsearch-view-write-response.json",
-      "project"    -> projectRef,
-      "id"         -> id,
-      "rev"        -> rev,
-      "uuid"       -> uuid,
-      "deprecated" -> deprecated,
-      "createdBy"  -> createdBy.id,
-      "updatedBy"  -> updatedBy.id,
-      "label"      -> lastSegment(id)
+      "project"     -> projectRef,
+      "id"          -> id,
+      "rev"         -> rev,
+      "indexingRev" -> indexingRev,
+      "uuid"        -> uuid,
+      "deprecated"  -> deprecated,
+      "createdBy"   -> createdBy.asIri,
+      "updatedBy"   -> updatedBy.asIri,
+      "label"       -> lastSegment(id)
     )
 
   private def elasticSearchView(
       id: Iri,
       includeDeprecated: Boolean = false,
-      rev: Long = 1L,
+      rev: Int = 1,
+      indexingRev: Int = 1,
       deprecated: Boolean = false,
       createdBy: Subject = Anonymous,
       updatedBy: Subject = Anonymous
@@ -661,26 +671,14 @@ class ElasticSearchViewsRoutesSpec
       "id"                -> id,
       "rev"               -> rev,
       "uuid"              -> uuid,
+      "indexingRev"       -> indexingRev,
       "deprecated"        -> deprecated,
-      "createdBy"         -> createdBy.id,
-      "updatedBy"         -> updatedBy.id,
+      "createdBy"         -> createdBy.asIri,
+      "updatedBy"         -> updatedBy.asIri,
       "includeDeprecated" -> includeDeprecated,
       "label"             -> lastSegment(id)
     ).mapObject(_.add("settings", settings))
 
   private def lastSegment(iri: Iri) =
     iri.toString.substring(iri.toString.lastIndexOf("/") + 1)
-
-  private var db: JdbcBackend.Database = null
-
-  override protected def beforeAll(): Unit = {
-    super.beforeAll()
-    db = AbstractDBSpec.beforeAll
-    ()
-  }
-
-  override protected def afterAll(): Unit = {
-    AbstractDBSpec.afterAll(db)
-    super.afterAll()
-  }
 }

@@ -2,17 +2,16 @@ package ch.epfl.bluebrain.nexus.delta.plugins.search
 
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.projectionIndex
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.ElasticSearchProjection
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeView, CompositeViewSearchParams}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchRejection.WrappedElasticSearchClientError
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.Acls
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress.{Project => ProjectAcl}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress.{Project => ProjectAcl}
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import io.circe.{Json, JsonObject}
 import monix.bio.{IO, UIO}
 
@@ -29,7 +28,7 @@ trait Search {
 
 object Search {
 
-  final case class TargetProjection(projection: ElasticSearchProjection, view: CompositeView, rev: Long)
+  final case class TargetProjection(projection: ElasticSearchProjection, view: CompositeView, rev: Int)
 
   private[search] type ListProjections = () => UIO[Seq[TargetProjection]]
 
@@ -38,16 +37,16 @@ object Search {
     */
   final def apply(
       compositeViews: CompositeViews,
-      acls: Acls,
+      aclCheck: AclCheck,
       client: ElasticSearchClient,
-      indexingConfig: ExternalIndexingConfig
+      prefix: String
   ): Search = {
 
     val listProjections: ListProjections = () =>
       compositeViews
         .list(
           Pagination.OnePage,
-          CompositeViewSearchParams(deprecated = Some(false), filter = _.id == defaultViewId),
+          CompositeViewSearchParams(deprecated = Some(false), filter = v => UIO.pure(v.id == defaultViewId)),
           Ordering.by(_.createdAt)
         )
         .map(
@@ -60,7 +59,7 @@ object Search {
               } yield TargetProjection(esProjection, res.value, res.rev)
             }
         )
-    apply(listProjections, acls, client, indexingConfig)
+    apply(listProjections, aclCheck, client, prefix)
   }
 
   /**
@@ -68,23 +67,20 @@ object Search {
     */
   final def apply(
       listProjections: ListProjections,
-      acls: Acls,
+      aclCheck: AclCheck,
       client: ElasticSearchClient,
-      indexingConfig: ExternalIndexingConfig
+      prefix: String
   ): Search =
     new Search {
-
       override def query(payload: JsonObject, qp: Uri.Query)(implicit caller: Caller): IO[SearchRejection, Json] = {
         for {
           allProjections    <- listProjections()
-          accessible        <-
-            acls.authorizeForAny(allProjections.map(v => ProjectAcl(v.view.project) -> v.projection.permission))
-          accessibleProjects = accessible.collect { case (p: ProjectAcl, true) => ProjectRef(p.org, p.project) }.toSet
-          accessibleIndices  = allProjections.collect {
-                                 case v if accessibleProjects.contains(v.view.project) =>
-                                   CompositeViews.index(v.projection, v.view, v.rev, indexingConfig.prefix).value
-                               }
-          results           <- client.search(payload, accessibleIndices.toSet, qp)().mapError(WrappedElasticSearchClientError)
+          accessibleIndices <- aclCheck.mapFilter[TargetProjection, String](
+                                 allProjections,
+                                 p => ProjectAcl(p.view.project) -> p.projection.permission,
+                                 p => projectionIndex(p.projection, p.view.uuid, p.rev, prefix).value
+                               )
+          results           <- client.search(payload, accessibleIndices, qp)().mapError(WrappedElasticSearchClientError)
         } yield results
       }
     }

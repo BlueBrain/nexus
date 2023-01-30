@@ -1,0 +1,23 @@
+[
+  {
+    "@type": [
+      "https://bluebrain.github.io/nexus/vocabulary/InProject"
+    ],
+    "@id": "https://bluebrain.github.io/nexus/vocabulary/in-project",
+    "https://bluebrain.github.io/nexus/vocabulary/name": [
+      {
+        "@value": "resolverName"
+      }
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/description": [
+      {
+        "@value": "resolverDescription"
+      }
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/priority": [
+      {
+        "@value": 42
+      }
+    ]
+  }
+]

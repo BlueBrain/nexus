@@ -2,11 +2,12 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{nxvStorage, schemas, StorageResource}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import monix.bio.UIO
 
 /**
   * Search parameters for storage.
@@ -29,16 +30,16 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams
 final case class StorageSearchParams(
     project: Option[ProjectRef] = None,
     deprecated: Option[Boolean] = None,
-    rev: Option[Long] = None,
+    rev: Option[Int] = None,
     createdBy: Option[Subject] = None,
     updatedBy: Option[Subject] = None,
     types: Set[Iri] = Set(nxvStorage),
-    filter: Storage => Boolean
+    filter: Storage => UIO[Boolean]
 ) extends SearchParams[Storage] {
 
   override val schema: Option[ResourceRef] = Some(Latest(schemas.storage))
 
-  override def matches(resource: StorageResource): Boolean =
-    super.matches(resource) &&
-      project.forall(_ == resource.value.project)
+  override def matches(resource: StorageResource): UIO[Boolean] =
+    super.matches(resource).map(_ && project.forall(_ == resource.value.project))
+
 }

@@ -6,7 +6,9 @@
         "@type": "Anonymous"
       },
       "permissions": [
-        "{{{perms}}}"
+        {{#each perms}}
+        "{{this}}"{{#unless @last}},{{/unless}}
+        {{/each}}
       ]
     }
   ]

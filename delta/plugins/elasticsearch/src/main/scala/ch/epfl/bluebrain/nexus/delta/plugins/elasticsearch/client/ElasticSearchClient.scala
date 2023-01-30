@@ -46,6 +46,8 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
   private val docPath                                               = "_doc"
   private val allIndexPath                                          = "_all"
   private val bulkPath                                              = "_bulk"
+  private val refreshPath                                           = "_refresh"
+  private val indexTemplate                                         = "_index_template"
   private val mget                                                  = "_mget"
   private val tasksPath                                             = "_tasks"
   private val waitForCompletion                                     = "wait_for_completion"
@@ -131,6 +133,22 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
     */
   def createIndex(index: IndexLabel, mappings: Option[JsonObject], settings: Option[JsonObject]): HttpResult[Boolean] =
     createIndex(index, JsonObject.empty.addIfExists("mappings", mappings).addIfExists("settings", settings))
+
+  /**
+    * Attempts to create an index template
+    *
+    * @param name
+    *   the template name
+    * @param template
+    *   the template payload
+    * @return
+    *   ''true'' when the index template has been created
+    */
+  def createIndexTemplate(name: String, template: JsonObject): HttpResult[Boolean] =
+    client(Put(endpoint / indexTemplate / name, template).withHttpCredentials) {
+      case resp if resp.status.isSuccess() =>
+        discardEntity(resp) >> IO.pure(true)
+    }
 
   /**
     * Attempts to delete an index recovering gracefully when the index is not found.
@@ -421,6 +439,15 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
     val searchEndpoint = (endpoint / index / searchPath).withQuery(Uri.Query(defaultQuery ++ qp.toMap))
     client.fromJsonTo[T](Post(searchEndpoint, query.build).withHttpCredentials)
   }
+
+  /**
+    * Refresh the given index
+    */
+  def refresh(index: IndexLabel): HttpResult[Boolean] =
+    client(Post(endpoint / index.value / refreshPath).withHttpCredentials) {
+      case resp if resp.status.isSuccess() =>
+        discardEntity(resp) >> IO.pure(true)
+    }
 
   private def discardEntity(resp: HttpResponse) =
     UIO.delay(resp.discardEntityBytes()) >> IO.unit

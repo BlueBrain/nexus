@@ -1,9 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectBase, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectBase
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.Json
 
 /**
@@ -22,6 +23,12 @@ sealed trait CompositeViewCommand extends Product with Serializable {
     *   a reference to the parent project
     */
   def project: ProjectRef
+
+  /**
+    * @return
+    *   the last known revision of the view
+    */
+  def rev: Int
 
   /**
     * @return
@@ -55,7 +62,9 @@ object CompositeViewCommand {
       source: Json,
       subject: Subject,
       projectBase: ProjectBase
-  ) extends CompositeViewCommand
+  ) extends CompositeViewCommand {
+    override def rev: Int = 0
+  }
 
   /**
     * Command for the update of a composite view.
@@ -78,7 +87,7 @@ object CompositeViewCommand {
   final case class UpdateCompositeView(
       id: Iri,
       project: ProjectRef,
-      rev: Long,
+      rev: Int,
       value: CompositeViewFields,
       source: Json,
       subject: Subject,
@@ -97,7 +106,7 @@ object CompositeViewCommand {
     * @param subject
     *   the identity associated with this command
     */
-  final case class DeprecateCompositeView(id: Iri, project: ProjectRef, rev: Long, subject: Subject)
+  final case class DeprecateCompositeView(id: Iri, project: ProjectRef, rev: Int, subject: Subject)
       extends CompositeViewCommand
 
   /**
@@ -119,9 +128,9 @@ object CompositeViewCommand {
   final case class TagCompositeView(
       id: Iri,
       project: ProjectRef,
-      targetRev: Long,
-      tag: TagLabel,
-      rev: Long,
+      targetRev: Int,
+      tag: UserTag,
+      rev: Int,
       subject: Subject
   ) extends CompositeViewCommand
 

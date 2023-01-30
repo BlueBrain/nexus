@@ -1,0 +1,16 @@
+{
+  "@context": {
+    "@vocab": "https://bluebrain.github.io/nexus/vocabulary/",
+    "name": "https://schema.org/name",
+    "description": "https://schema.org/description",
+    "types": {
+      "@type": "@id",
+      "@container": "@set"
+    },
+    "predicates": {
+      "@type": "@id",
+      "@container": "@set"
+    }
+  },
+  "@id": "https://bluebrain.github.io/nexus/contexts/pipeline.json"
+}

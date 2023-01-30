@@ -24,11 +24,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectivesSpec.SimpleRe
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef.{Latest, Revision, Tag}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.sdk.{SimpleRejection, SimpleResource}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestHelpers, TestMatchers}
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
@@ -62,7 +64,7 @@ class DeltaDirectivesSpec
   implicit private val s: Scheduler = Scheduler.global
 
   private val id                = nxv + "myresource"
-  private val resource          = SimpleResource(id, 1L, Instant.EPOCH, "Maria", 20)
+  private val resource          = SimpleResource(id, 1, Instant.EPOCH, "Maria", 20)
   private val resourceFusionUri = Uri(
     "https://bbp.epfl.ch/nexus/web/org/proj/resources/https:%2F%2Fbluebrain.github.io%2Fnexus%2Fvocabulary%2Fid"
   )
@@ -138,10 +140,10 @@ class DeltaDirectivesSpec
               emitOrFusionRedirect(ref, Latest(nxv + "id"), emit(resource))
             },
             path("redirectFusionRev") {
-              emitOrFusionRedirect(ref, Revision(nxv + "id", 7L), emit(resource))
+              emitOrFusionRedirect(ref, Revision(nxv + "id", 7), emit(resource))
             },
             path("redirectFusionTag") {
-              emitOrFusionRedirect(ref, Tag(nxv + "id", TagLabel.unsafe("my-tag")), emit(resource))
+              emitOrFusionRedirect(ref, Tag(nxv + "id", UserTag.unsafe("my-tag")), emit(resource))
             },
             path("redirectFusionDisabled") {
               emitOrFusionRedirect(ref, Latest(nxv + "id"), emit(resource))(f.copy(enableRedirects = false), s)
@@ -516,7 +518,7 @@ class DeltaDirectivesSpec
 }
 
 object DeltaDirectivesSpec {
-  final case class SimpleResource2(id: Iri, rev: Long)
+  final case class SimpleResource2(id: Iri, rev: Int)
 
   object SimpleResource2 extends CirceLiteral {
 

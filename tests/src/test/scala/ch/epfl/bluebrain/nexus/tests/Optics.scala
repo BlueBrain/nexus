@@ -63,7 +63,7 @@ object Optics extends Optics {
 
     val _label             = root._label.string
     val description        = root.description.string
-    val _rev               = root._rev.long
+    val _rev               = root._rev.int
     val _deprecated        = root._deprecated.boolean
     val _markedForDeletion = root._markedForDeletion.boolean
 
@@ -81,7 +81,7 @@ object Optics extends Optics {
         idPrefix: String,
         id: String,
         desc: String,
-        rev: Long,
+        rev: Int,
         label: String,
         deprecated: Boolean = false
     )(implicit config: TestsConfig): Assertion = {

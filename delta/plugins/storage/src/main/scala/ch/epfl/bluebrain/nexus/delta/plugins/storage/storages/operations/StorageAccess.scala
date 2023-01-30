@@ -28,7 +28,7 @@ private[operations] trait StorageAccess {
 
 object StorageAccess {
 
-  final private[storages] def apply(
+  final private[storage] def apply(
       id: Iri,
       storage: StorageValue
   )(implicit config: StorageTypeConfig, client: HttpClient, as: ActorSystem): IO[StorageNotAccessible, Unit] =

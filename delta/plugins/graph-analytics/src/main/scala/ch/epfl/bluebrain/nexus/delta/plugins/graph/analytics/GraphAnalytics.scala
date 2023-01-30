@@ -13,13 +13,11 @@ import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.PropertiesSta
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.{AnalyticsGraph, GraphAnalyticsRejection, PropertiesStatistics}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.sdk.Projects
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import com.typesafe.scalalogging.Logger
 import io.circe.{Decoder, JsonObject}
 import monix.bio.{IO, Task}
@@ -42,8 +40,8 @@ object GraphAnalytics {
 
   final def apply(
       client: ElasticSearchClient,
-      projects: Projects
-  )(implicit indexingCfg: ExternalIndexingConfig, aggCfg: TermAggregationsConfig): Task[GraphAnalytics] =
+      fetchContext: FetchContext[GraphAnalyticsRejection]
+  )(implicit aggCfg: TermAggregationsConfig): Task[GraphAnalytics] =
     for {
       script <- scriptContent
       _      <- client.createScript(updateRelationshipsScriptId, script)
@@ -75,7 +73,7 @@ object GraphAnalytics {
 
       override def relationships(projectRef: ProjectRef): IO[GraphAnalyticsRejection, AnalyticsGraph] =
         for {
-          _     <- projects.fetchProject[GraphAnalyticsRejection](projectRef)
+          _     <- fetchContext.onRead(projectRef)
           query <- relationshipsAggQuery
           stats <- client
                      .searchAs[AnalyticsGraph](QueryBuilder(query), idx(projectRef).value, Query.Empty)
@@ -95,10 +93,10 @@ object GraphAnalytics {
         }
 
         for {
-          project <- projects.fetchProject[GraphAnalyticsRejection](projectRef)
-          tpeIri  <- expandIri(tpe, project)
-          query   <- propertiesAggQueryFor(tpeIri)
-          stats   <- search(tpeIri, idx(projectRef), query)
+          pc     <- fetchContext.onRead(projectRef)
+          tpeIri <- expandIri(tpe, pc)
+          query  <- propertiesAggQueryFor(tpeIri)
+          stats  <- search(tpeIri, idx(projectRef), query)
         } yield stats
 
       }
@@ -125,14 +123,11 @@ object GraphAnalytics {
       case _                     => Left("Empty Path")
     }
 
-  private[analytics] def idx(projectRef: ProjectRef)(implicit config: ExternalIndexingConfig): IndexLabel =
-    if (config.prefix.isEmpty)
-      IndexLabel.unsafe(s"${UrlUtils.encode(projectRef.toString)}_graph_analytics")
-    else
-      IndexLabel.unsafe(s"${config.prefix}_${UrlUtils.encode(projectRef.toString)}_graph_analytics")
+  private[analytics] def idx(projectRef: ProjectRef): IndexLabel =
+    IndexLabel.unsafe(s"${UrlUtils.encode(projectRef.toString)}_graph_analytics")
 
-  private[analytics] def projectionId(projectRef: ProjectRef): ViewProjectionId =
-    ViewProjectionId(s"graph_analytics-$projectRef")
+  private[analytics] def projectionId(projectRef: ProjectRef): String =
+    s"graph_analytics-$projectRef"
 
   private[analytics] def name(iri: Iri): String =
     (iri.fragment orElse iri.lastSegment) getOrElse iri.toString

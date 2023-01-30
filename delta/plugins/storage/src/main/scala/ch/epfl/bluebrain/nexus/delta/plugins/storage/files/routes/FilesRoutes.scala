@@ -6,9 +6,7 @@ import akka.http.scaladsl.model.headers.Accept
 import akka.http.scaladsl.model.{ContentType, MediaRange}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
-import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{File, FileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.permissions.{read => Read, write => Write}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutes._
@@ -16,19 +14,18 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{schemas, FileResourc
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
-import ch.epfl.bluebrain.nexus.delta.sdk.Projects.FetchUuids
 import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{Tag, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, IdSegmentRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.Decoder
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
@@ -43,24 +40,21 @@ import scala.annotation.nowarn
   *
   * @param identities
   *   the identity module
-  * @param acls
-  *   the acls module
-  * @param organizations
-  *   the organizations module
-  * @param projects
-  *   the projects module
+  * @param aclCheck
+  *   to check acls
   * @param files
   *   the files module
+  * @param schemeDirectives
+  *   directives related to orgs and projects
   * @param index
   *   the indexing action on write operations
   */
 final class FilesRoutes(
     identities: Identities,
-    acls: Acls,
-    organizations: Organizations,
-    projects: Projects,
+    aclCheck: AclCheck,
     files: Files,
-    index: IndexingAction
+    schemeDirectives: DeltaSchemeDirectives,
+    index: IndexingAction.Execute[File]
 )(implicit
     baseUri: BaseUri,
     storageConfig: StorageTypeConfig,
@@ -68,164 +62,123 @@ final class FilesRoutes(
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering,
     fusionConfig: FusionConfig
-) extends AuthDirectives(identities, acls)
+) extends AuthDirectives(identities, aclCheck)
     with CirceUnmarshalling {
 
   import baseUri.prefixSegment
-
-  implicit private val fetchProjectUuids: FetchUuids = projects
-
-  implicit private val eventExchangeMapper = Mapper(Files.eventExchangeValue(_))
+  import schemeDirectives._
 
   def routes: Route =
-    (baseUriPrefix(baseUri.prefix) & replaceUri("files", schemas.files, projects)) {
+    (baseUriPrefix(baseUri.prefix) & replaceUri("files", schemas.files)) {
       pathPrefix("files") {
         extractCaller { implicit caller =>
-          concat(
-            // SSE files for all events
-            (pathPrefix("events") & pathEndOrSingleSlash) {
-              get {
-                operationName(s"$prefixSegment/files/events") {
-                  authorizeFor(AclAddress.Root, events.read).apply {
-                    lastEventId { offset =>
-                      emit(files.events(offset))
-                    }
-                  }
-                }
-              }
-            },
-            // SSE files for all events belonging to an organization
-            (orgLabel(organizations) & pathPrefix("events") & pathEndOrSingleSlash) { org =>
-              get {
-                operationName(s"$prefixSegment/files/{org}/events") {
-                  authorizeFor(org, events.read).apply {
-                    lastEventId { offset =>
-                      emit(files.events(org, offset).leftWiden[FileRejection])
-                    }
-                  }
-                }
-              }
-            },
-            projectRef(projects).apply { ref =>
-              concat(
-                // SSE files for all events belonging to a project
-                (pathPrefix("events") & pathEndOrSingleSlash) {
-                  get {
-                    operationName(s"$prefixSegment/files/{org}/{project}/events") {
-                      authorizeFor(ref, events.read).apply {
-                        lastEventId { offset =>
-                          emit(files.events(ref, offset))
-                        }
-                      }
-                    }
-                  }
-                },
-                (post & pathEndOrSingleSlash & noParameter("rev") & parameter(
-                  "storage".as[IdSegment].?
-                ) & indexingMode) { (storage, mode) =>
-                  operationName(s"$prefixSegment/files/{org}/{project}") {
-                    concat(
-                      // Link a file without id segment
-                      entity(as[LinkFile]) { case LinkFile(filename, mediaType, path) =>
-                        emit(
-                          Created,
-                          files.createLink(storage, ref, filename, mediaType, path).tapEval(index(ref, _, mode))
-                        )
-                      },
-                      // Create a file without id segment
-                      extractRequestEntity { entity =>
-                        emit(Created, files.create(storage, ref, entity).tapEval(index(ref, _, mode)))
-                      }
-                    )
-                  }
-                },
-                (idSegment & indexingMode) { (id, mode) =>
+          resolveProjectRef.apply { ref =>
+            concat(
+              (post & pathEndOrSingleSlash & noParameter("rev") & parameter(
+                "storage".as[IdSegment].?
+              ) & indexingMode) { (storage, mode) =>
+                operationName(s"$prefixSegment/files/{org}/{project}") {
                   concat(
-                    pathEndOrSingleSlash {
-                      operationName(s"$prefixSegment/files/{org}/{project}/{id}") {
-                        concat(
-                          (put & pathEndOrSingleSlash) {
-                            parameters("rev".as[Long].?, "storage".as[IdSegment].?) {
-                              case (None, storage)      =>
-                                concat(
-                                  // Link a file with id segment
-                                  entity(as[LinkFile]) { case LinkFile(filename, mediaType, path) =>
-                                    emit(
-                                      Created,
-                                      files
-                                        .createLink(id, storage, ref, filename, mediaType, path)
-                                        .tapEval(index(ref, _, mode))
-                                    )
-                                  },
-                                  // Create a file with id segment
-                                  extractRequestEntity { entity =>
-                                    emit(Created, files.create(id, storage, ref, entity).tapEval(index(ref, _, mode)))
-                                  }
-                                )
-                              case (Some(rev), storage) =>
-                                concat(
-                                  // Update a Link
-                                  entity(as[LinkFile]) { case LinkFile(filename, mediaType, path) =>
-                                    emit(
-                                      files
-                                        .updateLink(id, storage, ref, filename, mediaType, path, rev)
-                                        .tapEval(index(ref, _, mode))
-                                    )
-                                  },
-                                  // Update a file
-                                  extractRequestEntity { entity =>
-                                    emit(files.update(id, storage, ref, rev, entity).tapEval(index(ref, _, mode)))
-                                  }
-                                )
-                            }
-                          },
-                          // Deprecate a file
-                          (delete & parameter("rev".as[Long])) { rev =>
-                            authorizeFor(ref, Write).apply {
-                              emit(files.deprecate(id, ref, rev).tapEval(index(ref, _, mode)).rejectOn[FileNotFound])
-                            }
-                          },
-                          // Fetch a file
-                          (get & idSegmentRef(id)) { id =>
-                            emitOrFusionRedirect(
-                              ref,
-                              id,
-                              fetch(id, ref)
-                            )
-                          }
-                        )
-                      }
+                    // Link a file without id segment
+                    entity(as[LinkFile]) { case LinkFile(filename, mediaType, path) =>
+                      emit(
+                        Created,
+                        files.createLink(storage, ref, filename, mediaType, path).tapEval(index(ref, _, mode))
+                      )
                     },
-                    (pathPrefix("tags")) {
-                      operationName(s"$prefixSegment/files/{org}/{project}/{id}/tags") {
-                        concat(
-                          // Fetch a file tags
-                          (get & idSegmentRef(id) & pathEndOrSingleSlash & authorizeFor(ref, Read)) { id =>
-                            emit(fetchMetadata(id, ref).map(res => Tags(res.value.tags)).rejectOn[FileNotFound])
-                          },
-                          // Tag a file
-                          (post & parameter("rev".as[Long]) & pathEndOrSingleSlash) { rev =>
-                            authorizeFor(ref, Write).apply {
-                              entity(as[Tag]) { case Tag(tagRev, tag) =>
-                                emit(Created, files.tag(id, ref, tag, tagRev, rev).tapEval(index(ref, _, mode)))
-                              }
-                            }
-                          },
-                          // Delete a tag
-                          (tagLabel & delete & parameter("rev".as[Long]) & pathEndOrSingleSlash & authorizeFor(
-                            ref,
-                            Write
-                          )) { (tag, rev) =>
-                            emit(files.deleteTag(id, ref, tag, rev).tapEval(index(ref, _, mode)))
-                          }
-                        )
-                      }
+                    // Create a file without id segment
+                    extractRequestEntity { entity =>
+                      emit(Created, files.create(storage, ref, entity).tapEval(index(ref, _, mode)))
                     }
                   )
                 }
-              )
-            }
-          )
+              },
+              (idSegment & indexingMode) { (id, mode) =>
+                concat(
+                  pathEndOrSingleSlash {
+                    operationName(s"$prefixSegment/files/{org}/{project}/{id}") {
+                      concat(
+                        (put & pathEndOrSingleSlash) {
+                          parameters("rev".as[Int].?, "storage".as[IdSegment].?) {
+                            case (None, storage)      =>
+                              concat(
+                                // Link a file with id segment
+                                entity(as[LinkFile]) { case LinkFile(filename, mediaType, path) =>
+                                  emit(
+                                    Created,
+                                    files
+                                      .createLink(id, storage, ref, filename, mediaType, path)
+                                      .tapEval(index(ref, _, mode))
+                                  )
+                                },
+                                // Create a file with id segment
+                                extractRequestEntity { entity =>
+                                  emit(Created, files.create(id, storage, ref, entity).tapEval(index(ref, _, mode)))
+                                }
+                              )
+                            case (Some(rev), storage) =>
+                              concat(
+                                // Update a Link
+                                entity(as[LinkFile]) { case LinkFile(filename, mediaType, path) =>
+                                  emit(
+                                    files
+                                      .updateLink(id, storage, ref, filename, mediaType, path, rev)
+                                      .tapEval(index(ref, _, mode))
+                                  )
+                                },
+                                // Update a file
+                                extractRequestEntity { entity =>
+                                  emit(files.update(id, storage, ref, rev, entity).tapEval(index(ref, _, mode)))
+                                }
+                              )
+                          }
+                        },
+                        // Deprecate a file
+                        (delete & parameter("rev".as[Int])) { rev =>
+                          authorizeFor(ref, Write).apply {
+                            emit(files.deprecate(id, ref, rev).tapEval(index(ref, _, mode)).rejectOn[FileNotFound])
+                          }
+                        },
+                        // Fetch a file
+                        (get & idSegmentRef(id)) { id =>
+                          emitOrFusionRedirect(
+                            ref,
+                            id,
+                            fetch(id, ref)
+                          )
+                        }
+                      )
+                    }
+                  },
+                  (pathPrefix("tags")) {
+                    operationName(s"$prefixSegment/files/{org}/{project}/{id}/tags") {
+                      concat(
+                        // Fetch a file tags
+                        (get & idSegmentRef(id) & pathEndOrSingleSlash & authorizeFor(ref, Read)) { id =>
+                          emit(fetchMetadata(id, ref).map(_.value.tags).rejectOn[FileNotFound])
+                        },
+                        // Tag a file
+                        (post & parameter("rev".as[Int]) & pathEndOrSingleSlash) { rev =>
+                          authorizeFor(ref, Write).apply {
+                            entity(as[Tag]) { case Tag(tagRev, tag) =>
+                              emit(Created, files.tag(id, ref, tag, tagRev, rev).tapEval(index(ref, _, mode)))
+                            }
+                          }
+                        },
+                        // Delete a tag
+                        (tagLabel & delete & parameter("rev".as[Int]) & pathEndOrSingleSlash & authorizeFor(
+                          ref,
+                          Write
+                        )) { (tag, rev) =>
+                          emit(files.deleteTag(id, ref, tag, rev).tapEval(index(ref, _, mode)))
+                        }
+                      )
+                    }
+                  }
+                )
+              }
+            )
+          }
         }
       }
     }
@@ -239,7 +192,7 @@ final class FilesRoutes(
     }
 
   def fetchMetadata(id: IdSegmentRef, ref: ProjectRef)(implicit caller: Caller): IO[FileRejection, FileResource] =
-    acls.authorizeForOr(ref, Read)(AuthorizationFailed(ref, Read)) >> files.fetch(id, ref)
+    aclCheck.authorizeForOr(ref, Read)(AuthorizationFailed(ref, Read)) >> files.fetch(id, ref)
 }
 
 object FilesRoutes {
@@ -255,11 +208,10 @@ object FilesRoutes {
   def apply(
       config: StorageTypeConfig,
       identities: Identities,
-      acls: Acls,
-      organizations: Organizations,
-      projects: Projects,
+      aclCheck: AclCheck,
       files: Files,
-      index: IndexingAction
+      schemeDirectives: DeltaSchemeDirectives,
+      index: IndexingAction.Execute[File]
   )(implicit
       baseUri: BaseUri,
       s: Scheduler,
@@ -268,7 +220,7 @@ object FilesRoutes {
       fusionConfig: FusionConfig
   ): Route = {
     implicit val storageTypeConfig: StorageTypeConfig = config
-    new FilesRoutes(identities, acls, organizations, projects, files, index).routes
+    new FilesRoutes(identities, aclCheck, files, schemeDirectives, index).routes
   }
 
   final case class LinkFile(filename: Option[String], mediaType: Option[ContentType], path: Path)

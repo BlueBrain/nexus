@@ -1,9 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
+import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryClientDummy
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.SparqlNTriples
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.permissions
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.projectionNamespace
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{AuthorizationFailed, ProjectionNotFound, ViewIsDeprecated}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.ProjectSource
@@ -13,15 +15,16 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.NTriples
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
+import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Group, User}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclSetup, ConfigFixtures}
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Group, User}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.{Json, JsonObject}
 import monix.execution.Scheduler
@@ -50,9 +53,8 @@ class BlazegraphQuerySpec
     with Eventually {
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(6.seconds, 100.millis)
 
-  implicit private val sc: Scheduler                          = Scheduler.global
-  implicit private def externalConfig: ExternalIndexingConfig = externalIndexing
-  implicit val baseUri: BaseUri                               = BaseUri("http://localhost", Label.unsafe("v1"))
+  implicit private val sc: Scheduler = Scheduler.global
+  implicit val baseUri: BaseUri      = BaseUri("http://localhost", Label.unsafe("v1"))
 
   private val realm                = Label.unsafe("myrealm")
   private val alice: Caller        = Caller(User("Alice", realm), Set(User("Alice", realm), Group("users", realm)))
@@ -62,13 +64,11 @@ class BlazegraphQuerySpec
   private val project   = ProjectGen.project("myorg", "proj")
   private val otherPerm = Permission.unsafe("other")
 
-  private val acls = AclSetup
-    .init(
-      (alice.subject, AclAddress.Project(project.ref), Set(permissions.query)),
-      (bob.subject, AclAddress.Project(project.ref), Set(permissions.query, otherPerm)),
-      (anon.subject, AclAddress.Root, Set(permissions.read))
-    )
-    .accepted
+  private val aclCheck = AclSimpleCheck(
+    (alice.subject, AclAddress.Project(project.ref), Set(permissions.query)),
+    (bob.subject, AclAddress.Project(project.ref), Set(permissions.query, otherPerm)),
+    (anon.subject, AclAddress.Root, Set(permissions.read))
+  ).accepted
 
   private val construct = TemplateSparqlConstructQuery(
     "prefix p: <http://localhost/>\nCONSTRUCT{ {resource_id} p:transformed ?v } WHERE { {resource_id} p:predicate ?v}"
@@ -120,7 +120,7 @@ class BlazegraphQuerySpec
     NonEmptySet.of(blazeProjection1, blazeProjection2, esProjection),
     None,
     UUID.randomUUID(),
-    Map.empty,
+    Tags.empty,
     Json.obj(),
     Instant.EPOCH
   )
@@ -132,7 +132,7 @@ class BlazegraphQuerySpec
     NonEmptySet.of(blazeProjection1, blazeProjection2, esProjection),
     None,
     UUID.randomUUID(),
-    Map.empty,
+    Tags.empty,
     Json.obj(),
     Instant.EPOCH
   )
@@ -167,12 +167,12 @@ class BlazegraphQuerySpec
       deprecatedCompositeView
     )
 
-  private val config = externalIndexing
+  private val prefix = "prefix"
 
   // projection namespaces
-  private val blazeP1Ns     = CompositeViews.namespace(blazeProjection1, compositeView, 1, config.prefix)
-  private val blazeP2Ns     = CompositeViews.namespace(blazeProjection2, compositeView, 1, config.prefix)
-  private val blazeCommonNs = BlazegraphViews.namespace(compositeView.uuid, 1, config)
+  private val blazeP1Ns     = projectionNamespace(blazeProjection1, compositeView.uuid, 1, prefix)
+  private val blazeP2Ns     = projectionNamespace(blazeProjection2, compositeView.uuid, 1, prefix)
+  private val blazeCommonNs = BlazegraphViews.namespace(compositeView.uuid, 1, prefix)
 
   private val views              = new CompositeViewsDummy(compositeViewResource, deprecatedCompositeViewResource)
   private val responseCommonNs   = NTriples("blazeCommonNs", BNode.random)
@@ -181,7 +181,7 @@ class BlazegraphQuerySpec
 
   private val viewsQuery =
     BlazegraphQuery(
-      acls,
+      aclCheck,
       views.fetch,
       views.fetchBlazegraphProjection,
       new SparqlQueryClientDummy(sparqlNTriples = {
@@ -189,7 +189,8 @@ class BlazegraphQuerySpec
         case seq if seq.toSet == Set(blazeP1Ns)            => responseBlazeP1Ns
         case seq if seq.toSet == Set(blazeP1Ns, blazeP2Ns) => responseBlazeP12Ns
         case _                                             => NTriples.empty
-      })
+      }),
+      prefix
     )
 
   "A BlazegraphQuery" should {

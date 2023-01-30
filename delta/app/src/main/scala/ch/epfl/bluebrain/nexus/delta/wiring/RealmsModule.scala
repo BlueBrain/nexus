@@ -5,18 +5,19 @@ import akka.http.scaladsl.model.{HttpRequest, Uri}
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.RealmsRoutes
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
-import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmEvent
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, MetadataContextValue}
 import ch.epfl.bluebrain.nexus.delta.sdk._
-import ch.epfl.bluebrain.nexus.delta.service.realms.{RealmEventExchange, RealmsImpl, WellKnownResolver}
-import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, MetadataContextValue}
+import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.RealmEvent
+import ch.epfl.bluebrain.nexus.delta.sdk.realms.{Realms, RealmsImpl}
+import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
 import monix.execution.Scheduler
@@ -28,20 +29,15 @@ import monix.execution.Scheduler
 object RealmsModule extends ModuleDef {
   implicit private val classLoader: ClassLoader = getClass.getClassLoader
 
-  make[EventLog[Envelope[RealmEvent]]].fromEffect { databaseEventLog[RealmEvent](_, _) }
-
-  make[Realms].fromEffect {
+  make[Realms].from {
     (
         cfg: AppConfig,
-        eventLog: EventLog[Envelope[RealmEvent]],
-        as: ActorSystem[Nothing],
-        uuidF: UUIDF,
         clock: Clock[UIO],
-        scheduler: Scheduler,
-        hc: HttpClient @Id("realm")
+        hc: HttpClient @Id("realm"),
+        xas: Transactors
     ) =>
-      val wellKnownResolver = WellKnownResolver((uri: Uri) => hc.toJson(HttpRequest(uri = uri))) _
-      RealmsImpl(cfg.realms, wellKnownResolver, eventLog)(uuidF, as, scheduler, clock)
+      val wellKnownResolver = realms.WellKnownResolver((uri: Uri) => hc.toJson(HttpRequest(uri = uri))) _
+      RealmsImpl(cfg.realms, wellKnownResolver, xas)(clock)
   }
 
   make[RealmsRoutes].from {
@@ -49,17 +45,19 @@ object RealmsModule extends ModuleDef {
         identities: Identities,
         realms: Realms,
         cfg: AppConfig,
-        acls: Acls,
+        aclCheck: AclCheck,
         s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
     ) =>
-      new RealmsRoutes(identities, realms, acls)(cfg.http.baseUri, cfg.realms.pagination, s, cr, ordering)
+      new RealmsRoutes(identities, realms, aclCheck)(cfg.http.baseUri, cfg.realms.pagination, s, cr, ordering)
   }
 
   make[HttpClient].named("realm").from { (cfg: AppConfig, as: ActorSystem[Nothing], sc: Scheduler) =>
     HttpClient()(cfg.realms.client, as.classicSystem, sc)
   }
+
+  many[SseEncoder[_]].add { base: BaseUri => RealmEvent.sseEncoder(base) }
 
   many[MetadataContextValue].addEffect(MetadataContextValue.fromFile("contexts/realms-metadata.json"))
 
@@ -74,7 +72,5 @@ object RealmsModule extends ModuleDef {
     PriorityRoute(pluginsMaxPriority + 4, route.routes, requiresStrictEntity = true)
   }
 
-  make[RealmEventExchange]
-  many[EventExchange].ref[RealmEventExchange]
 }
 // $COVERAGE-ON$

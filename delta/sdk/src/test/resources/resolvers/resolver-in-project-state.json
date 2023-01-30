@@ -1,0 +1,28 @@
+{
+  "id" : "https://bluebrain.github.io/nexus/vocabulary/myId",
+  "project" : "myorg/myproj",
+  "deprecated" : false,
+  "rev" : 1,
+  "value" : {
+    "@type" : "InProjectValue",
+    "priority" : 42
+  },
+  "source" : {
+    "resolver" : "value"
+  },
+  "tags" : {
+    "mytag" : 3
+  },
+  "createdAt" : "1970-01-01T00:00:00Z",
+  "createdBy" : {
+    "@type" : "User",
+    "realm" : "myrealm",
+    "subject" : "username"
+  },
+  "updatedAt" : "1970-01-01T00:00:00Z",
+  "updatedBy" : {
+    "@type" : "User",
+    "realm" : "myrealm",
+    "subject" : "username"
+  }
+}

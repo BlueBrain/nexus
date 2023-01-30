@@ -1,24 +1,30 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
-import akka.actor.typed.ActorSystem
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMinPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
+import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.ResourcesRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk._
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolution}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, EntityType, Envelope, Event}
-import ch.epfl.bluebrain.nexus.delta.service.resources.ResourcesImpl.ResourcesAggregate
-import ch.epfl.bluebrain.nexus.delta.service.resources.{DataDeletion, ResourceEventExchange, ResourcesImpl}
-import ch.epfl.bluebrain.nexus.delta.sourcing.{DatabaseCleanup, EventLog}
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.{ResolverContextResolution, Resolvers, ResourceResolution}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.ProjectContextRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{Resource, ResourceEvent}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.{Resources, ResourcesImpl}
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas
+import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
 import monix.execution.Scheduler
@@ -28,74 +34,52 @@ import monix.execution.Scheduler
   */
 object ResourcesModule extends ModuleDef {
 
-  make[EventLog[Envelope[ResourceEvent]]].fromEffect { databaseEventLog[ResourceEvent](_, _) }
-
-  make[ResourcesAggregate].fromEffect {
-    (
-        config: AppConfig,
-        acls: Acls,
-        resolvers: Resolvers,
-        schemas: Schemas,
-        resourceIdCheck: ResourceIdCheck,
-        api: JsonLdApi,
-        as: ActorSystem[Nothing],
-        clock: Clock[UIO]
-    ) =>
-      ResourcesImpl.aggregate(
-        config.resources.aggregate,
-        ResourceResolution.schemaResource(acls, resolvers, schemas),
-        resourceIdCheck
-      )(api, as, clock)
-  }
-
-  many[ResourcesDeletion].add { (agg: ResourcesAggregate, resources: Resources, dbCleanup: DatabaseCleanup) =>
-    DataDeletion(agg, resources, dbCleanup)
-  }
-
   make[Resources].from {
     (
-        eventLog: EventLog[Envelope[ResourceEvent]],
-        agg: ResourcesAggregate,
-        organizations: Organizations,
-        projects: Projects,
-        api: JsonLdApi,
+        aclCheck: AclCheck,
+        resolvers: Resolvers,
+        schemas: Schemas,
+        fetchContext: FetchContext[ContextRejection],
+        config: AppConfig,
         resolverContextResolution: ResolverContextResolution,
+        api: JsonLdApi,
+        xas: Transactors,
+        clock: Clock[UIO],
         uuidF: UUIDF
     ) =>
-      ResourcesImpl(organizations, projects, agg, resolverContextResolution, eventLog)(api, uuidF)
+      ResourcesImpl(
+        ResourceResolution.schemaResource(aclCheck, resolvers, schemas),
+        fetchContext.mapRejection(ProjectContextRejection),
+        resolverContextResolution,
+        config.resources,
+        xas
+      )(
+        api,
+        clock,
+        uuidF
+      )
   }
 
   make[ResolverContextResolution].from {
-    (acls: Acls, resolvers: Resolvers, resources: Resources, rcr: RemoteContextResolution @Id("aggregate")) =>
-      ResolverContextResolution(acls, resolvers, resources, rcr)
+    (aclCheck: AclCheck, resolvers: Resolvers, resources: Resources, rcr: RemoteContextResolution @Id("aggregate")) =>
+      ResolverContextResolution(aclCheck, resolvers, resources, rcr)
   }
-  make[SseEventLog]
-    .named("resources")
-    .from(
-      (
-          eventLog: EventLog[Envelope[Event]],
-          orgs: Organizations,
-          projects: Projects,
-          exchanges: Set[EventExchange] @Id("resources")
-      ) => SseEventLog(eventLog, orgs, projects, exchanges)
-    )
 
   make[ResourcesRoutes].from {
     (
         identities: Identities,
-        acls: Acls,
-        organizations: Organizations,
-        projects: Projects,
+        aclCheck: AclCheck,
         resources: Resources,
+        schemeDirectives: DeltaSchemeDirectives,
         indexingAction: IndexingAction @Id("aggregate"),
-        sseEventLog: SseEventLog @Id("resources"),
+        shift: Resource.Shift,
         baseUri: BaseUri,
         s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering,
         fusionConfig: FusionConfig
     ) =>
-      new ResourcesRoutes(identities, acls, organizations, projects, resources, sseEventLog, indexingAction)(
+      new ResourcesRoutes(identities, aclCheck, resources, schemeDirectives, indexingAction(_, _, _)(shift, cr))(
         baseUri,
         s,
         cr,
@@ -104,19 +88,20 @@ object ResourcesModule extends ModuleDef {
       )
   }
 
+  many[SseEncoder[_]].add { base: BaseUri => ResourceEvent.sseEncoder(base) }
+
+  many[ScopedEventMetricEncoder[_]].add { ResourceEvent.resourceEventMetricEncoder }
+
   many[ApiMappings].add(Resources.mappings)
 
   many[PriorityRoute].add { (route: ResourcesRoutes) =>
     PriorityRoute(pluginsMinPriority - 1, route.routes, requiresStrictEntity = true)
   }
 
-  many[ReferenceExchange].add { (resources: Resources) =>
-    Resources.referenceExchange(resources)
+  make[Resource.Shift].from { (resources: Resources, base: BaseUri) =>
+    Resource.shift(resources)(base)
   }
 
-  make[ResourceEventExchange]
-  many[EventExchange].ref[ResourceEventExchange]
-  many[EventExchange].named("resources").ref[ResourceEventExchange]
-  many[EntityType].add(EntityType(Resources.moduleType))
+  many[ResourceShift[_, _, _]].ref[Resource.Shift]
 
 }

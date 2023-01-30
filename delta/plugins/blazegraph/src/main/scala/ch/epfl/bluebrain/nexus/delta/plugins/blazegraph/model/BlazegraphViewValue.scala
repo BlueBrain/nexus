@@ -1,12 +1,15 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model
 
+import cats.data.NonEmptySet
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.IndexingBlazegraphViewValue
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.configuration.semiauto.deriveConfigJsonLdDecoder
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{NonEmptySet, TagLabel}
-import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{Configuration, JsonLdDecoder}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
+import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.PipeChain
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
@@ -20,11 +23,29 @@ sealed trait BlazegraphViewValue extends Product with Serializable {
 
   /**
     * @return
+    *   the name of the view
+    */
+  def name: Option[String]
+
+  /**
+    * @return
+    *   the description of the view
+    */
+  def description: Option[String]
+
+  /**
+    * @return
     *   the view type
     */
   def tpe: BlazegraphViewType
 
   def toJson(iri: Iri): Json = this.asJsonObject.add(keywords.id, iri.asJson).asJson.dropNullValues
+
+  def asIndexingValue: Option[IndexingBlazegraphViewValue] =
+    this match {
+      case v: IndexingBlazegraphViewValue => Some(v)
+      case _                              => None
+    }
 }
 
 @nowarn("cat=unused")
@@ -48,15 +69,45 @@ object BlazegraphViewValue {
     *   the permission required for querying this view
     */
   final case class IndexingBlazegraphViewValue(
+      name: Option[String] = None,
+      description: Option[String] = None,
       resourceSchemas: Set[Iri] = Set.empty,
       resourceTypes: Set[Iri] = Set.empty,
-      resourceTag: Option[TagLabel] = None,
+      resourceTag: Option[UserTag] = None,
       includeMetadata: Boolean = false,
       includeDeprecated: Boolean = false,
       permission: Permission = permissions.query
   ) extends BlazegraphViewValue {
     override val tpe: BlazegraphViewType = BlazegraphViewType.IndexingBlazegraphView
+
+    /**
+      * Translates the view into a [[PipeChain]]
+      */
+    def pipeChain: Option[PipeChain] = PipeChain(resourceSchemas, resourceTypes, includeMetadata, includeDeprecated)
+
+    /**
+      * Returns true if this [[IndexingBlazegraphViewValue]] is equal to the provided [[IndexingBlazegraphViewValue]] on
+      * the fields which should trigger a reindexing of the view when modified.
+      */
+    def hasSameIndexingFields(that: IndexingBlazegraphViewValue): Boolean =
+      resourceSchemas == that.resourceSchemas &&
+        resourceTypes == that.resourceTypes &&
+        resourceTag == that.resourceTag &&
+        includeMetadata == that.includeMetadata &&
+        includeDeprecated == that.includeDeprecated
   }
+
+  /**
+    * @return
+    *   the next indexing revision based on the differences between the given views
+    */
+  def nextIndexingRev(
+      view1: IndexingBlazegraphViewValue,
+      view2: IndexingBlazegraphViewValue,
+      currentRev: Int
+  ): Int =
+    if (!view1.hasSameIndexingFields(view2)) currentRev + 1
+    else currentRev
 
   /**
     * The configuration of the Blazegraph view that delegates queries to multiple namespaces.
@@ -64,11 +115,15 @@ object BlazegraphViewValue {
     * @param views
     *   the collection of views where queries will be delegated (if necessary permissions are met)
     */
-  final case class AggregateBlazegraphViewValue(views: NonEmptySet[ViewRef]) extends BlazegraphViewValue {
+  final case class AggregateBlazegraphViewValue(
+      name: Option[String],
+      description: Option[String],
+      views: NonEmptySet[ViewRef]
+  ) extends BlazegraphViewValue {
     override val tpe: BlazegraphViewType = BlazegraphViewType.AggregateBlazegraphView
   }
 
-  implicit private[model] val blazegraphViewValueEncoder: Encoder.AsObject[BlazegraphViewValue] = {
+  implicit private val blazegraphViewValueEncoder: Encoder.AsObject[BlazegraphViewValue] = {
     import io.circe.generic.extras.Configuration
 
     implicit val config: Configuration = Configuration(
@@ -85,16 +140,9 @@ object BlazegraphViewValue {
     deriveConfiguredEncoder[BlazegraphViewValue]
   }
 
-  implicit val blazegraphViewValueJsonLdDecoder: JsonLdDecoder[BlazegraphViewValue] = {
-    import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.Configuration
-
-    val ctx = Configuration.default.context
-      .addAliasIdType("IndexingBlazegraphViewValue", BlazegraphViewType.IndexingBlazegraphView.tpe)
-      .addAliasIdType("AggregateBlazegraphViewValue", BlazegraphViewType.AggregateBlazegraphView.tpe)
-
-    implicit val cfg: Configuration = Configuration.default.copy(context = ctx)
-
+  implicit def blazegraphViewValueJsonLdDecoder(implicit
+      configuration: Configuration
+  ): JsonLdDecoder[BlazegraphViewValue] =
     deriveConfigJsonLdDecoder[BlazegraphViewValue]
-  }
 
 }

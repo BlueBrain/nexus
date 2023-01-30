@@ -131,8 +131,8 @@ class SparqlViewsSpec extends BaseSpec with EitherValuable with CirceEq {
     }
 
     "wait until in project view is indexed" in eventually {
-      deltaClient.get[Json](s"/views/$fullId", ScoobyDoo) { (json, response) =>
-        _total.getOption(json).value shouldEqual 4
+      deltaClient.get[Json](s"/views/$fullId?type=nxv%3ASparqlView", ScoobyDoo) { (json, response) =>
+        _total.getOption(json).value shouldEqual 2
         response.status shouldEqual StatusCodes.OK
       }
     }
@@ -162,7 +162,7 @@ class SparqlViewsSpec extends BaseSpec with EitherValuable with CirceEq {
       }
     }
 
-    "search instances in SPARQL endpoint in project 2" in {
+    "search instances in SPARQL endpoint in project 2" in eventually {
       deltaClient.sparqlQuery[Json](s"/views/$fullId2/nxv:defaultSparqlIndex/sparql", query, ScoobyDoo) {
         (json, response) =>
           response.status shouldEqual StatusCodes.OK
@@ -186,18 +186,21 @@ class SparqlViewsSpec extends BaseSpec with EitherValuable with CirceEq {
       }
     }
 
-    //TODO: Fix issue #32688 on Blazegraph views statistics
-    "fetch statistics for cell-view" ignore {
+    "fetch statistics for cell-view" in eventually {
       deltaClient.get[Json](s"/views/$fullId/test-resource:cell-view/statistics", ScoobyDoo) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
-        val expected = jsonContentOf(
-          "/kg/views/statistics.json",
-          "total"     -> "13",
-          "processed" -> "13",
-          "evaluated" -> "0",
-          "discarded" -> "13",
-          "remaining" -> "0"
-        )
+        val expected =
+          filterNestedKeys("delayInSeconds")(
+            jsonContentOf(
+              "/kg/views/statistics.json",
+              "total"     -> "0",
+              "processed" -> "0",
+              "evaluated" -> "0",
+              "discarded" -> "0",
+              "remaining" -> "0"
+            )
+          )
+
         filterNestedKeys("lastEventDateTime", "lastProcessedEventDateTime")(json) shouldEqual expected
       }
     }
@@ -245,10 +248,10 @@ class SparqlViewsSpec extends BaseSpec with EitherValuable with CirceEq {
         response.status shouldEqual StatusCodes.OK
         val expected = jsonContentOf(
           "/kg/views/statistics.json",
-          "total"     -> "18",
-          "processed" -> "18",
-          "evaluated" -> "11",
-          "discarded" -> "7",
+          "total"     -> "5",
+          "processed" -> "5",
+          "evaluated" -> "5",
+          "discarded" -> "0",
           "remaining" -> "0"
         )
         filterNestedKeys("lastEventDateTime", "lastProcessedEventDateTime")(json) shouldEqual expected
@@ -327,5 +330,13 @@ class SparqlViewsSpec extends BaseSpec with EitherValuable with CirceEq {
       }
     }
 
+    "restart the view indexing" in eventually {
+      deltaClient.delete[Json](s"/views/$fullId/test-resource:cell-view/offset", ScoobyDoo) { (json, response) =>
+        response.status shouldEqual StatusCodes.OK
+        val expected =
+          json"""{ "@context" : "https://bluebrain.github.io/nexus/contexts/offset.json", "@type" : "Start" }"""
+        json shouldEqual expected
+      }
+    }
   }
 }

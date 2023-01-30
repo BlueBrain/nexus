@@ -1,41 +1,44 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes
 
-import akka.actor.ActorSystem
 import akka.http.scaladsl.model.MediaTypes.`text/html`
-import akka.http.scaladsl.model.headers.{`Content-Type`, Accept, Location, OAuth2BearerToken}
-import akka.http.scaladsl.model.{HttpEntity, StatusCodes, Uri}
+import akka.http.scaladsl.model.headers._
+import akka.http.scaladsl.model.{HttpEntity, MediaTypes, StatusCodes, Uri}
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
-import akka.persistence.query.Sequence
 import akka.util.ByteString
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{SparqlQueryClientDummy, SparqlResults}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{BlazegraphViewsSetup, Fixtures}
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{BlazegraphViews, Fixtures}
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
-import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, User}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{permissions => _, _}
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
-import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
-import ch.epfl.bluebrain.nexus.delta.sdk.{ProgressesStatistics, ProjectsCountsDummy}
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionId, ProjectionProgress}
+import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, IndexingAction}
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, User}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label}
+import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projections
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.model.ProjectionRestart
+import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{FailedElem, SuccessElem}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionMetadata
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
 import io.circe.syntax._
@@ -43,13 +46,14 @@ import monix.bio.UIO
 import monix.execution.Scheduler
 import org.scalatest._
 import org.scalatest.matchers.should.Matchers
-import slick.jdbc.JdbcBackend
 
 import java.time.Instant
 import java.util.UUID
+import scala.concurrent.duration._
 
 class BlazegraphViewsRoutesSpec
     extends RouteHelpers
+    with DoobieScalaTestFixture
     with Matchers
     with CirceLiteral
     with CirceEq
@@ -66,124 +70,100 @@ class BlazegraphViewsRoutesSpec
     with BlazegraphViewRoutesFixtures {
 
   import akka.actor.typed.scaladsl.adapter._
-  implicit val typedSystem = system.toTyped
+  implicit private val typedSystem = system.toTyped
 
-  val uuid                      = UUID.randomUUID()
-  implicit val uuidF: UUIDF     = UUIDF.fixed(uuid)
-  implicit val sc: Scheduler    = Scheduler.global
-  val realm                     = Label.unsafe("myrealm")
-  val bob                       = User("Bob", realm)
-  implicit val caller: Caller   = Caller(bob, Set(bob, Group("mygroup", realm), Authenticated(realm)))
-  implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
-  private val identities        = IdentitiesDummy(Map(AuthToken("bob") -> caller))
-  private val asBob             = addCredentials(OAuth2BearerToken("bob"))
+  private val prefix                    = "prefix"
+  private val uuid                      = UUID.randomUUID()
+  implicit private val uuidF: UUIDF     = UUIDF.fixed(uuid)
+  implicit private val sc: Scheduler    = Scheduler.global
+  private val realm                     = Label.unsafe("myrealm")
+  private val bob                       = User("Bob", realm)
+  implicit private val caller: Caller   = Caller(bob, Set(bob, Group("mygroup", realm), Authenticated(realm)))
+  implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
+  private val identities                = IdentitiesDummy(caller)
+  private val asBob                     = addCredentials(OAuth2BearerToken("Bob"))
 
-  val indexingSource  = jsonContentOf("indexing-view-source.json")
-  val aggregateSource = jsonContentOf("aggregate-view-source.json")
+  private val indexingSource  = jsonContentOf("indexing-view-source.json")
+  private val indexingSource2 = jsonContentOf("indexing-view-source-2.json")
+  private val aggregateSource = jsonContentOf("aggregate-view-source.json")
 
-  val updatedIndexingSource = indexingSource.mapObject(_.add("resourceTag", Json.fromString("v1.5")))
+  private val updatedIndexingSource = indexingSource.mapObject(_.add("resourceTag", Json.fromString("v1.5")))
 
-  val indexingViewId = nxv + "indexing-view"
+  private val indexingViewId = nxv + "indexing-view"
 
-  val resource = nxv + "resource-incoming-outgoing"
-
-  val undefinedPermission = Permission.unsafe("not/defined")
-
-  val allowedPerms = Set(
-    permissions.query,
-    permissions.read,
-    permissions.write,
-    events.read
+  private val fetchContext = FetchContextDummy[BlazegraphViewRejection](
+    Map(project.ref -> project.context),
+    Set(deprecatedProject.ref),
+    ProjectContextRejection
   )
 
-  private val perms         = PermissionsDummy(allowedPerms).accepted
-  private val realms        = RealmSetup.init(realm).accepted
-  private val acls          = AclsDummy(perms, realms).accepted
-  private val (orgs, projs) =
-    ProjectSetup
-      .init(
-        orgsToCreate = org :: orgDeprecated :: Nil,
-        projectsToCreate = project :: deprecatedProject :: projectWithDeprecatedOrg :: Nil,
-        projectsToDeprecate = deprecatedProject.ref :: Nil,
-        organizationsToDeprecate = orgDeprecated :: Nil
-      )
-      .accepted
-
-  val viewRef = ViewRef(project.ref, indexingViewId)
-
-  implicit val ordering: JsonKeyOrdering          =
+  implicit private val ordering: JsonKeyOrdering  =
     JsonKeyOrdering.default(topKeys =
       List("@context", "@id", "@type", "reason", "details", "sourceId", "projectionId", "_total", "_results")
     )
   implicit val rejectionHandler: RejectionHandler = RdfRejectionHandler.apply
   implicit val exceptionHandler: ExceptionHandler = RdfExceptionHandler.apply
 
-  val tag = TagLabel.unsafe("v1.5")
-
-  val doesntExistId = nxv + "doesntexist"
-
-  private val now          = Instant.now()
-  private val nowMinus5    = now.minusSeconds(5)
-  private val projectStats = ProjectCount(10, 10, now)
-
-  val projectsCounts = ProjectsCountsDummy(projectRef -> projectStats)
-
-  val viewsProgressesCache =
-    KeyValueStore.localLRU[ProjectionId, ProjectionProgress[Unit]](10L).accepted
-  val statisticsProgress   = new ProgressesStatistics(viewsProgressesCache, projectsCounts)
-
-  implicit val externalIndexingConfig  = externalIndexing
   implicit val paginationConfig        = pagination
   implicit private val f: FusionConfig = fusionConfig
 
   private val selectQuery    = SparqlQuery("SELECT * {?s ?p ?o}")
   private val constructQuery = SparqlConstructQuery("CONSTRUCT {?s ?p ?o} WHERE {?s ?p ?o}").rightValue
 
-  var restartedView: Option[(ProjectRef, Iri)] = None
+  private lazy val views = BlazegraphViews(
+    fetchContext,
+    ResolverContextResolution(rcr),
+    alwaysValidate,
+    _ => UIO.unit,
+    eventLogConfig,
+    prefix,
+    xas
+  ).accepted
 
-  private def restart(id: Iri, projectRef: ProjectRef) = UIO { restartedView = Some(projectRef -> id) }.void
-  private val views                                    = BlazegraphViewsSetup.init(orgs, projs, perms)
+  private lazy val projections = Projections(xas, QueryConfig(10, RefreshStrategy.Stop), 1.hour)
 
-  val viewsQuery = new BlazegraphViewsQueryDummy(
+  lazy val viewsQuery = new BlazegraphViewsQueryDummy(
     projectRef,
     new SparqlQueryClientDummy(),
     views,
     Map("resource-incoming-outgoing" -> linksResults)
   )
 
-  private val routes =
+  private val aclCheck        = AclSimpleCheck().accepted
+  private val groupDirectives = DeltaSchemeDirectives(fetchContext, _ => UIO.none, _ => UIO.none)
+  private lazy val routes     =
     Route.seal(
       BlazegraphViewsRoutes(
         views,
         viewsQuery,
         identities,
-        acls,
-        projs,
-        statisticsProgress,
-        restart,
-        IndexingActionDummy()
+        aclCheck,
+        projections,
+        groupDirectives,
+        IndexingAction.noop
       )
     )
 
   "Blazegraph view routes" should {
     "fail to create a view without permission" in {
-      acls.append(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 0L).accepted
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(events.read)).accepted
       Post("/v1/views/org/proj", indexingSource.toEntity) ~> routes ~> check {
         response.status shouldEqual StatusCodes.Forbidden
         response.asJson shouldEqual jsonContentOf("routes/errors/authorization-failed.json")
       }
     }
     "create an indexing view" in {
-      acls
-        .append(Acl(AclAddress.Root, caller.subject -> Set(permissions.write, permissions.read)), 1L)
+      aclCheck
+        .append(AclAddress.Root, caller.subject -> Set(permissions.write, permissions.read))
         .accepted
       Post("/v1/views/org/proj", indexingSource.toEntity) ~> asBob ~> routes ~> check {
         response.status shouldEqual StatusCodes.Created
         response.asJson shouldEqual jsonContentOf(
           "routes/responses/indexing-view-metadata.json",
-          "uuid"       -> uuid,
-          "rev"        -> 1,
-          "deprecated" -> false
+          "uuid"        -> uuid,
+          "rev"         -> 1,
+          "indexingRev" -> 1,
+          "deprecated"  -> false
         )
       }
     }
@@ -220,6 +200,39 @@ class BlazegraphViewsRoutesSpec
       }
     }
 
+    "fail to fetch statistics and offset from view without resources/read permission" in {
+
+      val endpoints = List(
+        "/v1/views/org/proj/indexing-view/statistics",
+        "/v1/views/org/proj/indexing-view/offset"
+      )
+      forAll(endpoints) { endpoint =>
+        Get(endpoint) ~> routes ~> check {
+          response.status shouldEqual StatusCodes.Forbidden
+          response.asJson shouldEqual jsonContentOf("routes/errors/authorization-failed.json")
+        }
+      }
+    }
+
+    "fetch statistics from view" in {
+
+      Get("/v1/views/org/proj/indexing-view/statistics") ~> asBob ~> routes ~> check {
+        response.status shouldEqual StatusCodes.OK
+        response.asJson shouldEqual jsonContentOf(
+          "routes/responses/statistics.json",
+          "projectLatestInstant" -> Instant.EPOCH,
+          "viewLatestInstant"    -> Instant.EPOCH
+        )
+      }
+    }
+
+    "fetch offset from view" in {
+      Get("/v1/views/org/proj/indexing-view/offset") ~> asBob ~> routes ~> check {
+        response.status shouldEqual StatusCodes.OK
+        response.asJson shouldEqual jsonContentOf("routes/responses/offset.json")
+      }
+    }
+
     "reject creation of a view which already exits" in {
       Put("/v1/views/org/proj/aggregate-view", aggregateSource.toEntity) ~> asBob ~> routes ~> check {
         response.status shouldEqual StatusCodes.Conflict
@@ -238,9 +251,10 @@ class BlazegraphViewsRoutesSpec
         response.status shouldEqual StatusCodes.OK
         response.asJson shouldEqual jsonContentOf(
           "routes/responses/indexing-view-metadata.json",
-          "uuid"       -> uuid,
-          "rev"        -> 2,
-          "deprecated" -> false
+          "uuid"        -> uuid,
+          "rev"         -> 2,
+          "indexingRev" -> 2,
+          "deprecated"  -> false
         )
 
       }
@@ -259,9 +273,10 @@ class BlazegraphViewsRoutesSpec
         status shouldEqual StatusCodes.Created
         response.asJson shouldEqual jsonContentOf(
           "routes/responses/indexing-view-metadata.json",
-          "uuid"       -> uuid,
-          "rev"        -> 3,
-          "deprecated" -> false
+          "uuid"        -> uuid,
+          "rev"         -> 3,
+          "indexingRev" -> 2,
+          "deprecated"  -> false
         )
       }
     }
@@ -283,9 +298,10 @@ class BlazegraphViewsRoutesSpec
         response.status shouldEqual StatusCodes.OK
         response.asJson shouldEqual jsonContentOf(
           "routes/responses/indexing-view-metadata.json",
-          "uuid"       -> uuid,
-          "rev"        -> 4,
-          "deprecated" -> true
+          "uuid"        -> uuid,
+          "rev"         -> 4,
+          "indexingRev" -> 2,
+          "deprecated"  -> true
         )
 
       }
@@ -311,9 +327,10 @@ class BlazegraphViewsRoutesSpec
         response.status shouldEqual StatusCodes.OK
         response.asJson shouldEqual jsonContentOf(
           "routes/responses/indexing-view.json",
-          "uuid"       -> uuid,
-          "deprecated" -> true,
-          "rev"        -> 4
+          "uuid"        -> uuid,
+          "deprecated"  -> true,
+          "rev"         -> 4,
+          "indexingRev" -> 2
         )
       }
     }
@@ -331,9 +348,10 @@ class BlazegraphViewsRoutesSpec
           response.status shouldEqual StatusCodes.OK
           response.asJson shouldEqual jsonContentOf(
             "routes/responses/indexing-view.json",
-            "uuid"       -> uuid,
-            "deprecated" -> false,
-            "rev"        -> 1
+            "uuid"        -> uuid,
+            "deprecated"  -> false,
+            "rev"         -> 1,
+            "indexingRev" -> 1
           ).mapObject(_.remove("resourceTag"))
         }
       }
@@ -372,41 +390,6 @@ class BlazegraphViewsRoutesSpec
       Get("/v1/views/org/proj/indexing-view?rev=1&tag=mytag") ~> asBob ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual jsonContentOf("routes/errors/tag-and-rev-error.json")
-      }
-    }
-
-    "fail to fetch statistics and offset from view without resources/read permission" in {
-
-      val endpoints = List(
-        "/v1/views/org/proj/indexing-view/statistics",
-        "/v1/views/org/proj/indexing-view/offset"
-      )
-      forAll(endpoints) { endpoint =>
-        Get(endpoint) ~> routes ~> check {
-          response.status shouldEqual StatusCodes.Forbidden
-          response.asJson shouldEqual jsonContentOf("routes/errors/authorization-failed.json")
-        }
-      }
-    }
-
-    "fetch statistics from view" in {
-      val projectionId = ViewProjectionId(s"blazegraph-${uuid}_4")
-      viewsProgressesCache.put(projectionId, ProjectionProgress(Sequence(2), nowMinus5, 2, 0, 0, 0)).accepted
-
-      Get("/v1/views/org/proj/indexing-view/statistics") ~> asBob ~> routes ~> check {
-        response.status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual jsonContentOf(
-          "routes/responses/statistics.json",
-          "projectLatestInstant" -> now,
-          "viewLatestInstant"    -> nowMinus5
-        )
-      }
-    }
-
-    "fetch offset from view" in {
-      Get("/v1/views/org/proj/indexing-view/offset") ~> asBob ~> routes ~> check {
-        response.status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual jsonContentOf("routes/responses/offset.json")
       }
     }
 
@@ -474,12 +457,70 @@ class BlazegraphViewsRoutesSpec
     }
 
     "restart offset from view" in {
-      acls.append(Acl(AclAddress.Root, Anonymous -> Set(permissions.write)), 2L).accepted
-      restartedView shouldEqual None
-      Delete("/v1/views/org/proj/indexing-view/offset") ~> routes ~> check {
+      // Creating a new view, as indexing-view is deprecated and cannot be restarted
+      Post("/v1/views/org/proj", indexingSource2.toEntity) ~> asBob ~> routes
+
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(permissions.write)).accepted
+      projections.restarts(Offset.start).compile.toList.accepted.size shouldEqual 0
+      Delete("/v1/views/org/proj/indexing-view-2/offset") ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual json"""{"@context": "${Vocabulary.contexts.offset}", "@type": "NoOffset"}"""
-        restartedView shouldEqual Some(projectRef -> indexingViewId)
+        response.asJson shouldEqual json"""{"@context": "${Vocabulary.contexts.offset}", "@type": "Start"}"""
+        projections.restarts(Offset.start).compile.lastOrError.accepted shouldEqual SuccessElem(
+          ProjectionRestart.entityType,
+          ProjectionRestart.restartId(Offset.at(1L)),
+          None,
+          Instant.EPOCH,
+          Offset.at(1L),
+          ProjectionRestart(
+            "blazegraph-org/proj-https://bluebrain.github.io/nexus/vocabulary/indexing-view-2-1",
+            Instant.EPOCH,
+            Anonymous
+          ),
+          1
+        )
+      }
+    }
+
+    "return no blazegraph projection failures without write permission" in {
+      aclCheck.subtract(AclAddress.Root, Anonymous -> Set(permissions.write)).accepted
+
+      Get("/v1/views/org/proj/indexing-view/failures") ~> routes ~> check {
+        response.status shouldBe StatusCodes.Forbidden
+        response.asJson shouldEqual jsonContentOf("/routes/errors/authorization-failed.json")
+      }
+    }
+
+    "not return any failures if there aren't any" in {
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(permissions.write)).accepted
+
+      Get("/v1/views/org/proj/indexing-view/failures") ~> routes ~> check {
+        mediaType shouldBe MediaTypes.`text/event-stream`
+        response.status shouldBe StatusCodes.OK
+        chunksStream.asString(2).strip shouldBe ""
+      }
+    }
+
+    "return all available failures when no LastEventID is provided" in {
+      val metadata = ProjectionMetadata("testModule", "testName", Some(projectRef), Some(indexingViewId))
+      val error    = new Exception("boom")
+      val rev      = 1
+      val fail1    =
+        FailedElem(EntityType("ACL"), nxv + "myid", Some(projectRef), Instant.EPOCH, Offset.At(42L), error, rev)
+      val fail2    = FailedElem(EntityType("Schema"), nxv + "myid", None, Instant.EPOCH, Offset.At(42L), error, rev)
+      projections.saveFailedElems(metadata, List(fail1, fail2)).accepted
+
+      Get("/v1/views/org/proj/indexing-view/failures") ~> routes ~> check {
+        mediaType shouldBe MediaTypes.`text/event-stream`
+        response.status shouldBe StatusCodes.OK
+        chunksStream.asString(2).strip shouldEqual contentOf("/routes/sse/indexing-failures-1-2.txt")
+      }
+    }
+
+    "return failures only from the given LastEventID" in {
+      Get("/v1/views/org/proj/indexing-view/failures") ~> `Last-Event-ID`("1") ~> routes ~> check {
+        mediaType shouldBe MediaTypes.`text/event-stream`
+        response.status shouldBe StatusCodes.OK
+        chunksStream.asString(3).strip shouldEqual contentOf("/routes/sse/indexing-failure-2.txt")
       }
     }
 
@@ -492,21 +533,4 @@ class BlazegraphViewsRoutesSpec
       }
     }
   }
-
-  private var db: JdbcBackend.Database = null
-
-  override protected def createActorSystem(): ActorSystem =
-    ActorSystem("BlazegraphViewsRoutesSpec", AbstractDBSpec.config)
-
-  override protected def beforeAll(): Unit = {
-    super.beforeAll()
-    db = AbstractDBSpec.beforeAll
-    ()
-  }
-
-  override protected def afterAll(): Unit = {
-    AbstractDBSpec.afterAll(db)
-    super.afterAll()
-  }
-
 }

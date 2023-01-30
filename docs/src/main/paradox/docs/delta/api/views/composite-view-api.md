@@ -563,7 +563,7 @@ POST /v1/views/{org_label}/{project_label}/{view_id}/projections/{projection_id}
 where `{projection_id}` is the @id value of the target `ElasticSearch` projection. The reserved value `_`  means "every projection".
 
 The supported payload is defined on the 
-@link:[ElasticSearch documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-body.html){ open=new }
+@link:[ElasticSearch documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-search.html#search-search-api-request-body){ open=new }
 
 
 **Example**

@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.config
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour
 import ch.epfl.bluebrain.nexus.testkit.IOValues
 import com.typesafe.config.impl.ConfigImpl
 import org.scalatest.BeforeAndAfterAll
@@ -23,8 +22,7 @@ class AppConfigSpec extends AnyWordSpecLike with Matchers with IOValues with Bef
   }
 
   private def clearProperties(): Unit = {
-    System.clearProperty("app.database.flavour")
-    System.clearProperty("app.projects.deny-project-pruning")
+    System.clearProperty("app.description.name")
     ConfigImpl.reloadSystemPropertiesConfig()
   }
 
@@ -32,45 +30,29 @@ class AppConfigSpec extends AnyWordSpecLike with Matchers with IOValues with Bef
 
     val externalConfigPath = ClasspathResourceUtils.absolutePath("/config/external.conf").accepted
 
-    "load cassandra configuration by default" in {
+    "load conf" in {
       val (conf, _) = AppConfig.load().accepted
-
-      conf.database.flavour shouldEqual DatabaseFlavour.Cassandra
+      conf.description.name.value shouldEqual "delta"
     }
 
-    "load postgresql configuration when defined" in {
-      System.setProperty("app.database.flavour", "postgres")
-      ConfigImpl.reloadSystemPropertiesConfig()
-      val (conf, _) = AppConfig.load().accepted
-
-      conf.database.flavour shouldEqual DatabaseFlavour.Postgres
-    }
-
-    "load postgresql configuration via an external config file" in {
+    "load app name via an external config file" in {
       clearProperties()
       val (conf, _) = AppConfig
         .load(externalConfigPath = Some(externalConfigPath))
         .accepted
 
-      conf.database.flavour shouldEqual DatabaseFlavour.Postgres
+      conf.description.name.value shouldEqual "override name by file"
     }
 
-    "load cassandra as system properties have a higher priority than the external config file" in {
-      System.setProperty("app.database.flavour", "cassandra")
+    "load app name as system properties have a higher priority than the external config file" in {
+      System.setProperty("app.description.name", "override name by property")
       ConfigImpl.reloadSystemPropertiesConfig()
       val (conf, _) = AppConfig
         .load(externalConfigPath = Some(externalConfigPath))
         .accepted
 
-      conf.database.flavour shouldEqual DatabaseFlavour.Cassandra
+      conf.description.name.value shouldEqual "override name by property"
     }
-
-    "fail to load because of cleanup misconfiguration" in {
-      System.setProperty("app.projects.deny-project-pruning", "false")
-      ConfigImpl.reloadSystemPropertiesConfig()
-      AppConfig.load().rejected.head shouldEqual AppConfig.projectPruningMisconfiguration
-    }
-
   }
 
 }

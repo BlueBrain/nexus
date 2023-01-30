@@ -1,10 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.contexts.{blazegraph, blazegraphMetadata}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.testkit.IOValues
+import monix.bio.IO
 
 trait Fixtures extends IOValues {
   implicit private val cl: ClassLoader = getClass.getClassLoader
@@ -22,4 +24,6 @@ trait Fixtures extends IOValues {
     Vocabulary.contexts.tags       -> ContextValue.fromFile("contexts/tags.json").accepted,
     Vocabulary.contexts.search     -> ContextValue.fromFile("contexts/search.json").accepted
   )
+
+  def alwaysValidate: ValidateBlazegraphView = (_: BlazegraphViewValue) => IO.unit
 }

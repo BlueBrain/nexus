@@ -196,3 +196,19 @@ Request
 
 Response
 :   @@snip [views-sse.json](../assets/views/sse.json)
+
+### Fetch indexing failures
+
+This endpoint fetches the available indexing failures as SSEs. The `Last-Event-Id` is optional and provides the id of the indexing failure at which to start the stream; by default all indexing failures are fetched. The caller must have `view/write` permission on `{org_label}/{project_label}`.
+
+```
+GET /v1/views/{org_label}/{project_label}/{view_id}/failures
+```
+
+**Example**
+
+Request
+:   @@snip [failures.sh](../assets/views/elasticsearch/failures.sh)
+
+Response
+:   @@snip [failures.json](../assets/views/elasticsearch/failures.json)

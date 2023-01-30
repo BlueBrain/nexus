@@ -6,21 +6,21 @@ import org.testcontainers.containers.wait.strategy.Wait
 import org.testcontainers.utility.DockerImageName
 
 class MinioContainer(
-    accessKey: String,
-    secretKey: String,
+    rootUser: String,
+    rootPassword: String,
     virtualHost: String,
     region: String
 ) extends GenericContainer[MinioContainer](DockerImageName.parse(s"minio/minio:$Version")) {
 
-  addEnv("MINIO_ACCESS_KEY", accessKey)
-  addEnv("MINIO_SECRET_KEY", secretKey)
+  addEnv("MINIO_ROOT_USER", rootUser)
+  addEnv("MINIO_ROOT_PASSWORD", rootPassword)
   addEnv("MINIO_DOMAIN", virtualHost)
   addEnv("MINIO_REGION_NAME", region)
   setCommand("server", sys.props.getOrElse("java.io.tmpdir", "/tmp"))
   addExposedPort(9000)
-  setWaitStrategy(Wait.forHttp("/").forStatusCode(403))
+  setWaitStrategy(Wait.forHttp("/minio/health/live"))
 }
 
 object MinioContainer {
-  private val Version: String = "RELEASE.2021-07-30T00-02-00Z"
+  private val Version: String = "RELEASE.2022-08-02T23-59-16Z"
 }

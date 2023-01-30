@@ -1,14 +1,15 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.jira
 
-import akka.actor.typed.ActorSystem
 import cats.effect.Clock
+import ch.epfl.bluebrain.nexus.delta.kernel.database.{DatabaseConfig, Transactors}
 import ch.epfl.bluebrain.nexus.delta.plugins.jira.config.JiraConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.jira.routes.JiraRoutes
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseConfig
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
 import monix.execution.Scheduler
@@ -21,8 +22,8 @@ class JiraPluginModule(priority: Int) extends ModuleDef {
   make[JiraConfig].from { JiraConfig.load(_) }
 
   make[JiraClient].fromEffect {
-    (databaseConfig: DatabaseConfig, jiraConfig: JiraConfig, as: ActorSystem[Nothing], clock: Clock[UIO]) =>
-      TokenStore(databaseConfig, as, clock).flatMap { cache =>
+    (xas: Transactors, databaseConfig: DatabaseConfig, jiraConfig: JiraConfig, clock: Clock[UIO]) =>
+      TokenStore(xas, databaseConfig.tablesAutocreate)(clock).flatMap { cache =>
         JiraClient(cache, jiraConfig)
       }
   }
@@ -30,7 +31,7 @@ class JiraPluginModule(priority: Int) extends ModuleDef {
   make[JiraRoutes].from {
     (
         identities: Identities,
-        acls: Acls,
+        aclCheck: AclCheck,
         jiraClient: JiraClient,
         baseUri: BaseUri,
         s: Scheduler,
@@ -39,7 +40,7 @@ class JiraPluginModule(priority: Int) extends ModuleDef {
     ) =>
       new JiraRoutes(
         identities,
-        acls,
+        aclCheck,
         jiraClient
       )(
         baseUri,

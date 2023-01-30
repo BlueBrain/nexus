@@ -12,57 +12,52 @@ scalafmt: {
 }
  */
 
-val scalacScapegoatVersion = "1.4.13"
-val scalaCompilerVersion   = "2.13.8"
+val scalacScapegoatVersion = "2.1.0"
+val scalaCompilerVersion   = "2.13.10"
 
-val akkaHttpVersion                 = "10.2.9"
-val akkaHttpCirceVersion            = "1.39.2"
-val akkaCorsVersion                 = "1.1.3"
-val akkaPersistenceCassandraVersion = "1.0.5"
-val akkaPersistenceJdbcVersion      = "5.0.4"
-val akkaVersion                     = "2.6.19"
-val alpakkaVersion                  = "3.0.4"
-val apacheCompressVersion           = "1.21"
-val awsSdkVersion                   = "2.17.184"
-val byteBuddyAgentVersion           = "1.10.17"
-val betterMonadicForVersion         = "0.3.1"
-val caffeineVersion                 = "3.1.0"
-val catsEffectVersion               = "2.5.4"
-val catsRetryVersion                = "2.1.1"
-val catsVersion                     = "2.7.0"
-val circeVersion                    = "0.14.1"
-val classgraphVersion               = "4.8.146"
-val distageVersion                  = "1.0.10"
-val doobieVersion                   = "0.13.4"
-val fs2Version                      = "2.5.11"
-val googleAuthClientVersion         = "1.33.3"
-val h2Version                       = "1.4.200"
-val jenaVersion                     = "4.2.0"
-val jsonldjavaVersion               = "0.13.4"
-val kamonVersion                    = "2.5.1"
-val kanelaAgentVersion              = "1.0.13"
-val kindProjectorVersion            = "0.13.2"
-val kryoVersion                     = "2.4.3"
-val logbackVersion                  = "1.2.11"
-val magnoliaVersion                 = "0.17.0"
-val mockitoVersion                  = "1.17.5"
-val monixVersion                    = "3.4.0"
-val monixBioVersion                 = "1.2.0"
-val nimbusJoseJwtVersion            = "9.22"
-val pureconfigVersion               = "0.17.1"
-val scalaLoggingVersion             = "3.9.4"
-val scalateVersion                  = "1.9.6" // scala-parser-combinators_2.13:2.0.0 ... is selected over 1.1.2
-val scalaTestVersion                = "3.2.10"
-val slickVersion                    = "3.3.3"
-val streamzVersion                  = "0.12"
-val topBraidVersion                 = "1.3.2" // 1.4.1 fails to validate some test schemas
-val testContainersVersion           = "1.17.1"
-val uuidGeneratorVersion            = "4.0.1"
+val akkaHttpVersion         = "10.2.10"
+val akkaHttpCirceVersion    = "1.39.2"
+val akkaCorsVersion         = "1.1.3"
+val akkaVersion             = "2.6.20"
+val alpakkaVersion          = "3.0.4"
+val apacheCompressVersion   = "1.22"
+val awsSdkVersion           = "2.17.184"
+val byteBuddyAgentVersion   = "1.10.17"
+val betterMonadicForVersion = "0.3.1"
+val caffeineVersion         = "3.1.2"
+val catsEffectVersion       = "2.5.5"
+val catsRetryVersion        = "2.1.1"
+val catsVersion             = "2.9.0"
+val circeVersion            = "0.14.3"
+val circeOpticsVersion      = "0.14.1"
+val classgraphVersion       = "4.8.154"
+val distageVersion          = "1.0.10"
+val doobieVersion           = "0.13.4"
+val fs2Version              = "2.5.11"
+val googleAuthClientVersion = "1.34.1"
+val handleBarsVersion       = "4.3.1"
+val hikariVersion           = "5.0.1"
+val jenaVersion             = "4.2.0"
+val jsonldjavaVersion       = "0.13.4"
+val kamonVersion            = "2.5.12"
+val kanelaAgentVersion      = "1.0.17"
+val kindProjectorVersion    = "0.13.2"
+val logbackVersion          = "1.4.5"
+val magnoliaVersion         = "0.17.0"
+val mockitoVersion          = "1.17.12"
+val monixVersion            = "3.4.1"
+val monixBioVersion         = "1.2.0"
+val munitVersion            = "1.0.0-M7"
+val nimbusJoseJwtVersion    = "9.29"
+val postgresJdbcVersion     = "42.5.1"
+val pureconfigVersion       = "0.17.2"
+val scalaLoggingVersion     = "3.9.5"
+val scalaTestVersion        = "3.2.15"
+val scalaXmlVersion         = "2.1.0"
+val topBraidVersion         = "1.3.2" // 1.4.1 fails to validate some test schemas
+val testContainersVersion   = "1.17.6"
 
-lazy val akkaActorTyped           = "com.typesafe.akka" %% "akka-actor-typed"            % akkaVersion
-lazy val akkaClusterTyped         = "com.typesafe.akka" %% "akka-cluster-typed"          % akkaVersion
-lazy val akkaClusterShardingTyped = "com.typesafe.akka" %% "akka-cluster-sharding-typed" % akkaVersion
-lazy val akkaDistributedData      = "com.typesafe.akka" %% "akka-distributed-data"       % akkaVersion
+lazy val akkaActorTyped = "com.typesafe.akka" %% "akka-actor-typed" % akkaVersion
 
 lazy val akkaHttp        = "com.typesafe.akka" %% "akka-http"         % akkaHttpVersion
 lazy val akkaHttpCore    = "com.typesafe.akka" %% "akka-http-core"    % akkaHttpVersion
@@ -71,68 +66,60 @@ lazy val akkaHttpCors    = "ch.megard"         %% "akka-http-cors"    % akkaCors
 lazy val akkaHttpTestKit = "com.typesafe.akka" %% "akka-http-testkit" % akkaHttpVersion
 lazy val akkaHttpXml     = "com.typesafe.akka" %% "akka-http-xml"     % akkaHttpVersion
 
-lazy val akkaPersistenceTyped   = "com.typesafe.akka" %% "akka-persistence-typed"   % akkaVersion
-lazy val akkaPersistenceTestKit = "com.typesafe.akka" %% "akka-persistence-testkit" % akkaVersion
-
-lazy val akkaPersistenceCassandra = "com.typesafe.akka" %% "akka-persistence-cassandra" % akkaPersistenceCassandraVersion
-
-lazy val akkaPersistenceJdbc = Seq(
-  "com.lightbend.akka" %% "akka-persistence-jdbc" % akkaPersistenceJdbcVersion,
-  "com.typesafe.slick" %% "slick"                 % slickVersion,
-  "com.typesafe.slick" %% "slick-hikaricp"        % slickVersion
+lazy val akkaSlf4j          = "com.typesafe.akka"            %% "akka-slf4j"               % akkaVersion
+lazy val akkaStream         = "com.typesafe.akka"            %% "akka-stream"              % akkaVersion
+lazy val akkaTestKit        = "com.typesafe.akka"            %% "akka-testkit"             % akkaVersion
+lazy val akkaTestKitTyped   = "com.typesafe.akka"            %% "akka-actor-testkit-typed" % akkaVersion
+lazy val alpakkaFile        = "com.lightbend.akka"           %% "akka-stream-alpakka-file" % alpakkaVersion
+lazy val alpakkaSse         = "com.lightbend.akka"           %% "akka-stream-alpakka-sse"  % alpakkaVersion
+lazy val alpakkaS3          = "com.lightbend.akka"           %% "akka-stream-alpakka-s3"   % alpakkaVersion
+lazy val apacheCompress     = "org.apache.commons"            % "commons-compress"         % apacheCompressVersion
+lazy val awsSdk             = "software.amazon.awssdk"        % "s3"                       % awsSdkVersion
+lazy val betterMonadicFor   = "com.olegpy"                   %% "better-monadic-for"       % betterMonadicForVersion
+lazy val byteBuddyAgent     = "net.bytebuddy"                 % "byte-buddy-agent"         % byteBuddyAgentVersion
+lazy val caffeine           = "com.github.ben-manes.caffeine" % "caffeine"                 % caffeineVersion
+lazy val catsCore           = "org.typelevel"                %% "cats-core"                % catsVersion
+lazy val catsEffect         = "org.typelevel"                %% "cats-effect"              % catsEffectVersion
+lazy val catsEffectLaws     = "org.typelevel"                %% "cats-effect-laws"         % catsEffectVersion
+lazy val catsRetry          = "com.github.cb372"             %% "cats-retry"               % catsRetryVersion
+lazy val circeCore          = "io.circe"                     %% "circe-core"               % circeVersion
+lazy val circeGeneric       = "io.circe"                     %% "circe-generic"            % circeVersion
+lazy val circeGenericExtras = "io.circe"                     %% "circe-generic-extras"     % circeVersion
+lazy val circeLiteral       = "io.circe"                     %% "circe-literal"            % circeVersion
+lazy val circeOptics        = "io.circe"                     %% "circe-optics"             % circeOpticsVersion
+lazy val circeParser        = "io.circe"                     %% "circe-parser"             % circeVersion
+lazy val classgraph         = "io.github.classgraph"          % "classgraph"               % classgraphVersion
+lazy val distageCore        = "io.7mind.izumi"               %% "distage-core"             % distageVersion
+lazy val doobiePostgres     = "org.tpolecat"                 %% "doobie-postgres"          % doobieVersion
+lazy val doobie             = Seq(
+  doobiePostgres,
+  "org.tpolecat"  %% "doobie-hikari" % doobieVersion,
+  "com.zaxxer"     % "HikariCP"      % hikariVersion exclude ("org.slf4j", "slf4j-api"),
+  "org.postgresql" % "postgresql"    % postgresJdbcVersion
 )
-
-lazy val akkaPersistenceQuery = "com.typesafe.akka"            %% "akka-persistence-query"   % akkaVersion
-lazy val akkaSlf4j            = "com.typesafe.akka"            %% "akka-slf4j"               % akkaVersion
-lazy val akkaStream           = "com.typesafe.akka"            %% "akka-stream"              % akkaVersion
-lazy val akkaTestKit          = "com.typesafe.akka"            %% "akka-testkit"             % akkaVersion
-lazy val akkaTestKitTyped     = "com.typesafe.akka"            %% "akka-actor-testkit-typed" % akkaVersion
-lazy val alpakkaFile          = "com.lightbend.akka"           %% "akka-stream-alpakka-file" % alpakkaVersion
-lazy val alpakkaSse           = "com.lightbend.akka"           %% "akka-stream-alpakka-sse"  % alpakkaVersion
-lazy val alpakkaS3            = "com.lightbend.akka"           %% "akka-stream-alpakka-s3"   % alpakkaVersion
-lazy val apacheCompress       = "org.apache.commons"            % "commons-compress"         % apacheCompressVersion
-lazy val awsSdk               = "software.amazon.awssdk"        % "s3"                       % awsSdkVersion
-lazy val betterMonadicFor     = "com.olegpy"                   %% "better-monadic-for"       % betterMonadicForVersion
-lazy val byteBuddyAgent       = "net.bytebuddy"                 % "byte-buddy-agent"         % byteBuddyAgentVersion
-lazy val caffeine             = "com.github.ben-manes.caffeine" % "caffeine"                 % caffeineVersion
-lazy val catsCore             = "org.typelevel"                %% "cats-core"                % catsVersion
-lazy val catsEffect           = "org.typelevel"                %% "cats-effect"              % catsEffectVersion
-lazy val catsEffectLaws       = "org.typelevel"                %% "cats-effect-laws"         % catsEffectVersion
-lazy val catsRetry            = "com.github.cb372"             %% "cats-retry"               % catsRetryVersion
-lazy val circeCore            = "io.circe"                     %% "circe-core"               % circeVersion
-lazy val circeGeneric         = "io.circe"                     %% "circe-generic"            % circeVersion
-lazy val circeGenericExtras   = "io.circe"                     %% "circe-generic-extras"     % circeVersion
-lazy val circeLiteral         = "io.circe"                     %% "circe-literal"            % circeVersion
-lazy val circeOptics          = "io.circe"                     %% "circe-optics"             % circeVersion
-lazy val circeParser          = "io.circe"                     %% "circe-parser"             % circeVersion
-lazy val classgraph           = "io.github.classgraph"          % "classgraph"               % classgraphVersion
-lazy val distageCore          = "io.7mind.izumi"               %% "distage-core"             % distageVersion
-lazy val doobiePostgres       = "org.tpolecat"                 %% "doobie-postgres"          % doobieVersion
-lazy val fs2                  = "co.fs2"                       %% "fs2-core"                 % fs2Version
-lazy val fs2io                = "co.fs2"                       %% "fs2-io"                   % fs2Version
-lazy val googleAuthClient     = "com.google.oauth-client"       % "google-oauth-client"      % googleAuthClientVersion
-lazy val h2                   = "com.h2database"                % "h2"                       % h2Version
-lazy val jenaArq              = "org.apache.jena"               % "jena-arq"                 % jenaVersion
-lazy val jsonldjava           = "com.github.jsonld-java"        % "jsonld-java"              % jsonldjavaVersion
-lazy val kamonAkkaHttp        = "io.kamon"                     %% "kamon-akka-http"          % kamonVersion
-lazy val kamonCore            = "io.kamon"                     %% "kamon-core"               % kamonVersion
-lazy val kanelaAgent          = "io.kamon"                      % "kanela-agent"             % kanelaAgentVersion
-lazy val kindProjector        = "org.typelevel"                %% "kind-projector"           % kindProjectorVersion cross CrossVersion.full
-lazy val kryo                 = "io.altoo"                     %% "akka-kryo-serialization"  % kryoVersion
-lazy val logback              = "ch.qos.logback"                % "logback-classic"          % logbackVersion
-lazy val magnolia             = "com.propensive"               %% "magnolia"                 % magnoliaVersion
-lazy val mockito              = "org.mockito"                  %% "mockito-scala"            % mockitoVersion
-lazy val monixBio             = "io.monix"                     %% "monix-bio"                % monixBioVersion
-lazy val monixEval            = "io.monix"                     %% "monix-eval"               % monixVersion
-lazy val nimbusJoseJwt        = "com.nimbusds"                  % "nimbus-jose-jwt"          % nimbusJoseJwtVersion
-lazy val pureconfig           = "com.github.pureconfig"        %% "pureconfig"               % pureconfigVersion
-lazy val scalaLogging         = "com.typesafe.scala-logging"   %% "scala-logging"            % scalaLoggingVersion
-lazy val scalate              = "org.scalatra.scalate"         %% "scalate-core"             % scalateVersion
-lazy val scalaTest            = "org.scalatest"                %% "scalatest"                % scalaTestVersion
-lazy val streamz              = "com.github.krasserm"          %% "streamz-converter"        % streamzVersion
-lazy val topBraidShacl        = "org.topbraid"                  % "shacl"                    % topBraidVersion
-lazy val testContainers       = "org.testcontainers"            % "testcontainers"           % testContainersVersion
-lazy val uuidGenerator        = "com.fasterxml.uuid"            % "java-uuid-generator"      % uuidGeneratorVersion
+lazy val fs2                = "co.fs2"                       %% "fs2-core"                 % fs2Version
+lazy val fs2io              = "co.fs2"                       %% "fs2-io"                   % fs2Version
+lazy val googleAuthClient   = "com.google.oauth-client"       % "google-oauth-client"      % googleAuthClientVersion
+lazy val handleBars         = "com.github.jknack"             % "handlebars"               % handleBarsVersion
+lazy val jenaArq            = "org.apache.jena"               % "jena-arq"                 % jenaVersion
+lazy val jsonldjava         = "com.github.jsonld-java"        % "jsonld-java"              % jsonldjavaVersion
+lazy val kamonAkkaHttp      = "io.kamon"                     %% "kamon-akka-http"          % kamonVersion
+lazy val kamonCore          = "io.kamon"                     %% "kamon-core"               % kamonVersion
+lazy val kanelaAgent        = "io.kamon"                      % "kanela-agent"             % kanelaAgentVersion
+lazy val kindProjector      = "org.typelevel"                %% "kind-projector"           % kindProjectorVersion cross CrossVersion.full
+lazy val logback            = "ch.qos.logback"                % "logback-classic"          % logbackVersion
+lazy val magnolia           = "com.propensive"               %% "magnolia"                 % magnoliaVersion
+lazy val mockito            = "org.mockito"                  %% "mockito-scala"            % mockitoVersion
+lazy val monixBio           = "io.monix"                     %% "monix-bio"                % monixBioVersion
+lazy val monixEval          = "io.monix"                     %% "monix-eval"               % monixVersion
+lazy val munit              = "org.scalameta"                %% "munit"                    % munitVersion
+lazy val nimbusJoseJwt      = "com.nimbusds"                  % "nimbus-jose-jwt"          % nimbusJoseJwtVersion
+lazy val pureconfig         = "com.github.pureconfig"        %% "pureconfig"               % pureconfigVersion
+lazy val scalaLogging       = "com.typesafe.scala-logging"   %% "scala-logging"            % scalaLoggingVersion
+lazy val scalaTest          = "org.scalatest"                %% "scalatest"                % scalaTestVersion
+lazy val scalaXml           = "org.scala-lang.modules"       %% "scala-xml"                % scalaXmlVersion
+lazy val topBraidShacl      = "org.topbraid"                  % "shacl"                    % topBraidVersion
+lazy val testContainers     = "org.testcontainers"            % "testcontainers"           % testContainersVersion
 
 val javaSpecificationVersion = SettingKey[String](
   "java-specification-version",
@@ -194,7 +181,6 @@ lazy val docs = project
       val contextDirs                        = Seq(
         (rdf / Compile / resourceDirectory).value / "contexts",
         (sdk / Compile / resourceDirectory).value / "contexts",
-        (sdkViews / Compile / resourceDirectory).value / "contexts",
         (archivePlugin / Compile / resourceDirectory).value / "contexts",
         (blazegraphPlugin / Compile / resourceDirectory).value / "contexts",
         (graphAnalyticsPlugin / Compile / resourceDirectory).value / "contexts",
@@ -217,14 +203,15 @@ lazy val kernel = project
     javaSpecificationVersion := "1.8",
     libraryDependencies     ++= Seq(
       catsRetry,
+      circeCore,
       circeParser,
+      handleBars,
       monixBio,
       kamonCore,
       pureconfig,
       scalaLogging,
-      scalate,
       scalaTest % Test
-    ),
+    ) ++ doobie,
     addCompilerPlugin(kindProjector),
     coverageFailOnMinimum    := false
   )
@@ -243,46 +230,37 @@ lazy val testkit = project
       catsRetry,
       doobiePostgres,
       monixBio,
+      munit,
       scalaTest,
       testContainers
     ),
     addCompilerPlugin(kindProjector)
   )
 
-lazy val sourcing = project
-  .in(file("delta/sourcing"))
-  .dependsOn(kernel, testkit % "test->compile")
+lazy val sourcingPsql = project
+  .in(file("delta/sourcing-psql"))
+  .dependsOn(rdf, testkit % "test->compile")
   .settings(
-    name       := "delta-sourcing",
-    moduleName := "delta-sourcing"
+    name       := "delta-sourcing-psql",
+    moduleName := "delta-sourcing-psql"
   )
   .settings(shared, compilation, assertJavaVersion, coverage, release)
   .settings(
-    coverageMinimumStmtTotal := 64,
-    libraryDependencies     ++= Seq(
-      akkaActorTyped,
-      akkaClusterTyped,
-      akkaClusterShardingTyped,
-      akkaPersistenceTyped,
-      akkaPersistenceCassandra,
-      akkaPersistenceQuery,
+    libraryDependencies ++= Seq(
       catsCore,
       circeCore,
       circeGenericExtras,
       circeParser,
       distageCore,
-      doobiePostgres,
       fs2,
       fs2io,
-      kryo,
       monixBio,
-      streamz,
-      akkaPersistenceTestKit % Test,
-      akkaSlf4j              % Test,
-      catsEffectLaws         % Test,
-      logback                % Test
-    ) ++ akkaPersistenceJdbc,
-    Test / fork              := true
+      munit          % Test,
+      catsEffectLaws % Test,
+      logback        % Test
+    ) ++ doobie,
+    Test / fork          := true,
+    addCompilerPlugin(kindProjector)
   )
 
 lazy val rdf = project
@@ -322,91 +300,44 @@ lazy val sdk = project
     name       := "delta-sdk",
     moduleName := "delta-sdk"
   )
-  .dependsOn(kernel, sourcing, rdf % "compile->compile;test->test", testkit % "test->compile")
+  .dependsOn(kernel, sourcingPsql % "compile->compile;test->test", rdf % "compile->compile;test->test", testkit % "test->compile")
   .settings(shared, compilation, assertJavaVersion, coverage, release)
   .settings(
     coverageFailOnMinimum := false,
     libraryDependencies  ++= Seq(
-      akkaClusterTyped,
-      akkaDistributedData,
+      akkaStream,
       akkaHttp,
-      akkaHttpXml,
-      akkaPersistenceQuery, // To have access to the Offset type
+      akkaHttpXml exclude ("org.scala-lang.modules", "scala-xml_2.13"),
+      scalaXml,
       caffeine,
       circeLiteral,
       circeGenericExtras,
       distageCore,
       fs2,
-      kryo,
       monixBio,
-      streamz,
-      akkaTestKitTyped % Test,
-      akkaHttpTestKit  % Test,
-      scalaTest        % Test,
-      mockito          % Test
-    ),
-    addCompilerPlugin(kindProjector),
-    addCompilerPlugin(betterMonadicFor)
-  )
-
-lazy val sdkTestkit = project
-  .in(file("delta/sdk-testkit"))
-  .settings(
-    name       := "delta-sdk-testkit",
-    moduleName := "delta-sdk-testkit"
-  )
-  .settings(shared, compilation, assertJavaVersion, coverage, release)
-  .dependsOn(rdf, sdk % "compile->compile;test->test", testkit)
-  .settings(
-    libraryDependencies ++= Seq(
-      akkaTestKitTyped,
-      scalaTest % Test
-    ) ++ akkaPersistenceJdbc,
-    addCompilerPlugin(betterMonadicFor)
-  )
-
-lazy val sdkViews = project
-  .in(file("delta/sdk-views"))
-  .settings(
-    name       := "delta-sdk-views",
-    moduleName := "delta-sdk-views"
-  )
-  .dependsOn(sdk % "compile->compile;test->test", testkit % "test->compile")
-  .settings(shared, compilation, assertJavaVersion, coverage, release)
-  .settings(
-    coverageFailOnMinimum := false,
-    libraryDependencies  ++= Seq(
-      akkaTestKitTyped % Test,
-      akkaHttpTestKit  % Test,
-      scalaTest        % Test
-    ),
-    addCompilerPlugin(kindProjector),
-    addCompilerPlugin(betterMonadicFor),
-    Test / fork           := true
-  )
-
-lazy val service = project
-  .in(file("delta/service"))
-  .settings(
-    name       := "delta-service",
-    moduleName := "delta-service"
-  )
-  .settings(shared, compilation, assertJavaVersion, coverage, release)
-  .dependsOn(rdf, sdk, sdkViews, sdkTestkit % "test->compile;test->test", testkit % "test->compile")
-  .settings(Test / compile := (Test / compile).dependsOn(testPlugin / assembly).value)
-  .settings(
-    libraryDependencies ++= Seq(
-      classgraph,
       nimbusJoseJwt,
-      akkaSlf4j        % Test,
       akkaTestKitTyped % Test,
       akkaHttpTestKit  % Test,
-      h2               % Test,
-      logback          % Test,
+      munit            % Test,
       scalaTest        % Test
     ),
-    addCompilerPlugin(betterMonadicFor),
-    Test / fork          := true
+    addCompilerPlugin(kindProjector),
+    addCompilerPlugin(betterMonadicFor)
+  )
+
+lazy val migration = project
+  .in(file("delta/migration"))
+  .settings(
+    name       := "delta-migration",
+    moduleName := "delta-migration"
+  )
+  .settings(shared, compilation, assertJavaVersion, coverage, release)
+  .dependsOn(sdk, testkit % "test->compile")
+  .settings(
+    libraryDependencies ++= Seq(
+      circeOptics,
+      "com.lightbend.akka" %% "akka-stream-alpakka-cassandra" % "4.0.0"
+    )
   )
 
 lazy val app = project
@@ -417,16 +348,16 @@ lazy val app = project
   )
   .enablePlugins(UniversalPlugin, JavaAppPackaging, JavaAgent, DockerPlugin, BuildInfoPlugin)
   .settings(shared, compilation, servicePackaging, assertJavaVersion, kamonSettings, coverage, release)
-  .dependsOn(service, testkit % "test->compile", sdkTestkit % "test->compile;test->test")
+  .dependsOn(sdk % "compile->compile;test->test", testkit % "test->compile", migration)
+  .settings(Test / compile := (Test / compile).dependsOn(testPlugin / assembly).value)
   .settings(
     libraryDependencies  ++= Seq(
-      akkaDistributedData,
       akkaHttpCors,
       akkaSlf4j,
+      classgraph,
       logback,
-      akkaHttpTestKit  % Test,
-      akkaTestKitTyped % Test,
-      scalaTest        % Test
+      akkaHttpTestKit % Test,
+      scalaTest       % Test
     ),
     addCompilerPlugin(betterMonadicFor),
     run / fork            := true,
@@ -513,9 +444,7 @@ lazy val elasticsearchPlugin = project
   .enablePlugins(BuildInfoPlugin)
   .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
   .dependsOn(
-    sdk        % "provided;test->test",
-    sdkViews   % "provided;test->test",
-    sdkTestkit % "test->compile;test->test"
+    sdk % "provided;test->test"
   )
   .settings(
     name                       := "delta-elasticsearch-plugin",
@@ -526,7 +455,6 @@ lazy val elasticsearchPlugin = project
       kamonAkkaHttp    % Provided,
       akkaTestKitTyped % Test,
       akkaSlf4j        % Test,
-      h2               % Test,
       logback          % Test,
       scalaTest        % Test
     ),
@@ -544,9 +472,7 @@ lazy val blazegraphPlugin = project
   .enablePlugins(BuildInfoPlugin)
   .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
   .dependsOn(
-    sdk        % "provided;test->test",
-    sdkViews   % "provided;test->test",
-    sdkTestkit % "test->compile;test->test"
+    sdk % "provided;test->test"
   )
   .settings(
     name                       := "delta-blazegraph-plugin",
@@ -554,7 +480,6 @@ lazy val blazegraphPlugin = project
     libraryDependencies       ++= Seq(
       kamonAkkaHttp % Provided,
       akkaSlf4j     % Test,
-      h2            % Test,
       logback       % Test,
       scalaTest     % Test
     ),
@@ -574,8 +499,6 @@ lazy val compositeViewsPlugin = project
   .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
   .dependsOn(
     sdk                 % "provided;test->test",
-    sdkViews            % Provided,
-    sdkTestkit          % "test->compile;test->test",
     elasticsearchPlugin % "provided;test->test",
     blazegraphPlugin    % "provided;test->test"
   )
@@ -589,7 +512,6 @@ lazy val compositeViewsPlugin = project
       ),
       kamonAkkaHttp % Provided,
       akkaSlf4j     % Test,
-      h2            % Test,
       logback       % Test,
       scalaTest     % Test
     ),
@@ -610,8 +532,6 @@ lazy val searchPlugin = project
   .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
   .dependsOn(
     sdk                  % "provided;test->test",
-    sdkViews             % Provided,
-    sdkTestkit           % "test->compile;test->test",
     blazegraphPlugin     % "provided;test->compile;test->test",
     elasticsearchPlugin  % "provided;test->compile;test->test",
     compositeViewsPlugin % "provided;test->compile;test->test"
@@ -622,7 +542,6 @@ lazy val searchPlugin = project
     libraryDependencies       ++= Seq(
       kamonAkkaHttp % Provided,
       akkaSlf4j     % Test,
-      h2            % Test,
       logback       % Test,
       scalaTest     % Test
     ),
@@ -642,8 +561,9 @@ lazy val storagePlugin = project
   .in(file("delta/plugins/storage"))
   .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
   .dependsOn(
-    sdk        % Provided,
-    sdkTestkit % "test->compile;test->test"
+    sdk                 % "provided;test->test",
+    elasticsearchPlugin % "provided;test->compile;test->test",
+    testkit             % "test->compile"
   )
   .settings(
     name                       := "delta-storage-plugin",
@@ -652,14 +572,14 @@ lazy val storagePlugin = project
       alpakkaS3 excludeAll (
         ExclusionRule(organization = "com.typesafe.akka", name = "akka-stream_2.13"),
         ExclusionRule(organization = "com.typesafe.akka", name = "akka-http_2.13"),
+        ExclusionRule(organization = "com.typesafe.akka", name = "akka-http-xml_2.13"),
         ExclusionRule(organization = "org.slf4j", name = "slf4j-api")
       ),
-      kamonAkkaHttp   % Provided,
-      akkaSlf4j       % Test,
-      akkaHttpTestKit % Test,
-      h2              % Test,
-      logback         % Test,
-      scalaTest       % Test
+      kamonAkkaHttp    % Provided,
+      akkaSlf4j        % Test,
+      akkaTestKitTyped % Test,
+      akkaHttpTestKit  % Test,
+      logback          % Test
     ),
     buildInfoKeys              := Seq[BuildInfoKey](version),
     buildInfoPackage           := "ch.epfl.bluebrain.nexus.delta.plugins.storage",
@@ -679,8 +599,7 @@ lazy val archivePlugin = project
   .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
   .dependsOn(
     sdk           % Provided,
-    storagePlugin % "provided;test->test",
-    sdkTestkit    % "test;test->test"
+    storagePlugin % "provided;test->test"
   )
   .settings(
     name                       := "delta-archive-plugin",
@@ -709,8 +628,7 @@ lazy val projectDeletionPlugin = project
   .enablePlugins(BuildInfoPlugin)
   .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
   .dependsOn(
-    sdk        % "provided;test->test",
-    sdkTestkit % "test->compile;test->test"
+    sdk % "provided;test->test"
   )
   .settings(
     name                       := "delta-project-deletion-plugin",
@@ -726,7 +644,8 @@ lazy val projectDeletionPlugin = project
     assembly / assemblyOption  := (assembly / assemblyOption).value.withIncludeScala(false),
     assembly / test            := {},
     addArtifact(Artifact("delta-project-deletion-plugin", "plugin"), assembly),
-    Test / fork                := true
+    Test / fork                := true,
+    coverageFailOnMinimum      := false
   )
 
 lazy val graphAnalyticsPlugin = project
@@ -736,8 +655,6 @@ lazy val graphAnalyticsPlugin = project
   .dependsOn(
     sdk                 % Provided,
     storagePlugin       % "provided;test->test",
-    sdkViews            % "provided;test->test",
-    sdkTestkit          % "test;test->test",
     elasticsearchPlugin % "provided;test->test"
   )
   .settings(
@@ -765,8 +682,7 @@ lazy val jiraPlugin = project
   .enablePlugins(BuildInfoPlugin)
   .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
   .dependsOn(
-    sdk        % "provided;test->test",
-    sdkTestkit % "test->compile;test->test"
+    sdk % "provided;test->test"
   )
   .settings(
     name                       := "delta-jira-plugin",
@@ -806,7 +722,7 @@ lazy val plugins = project
 lazy val delta = project
   .in(file("delta"))
   .settings(shared, compilation, noPublish)
-  .aggregate(kernel, testkit, sourcing, rdf, sdk, sdkTestkit, sdkViews, service, app, plugins)
+  .aggregate(kernel, testkit, sourcingPsql, rdf, sdk, app, plugins)
 
 lazy val cargo = taskKey[(File, String)]("Run Cargo to build 'nexus-fixer'")
 
@@ -888,8 +804,7 @@ lazy val tests = project
       awsSdk          % Test,
       scalaTest       % Test,
       akkaSlf4j       % Test,
-      alpakkaSse      % Test,
-      uuidGenerator   % Test
+      alpakkaSse      % Test
     ),
     Test / parallelExecution           := false,
     Test / testOptions                 += Tests.Argument(TestFrameworks.ScalaTest, "-o", "-u", "target/test-reports"),
@@ -994,7 +909,7 @@ lazy val compilation = {
 
   Seq(
     scalaVersion                           := scalaCompilerVersion,
-    scalacOptions                          ~= { options: Seq[String] => options.filterNot(Set("-Wself-implicit")) },
+    scalacOptions                          ~= { options: Seq[String] => options.filterNot(Set("-Wself-implicit", "-Xlint:infer-any", "-Wnonunit-statement")) },
     javaSpecificationVersion               := "11",
     javacOptions                          ++= Seq(
       "-source",
@@ -1060,7 +975,7 @@ lazy val servicePackaging = {
       else version.value
     },
     Docker / daemonUser  := "nexus",
-    dockerBaseImage      := "adoptopenjdk:11-jre-hotspot",
+    dockerBaseImage      := "eclipse-temurin:11-jre",
     dockerExposedPorts   := Seq(8080, 25520),
     dockerUsername       := Some("bluebrain"),
     dockerUpdateLatest   := false,

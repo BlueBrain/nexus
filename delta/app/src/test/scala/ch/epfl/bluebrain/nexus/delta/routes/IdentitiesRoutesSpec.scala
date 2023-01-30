@@ -5,13 +5,12 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.{Accept, BasicHttpCredentials, OAuth2BearerToken}
 import akka.http.scaladsl.server.Directives.handleExceptions
 import akka.http.scaladsl.server.Route
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfExceptionHandler
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclSetup, IdentitiesDummy}
-import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
-import ch.epfl.bluebrain.nexus.delta.utils.RouteFixtures
+import ch.epfl.bluebrain.nexus.delta.sdk.utils.{RouteFixtures, RouteHelpers}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group}
 import ch.epfl.bluebrain.nexus.testkit.{CirceEq, IOValues}
 import org.scalatest.matchers.should.Matchers
 
@@ -19,13 +18,13 @@ class IdentitiesRoutesSpec extends RouteHelpers with Matchers with CirceEq with 
 
   private val caller = Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
 
-  private val identities = IdentitiesDummy(Map(AuthToken("alice") -> caller))
+  private val identities = IdentitiesDummy(caller)
 
-  private val acls = AclSetup.init(Set.empty[Permission], Set(realm)).accepted
+  private val aclCheck = AclSimpleCheck().accepted
 
   private val route = Route.seal(
     handleExceptions(RdfExceptionHandler.apply) {
-      IdentitiesRoutes(identities, acls)
+      IdentitiesRoutes(identities, aclCheck)
     }
   )
 

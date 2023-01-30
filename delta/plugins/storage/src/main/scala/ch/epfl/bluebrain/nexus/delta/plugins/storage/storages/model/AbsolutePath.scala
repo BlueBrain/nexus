@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 
-import cats.Eq
+import cats.{Eq, Order}
 import cats.implicits.toBifunctorOps
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
@@ -58,4 +58,7 @@ object AbsolutePath {
         case Success(value) => apply(value).leftMap(err => ParsingFailure(err))
       }
     }
+
+  implicit private val pathOrder: Order[Path]         = Order.fromComparable
+  implicit val absolutePathOrder: Order[AbsolutePath] = Order.by(_.value)
 }

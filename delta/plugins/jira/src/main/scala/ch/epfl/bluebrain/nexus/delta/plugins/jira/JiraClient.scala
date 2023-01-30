@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.jira.OAuthToken.{AccessToken, Reque
 import ch.epfl.bluebrain.nexus.delta.plugins.jira.config.JiraConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.jira.model.{AuthenticationRequest, JiraResponse, Verifier}
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.uriSyntax
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import com.google.api.client.auth.oauth.{OAuthAuthorizeTemporaryTokenUrl, OAuthGetAccessToken, OAuthGetTemporaryToken, OAuthRsaSigner}
 import com.google.api.client.http.javanet.NetHttpTransport
 import com.google.api.client.http.{ByteArrayContent, GenericUrl}

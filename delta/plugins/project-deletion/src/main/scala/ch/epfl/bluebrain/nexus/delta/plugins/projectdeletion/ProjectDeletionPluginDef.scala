@@ -40,5 +40,5 @@ class ProjectDeletionPluginDef extends PluginDef {
     *   [[Plugin]] instance.
     */
   override def initialize(locator: Locator): Task[Plugin] =
-    Task.delay(locator.get[ProjectDeletion])
+    Task.delay(locator.get[Plugin])
 }

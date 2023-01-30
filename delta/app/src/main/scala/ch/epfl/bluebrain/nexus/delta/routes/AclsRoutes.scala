@@ -13,45 +13,45 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.AclsRoutes.PatchAcl._
 import ch.epfl.bluebrain.nexus.delta.routes.AclsRoutes._
-import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{acls => aclsPermissions, events}
-import ch.epfl.bluebrain.nexus.delta.sdk.Projects.FetchUuids
+import ch.epfl.bluebrain.nexus.delta.sdk.AclResource
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress.{Organization, Project}
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddressFilter.{AnyOrganization, AnyOrganizationAnyProject, AnyProject}
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclRejection.AclNotFound
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.{AclCheck, Acls}
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfRejectionHandler.{malformedQueryParamEncoder, malformedQueryParamResponseFields}
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{QueryParamsUnmarshalling, RdfRejectionHandler}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress.{Organization, Project}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddressFilter.{AnyOrganization, AnyOrganizationAnyProject, AnyProject}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection.AclNotFound
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress, AclAddressFilter, AclRejection}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.{AclResource, Acls, Identities}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{acls => aclsPermissions}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label}
 import io.circe._
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
-import monix.bio.{IO, UIO}
+import monix.bio.IO
 import monix.execution.Scheduler
 
 import scala.annotation.nowarn
 
-class AclsRoutes(identities: Identities, acls: Acls)(implicit
+class AclsRoutes(identities: Identities, acls: Acls, aclCheck: AclCheck)(implicit
     baseUri: BaseUri,
     s: Scheduler,
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering
-) extends AuthDirectives(identities, acls)
+) extends AuthDirectives(identities, aclCheck)
     with CirceUnmarshalling
     with QueryParamsUnmarshalling {
 
-  private val any                                    = "*"
-  implicit private val fetchProjectUuids: FetchUuids = _ => UIO.none
+  private val any = "*"
 
   private val simultaneousRevAndAncestorsRejection =
     MalformedQueryParamRejection("rev", "rev and ancestors query parameters cannot be present simultaneously.")
@@ -101,24 +101,14 @@ class AclsRoutes(identities: Identities, acls: Acls)(implicit
       pathPrefix("acls") {
         extractCaller { implicit caller =>
           concat(
-            // SSE ACLs
-            (pathPrefix("events") & pathEndOrSingleSlash) {
-              authorizeFor(AclAddress.Root, events.read).apply {
-                operationName(s"$prefixSegment/acls/events") {
-                  lastEventId { offset =>
-                    emit(acls.events(offset))
-                  }
-                }
-              }
-            },
             extractAclAddress { address =>
-              parameter("rev" ? 0L) { rev =>
+              parameter("rev" ? 0) { rev =>
                 operationName(s"$prefixSegment/acls${address.string}") {
                   concat(
                     // Replace ACLs
                     (put & entity(as[ReplaceAcl])) { case ReplaceAcl(AclValues(values)) =>
                       authorizeFor(address, aclsPermissions.write).apply {
-                        val status = if (rev == 0L) Created else OK
+                        val status = if (rev == 0) Created else OK
                         emit(status, acls.replace(Acl(address, values: _*), rev).mapValue(_.metadata))
                       }
                     },
@@ -138,7 +128,7 @@ class AclsRoutes(identities: Identities, acls: Acls)(implicit
                     // Fetch ACLs
                     (get & parameter("self" ? true)) {
                       case true  =>
-                        (parameter("rev".as[Long].?) & parameter("ancestors" ? false)) {
+                        (parameter("rev".as[Int].?) & parameter("ancestors" ? false)) {
                           case (Some(_), true)    => emit(simultaneousRevAndAncestorsRejection)
                           case (Some(rev), false) =>
                             // Fetch self ACLs without ancestors at specific revision
@@ -152,7 +142,7 @@ class AclsRoutes(identities: Identities, acls: Acls)(implicit
                         }
                       case false =>
                         authorizeFor(address, aclsPermissions.read).apply {
-                          (parameter("rev".as[Long].?) & parameter("ancestors" ? false)) {
+                          (parameter("rev".as[Int].?) & parameter("ancestors" ? false)) {
                             case (Some(_), true)    => reject(simultaneousRevAndAncestorsRejection)
                             case (Some(rev), false) =>
                               // Fetch all ACLs without ancestors at specific revision
@@ -265,11 +255,11 @@ object AclsRoutes {
     * @return
     *   the [[Route]] for ACLs
     */
-  def apply(identities: Identities, acls: Acls)(implicit
+  def apply(identities: Identities, acls: Acls, aclCheck: AclCheck)(implicit
       baseUri: BaseUri,
       s: Scheduler,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering
-  ): AclsRoutes = new AclsRoutes(identities, acls)
+  ): AclsRoutes = new AclsRoutes(identities, acls, aclCheck)
 
 }

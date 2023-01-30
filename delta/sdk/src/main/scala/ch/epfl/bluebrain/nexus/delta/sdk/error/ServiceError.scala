@@ -4,6 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.syntax.EncoderOps
@@ -35,11 +36,19 @@ object ServiceError {
     */
   final case class ScopeInitializationFailed(override val reason: String) extends ServiceError(reason)
 
-  sealed abstract class IndexingActionFailed(override val reason: String, val resource: ResourceF[Unit])
-      extends ServiceError(reason)
+  /**
+    * Signals when fetch a project context for a given project
+    */
+  final case class FetchContextFailed(project: ProjectRef)
+      extends ServiceError(s"Fetching the context for the project '$project' failed.")
 
-  final case class IndexingFailed(override val reason: String, override val resource: ResourceF[Unit])
-      extends IndexingActionFailed(reason, resource)
+  final case class IndexingFailed(resource: ResourceF[Unit], errors: List[Throwable])
+      extends ServiceError(errors.map(_.getMessage).mkString("* ", "\n* ", ""))
+
+  /**
+    * Signals that the SSE label can't be found
+    */
+  final case class UnknownSseLabel(label: Label) extends ServiceError(s"The SSE label $label is unknown.")
 
   @nowarn("cat=unused")
   implicit def serviceErrorEncoder(implicit baseUri: BaseUri): Encoder.AsObject[ServiceError] = {
@@ -54,14 +63,14 @@ object ServiceError {
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.error))
 
   @nowarn("cat=unused")
-  implicit def consistentWriteFailedEncoder(implicit baseUri: BaseUri): Encoder.AsObject[IndexingActionFailed] = {
+  implicit def indexingFailedEncoder(implicit baseUri: BaseUri): Encoder.AsObject[IndexingFailed] = {
     implicit val configuration: Configuration = Configuration.default.withDiscriminator("@type")
     val enc                                   = deriveConfiguredEncoder[ServiceError]
-    Encoder.AsObject.instance[IndexingActionFailed] { r =>
+    Encoder.AsObject.instance[IndexingFailed] { r =>
       enc.encodeObject(r).add("reason", Json.fromString(r.reason)).add("_resource", r.resource.asJson)
     }
   }
 
-  implicit def consistentWriteFailedJsonLdEncoder(implicit baseUri: BaseUri): JsonLdEncoder[IndexingActionFailed] =
+  implicit def consistentWriteFailedJsonLdEncoder(implicit baseUri: BaseUri): JsonLdEncoder[IndexingFailed] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.error))
 }

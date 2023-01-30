@@ -73,7 +73,7 @@ where...
     * Optional and defaults to compacted
     * Accepts the following values: source (to get the original payload), compacted, expanded, n-triples, dot
     * Can not be present at the same time as `originalSource` field.
-- `{rev}`: Long - the revision of the resource. This field is optional. It defaults to the latest revision.
+- `{rev}`: Int - the revision of the resource. This field is optional. It defaults to the latest revision.
 - `{tag}`: String - the tag of the resource. This field is optional. This field cannot be present at the same time as 
   `rev` field.
 

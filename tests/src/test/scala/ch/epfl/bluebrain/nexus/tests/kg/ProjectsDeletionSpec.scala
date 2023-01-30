@@ -10,12 +10,15 @@ import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Events, Organizations
 import ch.epfl.bluebrain.nexus.tests.{BaseSpec, Identity}
 import io.circe.Json
 import io.circe.optics.JsonPath.root
-import org.scalatest.AppendedClues
+import org.scalatest.{AppendedClues, DoNotDiscover}
 
 import java.io.File
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import scala.reflect.io.Directory
+
+//TODO Reenable when deletion is reimplemented
+@DoNotDiscover
 final class ProjectsDeletionSpec extends BaseSpec with CirceEq with EitherValuable with AppendedClues {
 
   private val org   = genId()
@@ -311,25 +314,7 @@ final class ProjectsDeletionSpec extends BaseSpec with CirceEq with EitherValuab
     }
 
     "succeed in creating the project again with postgres" in {
-      if (isPostgres) {
-        adminDsl.createProject(org, proj1, kgDsl.projectJson(name = proj1), Bojack)
-      } else {
-        //TODO find a way to automate test with Cassandra
-        succeed
-      }
-    }
-
-    "reject as a cooldown must be respected for cassandra" in {
-      if (isCassandra) {
-        deltaClient.put[Json](s"/projects/$org/$proj1", json"""{}""", Bojack) { (json, response) =>
-          response.status shouldEqual StatusCodes.BadRequest
-
-          root.`@type`.string.getOption(json).value shouldEqual "ProjectCreationCooldown"
-        }
-      } else {
-        // No cooldown for postgresql
-        succeed
-      }
+      adminDsl.createProject(org, proj1, kgDsl.projectJson(name = proj1), Bojack)
     }
   }
 

@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
+import cats.data.NonEmptySet
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViewJsonLdSourceDecoder.{toValue, ElasticSearchViewFields}
@@ -10,21 +11,25 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLdCursor
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.semiauto.deriveJsonLdDecoder
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.configuration.semiauto.deriveConfigJsonLdDecoder
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{Configuration, JsonLdDecoder}
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceResolvingDecoder
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{NonEmptySet, TagLabel}
-import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
-import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe._
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.views.{PipeStep, ViewRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes._
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
-import monix.bio.IO
+import monix.bio.{IO, Task}
+
+import scala.annotation.nowarn
 
 /**
   * Decoder for [[ElasticSearchViewValue]] which maps some fields to string, before decoding to get around lack of
@@ -35,18 +40,19 @@ class ElasticSearchViewJsonLdSourceDecoder private (
     decoder: JsonLdSourceResolvingDecoder[ElasticSearchViewRejection, ElasticSearchViewFields]
 ) {
 
-  def apply(project: Project, source: Json)(implicit
+  def apply(ref: ProjectRef, context: ProjectContext, source: Json)(implicit
       caller: Caller
   ): IO[ElasticSearchViewRejection, (Iri, ElasticSearchViewValue)] =
-    decoder(project, mapJsonToString(source)).map { case (iri, fields) =>
+    decoder(ref, context, mapJsonToString(source)).map { case (iri, fields) =>
       iri -> toValue(fields)
     }
 
-  def apply(project: Project, iri: Iri, source: Json)(implicit
+  def apply(ref: ProjectRef, context: ProjectContext, iri: Iri, source: Json)(implicit
       caller: Caller
   ): IO[ElasticSearchViewRejection, ElasticSearchViewValue] =
     decoder(
-      project,
+      ref,
+      context,
       iri,
       mapJsonToString(source)
     ).map(toValue)
@@ -59,6 +65,8 @@ class ElasticSearchViewJsonLdSourceDecoder private (
 object ElasticSearchViewJsonLdSourceDecoder {
 
   sealed private trait ElasticSearchViewFields extends Product with Serializable {
+    def name: Option[String]
+    def description: Option[String]
     def tpe: ElasticSearchViewType
   }
 
@@ -66,9 +74,11 @@ object ElasticSearchViewJsonLdSourceDecoder {
 
     // Describe the legacy payload using deprecated fields to keep retro-compatibility
     final case class LegacyIndexingElasticSearchViewFields(
+        name: Option[String] = None,
+        description: Option[String] = None,
         resourceSchemas: Set[Iri] = Set.empty,
         resourceTypes: Set[Iri] = Set.empty,
-        resourceTag: Option[TagLabel] = None,
+        resourceTag: Option[UserTag] = None,
         sourceAsText: Boolean = false,
         includeMetadata: Boolean = false,
         includeDeprecated: Boolean = false,
@@ -80,8 +90,10 @@ object ElasticSearchViewJsonLdSourceDecoder {
     }
 
     final case class IndexingElasticSearchViewFields(
-        resourceTag: Option[TagLabel] = None,
-        pipeline: Option[List[PipeDef]] = None,
+        name: Option[String] = None,
+        description: Option[String] = None,
+        resourceTag: Option[UserTag] = None,
+        pipeline: Option[List[PipeStep]] = None,
         mapping: JsonObject,
         settings: Option[JsonObject] = None,
         context: Option[ContextObject] = None,
@@ -91,15 +103,20 @@ object ElasticSearchViewJsonLdSourceDecoder {
     }
 
     final case class AggregateElasticSearchViewFields(
+        name: Option[String] = None,
+        description: Option[String] = None,
         views: NonEmptySet[ViewRef]
     ) extends ElasticSearchViewFields {
       override val tpe: ElasticSearchViewType = ElasticSearchViewType.AggregateElasticSearch
     }
 
-    implicit final val elasticSearchViewFieldsJsonLdDecoder: JsonLdDecoder[ElasticSearchViewFields] = {
-      val legacyFieldsJsonLdDecoder    = deriveJsonLdDecoder[LegacyIndexingElasticSearchViewFields]
-      val indexingFieldsJsonLdDecoder  = deriveJsonLdDecoder[IndexingElasticSearchViewFields]
-      val aggregateFieldsJsonLdDecoder = deriveJsonLdDecoder[AggregateElasticSearchViewFields]
+    @nowarn("cat=unused")
+    implicit final def elasticSearchViewFieldsJsonLdDecoder(implicit
+        configuration: Configuration
+    ): JsonLdDecoder[ElasticSearchViewFields] = {
+      val legacyFieldsJsonLdDecoder    = deriveConfigJsonLdDecoder[LegacyIndexingElasticSearchViewFields]
+      val indexingFieldsJsonLdDecoder  = deriveConfigJsonLdDecoder[IndexingElasticSearchViewFields]
+      val aggregateFieldsJsonLdDecoder = deriveConfigJsonLdDecoder[AggregateElasticSearchViewFields]
       val pipeline                     = nxv + "pipeline"
       (cursor: ExpandedJsonLdCursor) =>
         cursor.getTypes.flatMap { types =>
@@ -139,15 +156,17 @@ object ElasticSearchViewJsonLdSourceDecoder {
     case i: LegacyIndexingElasticSearchViewFields =>
       // Translate legacy fields into a pipeline
       val pipeline = List(
-        i.resourceSchemas.nonEmpty -> FilterBySchema(i.resourceSchemas),
-        i.resourceTypes.nonEmpty   -> FilterByType(i.resourceTypes),
-        !i.includeDeprecated       -> FilterDeprecated(),
-        !i.includeMetadata         -> DiscardMetadata(),
-        true                       -> DefaultLabelPredicates(),
-        i.sourceAsText             -> SourceAsText()
+        i.resourceSchemas.nonEmpty -> PipeStep(FilterBySchema(i.resourceSchemas)),
+        i.resourceTypes.nonEmpty   -> PipeStep(FilterByType(i.resourceTypes)),
+        !i.includeDeprecated       -> PipeStep.noConfig(FilterDeprecated.ref),
+        !i.includeMetadata         -> PipeStep.noConfig(DiscardMetadata.ref),
+        true                       -> PipeStep.noConfig(DefaultLabelPredicates.ref),
+        i.sourceAsText             -> PipeStep.noConfig(SourceAsText.ref)
       ).mapFilter { case (b, p) => Option.when(b)(p) }
 
       IndexingElasticSearchViewValue(
+        name = i.name,
+        description = i.description,
         resourceTag = i.resourceTag,
         pipeline,
         mapping = Some(i.mapping),
@@ -157,8 +176,10 @@ object ElasticSearchViewJsonLdSourceDecoder {
       )
     case i: IndexingElasticSearchViewFields       =>
       IndexingElasticSearchViewValue(
+        name = i.name,
+        description = i.description,
         resourceTag = i.resourceTag,
-        // If there is no pipeline defined, we use a default one to keep the historic behaviour
+        // If no pipeline defined, we use a default one to keep the historic behaviour
         pipeline = i.pipeline.getOrElse(IndexingElasticSearchViewValue.defaultPipeline),
         mapping = Some(i.mapping),
         settings = i.settings,
@@ -166,15 +187,26 @@ object ElasticSearchViewJsonLdSourceDecoder {
         permission = i.permission
       )
     case a: AggregateElasticSearchViewFields      =>
-      AggregateElasticSearchViewValue(a.views)
+      AggregateElasticSearchViewValue(
+        name = a.name,
+        description = a.description,
+        views = a.views
+      )
   }
 
-  def apply(uuidF: UUIDF, contextResolution: ResolverContextResolution)(implicit api: JsonLdApi) =
-    new ElasticSearchViewJsonLdSourceDecoder(
-      new JsonLdSourceResolvingDecoder[ElasticSearchViewRejection, ElasticSearchViewFields](
-        contexts.elasticsearch,
-        contextResolution,
-        uuidF
+  def apply(uuidF: UUIDF, contextResolution: ResolverContextResolution)(implicit
+      api: JsonLdApi
+  ): Task[ElasticSearchViewJsonLdSourceDecoder] = {
+    implicit val rcr: RemoteContextResolution = contextResolution.rcr
+
+    ElasticSearchDecoderConfiguration.apply.map { implicit config =>
+      new ElasticSearchViewJsonLdSourceDecoder(
+        new JsonLdSourceResolvingDecoder[ElasticSearchViewRejection, ElasticSearchViewFields](
+          contexts.elasticsearch,
+          contextResolution,
+          uuidF
+        )
       )
-    )
+    }
+  }
 }

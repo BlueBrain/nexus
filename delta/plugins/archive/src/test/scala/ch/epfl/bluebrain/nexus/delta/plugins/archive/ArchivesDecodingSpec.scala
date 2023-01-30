@@ -1,14 +1,18 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.archive
 
+import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.{FileReference, ResourceReference}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.{DecodingFailed, InvalidJsonLdFormat, UnexpectedArchiveId}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveResourceRepresentation.{CompactedJsonLd, Dot, ExpandedJsonLd, NTriples, SourceJson}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.AbsolutePath
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.{Latest, Revision, Tag}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{NonEmptySet, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision, Tag}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOValues, TestHelpers}
 import io.circe.literal._
 import org.scalatest.Inspectors
@@ -26,9 +30,16 @@ class ArchivesDecodingSpec
     with TestHelpers
     with RemoteContextResolutionFixture {
 
-  implicit private val uuidF: UUIDF = UUIDF.random
+  implicit private val uuidF: UUIDF   = UUIDF.random
+  implicit private val api: JsonLdApi = JsonLdJavaApi.strict
 
-  private val project = ProjectGen.project(genString(), genString())
+  private val context = ProjectContext.unsafe(
+    ApiMappings.empty,
+    nxv.base,
+    nxv.base
+  )
+
+  private val ref = ProjectRef.unsafe(genString(), genString())
 
   "An ArchiveValue" should {
     val decoder = Archives.sourceDecoder
@@ -49,7 +60,7 @@ class ArchivesDecodingSpec
                 }
               ]
             }"""
-        val (_, value) = decoder(project, source).accepted
+        val (_, value) = decoder(context, source).accepted
         value.resources shouldEqual NonEmptySet.of(
           ResourceReference(Latest(resourceId), None, None, None),
           FileReference(Latest(fileId), None, None)
@@ -75,7 +86,7 @@ class ArchivesDecodingSpec
               ]
             }"""
 
-        val (decodedId, value) = decoder(project, source).accepted
+        val (decodedId, value) = decoder(context, source).accepted
         decodedId shouldEqual id
         value.resources shouldEqual NonEmptySet.of(
           ResourceReference(Latest(resourceId), None, None, None),
@@ -92,16 +103,16 @@ class ArchivesDecodingSpec
                 {
                   "@type": "Resource",
                   "resourceId": $resourceId,
-                  "project": ${project.ref},
+                  "project": $ref,
                   "path": "/a/b",
                   "rev": 1,
                   "originalSource": true
                 }
               ]
             }"""
-        val (_, value) = decoder(project, source).accepted
+        val (_, value) = decoder(context, source).accepted
         val expected   =
-          ResourceReference(Revision(resourceId, 1L), Some(project.ref), Some(path), Some(SourceJson))
+          ResourceReference(Revision(resourceId, 1), Some(ref), Some(path), Some(SourceJson))
         value.resources shouldEqual NonEmptySet.of(expected)
       }
 
@@ -114,17 +125,16 @@ class ArchivesDecodingSpec
                 {
                   "@type": "Resource",
                   "resourceId": $resourceId,
-                  "project": ${project.ref},
+                  "project": $ref,
                   "path": "/a/b",
                   "rev": 1,
                   "originalSource": false
                 }
               ]
             }"""
-        val (_, value) = decoder(project, source).accepted
-
-        val expected =
-          ResourceReference(Revision(resourceId, 1L), Some(project.ref), Some(path), Some(CompactedJsonLd))
+        val (_, value) = decoder(context, source).accepted
+        val expected   =
+          ResourceReference(Revision(resourceId, 1), Some(ref), Some(path), Some(CompactedJsonLd))
         value.resources shouldEqual NonEmptySet.of(expected)
       }
 
@@ -145,16 +155,16 @@ class ArchivesDecodingSpec
                   {
                     "@type": "Resource",
                     "resourceId": $resourceId,
-                    "project": ${project.ref},
+                    "project": $ref,
                     "path": "/a/b",
                     "rev": 1,
                     "format": $format
                   }
                 ]
               }"""
-          val (_, value) = decoder(project, source).accepted
+          val (_, value) = decoder(context, source).accepted
           val expected   =
-            ResourceReference(Revision(resourceId, 1L), Some(project.ref), Some(path), Some(expFormat))
+            ResourceReference(Revision(resourceId, 1), Some(ref), Some(path), Some(expFormat))
           value.resources shouldEqual NonEmptySet.of(expected)
         }
       }
@@ -162,21 +172,21 @@ class ArchivesDecodingSpec
       "having a file reference" in {
         val resourceId = iri"http://localhost/${genString()}"
         val path       = AbsolutePath(Paths.get("/a/b")).rightValue
-        val tag        = TagLabel.unsafe("mytag")
+        val tag        = UserTag.unsafe("mytag")
         val source     =
           json"""{
               "resources": [
                 {
                   "@type": "File",
                   "resourceId": $resourceId,
-                  "project": ${project.ref},
+                  "project": $ref,
                   "path": "/a/b",
                   "tag": $tag
                 }
               ]
             }"""
-        val (_, value) = decoder(project, source).accepted
-        val expected   = FileReference(Tag(resourceId, tag), Some(project.ref), Some(path))
+        val (_, value) = decoder(context, source).accepted
+        val expected   = FileReference(Tag(resourceId, tag), Some(ref), Some(path))
         value.resources shouldEqual NonEmptySet.of(expected)
       }
 
@@ -196,7 +206,7 @@ class ArchivesDecodingSpec
               ]
             }"""
 
-        val (decodedId, value) = decoder(project, source).accepted
+        val (decodedId, value) = decoder(context, source).accepted
         decodedId shouldEqual id
         value.resources shouldEqual NonEmptySet.of(
           ResourceReference(Latest(resourceId), None, Some(path), None)
@@ -230,7 +240,7 @@ class ArchivesDecodingSpec
         )
 
         forAll(list) { source =>
-          decoder(project, source).rejectedWith[InvalidJsonLdFormat]
+          decoder(context, source).rejectedWith[InvalidJsonLdFormat]
         }
       }
 
@@ -332,7 +342,7 @@ class ArchivesDecodingSpec
         )
 
         forAll(list) { source =>
-          decoder(project, source).rejectedWith[DecodingFailed]
+          decoder(context, source).rejectedWith[DecodingFailed]
         }
       }
 
@@ -350,7 +360,7 @@ class ArchivesDecodingSpec
             }
           ]
         }"""
-        decoder(project, providedId, source).rejectedWith[UnexpectedArchiveId]
+        decoder(context, providedId, source).rejectedWith[UnexpectedArchiveId]
       }
 
       "parsing a source as an ExpandedJsonLd" in {
@@ -365,7 +375,7 @@ class ArchivesDecodingSpec
             }
           ]
         }"""
-        decoder(project, source).rejectedWith[InvalidJsonLdFormat]
+        decoder(context, source).rejectedWith[InvalidJsonLdFormat]
       }
     }
   }

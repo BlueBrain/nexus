@@ -1,9 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.Json
 
 /**
@@ -22,6 +22,12 @@ sealed trait ElasticSearchViewCommand extends Product with Serializable {
     *   a reference to the parent project
     */
   def project: ProjectRef
+
+  /**
+    * @return
+    *   the last known revision of the view
+    */
+  def rev: Int
 
   /**
     * @return
@@ -52,7 +58,9 @@ object ElasticSearchViewCommand {
       value: ElasticSearchViewValue,
       source: Json,
       subject: Subject
-  ) extends ElasticSearchViewCommand
+  ) extends ElasticSearchViewCommand {
+    override def rev: Int = 0
+  }
 
   /**
     * Command for the update of an ElasticSearch view.
@@ -73,7 +81,7 @@ object ElasticSearchViewCommand {
   final case class UpdateElasticSearchView(
       id: Iri,
       project: ProjectRef,
-      rev: Long,
+      rev: Int,
       value: ElasticSearchViewValue,
       source: Json,
       subject: Subject
@@ -94,7 +102,7 @@ object ElasticSearchViewCommand {
   final case class DeprecateElasticSearchView(
       id: Iri,
       project: ProjectRef,
-      rev: Long,
+      rev: Int,
       subject: Subject
   ) extends ElasticSearchViewCommand
 
@@ -117,9 +125,9 @@ object ElasticSearchViewCommand {
   final case class TagElasticSearchView(
       id: Iri,
       project: ProjectRef,
-      targetRev: Long,
-      tag: TagLabel,
-      rev: Long,
+      targetRev: Int,
+      tag: UserTag,
+      rev: Int,
       subject: Subject
   ) extends ElasticSearchViewCommand
 }

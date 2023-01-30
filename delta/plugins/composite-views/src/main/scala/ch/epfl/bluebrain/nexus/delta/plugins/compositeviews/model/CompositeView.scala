@@ -1,5 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 
+import cats.data.NonEmptySet
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.{Metadata, RebuildStrategy}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -10,9 +12,12 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, NonEmptySet, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.ResourceShift
+import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.parser.parse
@@ -54,7 +59,7 @@ final case class CompositeView(
     projections: NonEmptySet[CompositeViewProjection],
     rebuildStrategy: Option[RebuildStrategy],
     uuid: UUID,
-    tags: Map[TagLabel, Long],
+    tags: Tags,
     source: Json,
     updatedAt: Instant
 ) {
@@ -95,8 +100,7 @@ object CompositeView {
 
   @nowarn("cat=unused")
   implicit private def compositeViewEncoder(implicit base: BaseUri): Encoder.AsObject[CompositeView] = {
-    implicit val config: Configuration                     = Configuration.default.withDiscriminator(keywords.tpe)
-    implicit val encoderTags: Encoder[Map[TagLabel, Long]] = Encoder.instance(_ => Json.Null)
+    implicit val config: Configuration = Configuration.default.withDiscriminator(keywords.tpe)
     Encoder.encodeJsonObject.contramapObject { v =>
       deriveConfiguredEncoder[CompositeView]
         .encodeObject(v)
@@ -142,4 +146,14 @@ object CompositeView {
 
   implicit val compositeViewMetadataJsonLdEncoder: JsonLdEncoder[Metadata]      =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.compositeViewsMetadata))
+
+  type Shift = ResourceShift[CompositeViewState, CompositeView, Metadata]
+
+  def shift(views: CompositeViews)(implicit baseUri: BaseUri, crypto: Crypto): Shift =
+    ResourceShift.withMetadata[CompositeViewState, CompositeView, Metadata](
+      CompositeViews.entityType,
+      (ref, project) => views.fetch(IdSegmentRef(ref), project),
+      (context, state) => state.toResource(context.apiMappings, context.base),
+      value => JsonLdContent(value, value.value.source, Some(value.value.metadata))
+    )
 }

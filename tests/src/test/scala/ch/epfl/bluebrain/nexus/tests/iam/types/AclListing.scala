@@ -6,12 +6,13 @@ import io.circe.generic.extras.semiauto._
 
 final case class AclListing(_results: List[Acl], _total: Long)
 
-final case class Acl(acl: List[AclEntry], _path: String, _rev: Long)
+final case class Acl(acl: List[AclEntry], _path: String, _rev: Int)
 
 final case class AclEntry(identity: Identity, permissions: Set[Permission])
 
 final case class Permission(name: String, action: String) {
-  def value: String = s"$name/$action"
+  def value: String             = s"$name/$action"
+  override def toString: String = value
 }
 
 sealed trait Identity
@@ -156,6 +157,13 @@ object Permission {
     val list: List[Permission] = Read :: Nil
   }
 
+  object Supervision {
+    val name             = "supervision"
+    val Read: Permission = Permission(name, "read")
+
+    val list: List[Permission] = Read :: Nil
+  }
+
   val minimalPermissions: Set[Permission] =
     (Version.list ++
       Acls.list ++
@@ -171,7 +179,8 @@ object Permission {
       Views.list ++
       Storages.list ++
       Archives.list ++
-      Quotas.list).toSet
+      Quotas.list ++
+      Supervision.list).toSet
 
   val adminPermissions: Set[Permission] =
     (Version.list ++
