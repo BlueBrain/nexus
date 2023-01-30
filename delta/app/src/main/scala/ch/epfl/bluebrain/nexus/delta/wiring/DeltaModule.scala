@@ -9,6 +9,7 @@ import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import akka.stream.{Materializer, SystemMaterializer}
 import cats.data.NonEmptyList
 import cats.effect.{Clock, Resource, Sync}
+import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.database.{DatabaseConfig, Transactors}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
@@ -16,6 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
+import ch.epfl.bluebrain.nexus.delta.routes.ErrorRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction.AggregateIndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.Acls
@@ -139,6 +141,12 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
 
   many[ScopeInitialization].add { (acls: Acls, serviceAccount: ServiceAccount) =>
     OwnerPermissionsScopeInitialization(acls, appCfg.permissions.ownerPermissions, serviceAccount)
+  }
+
+  many[PriorityRoute].add {
+    (cfg: AppConfig, s: Scheduler, cr: RemoteContextResolution @Id("aggregate"), ordering: JsonKeyOrdering) =>
+      val route = new ErrorRoutes()(cfg.http.baseUri, s, cr, ordering)
+      PriorityRoute(pluginsMaxPriority + 999, route.routes, requiresStrictEntity = true)
   }
 
   make[Vector[Route]].from { (pluginsRoutes: Set[PriorityRoute]) =>
