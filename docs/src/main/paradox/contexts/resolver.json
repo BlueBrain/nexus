@@ -27,6 +27,6 @@
     "group": "nxv:group"
   },
   "@id": "https://bluebrain.github.io/nexus/contexts/resolver.json",
-  "name": "https://schema.org/name",
-  "description": "https://schema.org/description"
+  "name": "http://schema.org/name",
+  "description": "http://schema.org/description"
 }
