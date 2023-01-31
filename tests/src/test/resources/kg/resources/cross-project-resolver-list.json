@@ -20,7 +20,8 @@
       "_rev": 1,
       "_deprecated": false,
       "_createdBy": "{{deltaUri}}/realms/internal/users/delta",
-      "_updatedBy": "{{deltaUri}}/realms/internal/users/delta"
+      "_updatedBy": "{{deltaUri}}/realms/internal/users/delta",
+      "name" : "Default resolver"
     },
     {
       "@id": "http://localhost/resolver",
