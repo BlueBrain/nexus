@@ -4,12 +4,12 @@
       "https://bluebrain.github.io/nexus/vocabulary/AggregateElasticSearchView",
       "https://bluebrain.github.io/nexus/vocabulary/View"
     ],
-    "https://schema.org/name": [
+    "http://schema.org/name": [
       {
         "@value": "viewName"
       }
     ],
-    "https://schema.org/description": [
+    "http://schema.org/description": [
       {
         "@value": "viewDescription"
       }

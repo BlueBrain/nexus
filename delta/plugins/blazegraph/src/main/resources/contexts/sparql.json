@@ -1,8 +1,8 @@
 {
   "@context": {
     "@vocab": "https://bluebrain.github.io/nexus/vocabulary/",
-    "name": "https://bluebrain.github.io/nexus/vocabulary/name",
-    "description": "https://bluebrain.github.io/nexus/vocabulary/description",
+    "name": "http://schema.org/name",
+    "description": "http://schema.org/description",
     "resourceTypes": {
       "@type": "@id",
       "@container": "@set"

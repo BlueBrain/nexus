@@ -5,12 +5,12 @@
       "https://bluebrain.github.io/nexus/vocabulary/Storage",
       "https://bluebrain.github.io/nexus/vocabulary/S3Storage"
     ],
-    "https://schema.org/name": [
+    "http://schema.org/name": [
       {
         "@value": "s3name"
       }
     ],
-    "https://schema.org/description": [
+    "http://schema.org/description": [
       {
         "@value": "s3description"
       }

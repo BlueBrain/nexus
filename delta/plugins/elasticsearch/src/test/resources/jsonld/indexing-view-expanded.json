@@ -9,12 +9,12 @@
         "@value": "{\"@vocab\":\"http://schema.org/\"}"
       }
     ],
-    "https://schema.org/name" : [
+    "http://schema.org/name" : [
       {
         "@value" : "viewName"
       }
     ],
-    "https://schema.org/description" : [
+    "http://schema.org/description" : [
       {
         "@value" : "viewDescription"
       }
@@ -53,7 +53,7 @@
                 ]
               }
             ],
-            "https://schema.org/name": [
+            "http://schema.org/name": [
               {
                 "@value": "filterBySchema"
               }
@@ -69,19 +69,19 @@
                 ]
               }
             ],
-            "https://schema.org/name": [
+            "http://schema.org/name": [
               {
                 "@value": "filterByType"
               }
             ]
           },
           {
-            "https://schema.org/description": [
+            "http://schema.org/description": [
               {
                 "@value": "Formatting source as text"
               }
             ],
-            "https://schema.org/name": [
+            "http://schema.org/name": [
               {
                 "@value": "sourceAsText"
               }
