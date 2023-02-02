@@ -30,6 +30,9 @@ object MigrationLog {
 
   private val logger: Logger = Logger[MigrationLog.type]
 
+  final case class IgnoredInvalidState(message: String)
+      extends Exception(s"Ignored the following InvalidState error: $message")
+
   def global[Id, S <: GlobalState, Command, E <: GlobalEvent, Rejection](
       definition: GlobalEntityDefinition[Id, S, Command, E, Rejection],
       extractId: E => Id,
@@ -51,6 +54,9 @@ object MigrationLog {
           original <- stateStore.get(extractId(event))
           enriched  = enrich(event, original)
           newState <- IO.fromOption(stateMachine.next(original, enriched), InvalidState(original, enriched))
+                        .mapErrorPartial {
+                          case err @ InvalidState(Some(s), e) if s.rev == e.rev => IgnoredInvalidState(err.getMessage)
+                        }
           result   <- (eventStore.save(enriched) >> stateStore.save(newState))
                         .attemptSomeSqlState { case sqlstate.class23.UNIQUE_VIOLATION =>
                           "Fail"
@@ -141,6 +147,9 @@ object MigrationLog {
           original <- stateStore.get(event.project, extractId(event)).redeem(_ => None, Some(_))
           enriched  = enrich(event, original)
           newState <- IO.fromOption(stateMachine.next(original, enriched), InvalidState(original, enriched))
+                        .mapErrorPartial {
+                          case err @ InvalidState(Some(s), e) if s.rev == e.rev => IgnoredInvalidState(err.getMessage)
+                        }
           result   <- persist(enriched, original, newState)
           _        <- result.fold(
                         _ =>

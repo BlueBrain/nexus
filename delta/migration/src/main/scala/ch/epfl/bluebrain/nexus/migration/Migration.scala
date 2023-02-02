@@ -7,6 +7,7 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.Acls
+import ch.epfl.bluebrain.nexus.delta.sdk.migration.MigrationLog.IgnoredInvalidState
 import ch.epfl.bluebrain.nexus.delta.sdk.migration.{MigrationLog, ToMigrateEvent}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
@@ -141,12 +142,18 @@ object Migration {
       root.address.string.all { address => projects.contains(address.substring(1)) }(payload))
   }
 
+  /**
+    * Returns a function that processes a given event using the appropriate migration log from the provided set.
+    */
   def processEvent(logs: Set[MigrationLog]): ToMigrateEvent => Task[Unit] = { event =>
     val logMap = logs.map { log => log.entityType -> log }.toMap
     logMap.get(event.entityType) match {
       case Some(migrationLog) =>
         migrationLog(event)
           .tapError { e => Task.delay { logger.error(s"[${event.persistenceId}] $e") } }
+          .onErrorRecover { case IgnoredInvalidState(message) =>
+            logger.warn(message)
+          }
       case None               =>
         val message = s"The logMap has no entry for entity type: ${event.entityType}"
         Task.delay { logger.error(message) } >>
