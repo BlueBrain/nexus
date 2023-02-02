@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.migration
 
-import ch.epfl.bluebrain.nexus.delta.sdk.acls.{AclFixtures, Acls}
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.Acls
 import ch.epfl.bluebrain.nexus.delta.sdk.migration.{MigrationLog, ToMigrateEvent}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.Resolvers
@@ -13,7 +13,7 @@ import monix.bio.Task
 import java.time.Instant
 import java.util.UUID
 
-class MigrationSuite extends BioSuite with TestHelpers with AclFixtures with IOValues {
+class MigrationSuite extends BioSuite with TestHelpers with IOValues {
 
   private val projectsToIgnore = Set("dummy", "myorg/test")
   private val uuid             = UUID.randomUUID()
