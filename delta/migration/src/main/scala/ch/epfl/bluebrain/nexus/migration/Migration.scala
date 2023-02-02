@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
-import ch.epfl.bluebrain.nexus.migration.Migration.{logger, MigrationProgress}
+import ch.epfl.bluebrain.nexus.migration.Migration.{processEvent, MigrationProgress}
 import ch.epfl.bluebrain.nexus.migration.config.ReplayConfig
 import ch.epfl.bluebrain.nexus.migration.replay.ReplayEvents
 import com.typesafe.config.{ConfigFactory, ConfigParseOptions}
@@ -38,20 +38,6 @@ final class Migration private (
     batch: BatchConfig,
     xas: Transactors
 ) {
-
-  private val logMap = logs.map { log => log.entityType -> log }.toMap
-
-  private val processEvent: ToMigrateEvent => Task[Unit] = event =>
-    logMap.get(event.entityType) match {
-      case Some(migrationLog) =>
-        migrationLog(event).tapError { e =>
-          Task.delay { logger.error(s"[${event.persistenceId}] $e") }
-        }
-      case None               =>
-        val message = s"The logMap has no entry for ${event.entityType}"
-        Task.delay { logger.error(message) } >>
-          Task.raiseError(new NoSuchElementException(message))
-    }
 
   private def saveProgress(progress: MigrationProgress) =
     sql"""INSERT INTO migration_offset (name, akka_offset, processed, discarded, failed, instant)
@@ -87,7 +73,7 @@ final class Migration private (
             val (toIgnore, toProcess) = chunk.partitionEither { e =>
               Either.cond(!Migration.toIgnore(e, blacklisted), e, e)
             }
-            val migrated              = toProcess.traverse(processEvent)
+            val migrated              = toProcess.traverse(processEvent(logs))
             val ignored               = saveIgnored(toIgnore).transact(xas.write)
             val migrationProgress     =
               MigrationProgress(last.offset, last.instant, toProcess.size.toLong, toIgnore.size.toLong, 0L)
@@ -153,6 +139,19 @@ object Migration {
     project.exist(projects.contains)(payload) || projectEventCondition ||
     (toMigrateEvent.entityType == Acls.entityType &&
       root.address.string.all { address => projects.contains(address.substring(1)) }(payload))
+  }
+
+  def processEvent(logs: Set[MigrationLog]): ToMigrateEvent => Task[Unit] = { event =>
+    val logMap = logs.map { log => log.entityType -> log }.toMap
+    logMap.get(event.entityType) match {
+      case Some(migrationLog) =>
+        migrationLog(event)
+          .tapError { e => Task.delay { logger.error(s"[${event.persistenceId}] $e") } }
+      case None               =>
+        val message = s"The logMap has no entry for entity type: ${event.entityType}"
+        Task.delay { logger.error(message) } >>
+          Task.raiseError(new NoSuchElementException(message))
+    }
   }
 
   private case class IgnoreConfig(blacklisted: Set[String])
