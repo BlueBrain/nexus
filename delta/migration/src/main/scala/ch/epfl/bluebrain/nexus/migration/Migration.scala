@@ -14,6 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
 import ch.epfl.bluebrain.nexus.migration.Migration.{processEvent, MigrationProgress}
 import ch.epfl.bluebrain.nexus.migration.config.ReplayConfig
 import ch.epfl.bluebrain.nexus.migration.replay.ReplayEvents
@@ -39,6 +40,8 @@ final class Migration private (
     batch: BatchConfig,
     xas: Transactors
 ) {
+
+  private val logMap = logs.map { log => log.entityType -> log }.toMap
 
   private def saveProgress(progress: MigrationProgress) =
     sql"""INSERT INTO migration_offset (name, akka_offset, processed, discarded, failed, instant)
@@ -74,7 +77,7 @@ final class Migration private (
             val (toIgnore, toProcess) = chunk.partitionEither { e =>
               Either.cond(!Migration.toIgnore(e, blacklisted), e, e)
             }
-            val migrated              = toProcess.traverse(processEvent(logs))
+            val migrated              = toProcess.traverse(processEvent(logMap))
             val ignored               = saveIgnored(toIgnore).transact(xas.write)
             val migrationProgress     =
               MigrationProgress(last.offset, last.instant, toProcess.size.toLong, toIgnore.size.toLong, 0L)
@@ -119,9 +122,7 @@ object Migration {
     }
   }
 
-  def processEvent(logs: Set[MigrationLog]): ToMigrateEvent => Task[Unit] = { event =>
-    val logMap = logs.map { log => log.entityType -> log }.toMap
-
+  def processEvent(logMap: Map[EntityType, MigrationLog]): ToMigrateEvent => Task[Unit] = { event =>
     logMap.get(event.entityType) match {
       case Some(migrationLog) =>
         migrationLog(event)

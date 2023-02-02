@@ -58,13 +58,13 @@ class MigrationSuite extends BioSuite with TestHelpers with AclFixtures with IOV
   private val projectEvent   = ToMigrateEvent(Projects.entityType, "id", 1L, projectPayload, Instant.EPOCH, uuid)
 
   test("An invalid state should not be rejected") {
-    val ml = new MigrationLog {
+    val projectMigrationLog = new MigrationLog {
       override def entityType: EntityType = Projects.entityType
 
       override def apply(event: ToMigrateEvent): Task[Unit] =
         Task.raiseError(InvalidState(None, event))
     }
-    Migration.processEvent(Set(ml))(projectEvent).accepted
+    Migration.processEvent(Map(Projects.entityType -> projectMigrationLog))(projectEvent).accepted
   }
 
 }
