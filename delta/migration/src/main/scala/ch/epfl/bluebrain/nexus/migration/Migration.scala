@@ -130,9 +130,9 @@ object Migration {
               logger.error(s"[${event.persistenceId}] $e")
             }
           }
-          .onErrorRecoverWith { case _: InvalidState[_, _] =>
+          .onErrorRecoverWith { case e: InvalidState[_, _] =>
             Task.delay {
-              logger.warn(s"Invalid state encountered")
+              logger.warn(s"Invalid state encountered. Proceeding with migration. Original message: ${e.getMessage}")
             }
           }
       case None               =>
