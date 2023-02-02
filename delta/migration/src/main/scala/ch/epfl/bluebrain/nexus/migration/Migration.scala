@@ -126,14 +126,11 @@ object Migration {
     logMap.get(event.entityType) match {
       case Some(migrationLog) =>
         migrationLog(event)
-          .tapError { e =>
-            Task.delay {
-              logger.error(s"[${event.persistenceId}] $e")
-            }
-          }
           .onErrorRecoverWith { case e: InvalidState[_, _] =>
             Task.delay {
-              logger.warn(s"Invalid state encountered. Proceeding with migration. Original message: ${e.getMessage}")
+              logger.warn(
+                s"Invalid state encountered while processing event: $event. Proceeding with migration. Original message: ${e.getMessage}"
+              )
             }
           }
       case None               =>
