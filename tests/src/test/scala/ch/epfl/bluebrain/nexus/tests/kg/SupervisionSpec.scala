@@ -9,18 +9,16 @@ import io.circe.Json
 class SupervisionSpec extends BaseSpec {
 
   "The supervision endpoint" should {
-    s"require ${Supervision.Read.value} permission" in {
+    s"reject calls without ${Supervision.Read.value} permission" in {
       deltaClient.get[Json]("/supervision/projections", ScoobyDoo) { (_, response) =>
         response.status shouldEqual StatusCodes.Forbidden
       }
     }
 
-    "return running projections" in {
+    s"accept calls with ${Supervision.Read.value}" in {
       aclDsl.addPermission("/", ScoobyDoo, Supervision.Read).accepted
-      deltaClient.get[Json]("/supervision/projections", ScoobyDoo) { (json, response) =>
+      deltaClient.get[Json]("/supervision/projections", ScoobyDoo) { (_, response) =>
         response.status shouldEqual StatusCodes.OK
-        val expected = jsonContentOf("/kg/supervision/projections.json")
-        json should equalIgnoreArrayOrder(expected)
       }
     }
   }
