@@ -1,0 +1,185 @@
+{
+  "@context": "https://bluebrain.github.io/nexus/contexts/supervision.json",
+  "projections": [
+    {
+      "executionStrategy": "PersistentSingleNode",
+      "metadata": {
+        "module": "system",
+        "name": "event-metrics"
+      },
+      "progress": {
+        "discarded": 0,
+        "failed": 0,
+        "instant": "1970-01-01T00:00:00Z",
+        "offset": {
+          "@type": "Start"
+        },
+        "processed": 0
+      },
+      "restarts": 0,
+      "status": "Running"
+    },
+    {
+      "executionStrategy": "TransientSingleNode",
+      "metadata": {
+        "module": "system",
+        "name": "purge-projection-restarts"
+      },
+      "progress": {
+        "discarded": 0,
+        "failed": 0,
+        "instant": "1970-01-01T00:00:00Z",
+        "offset": {
+          "@type": "Start"
+        },
+        "processed": 0
+      },
+      "restarts": 0,
+      "status": "Running"
+    },
+    {
+      "executionStrategy": "PersistentSingleNode",
+      "metadata": {
+        "module": "system",
+        "name": "file-attributes-update"
+      },
+      "progress": {
+        "discarded": 0,
+        "failed": 0,
+        "instant": "1970-01-01T00:00:00Z",
+        "offset": {
+          "@type": "Start"
+        },
+        "processed": 0
+      },
+      "restarts": 0,
+      "status": "Running"
+    },
+    {
+      "executionStrategy": "EveryNode",
+      "metadata": {
+        "module": "system",
+        "name": "watch-restarts"
+      },
+      "progress": {
+        "discarded": 0,
+        "failed": 0,
+        "instant": "1970-01-01T00:00:00Z",
+        "offset": {
+          "@type": "Start"
+        },
+        "processed": 0
+      },
+      "restarts": 0,
+      "status": "Running"
+    },
+    {
+      "executionStrategy": "TransientSingleNode",
+      "metadata": {
+        "module": "system",
+        "name": "delete-expired"
+      },
+      "progress": {
+        "discarded": 0,
+        "failed": 0,
+        "instant": "1970-01-01T00:00:00Z",
+        "offset": {
+          "@type": "Start"
+        },
+        "processed": 0
+      },
+      "restarts": 0,
+      "status": "Running"
+    },
+    {
+      "executionStrategy": "EveryNode",
+      "metadata": {
+        "module": "system",
+        "name": "blazegraph-coordinator"
+      },
+      "progress": {
+        "discarded": 0,
+        "failed": 0,
+        "instant": "1970-01-01T00:00:00Z",
+        "offset": {
+          "@type": "Start"
+        },
+        "processed": 0
+      },
+      "restarts": 0,
+      "status": "Running"
+    },
+    {
+      "executionStrategy": "TransientSingleNode",
+      "metadata": {
+        "module": "system",
+        "name": "delete-old-failed-elem"
+      },
+      "progress": {
+        "discarded": 0,
+        "failed": 0,
+        "instant": "1970-01-01T00:00:00Z",
+        "offset": {
+          "@type": "Start"
+        },
+        "processed": 0
+      },
+      "restarts": 0,
+      "status": "Running"
+    },
+    {
+      "executionStrategy": "TransientSingleNode",
+      "metadata": {
+        "module": "composite-views",
+        "name": "purge-composite-restarts"
+      },
+      "progress": {
+        "discarded": 0,
+        "failed": 0,
+        "instant": "1970-01-01T00:00:00Z",
+        "offset": {
+          "@type": "Start"
+        },
+        "processed": 0
+      },
+      "restarts": 0,
+      "status": "Running"
+    },
+    {
+      "executionStrategy": "EveryNode",
+      "metadata": {
+        "module": "system",
+        "name": "elasticsearch-coordinator"
+      },
+      "progress": {
+        "discarded": 0,
+        "failed": 0,
+        "instant": "1970-01-01T00:00:00Z",
+        "offset": {
+          "@type": "Start"
+        },
+        "processed": 0
+      },
+      "restarts": 0,
+      "status": "Running"
+    },
+    {
+      "executionStrategy": "EveryNode",
+      "metadata": {
+        "module": "system",
+        "name": "composite-views-coordinator"
+      },
+      "progress": {
+        "discarded": 0,
+        "failed": 0,
+        "instant": "1970-01-01T00:00:00Z",
+        "offset": {
+          "@type": "Start"
+        },
+        "processed": 0
+      },
+      "restarts": 0,
+      "status": "Running"
+    }
+  ]
+}
