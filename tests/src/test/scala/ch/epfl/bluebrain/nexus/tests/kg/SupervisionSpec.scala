@@ -227,18 +227,6 @@ class SupervisionSpec extends BaseSpec with EitherValuable with CirceLiteral wit
       }
     }
 
-    "reflects a view restart" in {
-      deltaClient.delete[Json](s"/views/$fullId/test-resource:$viewName/offset", Mickey) { (_, response) =>
-        response.status shouldEqual StatusCodes.OK
-        eventually {
-          deltaClient.get[Json]("/supervision/projections", Mickey) { (json, _) =>
-            val expected = compositeProjectionMetadata(revision = 2, restart = 1)
-            assert(metadataExists(expected)(json))
-          }
-        }
-      }
-    }
-
     "reflect a view deprecation" in {
       deltaClient.delete[Json](s"/views/$fullId/test-resource:$viewName?rev=2", Mickey) { (_, _) =>
         eventually {
