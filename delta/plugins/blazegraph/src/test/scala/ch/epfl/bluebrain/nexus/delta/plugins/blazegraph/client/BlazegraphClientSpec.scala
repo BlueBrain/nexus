@@ -204,6 +204,7 @@ class BlazegraphClientSpec(docker: BlazegraphDocker)
       triplesSparqlResults(index, graph) shouldEqual expectedResult(id, label, value)
       triplesSparqlResults(index, graph2) shouldEqual expectedResult(id2, label2, value2)
       triplesSparqlResults(index) shouldEqual expectedResult(id, label, value) ++ expectedResult(id2, label2, value2)
+      client.count(index).accepted shouldEqual 4L
     }
 
     "fail the query" in {

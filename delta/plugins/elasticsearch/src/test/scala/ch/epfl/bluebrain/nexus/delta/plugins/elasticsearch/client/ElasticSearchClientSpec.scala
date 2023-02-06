@@ -136,6 +136,19 @@ class ElasticSearchClientSpec(override val docker: ElasticSearchDocker)
       )
     }
 
+    "count" in {
+      val index = IndexLabel(genString()).rightValue
+
+      val operations = List(
+        ElasticSearchBulk.Index(index, "1", json"""{ "field1" : 1 }"""),
+        ElasticSearchBulk.Index(index, "2", json"""{ "field1" : 2 }"""),
+        ElasticSearchBulk.Index(index, "3", json"""{ "doc" : {"field2" : 4} }""")
+      )
+      esClient.bulk(operations, Refresh.WaitFor).accepted
+
+      esClient.count(index.value).accepted shouldEqual 3L
+    }
+
     "search" in {
       val index = IndexLabel(genString()).rightValue
 

@@ -67,12 +67,3 @@ CREATE TABLE IF NOT EXISTS public.migration_composite_count(
     count_1_8 bigint,
     PRIMARY KEY(project, id, space_id)
 );
-
-CREATE TABLE IF NOT EXISTS public.composite_count(
-    project       text         NOT NULL,
-    id            text         NOT NULL,
-    space_id      text         NOT NULL,
-    count_1_7 bigint,
-    count_1_8 bigint,
-    PRIMARY KEY(project, id, space_id)
-);

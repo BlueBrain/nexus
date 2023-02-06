@@ -16,6 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.HttpResult
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.AuthToken
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectStatistics
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.StreamConverter
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ElemStream
@@ -23,6 +24,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset.Start
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, RemainingElems}
 import com.typesafe.scalalogging.Logger
+import io.circe.Json
 import io.circe.parser.decode
 import fs2._
 import monix.bio.{IO, UIO}
@@ -35,6 +37,11 @@ import scala.concurrent.duration.FiniteDuration
   * Collection of functions for interacting with a remote delta instance.
   */
 trait DeltaClient {
+
+  /**
+    * Fetches the [[ProjectStatistics]] for the remote source
+    */
+  def projectStatistics(source: RemoteProjectSource): HttpResult[ProjectStatistics]
 
   /**
     * Fetches the [[RemainingElems]] for the remote source
@@ -66,6 +73,11 @@ trait DeltaClient {
     */
   def resourceAsNQuads(source: RemoteProjectSource, id: Iri): HttpResult[Option[NQuads]]
 
+  /**
+    * Fetches a resource with a given id in n-quads format.
+    */
+  def resourceAsJson(source: RemoteProjectSource, id: Iri): HttpResult[Option[Json]]
+
 }
 
 object DeltaClient {
@@ -78,6 +90,15 @@ object DeltaClient {
       as: ActorSystem[Nothing],
       scheduler: Scheduler
   ) extends DeltaClient {
+
+    override def projectStatistics(source: RemoteProjectSource): HttpResult[ProjectStatistics] = {
+      implicit val cred: Option[AuthToken] = token(source)
+      val statisticsEndpoint: HttpRequest  =
+        Get(
+          source.endpoint / "projects" / source.project.organization.value / source.project.project.value / "statistics"
+        ).addHeader(accept).withCredentials
+      client.fromJsonTo[ProjectStatistics](statisticsEndpoint)
+    }
 
     override def remaining(source: RemoteProjectSource, offset: Offset): HttpResult[RemainingElems] = {
       implicit val cred: Option[AuthToken] = token(source)
@@ -136,6 +157,16 @@ object DeltaClient {
       ).addHeader(Accept(RdfMediaTypes.`application/n-quads`)).withCredentials
       client.fromEntityTo[String](req).map(nq => Some(NQuads(nq, id))).onErrorRecover {
         case HttpClientStatusError(_, StatusCodes.NotFound, _) => None
+      }
+    }
+
+    override def resourceAsJson(source: RemoteProjectSource, id: Iri): HttpResult[Option[Json]] = {
+      implicit val cred: Option[AuthToken] = token(source)
+      val req                              = Get(
+        source.endpoint / "resources" / source.project.organization.value / source.project.project.value / "_" / id.toString
+      ).addHeader(accept).withCredentials
+      client.toJson(req).map(Some(_)).onErrorRecover { case HttpClientStatusError(_, StatusCodes.NotFound, _) =>
+        None
       }
     }
 
