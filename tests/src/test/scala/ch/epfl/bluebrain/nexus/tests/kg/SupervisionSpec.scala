@@ -139,6 +139,102 @@ class SupervisionSpec extends BaseSpec with EitherValuable with CirceLiteral wit
     }
   }
 
+  "A blazegraph view projection supervision description" should {
+    val bgViewName = "sv-bg-view"
+    val module = "blazegraph"
+    val createEsViewPayload =
+      jsonContentOf("/kg/supervision/bg-payload.json", "viewName" -> bgViewName, "type" -> "https://schema.org/Book")
+    val updateEsViewPayload =
+      jsonContentOf("/kg/supervision/bg-payload.json", "viewName" -> bgViewName, "type" -> "https://schema.org/Movie")
+
+    "not exist before project is created" in {
+      deltaClient.get[Json]("/supervision/projections", ScoobyDoo) { (json, _) =>
+        val viewMetaDataJson = jsonContentOf(
+          "/kg/supervision/scoped-projection-metadata.json",
+          "module" -> module,
+          "project" -> fullId,
+          "viewName" -> bgViewName,
+          "revision" -> 1,
+          "restarts" -> 0
+        )
+        assert(!metadataExists(viewMetaDataJson)(json))
+      }
+    }
+
+    "exist after a project is created" in {
+      deltaClient.put[Json](s"/views/$fullId/test-resource:$bgViewName", createEsViewPayload, ScoobyDoo) { (_, _) =>
+        eventually {
+          deltaClient.get[Json]("/supervision/projections", ScoobyDoo) { (json, _) =>
+            val expected = jsonContentOf(
+              "/kg/supervision/scoped-projection-metadata.json",
+              "module" -> module,
+              "project" -> fullId,
+              "viewName" -> bgViewName,
+              "revision" -> 1,
+              "restarts" -> 0
+            )
+            assert(metadataExists(expected)(json))
+          }
+        }
+      }
+    }
+
+    "reflects a view update" in {
+      deltaClient.put[Json](s"/views/$fullId/test-resource:$bgViewName?rev=1", updateEsViewPayload, ScoobyDoo) {
+        (_, _) =>
+          eventually {
+            deltaClient.get[Json]("/supervision/projections", ScoobyDoo) { (json, _) =>
+              val expected = jsonContentOf(
+                "/kg/supervision/scoped-projection-metadata.json",
+                "module" -> module,
+                "project" -> fullId,
+                "viewName" -> bgViewName,
+                "revision" -> 2,
+                "restarts" -> 0
+              )
+              assert(metadataExists(expected)(json))
+            }
+          }
+      }
+    }
+
+    "reflects a view restart" in {
+      deltaClient.delete[Json](s"/views/$fullId/test-resource:$bgViewName/offset", ScoobyDoo) { (_, _) =>
+        eventually {
+          deltaClient.get[Json]("/supervision/projections", ScoobyDoo) { (json, _) =>
+            val expected = jsonContentOf(
+              "/kg/supervision/scoped-projection-metadata.json",
+              "module" -> module,
+              "project" -> fullId,
+              "viewName" -> bgViewName,
+              "revision" -> 2,
+              "restarts" -> 1
+            )
+            assert(metadataExists(expected)(json))
+          }
+        }
+      }
+    }
+
+    "reflect a view deprecation" in {
+      deltaClient.delete[Json](s"/views/$fullId/test-resource:$bgViewName?rev=2", ScoobyDoo) { (_, _) =>
+        eventually {
+          deltaClient.get[Json]("/supervision/projections", ScoobyDoo) { (json, _) =>
+            val expected = jsonContentOf(
+              "/kg/supervision/scoped-projection-metadata.json",
+              "module" -> module,
+              "project" -> fullId,
+              "viewName" -> bgViewName,
+              "revision" -> 2,
+              "restarts" -> 1
+            )
+            assert(!metadataExists(expected)(json))
+          }
+        }
+      }
+    }
+  }
+
   /** For a JSON array of supervised description, checks that it contains the provided content */
   private def metadataExists(expectedMetadata: Json) = (supervisedDescriptions: Json) =>
     projections.json
