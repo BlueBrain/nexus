@@ -1,0 +1,9 @@
+{
+  "metadata": {
+    "module": "{{module}}",
+    "name": "{{module}}-{{project}}-https://dev.nexus.test.com/simplified-resource/{{viewName}}-{{revision}}",
+    "project": "{{project}}",
+    "resourceId": "https://dev.nexus.test.com/simplified-resource/{{viewName}}"
+  },
+  "restarts": {{restarts}}
+}
