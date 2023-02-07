@@ -40,15 +40,16 @@ private[decoder] object MagnoliaJsonLdDecoder {
   }
 
   def split[A](sealedTrait: SealedTrait[JsonLdDecoder, A])(implicit config: Configuration): JsonLdDecoder[A] =
-    (c: ExpandedJsonLdCursor) => c.getTypes match {
-      case Right(types) =>
-        sealedTrait.subtypes
-          .find(st => types.exists(config.context.expand(st.typeName.short, useVocab = true).contains)) match {
-          case Some(st) => st.typeclass.apply(c)
-          case None =>
-            val err = s"Unable to find type discriminator for '${sealedTrait.typeName.short}'"
-            Left(DecodingDerivationFailure(err))
-        }
-      case Left(err) => Left(err)
-    }
+    (c: ExpandedJsonLdCursor) =>
+      c.getTypes match {
+        case Right(types) =>
+          sealedTrait.subtypes
+            .find(st => types.exists(config.context.expand(st.typeName.short, useVocab = true).contains)) match {
+            case Some(st) => st.typeclass.apply(c)
+            case None     =>
+              val err = s"Unable to find type discriminator for '${sealedTrait.typeName.short}'"
+              Left(DecodingDerivationFailure(err))
+          }
+        case Left(err)    => Left(err)
+      }
 }
