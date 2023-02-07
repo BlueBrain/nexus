@@ -81,7 +81,11 @@ object Identity extends TestHelpers {
     val Radar = UserCredentials(genString(), genString(), testRealm)
   }
 
+  object supervision {
+    val Mickey = UserCredentials(genString(), genString(), testRealm)
+  }
+
   lazy val allUsers =
-    acls.Marge :: archives.Tweety :: compositeviews.Jerry :: events.BugsBunny :: listings.Bob :: listings.Alice :: orgs.Fry :: orgs.Leela :: projects.Bojack :: projects.PrincessCarolyn :: resources.Rick :: resources.Morty :: storages.Coyote :: views.ScoobyDoo :: mash.Radar :: Nil
+    acls.Marge :: archives.Tweety :: compositeviews.Jerry :: events.BugsBunny :: listings.Bob :: listings.Alice :: orgs.Fry :: orgs.Leela :: projects.Bojack :: projects.PrincessCarolyn :: resources.Rick :: resources.Morty :: storages.Coyote :: views.ScoobyDoo :: mash.Radar :: supervision.Mickey :: Nil
 
 }
