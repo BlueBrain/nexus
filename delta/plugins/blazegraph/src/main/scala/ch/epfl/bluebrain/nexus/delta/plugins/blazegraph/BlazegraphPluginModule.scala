@@ -107,7 +107,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         )(api, clock, uuidF)
     }
 
-  if (!MigrationState.isIndexingDisabled) {
+  if (!MigrationState.isBgIndexingDisabled) {
     make[BlazegraphCoordinator].fromEffect {
       (
           views: BlazegraphViews,
