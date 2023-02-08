@@ -43,7 +43,7 @@ val kamonVersion            = "2.5.12"
 val kanelaAgentVersion      = "1.0.17"
 val kindProjectorVersion    = "0.13.2"
 val logbackVersion          = "1.4.5"
-val magnoliaVersion         = "0.17.0"
+val magnoliaVersion         = "1.1.3"
 val mockitoVersion          = "1.17.12"
 val monixVersion            = "3.4.1"
 val monixBioVersion         = "1.2.0"
@@ -108,7 +108,7 @@ lazy val kamonCore          = "io.kamon"                     %% "kamon-core"    
 lazy val kanelaAgent        = "io.kamon"                      % "kanela-agent"             % kanelaAgentVersion
 lazy val kindProjector      = "org.typelevel"                %% "kind-projector"           % kindProjectorVersion cross CrossVersion.full
 lazy val logback            = "ch.qos.logback"                % "logback-classic"          % logbackVersion
-lazy val magnolia           = "com.propensive"               %% "magnolia"                 % magnoliaVersion
+lazy val magnolia           = "com.softwaremill.magnolia1_2" %% "magnolia"                 % magnoliaVersion
 lazy val mockito            = "org.mockito"                  %% "mockito-scala"            % mockitoVersion
 lazy val monixBio           = "io.monix"                     %% "monix-bio"                % monixBioVersion
 lazy val monixEval          = "io.monix"                     %% "monix-eval"               % monixVersion
@@ -337,7 +337,7 @@ lazy val migration = project
     libraryDependencies ++= Seq(
       circeOptics,
       "com.lightbend.akka" %% "akka-stream-alpakka-cassandra" % "4.0.0",
-      "org.lz4" % "lz4-java" % "1.4.1"
+      "org.lz4"             % "lz4-java"                      % "1.4.1"
     )
   )
 

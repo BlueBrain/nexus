@@ -1,17 +1,17 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.configuration
 
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{Configuration, JsonLdDecoder, MagnoliaJsonLdDecoder}
-import magnolia.{CaseClass, Magnolia, SealedTrait}
+import magnolia1.{CaseClass, Magnolia, SealedTrait}
 
 object semiauto {
 
   type Typeclass[T] = JsonLdDecoder[T]
 
-  def combine[T](caseClass: CaseClass[Typeclass, T])(implicit config: Configuration): Typeclass[T] =
-    MagnoliaJsonLdDecoder.combine(caseClass)
+  def join[T](caseClass: CaseClass[Typeclass, T])(implicit config: Configuration): Typeclass[T] =
+    MagnoliaJsonLdDecoder.join(caseClass)
 
-  def dispatch[T](sealedTrait: SealedTrait[Typeclass, T])(implicit config: Configuration): Typeclass[T] =
-    MagnoliaJsonLdDecoder.dispatch(sealedTrait)
+  def split[T](sealedTrait: SealedTrait[Typeclass, T])(implicit config: Configuration): Typeclass[T] =
+    MagnoliaJsonLdDecoder.split(sealedTrait)
 
   /**
     * @return
