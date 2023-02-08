@@ -15,6 +15,8 @@ import com.typesafe.scalalogging.Logger
 import doobie.implicits._
 import monix.bio.Task
 
+import concurrent.duration._
+
 class CompositeViewsCheck(
     fetchViews: ElemStream[CompositeViewDef],
     fetchESCount: String => Task[Long],
@@ -25,7 +27,18 @@ class CompositeViewsCheck(
     xas: Transactors
 ) {
 
-  def run: ElemStream[Unit] =
+  def run: Task[Unit] =
+    for {
+      start <- Task.delay(System.currentTimeMillis())
+      _     <- Task.delay(logger.info("Starting checking composite views counts"))
+      _     <- runStream.compile.drain
+      end   <- Task.delay(System.currentTimeMillis())
+      _     <- Task.delay(
+                 logger.info(s"Checking composite views counts completed in ${(end - start).millis.toSeconds} seconds.")
+               )
+    } yield ()
+
+  private def runStream: ElemStream[Unit] =
     fetchViews.evalMap { elem =>
       elem.traverse {
         case view: ActiveViewDef =>

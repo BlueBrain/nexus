@@ -12,6 +12,8 @@ import com.typesafe.scalalogging.Logger
 import doobie.implicits._
 import monix.bio.Task
 
+import concurrent.duration._
+
 class ElasticSearchViewsCheck(
     fetchViews: ElemStream[IndexingViewDef],
     fetchCount: String => Task[Long],
@@ -19,7 +21,18 @@ class ElasticSearchViewsCheck(
     xas: Transactors
 ) {
 
-  def run: ElemStream[Unit] =
+  def run: Task[Unit] =
+    for {
+      start <- Task.delay(System.currentTimeMillis())
+      _     <- Task.delay(logger.info("Starting checking elasticsearch views counts"))
+      _     <- runStream.compile.drain
+      end   <- Task.delay(System.currentTimeMillis())
+      _     <- Task.delay(
+                 logger.info(s"Checking elasticsearch views counts completed in ${(end - start).millis.toSeconds} seconds.")
+               )
+    } yield ()
+
+  private def runStream: ElemStream[Unit] =
     fetchViews.evalMap { elem =>
       elem.traverse {
         case active: ActiveViewDef =>

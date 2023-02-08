@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.migration
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.migration.ResourcesCheck.Diff.{Error, HasDiff, NoDiff}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.migration.ResourcesCheck._
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.AccessToken
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
@@ -15,36 +16,53 @@ import monix.bio.{Task, UIO}
 import doobie.implicits._
 import io.circe.syntax.EncoderOps
 
+import concurrent.duration._
 import scala.concurrent.duration.FiniteDuration
 
 final class ResourcesCheck(
     fetchProjects: Stream[Task, ProjectRef],
     fetchElems: (ProjectRef, Offset) => ElemStream[Unit],
-    fetchResource17: (ProjectRef, Iri) => Task[Option[Json]],
-    fetchResource18: (ProjectRef, Iri) => Task[Option[Json]],
+    fetchResource17: (ProjectRef, Iri, AccessToken) => Task[Option[Json]],
+    fetchResource18: (ProjectRef, Iri, AccessToken) => Task[Option[Json]],
     saveOffsetInterval: FiniteDuration,
     xas: Transactors
 ) {
 
-  def run = {
+  def run(token: AccessToken): Task[Unit] =
+    for {
+      start <- Task.delay(System.currentTimeMillis())
+      _     <- Task.delay(logger.info("Starting checking resources"))
+      _     <- runStream(token).compile.drain
+      end   <- Task.delay(System.currentTimeMillis())
+      _     <- Task.delay(logger.info(s"Checking resources completed in ${(end - start).millis.toSeconds} seconds."))
+    } yield ()
+
+  private def runStream(token: AccessToken) =
     for {
       project <- fetchProjects
       offset  <- Stream.eval(fetchOffset(project))
+      start   <- Stream.eval(Task.delay(System.currentTimeMillis()))
       _       <- Stream.eval(Task.delay(logger.info(s"Start checking resources in project $project from $offset")))
       _       <- fetchElems(project, offset)
-                   .parEvalMap(5)(elem => diffResource(project, elem).as(elem))
+                   .parEvalMap(5)(elem => diffResource(project, elem, token).as(elem))
                    .debounce(saveOffsetInterval)
                    .evalTap { elem => saveOffset(project, elem.offset) }
-      _       <- Stream.eval(Task.delay(logger.info(s"Finished resources in project $project from $offset")))
+      end     <- Stream.eval(Task.delay(System.currentTimeMillis()))
+      _       <- Stream.eval(
+                   Task.delay(
+                     logger.info(
+                       s"Finished resources in project $project from $offset in ${(end - start).millis.toSeconds} seconds."
+                     )
+                   )
+                 )
     } yield ()
-  }
 
-  private def diffResource(project: ProjectRef, elem: Elem[Unit]): UIO[Unit] = {
+  private def diffResource(project: ProjectRef, elem: Elem[Unit], token: AccessToken): UIO[Unit] = {
     for {
-      json17 <- fetchResource17(project, elem.id).onErrorHandleWith { e =>
+      json17 <- fetchResource17(project, elem.id, token).onErrorHandleWith { e =>
                   logError(project, elem, e).as(None)
                 }
-      json18 <- fetchResource18(project, elem.id).onErrorHandleWith { e =>
+      json18 <- fetchResource18(project, elem.id, token).onErrorHandleWith { e =>
                   logError(project, elem, e).as(None)
                 }
       diff    = equalsIgnoreArrayOrder(json17, json18)

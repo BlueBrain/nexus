@@ -114,7 +114,7 @@ object CompositeViewsCoordinator {
     for {
       cache      <- KeyValueStore[ViewRef, ActiveViewDef]()
       coordinator = new CompositeViewsCoordinator(
-                      compositeViews.views(_).map(_.map(CompositeViewDef.apply)),
+                      compositeViews.views,
                       cache,
                       supervisor,
                       compilePipeChain: PipeChain.Compile,

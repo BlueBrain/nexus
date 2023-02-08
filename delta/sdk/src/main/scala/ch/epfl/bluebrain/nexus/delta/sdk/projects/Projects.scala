@@ -19,7 +19,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{ScopedEntityDefinition, StateMachine}
-import monix.bio.{IO, UIO}
+import monix.bio.{IO, Task, UIO}
+import fs2.Stream
 
 trait Projects {
 
@@ -125,6 +126,11 @@ trait Projects {
       params: ProjectSearchParams,
       ordering: Ordering[ProjectResource]
   ): UIO[UnscoredSearchResults[ProjectResource]]
+
+  /**
+    * Stream all references of existing projects in a finite stream
+    */
+  def currentRefs: Stream[Task, ProjectRef]
 
   /**
     * The default api mappings

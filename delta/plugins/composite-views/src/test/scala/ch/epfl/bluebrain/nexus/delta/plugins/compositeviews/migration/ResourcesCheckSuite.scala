@@ -1,5 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.migration
 
+import ch.epfl.bluebrain.nexus.delta.kernel.Secret
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.AccessToken
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
@@ -64,28 +66,28 @@ class ResourcesCheckSuite extends BioSuite with Doobie.Fixture with CirceLiteral
           }
       }
 
-    def fetch17(project: ProjectRef, id: Iri) =
-      (project, id) match {
-        case (_, `id1`) => Task.some(json"""{ "a": 5 }""")
-        case (_, `id2`) => Task.some(json"""{ "b": [10,5,2] }""")
-        case (_, `id3`) => Task.some(json"""{ "c": "ABC" }""")
-        case (_, `id4`) => Task.raiseError(new IllegalArgumentException("Failed id4 v17"))
-        case (_, _)     => Task.none
+    def fetch17(project: ProjectRef, id: Iri, token: AccessToken) =
+      (project, id, token) match {
+        case (_, `id1`, _) => Task.some(json"""{ "a": 5 }""")
+        case (_, `id2`, _) => Task.some(json"""{ "b": [10,5,2] }""")
+        case (_, `id3`, _) => Task.some(json"""{ "c": "ABC" }""")
+        case (_, `id4`, _) => Task.raiseError(new IllegalArgumentException("Failed id4 v17"))
+        case _             => Task.none
       }
 
-    def fetch18(project: ProjectRef, id: Iri) =
-      (project, id) match {
-        case (_, `id1`) => Task.some(json"""{ "a": 5 }""")
-        case (_, `id2`) => Task.some(json"""{ "b": [2,5,10] }""")
-        case (_, `id3`) => Task.some(json"""{ "c": "DEF" }""")
-        case (_, `id4`) => Task.some(json"""{ "a": 15 }""")
-        case (_, _)     => Task.none
+    def fetch18(project: ProjectRef, id: Iri, token: AccessToken) =
+      (project, id, token) match {
+        case (_, `id1`, _) => Task.some(json"""{ "a": 5 }""")
+        case (_, `id2`, _) => Task.some(json"""{ "b": [2,5,10] }""")
+        case (_, `id3`, _) => Task.some(json"""{ "c": "DEF" }""")
+        case (_, `id4`, _) => Task.some(json"""{ "a": 15 }""")
+        case _             => Task.none
       }
 
     val check = new ResourcesCheck(fetchProjects, fetchElems, fetch17, fetch18, 1.second, xas)
 
     for {
-      _ <- check.run.compile.drain
+      _ <- check.run(AccessToken(Secret("TOKEN")))
       _ <- checkDiff(project1, id1).assertNone
       _ <- checkDiff(project1, id2).assertNone
       _ <- check.fetchOffset(project1).eventually(Offset.at(2L))

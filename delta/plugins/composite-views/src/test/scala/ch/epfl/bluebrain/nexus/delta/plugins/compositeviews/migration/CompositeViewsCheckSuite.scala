@@ -107,7 +107,7 @@ class CompositeViewsCheckSuite extends BioSuite with Doobie.Fixture with TestHel
     val check = new CompositeViewsCheck(fetchViews, fetch, fetch, fetch, "delta", "nexus", xas)
 
     for {
-      _ <- check.run.compile.drain
+      _ <- check.run
       _ <- checkView(project, id, CompositeViewsCheck.commonSpaceId).assert((44L, 44L))
       _ <- checkView(project, id, projection1Id).assert((81L, 81L))
       _ <- checkView(project, id, projection2Id).assert((81L, 81L))

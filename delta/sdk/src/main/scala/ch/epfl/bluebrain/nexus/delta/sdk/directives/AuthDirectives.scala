@@ -4,12 +4,13 @@ import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.directives.Credentials
+import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.error.IdentityError.{AuthenticationFailed, InvalidToken}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{AuthToken, Caller}
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{AuthToken, Caller, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import monix.execution.Scheduler
@@ -38,6 +39,13 @@ abstract class AuthDirectives(identities: Identities, aclCheck: AclCheck)(implic
       case _                          => pass
     }
 
+  def extractToken: Directive1[Secret[String]] =
+    extractCredentials.flatMap {
+      case Some(OAuth2BearerToken(s)) => provide(Secret(s))
+      case Some(_)                    => failWith(AuthenticationFailed)
+      case _                          => failWith(AuthenticationFailed)
+    }
+
   /**
     * Attempts to extract the Credentials from the HTTP call and generate a [[Caller]] from it.
     */
@@ -54,5 +62,11 @@ abstract class AuthDirectives(identities: Identities, aclCheck: AclCheck)(implic
     */
   def authorizeFor(path: AclAddress, permission: Permission)(implicit caller: Caller): Directive0 =
     authorizeAsync(aclCheck.authorizeFor(path, permission).runToFuture) or failWith(AuthorizationFailed)
+
+  /**
+    * Check whether [[Caller]] is the configured service account.
+    */
+  def authorizeServiceAccount(serviceAccount: ServiceAccount)(implicit caller: Caller): Directive0 =
+    authorize(caller.subject == serviceAccount.subject) or failWith(AuthorizationFailed)
 
 }

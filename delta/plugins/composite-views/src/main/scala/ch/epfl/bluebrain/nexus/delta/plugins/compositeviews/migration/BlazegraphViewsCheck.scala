@@ -11,6 +11,8 @@ import com.typesafe.scalalogging.Logger
 import doobie.implicits._
 import monix.bio.Task
 
+import concurrent.duration._
+
 class BlazegraphViewsCheck(
     fetchViews: ElemStream[IndexingViewDef],
     fetchCount18: String => Task[Long],
@@ -19,24 +21,34 @@ class BlazegraphViewsCheck(
     xas: Transactors
 ) {
 
-  def run: ElemStream[Unit] = {
-    fetchViews.evalMap { elem =>
-      elem.traverse {
-        case active: ActiveViewDef =>
-          val index18 = active.namespace
-          val index17 = index18.split("_").toList.get(1).map { uuid =>
-            s"${previousPrefix}_${uuid}_${elem.revision}"
-          }
-          for {
-            count18 <- fetchCount18(index18)
-            count17 <- index17.traverse(fetchCount17)
-            _       <- save(active.ref, count18, count17)
-          } yield ()
-        case deprecated            =>
-          Task.delay(logger.info(s"Blazegraph view '${deprecated.ref}' is deprecated."))
-      }
-    }
-  }
+  def run: Task[Unit] =
+    for {
+      start <- Task.delay(System.currentTimeMillis())
+      _     <- Task.delay(logger.info("Starting checking blazegraph views counts"))
+      _     <- fetchViews
+                 .evalMap { elem =>
+                   elem.traverse {
+                     case active: ActiveViewDef =>
+                       val index18 = active.namespace
+                       val index17 = index18.split("_").toList.get(1).map { uuid =>
+                         s"${previousPrefix}_${uuid}_${elem.revision}"
+                       }
+                       for {
+                         count18 <- fetchCount18(index18)
+                         count17 <- index17.traverse(fetchCount17)
+                         _       <- save(active.ref, count18, count17)
+                       } yield ()
+                     case deprecated            =>
+                       Task.delay(logger.info(s"Blazegraph view '${deprecated.ref}' is deprecated."))
+                   }
+                 }
+                 .compile
+                 .drain
+      end   <- Task.delay(System.currentTimeMillis())
+      _     <- Task.delay(
+                 logger.info(s"Checking blazegraph views counts completed in ${(end - start).millis.toSeconds} seconds.")
+               )
+    } yield ()
 
   private def save(view: ViewRef, count18: Long, count17: Option[Long]) =
     sql"""INSERT INTO public.migration_blazegraph_count (project, id, count_1_7, count_1_8)
