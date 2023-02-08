@@ -149,24 +149,26 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
     CompositeGraphStream(local, remote)
   }
 
-  make[CompositeViewsCoordinator].fromEffect {
-    (
-        compositeViews: CompositeViews,
-        supervisor: Supervisor,
-        registry: ReferenceRegistry,
-        graphStream: CompositeGraphStream,
-        buildSpaces: CompositeSpaces.Builder,
-        compositeProjections: CompositeProjections,
-        cr: RemoteContextResolution @Id("aggregate")
-    ) =>
-      CompositeViewsCoordinator(
-        compositeViews,
-        supervisor,
-        PipeChain.compile(_, registry),
-        graphStream,
-        buildSpaces.apply,
-        compositeProjections
-      )(cr)
+  if (!MigrationState.isCompositeIndexingDisabled) {
+    make[CompositeViewsCoordinator].fromEffect {
+      (
+          compositeViews: CompositeViews,
+          supervisor: Supervisor,
+          registry: ReferenceRegistry,
+          graphStream: CompositeGraphStream,
+          buildSpaces: CompositeSpaces.Builder,
+          compositeProjections: CompositeProjections,
+          cr: RemoteContextResolution @Id("aggregate")
+      ) =>
+        CompositeViewsCoordinator(
+          compositeViews,
+          supervisor,
+          PipeChain.compile(_, registry),
+          graphStream,
+          buildSpaces.apply,
+          compositeProjections
+        )(cr)
+    }
   }
 
   many[MetadataContextValue].addEffect(MetadataContextValue.fromFile("contexts/composite-views-metadata.json"))

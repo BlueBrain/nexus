@@ -101,7 +101,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
       )(api, clock, uuidF)
   }
 
-  if (!MigrationState.isIndexingDisabled) {
+  if (!MigrationState.isEsIndexingDisabled) {
     make[ElasticSearchCoordinator].fromEffect {
       (
           views: ElasticSearchViews,
