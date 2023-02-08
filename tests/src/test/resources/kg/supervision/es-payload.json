@@ -1,0 +1,10 @@
+{
+  "@id": "https://dev.nexus.test.com/simplified-resource/{{viewName}}",
+  "@type": "ElasticSearchView",
+  "resourceSchemas": [],
+  "resourceTypes": ["{{type}}"],
+  "sourceAsText": false,
+  "includeMetadata": true,
+  "includeDeprecated": false,
+  "mapping": {}
+}
