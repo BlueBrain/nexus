@@ -1,0 +1,8 @@
+{
+  "@id": "https://dev.nexus.test.com/simplified-resource/{{viewName}}",
+  "@type": "SparqlView",
+  "resourceSchemas": [],
+  "resourceTypes": ["{{type}}"],
+  "includeMetadata": true,
+  "includeDeprecated": false
+}

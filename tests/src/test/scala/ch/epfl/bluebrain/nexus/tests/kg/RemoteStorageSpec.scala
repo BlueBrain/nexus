@@ -1,18 +1,21 @@
 package ch.epfl.bluebrain.nexus.tests.kg
 
-import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
 import ch.epfl.bluebrain.nexus.tests.HttpClient._
 import ch.epfl.bluebrain.nexus.tests.Identity
 import ch.epfl.bluebrain.nexus.tests.Identity.storages.Coyote
-import ch.epfl.bluebrain.nexus.tests.Optics.{filterKey, filterMetadataKeys}
+import ch.epfl.bluebrain.nexus.tests.Optics.{filterKey, filterMetadataKeys, projections}
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission
-import io.circe.Json
+import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Supervision
+import io.circe.generic.semiauto.deriveDecoder
+import io.circe.{Decoder, Json}
 import monix.bio.Task
 import org.scalatest.Assertion
 
 import java.io.File
 import java.nio.file.attribute.PosixFilePermissions
 import java.nio.file.{Files, Paths}
+import scala.annotation.nowarn
 import scala.reflect.io.Directory
 
 class RemoteStorageSpec extends StorageSpec {
@@ -214,5 +217,59 @@ class RemoteStorageSpec extends StorageSpec {
           response.status shouldEqual StatusCodes.BadRequest
       }
     }
+  }
+
+  "The file-attributes-updated projection description" should {
+    "exist" in {
+      aclDsl.addPermission("/", Coyote, Supervision.Read).accepted
+      deltaClient.get[Json]("/supervision/projections", Coyote) { (json, _) =>
+        val expected = json"""{ "module": "system", "name": "file-attributes-update" }"""
+        assert(projections.metadata.json.exist(_ == expected)(json))
+      }
+    }
+
+    "have updated progress when a file is updated" in {
+      case class SupervisedDescription(metadata: Metadata, progress: ProjectionProgress)
+      case class Metadata(module: String, name: String)
+      case class ProjectionProgress(processed: Int)
+      @nowarn("cat=unused")
+      implicit val metadataDecoder: Decoder[Metadata]                 = deriveDecoder
+      @nowarn("cat=unused")
+      implicit val progressDecoder: Decoder[ProjectionProgress]       = deriveDecoder
+      implicit val descriptionDecoder: Decoder[SupervisedDescription] = deriveDecoder
+
+      /**
+        * Given a list of supervised descriptions (json), get the number of processed elements for the
+        * `file-attribute-update` projection
+        */
+      def getProcessed(json: Json): Option[Int] = {
+        val Right(projections)      = json.hcursor.downField("projections").as[List[SupervisedDescription]]
+        val fileAttributeProjection =
+          projections.find(p => p.metadata.name == "file-attribute-update" && p.metadata.module == "system")
+        fileAttributeProjection.map(_.progress.processed)
+      }
+
+      // get progress prior to updating the file
+      deltaClient.get[Json]("/supervision/projections", Coyote) { (json1, _) =>
+        eventually {
+          // update the file
+          deltaClient.putAttachment[Json](
+            s"/files/$fullId/file.txt?storage=nxv:${storageId}2&rev=2",
+            contentOf("/kg/files/attachment.json"),
+            ContentTypes.`application/json`,
+            "file.txt",
+            Coyote
+          ) { (_, _) =>
+            eventually {
+              // get progress after the file update and compare
+              deltaClient.get[Json]("/supervision/projections", Coyote) { (json2, _) =>
+                assert(getProcessed(json2) == getProcessed(json1).map(_ + 1))
+              }
+            }
+          }
+        }
+      }
+    }
+
   }
 }

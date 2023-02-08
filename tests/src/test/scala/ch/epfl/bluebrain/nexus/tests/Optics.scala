@@ -138,6 +138,8 @@ object Optics extends Optics {
     val _total     = root._total.long
   }
 
+  val projections = root.projections.each
+
   object events {
     val filterFields = filterKeys(Set("_instant", "_updatedAt"))
       .andThen(
