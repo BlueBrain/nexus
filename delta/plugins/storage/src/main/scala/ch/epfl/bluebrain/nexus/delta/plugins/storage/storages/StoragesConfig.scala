@@ -5,7 +5,6 @@ import cats.implicits.toBifunctorOps
 import ch.epfl.bluebrain.nexus.delta.kernel.{RetryStrategyConfig, Secret}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePath, DigestAlgorithm, StorageType}
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
@@ -192,8 +191,6 @@ object StoragesConfig {
     *   flag to decide whether or not to show the absolute location of the files in the metadata response
     * @param defaultMaxFileSize
     *   the default maximum allowed file size (in bytes) for uploaded files
-    * @param client
-    *   configuration of the remote disk client
     * @param digestComputation
     *   retry configuration for the digest computation task
     */
@@ -205,7 +202,6 @@ object StoragesConfig {
       defaultWritePermission: Permission,
       showLocation: Boolean,
       defaultMaxFileSize: Long,
-      client: HttpClientConfig,
       digestComputation: RetryStrategyConfig
   ) extends StorageTypeEntryConfig
 

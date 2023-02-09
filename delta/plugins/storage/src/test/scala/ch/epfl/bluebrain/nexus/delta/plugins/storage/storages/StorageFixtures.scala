@@ -6,7 +6,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageField
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePath, DigestAlgorithm}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.{Crypto, EncryptionConfig}
-import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClientConfig, HttpClientWorthRetry}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -26,13 +25,11 @@ trait StorageFixtures extends TestHelpers with CirceLiteral {
   private val diskVolume = AbsolutePath(Files.createTempDirectory("disk")).toOption.get
   private val tmpVolume  = AbsolutePath(Paths.get("/tmp")).toOption.get
 
-  private val httpConfig = HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never, true)
-
   // format: off
   implicit val config: StorageTypeConfig = StorageTypeConfig(
     disk = DiskStorageConfig(diskVolume, Set(diskVolume,tmpVolume), DigestAlgorithm.default, permissions.read, permissions.write, showLocation = false, Some(5000), 50),
     amazon = Some(S3StorageConfig(DigestAlgorithm.default, Some("localhost"), Some(Secret("accessKey")), Some(Secret("secretKey")), permissions.read, permissions.write, showLocation = false, 60)),
-    remoteDisk = Some(RemoteDiskStorageConfig(DigestAlgorithm.default, BaseUri("http://localhost", Label.unsafe("v1")), None, permissions.read, permissions.write, showLocation = false, 70, httpConfig, RetryStrategyConfig.AlwaysGiveUp)),
+    remoteDisk = Some(RemoteDiskStorageConfig(DigestAlgorithm.default, BaseUri("http://localhost", Label.unsafe("v1")), None, permissions.read, permissions.write, showLocation = false, 70, RetryStrategyConfig.AlwaysGiveUp)),
   )
   val crypto: Crypto = EncryptionConfig(Secret("changeme"), Secret("salt")).crypto
 
