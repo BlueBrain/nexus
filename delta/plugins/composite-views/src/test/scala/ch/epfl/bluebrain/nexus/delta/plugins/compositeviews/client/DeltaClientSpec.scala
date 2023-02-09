@@ -19,6 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.graph.NQuads
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.QueryParamsUnmarshalling
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectStatistics
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
@@ -54,6 +55,13 @@ class DeltaClientSpec
   var server: Option[Http.ServerBinding] = None
 
   private val token = "secretToken"
+
+  private val stats = """{
+          "@context" : "https://bluebrain.github.io/nexus/contexts/statistics.json",
+          "lastProcessedEventDateTime" : "1970-01-01T00:00:00Z",
+          "eventsCount" : 10,
+          "resourcesCount" : 10
+        }"""
 
   private val remainingElems = """{
           "@context" : "https://bluebrain.github.io/nexus/contexts/offset.json",
@@ -91,6 +99,9 @@ class DeltaClientSpec
             extractCredentials {
               case Some(OAuth2BearerToken(`token`)) =>
                 concat(
+                  (get & path("v1" / "projects" / "org" / "proj" / "statistics")) {
+                    complete(StatusCodes.OK, HttpEntity(ContentType(RdfMediaTypes.`application/ld+json`), stats))
+                  },
                   (get & path("v1" / "elems" / "org" / "proj" / "remaining")) {
                     complete(
                       StatusCodes.OK,
@@ -149,6 +160,21 @@ class DeltaClientSpec
   private val unknownToken = source.copy(token = Some(AccessToken(Secret("invalid"))))
 
   "Getting project statistics" should {
+
+    "work" in {
+      deltaClient.projectStatistics(source).accepted shouldEqual ProjectStatistics(10L, 10L, Instant.EPOCH)
+    }
+
+    "fail if project is unknown" in {
+      deltaClient.projectStatistics(unknownProjectSource).rejected.errorCode.value shouldEqual StatusCodes.NotFound
+    }
+
+    "fail if token is invalid" in {
+      deltaClient.projectStatistics(unknownToken).rejected.errorCode.value shouldEqual StatusCodes.Forbidden
+    }
+  }
+
+  "Getting remaining information" should {
 
     "work" in {
       deltaClient.remaining(source, Offset.Start).accepted shouldEqual RemainingElems(10, Instant.EPOCH)

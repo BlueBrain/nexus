@@ -5,6 +5,9 @@ object MigrationState {
   def isRunning: Boolean =
     sys.env.getOrElse("MIGRATE_DATA", "false").toBooleanOption.getOrElse(false)
 
+  def isCheck: Boolean =
+    sys.env.getOrElse("MIGRATE_CHECK", "false").toBooleanOption.getOrElse(false)
+
   private def isIndexingDisabled: Boolean =
     sys.env.getOrElse("DISABLE_INDEXING", "false").toBooleanOption.getOrElse(false)
 

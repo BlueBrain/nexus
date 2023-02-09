@@ -55,6 +55,7 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
   private val ignoreUnavailable                                     = "ignore_unavailable"
   private val allowNoIndices                                        = "allow_no_indices"
   private val updateByQueryPath                                     = "_update_by_query"
+  private val countPath                                             = "_count"
   private val searchPath                                            = "_search"
   private val newLine                                               = System.lineSeparator()
   private val `application/x-ndjson`: MediaType.WithFixedCharset    =
@@ -298,6 +299,22 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
             HttpClientStatusError(req, BadRequest, json.noSpaces)
           )
         }
+    }
+  }
+
+  /**
+    * Returns the number of document in a given index
+    * @param index
+    *   the index to use
+    */
+  def count(index: String): HttpResult[Long] = {
+    val req = Get(endpoint / index / countPath).withHttpCredentials
+    client.toJson(req).flatMap { json =>
+      val count = json.hcursor.downField("count").focus.flatMap(_.asNumber.flatMap(_.toLong))
+      IO.fromOption(
+        count,
+        HttpClientStatusError(req, BadRequest, json.noSpaces)
+      )
     }
   }
 

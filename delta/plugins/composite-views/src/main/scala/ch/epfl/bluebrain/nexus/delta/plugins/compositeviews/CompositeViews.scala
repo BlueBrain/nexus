@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.syntax.kamonSyntax
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewCommand._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection._
@@ -33,7 +34,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax.nonEmptySetSyntax
 import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, EntityDependency, EntityType, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, EntityDependency, EntityType, Envelope, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Predicate, ScopedEntityDefinition, ScopedEventLog, StateMachine}
@@ -402,20 +403,27 @@ final class CompositeViews private (
   }
 
   /**
+    * Return all existing indexing views in a finite stream
+    */
+  def currentViews: ElemStream[CompositeViewDef] =
+    log.currentStates(Predicate.Root).map(toCompositeViewDef)
+
+  /**
     * Return the indexing views in a non-ending stream
     */
-  def views(start: Offset): ElemStream[CompositeViewState] =
-    log.states(Predicate.Root, start).map { envelope =>
-      SuccessElem(
-        tpe = envelope.tpe,
-        id = envelope.id,
-        project = Some(envelope.value.project),
-        instant = envelope.instant,
-        offset = envelope.offset,
-        value = envelope.value,
-        revision = envelope.rev
-      )
-    }
+  def views(start: Offset): ElemStream[CompositeViewDef] =
+    log.states(Predicate.Root, start).map(toCompositeViewDef)
+
+  private def toCompositeViewDef(envelope: Envelope[CompositeViewState]) =
+    SuccessElem(
+      tpe = envelope.tpe,
+      id = envelope.id,
+      project = Some(envelope.value.project),
+      instant = envelope.instant,
+      offset = envelope.offset,
+      value = CompositeViewDef(envelope.value),
+      revision = envelope.rev
+    )
 
   private def eval(
       cmd: CompositeViewCommand,

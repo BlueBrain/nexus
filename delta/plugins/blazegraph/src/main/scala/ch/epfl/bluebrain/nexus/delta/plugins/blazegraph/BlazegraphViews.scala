@@ -314,10 +314,18 @@ final class BlazegraphViews(
   }
 
   /**
-    * Return the existing indexing views in a finite stream
+    * Return the existing indexing views in a project in a finite stream
     */
   def currentIndexingViews(project: ProjectRef): ElemStream[IndexingViewDef] =
     log.currentStates(Predicate.Project(project)).evalMapFilter { envelope =>
+      Task.pure(toIndexViewDef(envelope))
+    }
+
+  /**
+    * Return all existing indexing views in a finite stream
+    */
+  def currentIndexingViews: ElemStream[IndexingViewDef] =
+    log.currentStates(Predicate.Root).evalMapFilter { envelope =>
       Task.pure(toIndexViewDef(envelope))
     }
 

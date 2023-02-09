@@ -28,6 +28,15 @@ object SparqlClientError {
   }
 
   /**
+    * Error when trying to perform a count on an index
+    */
+  final case class InvalidCountRequest(index: String, queryString: String)
+      extends SparqlClientError(
+        s"Attempting to count the triples the index '$index' with a wrong query '$queryString'",
+        None
+      )
+
+  /**
     * Error when trying to perform an update and the query passed is wrong.
     */
   final case class InvalidUpdateRequest(index: String, queryString: String, details: String)

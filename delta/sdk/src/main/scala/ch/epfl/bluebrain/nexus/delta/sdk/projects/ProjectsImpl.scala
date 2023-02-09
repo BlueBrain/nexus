@@ -16,7 +16,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import monix.bio.{IO, UIO}
+import fs2.Stream
+import monix.bio.{IO, Task, UIO}
 
 final class ProjectsImpl private (
     log: ProjectsLog,
@@ -95,6 +96,9 @@ final class ProjectsImpl private (
       pagination,
       ordering
     ).span("listProjects")
+
+  override def currentRefs: Stream[Task, ProjectRef] =
+    log.currentStates(Predicate.root).map(_.value.project)
 
   private def eval(cmd: ProjectCommand): IO[ProjectRejection, ProjectResource] =
     log.evaluate(cmd.ref, cmd.ref, cmd).map(_._2.toResource(defaultApiMappings))
