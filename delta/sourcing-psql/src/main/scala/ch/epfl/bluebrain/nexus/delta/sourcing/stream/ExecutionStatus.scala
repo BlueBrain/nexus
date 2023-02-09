@@ -55,11 +55,6 @@ object ExecutionStatus {
   }
 
   /**
-    * Status for projections that have passivated.
-    */
-  final case object Passivated extends ExecutionStatus
-
-  /**
     * Status for projections that have completed.
     */
   final case object Completed extends ExecutionStatus
@@ -73,12 +68,11 @@ object ExecutionStatus {
 
   implicit final val executionStatusEncoder: Encoder[ExecutionStatus] =
     Encoder.instance[ExecutionStatus] {
-      case Ignored    => Json.fromString("Ignored")
-      case Pending    => Json.fromString("Pending")
-      case Running    => Json.fromString("Running")
-      case Stopped    => Json.fromString("Stopped")
-      case Passivated => Json.fromString("Passivated")
-      case Completed  => Json.fromString("Completed")
-      case Failed(_)  => Json.fromString("Failed")
+      case Ignored   => Json.fromString("Ignored")
+      case Pending   => Json.fromString("Pending")
+      case Running   => Json.fromString("Running")
+      case Stopped   => Json.fromString("Stopped")
+      case Completed => Json.fromString("Completed")
+      case Failed(_) => Json.fromString("Failed")
     }
 }
