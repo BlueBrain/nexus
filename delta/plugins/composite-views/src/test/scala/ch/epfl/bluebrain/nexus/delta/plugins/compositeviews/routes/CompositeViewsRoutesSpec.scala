@@ -145,7 +145,8 @@ class CompositeViewsRoutesSpec
       restartStore,
       xas,
       QueryConfig(5, RefreshStrategy.Stop),
-      BatchConfig(5, 100.millis)
+      BatchConfig(5, 100.millis),
+      3.seconds
     )
 
   private def lastRestart = restartStore.last(ViewRef(project.ref, viewId)).map(_.flatMap(_.toOption)).accepted

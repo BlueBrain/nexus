@@ -175,7 +175,8 @@ trait CompositeViewsFixture extends ConfigFixtures with EitherValuable {
     RemoteSourceClientConfig(httpClientConfig, 1.second, 1, 500.milliseconds),
     1.minute,
     batchConfig,
-    batchConfig
+    batchConfig,
+    3.seconds
   )
 }
 

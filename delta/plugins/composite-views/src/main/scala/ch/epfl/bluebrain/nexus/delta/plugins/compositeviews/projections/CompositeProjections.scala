@@ -18,7 +18,7 @@ import com.typesafe.scalalogging.Logger
 import fs2.{Pipe, Stream}
 import monix.bio.{Task, UIO}
 
-import concurrent.duration._
+import concurrent.duration.FiniteDuration
 
 import java.time.Instant
 
@@ -115,8 +115,14 @@ object CompositeProjections {
 
   private val logger: Logger = Logger[CompositeProjections]
 
-  def apply(compositeRestartStore: CompositeRestartStore, xas: Transactors, query: QueryConfig, batch: BatchConfig)(
-      implicit clock: Clock[UIO]
+  def apply(
+      compositeRestartStore: CompositeRestartStore,
+      xas: Transactors,
+      query: QueryConfig,
+      batch: BatchConfig,
+      restartCheckInterval: FiniteDuration
+  )(implicit
+      clock: Clock[UIO]
   ): CompositeProjections =
     new CompositeProjections {
       private val projectionStore        = ProjectionStore(xas, query)
@@ -190,7 +196,7 @@ object CompositeProjections {
 
         def restartWhen: Stream[Task, Boolean] =
           Stream
-            .awakeEvery[Task](3.seconds)
+            .awakeEvery[Task](restartCheckInterval)
             .flatMap { _ => Stream.eval(compositeRestartStore.head(view)).map(_.nonEmpty) }
 
         stream.interruptWhen(restartWhen).onFinalize(applyRestart).repeat

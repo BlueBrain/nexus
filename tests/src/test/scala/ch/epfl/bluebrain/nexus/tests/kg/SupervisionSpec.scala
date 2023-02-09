@@ -204,14 +204,13 @@ class SupervisionSpec extends BaseSpec with EitherValuable with CirceLiteral wit
     }
 
     "exist after a project is created" in {
-      deltaClient.put[Json](s"/views/$fullId/test-resource:$viewName", createCompositeViewPayload, Mickey) {
-        (_, _) =>
-          eventually {
-            deltaClient.get[Json]("/supervision/projections", Mickey) { (json, _) =>
-              val expected = compositeProjectionMetadata(revision = 1, restart = 0)
-              assert(metadataExists(expected)(json))
-            }
+      deltaClient.put[Json](s"/views/$fullId/test-resource:$viewName", createCompositeViewPayload, Mickey) { (_, _) =>
+        eventually {
+          deltaClient.get[Json]("/supervision/projections", Mickey) { (json, _) =>
+            val expected = compositeProjectionMetadata(revision = 1, restart = 0)
+            assert(metadataExists(expected)(json))
           }
+        }
       }
     }
 

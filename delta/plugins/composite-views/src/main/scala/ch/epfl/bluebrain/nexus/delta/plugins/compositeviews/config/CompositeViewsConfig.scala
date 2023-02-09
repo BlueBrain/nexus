@@ -33,6 +33,8 @@ import scala.concurrent.duration.FiniteDuration
   *   the batch configuration for indexing into the blazegraph common space and the blazegraph projections
   * @param elasticsearchBatch
   *   the batch configuration for indexing into the elasticsearch projections
+  * @param restartCheckInterval
+  *   the interval at which a view will look for requested restarts
   */
 final case class CompositeViewsConfig(
     sources: SourcesConfig,
@@ -43,7 +45,8 @@ final case class CompositeViewsConfig(
     remoteSourceClient: RemoteSourceClientConfig,
     minIntervalRebuild: FiniteDuration,
     blazegraphBatch: BatchConfig,
-    elasticsearchBatch: BatchConfig
+    elasticsearchBatch: BatchConfig,
+    restartCheckInterval: FiniteDuration
 )
 
 object CompositeViewsConfig {

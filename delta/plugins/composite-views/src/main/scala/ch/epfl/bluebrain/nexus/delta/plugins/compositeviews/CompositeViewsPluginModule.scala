@@ -122,10 +122,22 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
   }
 
   make[CompositeProjections].fromEffect {
-    (supervisor: Supervisor, xas: Transactors, projectionConfig: ProjectionConfig, clock: Clock[UIO]) =>
+    (
+        supervisor: Supervisor,
+        xas: Transactors,
+        config: CompositeViewsConfig,
+        projectionConfig: ProjectionConfig,
+        clock: Clock[UIO]
+    ) =>
       val compositeRestartStore = new CompositeRestartStore(xas)
       val compositeProjections  =
-        CompositeProjections(compositeRestartStore, xas, projectionConfig.query, projectionConfig.batch)(clock)
+        CompositeProjections(
+          compositeRestartStore,
+          xas,
+          projectionConfig.query,
+          projectionConfig.batch,
+          config.restartCheckInterval
+        )(clock)
 
       CompositeRestartStore
         .deleteExpired(compositeRestartStore, supervisor, projectionConfig)(clock)
