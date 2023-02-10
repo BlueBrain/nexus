@@ -159,13 +159,12 @@ object Supervisor {
       .evalMap { supervised =>
         val metadata = supervised.metadata
         supervised.control.status.flatMap {
-          case ExecutionStatus.Ignored    => Task.unit
-          case ExecutionStatus.Pending    => Task.unit
-          case ExecutionStatus.Running    => Task.unit
-          case ExecutionStatus.Passivated => Task.unit
-          case ExecutionStatus.Completed  => Task.unit
-          case ExecutionStatus.Stopped    => Task.unit
-          case ExecutionStatus.Failed(_)  =>
+          case ExecutionStatus.Ignored   => Task.unit
+          case ExecutionStatus.Pending   => Task.unit
+          case ExecutionStatus.Running   => Task.unit
+          case ExecutionStatus.Completed => Task.unit
+          case ExecutionStatus.Stopped   => Task.unit
+          case ExecutionStatus.Failed(_) =>
             val retryStrategy = RetryStrategy.retryOnNonFatal(
               cfg.retry,
               log,
