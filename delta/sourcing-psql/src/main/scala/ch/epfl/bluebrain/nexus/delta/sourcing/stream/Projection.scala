@@ -21,8 +21,6 @@ import scala.concurrent.duration.FiniteDuration
   *   a signal to stop the projection
   * @param fiber
   *   the projection fiber
-  * @see
-  *   [[ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionDef]]
   */
 final class Projection private[stream] (
     val name: String,

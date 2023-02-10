@@ -15,7 +15,6 @@ import monix.bio.UIO
 /**
   * Enumeration of the possible Search Parameters
   */
-// TODO update rev to Int
 trait SearchParams[A] {
   def deprecated: Option[Boolean]
   def rev: Option[Int]

@@ -39,7 +39,7 @@ class CompositeProjectionsSuite
   private lazy val compositeRestartStore  = new CompositeRestartStore(xas)
   private lazy val compositeProgressStore = new CompositeProgressStore(xas)
   private lazy val projections            =
-    CompositeProjections(compositeRestartStore, xas, queryConfig, BatchConfig(10, 50.millis))
+    CompositeProjections(compositeRestartStore, xas, queryConfig, BatchConfig(10, 50.millis), 3.seconds)
 
   private val project = ProjectRef.unsafe("org", "proj")
   private val view    = ViewRef(project, nxv + "id")
