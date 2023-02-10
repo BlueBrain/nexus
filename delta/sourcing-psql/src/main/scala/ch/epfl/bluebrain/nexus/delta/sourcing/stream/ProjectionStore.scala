@@ -230,7 +230,7 @@ object ProjectionStore {
              |  ${failure.offset},
              |  ${failure.id},
              |  ${failure.project},
-             |  ${failure.revision},
+             |  ${failure.rev},
              |  ${failure.throwable.getClass.getCanonicalName},
              |  ${failure.throwable.getMessage},
              |  ${stackTraceAsString(failure.throwable)},
@@ -302,7 +302,7 @@ object ProjectionStore {
         project: Option[ProjectRef],
         entityType: EntityType,
         offset: Offset,
-        revision: Int,
+        rev: Int,
         errorType: String,
         message: String,
         stackTrace: String

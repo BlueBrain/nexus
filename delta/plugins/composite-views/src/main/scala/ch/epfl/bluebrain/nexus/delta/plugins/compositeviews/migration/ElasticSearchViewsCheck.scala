@@ -38,7 +38,7 @@ class ElasticSearchViewsCheck(
         case active: ActiveViewDef =>
           val index18 = active.index.value
           val index17 = index18.split("_").toList.get(1).map { uuid =>
-            s"${previousPrefix}_${uuid}_${elem.revision}"
+            s"${previousPrefix}_${uuid}_${elem.rev}"
           }
           for {
             count18 <- fetchCount(index18)

@@ -80,7 +80,7 @@ class BlazegraphIndexingActionSuite extends BioSuite with Fixtures {
         instant = Instant.EPOCH,
         offset = Offset.at(1L),
         value = view1,
-        revision = 1
+        rev = 1
       ),
       SuccessElem(
         tpe = BlazegraphViews.entityType,
@@ -89,7 +89,7 @@ class BlazegraphIndexingActionSuite extends BioSuite with Fixtures {
         instant = Instant.EPOCH,
         offset = Offset.at(2L),
         value = view2,
-        revision = 1
+        rev = 1
       ),
       SuccessElem(
         tpe = BlazegraphViews.entityType,
@@ -98,7 +98,7 @@ class BlazegraphIndexingActionSuite extends BioSuite with Fixtures {
         instant = Instant.EPOCH,
         offset = Offset.at(3L),
         value = view3,
-        revision = 1
+        rev = 1
       ),
       SuccessElem(
         tpe = BlazegraphViews.entityType,
@@ -107,7 +107,7 @@ class BlazegraphIndexingActionSuite extends BioSuite with Fixtures {
         instant = Instant.EPOCH,
         offset = Offset.at(4L),
         value = view4,
-        revision = 1
+        rev = 1
       ),
       DroppedElem(
         tpe = BlazegraphViews.entityType,
@@ -115,7 +115,7 @@ class BlazegraphIndexingActionSuite extends BioSuite with Fixtures {
         project = Some(project),
         Instant.EPOCH,
         Offset.at(5L),
-        revision = 1
+        rev = 1
       )
     )
 
@@ -149,7 +149,7 @@ class BlazegraphIndexingActionSuite extends BioSuite with Fixtures {
     instant = pr.updatedAt,
     offset = Offset.at(1L),
     value = PullRequestState.toGraphResource(pr, base),
-    revision = 1
+    rev = 1
   )
 
   test("Collect only the adequate views") {
@@ -179,7 +179,7 @@ class BlazegraphIndexingActionSuite extends BioSuite with Fixtures {
       instant = pr.updatedAt,
       offset = Offset.at(1L),
       new IllegalStateException("Boom"),
-      revision = 1
+      rev = 1
     )
 
     indexingAction.apply(project, failed).assert(List(failed))

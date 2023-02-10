@@ -48,7 +48,7 @@ object PullRequestStream {
         instant = pr1.updatedAt,
         offset = Offset.at(1L),
         value = PullRequestState.toGraphResource(pr1, base),
-        revision = 1
+        rev = 1
       ),
       DroppedElem(
         tpe = PullRequest.entityType,
@@ -56,7 +56,7 @@ object PullRequestStream {
         project = Some(projectRef),
         Instant.EPOCH,
         Offset.at(2L),
-        revision = 1
+        rev = 1
       ),
       SuccessElem(
         tpe = PullRequest.entityType,
@@ -65,7 +65,7 @@ object PullRequestStream {
         instant = pr2.updatedAt,
         offset = Offset.at(3L),
         value = PullRequestState.toGraphResource(pr2, base),
-        revision = 1
+        rev = 1
       ),
       FailedElem(
         tpe = PullRequest.entityType,
@@ -74,7 +74,7 @@ object PullRequestStream {
         Instant.EPOCH,
         Offset.at(4L),
         new IllegalStateException("This is an error message"),
-        revision = 1
+        rev = 1
       )
     )
   }

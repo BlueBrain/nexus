@@ -44,7 +44,7 @@ class FilterBySchemaSuite extends BioSuite {
       instant = instant,
       offset = Offset.at(1L),
       value = graph.copy(schema = schema),
-      revision = 1
+      rev = 1
     )
 
   def pipe(schemas: Set[Iri]): FilterBySchema =

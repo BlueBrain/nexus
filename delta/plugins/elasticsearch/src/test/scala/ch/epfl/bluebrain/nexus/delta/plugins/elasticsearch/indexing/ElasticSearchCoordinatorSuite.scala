@@ -101,7 +101,7 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
         instant = Instant.EPOCH,
         offset = Offset.at(1L),
         value = view1,
-        revision = 1
+        rev = 1
       ),
       DroppedElem(
         tpe = ElasticSearchViews.entityType,
@@ -109,7 +109,7 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
         project = Some(project),
         Instant.EPOCH,
         Offset.at(2L),
-        revision = 1
+        rev = 1
       ),
       SuccessElem(
         tpe = ElasticSearchViews.entityType,
@@ -118,7 +118,7 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
         instant = Instant.EPOCH,
         offset = Offset.at(3L),
         value = view2,
-        revision = 1
+        rev = 1
       ),
       SuccessElem(
         tpe = ElasticSearchViews.entityType,
@@ -127,7 +127,7 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
         instant = Instant.EPOCH,
         offset = Offset.at(4L),
         value = view3,
-        revision = 1
+        rev = 1
       )
     ) ++ Stream.never[Task].interruptWhen(resumeSignal) ++ Stream(
       FailedElem(
@@ -137,7 +137,7 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
         Instant.EPOCH,
         Offset.at(5L),
         new IllegalStateException("Something got wrong :("),
-        revision = 1
+        rev = 1
       ),
       SuccessElem(
         tpe = ElasticSearchViews.entityType,
@@ -146,7 +146,7 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
         instant = Instant.EPOCH,
         offset = Offset.at(6L),
         value = deprecatedView1,
-        revision = 1
+        rev = 1
       ),
       SuccessElem(
         tpe = ElasticSearchViews.entityType,
@@ -155,7 +155,7 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
         instant = Instant.EPOCH,
         offset = Offset.at(7L),
         value = updatedView2,
-        revision = 1
+        rev = 1
       ),
       // Elem at offset 8 represents a view update that does not require reindexing
       SuccessElem(
@@ -165,7 +165,7 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
         instant = Instant.EPOCH,
         offset = Offset.at(8L),
         value = updatedView2,
-        revision = 1
+        rev = 1
       )
     )
 

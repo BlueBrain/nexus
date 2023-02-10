@@ -26,7 +26,7 @@ class SseElemStreamSuite extends FunSuite {
     assertEquals(
       SseElemStream.toServerSentEvent(elem),
       ServerSentEvent(
-        """{"tpe":"resource","id":"https://bbp.epfl.ch/my-resource","project":"org/proj","instant":"1970-01-01T00:00:00Z","offset":{"value":42,"@type":"At"},"value":{},"revision":5,"@type":"SuccessElem"}""",
+        """{"tpe":"resource","id":"https://bbp.epfl.ch/my-resource","project":"org/proj","instant":"1970-01-01T00:00:00Z","offset":{"value":42,"@type":"At"},"value":{},"rev":5,"@type":"SuccessElem"}""",
         "Success",
         "42"
       )

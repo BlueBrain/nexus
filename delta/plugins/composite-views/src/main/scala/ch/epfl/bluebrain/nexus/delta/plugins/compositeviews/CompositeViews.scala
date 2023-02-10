@@ -422,7 +422,7 @@ final class CompositeViews private (
       instant = envelope.instant,
       offset = envelope.offset,
       value = CompositeViewDef(envelope.value),
-      revision = envelope.rev
+      rev = envelope.rev
     )
 
   private def eval(
