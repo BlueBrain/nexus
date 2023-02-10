@@ -15,8 +15,6 @@ import monix.bio.Task
   *   the metadata of the projection
   * @param streamF
   *   a fn that produces a stream given a starting offset, a status reference and a stop signal
-  * @see
-  *   [[ProjectionDef]]
   */
 final case class CompiledProjection private (
     metadata: ProjectionMetadata,
