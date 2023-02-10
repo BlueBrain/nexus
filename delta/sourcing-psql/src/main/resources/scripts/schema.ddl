@@ -1,5 +1,3 @@
--- TODO: We may want to define a specific schema instead of using the public one
-
 CREATE SEQUENCE IF NOT EXISTS public.event_offset;
 CREATE SEQUENCE IF NOT EXISTS public.state_offset;
 

@@ -551,7 +551,7 @@ object CompositeIndexingSuite extends IOFixedClock {
       case (xas, esClient, bgClient) =>
         val compositeRestartStore = new CompositeRestartStore(xas)
         val projections           =
-          CompositeProjections(compositeRestartStore, xas, queryConfig, batchConfig)
+          CompositeProjections(compositeRestartStore, xas, queryConfig, batchConfig, 3.seconds)
         val spacesBuilder         = CompositeSpaces.Builder("delta", esClient, batchConfig, bgClient, batchConfig)(baseUri)
         (esClient, bgClient, projections, spacesBuilder)
     }
