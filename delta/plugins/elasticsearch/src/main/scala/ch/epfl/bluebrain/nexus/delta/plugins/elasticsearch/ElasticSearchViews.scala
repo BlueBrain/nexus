@@ -375,7 +375,7 @@ final class ElasticSearchViews private (
         instant = envelope.instant,
         offset = envelope.offset,
         value = viewDef,
-        revision = envelope.rev
+        rev = envelope.rev
       )
     }
 

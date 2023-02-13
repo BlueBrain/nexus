@@ -346,7 +346,7 @@ final class BlazegraphViews(
         instant = envelope.instant,
         offset = envelope.offset,
         value = viewDef,
-        revision = envelope.rev
+        rev = envelope.rev
       )
     }
 

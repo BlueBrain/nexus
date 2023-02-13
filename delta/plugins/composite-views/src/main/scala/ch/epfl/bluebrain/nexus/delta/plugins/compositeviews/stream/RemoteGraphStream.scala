@@ -97,7 +97,7 @@ object RemoteGraphStream {
       elem.tpe,
       project,
       elem.id,
-      elem.revision,
+      elem.rev,
       deprecated,
       schema,
       types,

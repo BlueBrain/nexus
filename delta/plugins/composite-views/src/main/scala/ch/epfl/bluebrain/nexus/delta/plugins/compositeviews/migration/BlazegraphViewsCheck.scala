@@ -31,7 +31,7 @@ class BlazegraphViewsCheck(
                      case active: ActiveViewDef =>
                        val index18 = active.namespace
                        val index17 = index18.split("_").toList.get(1).map { uuid =>
-                         s"${previousPrefix}_${uuid}_${elem.revision}"
+                         s"${previousPrefix}_${uuid}_${elem.rev}"
                        }
                        for {
                          count18 <- fetchCount18(index18)

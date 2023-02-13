@@ -47,7 +47,7 @@ class SelectPredicatesSuite extends BioSuite {
       instant = instant,
       offset = Offset.at(1L),
       value = graph,
-      revision = 1
+      rev = 1
     )
 
   def pipe(predicates: Set[Iri]): SelectPredicates =

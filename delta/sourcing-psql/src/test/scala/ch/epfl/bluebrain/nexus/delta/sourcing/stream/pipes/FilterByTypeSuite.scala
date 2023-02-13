@@ -43,7 +43,7 @@ class FilterByTypeSuite extends BioSuite {
       instant = instant,
       offset = Offset.at(1L),
       value = graph.copy(types = types),
-      revision = 1
+      rev = 1
     )
 
   def pipe(types: Set[Iri]): FilterByType =

@@ -98,7 +98,7 @@ class CompositeViewsCheckSuite extends BioSuite with Doobie.Fixture with TestHel
         instant = Instant.EPOCH,
         offset = Offset.at(index),
         value = v,
-        revision = 1
+        rev = 1
       )
     }
 

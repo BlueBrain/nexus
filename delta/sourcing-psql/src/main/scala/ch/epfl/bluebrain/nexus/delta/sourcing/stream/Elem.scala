@@ -57,26 +57,26 @@ sealed trait Elem[+A] extends Product with Serializable {
     * @return
     *   the revision number
     */
-  def revision: Int
+  def rev: Int
 
   /**
     * Produces a new [[FailedElem]] with the provided reason copying the common properties
     * @param throwable
     *   the error why the element processing failed
     */
-  def failed(throwable: Throwable): FailedElem = FailedElem(tpe, id, project, instant, offset, throwable, revision)
+  def failed(throwable: Throwable): FailedElem = FailedElem(tpe, id, project, instant, offset, throwable, rev)
 
   /**
     * Produces a new [[SuccessElem]] with the provided value copying the common properties.
     * @param value
     *   the value of the element
     */
-  def success[B](value: B): SuccessElem[B] = SuccessElem(tpe, id, project, instant, offset, value, revision)
+  def success[B](value: B): SuccessElem[B] = SuccessElem(tpe, id, project, instant, offset, value, rev)
 
   /**
     * Produces a new [[DroppedElem]] copying the common properties.
     */
-  def dropped: DroppedElem = DroppedElem(tpe, id, project, instant, offset, revision)
+  def dropped: DroppedElem = DroppedElem(tpe, id, project, instant, offset, rev)
 
   /**
     * Maps the underlying element value if this is a [[Elem.SuccessElem]] using f.
@@ -150,7 +150,7 @@ sealed trait Elem[+A] extends Product with Serializable {
   }
 
   override def toString: String =
-    s"${this.getClass.getSimpleName}[${project.fold("")(_.toString)}/$id:$revision]{${offset.value}}"
+    s"${this.getClass.getSimpleName}[${project.fold("")(_.toString)}/$id:$rev]{${offset.value}}"
 }
 
 object Elem {
@@ -208,7 +208,7 @@ object Elem {
       instant: Instant,
       offset: Offset,
       value: A,
-      revision: Int
+      rev: Int
   ) extends Elem[A]
 
   /**
@@ -231,7 +231,7 @@ object Elem {
       instant: Instant,
       offset: Offset,
       throwable: Throwable,
-      revision: Int
+      rev: Int
   ) extends Elem[Nothing]
 
   /**
@@ -251,7 +251,7 @@ object Elem {
       project: Option[ProjectRef],
       instant: Instant,
       offset: Offset,
-      revision: Int
+      rev: Int
   ) extends Elem[Nothing]
 
   implicit val traverseElem: Traverse[Elem] = new Traverse[Elem] {

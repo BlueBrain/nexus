@@ -43,7 +43,7 @@ class SourceAsTextSuite extends BioSuite {
       instant = instant,
       offset = Offset.at(1L),
       value = graph,
-      revision = 1
+      rev = 1
     )
     val newMetadataGraph = graph.metadataGraph.add(nxv.originalSource.iri, graph.source.noSpaces)
     val expected         = elem.copy(value = graph.copy(metadataGraph = newMetadataGraph, source = Json.obj()))

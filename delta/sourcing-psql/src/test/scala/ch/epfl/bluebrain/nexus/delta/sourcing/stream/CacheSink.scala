@@ -45,8 +45,8 @@ final class CacheSink[A: Typeable] private (documentId: Elem[A] => Iri) extends 
 object CacheSink {
   private val eventDocumentId: Elem[_] => Iri = elem =>
     elem.project match {
-      case Some(project) => iri"$project/${elem.id}:${elem.revision}"
-      case None          => iri"${elem.id}:${elem.revision}"
+      case Some(project) => iri"$project/${elem.id}:${elem.rev}"
+      case None          => iri"${elem.id}:${elem.rev}"
     }
 
   /** CacheSink for events */

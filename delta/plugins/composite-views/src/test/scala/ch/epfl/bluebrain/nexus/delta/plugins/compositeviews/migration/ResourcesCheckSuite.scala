@@ -61,7 +61,7 @@ class ResourcesCheckSuite extends BioSuite with Doobie.Fixture with CirceLiteral
               instant = Instant.EPOCH,
               offset = Offset.at(index + 1L),
               value = (),
-              revision = 1
+              rev = 1
             )
           }
       }

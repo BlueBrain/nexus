@@ -54,7 +54,7 @@ class BlazegraphViewsCheckSuite extends BioSuite with Doobie.Fixture {
           instant = Instant.EPOCH,
           offset = Offset.at(index),
           value = v,
-          revision = 1
+          rev = 1
         )
       }
 
