@@ -107,12 +107,12 @@ object IdentitiesImpl {
       .onErrorHandleWith {
         case e: HttpClientStatusError if e.code == StatusCodes.Unauthorized || e.code == StatusCodes.Forbidden =>
           val message =
-            s"A provided client token was rejected by the OIDC provider for user ${token.subject} of realm ${token.issuer}, reason: '${e.reason}'"
+            s"A provided client token was rejected by the OIDC provider for user '${token.subject}' of realm '${token.issuer}', reason: '${e.reason}'"
           UIO.delay(logger.error(message, e)) >>
             IO.raiseError(InvalidAccessToken(Option.when(e.message.trim.nonEmpty)(e.message)))
         case e                                                                                                 =>
           val message =
-            s"A call to get the groups from the OIDC provider failed unexpectedly for user ${token.subject} of realm ${token.issuer}."
+            s"A call to get the groups from the OIDC provider failed unexpectedly for user '${token.subject}' of realm '${token.issuer}'."
           UIO.delay(logger.error(message, e)) >> IO.raiseError(GetGroupsFromOidcError)
       }
   }
