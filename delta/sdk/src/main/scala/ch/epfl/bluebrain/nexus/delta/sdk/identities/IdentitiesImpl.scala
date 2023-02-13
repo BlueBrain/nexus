@@ -8,9 +8,9 @@ import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{CacheConfig, KeyValueStore}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
-import IdentitiesImpl.{extractGroups, GroupsCache}
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{AuthToken, Caller, TokenRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesImpl.{extractGroups, GroupsCache}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.TokenRejection.{GetGroupsFromOidcError, InvalidAccessToken, UnknownAccessTokenIssuer}
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{AuthToken, Caller, TokenRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.Realm
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, User}
@@ -66,7 +66,7 @@ class IdentitiesImpl private (
           groups
             .getOrElseUpdate(
               parsedToken.rawToken,
-              extractGroups(getUserInfo)(parsedToken.rawToken, realm).map(_.getOrElse(Set.empty))
+              extractGroups(getUserInfo)(parsedToken, realm).map(_.getOrElse(Set.empty))
             )
             .span("fetchGroups")
         }
@@ -94,24 +94,26 @@ object IdentitiesImpl {
 
   def extractGroups(
       getUserInfo: (Uri, OAuth2BearerToken) => IO[HttpClientError, Json]
-  )(token: String, realm: Realm): IO[TokenRejection, Option[Set[Group]]] = {
+  )(token: ParsedToken, realm: Realm): IO[TokenRejection, Option[Set[Group]]] = {
     def fromSet(cursor: HCursor): Decoder.Result[Set[String]] =
       cursor.get[Set[String]]("groups").map(_.map(_.trim).filterNot(_.isEmpty))
     def fromCsv(cursor: HCursor): Decoder.Result[Set[String]] =
       cursor.get[String]("groups").map(_.split(",").map(_.trim).filterNot(_.isEmpty).toSet)
-    getUserInfo(realm.userInfoEndpoint, OAuth2BearerToken(token))
+    getUserInfo(realm.userInfoEndpoint, OAuth2BearerToken(token.rawToken))
       .map { json =>
         val stringGroups = fromSet(json.hcursor) orElse fromCsv(json.hcursor) getOrElse Set.empty[String]
         Some(stringGroups.map(str => Group(str, realm.label)))
       }
-      .mapError {
-        case HttpClientStatusError(_, code, message)
-            if code == StatusCodes.Unauthorized || code == StatusCodes.Forbidden =>
-          logger.warn(s"A provided client token was rejected by the OIDC provider, reason: '$message'")
-          InvalidAccessToken(Option.when(message.trim.nonEmpty)(message))
-        case e =>
-          logger.warn(s"A call to get the groups from the OIDC provider failed unexpectedly, reason: '${e.asString}'")
-          GetGroupsFromOidcError
+      .onErrorHandleWith {
+        case e: HttpClientStatusError if e.code == StatusCodes.Unauthorized || e.code == StatusCodes.Forbidden =>
+          val message =
+            s"A provided client token was rejected by the OIDC provider for user ${token.subject} of realm ${token.issuer}, reason: '${e.reason}'"
+          UIO.delay(logger.error(message, e)) >>
+            IO.raiseError(InvalidAccessToken(Option.when(e.message.trim.nonEmpty)(e.message)))
+        case e                                                                                                 =>
+          val message =
+            s"A call to get the groups from the OIDC provider failed unexpectedly for user ${token.subject} of realm ${token.issuer}."
+          UIO.delay(logger.error(message, e)) >> IO.raiseError(GetGroupsFromOidcError)
       }
   }
 
