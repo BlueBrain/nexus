@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.config.BlazegraphViewsConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViewsPluginModule.{enrichCompositeViewEvent, injectSearchViewDefaults}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViewsPluginModule.{enrichCompositeViewEvent, injectSearchViewDefaults, logger}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.DeltaClient
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.{CompositeSpaces, CompositeViewsCoordinator, MetadataPredicates}
@@ -51,6 +51,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.{ProjectionConfig, QueryCon
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, Tag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.StreamingQuery
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeChain, ReferenceRegistry, Supervisor}
+import com.typesafe.scalalogging.Logger
 import distage.ModuleDef
 import io.circe.syntax.EncoderOps
 import io.circe.{Json, JsonObject}
@@ -278,6 +279,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
   }
 
   if (MigrationState.isCheck) {
+    logger.info("Migration checks are enabled.")
 
     make[MigrationCheckConfig].from(MigrationCheckConfig.load())
 
@@ -419,13 +421,15 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
     }
 
     many[PriorityRoute].add { (route: MigrationCheckRoutes) =>
-      PriorityRoute(priority, route.routes, requiresStrictEntity = true)
+      PriorityRoute(99, route.routes, requiresStrictEntity = true)
     }
   }
 }
 
 // TODO: This object contains migration helpers, and should be deleted when the migration module is removed
 object CompositeViewsPluginModule {
+
+  private val logger: Logger = Logger[CompositeViewsPluginModule]
 
   def enrichCompositeViewEvent: Json => Json = { input =>
     val projections = input.hcursor.downField("value").downField("projections")
