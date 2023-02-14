@@ -42,10 +42,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.migration.{MigrationLog, MigrationState}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, Projects, ProjectsStatistics}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{ProjectionConfig, QueryConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, Tag}
@@ -256,6 +258,10 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
   }
 
   many[ResourceShift[_, _, _]].ref[CompositeView.Shift]
+
+  many[SseEncoder[_]].add { (crypto: Crypto, base: BaseUri) => CompositeViewEvent.sseEncoder(crypto)(base) }
+
+  many[ScopedEventMetricEncoder[_]].add { (crypto: Crypto) => CompositeViewEvent.compositeViewMetricEncoder(crypto) }
 
   many[PriorityRoute].add { (route: CompositeViewsRoutes) =>
     PriorityRoute(priority, route.routes, requiresStrictEntity = true)
