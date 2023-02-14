@@ -68,14 +68,14 @@ class ProjectsStatisticsSuite extends BioSuite with Doobie.Fixture with ConfigFi
   }
 
   test("Return the expected stats for proj1") {
-    stats.get(proj).assertSome(ProjectStatistics(3L, 9L, epoch.plusSeconds(15L)))
+    stats.get(proj).assertSome(ProjectStatistics(9L, 3L, epoch.plusSeconds(15L)))
   }
 
   test("Return the expected stats for proj2") {
-    stats.get(proj2).assertSome(ProjectStatistics(2L, 6L, epoch))
+    stats.get(proj2).assertSome(ProjectStatistics(6L, 2L, epoch))
   }
 
-  test("Return noen for proj3") {
+  test("Return none for proj3") {
     stats.get(proj3).assertNone
   }
 }
