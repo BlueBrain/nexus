@@ -53,7 +53,7 @@ class ElasticSearchViewsCheck(
   private def save(view: ViewRef, count18: Long, count17: Option[Long]) =
     sql"""INSERT INTO public.migration_elasticsearch_count (project, id, count_1_7, count_1_8)
          |VALUES (
-         |   ${view.project}, ${view.viewId}, $count18, $count17
+         |   ${view.project}, ${view.viewId}, $count17, $count18
          |)
          |ON CONFLICT (project, id)
          |DO UPDATE set

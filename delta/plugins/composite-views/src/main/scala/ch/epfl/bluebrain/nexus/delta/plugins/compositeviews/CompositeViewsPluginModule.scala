@@ -387,14 +387,13 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
           migrationConfig: MigrationCheckConfig,
           qc: QueryConfig,
           deltaClient: DeltaClient,
-          baseUri: BaseUri,
           xas: Transactors
       ) =>
         new ResourcesCheck(
           projects.currentRefs,
           (p, o) => StreamingQuery.elems(p, Tag.latest, o, qc.stop, xas),
           (p, id, token) => deltaClient.resourceAsJson(remoteSource(p, migrationConfig.deltaBase, token.value), id),
-          (p, id, token) => deltaClient.resourceAsJson(remoteSource(p, baseUri.endpoint, token.value), id),
+          (p, id, token) => deltaClient.resourceAsJson(remoteSource(p, migrationConfig.newDeltaBase, token.value), id),
           migrationConfig.saveInterval,
           xas
         )

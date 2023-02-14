@@ -62,7 +62,7 @@ class BlazegraphViewsCheckSuite extends BioSuite with Doobie.Fixture {
 
     for {
       _ <- check.run
-      _ <- checkView(project, id1).assert((12L, 11L))
+      _ <- checkView(project, id1).assert((11L, 12L))
       _ <- checkView(project, id2).assert((11L, 11L))
     } yield ()
   }

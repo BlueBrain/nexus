@@ -48,13 +48,14 @@ final class ResourcesCheck(
                    .debounce(saveOffsetInterval)
                    .evalTap { elem => saveOffset(project, elem.offset) }
       end     <- Stream.eval(Task.delay(System.currentTimeMillis()))
-      _       <- Stream.eval(
-                   Task.delay(
-                     logger.info(
-                       s"Finished resources in project $project from $offset in ${(end - start).millis.toSeconds} seconds."
-                     )
-                   )
-                 )
+      _       <-
+        Stream.eval(
+          Task.delay(
+            logger.info(
+              s"Checkpoint for resources in project $project from $offset after ${(end - start).millis.toSeconds} seconds."
+            )
+          )
+        )
     } yield ()
 
   private def diffResource(project: ProjectRef, elem: Elem[Unit], token: AccessToken): UIO[Unit] = {
