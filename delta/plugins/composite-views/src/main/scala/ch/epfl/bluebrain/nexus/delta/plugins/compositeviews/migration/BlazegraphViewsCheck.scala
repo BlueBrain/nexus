@@ -34,8 +34,8 @@ class BlazegraphViewsCheck(
                          s"${previousPrefix}_${uuid}_${elem.rev}"
                        }
                        for {
-                         count18 <- fetchCount18(index18)
-                         count17 <- index17.traverse(fetchCount17)
+                         count18 <- fetchCount18(index18).onErrorHandle(_ => -1L)
+                         count17 <- index17.traverse(fetchCount17(_).onErrorHandle(_ => -1L))
                          _       <- save(active.ref, count18, count17)
                        } yield ()
                      case deprecated            =>
