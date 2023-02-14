@@ -53,8 +53,8 @@ class CompositeViewsCheck(
                            val namespace17 = projectionNamespace(s, view.uuid, view.rev, previousPrefix)
                            val namespace18 = projectionNamespace(s, view.uuid, view.rev, currentPrefix)
                            for {
-                             count17 <- fetchBG17Count(namespace17)
-                             count18 <- fetchBG18Count(namespace18)
+                             count17 <- fetchBG17Count(namespace17).onErrorHandle(_ => -1L)
+                             count18 <- fetchBG18Count(namespace18).onErrorHandle(_ => -1L)
                              _       <- saveCount(view.ref, s.id, count18, count17)
                            } yield ()
                          case e: ElasticSearchProjection =>
