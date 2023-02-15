@@ -75,7 +75,7 @@ class CompositeViewsCheck(
   private def saveCount(view: ViewRef, spaceId: Iri, count18: Long, count17: Long) =
     sql"""INSERT INTO public.migration_composite_count (project, id, space_id, count_1_7, count_1_8)
          |VALUES (
-         |   ${view.project}, ${view.viewId}, $spaceId, $count18, $count17
+         |   ${view.project}, ${view.viewId}, $spaceId, $count17, $count18
          |)
          |ON CONFLICT (project, id, space_id)
          |DO UPDATE set

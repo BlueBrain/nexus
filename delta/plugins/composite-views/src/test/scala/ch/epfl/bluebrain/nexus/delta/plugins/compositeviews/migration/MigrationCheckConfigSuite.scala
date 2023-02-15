@@ -14,7 +14,9 @@ class MigrationCheckConfigSuite extends FunSuite {
         "delta",
         uri"http://blazegraph:9999/blazegraph",
         uri"http://delta:8080/v1",
-        20.seconds
+        uri"http://delta-new:8080/v1",
+        20.seconds,
+        2
       )
     )
   }

@@ -17,8 +17,8 @@ import scala.concurrent.duration.FiniteDuration
   *   the endpoint of the blazegraph instance used by Delta 1.7
   * @param deltaBase
   *   the endpoint of a running Delta 1.7
-  * @param saToken
-  *   a valid token from the service account
+  * @param newDeltaBase
+  *   the endpoint of a running Delta 1.8
   * @param saveInterval
   *   save interval for long running checks
   */
@@ -26,7 +26,9 @@ final case class MigrationCheckConfig(
     previousPrefix: String,
     blazegraphBase: Uri,
     deltaBase: Uri,
-    saveInterval: FiniteDuration
+    newDeltaBase: Uri,
+    saveInterval: FiniteDuration,
+    maxConcurrent: Int
 )
 
 object MigrationCheckConfig {
@@ -40,8 +42,12 @@ object MigrationCheckConfig {
       |  blazegraph-base = "http://blazegraph:9999/blazegraph"
       |  # The endpoint of the Delta 1.7 instance
       |  delta-base = "http://delta:8080/v1"
+      |  # The endpoint of the Delta 1.7 instance
+      |  new-delta-base = "http://delta-new:8080/v1"
       |  # Save interval for long running checks
       |  save-interval = 20 seconds
+      |  # Max concurrent checks for resources
+      |  max-concurrent = 2
       |}
       |""".stripMargin
 

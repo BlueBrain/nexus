@@ -32,7 +32,7 @@ object ProjectsStatistics {
             .query[(Long, Option[Long], Option[Instant])]
             .unique
             .map {
-              case (resources, Some(events), Some(instant)) => Some(ProjectStatistics(resources, events, instant))
+              case (resources, Some(events), Some(instant)) => Some(ProjectStatistics(events, resources, instant))
               case (_, _, _)                                => None
             }
             .transact(xas.read)
