@@ -215,14 +215,14 @@ object StreamingQuery {
 
     Stream
       .unfoldChunkEval[Task, Offset, A](start) { offset =>
-        query(offset).to[List].transact(xas.streaming).flatMap { elems =>
-          elems.lastOption.fold {
+        query(offset).accumulate[Chunk].transact(xas.streaming).flatMap { elems =>
+          elems.last.fold {
             cfg.refreshStrategy match {
               case RefreshStrategy.Stop         => Task.none
               case RefreshStrategy.Delay(value) =>
-                Task.sleep(value) >> Task.some((Chunk.empty[A], offset))
+                Task.sleep(value) >> Task.some((elems, offset))
             }
-          } { last => Task.some((Chunk.seq(elems), extractOffset(last))) }
+          } { last => Task.some((elems, extractOffset(last))) }
         }
       }
       .onFinalizeCase {
