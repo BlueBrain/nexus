@@ -86,10 +86,10 @@ object StreamingQuery {
            |$where
            |ORDER BY ordering
            |LIMIT ${cfg.batchSize})
-           |UNION
+           |UNION ALL
            |(SELECT 'tombstone', type, id, org, project, instant, ordering, -1
            |FROM public.scoped_tombstones
-           |$where
+           |$where and cause->>'deleted' = 'true'
            |ORDER BY ordering
            |LIMIT ${cfg.batchSize})
            |ORDER BY ordering)
@@ -142,10 +142,10 @@ object StreamingQuery {
            |$where
            |ORDER BY ordering
            |LIMIT ${cfg.batchSize})
-           |UNION
+           |UNION ALL
            |(SELECT 'tombstone', type, id, org, project, null, instant, ordering, -1
            |FROM public.scoped_tombstones
-           |$where
+           |$where and cause->>'deleted' = 'true'
            |ORDER BY ordering
            |LIMIT ${cfg.batchSize})
            |ORDER BY ordering)

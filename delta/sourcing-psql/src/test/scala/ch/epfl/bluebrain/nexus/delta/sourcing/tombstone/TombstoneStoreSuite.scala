@@ -8,12 +8,13 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
-import ch.epfl.bluebrain.nexus.delta.sourcing.tombstone.TombstoneStore.StateDiff
-import ch.epfl.bluebrain.nexus.delta.sourcing.tombstone.TombstoneStoreSuite.{entityType, SimpleResource}
+import ch.epfl.bluebrain.nexus.delta.sourcing.tombstone.TombstoneStore.Cause
+import ch.epfl.bluebrain.nexus.delta.sourcing.tombstone.TombstoneStoreSuite.{SimpleResource, entityType}
 import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
 import ch.epfl.bluebrain.nexus.testkit.postgres.Doobie
 import doobie.implicits._
 import io.circe.Json
+import io.circe.syntax.EncoderOps
 import monix.bio.Task
 import munit.AnyFixture
 
@@ -34,21 +35,21 @@ class TombstoneStoreSuite extends BioSuite with Doobie.Fixture {
 
   private def select(id: Iri, tag: Tag) =
     sql"""
-         | SELECT diff
+         | SELECT cause
          | FROM public.scoped_tombstones
          | WHERE id = $id AND tag = $tag""".stripMargin.query[Json].option.transact(xas.read)
 
-  private def selectAsDiff(id: Iri, tag: Tag) =
+  private def selectAsCause(id: Iri, tag: Tag) =
     select(id, tag).flatMap {
       case None       => Task.none
-      case Some(json) => Task.fromEither(json.as[StateDiff]).map(Some(_))
+      case Some(json) => Task.fromEither(json.as[Cause]).map(Some(_))
     }
 
   test("Save a tombstone for the given tag") {
     val tag = UserTag.unsafe("v1")
     for {
       _ <- TombstoneStore.save(entityType, state, tag).transact(xas.write).assert(())
-      _ <- select(id1, tag).assertSome(Json.obj())
+      _ <- select(id1, tag).assertSome(Cause.deleted.asJson)
     } yield ()
   }
 
@@ -81,8 +82,8 @@ class TombstoneStoreSuite extends BioSuite with Doobie.Fixture {
     val newState = SimpleResource(id3, Set(nxv + "SimpleResource2"), Latest(nxv + "schema"))
     for {
       _ <- TombstoneStore.save(entityType, Some(state), newState).transact(xas.write).assert(())
-      _ <- selectAsDiff(id3, Tag.latest).assertSome(
-             StateDiff(Set(nxv + "SimpleResource", nxv + "SimpleResource3"), None)
+      _ <- selectAsCause(id3, Tag.latest).assertSome(
+             Cause.diff(Set(nxv + "SimpleResource", nxv + "SimpleResource3"), None)
            )
     } yield ()
   }
@@ -92,8 +93,7 @@ class TombstoneStoreSuite extends BioSuite with Doobie.Fixture {
     val newState = SimpleResource(id4, state.types, Latest(nxv + "schema2"))
     for {
       _ <- TombstoneStore.save(entityType, Some(state), newState).transact(xas.write).assert(())
-
-      _ <- selectAsDiff(id4, Tag.latest).assertSome(StateDiff(Set.empty, Some(state.schema)))
+      _ <- selectAsCause(id4, Tag.latest).assertSome(Cause.diff(Set.empty, Some(state.schema)))
     } yield ()
   }
 
@@ -102,9 +102,8 @@ class TombstoneStoreSuite extends BioSuite with Doobie.Fixture {
     val newState = SimpleResource(id5, Set(nxv + "SimpleResource2"), Latest(nxv + "schema2"))
     for {
       _ <- TombstoneStore.save(entityType, Some(state), newState).transact(xas.write).assert(())
-
-      _ <- selectAsDiff(id5, Tag.latest).assertSome(
-             StateDiff(Set(nxv + "SimpleResource", nxv + "SimpleResource3"), Some(state.schema))
+      _ <- selectAsCause(id5, Tag.latest).assertSome(
+        Cause.diff(Set(nxv + "SimpleResource", nxv + "SimpleResource3"), Some(state.schema))
            )
     } yield ()
   }

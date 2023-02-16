@@ -67,14 +67,27 @@ CREATE TABLE IF NOT EXISTS public.scoped_states(
 CREATE INDEX IF NOT EXISTS scoped_states_ordering_idx ON public.scoped_states (ordering);
 CREATE INDEX IF NOT EXISTS project_uuid_idx ON public.scoped_states((value->>'uuid')) WHERE type = 'project';
 
+--
+-- Table for tombstones for scoped states
+-- These tombstones are meant to inform streaming operations that a resource
+-- has been deleted or doesn't have a certain type anymore so that the client
+-- can take the appropriate action
+-- The tombstones are deleted by Delta after a configured period
+--
 CREATE TABLE IF NOT EXISTS public.scoped_tombstones(
+    -- Primary key based on a sequence 'state_offset' shared so that states and tombstones
+    -- can be queried in the chronological order
     ordering   bigint       NOT NULL DEFAULT nextval('state_offset'),
+    -- Identifiers of the resource
     type       text         NOT NULL,
     org        text         NOT NULL,
     project    text         NOT NULL,
     id         text         NOT NULL,
+    -- Tag of the state the tombstone is associated to
     tag        text         NOT NULL,
-    diff       JSONB        NOT NULL,
+    -- Cause of the tombstone
+    cause     JSONB        NOT NULL,
+    -- Instant the tombstone was created
     instant    timestamptz  NOT NULL,
     PRIMARY KEY(ordering)
 );
