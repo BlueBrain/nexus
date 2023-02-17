@@ -2,17 +2,17 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.tombstone
 
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ResourceRef, Tag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
-import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import doobie._
 import doobie.implicits._
 import doobie.postgres.implicits._
+import io.circe.Codec
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredCodec
 import io.circe.syntax.EncoderOps
-import io.circe.{Codec, Json}
 
 import scala.annotation.nowarn
 
@@ -29,7 +29,7 @@ object TombstoneStore {
          |  project,
          |  id,
          |  tag,
-         |  diff,
+         |  cause,
          |  instant
          | )
          | VALUES (
@@ -38,7 +38,7 @@ object TombstoneStore {
          |  ${state.project.project},
          |  ${state.id},
          |  ${removedTag.value},
-         |  ${Json.obj()},
+         |  ${Cause.deleted.asJson},
          |  ${state.updatedAt}
          | )""".stripMargin.update.run.void
 
@@ -47,7 +47,7 @@ object TombstoneStore {
     * against a new schema
     */
   def save[S <: ScopedState](tpe: EntityType, original: Option[S], newState: S): ConnectionIO[Unit] =
-    StateDiff.compute(original, newState).fold(().pure[ConnectionIO]) { diff =>
+    Cause.diff(original, newState).fold(().pure[ConnectionIO]) { cause =>
       sql"""
            | INSERT INTO public.scoped_tombstones (
            |  type,
@@ -55,7 +55,7 @@ object TombstoneStore {
            |  project,
            |  id,
            |  tag,
-           |  diff,
+           |  cause,
            |  instant
            | )
            | VALUES (
@@ -64,27 +64,31 @@ object TombstoneStore {
            |  ${newState.project.project},
            |  ${newState.id},
            |  ${Tag.latest},
-           |  ${diff.asJson},
+           |  ${cause.asJson},
            |  ${newState.updatedAt}
            | )""".stripMargin.update.run.void
     }
 
-  final private[tombstone] case class StateDiff(types: Set[Iri], schema: Option[ResourceRef])
+  final private[tombstone] case class Cause(deleted: Boolean, types: Set[Iri], schema: Option[ResourceRef])
 
-  object StateDiff {
+  private[tombstone] object Cause {
 
-    implicit val stateDiffEncoder: Codec[StateDiff] = {
+    val deleted: Cause = Cause(deleted = true, Set.empty, None)
+
+    implicit val causeEncoder: Codec[Cause] = {
       @nowarn("cat=unused")
       implicit val configuration: Configuration = Configuration.default
-      deriveConfiguredCodec[StateDiff]
+      deriveConfiguredCodec[Cause]
     }
 
-    def compute[S <: ScopedState](original: Option[S], newState: S): Option[StateDiff] =
+    def diff(types: Set[Iri], schema: Option[ResourceRef]): Cause = Cause(deleted = false, types, schema)
+
+    def diff[S <: ScopedState](original: Option[S], newState: S): Option[Cause] =
       original.flatMap { o =>
         val removedTypes   = o.types.diff(newState.types)
         val modifiedSchema = Option.when(o.schema != newState.schema)(o.schema)
         Option.when(removedTypes.nonEmpty || modifiedSchema.isDefined)(
-          StateDiff(removedTypes, modifiedSchema)
+          Cause.diff(removedTypes, modifiedSchema)
         )
       }
 
