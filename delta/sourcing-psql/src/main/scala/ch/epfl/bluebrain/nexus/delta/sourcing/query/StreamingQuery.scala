@@ -20,6 +20,7 @@ import io.circe.Json
 import monix.bio.{Task, UIO}
 
 import java.time.Instant
+import scala.collection.mutable.ListBuffer
 
 /**
   * Provide utility methods to stream results from the database according to a [[QueryConfig]].
@@ -101,7 +102,7 @@ object StreamingQuery {
           DroppedElem(entityType, id, Some(ProjectRef(org, project)), instant, Offset.at(offset), rev)
       }
     }
-    StreamingQuery[Elem[Unit]](start, query, _.offset, cfg, xas)
+    StreamingQuery[Elem[Unit], Iri](start, query, _.offset, _.id, cfg, xas)
   }
 
   /**
@@ -157,7 +158,7 @@ object StreamingQuery {
           DroppedElem(entityType, id, Some(ProjectRef(org, project)), instant, Offset.at(offset), rev)
       }
     }
-    StreamingQuery[Elem[Json]](start, query, _.offset, cfg, xas)
+    StreamingQuery[Elem[Json], Iri](start, query, _.offset, _.id, cfg, xas)
       .evalMapChunk { e =>
         e.evalMap { value =>
           decodeValue(e.tpe, value).tapError { err =>
@@ -194,41 +195,82 @@ object StreamingQuery {
       extractOffset: A => Offset,
       cfg: QueryConfig,
       xas: Transactors
-  ): Stream[Task, A] = {
-    def onComplete() = Task.delay(
-      logger.debug(
-        "Reached the end of the single evaluation of query '{}'.",
-        query(start).sql
-      )
-    )
-
-    def onError(th: Throwable) = Task.delay(
-      logger.error(s"Single evaluation of query '${query(start).sql}' failed.", th)
-    )
-
-    def onCancel() = Task.delay(
-      logger.debug(
-        "Reached the end of the single evaluation of query '{}'.",
-        query(start).sql
-      )
-    )
-
+  ): Stream[Task, A] =
     Stream
       .unfoldChunkEval[Task, Offset, A](start) { offset =>
         query(offset).accumulate[Chunk].transact(xas.streaming).flatMap { elems =>
-          elems.last.fold {
-            cfg.refreshStrategy match {
-              case RefreshStrategy.Stop         => Task.none
-              case RefreshStrategy.Delay(value) =>
-                Task.sleep(value) >> Task.some((elems, offset))
-            }
-          } { last => Task.some((elems, extractOffset(last))) }
+          elems.last.fold(refreshOrStop[A](cfg, offset)) { last =>
+            Task.some((elems, extractOffset(last)))
+          }
         }
       }
-      .onFinalizeCase {
-        case ExitCase.Completed => onComplete()
-        case ExitCase.Error(e)  => onError(e)
-        case ExitCase.Canceled  => onCancel()
+      .onFinalizeCase(logQuery(query(start)))
+
+  /**
+    * Streams the results of a query starting with the provided offset.
+    *
+    * The stream termination depends on the provided [[QueryConfig]].
+    *
+    * @param start
+    *   the offset to start with
+    * @param query
+    *   the query to execute depending on the offset
+    * @param extractOffset
+    *   how to extract the offset from an [[A]] to be able to pursue the stream
+    * @param extractId
+    *   how to extract an id from an [[A]] to look for duplicates
+    * @param cfg
+    *   the query config
+    * @param xas
+    *   the transactors
+    */
+  def apply[A, K](
+      start: Offset,
+      query: Offset => Query0[A],
+      extractOffset: A => Offset,
+      extractId: A => K,
+      cfg: QueryConfig,
+      xas: Transactors
+  ): Stream[Task, A] =
+    Stream
+      .unfoldChunkEval[Task, Offset, A](start) { offset =>
+        query(offset).to[List].transact(xas.streaming).flatMap { elems =>
+          elems.lastOption.fold(refreshOrStop[A](cfg, offset)) { last =>
+            Task.some((dropDuplicates(elems, extractId), extractOffset(last)))
+          }
+        }
       }
+      .onFinalizeCase(logQuery(query(start)))
+
+  private def refreshOrStop[A](cfg: QueryConfig, offset: Offset): Task[Option[(Chunk[A], Offset)]] =
+    cfg.refreshStrategy match {
+      case RefreshStrategy.Stop         => Task.none
+      case RefreshStrategy.Delay(value) => Task.sleep(value) >> Task.some((Chunk.empty[A], offset))
+    }
+
+  // Looks for duplicates and keep the last occurrence
+  private[query] def dropDuplicates[A, K](elems: List[A], f: A => K): Chunk[A] = {
+    val (_, buffer) = elems.foldRight((Set.empty[K], new ListBuffer[A])) { case (x, (seen, buffer)) =>
+      val key = f(x)
+      if (seen.contains(key))
+        (seen, buffer)
+      else
+        (seen + key, buffer.prepend(x))
+    }
+    Chunk.buffer(buffer)
   }
+
+  private def logQuery[A, E](query: Query0[A]): ExitCase[E] => Task[Unit] = {
+    case ExitCase.Completed =>
+      Task.delay(
+        logger.debug("Reached the end of the single evaluation of query '{}'.", query.sql)
+      )
+    case ExitCase.Error(e)  =>
+      Task.delay(logger.error(s"Single evaluation of query '${query.sql}' failed.", e))
+    case ExitCase.Canceled  =>
+      Task.delay(
+        logger.debug("Reached the end of the single evaluation of query '{}'.", query.sql)
+      )
+  }
+
 }

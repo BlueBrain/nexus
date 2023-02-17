@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
 import ch.epfl.bluebrain.nexus.delta.sourcing.tombstone.TombstoneStore.Cause
-import ch.epfl.bluebrain.nexus.delta.sourcing.tombstone.TombstoneStoreSuite.{SimpleResource, entityType}
+import ch.epfl.bluebrain.nexus.delta.sourcing.tombstone.TombstoneStoreSuite.{entityType, SimpleResource}
 import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
 import ch.epfl.bluebrain.nexus.testkit.postgres.Doobie
 import doobie.implicits._
@@ -103,7 +103,7 @@ class TombstoneStoreSuite extends BioSuite with Doobie.Fixture {
     for {
       _ <- TombstoneStore.save(entityType, Some(state), newState).transact(xas.write).assert(())
       _ <- selectAsCause(id5, Tag.latest).assertSome(
-        Cause.diff(Set(nxv + "SimpleResource", nxv + "SimpleResource3"), Some(state.schema))
+             Cause.diff(Set(nxv + "SimpleResource", nxv + "SimpleResource3"), Some(state.schema))
            )
     } yield ()
   }

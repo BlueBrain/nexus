@@ -21,6 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.{PullRequest, Serializer}
 import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
 import ch.epfl.bluebrain.nexus.testkit.postgres.Doobie
 import doobie.implicits._
+import fs2.Chunk
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredCodec
 import io.circe.{Codec, DecodingFailure, Json}
@@ -148,7 +149,6 @@ class StreamingQuerySuite extends BioSuite with Doobie.Fixture {
     val expected = List(
       SuccessElem(PullRequest.entityType, id1, Some(project1), Instant.EPOCH, Offset.at(6L), id1, rev),
       SuccessElem(Release.entityType, release12.id, Some(project1), Instant.EPOCH, Offset.at(9L), release12.id, rev),
-      SuccessElem(PullRequest.entityType, id3, Some(project1), Instant.EPOCH, Offset.at(10L), id3, rev),
       DroppedElem(PullRequest.entityType, id3, Some(project1), Instant.EPOCH, Offset.at(11L), -1),
       SuccessElem(PullRequest.entityType, id2, Some(project1), Instant.EPOCH, Offset.at(12L), id2, rev),
       DroppedElem(PullRequest.entityType, id1, Some(project1), Instant.EPOCH, Offset.at(14L), -1),
@@ -239,6 +239,13 @@ class StreamingQuerySuite extends BioSuite with Doobie.Fixture {
 
   test(s"Get no remaining for an unknown project") {
     StreamingQuery.remaining(ProjectRef.unsafe("xxx", "xxx"), Tag.Latest, Offset.at(6L), xas).assertNone
+  }
+
+  test("Should only keep the last elem when elems with the same id appear several times") {
+    val input    = List(1 -> "A", 2 -> "B", 3 -> "C", 1 -> "D", 2 -> "E", 1 -> "F")
+    val expected = Chunk(3 -> "C", 2 -> "E", 1 -> "F")
+    val obtained = StreamingQuery.dropDuplicates[(Int, String), Int](input, _._1)
+    assertEquals(obtained, expected)
   }
 }
 
