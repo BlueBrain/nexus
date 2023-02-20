@@ -92,6 +92,7 @@ CREATE TABLE IF NOT EXISTS public.scoped_tombstones(
     PRIMARY KEY(ordering)
 );
 CREATE INDEX IF NOT EXISTS scoped_tombstones_idx ON public.scoped_tombstones(org, project, tag, id);
+CREATE INDEX IF NOT EXISTS scoped_tombstones_deleted_idx ON public.scoped_tombstones((cause->>'deleted'));
 
 --
 -- Table for ephemeral scoped states that belongs to a project
