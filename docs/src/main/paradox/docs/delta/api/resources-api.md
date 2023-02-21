@@ -210,14 +210,17 @@ if the `Accept` header is set to `text/html`, a redirection to the fusion repres
 ## Fetch original payload
 
 ```
-GET /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}/source?rev={rev}&tag={tag}
+GET /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}/source?rev={rev}&tag={tag}&annotate={annotate}
 ```
 where ...
 
 - `{rev}`: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.
 - `{tag}`: String - the targeted tag to be fetched. This field is optional.
+- `{annotate}`: Boolean - annotate the response with the resource metadata. This field only applies to standard resources. This field is optional.
 
 `{rev}` and `{tag}` fields cannot be simultaneously present.
+
+If `{annotate}` is set, fields present in the metadata will override fields with the same name from the payload.
 
 **Example**
 

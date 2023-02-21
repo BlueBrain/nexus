@@ -7,7 +7,7 @@ import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.testkit.{CirceEq, EitherValuable}
 import ch.epfl.bluebrain.nexus.tests.BaseSpec
-import ch.epfl.bluebrain.nexus.tests.Identity.resources.Rick
+import ch.epfl.bluebrain.nexus.tests.Identity.resources.{Morty, Rick}
 import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Organizations
 import io.circe.Json
@@ -137,6 +137,39 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
           )
         response.status shouldEqual StatusCodes.OK
         json should equalIgnoreArrayOrder(expected)
+      }
+    }
+
+    "fetch the original payload with metadata" in {
+      deltaClient.get[Json](s"/resources/$id1/test-schema/test-resource:1/source?annotate=true", Rick) {
+        (json, response) =>
+          val expected = jsonContentOf(
+            "/kg/resources/simple-resource-with-metadata.json",
+            replacements(
+              Rick,
+              "rev"        -> "1",
+              "resources"  -> s"${config.deltaUri}/resources/$id1",
+              "project"    -> s"${config.deltaUri}/projects/$id1",
+              "resourceId" -> "1",
+              "priority"   -> "5"
+            ): _*
+          )
+          response.status shouldEqual StatusCodes.OK
+          filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
+      }
+    }
+
+    "return not found if a resource is missing" in {
+      deltaClient.get[Json](s"/resources/$id1/test-schema/does-not-exist-resource:1/source?annotate=true", Rick) {
+        (_, response) =>
+          response.status shouldEqual StatusCodes.NotFound
+      }
+    }
+
+    "return forbidden if the user does not have access to the resource" in {
+      deltaClient.get[Json](s"/resources/$id1/test-schema/test-resource:1/source?annotate=true", Morty) {
+        (_, response) =>
+          response.status shouldEqual StatusCodes.Forbidden
       }
     }
 
@@ -325,6 +358,25 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
         }
       }
     }
+
+    "fetch previous revision original payload with metadata" in {
+      deltaClient.get[Json](s"/resources/$id1/test-schema/test-resource:1/source?rev=1&annotate=true", Rick) {
+        (json, response) =>
+          val expected = jsonContentOf(
+            "/kg/resources/simple-resource-with-metadata.json",
+            replacements(
+              Rick,
+              "rev"        -> "1",
+              "resources"  -> s"${config.deltaUri}/resources/$id1",
+              "project"    -> s"${config.deltaUri}/projects/$id1",
+              "resourceId" -> "1",
+              "priority"   -> "5"
+            ): _*
+          )
+          response.status shouldEqual StatusCodes.OK
+          filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
+      }
+    }
   }
 
   "tagging a resource" should {
@@ -406,6 +458,25 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
                filterMetadataKeys(json) should equalIgnoreArrayOrder(expectedTag3)
              }
       } yield succeed
+    }
+
+    "fetch tagged original payload with metadata" in {
+      deltaClient.get[Json](s"/resources/$id1/test-schema/test-resource:1/source?tag=v1.0.1&annotate=true", Rick) {
+        (json, response) =>
+          val expected = jsonContentOf(
+            "/kg/resources/simple-resource-with-metadata.json",
+            replacements(
+              Rick,
+              "rev"        -> "2",
+              "resources"  -> s"${config.deltaUri}/resources/$id1",
+              "project"    -> s"${config.deltaUri}/projects/$id1",
+              "resourceId" -> "1",
+              "priority"   -> "3"
+            ): _*
+          )
+          response.status shouldEqual StatusCodes.OK
+          filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
+      }
     }
   }
 
