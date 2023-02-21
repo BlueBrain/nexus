@@ -10,7 +10,7 @@ import monix.bio.Task
 import shapeless.Typeable
 
 /**
-  * Pipe implementation for UniformScopedState that filters deprecated resources.
+  * Pipe implementation that filters deprecated resources.
   */
 class FilterDeprecated extends Pipe {
   override type In  = GraphResource
@@ -26,7 +26,7 @@ class FilterDeprecated extends Pipe {
 }
 
 /**
-  * Pipe implementation for UniformScopedState that filters deprecated resources.
+  * Pipe implementation that filters deprecated resources.
   */
 object FilterDeprecated extends PipeDef {
   override type PipeType = FilterDeprecated

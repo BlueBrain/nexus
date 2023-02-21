@@ -54,7 +54,7 @@ class SelectPredicatesSuite extends BioSuite {
     registry
       .lookupA[SelectPredicates.type](SelectPredicates.ref)
       .rightValue
-      .withJsonLdConfig(SelectPredicatesConfig(predicates).toJsonLd)
+      .withJsonLdConfig(SelectPredicatesConfig(None, predicates).toJsonLd)
       .rightValue
 
   def defaultPipe: SelectPredicates =
@@ -75,5 +75,12 @@ class SelectPredicatesSuite extends BioSuite {
     val expected = element.copy(value = element.value.copy(graph = graph, types = types))
     pipe(Set(rdfs.label)).apply(element).assert(expected)
     defaultPipe.apply(element).assert(expected)
+  }
+
+  test("Do not apply any modifications for a forward type 'File'") {
+    val types = Set(nxv + "PullRequest", nxv + "File")
+    val file  = element.copy(value = element.value.copy(types = types))
+    pipe(Set(rdfs.label)).apply(element).assert(file)
+    defaultPipe.apply(file).assert(file)
   }
 }
