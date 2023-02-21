@@ -17,13 +17,13 @@ import java.time.Instant
 
 class GraphResourceToDocumentSuite extends FunSuite with Fixtures with JsonAssertions {
 
-  private val entityType    = EntityType("entityType")
-  private val project       = ProjectRef.unsafe("org", "project")
-  private val id            = iri"http://nexus.example.com/6A518B91-7B12-451B-8E85-48C67432C3A1"
-  private val rev           = 1
-  private val deprecated    = false
-  private val schema        = ResourceRef(iri"http://schema.org/Person")
-  private val types         = Set(iri"http://schema.org/Resource")
+  private val entityType = EntityType("entityType")
+  private val project    = ProjectRef.unsafe("org", "project")
+  private val id         = iri"http://nexus.example.com/6A518B91-7B12-451B-8E85-48C67432C3A1"
+  private val rev        = 1
+  private val deprecated = false
+  private val schema     = ResourceRef(iri"http://schema.org/Person")
+  private val types      = Set(iri"http://schema.org/Resource")
 
   private val expandedJson =
     json"""
