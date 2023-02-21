@@ -24,7 +24,18 @@ class GraphResourceToDocumentSuite extends FunSuite with Fixtures with JsonAsser
   private val deprecated    = false
   private val schema        = ResourceRef(iri"http://schema.org/Person")
   private val types         = Set(iri"http://schema.org/Resource")
-  private val expandedJson  = jsonContentOf("/jsonld/resource-john-doe-expanded.json")
+
+  private val expandedJson =
+    json"""
+      [
+        {
+          "@id": "http://nexus.example.com/6A518B91-7B12-451B-8E85-48C67432C3A1",
+          "@type": "http://schema.org/Person",
+          "http://schema.org/name": {"@value": "John Doe"}
+        }
+      ]
+        """
+
   private val expanded      = ExpandedJsonLd.expanded(expandedJson).rightValue
   private val graph         = Graph(expanded).rightValue
   private val metadataGraph = graph
@@ -47,11 +58,11 @@ class GraphResourceToDocumentSuite extends FunSuite with Fixtures with JsonAsser
 
     val expectedJson =
       json"""
-          {
-            "@id" : "http://nexus.example.com/john-doe",
-            "@type" : "http://schema.org/Person",
-            "name" : "John Doe"
-          }
+        {
+          "@id" : "http://nexus.example.com/john-doe",
+          "@type" : "http://schema.org/Person",
+          "name" : "John Doe"
+        }
           """
 
     for {
@@ -71,11 +82,11 @@ class GraphResourceToDocumentSuite extends FunSuite with Fixtures with JsonAsser
 
     val expectedJson =
       json"""
-      {
-        "@id" : "http://nexus.example.com/6A518B91-7B12-451B-8E85-48C67432C3A1",
-        "@type" : "http://schema.org/Person",
-        "name" : "John Doe"
-      }
+        {
+          "@id" : "http://nexus.example.com/6A518B91-7B12-451B-8E85-48C67432C3A1",
+          "@type" : "http://schema.org/Person",
+          "name" : "John Doe"
+        }
       """
 
     for {
