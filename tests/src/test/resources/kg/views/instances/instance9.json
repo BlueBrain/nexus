@@ -1,0 +1,5 @@
+{
+  "@context": "https://dev.nexus.test.com/simplified-resource/context",
+  "name": "John Doe",
+  "@type": "http://schema.org/Person"
+}
