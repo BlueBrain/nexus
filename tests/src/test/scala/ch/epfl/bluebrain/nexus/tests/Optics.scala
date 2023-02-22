@@ -41,7 +41,9 @@ object Optics extends Optics {
   private val projectKeysToIgnore             = metadataKeys + "_effectiveApiMappings"
   val filterProjectMetadataKeys: Json => Json = filterKeys(projectKeysToIgnore)
 
-  val filterResultMetadata: Json => Json = root._results.arr.modify(_.map(filterMetadataKeys))
+  def filterResults(keys: Set[String]): Json => Json = root._results.arr.modify(_.map(filterKeys(keys)))
+
+  val filterResultMetadata: Json => Json = filterResults(metadataKeys)
 
   val filterSearchMetadata: Json => Json = filterKey("_next") andThen filterResultMetadata
 

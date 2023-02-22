@@ -226,7 +226,7 @@ object Storage {
       Storages.entityType,
       (ref, project) => storages.fetch(IdSegmentRef(ref), project),
       (context, state) => state.toResource(context.apiMappings, context.base),
-      value => JsonLdContent(value, Storage.encryptSourceUnsafe(value.value.source, crypto), None)
+      value => JsonLdContent(value, Storage.encryptSourceUnsafe(value.value.source, crypto), Some(value.value.metadata))
     )
 
 }

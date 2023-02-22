@@ -15,7 +15,7 @@ import monix.bio.Task
 import shapeless.Typeable
 
 /**
-  * Pipe implementation for UniformScopedState that transforms the resource graph with a provided query.
+  * Pipe implementation that transforms the resource graph with a provided query.
   */
 class DataConstructQuery(config: DataConstructQueryConfig) extends Pipe {
   override type In  = GraphResource
@@ -33,7 +33,7 @@ class DataConstructQuery(config: DataConstructQueryConfig) extends Pipe {
 }
 
 /**
-  * Pipe implementation for UniformScopedState that transforms the resource graph with a provided query.
+  * Pipe implementation that transforms the resource graph with a provided query.
   */
 object DataConstructQuery extends PipeDef {
   override type PipeType = DataConstructQuery

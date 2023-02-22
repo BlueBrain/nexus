@@ -20,7 +20,6 @@ import org.apache.commons.codec.Charsets
 import org.scalatest.Assertion
 
 import java.util.Base64
-import scala.collection.immutable.Seq
 
 abstract class StorageSpec extends BaseSpec with CirceEq {
 
@@ -328,6 +327,79 @@ abstract class StorageSpec extends BaseSpec with CirceEq {
         )
       }
     }
+  }
+
+  "list files" in eventually {
+    deltaClient.get[Json](s"/files/$fullId", Coyote) { (json, response) =>
+      response.status shouldEqual StatusCodes.OK
+      val mapping  = replacements(
+        Coyote,
+        "project"     -> fullId,
+        "storageId"   -> storageId,
+        "storageType" -> storageType
+      )
+      val expected = jsonContentOf("/kg/files/list.json", mapping: _*)
+      filterSearchMetadata
+        .andThen(filterResults(Set("_location")))(json) should equalIgnoreArrayOrder(expected)
+    }
+  }
+
+  "query the default sparql view for files" in eventually {
+    val query =
+      s"""
+        |prefix nxv: <https://bluebrain.github.io/nexus/vocabulary/>
+        |prefix : <https://bluebrain.github.io/test/>
+        |
+        |CONSTRUCT {
+        |      ?id  a                   ?type        ;
+        |           :filename           ?filename    ;
+        |           :bytes              ?bytes       ;
+        |           :digestValue        ?digestValue    ;
+        |           :digestAlgo         ?digestAlgo     ;
+        |           :mediaType          ?mediaType      ;
+        |           :storageId          ?storageId      ;
+        |           :createdBy          ?createdBy      ;
+        |           :updatedBy          ?updatedBy      ;
+        |           :deprecated         ?deprecated     ;
+        |           :rev                ?rev            ;
+        |           :project            ?project        ;
+        |           :self               ?self           ;
+        |           :incoming           ?incoming       ;
+        |           :outgoing           ?outgoing       ;
+        |} WHERE {
+        |      BIND(<http://delta:8080/v1/resources/$fullId/_/attachment.json> as ?id) .
+        |
+        |      ?id  a  ?type  .
+        |      ?id  nxv:filename               ?filename;
+        |           nxv:bytes                  ?bytes;
+        |           nxv:digest / nxv:value     ?digestValue;
+        |           nxv:digest / nxv:algorithm ?digestAlgo;
+        |           nxv:mediaType   ?mediaType;
+        |           nxv:storage     ?storage;
+        |           nxv:createdBy   ?createdBy;
+        |           nxv:updatedBy   ?updatedBy;
+        |           nxv:deprecated  ?deprecated;
+        |           nxv:rev         ?rev;
+        |           nxv:rev         ?rev;
+        |           nxv:project     ?project;
+        |           nxv:self        ?self;
+        |           nxv:incoming    ?incoming;
+        |           nxv:outgoing    ?outgoing;
+        |}
+        |
+      """.stripMargin
+
+    deltaClient.sparqlQuery[Json](s"/views/$fullId/graph/sparql", query, Coyote) { (json, response) =>
+      response.status shouldEqual StatusCodes.OK
+      val mapping  = replacements(
+        Coyote,
+        "project"   -> fullId,
+        "storageId" -> storageId
+      )
+      val expected = jsonContentOf("/kg/files/sparql.json", mapping: _*)
+      json should equalIgnoreArrayOrder(expected)
+    }
+
   }
 
   private def attachmentString(filename: String): String = {

@@ -16,7 +16,7 @@ import monix.bio.Task
 import shapeless.Typeable
 
 /**
-  * Pipe implementation for UniformScopedState that filters resources based on their schema.
+  * Pipe implementation that filters resources based on their schema.
   */
 class FilterBySchema(config: FilterBySchemaConfig) extends Pipe {
   override type In  = GraphResource
@@ -32,7 +32,7 @@ class FilterBySchema(config: FilterBySchemaConfig) extends Pipe {
 }
 
 /**
-  * Pipe implementation for UniformScopedState that filters resources based on their schema.
+  * Pipe implementation that filters resources based on their schema.
   */
 object FilterBySchema extends PipeDef {
   override type PipeType = FilterBySchema
