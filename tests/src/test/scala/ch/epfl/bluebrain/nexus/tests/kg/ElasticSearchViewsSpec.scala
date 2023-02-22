@@ -85,6 +85,16 @@ class ElasticSearchViewsSpec extends BaseSpec with EitherValuable with CirceEq {
         }
     }
 
+    "create people view in project 2" in {
+      deltaClient.put[Json](
+        s"/views/$fullId2/test-resource:people",
+        jsonContentOf("/kg/views/elasticsearch/people-view.json"),
+        ScoobyDoo
+      ) { (_, response) =>
+        response.status shouldEqual StatusCodes.Created
+      }
+    }
+
     "get the created elasticsearch views" in {
       projects.parTraverse { project =>
         deltaClient.get[Json](s"/views/$project/test-resource:cell-view", ScoobyDoo) { (json, response) =>
@@ -153,6 +163,17 @@ class ElasticSearchViewsSpec extends BaseSpec with EitherValuable with CirceEq {
       }
     }
 
+    "post instance without id" in {
+      val payload = jsonContentOf(s"/kg/views/instances/instance9.json")
+      deltaClient.post[Json](
+        s"/resources/$fullId2/resource?indexing=sync",
+        payload,
+        ScoobyDoo
+      ) { (_, response) =>
+        response.status shouldEqual StatusCodes.Created
+      }
+    }
+
     "wait until in project view is indexed" in eventually {
       deltaClient.get[Json](s"/views/$fullId?type=nxv%3AElasticSearchView", ScoobyDoo) { (json, response) =>
         _total.getOption(json).value shouldEqual 3
@@ -163,7 +184,7 @@ class ElasticSearchViewsSpec extends BaseSpec with EitherValuable with CirceEq {
     "wait until all instances are indexed in default view of project 2" in eventually {
       deltaClient.get[Json](s"/resources/$fullId2/resource", ScoobyDoo) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
-        _total.getOption(json).value shouldEqual 4
+        _total.getOption(json).value shouldEqual 5
       }
     }
 
@@ -206,7 +227,7 @@ class ElasticSearchViewsSpec extends BaseSpec with EitherValuable with CirceEq {
       }
     }
 
-    "search instances on project 2" in eventually {
+    "search cell instances on project 2" in eventually {
       deltaClient.post[Json](s"/views/$fullId2/test-resource:cell-view/_search", sortedMatchCells, ScoobyDoo) {
         (json, response) =>
           response.status shouldEqual StatusCodes.OK
@@ -219,6 +240,15 @@ class ElasticSearchViewsSpec extends BaseSpec with EitherValuable with CirceEq {
               filterKey("took")(json2) shouldEqual filterKey("took")(json)
             }
             .runSyncUnsafe()
+      }
+    }
+
+    "the person resource created with no id in payload should have the default id in _source" in eventually {
+      deltaClient.post[Json](s"/views/$fullId2/test-resource:people/_search", matchAll, ScoobyDoo) { (json, response) =>
+        response.status shouldEqual StatusCodes.OK
+        val id       = hits(0)._id.string.getOption(json)
+        val sourceId = hits(0)._source.`@id`.string.getOption(json)
+        sourceId shouldEqual id
       }
     }
 

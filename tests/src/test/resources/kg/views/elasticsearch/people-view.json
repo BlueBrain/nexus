@@ -1,0 +1,22 @@
+{
+  "@type": "ElasticSearchView",
+  "includeDeprecated": false,
+  "includeMetadata": true,
+  "mapping": {
+    "properties": {
+      "name": {
+        "type": "text",
+        "fields": {
+          "raw": {
+            "type": "keyword"
+          }
+        }
+      }
+    }
+  },
+  "resourceSchemas": [],
+  "resourceTypes": [
+    "http://schema.org/Person"
+  ],
+  "sourceAsText": false
+}

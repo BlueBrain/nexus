@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing
 
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
@@ -40,12 +40,15 @@ final class GraphResourceToDocument(context: ContextValue, includeContext: Boole
         .map(ld => element.map(_ => injectContext(ld.obj.asJson)))
     else
       (graph -- graph.rootTypesGraph)
-        .replaceRootNode(BNode.random) // This is done to get rid of the @id in order to avoid overriding the source @id
+        .replaceRootNode(getSourceId(element.value.source).getOrElse(element.value.id))
         .toCompactedJsonLd(context)
         .map(ld => injectContext(mergeJsonLd(element.value.source, ld.json)))
         .map(json => if (json.isEmpty()) element.dropped else element.success(json))
 
   }
+
+  private def getSourceId(json: Json): Option[Iri] =
+    json.hcursor.get[Iri]("@id").toOption
 
   private def injectContext(json: Json) =
     if (includeContext)
