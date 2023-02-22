@@ -1,3 +1,4 @@
+Daniel Bell (maintainer)
 Oliver Grabinski (maintainer)
 Simon Dumas (maintainer)
 

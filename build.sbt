@@ -977,7 +977,7 @@ lazy val servicePackaging = {
     },
     Docker / daemonUser  := "nexus",
     dockerBaseImage      := "eclipse-temurin:11-jre",
-    dockerExposedPorts   := Seq(8080, 25520),
+    dockerExposedPorts   := Seq(8080),
     dockerUsername       := Some("bluebrain"),
     dockerUpdateLatest   := false,
     dockerChmodType      := DockerChmodType.UserGroupWriteExecute,
@@ -1001,10 +1001,9 @@ ThisBuild / homepage                     := Some(url("https://bluebrainnexus.io"
 ThisBuild / licenses                     := Seq("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt"))
 ThisBuild / scmInfo                      := Some(ScmInfo(url("https://github.com/BlueBrain/nexus"), "scm:git:git@github.com:BlueBrain/nexus.git"))
 ThisBuild / developers                   := List(
-  Developer("bogdanromanx", "Bogdan Roman", "noreply@epfl.ch", url("https://bluebrain.epfl.ch/")),
-  Developer("umbreak", "Didac Montero Mendez", "noreply@epfl.ch", url("https://bluebrain.epfl.ch/")),
-  Developer("wwajerowicz", "Wojtek Wajerowicz", "noreply@epfl.ch", url("https://bluebrain.epfl.ch/")),
-  Developer("imsdu", "Simon Dumas", "noreply@epfl.ch", url("https://bluebrain.epfl.ch/"))
+  Developer("imsdu", "Simon Dumas", "noreply@epfl.ch", url("https://bluebrain.epfl.ch/")),
+  Developer("olivergrabinski ", "Oliver Grabinski", "noreply@epfl.ch", url("https://bluebrain.epfl.ch/")),
+  Developer("shinyhappydan", "Daniel Bell", "noreply@epfl.ch", url("https://bluebrain.epfl.ch/"))
 )
 ThisBuild / githubOwner                  := "BlueBrain"
 ThisBuild / githubRepository             := "nexus"
