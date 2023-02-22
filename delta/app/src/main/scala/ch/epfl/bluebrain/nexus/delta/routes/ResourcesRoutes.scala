@@ -29,6 +29,7 @@ import io.circe.{Json, Printer}
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.bio.IO
 import monix.execution.Scheduler
+import io.circe.optics.JsonPath.root
 
 /**
   * The resource routes
@@ -267,11 +268,25 @@ object ResourcesRoutes {
   def asSourceWithMetadata(
       resource: ResourceF[Resource]
   )(implicit baseUri: BaseUri, cr: RemoteContextResolution): IO[ResourceRejection, Json] = {
+    metadataJson(resource)
+      .map(mergeOriginalPayloadWithMetadata(resource.value.source, _))
+  }
 
+  private def metadataJson(resource: ResourceF[Resource])(implicit baseUri: BaseUri, cr: RemoteContextResolution) = {
     implicit val resourceFJsonLdEncoder: JsonLdEncoder[ResourceF[Unit]] = ResourceF.defaultResourceFAJsonLdEncoder
     resourceFJsonLdEncoder
       .compact(resource.void)
-      .bimap(e => InvalidJsonLdFormat(Some(resource.id), e), c => resource.value.source.deepMerge(c.json))
+      .map(_.json)
+      .mapError(e => InvalidJsonLdFormat(Some(resource.id), e))
+  }
+
+  private val IdLens = root.`@id`.string
+  private def mergeOriginalPayloadWithMetadata(payload: Json, metadata: Json): Json = {
+    IdLens
+      .getOption(payload)
+      .foldLeft(payload.deepMerge(metadata)) { (json, existingId) =>
+        IdLens.set(existingId)(json)
+      }
   }
 
 }
