@@ -12,7 +12,7 @@ import monix.bio.Task
 import shapeless.Typeable
 
 /**
-  * Pipe implementation for UniformScopedState that embeds the resource source into the metadata graph.
+  * Pipe implementation that embeds the resource source into the metadata graph.
   */
 class SourceAsText extends Pipe {
 
@@ -32,7 +32,7 @@ class SourceAsText extends Pipe {
 }
 
 /**
-  * Pipe implementation for UniformScopedState that embeds the resource source into the metadata graph.
+  * Pipe implementation that embeds the resource source into the metadata graph.
   */
 object SourceAsText extends PipeDef {
   override type PipeType = SourceAsText

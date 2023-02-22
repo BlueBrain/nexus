@@ -18,7 +18,7 @@ import org.apache.jena.graph.Node
 import shapeless.Typeable
 
 /**
-  * Pipe implementation for UniformScopedState that transforms the resource graph keeping only the specific predicates.
+  * Pipe implementation that transforms the resource graph keeping only the specific predicates.
   */
 class SelectPredicates(config: SelectPredicatesConfig) extends Pipe {
   override type In  = GraphResource
@@ -27,17 +27,21 @@ class SelectPredicates(config: SelectPredicatesConfig) extends Pipe {
   override def inType: Typeable[GraphResource]  = Typeable[GraphResource]
   override def outType: Typeable[GraphResource] = Typeable[GraphResource]
 
-  override def apply(element: SuccessElem[GraphResource]): Task[Elem[GraphResource]] = {
-    val id       = subject(element.value.id)
-    val newGraph = element.value.graph.filter { case (s, p, _) => s == id && config.nodeSet.contains(p) }
-    val newState = element.value.copy(graph = newGraph, types = newGraph.rootTypes)
-    Task.pure(element.copy(value = newState))
+  override def apply(element: SuccessElem[GraphResource]): Task[Elem[GraphResource]] = Task.pure {
+    if (config.forwardTypes.exists { p => p.exists(element.value.types.contains) }) {
+      element
+    } else {
+      val id       = subject(element.value.id)
+      val newGraph = element.value.graph.filter { case (s, p, _) => s == id && config.nodeSet.contains(p) }
+      val newState = element.value.copy(graph = newGraph, types = newGraph.rootTypes)
+      element.copy(value = newState)
+    }
   }
 
 }
 
 /**
-  * Pipe implementation for UniformScopedState that transforms the resource graph keeping only the specific predicates.
+  * Pipe implementation that transforms the resource graph keeping only the specific predicates.
   */
 object SelectPredicates extends PipeDef {
   override type PipeType = SelectPredicates
@@ -47,20 +51,30 @@ object SelectPredicates extends PipeDef {
   override def ref: PipeRef                                                 = PipeRef.unsafe("selectPredicates")
   override def withConfig(config: SelectPredicatesConfig): SelectPredicates = new SelectPredicates(config)
 
-  final case class SelectPredicatesConfig(predicates: Set[Iri]) {
+  /**
+    * Configuration of the [[SelectPredicates]]
+    * @param forwardTypes
+    *   types that must keep all their predicates
+    * @param predicates
+    *   predicates to retain for the other types
+    */
+  final case class SelectPredicatesConfig(forwardTypes: Option[Set[Iri]], predicates: Set[Iri]) {
     lazy val nodeSet: Set[Node]  = predicates.map(predicate)
     def toJsonLd: ExpandedJsonLd = ExpandedJsonLd(
       Seq(
         ExpandedJsonLd.unsafe(
           nxv + ref.toString,
           JsonObject(
-            (nxv + "predicates").toString -> Json.arr(predicates.toList.map(iri => Json.obj("@id" -> iri.asJson)): _*)
+            (nxv + "pass").toString       -> forwardTypes.fold(Json.Null) { pass => toJson(pass) },
+            (nxv + "predicates").toString -> toJson(predicates)
           )
         )
       )
     )
+
+    private def toJson(set: Set[Iri]) = Json.fromValues(set.map(iri => Json.obj("@id" -> iri.asJson)))
   }
-  object SelectPredicatesConfig                                 {
+  object SelectPredicatesConfig                                                                 {
     implicit val selectPredicatesConfigJsonLdDecoder: JsonLdDecoder[SelectPredicatesConfig] = deriveDefaultJsonLdDecoder
   }
 }

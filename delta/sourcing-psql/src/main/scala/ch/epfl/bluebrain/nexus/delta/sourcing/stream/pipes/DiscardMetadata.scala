@@ -11,7 +11,7 @@ import monix.bio.Task
 import shapeless.Typeable
 
 /**
-  * Pipe implementation for UniformScopedState that drops the contents of the state metadata graph.
+  * Pipe implementation that drops the contents of the state metadata graph.
   */
 class DiscardMetadata extends Pipe {
   override type In  = GraphResource
@@ -26,7 +26,7 @@ class DiscardMetadata extends Pipe {
 }
 
 /**
-  * Pipe implementation for UniformScopedState that drops the contents of the state metadata graph.
+  * Pipe implementation that drops the contents of the state metadata graph.
   */
 object DiscardMetadata extends PipeDef {
   override type PipeType = DiscardMetadata
