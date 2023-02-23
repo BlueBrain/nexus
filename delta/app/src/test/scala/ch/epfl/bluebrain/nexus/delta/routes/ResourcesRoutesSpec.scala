@@ -59,13 +59,14 @@ class ResourcesRoutesSpec extends BaseRouteSpec {
   private val schema1      = SchemaGen.schema(nxv + "myschema", project.value.ref, schemaSource.removeKeys(keywords.id))
   private val schema2      = SchemaGen.schema(schema.Person, project.value.ref, schemaSource.removeKeys(keywords.id))
 
-  private val myId         = nxv + "myid"  // Resource created against no schema with id present on the payload
-  private val myId2        = nxv + "myid2" // Resource created against schema1 with id present on the payload
-  private val myId3        = nxv + "myid3" // Resource created against no schema with id passed and present on the payload
-  private val myId4        = nxv + "myid4" // Resource created against schema1 with id passed and present on the payload
-  private val myIdEncoded  = UrlUtils.encode(myId.toString)
-  private val myId2Encoded = UrlUtils.encode(myId2.toString)
-  private val payload      = jsonContentOf("resources/resource.json", "id" -> myId)
+  private val myId                = nxv + "myid"  // Resource created against no schema with id present on the payload
+  private val myId2               = nxv + "myid2" // Resource created against schema1 with id present on the payload
+  private val myId3               = nxv + "myid3" // Resource created against no schema with id passed and present on the payload
+  private val myId4               = nxv + "myid4" // Resource created against schema1 with id passed and present on the payload
+  private val myIdEncoded         = UrlUtils.encode(myId.toString)
+  private val myId2Encoded        = UrlUtils.encode(myId2.toString)
+  private val payload             = jsonContentOf("resources/resource.json", "id" -> myId)
+  private val payloadWithMetadata = jsonContentOf("resources/resource-with-metadata.json", "id" -> myId)
 
   private val aclCheck = AclSimpleCheck().accepted
 
@@ -95,6 +96,8 @@ class ResourcesRoutesSpec extends BaseRouteSpec {
     )
 
   private val payloadUpdated = payload deepMerge json"""{"name": "Alice", "address": null}"""
+
+  private val payloadUpdatedWithMetdata = payloadWithMetadata deepMerge json"""{"name": "Alice", "address": null}"""
 
   "A resource route" should {
 
@@ -255,6 +258,15 @@ class ResourcesRoutesSpec extends BaseRouteSpec {
       }
     }
 
+    "fail fetching a resource original payload without resources/read permission" in {
+      forAll(List("", "?annotate=true")) { suffix =>
+        Get(s"/v1/resources/myorg/myproject/_/myid2/source$suffix") ~> routes ~> check {
+          response.status shouldEqual StatusCodes.Forbidden
+          response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+        }
+      }
+    }
+
     val resourceCtx = json"""{"@context": ["${contexts.metadata}", {"@vocab": "${nxv.base}"}]}"""
 
     "fetch a resource" in {
@@ -288,6 +300,45 @@ class ResourcesRoutesSpec extends BaseRouteSpec {
       Get("/v1/resources/myorg/myproject/_/myid/source") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual payloadUpdated
+      }
+    }
+
+    "return not found if fetching a resource original payload that does not exist" in {
+      Get("/v1/resources/myorg/myproject/_/wrongid/source") ~> routes ~> check {
+        status shouldEqual StatusCodes.NotFound
+        response.asJson shouldEqual jsonContentOf(
+          "/resources/errors/not-found.json",
+          "id"   -> "https://bluebrain.github.io/nexus/vocabulary/wrongid",
+          "proj" -> "myorg/myproject"
+        )
+      }
+    }
+
+    "fetch a resource original payload with metadata" in {
+      Get("/v1/resources/myorg/myproject/_/myid/source?annotate=true") ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        response.asJson shouldEqual payloadUpdatedWithMetdata
+      }
+    }
+
+    "fetch a resource original payload with metadata using tags and revisions" in {
+      val endpoints = List(
+        "/v1/resources/myorg/myproject/myschema/myid2/source?rev=1&annotate=true",
+        "/v1/resources/myorg/myproject/_/myid2/source?rev=1&annotate=true",
+        s"/v1/resources/$uuid/$uuid/_/myid2/source?rev=1&annotate=true",
+        "/v1/resources/myorg/myproject/myschema/myid2/source?tag=mytag&annotate=true",
+        s"/v1/resources/$uuid/$uuid/_/myid2/source?tag=mytag&annotate=true"
+      )
+
+      val payload = jsonContentOf("resources/resource.json", "id" -> myId2)
+      val meta    =
+        resourceMetadata(projectRef, myId2, schema1.id, "https://bluebrain.github.io/nexus/vocabulary/Custom", rev = 1)
+
+      forAll(endpoints) { endpoint =>
+        Get(endpoint) ~> routes ~> check {
+          status shouldEqual StatusCodes.OK
+          response.asJson shouldEqual payload.deepMerge(meta)
+        }
       }
     }
 

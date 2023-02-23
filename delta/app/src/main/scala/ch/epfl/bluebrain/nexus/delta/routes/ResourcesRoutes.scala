@@ -5,9 +5,11 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
+import ch.epfl.bluebrain.nexus.delta.routes.ResourcesRoutes.asSourceWithMetadata
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
@@ -21,10 +23,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources.{read => Read, write => Write}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{Resource, ResourceRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{InvalidJsonLdFormat, InvalidSchemaRejection, ResourceNotFound}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{Resource, ResourceRejection}
 import io.circe.{Json, Printer}
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
+import monix.bio.IO
 import monix.execution.Scheduler
 
 /**
@@ -167,9 +170,20 @@ final class ResourcesRoutes(
                       (pathPrefix("source") & get & pathEndOrSingleSlash & idSegmentRef(id)) { id =>
                         operationName(s"$prefixSegment/resources/{org}/{project}/{schema}/{id}/source") {
                           authorizeFor(ref, Read).apply {
-                            implicit val source: Printer = sourcePrinter
-                            val sourceIO                 = resources.fetch(id, ref, schemaOpt).map(_.value.source)
-                            emit(sourceIO.leftWiden[ResourceRejection].rejectWhen(wrongJsonOrNotFound))
+                            parameter("annotate".as[Boolean].withDefault(false)) { annotate =>
+                              implicit val source: Printer = sourcePrinter
+                              if (annotate) {
+                                emit(
+                                  resources
+                                    .fetch(id, ref, schemaOpt)
+                                    .flatMap(asSourceWithMetadata)
+                                )
+                              } else {
+                                val sourceIO = resources.fetch(id, ref, schemaOpt).map(_.value.source)
+                                val value    = sourceIO.leftWiden[ResourceRejection]
+                                emit(value.rejectWhen(wrongJsonOrNotFound))
+                              }
+                            }
                           }
                         }
                       },
@@ -247,5 +261,31 @@ object ResourcesRoutes {
       ordering: JsonKeyOrdering,
       fusionConfig: FusionConfig
   ): Route = new ResourcesRoutes(identities, aclCheck, resources, projectsDirectives, index).routes
+
+  implicit private val api: JsonLdApi = JsonLdJavaApi.lenient
+
+  def asSourceWithMetadata(
+      resource: ResourceF[Resource]
+  )(implicit baseUri: BaseUri, cr: RemoteContextResolution): IO[ResourceRejection, Json] = {
+    metadataJson(resource)
+      .map(mergeOriginalPayloadWithMetadata(resource.value.source, _))
+  }
+
+  private def metadataJson(resource: ResourceF[Resource])(implicit baseUri: BaseUri, cr: RemoteContextResolution) = {
+    implicit val resourceFJsonLdEncoder: JsonLdEncoder[ResourceF[Unit]] = ResourceF.defaultResourceFAJsonLdEncoder
+    resourceFJsonLdEncoder
+      .compact(resource.void)
+      .map(_.json)
+      .mapError(e => InvalidJsonLdFormat(Some(resource.id), e))
+  }
+
+  private def mergeOriginalPayloadWithMetadata(payload: Json, metadata: Json): Json = {
+    getId(payload)
+      .foldLeft(payload.deepMerge(metadata))(setId)
+  }
+
+  private def getId(payload: Json): Option[String]   = payload.hcursor.get[String]("@id").toOption
+  private def setId(payload: Json, id: String): Json =
+    payload.hcursor.downField("@id").set(Json.fromString(id)).top.getOrElse(payload)
 
 }
