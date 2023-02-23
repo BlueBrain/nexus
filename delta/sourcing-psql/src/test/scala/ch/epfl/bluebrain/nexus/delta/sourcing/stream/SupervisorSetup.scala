@@ -9,7 +9,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.testkit.bio.{BioSuite, ResourceFixture}
 import ch.epfl.bluebrain.nexus.testkit.postgres.Doobie
 import monix.bio.{Task, UIO}
-import monix.execution.Scheduler
 
 import scala.concurrent.duration._
 
@@ -19,7 +18,7 @@ object SupervisorSetup {
 
   def resource(
       cluster: ClusterConfig
-  )(implicit clock: Clock[UIO], s: Scheduler, cl: ClassLoader): Resource[Task, (Supervisor, Projections)] = {
+  )(implicit clock: Clock[UIO], cl: ClassLoader): Resource[Task, (Supervisor, Projections)] = {
     val config: ProjectionConfig = ProjectionConfig(
       cluster,
       BatchConfig(3, 50.millis),
@@ -35,7 +34,7 @@ object SupervisorSetup {
 
   def resource(
       config: ProjectionConfig
-  )(implicit clock: Clock[UIO], s: Scheduler, cl: ClassLoader): Resource[Task, (Supervisor, Projections)] =
+  )(implicit clock: Clock[UIO], cl: ClassLoader): Resource[Task, (Supervisor, Projections)] =
     Doobie.resource().flatMap { xas =>
       val projections = Projections(xas, config.query, config.restartTtl)
       Supervisor(projections, config).map(_ -> projections)
@@ -43,7 +42,6 @@ object SupervisorSetup {
 
   def suiteLocalFixture(name: String, cluster: ClusterConfig)(implicit
       clock: Clock[UIO],
-      s: Scheduler,
       cl: ClassLoader
   ): ResourceFixture.TaskFixture[(Supervisor, Projections)] =
     ResourceFixture.suiteLocal(name, resource(cluster))

@@ -7,7 +7,6 @@ import ch.epfl.bluebrain.nexus.testkit.bio.ResourceFixture.TaskFixture
 import ch.epfl.bluebrain.nexus.testkit.bio.{BioSuite, ResourceFixture}
 import doobie.postgres.sqlstate
 import monix.bio.{IO, Task, UIO}
-import monix.execution.Scheduler
 import munit.Location
 import org.postgresql.util.PSQLException
 
@@ -24,19 +23,17 @@ object Doobie {
       user: String = PostgresUser,
       pass: String = PostgresPassword,
       ddls: List[Path] = DDLs
-  )(implicit s: Scheduler, cl: ClassLoader): Resource[Task, Transactors] =
-    postgres.evalMap { container =>
-      for {
-        xas <- Transactors.sharedFrom(container.getHost, container.getMappedPort(5432), user, pass)
-        _   <- ddls.traverse(path => xas.execDDL(path.toString))
-      } yield xas
-    }
+  )(implicit cl: ClassLoader): Resource[Task, Transactors] = {
+    postgres
+      .flatMap(container => Transactors.test(container.getHost, container.getMappedPort(5432), user, pass))
+      .evalTap(xas => ddls.traverse(path => xas.execDDL(path.toString)))
+  }
 
   def resource(
       user: String = PostgresUser,
       pass: String = PostgresPassword,
       ddls: List[Path] = DDLs
-  )(implicit s: Scheduler, cl: ClassLoader): Resource[Task, Transactors] =
+  )(implicit cl: ClassLoader): Resource[Task, Transactors] =
     apply(PostgresContainer.resource(user, pass), user, pass, ddls)
 
   def suiteLocalFixture(
@@ -44,7 +41,7 @@ object Doobie {
       user: String = PostgresUser,
       pass: String = PostgresPassword,
       ddls: List[Path] = DDLs
-  )(implicit s: Scheduler, cl: ClassLoader): TaskFixture[Transactors] =
+  )(implicit cl: ClassLoader): TaskFixture[Transactors] =
     ResourceFixture.suiteLocal(name, resource(user, pass, ddls))
 
   trait Fixture { self: BioSuite =>
