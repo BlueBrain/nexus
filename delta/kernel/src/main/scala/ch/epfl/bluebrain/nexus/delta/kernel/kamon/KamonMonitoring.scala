@@ -24,7 +24,9 @@ object KamonMonitoring {
     *   the configuration
     */
   def initialize(config: Config): UIO[Unit] =
-    UIO.when(enabled)(UIO.delay(Kamon.init(config)))
+    UIO.when(enabled) {
+      UIO.delay("Initializing Kamon") >> UIO.delay(Kamon.init(config))
+    }
 
   /**
     * Terminate Kamon
