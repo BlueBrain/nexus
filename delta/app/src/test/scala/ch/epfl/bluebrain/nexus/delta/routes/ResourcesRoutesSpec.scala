@@ -308,8 +308,8 @@ class ResourcesRoutesSpec extends BaseRouteSpec {
         status shouldEqual StatusCodes.NotFound
         response.asJson shouldEqual jsonContentOf(
           "/resources/errors/not-found.json",
-          "id" -> "https://bluebrain.github.io/nexus/vocabulary/wrongid",
-          "proj"  -> "myorg/myproject"
+          "id"   -> "https://bluebrain.github.io/nexus/vocabulary/wrongid",
+          "proj" -> "myorg/myproject"
         )
       }
     }

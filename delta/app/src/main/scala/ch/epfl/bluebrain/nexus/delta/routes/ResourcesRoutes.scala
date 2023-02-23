@@ -284,7 +284,8 @@ object ResourcesRoutes {
       .foldLeft(payload.deepMerge(metadata))(setId)
   }
 
-  private def getId(payload: Json): Option[String] = payload.hcursor.get[String]("@id").toOption
-  private def setId(payload: Json, id: String): Json = payload.hcursor.downField("@id").set(Json.fromString(id)).top.getOrElse(payload)
+  private def getId(payload: Json): Option[String]   = payload.hcursor.get[String]("@id").toOption
+  private def setId(payload: Json, id: String): Json =
+    payload.hcursor.downField("@id").set(Json.fromString(id)).top.getOrElse(payload)
 
 }
