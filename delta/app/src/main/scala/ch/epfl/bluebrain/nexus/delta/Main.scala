@@ -54,6 +54,7 @@ object Main extends BIOApp {
   private[delta] def start(loaderConfig: PluginLoaderConfig): Resource[Task, Locator] =
     for {
       _                             <- Resource.eval(UIO.delay(log.info(s"Starting Nexus Delta version '${BuildInfo.version}'.")))
+      _                             <- Resource.eval(UIO.delay(log.info(s"Loading plugins and config...")))
       (cfg, config, cl, pluginDefs) <- Resource.eval(loadPluginsAndConfig(loaderConfig))
       _                             <- Resource.eval(KamonMonitoring.initialize(config))
       modules                        = DeltaModule(cfg, config, cl)
