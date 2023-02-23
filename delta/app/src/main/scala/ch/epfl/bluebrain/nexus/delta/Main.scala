@@ -46,7 +46,7 @@ object Main extends BIOApp {
       }
       .as(ExitCode.Success)
       .onErrorHandleWith { e =>
-        Task.delay(log.error("Delta failed to start. Message: {}", e.getMessage)).as(ExitCode.Error)
+        Task.delay(log.error("Delta failed to start", e)).as(ExitCode.Error)
       }
       .hideErrors
   }

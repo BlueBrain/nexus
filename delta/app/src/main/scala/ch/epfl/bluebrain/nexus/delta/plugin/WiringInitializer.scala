@@ -32,8 +32,10 @@ object WiringInitializer {
       .toCats
       .evalMap { locator =>
         IO.traverse(pluginsDef) { plugin =>
-          Task.delay(logger.info(s"Initializing plugin ${plugin.info}")) >>
-            plugin.initialize(locator)
+          Task.delay(logger.info(s"Initializing plugin ${plugin.info.name}...")) >>
+            plugin.initialize(locator).tapEval { _ =>
+              Task.delay(logger.info(s"Plugin ${plugin.info.name} initialized."))
+            }
         }.map(_ -> locator)
           .mapError(e => PluginInitializationError(e.getMessage))
       }
