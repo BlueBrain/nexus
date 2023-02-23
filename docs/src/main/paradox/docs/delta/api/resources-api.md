@@ -220,7 +220,7 @@ where ...
 
 `{rev}` and `{tag}` fields cannot be simultaneously present.
 
-If `{annotate}` is set, fields present in the metadata will override fields with the same name from the payload.
+If `{annotate}` is set, fields present in the metadata will override fields with the same name from the payload. The `@id` field is an exception to this rule
 
 **Example**
 
