@@ -240,7 +240,11 @@ class IdentitiesImplSpec
         groups = Some(Set("group1", "group2"))
       )
 
-      identities.exchange(token).rejected shouldEqual InvalidAccessToken(Some("JWT audience rejected: [ca, de]"))
+      identities.exchange(token).rejected shouldEqual InvalidAccessToken(
+        "Robert",
+        githubLabel2.value,
+        "JWT audience rejected: [ca, de]"
+      )
     }
 
     "fail when the token is invalid" in {
@@ -296,7 +300,7 @@ class IdentitiesImplSpec
         useCommas = true
       )
 
-      identities.exchange(token).rejected shouldEqual InvalidAccessToken(Some("Expired JWT"))
+      identities.exchange(token).rejected shouldEqual InvalidAccessToken("Robert", githubLabel.value, "Expired JWT")
     }
 
     "fail when the token is not yet valid" in {
@@ -310,7 +314,11 @@ class IdentitiesImplSpec
         useCommas = true
       )
 
-      identities.exchange(token).rejected shouldEqual InvalidAccessToken(Some("JWT before use time"))
+      identities.exchange(token).rejected shouldEqual InvalidAccessToken(
+        "Robert",
+        githubLabel.value,
+        "JWT before use time"
+      )
     }
 
     "fail when the signature is invalid" in {
@@ -323,7 +331,9 @@ class IdentitiesImplSpec
       )
 
       identities.exchange(token).rejected shouldEqual InvalidAccessToken(
-        Some("Signed JWT rejected: Another algorithm expected, or no matching key(s) found")
+        "Robert",
+        githubLabel.value,
+        "Signed JWT rejected: Another algorithm expected, or no matching key(s) found"
       )
     }
 
@@ -336,7 +346,7 @@ class IdentitiesImplSpec
         useCommas = true
       )
 
-      identities.exchange(token).rejected shouldEqual GetGroupsFromOidcError
+      identities.exchange(token).rejected shouldEqual GetGroupsFromOidcError("Robert", gitlabLabel.value)
     }
   }
 

@@ -110,7 +110,7 @@ trait BaseSpec
   override def afterAll(): Unit =
     Task.when(config.cleanUp)(elasticsearchDsl.deleteAllIndices().void).runSyncUnsafe()
 
-  private def toAuthorizationHeader(token: String) =
+  protected def toAuthorizationHeader(token: String) =
     Authorization(
       HttpCredentials.createOAuth2BearerToken(token)
     )

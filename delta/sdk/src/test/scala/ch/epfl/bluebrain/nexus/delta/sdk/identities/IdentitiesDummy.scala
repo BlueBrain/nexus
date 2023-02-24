@@ -11,7 +11,9 @@ import monix.bio.IO
 class IdentitiesDummy private (expected: Map[AuthToken, Caller]) extends Identities {
 
   override def exchange(token: AuthToken): IO[TokenRejection, Caller] =
-    IO.fromEither(expected.get(token).toRight(InvalidAccessToken()))
+    IO.fromEither(
+      expected.get(token).toRight(InvalidAccessToken("Someone", "Some realm", "The caller could not be found."))
+    )
 }
 
 object IdentitiesDummy {

@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{CacheConfig, KeyValueStore}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesImpl.{extractGroups, GroupsCache}
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesImpl.{extractGroups, logger, GroupsCache}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.TokenRejection.{GetGroupsFromOidcError, InvalidAccessToken, UnknownAccessTokenIssuer}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{AuthToken, Caller, TokenRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.Realm
@@ -18,7 +18,6 @@ import com.nimbusds.jose.JWSAlgorithm
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet
 import com.nimbusds.jose.jwk.{JWK, JWKSet}
 import com.nimbusds.jose.proc.{JWSVerificationKeySelector, SecurityContext}
-import com.nimbusds.jwt.SignedJWT
 import com.nimbusds.jwt.proc.{DefaultJWTClaimsVerifier, DefaultJWTProcessor}
 import com.typesafe.scalalogging.Logger
 import io.circe.{Decoder, HCursor, Json}
@@ -43,7 +42,7 @@ class IdentitiesImpl private (
       new JWKSet(jwks.toList.asJava)
     }
 
-    def validate(audiences: Option[NonEmptySet[String]], jwt: SignedJWT, keySet: JWKSet) = {
+    def validate(audiences: Option[NonEmptySet[String]], token: ParsedToken, keySet: JWKSet) = {
       val proc        = new DefaultJWTProcessor[SecurityContext]
       val keySelector = new JWSVerificationKeySelector(JWSAlgorithm.RS256, new ImmutableJWKSet[SecurityContext](keySet))
       proc.setJWSKeySelector(keySelector)
@@ -52,8 +51,8 @@ class IdentitiesImpl private (
       }
       IO.fromEither(
         Either
-          .catchNonFatal(proc.process(jwt, null))
-          .leftMap(err => InvalidAccessToken(Option(err.getMessage).filter(_.trim.nonEmpty)))
+          .catchNonFatal(proc.process(token.jwtToken, null))
+          .leftMap(err => InvalidAccessToken(token.subject, token.issuer, err.getMessage))
       )
     }
 
@@ -76,13 +75,15 @@ class IdentitiesImpl private (
       parsedToken       <- IO.fromEither(ParsedToken.fromToken(token))
       activeRealmOption <- findActiveRealm(parsedToken.issuer)
       activeRealm       <- IO.fromOption(activeRealmOption, UnknownAccessTokenIssuer)
-      _                 <- validate(activeRealm.acceptedAudiences, parsedToken.jwtToken, realmKeyset(activeRealm))
+      _                 <- validate(activeRealm.acceptedAudiences, parsedToken, realmKeyset(activeRealm))
       groups            <- fetchGroups(parsedToken, activeRealm)
     } yield {
       val user = User(parsedToken.subject, activeRealm.label)
       Caller(user, groups ++ Set(Anonymous, user, Authenticated(activeRealm.label)))
     }
     result.span("exchangeToken")
+  }.tapError { rejection =>
+    UIO.delay(logger.error(s"Extracting and validating the caller failed for the reason: $rejection"))
   }
 }
 
@@ -109,11 +110,11 @@ object IdentitiesImpl {
           val message =
             s"A provided client token was rejected by the OIDC provider for user '${token.subject}' of realm '${token.issuer}', reason: '${e.reason}'"
           UIO.delay(logger.error(message, e)) >>
-            IO.raiseError(InvalidAccessToken(Option.when(e.message.trim.nonEmpty)(e.message)))
+            IO.raiseError(InvalidAccessToken(token.subject, token.issuer, e.getMessage))
         case e                                                                                                 =>
           val message =
             s"A call to get the groups from the OIDC provider failed unexpectedly for user '${token.subject}' of realm '${token.issuer}'."
-          UIO.delay(logger.error(message, e)) >> IO.raiseError(GetGroupsFromOidcError)
+          UIO.delay(logger.error(message, e)) >> IO.raiseError(GetGroupsFromOidcError(token.subject, token.issuer))
       }
   }
 

@@ -33,6 +33,9 @@ object Identity extends TestHelpers {
   val testRealm  = Realm("test-" + genString())
   val testClient = Identity.ClientCredentials(genString(), genString(), testRealm)
 
+  // User with an invalid token
+  val InvalidTokenUser: UserCredentials = UserCredentials(genString(), genString(), testRealm)
+
   object acls {
     val Marge = UserCredentials(genString(), genString(), testRealm)
   }
