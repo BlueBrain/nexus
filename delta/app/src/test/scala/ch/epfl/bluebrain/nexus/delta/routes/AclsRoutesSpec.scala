@@ -123,7 +123,6 @@ class AclsRoutesSpec extends BaseRouteSpec {
           status shouldEqual StatusCodes.Created
         }
       }
-
     }
 
     "append ACL" in {
@@ -348,10 +347,16 @@ class AclsRoutesSpec extends BaseRouteSpec {
       }
     }
 
-    "return error when getting ACL with rev and ancestors = true" in {
+    "return an error when getting ACL with rev and ancestors = true" in {
       Get(s"/v1/acls/myorg/myproj?rev=2&ancestors=true") ~> asUser ~> routes ~> check {
         response.asJson shouldEqual jsonContentOf("errors/acls-malformed-query-params.json")
         status shouldEqual StatusCodes.BadRequest
+      }
+    }
+
+    "return an error in the case of the keyword 'events'" in {
+      Get(s"/v1/acls/events") ~> asUser ~> routes ~> check {
+        status shouldEqual StatusCodes.NotFound
       }
     }
 

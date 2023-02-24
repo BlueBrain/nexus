@@ -14,7 +14,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.AclsRoutes.PatchAcl._
 import ch.epfl.bluebrain.nexus.delta.routes.AclsRoutes._
 import ch.epfl.bluebrain.nexus.delta.sdk.AclResource
-import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress.{Organization, Project}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddressFilter.{AnyOrganization, AnyOrganizationAnyProject, AnyProject}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclRejection.AclNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model._
@@ -32,7 +31,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{acls => aclsPermissions}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
 import io.circe._
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
@@ -68,15 +67,12 @@ class AclsRoutes(identities: Identities, acls: Acls, aclCheck: AclCheck)(implici
     extractUnmatchedPath.flatMap {
       case SingleSlash                                                                                            => provide(AclAddress.Root)
       case Path.Empty                                                                                             => provide(AclAddress.Root)
-      case Path.Slash(Path.Segment(org, Path.Empty)) if org != any                                                => provide(Organization(Label.unsafe(org)))
+      case Path.Slash(Path.Segment(org, Path.Empty)) if org != any                                                => label(org).map(AclAddress.fromOrg)
       case Path.Slash(Path.Segment(org, Path.Slash(Path.Segment(proj, Path.Empty)))) if org != any && proj != any =>
-        (for {
-          orgLabel  <- Label(org)
-          projLabel <- Label(proj)
-        } yield Project(orgLabel, projLabel)).fold(
-          err => reject(validationRejection(err.getMessage)),
-          provide(_)
-        )
+        for {
+          orgLabel  <- label(org)
+          projLabel <- label(proj)
+        } yield AclAddress.fromProject(ProjectRef(orgLabel, projLabel))
       case _                                                                                                      => reject
 
     }

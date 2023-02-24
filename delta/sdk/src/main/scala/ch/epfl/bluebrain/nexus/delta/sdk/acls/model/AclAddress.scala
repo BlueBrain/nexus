@@ -37,8 +37,8 @@ object AclAddress {
   final private[sdk] val orgAddressRegex  = s"^/(${Label.regex.regex})$$".r
   final private[sdk] val projAddressRegex = s"^/(${Label.regex.regex})/(${Label.regex.regex})$$".r
 
-  implicit final def fromProject(project: ProjectRef): Project = Project(project)
-  implicit final def fromOrg(label: Label): Organization       = Organization(label)
+  implicit final def fromProject(project: ProjectRef): AclAddress = Project(project)
+  implicit final def fromOrg(label: Label): AclAddress            = Organization(label)
 
   /**
     * Attempts to construct an AclAddress from the provided string. The accepted formats are the ones generated from the
