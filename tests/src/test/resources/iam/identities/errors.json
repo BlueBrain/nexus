@@ -1,0 +1,5 @@
+{
+  "@context": "https://bluebrain.github.io/nexus/contexts/error.json",
+  "@type": "InvalidAccessTokenFormat",
+  "reason": "Access token is invalid; possible causes are: JWT not signed, encoded parts are not properly encoded or each part is not a valid json."
+}

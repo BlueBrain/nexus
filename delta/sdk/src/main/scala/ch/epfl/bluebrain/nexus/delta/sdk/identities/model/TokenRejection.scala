@@ -48,13 +48,13 @@ object TokenRejection {
   /**
     * Rejection for cases where the access token is invalid according to JWTClaimsVerifier
     */
-  final case class InvalidAccessToken(details: Option[String] = None)
-      extends TokenRejection("The provided token is invalid.")
+  final case class InvalidAccessToken(subject: String, issuer: String, details: String)
+      extends TokenRejection(s"The provided token is invalid for user '$subject/$issuer' .")
 
   /**
     * Rejection for cases where we couldn't fetch the groups from the OIDC provider
     */
-  final case object GetGroupsFromOidcError
+  final case class GetGroupsFromOidcError(subject: String, issuer: String)
       extends TokenRejection(
         "The token is invalid; possible causes are: the OIDC provider is unreachable."
       )
@@ -64,8 +64,8 @@ object TokenRejection {
       val tpe  = ClassUtils.simpleName(r)
       val json = JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
       r match {
-        case InvalidAccessToken(Some(details)) => json.add("details", details.asJson)
-        case _                                 => json
+        case InvalidAccessToken(_, _, error) => json.add("details", error.asJson)
+        case _                               => json
       }
     }
 

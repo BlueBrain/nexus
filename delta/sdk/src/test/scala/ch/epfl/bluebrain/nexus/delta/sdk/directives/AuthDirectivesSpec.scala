@@ -50,7 +50,7 @@ class AuthDirectivesSpec extends RouteHelpers with TestHelpers with Matchers wit
       token match {
         case AuthToken("alice") => IO.pure(userCaller)
         case AuthToken("bob")   => IO.pure(user2Caller)
-        case _                  => IO.raiseError(InvalidAccessToken(Some("Expired JWT")))
+        case _                  => IO.raiseError(InvalidAccessToken("John", "Doe", "Expired JWT"))
 
       }
     }
@@ -118,7 +118,11 @@ class AuthDirectivesSpec extends RouteHelpers with TestHelpers with Matchers wit
     "fail with an invalid token" in {
       Get("/user") ~> addCredentials(OAuth2BearerToken("unknown")) ~> callerRoute ~> check {
         response.status shouldEqual StatusCodes.Unauthorized
-        response.asJson shouldEqual jsonContentOf("identities/invalid-access-token.json")
+        response.asJson shouldEqual jsonContentOf(
+          "identities/invalid-access-token.json",
+          "subject" -> "John",
+          "issuer"  -> "Doe"
+        )
       }
     }
 
