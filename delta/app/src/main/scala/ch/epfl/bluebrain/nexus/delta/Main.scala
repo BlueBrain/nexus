@@ -7,7 +7,7 @@ import akka.actor.{ActorSystem => ActorSystemClassic}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route, RouteResult}
 import cats.effect.{ExitCode, Resource}
-import ch.epfl.bluebrain.nexus.delta.config.{AppConfig, AppConfigError, BuildInfo}
+import ch.epfl.bluebrain.nexus.delta.config.{AppConfig, BuildInfo}
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMonitoring
 import ch.epfl.bluebrain.nexus.delta.plugin.PluginsLoader.PluginLoaderConfig
 import ch.epfl.bluebrain.nexus.delta.plugin.{PluginsLoader, WiringInitializer}
@@ -45,9 +45,8 @@ object Main extends BIOApp {
         UIO.never
       }
       .as(ExitCode.Success)
-      .onErrorRecoverWith {
-        case e: PluginInitializationError => Task.delay(log.error(e.getMessage)).as(ExitCode.Error)
-        case e: AppConfigError            => Task.delay(log.error(e.getMessage)).as(ExitCode.Error)
+      .onErrorHandleWith { e =>
+        Task.delay(log.error("Delta failed to start", e)).as(ExitCode.Error)
       }
       .hideErrors
   }
@@ -55,6 +54,7 @@ object Main extends BIOApp {
   private[delta] def start(loaderConfig: PluginLoaderConfig): Resource[Task, Locator] =
     for {
       _                             <- Resource.eval(UIO.delay(log.info(s"Starting Nexus Delta version '${BuildInfo.version}'.")))
+      _                             <- Resource.eval(UIO.delay(log.info(s"Loading plugins and config...")))
       (cfg, config, cl, pluginDefs) <- Resource.eval(loadPluginsAndConfig(loaderConfig))
       _                             <- Resource.eval(KamonMonitoring.initialize(config))
       modules                        = DeltaModule(cfg, config, cl)
