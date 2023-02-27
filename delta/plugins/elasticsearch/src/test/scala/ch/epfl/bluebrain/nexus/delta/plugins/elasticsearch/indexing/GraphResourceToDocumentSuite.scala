@@ -79,7 +79,7 @@ class GraphResourceToDocumentSuite extends FunSuite with Fixtures with JsonAsser
           "name": "John Doe"
         }
           """
-    val elem = elemFromSource(source)
+    val elem   = elemFromSource(source)
 
     val expectedJson =
       json"""
