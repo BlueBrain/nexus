@@ -22,7 +22,7 @@ import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.{Logger => Logging}
 import izumi.distage.model.Locator
-import monix.bio.{BIOApp, Task, UIO}
+import monix.bio.{BIOApp, Cause, Task, UIO}
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.concurrent.duration.DurationInt
@@ -41,15 +41,12 @@ object Main extends BIOApp {
     System.setProperty("cats.effect.logNonDaemonThreadsOnExit", "false")
     val config = sys.env.get(pluginEnvVariable).fold(PluginLoaderConfig())(PluginLoaderConfig(_))
     start(config)
-      .use { _ =>
-        UIO.never
-      }
-      .as(ExitCode.Success)
-      .onErrorHandleWith { e =>
-        Task.delay(log.error("Delta failed to start", e)).as(ExitCode.Error)
-      }
-      .hideErrors
+      .use(_ => UIO.never)
+      .redeemCauseWith(logTerminalError, _ => UIO.pure(ExitCode.Success))
   }
+
+  private def logTerminalError: Cause[Throwable] => Task[ExitCode] = c =>
+    Task.delay(log.error("Delta failed to start", c.toThrowable)).as(ExitCode.Error)
 
   private[delta] def start(loaderConfig: PluginLoaderConfig): Resource[Task, Locator] =
     for {
