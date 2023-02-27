@@ -234,8 +234,14 @@ class EventsSpec extends BaseSpec with Inspectors {
       } yield succeed
     }
 
+    "fetch acls events" in {
+      deltaClient.sseEvents(s"/acls/events", BugsBunny, initialEventId, take = 1L) { sses =>
+        sses.flatMap(_._1) should contain theSameElementsInOrderAs List("AclAppended")
+      }
+    }
+
     "fetch global events" in {
-      // Only for cassandra, it is difficult to get the current sequence value with PostgreSQL
+      // TODO: find a way to get the current event sequence in postgres
       Task
         .when(initialEventId.isDefined) {
           for {
