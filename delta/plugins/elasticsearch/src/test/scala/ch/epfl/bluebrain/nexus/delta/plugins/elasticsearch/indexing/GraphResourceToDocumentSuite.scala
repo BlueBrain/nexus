@@ -45,7 +45,7 @@ class GraphResourceToDocumentSuite extends FunSuite with Fixtures with JsonAsser
 
   private val graphResourceToDocument = new GraphResourceToDocument(context, false)
 
-  test("If the source has an ID it should be used") {
+  test("If the source has an expanded Iri `@id` it should be used") {
     val source =
       json"""
         {
@@ -70,7 +70,32 @@ class GraphResourceToDocumentSuite extends FunSuite with Fixtures with JsonAsser
     } yield json.equalsIgnoreArrayOrder(expectedJson)
   }
 
-  test("If the source does not have an ID it should be injected") {
+  test("If the source has a compacted Iri `@id` it should be used") {
+    val source =
+      json"""
+        {
+          "@id": "nxv:JohnDoe",
+          "@type": "http://schema.org/Person",
+          "name": "John Doe"
+        }
+          """
+    val elem   = elemFromSource(source)
+
+    val expectedJson =
+      json"""
+        {
+          "@id" : "nxv:JohnDoe",
+          "@type" : "http://schema.org/Person",
+          "name" : "John Doe"
+        }
+          """
+
+    for {
+      json <- graphResourceToDocument(elem).accepted.toOption
+    } yield json.equalsIgnoreArrayOrder(expectedJson)
+  }
+
+  test("If the source does not have an `@id` it should be injected") {
     val source =
       json"""
         {
