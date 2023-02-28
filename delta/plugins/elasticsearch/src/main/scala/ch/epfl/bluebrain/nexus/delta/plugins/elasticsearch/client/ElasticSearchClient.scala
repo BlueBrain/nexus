@@ -26,7 +26,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Name}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import com.typesafe.scalalogging.Logger
 import io.circe.syntax._
-import io.circe.{Decoder, DecodingFailure, Json, JsonObject}
+import io.circe.{Decoder, DecodingFailure, HCursor, Json, JsonObject}
 import monix.bio.{IO, UIO}
 import retry.syntax.all._
 
@@ -576,15 +576,11 @@ object ElasticSearchClient {
     final case class Error(json: JsonObject) extends BulkItemOutcome
   }
 
+  private val Operations                      = List("update", "create", "delete", "index")
   implicit private val bulkItemOutcomeDecoder = Decoder.instance[BulkItemOutcome] { hcursor =>
-    val obj = hcursor
-      .downField("update")
-      .success
-      .orElse(hcursor.downField("create").success)
-      .orElse(hcursor.downField("delete").success)
-      .orElse(hcursor.downField("index").success)
-      .toRight(DecodingFailure("expected item of type update, create, delete or index", hcursor.history))
-    obj
+    Operations
+      .collectFirstSome(hcursor.downField(_).success)
+      .toRight(DecodingFailure(s"operation type was not one of ${Operations.mkString(", ")}", hcursor.history))
       .map(itemCursor =>
         itemCursor.get[JsonObject]("error") match {
           case Left(_)      => BulkItemOutcome.Success
