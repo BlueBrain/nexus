@@ -3,14 +3,13 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.BulkResponse.{MixedOutcomes, Success}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.{BulkResponse, Refresh}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchBulk, ElasticSearchClient, IndexLabel}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchSink.{logger, BulkUpdateException}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchSink.BulkUpdateException
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
-import com.typesafe.scalalogging.Logger
 import fs2.Chunk
 import io.circe.{Json, JsonObject}
-import monix.bio.{Task, UIO}
+import monix.bio.Task
 import shapeless.Typeable
 
 import scala.concurrent.duration.FiniteDuration
@@ -67,11 +66,6 @@ final class ElasticSearchSink private (
                 element.failed(BulkUpdateException(json))
             }
         }
-        .onErrorHandleWith(err =>
-          UIO
-            .delay(logger.error(s"Indexing in elasticsearch index ${index.value} failed", err))
-            .as(elements.map(_.failed(err)))
-        )
     } else {
       Task.pure(elements.map(_.void))
     }
@@ -79,8 +73,6 @@ final class ElasticSearchSink private (
 }
 
 object ElasticSearchSink {
-
-  private val logger: Logger = Logger[ElasticSearchSink]
 
   /**
     * @return
