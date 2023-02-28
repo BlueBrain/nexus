@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing
 
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.SparqlNTriples
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.QueryGraph.logger
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.idTemplating
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Graph, NTriples}
@@ -10,13 +11,14 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Pipe
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, PipeRef}
+import com.typesafe.scalalogging.Logger
 import monix.bio.Task
 import shapeless.Typeable
 
 import java.util.regex.Pattern.quote
 
 /**
-  * Pipe that performs the provided query for the incoming resource and replace the graph with the result of query
+  * Pipe that performs the provided query for the incoming resource and replaces the graph with the result of query
   * @param client
   *   the blazegraph client
   * @param namespace
@@ -45,6 +47,9 @@ final class QueryGraph(client: BlazegraphClient, namespace: String, query: Sparq
     for {
       ntriples    <- client.query(Set(namespace), replaceId(query, element.id), SparqlNTriples)
       graphResult <- newGraph(ntriples.value, element.id)
+      _           <- Task.when(graphResult.isEmpty)(
+                       Task.delay(logger.warn(s"Querying blazegraph did not return any triples, '$element' will be dropped."))
+                     )
     } yield graphResult.map(g => element.map(_.copy(graph = g))).getOrElse(element.dropped)
 
   private def replaceId(query: SparqlConstructQuery, iri: Iri): SparqlConstructQuery =
@@ -52,6 +57,8 @@ final class QueryGraph(client: BlazegraphClient, namespace: String, query: Sparq
 }
 
 object QueryGraph {
+
+  private val logger: Logger = Logger[QueryGraph]
 
   val ref: PipeRef = PipeRef.unsafe("query-graph")
 

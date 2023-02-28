@@ -293,7 +293,7 @@ object Operation {
 
     protected[stream] def asFs2: fs2.Pipe[Task, Elem[In], Elem[Unit]] =
       _.groupWithin(chunkSize, maxWindow)
-        .evalMapChunk { chunk =>
+        .evalMap { chunk =>
           apply(chunk)
         }
         .flatMap(Stream.chunk)
