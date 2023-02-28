@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing
 
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.BulkResponse.{NoErrors, SomeErrors}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.{BulkItemOutcome, Refresh}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.BulkResponse.{MixedOutcomes, Success}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.{BulkResponse, Refresh}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchBulk, ElasticSearchClient, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchSink.{logger, BulkUpdateException}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
@@ -59,11 +59,11 @@ final class ElasticSearchSink private (
       client
         .bulk(bulk, refresh)
         .map {
-          case NoErrors          => elements.map(_.void)
-          case SomeErrors(items) =>
+          case Success                           => elements.map(_.void)
+          case BulkResponse.MixedOutcomes(items) =>
             elements.zip(Chunk.seq(items)).map {
-              case (element, BulkItemOutcome.Success)     => element.void
-              case (element, BulkItemOutcome.Error(json)) =>
+              case (element, MixedOutcomes.Outcome.Success)     => element.void
+              case (element, MixedOutcomes.Outcome.Error(json)) =>
                 element.failed(BulkUpdateException(json))
             }
         }

@@ -10,7 +10,8 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy.logError
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.BulkResponse.{NoErrors, SomeErrors}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.BulkResponse.MixedOutcomes.{HasMixedOutcomes, Outcome}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.BulkResponse.Success
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{emptyResults, ResourcesSearchParams}
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceMarshalling._
@@ -26,7 +27,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Name}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import com.typesafe.scalalogging.Logger
 import io.circe.syntax._
-import io.circe.{Decoder, DecodingFailure, HCursor, Json, JsonObject}
+import io.circe.{Decoder, DecodingFailure, Json, JsonObject}
 import monix.bio.{IO, UIO}
 import retry.syntax.all._
 
@@ -210,7 +211,7 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
     *   the value for the `refresh` Elasticsearch parameter
     */
   def bulk(ops: Seq[ElasticSearchBulk], refresh: Refresh = Refresh.False): HttpResult[BulkResponse] = {
-    if (ops.isEmpty) IO.pure(BulkResponse.NoErrors)
+    if (ops.isEmpty) IO.pure(BulkResponse.Success)
     else {
       val bulkEndpoint = (endpoint / bulkPath).withQuery(Query(refreshParam -> refresh.value))
       val entity       = HttpEntity(`application/x-ndjson`, ops.map(_.payload).mkString("", newLine, newLine))
@@ -219,11 +220,11 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
       client
         .toJson(req)
         .map {
-          case BatchPartialFailure(err) => err
-          case _                        => NoErrors
+          case HasMixedOutcomes(mixedOutcomes) => mixedOutcomes
+          case _                               => Success
         }
-        .recover { case BatchPartialFailure(err) =>
-          err
+        .recover { case HasMixedOutcomes(mixedOutcomes) =>
+          mixedOutcomes
         }
     }
   }
@@ -566,40 +567,40 @@ object ElasticSearchClient {
 
   sealed trait BulkResponse
   object BulkResponse {
-    final case object NoErrors                                extends BulkResponse
-    final case class SomeErrors(items: List[BulkItemOutcome]) extends BulkResponse
-  }
+    final case object Success                            extends BulkResponse
+    final case class MixedOutcomes(items: List[Outcome]) extends BulkResponse
+    object MixedOutcomes {
+      sealed trait Outcome
+      object Outcome {
+        final case object Success                extends Outcome
+        final case class Error(json: JsonObject) extends Outcome
+      }
 
-  sealed trait BulkItemOutcome
-  object BulkItemOutcome {
-    final case object Success                extends BulkItemOutcome
-    final case class Error(json: JsonObject) extends BulkItemOutcome
-  }
-
-  private val Operations                      = List("update", "create", "delete", "index")
-  implicit private val bulkItemOutcomeDecoder = Decoder.instance[BulkItemOutcome] { hcursor =>
-    Operations
-      .collectFirstSome(hcursor.downField(_).success)
-      .toRight(DecodingFailure(s"operation type was not one of ${Operations.mkString(", ")}", hcursor.history))
-      .map(itemCursor =>
-        itemCursor.get[JsonObject]("error") match {
-          case Left(_)      => BulkItemOutcome.Success
-          case Right(value) => BulkItemOutcome.Error(value)
+      object HasMixedOutcomes {
+        private val Operations                      = List("update", "create", "delete", "index")
+        implicit private val bulkItemOutcomeDecoder = Decoder.instance[Outcome] { hcursor =>
+          Operations
+            .collectFirstSome(hcursor.downField(_).success)
+            .toRight(DecodingFailure(s"operation type was not one of ${Operations.mkString(", ")}", hcursor.history))
+            .map(itemCursor =>
+              itemCursor.get[JsonObject]("error") match {
+                case Left(_)      => Outcome.Success
+                case Right(value) => Outcome.Error(value)
+              }
+            )
         }
-      )
-  }
+        def unapply(err: HttpClientError): Option[MixedOutcomes] = {
+          err.jsonBody
+            .flatMap(unapply)
+        }
 
-  object BatchPartialFailure {
-    def unapply(err: HttpClientError): Option[SomeErrors] = {
-      err.jsonBody
-        .flatMap(unapply)
-    }
-
-    def unapply(json: Json): Option[SomeErrors] = {
-      Some(json)
-        .filter(json => json.hcursor.get[Boolean]("errors").contains(true))
-        .flatMap(json => json.hcursor.get[List[BulkItemOutcome]]("items").toOption)
-        .map(BulkResponse.SomeErrors)
+        def unapply(json: Json): Option[MixedOutcomes] = {
+          Some(json)
+            .filter(json => json.hcursor.get[Boolean]("errors").contains(true))
+            .flatMap(json => json.hcursor.get[List[Outcome]]("items").toOption)
+            .map(MixedOutcomes(_))
+        }
+      }
     }
   }
 }

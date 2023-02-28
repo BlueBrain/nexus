@@ -4,7 +4,8 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri.Query
 import akka.testkit.TestKit
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ScalaTestElasticSearchClientSetup
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.{BulkItemOutcome, BulkResponse, Refresh}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.BulkResponse.MixedOutcomes.Outcome
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.{BulkResponse, Refresh}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
@@ -131,10 +132,10 @@ class ElasticSearchClientSpec(override val docker: ElasticSearchDocker)
       )
       val result     = esClient.bulk(operations).accepted
       result match {
-        case BulkResponse.NoErrors          => fail("errors expected")
-        case BulkResponse.SomeErrors(items) => {
-          every(items.take(5)) shouldBe BulkItemOutcome.Success
-          items(5) shouldBe a[BulkItemOutcome.Error]
+        case BulkResponse.Success              => fail("errors expected")
+        case BulkResponse.MixedOutcomes(items) => {
+          every(items.take(5)) shouldBe Outcome.Success
+          items(5) shouldBe an[Outcome.Error]
         }
       }
     }
