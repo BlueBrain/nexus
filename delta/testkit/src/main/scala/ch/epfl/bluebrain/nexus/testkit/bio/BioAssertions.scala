@@ -43,7 +43,7 @@ trait BioAssertions { self: Assertions =>
       )
     }
 
-    def assert(expected: A, clue: Any = "values are not the same"): UIO[Unit] = io.redeemCause(
+    def assert(expected: A, clue: Any = "values are not the same")(implicit loc: Location): UIO[Unit] = io.redeemCause(
       {
         case Error(NonFatal(err)) =>
           exceptionHandler(err)

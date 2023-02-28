@@ -10,12 +10,14 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy.logError
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.BulkResponse.MixedOutcomes.{HasMixedOutcomes, Outcome}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.BulkResponse.Success
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{emptyResults, ResourcesSearchParams}
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceMarshalling._
-import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientError}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.HttpResult
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
+import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientError}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription.ResolvedServiceDescription
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.{ScoredResultEntry, UnscoredResultEntry}
@@ -24,9 +26,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, ResultEntry, 
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Name}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import com.typesafe.scalalogging.Logger
-import io.circe.{Decoder, Json, JsonObject}
-import monix.bio.{IO, UIO}
 import io.circe.syntax._
+import io.circe.{Decoder, DecodingFailure, Json, JsonObject}
+import monix.bio.{IO, UIO}
 import retry.syntax.all._
 
 import scala.concurrent.duration._
@@ -208,20 +210,24 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
     * @param refresh
     *   the value for the `refresh` Elasticsearch parameter
     */
-  def bulk(ops: Seq[ElasticSearchBulk], refresh: Refresh = Refresh.False): HttpResult[Unit] =
-    if (ops.isEmpty) IO.unit
+  def bulk(ops: Seq[ElasticSearchBulk], refresh: Refresh = Refresh.False): HttpResult[BulkResponse] = {
+    if (ops.isEmpty) IO.pure(BulkResponse.Success)
     else {
       val bulkEndpoint = (endpoint / bulkPath).withQuery(Query(refreshParam -> refresh.value))
       val entity       = HttpEntity(`application/x-ndjson`, ops.map(_.payload).mkString("", newLine, newLine))
       val req          = Post(bulkEndpoint, entity).withHttpCredentials
+
       client
         .toJson(req)
-        .flatMap { json =>
-          IO.unless(json.hcursor.get[Boolean]("errors").contains(false))(
-            IO.raiseError(HttpClientStatusError(req, BadRequest, json.noSpaces))
-          )
+        .map {
+          case HasMixedOutcomes(mixedOutcomes) => mixedOutcomes
+          case _                               => Success
+        }
+        .recover { case HasMixedOutcomes(mixedOutcomes) =>
+          mixedOutcomes
         }
     }
+  }
 
   /**
     * Creates a script on Elasticsearch with the passed ''id'' and ''content''
@@ -557,5 +563,44 @@ object ElasticSearchClient {
   private[client] object Count {
     implicit val decodeCount: Decoder[Count] =
       Decoder.instance(_.get[Long]("count").map(Count(_)))
+  }
+
+  sealed trait BulkResponse
+  object BulkResponse {
+    final case object Success                            extends BulkResponse
+    final case class MixedOutcomes(items: List[Outcome]) extends BulkResponse
+    object MixedOutcomes {
+      sealed trait Outcome
+      object Outcome {
+        final case object Success                extends Outcome
+        final case class Error(json: JsonObject) extends Outcome
+      }
+
+      object HasMixedOutcomes {
+        private val Operations                      = List("update", "create", "delete", "index")
+        implicit private val bulkItemOutcomeDecoder = Decoder.instance[Outcome] { hcursor =>
+          Operations
+            .collectFirstSome(hcursor.downField(_).success)
+            .toRight(DecodingFailure(s"operation type was not one of ${Operations.mkString(", ")}", hcursor.history))
+            .map(itemCursor =>
+              itemCursor.get[JsonObject]("error") match {
+                case Left(_)      => Outcome.Success
+                case Right(value) => Outcome.Error(value)
+              }
+            )
+        }
+        def unapply(err: HttpClientError): Option[MixedOutcomes] = {
+          err.jsonBody
+            .flatMap(unapply)
+        }
+
+        def unapply(json: Json): Option[MixedOutcomes] = {
+          Some(json)
+            .filter(json => json.hcursor.get[Boolean]("errors").contains(true))
+            .flatMap(json => json.hcursor.get[List[Outcome]]("items").toOption)
+            .map(MixedOutcomes(_))
+        }
+      }
+    }
   }
 }

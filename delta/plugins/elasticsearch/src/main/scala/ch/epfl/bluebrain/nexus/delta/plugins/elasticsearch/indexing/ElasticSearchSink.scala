@@ -1,18 +1,19 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing
 
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.BulkResponse.{MixedOutcomes, Success}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.{BulkResponse, Refresh}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchBulk, ElasticSearchClient, IndexLabel}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchSink.logger
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchSink.BulkUpdateException
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
-import com.typesafe.scalalogging.Logger
 import fs2.Chunk
-import io.circe.Json
-import monix.bio.{Task, UIO}
+import io.circe.{Json, JsonObject}
+import monix.bio.Task
 import shapeless.Typeable
 
 import scala.concurrent.duration.FiniteDuration
+import scala.util.control.NoStackTrace
 
 /**
   * Sink that pushes json documents into an Elasticsearch index
@@ -56,13 +57,15 @@ final class ElasticSearchSink private (
     if (bulk.nonEmpty) {
       client
         .bulk(bulk, refresh)
-        .redeemWith(
-          err =>
-            UIO
-              .delay(logger.error(s"Indexing in elasticsearch index ${index.value} failed", err))
-              .as(elements.map { _.failed(err) }),
-          _ => Task.pure(elements.map(_.void))
-        )
+        .map {
+          case Success                           => elements.map(_.void)
+          case BulkResponse.MixedOutcomes(items) =>
+            elements.zip(Chunk.seq(items)).map {
+              case (element, MixedOutcomes.Outcome.Success)     => element.void
+              case (element, MixedOutcomes.Outcome.Error(json)) =>
+                element.failed(BulkUpdateException(json))
+            }
+        }
     } else {
       Task.pure(elements.map(_.void))
     }
@@ -70,8 +73,6 @@ final class ElasticSearchSink private (
 }
 
 object ElasticSearchSink {
-
-  private val logger: Logger = Logger[ElasticSearchSink]
 
   /**
     * @return
@@ -143,4 +144,7 @@ object ElasticSearchSink {
       refresh
     )
 
+  final case class BulkUpdateException(json: JsonObject)
+      extends Exception("Error updating elasticsearch: " + Json.fromJsonObject(json).noSpaces)
+      with NoStackTrace
 }
