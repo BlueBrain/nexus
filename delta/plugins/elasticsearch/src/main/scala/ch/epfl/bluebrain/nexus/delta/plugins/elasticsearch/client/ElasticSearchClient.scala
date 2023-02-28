@@ -10,12 +10,13 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy.logError
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.BulkResponse.{NoErrors, SomeErrors}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{emptyResults, ResourcesSearchParams}
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceMarshalling._
-import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientError}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.HttpResult
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
+import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientError}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription.ResolvedServiceDescription
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.{ScoredResultEntry, UnscoredResultEntry}
@@ -24,9 +25,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, ResultEntry, 
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Name}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import com.typesafe.scalalogging.Logger
-import io.circe.{Decoder, Json, JsonObject}
-import monix.bio.{IO, UIO}
 import io.circe.syntax._
+import io.circe.{Decoder, DecodingFailure, Json, JsonObject}
+import monix.bio.{IO, UIO}
 import retry.syntax.all._
 
 import scala.concurrent.duration._
@@ -208,20 +209,24 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
     * @param refresh
     *   the value for the `refresh` Elasticsearch parameter
     */
-  def bulk(ops: Seq[ElasticSearchBulk], refresh: Refresh = Refresh.False): HttpResult[Unit] =
-    if (ops.isEmpty) IO.unit
+  def bulk(ops: Seq[ElasticSearchBulk], refresh: Refresh = Refresh.False): HttpResult[BulkResponse] = {
+    if (ops.isEmpty) IO.pure(BulkResponse.NoErrors)
     else {
       val bulkEndpoint = (endpoint / bulkPath).withQuery(Query(refreshParam -> refresh.value))
       val entity       = HttpEntity(`application/x-ndjson`, ops.map(_.payload).mkString("", newLine, newLine))
       val req          = Post(bulkEndpoint, entity).withHttpCredentials
+
       client
         .toJson(req)
-        .flatMap { json =>
-          IO.unless(json.hcursor.get[Boolean]("errors").contains(false))(
-            IO.raiseError(HttpClientStatusError(req, BadRequest, json.noSpaces))
-          )
+        .map {
+          case BatchPartialFailure(err) => err
+          case _                        => NoErrors
+        }
+        .recover { case BatchPartialFailure(err) =>
+          err
         }
     }
+  }
 
   /**
     * Creates a script on Elasticsearch with the passed ''id'' and ''content''
@@ -557,5 +562,48 @@ object ElasticSearchClient {
   private[client] object Count {
     implicit val decodeCount: Decoder[Count] =
       Decoder.instance(_.get[Long]("count").map(Count(_)))
+  }
+
+  sealed trait BulkResponse
+  object BulkResponse {
+    final case object NoErrors                                extends BulkResponse
+    final case class SomeErrors(items: List[BulkItemOutcome]) extends BulkResponse
+  }
+
+  sealed trait BulkItemOutcome
+  object BulkItemOutcome {
+    final case object Success                extends BulkItemOutcome
+    final case class Error(json: JsonObject) extends BulkItemOutcome
+  }
+
+  implicit private val bulkItemOutcomeDecoder = Decoder.instance[BulkItemOutcome] { hcursor =>
+    val obj = hcursor
+      .downField("update")
+      .success
+      .orElse(hcursor.downField("create").success)
+      .orElse(hcursor.downField("delete").success)
+      .orElse(hcursor.downField("index").success)
+      .toRight(DecodingFailure("expected item of type update, create, delete or index", hcursor.history))
+    obj
+      .map(itemCursor =>
+        itemCursor.get[JsonObject]("error") match {
+          case Left(_)      => BulkItemOutcome.Success
+          case Right(value) => BulkItemOutcome.Error(value)
+        }
+      )
+  }
+
+  object BatchPartialFailure {
+    def unapply(err: HttpClientError): Option[SomeErrors] = {
+      err.jsonBody
+        .flatMap(unapply)
+    }
+
+    def unapply(json: Json): Option[SomeErrors] = {
+      Some(json)
+        .filter(json => json.hcursor.get[Boolean]("errors").contains(true))
+        .flatMap(json => json.hcursor.get[List[BulkItemOutcome]]("items").toOption)
+        .map(BulkResponse.SomeErrors)
+    }
   }
 }

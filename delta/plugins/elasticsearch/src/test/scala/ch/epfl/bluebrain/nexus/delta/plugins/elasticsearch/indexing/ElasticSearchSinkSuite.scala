@@ -68,21 +68,16 @@ class ElasticSearchSinkSuite extends BioSuite with ElasticSearchClientSetup.Fixt
   }
 
   test("Report errors when a invalid json is submitted") {
-    val chunk = Chunk((nxv + "xxx", json"""{"name": 112, "age": "xxx"}"""), alice).map { case (id, json) =>
+    val invalidElement = (nxv + "xxx", json"""{"name": 112, "age": "xxx"}""")
+    val chunk          = Chunk(invalidElement, alice).map { case (id, json) =>
       SuccessElem(membersEntity, id, None, Instant.EPOCH, Offset.at(members.size.toLong + 1), json, rev)
     }
 
     for {
       _ <- sink
              .apply(chunk)
-             .map {
-               _.foldLeft(0) {
-                 case (acc, _: SuccessElem[Unit]) => acc
-                 case (acc, _: DroppedElem)       => acc
-                 case (acc, _: FailedElem)        => acc + 1
-               }
-             }
-             .assert(2)
+             .map(_.filter(_.isInstanceOf[FailedElem]).size)
+             .assert(1)
       _ <- client
              .search(QueryBuilder.empty, Set(index.value), Query.Empty)
              .map(_.sources.toSet)

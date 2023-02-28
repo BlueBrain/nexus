@@ -4,7 +4,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri.Query
 import akka.testkit.TestKit
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ScalaTestElasticSearchClientSetup
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.{BulkItemOutcome, BulkResponse, Refresh}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
@@ -116,6 +116,26 @@ class ElasticSearchClientSpec(override val docker: ElasticSearchDocker)
       eventually {
         searchAllIn(index) shouldEqual
           Vector(jobj"""{"field1": "value3"}""", jobj"""{"field1": "value1", "field2" : "value2"}""")
+      }
+    }
+
+    "run bulk operation with errors" in {
+      val index      = IndexLabel(genString()).rightValue
+      val operations = List(
+        ElasticSearchBulk.Index(index, "1", json"""{ "field1" : "value1" }"""),
+        ElasticSearchBulk.Delete(index, "2"),
+        ElasticSearchBulk.Index(index, "2", json"""{ "field1" : 27 }"""),
+        ElasticSearchBulk.Delete(index, "3"),
+        ElasticSearchBulk.Create(index, "3", json"""{ "field1" : "value3" }"""),
+        ElasticSearchBulk.Update(index, "5", json"""{ "doc" : {"field2" : "value2"} }""")
+      )
+      val result     = esClient.bulk(operations).accepted
+      result match {
+        case BulkResponse.NoErrors          => fail("errors expected")
+        case BulkResponse.SomeErrors(items) => {
+          every(items.take(5)) shouldBe BulkItemOutcome.Success
+          items(5) shouldBe a[BulkItemOutcome.Error]
+        }
       }
     }
 
