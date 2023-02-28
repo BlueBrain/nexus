@@ -42,11 +42,12 @@ object Main extends BIOApp {
     val config = sys.env.get(pluginEnvVariable).fold(PluginLoaderConfig())(PluginLoaderConfig(_))
     start(config)
       .use(_ => UIO.never)
-      .redeemCauseWith(logTerminalError, _ => UIO.pure(ExitCode.Success))
+      .as(ExitCode.Success)
+      .redeemCauseWith(logTerminalError, UIO.pure)
   }
 
-  private def logTerminalError: Cause[Throwable] => Task[ExitCode] = c =>
-    Task.delay(log.error("Delta failed to start", c.toThrowable)).as(ExitCode.Error)
+  private def logTerminalError: Cause[Throwable] => UIO[ExitCode] = c =>
+    UIO.delay(log.error("Delta failed to start", c.toThrowable)).as(ExitCode.Error)
 
   private[delta] def start(loaderConfig: PluginLoaderConfig): Resource[Task, Locator] =
     for {
