@@ -28,4 +28,28 @@ class ElasticSearchContainer(password: String)
 
 object ElasticSearchContainer {
   private val Version = "8.6.2"
+
+  val ElasticSearchUser                         = "elastic"
+  val ElasticSearchPassword                     = "password"
+  val Credentials: Option[BasicHttpCredentials] = Some(BasicHttpCredentials(ElasticSearchUser, ElasticSearchPassword))
+
+  final case class ElasticSearchHostConfig(host: String, port: Int) {
+    def endpoint: String = s"http://$host:$port"
+  }
+
+  implicit lazy val credentials: Option[BasicHttpCredentials] = Some(BasicHttpCredentials("elastic", "password"))
+
+  /**
+    * A running elasticsearch container wrapped in a Resource. The container will be stopped upon release.
+    */
+  def resource(): Resource[Task, ElasticSearchContainer] = {
+    def createAndStartContainer = {
+      val container = new ElasticSearchContainer(ElasticSearchPassword)
+        .withReuse(false)
+        .withStartupTimeout(60.seconds.toJava)
+      container.start()
+      container
+    }
+    Resource.make(Task.delay(createAndStartContainer))(container => Task.delay(container.stop()))
+  }
 }
