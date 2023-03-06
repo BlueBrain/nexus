@@ -15,7 +15,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ReferenceRegistry
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.SelectPredicates.SelectPredicatesConfig
 import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
-import monix.bio.Task
 
 import java.time.Instant
 
@@ -78,7 +77,7 @@ class SelectPredicatesSuite extends BioSuite {
   test(s"Retain only the '${rdfs.label}' predicate") {
     val graph    = Graph.empty(base / "id").add(rdfs.label, "active")
     val expected = element.copy(value = element.value.copy(graph = graph, types = Set.empty))
-    pipe(Set(rdfs.label)).apply(element).tapEval(e => Task.delay(println(e))).assert(expected)
+    pipe(Set(rdfs.label)).apply(element).assert(expected)
   }
 
   test(s"Retain the '${rdfs.label}' and the '${rdf.tpe}' predicate with the default pipe") {
