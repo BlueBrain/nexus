@@ -1,12 +1,17 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 
+import cats.data.{NonEmptyChain, NonEmptySet}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.IndexingElasticSearchViewValue
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.IndexingElasticSearchViewValue.defaultPipeline
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{NonEmptySet, TagLabel}
-import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
-import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.{DefaultLabelPredicates, DiscardMetadata, FilterDeprecated, PipeDef}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
+import ch.epfl.bluebrain.nexus.delta.sdk.views.{PipeStep, ViewRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{DefaultLabelPredicates, DiscardMetadata, FilterDeprecated}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeChain, PipeRef}
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
 
@@ -19,12 +24,31 @@ sealed trait ElasticSearchViewValue extends Product with Serializable {
 
   /**
     * @return
+    *   the name of the view
+    */
+  def name: Option[String]
+
+  /**
+    * @return
+    *   the description of the view
+    */
+  def description: Option[String]
+
+  /**
+    * @return
     *   the view type
     */
   def tpe: ElasticSearchViewType
 
-  def toJson(iri: Iri): Json = this.asJsonObject.add(keywords.id, iri.asJson).asJson.deepDropNullValues
+  def toJson(iri: Iri): Json = {
+    import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.Source._
+    this.asJsonObject.add(keywords.id, iri.asJson).asJson.deepDropNullValues
+  }
 
+  def asIndexingValue: Option[IndexingElasticSearchViewValue] = this match {
+    case v: IndexingElasticSearchViewValue => Some(v)
+    case _                                 => None
+  }
 }
 
 object ElasticSearchViewValue {
@@ -47,14 +71,38 @@ object ElasticSearchViewValue {
     *   the permission required for querying this view
     */
   final case class IndexingElasticSearchViewValue(
-      resourceTag: Option[TagLabel],
-      pipeline: List[PipeDef],
-      mapping: Option[JsonObject],
-      settings: Option[JsonObject],
-      context: Option[ContextObject],
-      permission: Permission
+      name: Option[String],
+      description: Option[String],
+      resourceTag: Option[UserTag] = None,
+      pipeline: List[PipeStep] = defaultPipeline,
+      mapping: Option[JsonObject] = None,
+      settings: Option[JsonObject] = None,
+      context: Option[ContextObject] = None,
+      permission: Permission = permissions.query
   ) extends ElasticSearchViewValue {
     override val tpe: ElasticSearchViewType = ElasticSearchViewType.ElasticSearch
+
+    /**
+      * Translates the view into a [[PipeChain]]
+      */
+    def pipeChain: Option[PipeChain] =
+      NonEmptyChain.fromSeq(pipeline).map { steps =>
+        val pipes = steps.map { step =>
+          (PipeRef(step.name), step.config.getOrElse(ExpandedJsonLd.empty))
+        }
+        PipeChain(pipes)
+      }
+
+    /**
+      * Returns true if this [[IndexingElasticSearchViewValue]] is equal to the provided
+      * [[IndexingElasticSearchViewValue]] on the fields which should trigger a reindexing of the view when modified.
+      */
+    private def hasSameIndexingFields(that: IndexingElasticSearchViewValue): Boolean =
+      resourceTag == that.resourceTag &&
+        pipeline == that.pipeline &&
+        mapping == that.mapping &&
+        settings == that.settings &&
+        context == that.context
   }
 
   object IndexingElasticSearchViewValue {
@@ -62,7 +110,37 @@ object ElasticSearchViewValue {
     /**
       * Default pipeline to apply if none is present in the payload
       */
-    val defaultPipeline = List(FilterDeprecated(), DiscardMetadata(), DefaultLabelPredicates())
+    val defaultPipeline: List[PipeStep] = List(
+      PipeStep(FilterDeprecated.ref.label, None, None),
+      PipeStep(DiscardMetadata.ref.label, None, None),
+      PipeStep(DefaultLabelPredicates.ref.label, None, None)
+    )
+
+    /**
+      * @return
+      *   an IndexingElasticSearchViewValue without name and description
+      */
+    def apply(
+        resourceTag: Option[UserTag],
+        pipeline: List[PipeStep],
+        mapping: Option[JsonObject],
+        settings: Option[JsonObject],
+        context: Option[ContextObject],
+        permission: Permission
+    ): IndexingElasticSearchViewValue =
+      IndexingElasticSearchViewValue(None, None, resourceTag, pipeline, mapping, settings, context, permission)
+
+    /**
+      * @return
+      *   the next indexing revision based on the differences between the given views
+      */
+    def nextIndexingRev(
+        view1: IndexingElasticSearchViewValue,
+        view2: IndexingElasticSearchViewValue,
+        currentRev: Int
+    ): Int =
+      if (!view1.hasSameIndexingFields(view2)) currentRev + 1
+      else currentRev
   }
 
   /**
@@ -72,26 +150,41 @@ object ElasticSearchViewValue {
     *   the collection of views where queries will be delegated (if necessary permissions are met)
     */
   final case class AggregateElasticSearchViewValue(
+      name: Option[String],
+      description: Option[String],
       views: NonEmptySet[ViewRef]
   ) extends ElasticSearchViewValue {
     override val tpe: ElasticSearchViewType = ElasticSearchViewType.AggregateElasticSearch
   }
 
-  @nowarn("cat=unused")
-  implicit final val elasticSearchViewValueEncoder: Encoder.AsObject[ElasticSearchViewValue] = {
-    import io.circe.generic.extras.Configuration
-    import io.circe.generic.extras.semiauto._
-    implicit val config: Configuration = Configuration(
-      transformMemberNames = identity,
-      transformConstructorNames = {
-        case "IndexingElasticSearchViewValue"  => ElasticSearchViewType.ElasticSearch.toString
-        case "AggregateElasticSearchViewValue" => ElasticSearchViewType.AggregateElasticSearch.toString
-        case other                             => other
-      },
-      useDefaults = false,
-      discriminator = Some(keywords.tpe),
-      strictDecoding = false
-    )
-    deriveConfiguredEncoder[ElasticSearchViewValue]
+  object AggregateElasticSearchViewValue {
+
+    /**
+      * @return
+      *   an AggregateElasticSearchViewValue without name and description
+      */
+    def apply(views: NonEmptySet[ViewRef]): AggregateElasticSearchViewValue =
+      AggregateElasticSearchViewValue(None, None, views)
   }
+
+  object Source {
+    @nowarn("cat=unused")
+    implicit final val elasticSearchViewValueEncoder: Encoder.AsObject[ElasticSearchViewValue] = {
+      import io.circe.generic.extras.Configuration
+      import io.circe.generic.extras.semiauto._
+      implicit val config: Configuration = Configuration(
+        transformMemberNames = identity,
+        transformConstructorNames = {
+          case "IndexingElasticSearchViewValue"  => ElasticSearchViewType.ElasticSearch.toString
+          case "AggregateElasticSearchViewValue" => ElasticSearchViewType.AggregateElasticSearch.toString
+          case other                             => other
+        },
+        useDefaults = false,
+        discriminator = Some(keywords.tpe),
+        strictDecoding = false
+      )
+      deriveConfiguredEncoder[ElasticSearchViewValue]
+    }
+  }
+
 }

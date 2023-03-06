@@ -12,12 +12,12 @@ services:
       DELTA_PLUGINS: "/opt/docker/plugins/"
       DELTA_EXTERNAL_CONF: "/config/delta-postgres.conf"
       KAMON_ENABLED: "false"
+      LOG_LEVEL: "INFO"
     image: bluebrain/nexus-delta:latest
     entrypoint: [ "bin/wait-for-it.sh", "-s", "-t", "0", "postgres:5432", "--",
                   "bin/wait-for-it.sh", "-s", "-t", "0", "elasticsearch:9200", "--",
                   "./bin/delta-app",
-                  "-Xmx512m",
-                  "-Dapp.cluster.remote-interface=delta" ]
+                  "-Xmx512m" ]
     ports:
       - 8080:8080
     volumes:
@@ -41,8 +41,7 @@ services:
   #      KAMON_ENABLED: "false"
   #    image: bluebrain/nexus-delta:latest
   #    entrypoint: [ "bin/wait-for-it.sh", "-s", "-t", "0", "delta:8080", "--", "./bin/delta-app",
-  #                  "-Xmx512m",
-  #                  "-Dapp.cluster.remote-interface=delta2" ]
+  #                  "-Xmx512m" ]
   #    ports:
   #      - 8081:8080
   #    volumes:
@@ -62,8 +61,7 @@ services:
   #      KAMON_ENABLED: "false"
   #    image: bluebrain/nexus-delta:latest<localBuild>
   #    entrypoint: [ "bin/wait-for-it.sh", "-s", "-t", "0", "delta2:8080", "--", "./bin/delta-app",
-  #                  "-Xmx512m",
-  #                  "-Dapp.cluster.remote-interface=delta3" ]
+  #                  "-Xmx512m" ]
   #    ports:
   #      - 8082:8080
   #    volumes:
@@ -94,9 +92,8 @@ services:
           memory: 512M
 
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.4.3
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.6.2
     environment:
-      ES_JAVA_OPTS: "-Xmx256m"
       discovery.type: "single-node"
       bootstrap.memory_lock: "true"
       xpack.security.enabled: "true"
@@ -112,7 +109,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 384M
+          memory: 512M
 
   blazegraph:
     image: bluebrain/blazegraph-nexus:2.1.6-RC
@@ -126,7 +123,7 @@ services:
           memory: 512M
 
   postgres:
-    image: library/postgres:12.2
+    image: library/postgres:15.1
     environment:
       POSTGRES_USER: "postgres"
       POSTGRES_PASSWORD: "postgres"
@@ -134,7 +131,7 @@ services:
   storage-service:
     image: bluebrain/nexus-storage:latest
     entrypoint: [ "./bin/storage",
-                  "-Xmx192m",
+                  "-Xmx256m",
                   "-Dapp.instance.interface=0.0.0.0",
                   "-Dapp.http.interface=0.0.0.0",
                   "-Dapp.http.public-uri=http://storage.tests.nexus.ocp.bbp.epfl.ch",

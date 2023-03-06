@@ -1,0 +1,9 @@
+{
+  "resourceSchemas": [],
+  "resourceTypes": [],
+  "includeMetadata": false,
+  "includeDeprecated": false,
+  "permission": "views/query",
+  "@type": "SparqlView",
+  "@id": "https://bluebrain.github.io/nexus/vocabulary/indexing-view-2"
+}

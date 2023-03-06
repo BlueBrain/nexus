@@ -1,6 +1,7 @@
 {
   "@id": "muse",
   "@type": "Band",
+  "_project" : "org/proj",
   "album": [
     {
       "@id": "absolution",
@@ -16,18 +17,7 @@
     "progressive rock",
     "electronica"
   ],
+  "label": "Muse",
   "name": "Muse",
-  "start": 1994,
-  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/unconstrained.json",
-  "_createdAt": "1970-01-01T00:00:00Z",
-  "_createdBy": "http://localhost/v1/realms/myrealm/users/Bob",
-  "_deprecated": false,
-  "_incoming": "http://localhost/v1/resources/org/proj/http:%2F%2Fmusic.com%2Fmuse/incoming",
-  "_outgoing": "http://localhost/v1/resources/org/proj/http:%2F%2Fmusic.com%2Fmuse/outgoing",
-  "_project": "http://localhost/v1/projects/org/proj",
-  "_rev": 1,
-  "_self": "http://localhost/v1/resources/org/proj/http:%2F%2Fmusic.com%2Fmuse",
-  "_updatedAt": "1970-01-01T00:00:00Z",
-  "_updatedBy": "http://localhost/v1/realms/myrealm/users/Bob",
-  "_uuid": "{{uuid}}"
+  "start": 1994
 }

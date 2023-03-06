@@ -3,8 +3,9 @@ package ch.epfl.bluebrain.nexus.delta.plugins.search
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri.Query
 import akka.testkit.TestKit
+import cats.data.NonEmptySet
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.ElasticSearchProjection
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.ProjectSource
@@ -12,20 +13,21 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchB
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel.IndexGroup
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.permissions
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchClientSetup, Fixtures}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{Fixtures, ScalaTestElasticSearchClientSetup}
 import ch.epfl.bluebrain.nexus.delta.plugins.search.Search.{ListProjections, TargetProjection}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Group, User}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, NonEmptySet}
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclSetup, ConfigFixtures}
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Group, User}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit._
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchDocker
 import io.circe.{Json, JsonObject}
@@ -33,7 +35,7 @@ import monix.bio.UIO
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
-import org.scalatest.{CancelAfterFailure, Inspectors}
+import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
 
 import java.time.Instant
 import java.util.UUID
@@ -44,11 +46,12 @@ class SearchSpec
     with AnyWordSpecLike
     with Matchers
     with EitherValuable
+    with OptionValues
     with CirceLiteral
     with TestHelpers
     with CancelAfterFailure
     with Inspectors
-    with ElasticSearchClientSetup
+    with ScalaTestElasticSearchClientSetup
     with ConfigFixtures
     with IOValues
     with Eventually
@@ -59,8 +62,7 @@ class SearchSpec
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(6.seconds, 100.millis)
 
-  implicit private def externalConfig: ExternalIndexingConfig = externalIndexing
-  implicit private val baseUri: BaseUri                       = BaseUri("http://localhost", Label.unsafe("v1"))
+  implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
 
   private val realm                  = Label.unsafe("myrealm")
   implicit private val alice: Caller = Caller(User("Alice", realm), Set(User("Alice", realm), Group("users", realm)))
@@ -70,12 +72,10 @@ class SearchSpec
   private val project2        = ProjectGen.project("org2", "proj2")
   private val queryPermission = Permission.unsafe("views/query")
 
-  private val acls = AclSetup
-    .init(
-      (alice.subject, AclAddress.Project(project1.ref), Set(queryPermission)),
-      (bob.subject, AclAddress.Root, Set(queryPermission))
-    )
-    .accepted
+  private val aclCheck = AclSimpleCheck(
+    (alice.subject, AclAddress.Project(project1.ref), Set(queryPermission)),
+    (bob.subject, AclAddress.Root, Set(queryPermission))
+  ).accepted
 
   private val mappings = jsonObjectContentOf("test-mapping.json")
 
@@ -103,15 +103,15 @@ class SearchSpec
     ),
     None,
     UUID.randomUUID(),
-    Map.empty,
+    Tags.empty,
     Json.obj(),
     Instant.EPOCH
   )
   private val compViewProj2   = compViewProj1.copy(project = project2.ref, uuid = UUID.randomUUID())
   private val projectionProj1 =
-    TargetProjection(compViewProj1.projections.value.head.asElasticSearch.value, compViewProj1, 1L)
+    TargetProjection(compViewProj1.projections.value.head.asElasticSearch.value, compViewProj1, 1)
   private val projectionProj2 =
-    TargetProjection(compViewProj2.projections.value.head.asElasticSearch.value, compViewProj2, 1L)
+    TargetProjection(compViewProj2.projections.value.head.asElasticSearch.value, compViewProj2, 1)
 
   private val projections = Seq(
     projectionProj1,
@@ -127,7 +127,7 @@ class SearchSpec
       val resource =
         ResourceGen.resource(iri"https://example.com/${proj.view.uuid}" / idx.toString, proj.view.project, Json.obj())
       ResourceGen
-        .resourceFor(resource, types = Set(nxv + idx.toString, tpe1), rev = idx.toLong)
+        .resourceFor(resource, types = Set(nxv + idx.toString, tpe1), rev = idx)
         .copy(createdAt = Instant.EPOCH.plusSeconds(idx.toLong))
         .toCompactedJsonLd
         .accepted
@@ -142,12 +142,14 @@ class SearchSpec
       .rightValue
   }
 
+  private val prefix = "prefix"
+
   "Search" should {
-    lazy val search = Search(listViews, acls, esClient, externalConfig)
+    lazy val search = Search(listViews, aclCheck, esClient, prefix)
 
     "index documents" in {
       val bulkSeq = projections.foldLeft(Seq.empty[ElasticSearchBulk]) { (bulk, p) =>
-        val index   = CompositeViews.index(p.projection, p.view, p.rev, externalConfig.prefix)
+        val index   = projectionIndex(p.projection, p.view.uuid, p.rev, prefix)
         esClient.createIndex(index, Some(mappings), None).accepted
         val newBulk = createDocuments(p).zipWithIndex.map { case (json, idx) =>
           ElasticSearchBulk.Index(index, idx.toString, json)

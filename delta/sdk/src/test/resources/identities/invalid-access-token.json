@@ -1,6 +1,6 @@
 {
   "@context" : "https://bluebrain.github.io/nexus/contexts/error.json",
   "@type" : "InvalidAccessToken",
-  "reason" : "The provided token is invalid.",
+  "reason" : "The provided token is invalid for user '{{subject}}/{{issuer}}' .",
   "details": "Expired JWT"
 }

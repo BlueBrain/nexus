@@ -1,50 +1,78 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
-import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews.ElasticSearchViewCache
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.{DataEncoder, ElasticSearchIndexingStream}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.IndexingElasticSearchView
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchViewType, ViewResource}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.IndexingViewDef.{ActiveViewDef, DeprecatedViewDef}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.{ElasticSearchSink, IndexingViewDef}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction
-import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.{IndexingActionFailed, IndexingFailed}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.{Pipe, PipeConfig}
-import monix.bio.IO
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
+import fs2.Stream
+import monix.bio.{Task, UIO}
 
-class ElasticSearchIndexingAction(
-    client: ElasticSearchClient,
-    cache: ElasticSearchViewCache,
-    pipeConfig: PipeConfig,
-    config: ElasticSearchViewsConfig
-)(implicit cr: RemoteContextResolution, baseUri: BaseUri)
-    extends IndexingAction {
-  override protected def execute(project: ProjectRef, res: EventExchangeValue[_, _]): IO[IndexingActionFailed, Unit] =
-    (for {
-      projectViews <- cache.values(project).map {
-                        _.mapFilter {
-                          case v: ViewResource if v.value.tpe == ElasticSearchViewType.ElasticSearch && !v.deprecated =>
-                            val indexing = v.map(_.asInstanceOf[IndexingElasticSearchView])
-                            Option.when(indexing.value.resourceTag.isEmpty)(indexing)
-                          case _                                                                                      => None
-                        }
-                      }
-      queries      <- projectViews
-                        .traverseFilter { v =>
-                          def encoder = DataEncoder.defaultEncoder(v.value.context)
-                          Pipe.run(v.value.pipeline, pipeConfig).flatMap { pipeline =>
-                            ElasticSearchIndexingStream.process(
-                              res,
-                              IndexLabel.fromView(config.indexing.prefix, v.value.uuid, v.rev),
-                              pipeline,
-                              encoder
-                            )
-                          }
-                        }
-      _            <- client.bulk(queries, config.syncIndexingRefresh)
-    } yield ()).mapError(err => IndexingFailed(err.getMessage, res.value.resource.void))
+import scala.concurrent.duration.FiniteDuration
+
+/**
+  * To synchronously index a resource in the different Elasticsearch views of a project
+  * @param fetchCurrentViews
+  *   get the views of the projects in a finite stream
+  * @param compilePipeChain
+  *   to compile the views
+  * @param sink
+  *   the Elasticsearch sink
+  * @param timeout
+  *   a maximum duration for the indexing
+  */
+final class ElasticSearchIndexingAction(
+    fetchCurrentViews: ProjectRef => ElemStream[IndexingViewDef],
+    compilePipeChain: PipeChain => Either[ProjectionErr, Operation],
+    sink: ActiveViewDef => Sink,
+    override val timeout: FiniteDuration
+) extends IndexingAction {
+
+  private def compile(view: IndexingViewDef, elem: Elem[GraphResource])(implicit
+      cr: RemoteContextResolution
+  ): Task[Option[CompiledProjection]] = view match {
+    // Synchronous indexing only applies to views that index the latest version
+    case active: ActiveViewDef if active.resourceTag.isEmpty =>
+      IndexingViewDef
+        .compile(
+          active,
+          compilePipeChain,
+          Stream(elem),
+          sink(active)
+        )
+        .map(Some(_))
+    case _: ActiveViewDef                                    => UIO.none
+    case _: DeprecatedViewDef                                => UIO.none
+  }
+
+  def projections(project: ProjectRef, elem: Elem[GraphResource])(implicit
+      cr: RemoteContextResolution
+  ): ElemStream[CompiledProjection] =
+    fetchCurrentViews(project).evalMap { _.evalMapFilter(compile(_, elem)) }
+}
+object ElasticSearchIndexingAction {
+
+  def apply(
+      views: ElasticSearchViews,
+      registry: ReferenceRegistry,
+      client: ElasticSearchClient,
+      timeout: FiniteDuration,
+      syncIndexingRefresh: Refresh
+  ): ElasticSearchIndexingAction = {
+    val batchConfig = BatchConfig.individual
+    new ElasticSearchIndexingAction(
+      views.currentIndexingViews,
+      PipeChain.compile(_, registry),
+      (v: ActiveViewDef) =>
+        ElasticSearchSink
+          .states(client, batchConfig.maxElements, batchConfig.maxInterval, v.index, syncIndexingRefresh),
+      timeout
+    )
+  }
 }

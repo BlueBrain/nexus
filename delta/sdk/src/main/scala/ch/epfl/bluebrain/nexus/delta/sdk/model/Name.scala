@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model
 
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatError
-import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatError.IllegalNameFormatError
+import ch.epfl.bluebrain.nexus.delta.kernel.error.FormatError
+import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatErrors.IllegalNameFormatError
 import io.circe.{Decoder, Encoder}
 
 import scala.util.matching.Regex

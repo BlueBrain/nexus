@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.Sto
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, Storage}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.SaveFileRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import monix.bio.IO
 
 import java.util.UUID

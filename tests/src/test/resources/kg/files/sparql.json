@@ -1,0 +1,213 @@
+{
+  "head": {
+    "vars": [
+      "subject",
+      "predicate",
+      "object",
+      "context"
+    ]
+  },
+  "results": {
+    "bindings": [
+      {
+        "object": {
+          "type": "uri",
+          "value": "https://bluebrain.github.io/nexus/vocabulary/File"
+        },
+        "predicate": {
+          "type": "uri",
+          "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type"
+        },
+        "subject": {
+          "type": "uri",
+          "value": "{{deltaUri}}/resources/{{project}}/_/attachment.json"
+        }
+      },
+      {
+        "object": {
+          "type": "literal",
+          "value": "attachment.json"
+        },
+        "predicate": {
+          "type": "uri",
+          "value": "https://bluebrain.github.io/test/filename"
+        },
+        "subject": {
+          "type": "uri",
+          "value": "{{deltaUri}}/resources/{{project}}/_/attachment.json"
+        }
+      },
+      {
+        "object": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#integer",
+          "type": "literal",
+          "value": "52"
+        },
+        "predicate": {
+          "type": "uri",
+          "value": "https://bluebrain.github.io/test/bytes"
+        },
+        "subject": {
+          "type": "uri",
+          "value": "{{deltaUri}}/resources/{{project}}/_/attachment.json"
+        }
+      },
+      {
+        "object": {
+          "type": "literal",
+          "value": "0e5ce4e33df07eb312e462d9b4646aebf44e7c4d758891e632dbb0533df85e3f"
+        },
+        "predicate": {
+          "type": "uri",
+          "value": "https://bluebrain.github.io/test/digestValue"
+        },
+        "subject": {
+          "type": "uri",
+          "value": "{{deltaUri}}/resources/{{project}}/_/attachment.json"
+        }
+      },
+      {
+        "object": {
+          "type": "literal",
+          "value": "SHA-256"
+        },
+        "predicate": {
+          "type": "uri",
+          "value": "https://bluebrain.github.io/test/digestAlgo"
+        },
+        "subject": {
+          "type": "uri",
+          "value": "{{deltaUri}}/resources/{{project}}/_/attachment.json"
+        }
+      },
+      {
+        "object": {
+          "type": "literal",
+          "value": "application/json"
+        },
+        "predicate": {
+          "type": "uri",
+          "value": "https://bluebrain.github.io/test/mediaType"
+        },
+        "subject": {
+          "type": "uri",
+          "value": "{{deltaUri}}/resources/{{project}}/_/attachment.json"
+        }
+      },
+      {
+        "object": {
+          "type": "uri",
+          "value": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
+        },
+        "predicate": {
+          "type": "uri",
+          "value": "https://bluebrain.github.io/test/createdBy"
+        },
+        "subject": {
+          "type": "uri",
+          "value": "{{deltaUri}}/resources/{{project}}/_/attachment.json"
+        }
+      },
+      {
+        "object": {
+          "type": "uri",
+          "value": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
+        },
+        "predicate": {
+          "type": "uri",
+          "value": "https://bluebrain.github.io/test/updatedBy"
+        },
+        "subject": {
+          "type": "uri",
+          "value": "{{deltaUri}}/resources/{{project}}/_/attachment.json"
+        }
+      },
+      {
+        "object": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#boolean",
+          "type": "literal",
+          "value": "true"
+        },
+        "predicate": {
+          "type": "uri",
+          "value": "https://bluebrain.github.io/test/deprecated"
+        },
+        "subject": {
+          "type": "uri",
+          "value": "{{deltaUri}}/resources/{{project}}/_/attachment.json"
+        }
+      },
+      {
+        "object": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#integer",
+          "type": "literal",
+          "value": "3"
+        },
+        "predicate": {
+          "type": "uri",
+          "value": "https://bluebrain.github.io/test/rev"
+        },
+        "subject": {
+          "type": "uri",
+          "value": "{{deltaUri}}/resources/{{project}}/_/attachment.json"
+        }
+      },
+      {
+        "object": {
+          "type": "uri",
+          "value": "{{deltaUri}}/projects/{{project}}"
+        },
+        "predicate": {
+          "type": "uri",
+          "value": "https://bluebrain.github.io/test/project"
+        },
+        "subject": {
+          "type": "uri",
+          "value": "{{deltaUri}}/resources/{{project}}/_/attachment.json"
+        }
+      },
+      {
+        "object": {
+          "type": "uri",
+          "value": "{{deltaUri}}/files/{{project}}/attachment.json"
+        },
+        "predicate": {
+          "type": "uri",
+          "value": "https://bluebrain.github.io/test/self"
+        },
+        "subject": {
+          "type": "uri",
+          "value": "{{deltaUri}}/resources/{{project}}/_/attachment.json"
+        }
+      },
+      {
+        "object": {
+          "type": "uri",
+          "value": "{{deltaUri}}/files/{{project}}/attachment.json/incoming"
+        },
+        "predicate": {
+          "type": "uri",
+          "value": "https://bluebrain.github.io/test/incoming"
+        },
+        "subject": {
+          "type": "uri",
+          "value": "{{deltaUri}}/resources/{{project}}/_/attachment.json"
+        }
+      },
+      {
+        "object": {
+          "type": "uri",
+          "value": "{{deltaUri}}/files/{{project}}/attachment.json/outgoing"
+        },
+        "predicate": {
+          "type": "uri",
+          "value": "https://bluebrain.github.io/test/outgoing"
+        },
+        "subject": {
+          "type": "uri",
+          "value": "{{deltaUri}}/resources/{{project}}/_/attachment.json"
+        }
+      }
+    ]
+  }
+}

@@ -104,7 +104,7 @@ class OrgsSpec extends BaseSpec with EitherValuable {
     "succeed if organization exists" in {
       deltaClient.get[Json](s"/orgs/$id", Leela) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
-        admin.validate(json, "Organization", "orgs", id, s"Description $id", 1L, id)
+        admin.validate(json, "Organization", "orgs", id, s"Description $id", 1, id)
       }
     }
 
@@ -177,7 +177,7 @@ class OrgsSpec extends BaseSpec with EitherValuable {
         id,
         description,
         Leela,
-        4L,
+        4,
         Some(OrganizationConflict)
       )
     }
@@ -200,7 +200,7 @@ class OrgsSpec extends BaseSpec with EitherValuable {
         nonExistent,
         description,
         Leela,
-        1L,
+        1,
         Some(notFound)
       )
     }
@@ -214,18 +214,18 @@ class OrgsSpec extends BaseSpec with EitherValuable {
                id,
                updatedName,
                Leela,
-               1L
+               1
              )
         _ <- adminDsl.updateOrganization(
                id,
                updatedName2,
                Leela,
-               2L
+               2
              )
         _ <- deltaClient.get[Json](s"/orgs/$id", Leela) { (lastVersion, response) =>
                runTask {
                  response.status shouldEqual StatusCodes.OK
-                 admin.validate(lastVersion, "Organization", "orgs", id, updatedName2, 3L, id)
+                 admin.validate(lastVersion, "Organization", "orgs", id, updatedName2, 3, id)
                  deltaClient.get[Json](s"/orgs/$id?rev=3", Leela) { (thirdVersion, response) =>
                    response.status shouldEqual StatusCodes.OK
                    thirdVersion shouldEqual lastVersion
@@ -234,11 +234,11 @@ class OrgsSpec extends BaseSpec with EitherValuable {
              }
         _ <- deltaClient.get[Json](s"/orgs/$id?rev=2", Leela) { (json, response) =>
                response.status shouldEqual StatusCodes.OK
-               admin.validate(json, "Organization", "orgs", id, updatedName, 2L, id)
+               admin.validate(json, "Organization", "orgs", id, updatedName, 2, id)
              }
         _ <- deltaClient.get[Json](s"/orgs/$id?rev=1", Leela) { (json, response) =>
                response.status shouldEqual StatusCodes.OK
-               admin.validate(json, "Organization", "orgs", id, s"$id organization", 1L, id)
+               admin.validate(json, "Organization", "orgs", id, s"$id organization", 1, id)
              }
       } yield succeed
     }
@@ -283,11 +283,11 @@ class OrgsSpec extends BaseSpec with EitherValuable {
         _ <- adminDsl.deprecateOrganization(id, Leela)
         _ <- deltaClient.get[Json](s"/orgs/$id", Leela) { (json, response) =>
                response.status shouldEqual StatusCodes.OK
-               admin.validate(json, "Organization", "orgs", id, name, 2L, id, deprecated = true)
+               admin.validate(json, "Organization", "orgs", id, name, 2, id, deprecated = true)
              }
         _ <- deltaClient.get[Json](s"/orgs/$id?rev=1", Leela) { (json, response) =>
                response.status shouldEqual StatusCodes.OK
-               admin.validate(json, "Organization", "orgs", id, name, 1L, id)
+               admin.validate(json, "Organization", "orgs", id, name, 1, id)
              }
       } yield succeed
     }

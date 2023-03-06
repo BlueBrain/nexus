@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.tests.kg
 
-import akka.http.scaladsl.model.{StatusCodes, Uri}
+import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.testkit.EitherValuable
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission
 import ch.epfl.bluebrain.nexus.tests.kg.VersionSpec.VersionBundle
@@ -10,8 +10,6 @@ import io.circe.{Decoder, Json}
 import monix.execution.Scheduler.Implicits.global
 
 class VersionSpec extends BaseSpec with EitherValuable {
-
-  val versionUri: Uri = Uri(s"http://${System.getProperty("delta:8080")}/v1/version")
 
   "The /version endpoint" should {
     s"be protected by ${Permission.Version.Read.value}" in {

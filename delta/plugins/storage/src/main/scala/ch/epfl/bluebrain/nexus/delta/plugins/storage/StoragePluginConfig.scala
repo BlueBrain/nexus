@@ -2,13 +2,18 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage
 
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.FilesConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.Defaults
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.Logger
 import monix.bio.UIO
 import pureconfig.generic.semiauto.deriveReader
 import pureconfig.{ConfigReader, ConfigSource}
 
-final case class StoragePluginConfig(storages: StoragesConfig, files: FilesConfig)
+final case class StoragePluginConfig(
+    storages: StoragesConfig,
+    files: FilesConfig,
+    defaults: Defaults
+)
 
 object StoragePluginConfig {
 

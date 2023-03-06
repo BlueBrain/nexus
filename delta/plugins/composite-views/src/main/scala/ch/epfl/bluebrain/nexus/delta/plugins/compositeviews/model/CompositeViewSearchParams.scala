@@ -2,10 +2,11 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import monix.bio.UIO
 
 /**
   * Search parameters for Composite views.
@@ -28,16 +29,16 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams
 final case class CompositeViewSearchParams(
     project: Option[ProjectRef] = None,
     deprecated: Option[Boolean] = None,
-    rev: Option[Long] = None,
+    rev: Option[Int] = None,
     createdBy: Option[Subject] = None,
     updatedBy: Option[Subject] = None,
     types: Set[Iri] = Set.empty,
-    filter: CompositeView => Boolean
+    filter: CompositeView => UIO[Boolean]
 ) extends SearchParams[CompositeView] {
 
   override val schema: Option[ResourceRef] = Some(model.schema)
 
-  override def matches(resource: ViewResource): Boolean =
-    super.matches(resource) &&
-      project.forall(_ == resource.value.project)
+  override def matches(resource: ViewResource): UIO[Boolean] =
+    super.matches(resource).map(_ && project.forall(_ == resource.value.project))
+
 }

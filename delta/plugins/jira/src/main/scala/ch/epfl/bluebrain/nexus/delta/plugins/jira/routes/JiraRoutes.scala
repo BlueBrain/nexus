@@ -7,14 +7,15 @@ import ch.epfl.bluebrain.nexus.delta.plugins.jira.JiraClient
 import ch.epfl.bluebrain.nexus.delta.plugins.jira.model.Verifier
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
-import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import io.circe.JsonObject
 import io.circe.syntax.EncoderOps
 import monix.execution.Scheduler
@@ -24,17 +25,17 @@ import monix.execution.Scheduler
   *
   * @param identities
   *   the identity module
-  * @param acls
-  *   the acls module
+  * @param aclCheck
+  *   to check acls
   * @param jiraClient
   *   the jira client
   */
 class JiraRoutes(
     identities: Identities,
-    acls: Acls,
+    aclCheck: AclCheck,
     jiraClient: JiraClient
 )(implicit baseUri: BaseUri, s: Scheduler, cr: RemoteContextResolution, ordering: JsonKeyOrdering)
-    extends AuthDirectives(identities, acls)
+    extends AuthDirectives(identities, aclCheck)
     with CirceUnmarshalling
     with RdfMarshalling {
 

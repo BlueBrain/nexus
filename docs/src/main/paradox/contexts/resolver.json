@@ -26,5 +26,7 @@
     "subject": "nxv:subject",
     "group": "nxv:group"
   },
-  "@id": "https://bluebrain.github.io/nexus/contexts/resolver.json"
+  "@id": "https://bluebrain.github.io/nexus/contexts/resolver.json",
+  "name": "http://schema.org/name",
+  "description": "http://schema.org/description"
 }

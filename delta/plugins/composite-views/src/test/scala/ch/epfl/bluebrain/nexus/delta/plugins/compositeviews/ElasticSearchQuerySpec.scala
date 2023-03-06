@@ -2,7 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.Uri.Query
+import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.permissions
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.projectionIndex
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{AuthorizationFailed, ProjectionNotFound, ViewIsDeprecated}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.ProjectSource
@@ -11,17 +13,18 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeView
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
+import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.HttpResult
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpUnexpectedError
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Group, User}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclSetup, ConfigFixtures}
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Group, User}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
@@ -30,7 +33,7 @@ import monix.execution.Scheduler
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
-import org.scalatest.{CancelAfterFailure, Inspectors}
+import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
 
 import java.time.Instant
 import java.util.UUID
@@ -45,6 +48,7 @@ class ElasticSearchQuerySpec
     with TestHelpers
     with CancelAfterFailure
     with Inspectors
+    with OptionValues
     with ConfigFixtures
     with Fixtures
     with IOValues
@@ -52,9 +56,8 @@ class ElasticSearchQuerySpec
     with TestMatchers {
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(6.seconds, 100.millis)
 
-  implicit private val sc: Scheduler                          = Scheduler.global
-  implicit private def externalConfig: ExternalIndexingConfig = externalIndexing
-  implicit val baseUri: BaseUri                               = BaseUri("http://localhost", Label.unsafe("v1"))
+  implicit private val sc: Scheduler = Scheduler.global
+  implicit val baseUri: BaseUri      = BaseUri("http://localhost", Label.unsafe("v1"))
 
   private val realm                = Label.unsafe("myrealm")
   private val alice: Caller        = Caller(User("Alice", realm), Set(User("Alice", realm), Group("users", realm)))
@@ -67,13 +70,11 @@ class ElasticSearchQuerySpec
   private val project   = ProjectGen.project("myorg2", "proj")
   private val otherPerm = Permission.unsafe("other")
 
-  private val acls      = AclSetup
-    .init(
-      (alice.subject, AclAddress.Project(project.ref), Set(permissions.query)),
-      (bob.subject, AclAddress.Project(project.ref), Set(permissions.query, otherPerm)),
-      (anon.subject, AclAddress.Root, Set(permissions.read))
-    )
-    .accepted
+  private val acls      = AclSimpleCheck(
+    (alice.subject, AclAddress.Project(project.ref), Set(permissions.query)),
+    (bob.subject, AclAddress.Project(project.ref), Set(permissions.query, otherPerm)),
+    (anon.subject, AclAddress.Root, Set(permissions.read))
+  ).accepted
   private val construct = TemplateSparqlConstructQuery(
     "prefix p: <http://localhost/>\nCONSTRUCT{ {resource_id} p:transformed ?v } WHERE { {resource_id} p:predicate ?v}"
   ).rightValue
@@ -125,7 +126,7 @@ class ElasticSearchQuerySpec
     NonEmptySet.of(esProjection1, esProjection2, blazeProjection),
     None,
     UUID.randomUUID(),
-    Map.empty,
+    Tags.empty,
     Json.obj(),
     Instant.EPOCH
   )
@@ -136,7 +137,7 @@ class ElasticSearchQuerySpec
     NonEmptySet.of(esProjection1, esProjection2, blazeProjection),
     None,
     UUID.randomUUID(),
-    Map.empty,
+    Tags.empty,
     Json.obj(),
     Instant.EPOCH
   )
@@ -171,11 +172,11 @@ class ElasticSearchQuerySpec
       deprecatedCompositeView
     )
 
-  private val config = externalIndexing
+  private val prefix = "prefix"
 
   // projection namespaces
-  private val esP1Idx = CompositeViews.index(esProjection1, compositeView, 1, config.prefix).value
-  private val esP2Idx = CompositeViews.index(esProjection2, compositeView, 1, config.prefix).value
+  private val esP1Idx = projectionIndex(esProjection1, compositeView.uuid, 1, prefix).value
+  private val esP2Idx = projectionIndex(esProjection2, compositeView.uuid, 1, prefix).value
 
   private val indexResults = Map(esP1Idx -> document(), esP2Idx -> document())
 
@@ -191,7 +192,7 @@ class ElasticSearchQuerySpec
 
   private val views = new CompositeViewsDummy(compositeViewResource, deprecatedCompositeViewResource)
 
-  private val viewsQuery = ElasticSearchQuery(acls, views.fetch, views.fetchElasticSearchProjection, esQuery)
+  private val viewsQuery = ElasticSearchQuery(acls, views.fetch, views.fetchElasticSearchProjection, esQuery, prefix)
 
   "A ElasticSearchQuery" should {
 

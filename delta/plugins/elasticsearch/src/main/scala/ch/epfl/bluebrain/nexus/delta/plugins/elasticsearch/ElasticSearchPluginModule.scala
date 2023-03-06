@@ -2,41 +2,45 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import akka.actor.typed.ActorSystem
 import cats.effect.Clock
-import cats.effect.concurrent.Deferred
+import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews.{ElasticSearchViewAggregate, ElasticSearchViewCache}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchPluginModule.injectElasticViewDefaults
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.fix.ElasticsearchIndexing3266
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchIndexingCoordinator.{ElasticSearchIndexingController, ElasticSearchIndexingCoordinator}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.{ElasticSearchIndexingCleanup, ElasticSearchIndexingCoordinator, ElasticSearchIndexingStream, ElasticSearchOnEventInstant}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.metric.ProjectEventMetricsStream
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.IndexingElasticSearchView
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, schema => viewsSchemaId, ElasticSearchViewEvent}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchCoordinator
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewEvent._
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.ProjectContextRejection
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue._
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, defaultElasticsearchMapping, defaultElasticsearchSettings, schema => viewsSchemaId, ElasticSearchView, ElasticSearchViewCommand, ElasticSearchViewEvent, ElasticSearchViewRejection, ElasticSearchViewState, ElasticSearchViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.ElasticSearchViewsRoutes
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
 import ch.epfl.bluebrain.nexus.delta.sdk._
-import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
+import ch.epfl.bluebrain.nexus.delta.sdk.migration.{MigrationLog, MigrationState}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectsConfig}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStreamAwake, IndexingStreamController, OnEventInstant}
-import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ProjectsEventsInstantCollection
-import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.PipeConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionId, ProjectionProgress}
-import ch.epfl.bluebrain.nexus.delta.sourcing.{DatabaseCleanup, EventLog}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projections
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeChain, ReferenceRegistry, Supervisor}
 import izumi.distage.model.definition.{Id, ModuleDef}
-import monix.bio.{Task, UIO}
+import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
 
 /**
@@ -48,8 +52,6 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
 
   make[ElasticSearchViewsConfig].from { ElasticSearchViewsConfig.load(_) }
 
-  make[EventLog[Envelope[ElasticSearchViewEvent]]].fromEffect { databaseEventLog[ElasticSearchViewEvent](_, _) }
-
   make[HttpClient].named("elasticsearch-client").from {
     (cfg: ElasticSearchViewsConfig, as: ActorSystem[Nothing], sc: Scheduler) =>
       HttpClient()(cfg.client, as.classicSystem, sc)
@@ -60,259 +62,137 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
       new ElasticSearchClient(client, cfg.base, cfg.maxIndexPathLength)(cfg.credentials, as.classicSystem)
   }
 
-  make[IndexingSource].named("elasticsearch-source").from {
+  make[ValidateElasticSearchView].from {
     (
-        cfg: ElasticSearchViewsConfig,
-        projects: Projects,
-        eventLog: EventLog[Envelope[Event]],
-        exchanges: Set[EventExchange]
-    ) =>
-      IndexingSource(
-        projects,
-        eventLog,
-        exchanges,
-        cfg.indexing.maxBatchSize,
-        cfg.indexing.maxTimeWindow,
-        cfg.indexing.retry
-      )
-  }
-
-  make[ProgressesCache].named("elasticsearch-progresses").from {
-    (cfg: ElasticSearchViewsConfig, as: ActorSystem[Nothing]) =>
-      KeyValueStore.distributedWithDefaultClock[ProjectionId, ProjectionProgress[Unit]](
-        "elasticsearch-views-progresses"
-      )(as, cfg.keyValueStore)
-  }
-
-  make[ElasticSearchIndexingStream].from {
-    (
-        client: ElasticSearchClient,
-        projection: Projection[Unit],
-        indexingSource: IndexingSource @Id("elasticsearch-source"),
-        cache: ProgressesCache @Id("elasticsearch-progresses"),
-        pipeConfig: PipeConfig,
-        config: ElasticSearchViewsConfig,
-        scheduler: Scheduler,
-        cr: RemoteContextResolution @Id("aggregate"),
-        base: BaseUri
-    ) =>
-      new ElasticSearchIndexingStream(client, indexingSource, cache, pipeConfig, config, projection)(
-        cr,
-        base,
-        scheduler
-      )
-  }
-
-  make[ElasticSearchIndexingController].from { (as: ActorSystem[Nothing]) =>
-    new IndexingStreamController[IndexingElasticSearchView](ElasticSearchViews.moduleType)(as)
-  }
-
-  make[ElasticSearchIndexingCleanup].from {
-    (
-        client: ElasticSearchClient,
-        cache: ProgressesCache @Id("elasticsearch-progresses"),
-        projection: Projection[Unit]
-    ) =>
-      new ElasticSearchIndexingCleanup(client, cache, projection)
-  }
-
-  make[ElasticSearchIndexingCoordinator].fromEffect {
-    (
-        log: EventLog[Envelope[ElasticSearchViewEvent]],
-        views: ElasticSearchViews,
-        indexingController: ElasticSearchIndexingController,
-        indexingCleanup: ElasticSearchIndexingCleanup,
-        indexingStream: ElasticSearchIndexingStream,
-        config: ElasticSearchViewsConfig,
-        as: ActorSystem[Nothing],
-        scheduler: Scheduler,
-        uuidF: UUIDF
-    ) =>
-      val fix = Task.when(sys.env.getOrElse("FIX_3266", "false").toBoolean) {
-        new ElasticsearchIndexing3266(log, views, indexingCleanup, config).run()
-      }
-      ElasticSearchIndexingCoordinator(views, indexingController, indexingStream, indexingCleanup, config, fix)(
-        uuidF,
-        as,
-        scheduler
-      )
-  }
-
-  make[ElasticSearchViewCache].fromEffect { (config: ElasticSearchViewsConfig, as: ActorSystem[Nothing]) =>
-    ElasticSearchViews.cache(config)(as)
-  }
-
-  make[Deferred[Task, ElasticSearchViews]].fromEffect(Deferred[Task, ElasticSearchViews])
-
-  make[ElasticSearchViewAggregate].fromEffect {
-    (
-        pipeConfig: PipeConfig,
-        config: ElasticSearchViewsConfig,
+        registry: ReferenceRegistry,
         permissions: Permissions,
         client: ElasticSearchClient,
-        deferred: Deferred[Task, ElasticSearchViews],
-        resourceIdCheck: ResourceIdCheck,
-        as: ActorSystem[Nothing],
-        uuidF: UUIDF,
-        clock: Clock[UIO]
+        config: ElasticSearchViewsConfig,
+        xas: Transactors
     ) =>
-      ElasticSearchViews.aggregate(pipeConfig, config, permissions, client, deferred, resourceIdCheck)(as, uuidF, clock)
+      ValidateElasticSearchView(
+        PipeChain.validate(_, registry),
+        permissions,
+        client: ElasticSearchClient,
+        config.prefix,
+        config.maxViewRefs,
+        xas
+      )
   }
 
-  make[ElasticSearchViews]
-    .fromEffect {
-      (
-          cfg: ElasticSearchViewsConfig,
-          log: EventLog[Envelope[ElasticSearchViewEvent]],
-          contextResolution: ResolverContextResolution,
-          cache: ElasticSearchViewCache,
-          agg: ElasticSearchViewAggregate,
-          deferred: Deferred[Task, ElasticSearchViews],
-          orgs: Organizations,
-          projects: Projects,
-          api: JsonLdApi,
-          uuidF: UUIDF,
-          as: ActorSystem[Nothing],
-          scheduler: Scheduler
-      ) =>
-        ElasticSearchViews(
-          deferred,
-          cfg,
-          log,
-          contextResolution,
-          cache,
-          agg,
-          orgs,
-          projects
-        )(
-          api,
-          uuidF,
-          scheduler,
-          as
-        )
-    }
-
-  many[ResourcesDeletion].add {
+  make[ElasticSearchViews].fromEffect {
     (
-        cache: ElasticSearchViewCache,
-        agg: ElasticSearchViewAggregate,
-        views: ElasticSearchViews,
-        dbCleanup: DatabaseCleanup,
-        coordinator: ElasticSearchIndexingCoordinator,
-        indexingStreamAwake: IndexingStreamAwake
-    ) => ElasticSearchViewsDeletion(cache, agg, views, dbCleanup, coordinator, indexingStreamAwake)
+        fetchContext: FetchContext[ContextRejection],
+        contextResolution: ResolverContextResolution,
+        validateElasticSearchView: ValidateElasticSearchView,
+        config: ElasticSearchViewsConfig,
+        xas: Transactors,
+        api: JsonLdApi,
+        clock: Clock[UIO],
+        uuidF: UUIDF
+    ) =>
+      ElasticSearchViews(
+        fetchContext.mapRejection(ProjectContextRejection),
+        contextResolution,
+        validateElasticSearchView,
+        config.eventLog,
+        config.prefix,
+        xas
+      )(api, clock, uuidF)
   }
 
-  many[ProjectReferenceFinder].add { (views: ElasticSearchViews) =>
-    ElasticSearchViews.projectReferenceFinder(views)
+  if (!MigrationState.isEsIndexingDisabled) {
+    make[ElasticSearchCoordinator].fromEffect {
+      (
+          views: ElasticSearchViews,
+          graphStream: GraphResourceStream,
+          registry: ReferenceRegistry,
+          supervisor: Supervisor,
+          client: ElasticSearchClient,
+          config: ElasticSearchViewsConfig,
+          cr: RemoteContextResolution @Id("aggregate")
+      ) =>
+        ElasticSearchCoordinator(
+          views,
+          graphStream,
+          registry,
+          supervisor,
+          client,
+          config.batch
+        )(cr)
+    }
+  }
+
+  make[EventMetricsProjection].fromEffect {
+    (
+        metricEncoders: Set[ScopedEventMetricEncoder[_]],
+        xas: Transactors,
+        supervisor: Supervisor,
+        client: ElasticSearchClient,
+        config: ElasticSearchViewsConfig
+    ) =>
+      if (config.disableMetricsProjection)
+        Task.unit.as(new EventMetricsProjection {})
+      else
+        EventMetricsProjection(
+          metricEncoders,
+          supervisor,
+          client,
+          xas,
+          config.batch,
+          config.metricsQuery,
+          config.prefix
+        )
   }
 
   make[ElasticSearchViewsQuery].from {
     (
-        acls: Acls,
-        projects: Projects,
+        aclCheck: AclCheck,
+        fetchContext: FetchContext[ContextRejection],
         views: ElasticSearchViews,
-        cache: ElasticSearchViewCache,
         client: ElasticSearchClient,
+        xas: Transactors,
+        baseUri: BaseUri,
         cfg: ElasticSearchViewsConfig
     ) =>
-      ElasticSearchViewsQuery(acls, projects, views, cache, client)(cfg.indexing)
-  }
-
-  make[ProgressesStatistics].named("elasticsearch-statistics").from {
-    (cache: ProgressesCache @Id("elasticsearch-progresses"), projectsCounts: ProjectsCounts) =>
-      new ProgressesStatistics(cache, projectsCounts)
-  }
-
-  make[SseEventLog]
-    .named("view-sse")
-    .from(
-      (
-          eventLog: EventLog[Envelope[Event]],
-          orgs: Organizations,
-          projects: Projects,
-          exchanges: Set[EventExchange] @Id("view")
-      ) => SseEventLog(eventLog, orgs, projects, exchanges, ElasticSearchViews.moduleTag)
-    )
-
-  make[Projection[ProjectsEventsInstantCollection]].fromEffect {
-    (database: DatabaseConfig, system: ActorSystem[Nothing], clock: Clock[UIO]) =>
-      Projection(database, ProjectsEventsInstantCollection.empty, system, clock)
-  }
-
-  make[IndexingStreamAwake].fromEffect {
-    (
-        cfg: ProjectsConfig,
-        projection: Projection[ProjectsEventsInstantCollection],
-        onEventInstantsSet: Set[OnEventInstant],
-        eventLog: EventLog[Envelope[ProjectScopedEvent]],
-        uuidF: UUIDF,
-        as: ActorSystem[Nothing],
-        sc: Scheduler
-    ) =>
-      IndexingStreamAwake(
-        projection,
-        eventLog.eventsByTag(Event.eventTag, _),
-        OnEventInstant.combine(onEventInstantsSet),
-        cfg.keyValueStore.retry,
-        cfg.persistProgressConfig
-      )(uuidF, as, sc)
-
-  }
-
-  make[ProjectEventMetricsStream].fromEffect {
-    (
-        eventLog: EventLog[Envelope[ProjectScopedEvent]],
-        exchanges: Set[EventExchange],
-        client: ElasticSearchClient,
-        projection: Projection[Unit],
-        config: ElasticSearchViewsConfig,
-        uuidF: UUIDF,
-        as: ActorSystem[Nothing],
-        sc: Scheduler
-    ) =>
-      ProjectEventMetricsStream(
-        eventLog.eventsByTag(Event.eventTag, _),
-        exchanges,
+      ElasticSearchViewsQuery(
+        aclCheck,
+        fetchContext.mapRejection(ProjectContextRejection),
+        views,
         client,
-        projection,
-        config.indexing
-      )(uuidF, as, sc)
+        cfg.prefix,
+        xas
+      )(baseUri)
   }
 
   make[ElasticSearchViewsRoutes].from {
     (
         identities: Identities,
-        acls: Acls,
-        orgs: Organizations,
-        projects: Projects,
+        aclCheck: AclCheck,
         views: ElasticSearchViews,
+        projections: Projections,
+        schemeDirectives: DeltaSchemeDirectives,
         indexingAction: IndexingAction @Id("aggregate"),
         viewsQuery: ElasticSearchViewsQuery,
-        progresses: ProgressesStatistics @Id("elasticsearch-statistics"),
-        indexingController: ElasticSearchIndexingController,
+        shift: ElasticSearchView.Shift,
         baseUri: BaseUri,
         cfg: ElasticSearchViewsConfig,
         s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering,
         resourcesToSchemaSet: Set[ResourceToSchemaMappings],
-        sseEventLog: SseEventLog @Id("view-sse"),
         fusionConfig: FusionConfig
     ) =>
       val resourceToSchema = resourcesToSchemaSet.foldLeft(ResourceToSchemaMappings.empty)(_ + _)
       new ElasticSearchViewsRoutes(
         identities,
-        acls,
-        orgs,
-        projects,
+        aclCheck,
         views,
         viewsQuery,
-        progresses,
-        indexingController.restart,
+        projections,
         resourceToSchema,
-        sseEventLog,
-        indexingAction
+        schemeDirectives,
+        indexingAction(_, _, _)(shift, cr)
       )(
         baseUri,
         cfg.pagination,
@@ -324,6 +204,9 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
   }
 
   make[ElasticSearchScopeInitialization]
+    .from { (views: ElasticSearchViews, serviceAccount: ServiceAccount, config: ElasticSearchViewsConfig) =>
+      new ElasticSearchScopeInitialization(views, serviceAccount, config.defaults)
+    }
 
   many[ScopeInitialization].ref[ElasticSearchScopeInitialization]
 
@@ -340,6 +223,10 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         ContextObject(obj.filterKeys(_.startsWith("_")))
       }))
     }
+
+  many[SseEncoder[_]].add { base: BaseUri => ElasticSearchViewEvent.sseEncoder(base) }
+
+  many[ScopedEventMetricEncoder[_]].add { ElasticSearchViewEvent.esViewMetricEncoder }
 
   many[RemoteContextResolution].addEffect {
     (
@@ -375,28 +262,67 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
 
   many[ServiceDependency].add { new ElasticSearchServiceDependency(_) }
 
-  many[ReferenceExchange].add { (elasticSearchViews: ElasticSearchViews) =>
-    ElasticSearchViews.referenceExchange(elasticSearchViews)
-  }
-
   many[IndexingAction].add {
     (
+        views: ElasticSearchViews,
+        registry: ReferenceRegistry,
         client: ElasticSearchClient,
-        cache: ElasticSearchViewCache,
-        pipeConfig: PipeConfig,
-        config: ElasticSearchViewsConfig,
-        baseUri: BaseUri,
-        cr: RemoteContextResolution @Id("aggregate")
+        config: ElasticSearchViewsConfig
     ) =>
-      new ElasticSearchIndexingAction(client, cache, pipeConfig, config)(cr, baseUri)
+      ElasticSearchIndexingAction(views, registry, client, config.syncIndexingTimeout, config.syncIndexingRefresh)
   }
 
-  make[ElasticSearchViewEventExchange]
-  many[EventExchange].named("view").ref[ElasticSearchViewEventExchange]
-  many[EventExchange].named("resources").ref[ElasticSearchViewEventExchange]
-  many[EventExchange].ref[ElasticSearchViewEventExchange]
-  many[EntityType].add(EntityType(ElasticSearchViews.moduleType))
-  make[ElasticSearchOnEventInstant]
-  many[OnEventInstant].ref[ElasticSearchOnEventInstant]
+  make[ElasticSearchView.Shift].fromEffect { (views: ElasticSearchViews, base: BaseUri) =>
+    for {
+      defaultMapping  <- defaultElasticsearchMapping
+      defaultSettings <- defaultElasticsearchSettings
+    } yield ElasticSearchView.shift(views, defaultMapping, defaultSettings)(base)
+  }
+
+  many[ResourceShift[_, _, _]].ref[ElasticSearchView.Shift]
+
+  if (MigrationState.isRunning) {
+    many[MigrationLog].add { (cfg: ElasticSearchViewsConfig, xas: Transactors, clock: Clock[UIO], uuidF: UUIDF) =>
+      MigrationLog.scoped[
+        Iri,
+        ElasticSearchViewState,
+        ElasticSearchViewCommand,
+        ElasticSearchViewEvent,
+        ElasticSearchViewRejection
+      ](
+        ElasticSearchViews.definition((_, _, _) =>
+          IO.terminate(new IllegalStateException("ElasticSearchView command evaluation should not happen"))
+        )(clock, uuidF),
+        e => e.id,
+        identity,
+        (e, _) => injectElasticViewDefaults(cfg.defaults)(e),
+        cfg.eventLog,
+        xas
+      )
+    }
+  }
+
+}
+
+// TODO: This object contains migration helpers, and should be deleted when the migration module is removed
+object ElasticSearchPluginModule {
+
+  import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.defaultViewId
+
+  private def setViewDefaults(
+      name: Option[String],
+      description: Option[String]
+  ): ElasticSearchViewValue => ElasticSearchViewValue = {
+    case iv: IndexingElasticSearchViewValue  => iv.copy(name = name, description = description)
+    case av: AggregateElasticSearchViewValue => av.copy(name = name, description = description)
+  }
+
+  def injectElasticViewDefaults(defaults: Defaults): ElasticSearchViewEvent => ElasticSearchViewEvent = {
+    case e @ ElasticSearchViewCreated(id, _, _, value, _, _, _, _) if id == defaultViewId =>
+      e.copy(value = setViewDefaults(Some(defaults.name), Some(defaults.description))(value))
+    case e @ ElasticSearchViewUpdated(id, _, _, value, _, _, _, _) if id == defaultViewId =>
+      e.copy(value = setViewDefaults(Some(defaults.name), Some(defaults.description))(value))
+    case event                                                                            => event
+  }
 
 }

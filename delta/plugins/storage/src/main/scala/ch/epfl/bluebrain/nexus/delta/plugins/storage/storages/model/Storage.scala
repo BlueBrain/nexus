@@ -15,11 +15,12 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.OrderingFields
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
-import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.{OrderingFields, ResourceShift}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import com.typesafe.scalalogging.Logger
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
@@ -44,7 +45,7 @@ sealed trait Storage extends Product with Serializable {
     * @return
     *   the tag -> rev mapping
     */
-  def tags: Map[TagLabel, Long]
+  def tags: Tags
 
   /**
     * @return
@@ -84,7 +85,7 @@ object Storage {
       id: Iri,
       project: ProjectRef,
       value: DiskStorageValue,
-      tags: Map[TagLabel, Long],
+      tags: Tags,
       source: Secret[Json]
   ) extends Storage {
     override val default: Boolean           = value.default
@@ -105,7 +106,7 @@ object Storage {
       id: Iri,
       project: ProjectRef,
       value: S3StorageValue,
-      tags: Map[TagLabel, Long],
+      tags: Tags,
       source: Secret[Json]
   ) extends Storage {
 
@@ -130,7 +131,7 @@ object Storage {
       id: Iri,
       project: ProjectRef,
       value: RemoteDiskStorageValue,
-      tags: Map[TagLabel, Long],
+      tags: Tags,
       source: Secret[Json]
   ) extends Storage {
     override val default: Boolean           = value.default
@@ -217,5 +218,15 @@ object Storage {
     OrderingFields { case "_algorithm" =>
       Ordering[String] on (_.storageValue.algorithm.value)
     }
+
+  type Shift = ResourceShift[StorageState, Storage, Metadata]
+
+  def shift(storages: Storages)(implicit baseUri: BaseUri, crypto: Crypto): Shift =
+    ResourceShift.withMetadata[StorageState, Storage, Metadata](
+      Storages.entityType,
+      (ref, project) => storages.fetch(IdSegmentRef(ref), project),
+      (context, state) => state.toResource(context.apiMappings, context.base),
+      value => JsonLdContent(value, Storage.encryptSourceUnsafe(value.value.source, crypto), Some(value.value.metadata))
+    )
 
 }

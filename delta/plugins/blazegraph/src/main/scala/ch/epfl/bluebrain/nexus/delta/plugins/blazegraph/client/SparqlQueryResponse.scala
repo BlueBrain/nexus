@@ -19,7 +19,7 @@ sealed trait SparqlQueryResponse extends Product with Serializable
 object SparqlQueryResponse {
 
   private val jsonMediaTypes =
-    SparqlResultsJson.mediaTypes.value ++ SparqlJsonLd.mediaTypes.value
+    SparqlResultsJson.mediaTypes.toList ++ SparqlJsonLd.mediaTypes.toList
 
   /**
     * Sparql response returned when using application/sparql-results+json Accept header

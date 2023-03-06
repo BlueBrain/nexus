@@ -4,14 +4,15 @@ import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.directives.Credentials
+import ch.epfl.bluebrain.nexus.delta.kernel.Secret
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.error.IdentityError.{AuthenticationFailed, InvalidToken}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{AclAddress, AclCollection}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddressFilter.AnyOrganizationAnyProject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities}
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{AuthToken, Caller, ServiceAccount}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import monix.execution.Scheduler
 
 import scala.concurrent.Future
@@ -19,7 +20,7 @@ import scala.concurrent.Future
 /**
   * Akka HTTP directives for authentication
   */
-abstract class AuthDirectives(identities: Identities, acls: Acls)(implicit val s: Scheduler) {
+abstract class AuthDirectives(identities: Identities, aclCheck: AclCheck)(implicit val s: Scheduler) {
 
   private def authenticator: AsyncAuthenticator[Caller] = {
     case Credentials.Missing         => Future.successful(None)
@@ -38,6 +39,13 @@ abstract class AuthDirectives(identities: Identities, acls: Acls)(implicit val s
       case _                          => pass
     }
 
+  def extractToken: Directive1[Secret[String]] =
+    extractCredentials.flatMap {
+      case Some(OAuth2BearerToken(s)) => provide(Secret(s))
+      case Some(_)                    => failWith(AuthenticationFailed)
+      case _                          => failWith(AuthenticationFailed)
+    }
+
   /**
     * Attempts to extract the Credentials from the HTTP call and generate a [[Caller]] from it.
     */
@@ -53,13 +61,12 @@ abstract class AuthDirectives(identities: Identities, acls: Acls)(implicit val s
     * Checks whether given [[Caller]] has the [[Permission]] on the [[AclAddress]].
     */
   def authorizeFor(path: AclAddress, permission: Permission)(implicit caller: Caller): Directive0 =
-    authorizeAsync(acls.authorizeFor(path, permission).runToFuture) or failWith(AuthorizationFailed)
+    authorizeAsync(aclCheck.authorizeFor(path, permission).runToFuture) or failWith(AuthorizationFailed)
 
   /**
-    * Return all callers acls
+    * Check whether [[Caller]] is the configured service account.
     */
-  def callerAcls(implicit caller: Caller): Directive1[AclCollection] = onSuccess(
-    acls.listSelf(AnyOrganizationAnyProject(true)).runToFuture
-  )
+  def authorizeServiceAccount(serviceAccount: ServiceAccount)(implicit caller: Caller): Directive0 =
+    authorize(caller.subject == serviceAccount.subject) or failWith(AuthorizationFailed)
 
 }

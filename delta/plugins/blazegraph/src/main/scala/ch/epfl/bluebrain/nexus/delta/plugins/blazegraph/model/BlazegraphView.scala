@@ -1,16 +1,20 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model
 
+import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.Metadata
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{NonEmptySet, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.ResourceShift
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.views.model.{ViewIndex, ViewRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.syntax._
@@ -32,6 +36,18 @@ sealed trait BlazegraphView extends Product with Serializable {
 
   /**
     * @return
+    *   the name of the view
+    */
+  def name: Option[String]
+
+  /**
+    * @return
+    *   the description of the view
+    */
+  def description: Option[String]
+
+  /**
+    * @return
     *   a reference to the parent project
     */
   def project: ProjectRef
@@ -40,7 +56,7 @@ sealed trait BlazegraphView extends Product with Serializable {
     * @return
     *   the tag -> rev mapping
     */
-  def tags: Map[TagLabel, Long]
+  def tags: Tags
 
   /**
     * @return
@@ -92,40 +108,23 @@ object BlazegraphView {
     */
   final case class IndexingBlazegraphView(
       id: Iri,
+      name: Option[String],
+      description: Option[String],
       project: ProjectRef,
       uuid: UUID,
       resourceSchemas: Set[Iri],
       resourceTypes: Set[Iri],
-      resourceTag: Option[TagLabel],
+      resourceTag: Option[UserTag],
       includeMetadata: Boolean,
       includeDeprecated: Boolean,
       permission: Permission,
-      tags: Map[TagLabel, Long],
-      source: Json
+      tags: Tags,
+      source: Json,
+      indexingRev: Int
   ) extends BlazegraphView {
-    override def metadata: Metadata = Metadata(Some(uuid))
+    override def metadata: Metadata = Metadata(Some(uuid), Some(indexingRev))
 
     override def tpe: BlazegraphViewType = BlazegraphViewType.IndexingBlazegraphView
-  }
-
-  object IndexingBlazegraphView {
-
-    /**
-      * Create the view index from the [[IndexingBlazegraphView]]
-      */
-    def resourceToViewIndex(
-        res: IndexingViewResource,
-        config: BlazegraphViewsConfig
-    ): ViewIndex[IndexingBlazegraphView] = ViewIndex(
-      res.value.project,
-      res.id,
-      BlazegraphViews.projectionId(res),
-      BlazegraphViews.namespace(res, config.indexing),
-      res.rev,
-      res.deprecated,
-      res.value.resourceTag,
-      res.value
-    )
   }
 
   /**
@@ -144,12 +143,14 @@ object BlazegraphView {
     */
   final case class AggregateBlazegraphView(
       id: Iri,
+      name: Option[String],
+      description: Option[String],
       project: ProjectRef,
       views: NonEmptySet[ViewRef],
-      tags: Map[TagLabel, Long],
+      tags: Tags,
       source: Json
   ) extends BlazegraphView {
-    override def metadata: Metadata      = Metadata(None)
+    override def metadata: Metadata      = Metadata(None, None)
     override def tpe: BlazegraphViewType = BlazegraphViewType.AggregateBlazegraphView
 
   }
@@ -160,12 +161,11 @@ object BlazegraphView {
     * @param uuid
     *   the optionally available unique view identifier
     */
-  final case class Metadata(uuid: Option[UUID])
+  final case class Metadata(uuid: Option[UUID], indexingRev: Option[Int])
 
   @nowarn("cat=unused")
   implicit private val blazegraphViewsEncoder: Encoder.AsObject[BlazegraphView] = {
-    implicit val config: Configuration                     = Configuration.default.withDiscriminator(keywords.tpe)
-    implicit val encoderTags: Encoder[Map[TagLabel, Long]] = Encoder.instance(_ => Json.Null)
+    implicit val config: Configuration = Configuration.default.withDiscriminator(keywords.tpe)
     Encoder.encodeJsonObject.contramapObject { v =>
       deriveConfiguredEncoder[BlazegraphView]
         .encodeObject(v)
@@ -182,8 +182,22 @@ object BlazegraphView {
     JsonLdEncoder.computeFromCirce(_.id, ContextValue(contexts.blazegraph))
 
   implicit private val blazegraphMetadataEncoder: Encoder.AsObject[Metadata] =
-    Encoder.encodeJsonObject.contramapObject(meta => JsonObject.empty.addIfExists("_uuid", meta.uuid))
+    Encoder.encodeJsonObject.contramapObject(meta =>
+      JsonObject.empty
+        .addIfExists("_uuid", meta.uuid)
+        .addIfExists("_indexingRev", meta.indexingRev)
+    )
 
   implicit val blazegraphMetadataJsonLdEncoder: JsonLdEncoder[Metadata] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.blazegraphMetadata))
+
+  type Shift = ResourceShift[BlazegraphViewState, BlazegraphView, Metadata]
+
+  def shift(views: BlazegraphViews)(implicit baseUri: BaseUri): Shift =
+    ResourceShift.withMetadata[BlazegraphViewState, BlazegraphView, Metadata](
+      BlazegraphViews.entityType,
+      (ref, project) => views.fetch(IdSegmentRef(ref), project),
+      (context, state) => state.toResource(context.apiMappings, context.base),
+      value => JsonLdContent(value, value.value.source, Some(value.value.metadata))
+    )
 }

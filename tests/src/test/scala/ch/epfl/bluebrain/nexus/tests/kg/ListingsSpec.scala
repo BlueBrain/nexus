@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.tests.BaseSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.listings.{Alice, Bob}
 import ch.epfl.bluebrain.nexus.tests.Identity.{Anonymous, Delta}
 import ch.epfl.bluebrain.nexus.tests.Optics.{filterMetadataKeys, filterSearchMetadata, listing}
-import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Organizations, Resources}
+import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Organizations, Resources, Views}
 import io.circe.Json
 import org.scalatest.Inspectors
 
@@ -36,6 +36,7 @@ final class ListingsSpec extends BaseSpec with Inspectors with EitherValuable wi
         _ <- adminDsl.createOrganization(org2, org2, Bob)
         _ <- adminDsl.createProject(org2, proj21, kgDsl.projectJson(name = proj21), Bob)
         _ <- aclDsl.addPermission(s"/$ref12", Alice, Resources.Read)
+        _ <- aclDsl.addPermission(s"/$ref12", Alice, Views.Query)
       } yield succeed
     }
 
@@ -57,9 +58,9 @@ final class ListingsSpec extends BaseSpec with Inspectors with EitherValuable wi
         _ <- deltaClient.put[Json](s"/resources/$ref21/_/resource21", resourcePayload, Bob)(expectCreated)
         // Tag
         _ <-
-          deltaClient.post[Json](s"/resources/$ref11/_/resource11/tags?rev=1", tag("v1.0.0", 1L), Bob)(expectCreated)
+          deltaClient.post[Json](s"/resources/$ref11/_/resource11/tags?rev=1", tag("v1.0.0", 1), Bob)(expectCreated)
         _ <-
-          deltaClient.post[Json](s"/resources/$ref21/_/resource21/tags?rev=1", tag("v1.0.1", 1L), Bob)(expectCreated)
+          deltaClient.post[Json](s"/resources/$ref21/_/resource21/tags?rev=1", tag("v1.0.1", 1), Bob)(expectCreated)
         // Deprecate
         _ <- deltaClient.delete[Json](s"/resources/$ref12/_/resource12?rev=1", Bob)(expectOk)
       } yield succeed
@@ -218,8 +219,10 @@ final class ListingsSpec extends BaseSpec with Inspectors with EitherValuable wi
       )
 
       deltaClient.get[Json](s"/resources?type=$testResourceType", Bob) { (json, response) =>
-        response.status shouldEqual StatusCodes.OK
-        filterSearchMetadata(json) should equalIgnoreArrayOrder(expected)
+        eventually {
+          response.status shouldEqual StatusCodes.OK
+          filterSearchMetadata(json) should equalIgnoreArrayOrder(expected)
+        }
       }
     }
 

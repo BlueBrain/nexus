@@ -1,32 +1,29 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.archive
 
-import akka.actor.typed.scaladsl.adapter._
-import akka.actor.{typed, ActorSystem}
-import akka.cluster.typed.{Cluster, Join, Leave}
-import akka.testkit.TestKit
+import akka.stream.scaladsl.Source
+import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.plugins.archive.ArchivesSpec.config
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.{FileReference, ResourceReference}
-import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.ArchiveNotFound
-import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.{Archive, ArchiveValue}
+import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.{ArchiveNotFound, ProjectContextRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.{Archive, ArchiveRejection, ArchiveValue}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schema}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
+import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceUris.EphemeralResourceInProjectUris
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Subject, User}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, NonEmptySet}
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ProjectSetup
-import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOFixedClock, IOValues, TestHelpers}
-import com.typesafe.config.{Config, ConfigFactory}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.EphemeralLogConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
+import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.literal._
 import monix.bio.IO
 import monix.execution.Scheduler
-import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
 
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
@@ -35,9 +32,7 @@ import java.util.UUID
 import scala.concurrent.duration._
 
 class ArchivesSpec
-    extends TestKit(ActorSystem("ArchivesSpec", config))
-    with AnyWordSpecLike
-    with BeforeAndAfterAll
+    extends DoobieScalaTestFixture
     with Matchers
     with IOValues
     with IOFixedClock
@@ -45,42 +40,34 @@ class ArchivesSpec
     with TestHelpers
     with RemoteContextResolutionFixture {
 
-  implicit private val typedSystem: typed.ActorSystem[Nothing] = system.toTyped
-
-  override protected def beforeAll(): Unit = {
-    super.beforeAll()
-    val cluster = Cluster(typedSystem)
-    cluster.manager ! Join(cluster.selfMember.address)
-  }
-
-  override protected def afterAll(): Unit = {
-    val cluster = Cluster(typedSystem)
-    cluster.manager ! Leave(cluster.selfMember.address)
-    TestKit.shutdownActorSystem(system, verifySystemShutdown = true)
-    super.afterAll()
-  }
-
   private val uuid                   = UUID.randomUUID()
   implicit private val uuidF: UUIDF  = UUIDF.random
   implicit private val sc: Scheduler = Scheduler.global
 
+  implicit private val api: JsonLdApi = JsonLdJavaApi.strict
+
   private val usersRealm: Label       = Label.unsafe("users")
-  implicit private val bob: Subject   = User("bob", usersRealm)
+  private val bob: Subject            = User("bob", usersRealm)
   implicit private val caller: Caller = Caller.unsafe(bob)
 
-  implicit private val baseUri: BaseUri = BaseUri.withoutPrefix("http://localhost")
-
-  private val org      = Label.unsafe("org")
   private val am       = ApiMappings("nxv" -> nxv.base, "Person" -> schema.Person)
   private val projBase = iri"http://localhost/base/"
   private val project  =
     ProjectGen.project("org", "project", uuid = uuid, orgUuid = uuid, base = projBase, mappings = am)
 
-  private val (_, projects) = ProjectSetup.init(List(org), List(project)).accepted
+  private val fetchContext = FetchContextDummy[ArchiveRejection](
+    List(project),
+    ProjectContextRejection
+  )
 
-  private val cfg      = ArchivePluginConfig.load(config).accepted
-  private val download = ArchiveDownloadDummy()
-  private val archives = Archives(projects, download, cfg, (_, _) => IO.unit).accepted
+  private val cfg           = ArchivePluginConfig(1, EphemeralLogConfig(5.seconds, 5.hours))
+  private val download      = new ArchiveDownload {
+    override def apply(value: ArchiveValue, project: ProjectRef, ignoreNotFound: Boolean)(implicit
+        caller: Caller
+    ): IO[ArchiveRejection, AkkaSource] =
+      IO.pure(Source.empty)
+  }
+  private lazy val archives = Archives(fetchContext, download, cfg, xas)
 
   "An Archives module" should {
     "create an archive from source" in {
@@ -286,18 +273,4 @@ class ArchivesSpec
     }
   }
 
-}
-
-object ArchivesSpec {
-
-  def config: Config =
-    ConfigFactory
-      .parseResources("akka-test.conf")
-      .withFallback(
-        ConfigFactory.parseResources("archive.conf")
-      )
-      .withFallback(
-        ConfigFactory.load()
-      )
-      .resolve()
 }

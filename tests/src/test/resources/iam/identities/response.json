@@ -1,0 +1,23 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/metadata.json",
+    "https://bluebrain.github.io/nexus/contexts/identities.json"
+  ],
+  "identities": [
+    {
+      "@id": "{{deltaUri}}/anonymous",
+      "@type": "Anonymous"
+    },
+    {
+      "@id": "{{deltaUri}}/realms/internal/authenticated",
+      "@type": "Authenticated",
+      "realm": "internal"
+    },
+    {
+      "@id": "{{deltaUri}}/realms/internal/users/service-account-delta",
+      "@type": "User",
+      "realm": "internal",
+      "subject": "service-account-delta"
+    }
+  ]
+}

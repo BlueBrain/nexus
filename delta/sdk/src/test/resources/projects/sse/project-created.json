@@ -1,0 +1,25 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/metadata.json",
+    "https://bluebrain.github.io/nexus/contexts/projects.json"
+  ],
+  "@type": "ProjectCreated",
+  "apiMappings": [
+    {
+      "namespace": "https://bluebrain.github.io/nexus/vocabulary/",
+      "prefix": "nxv"
+    }
+  ],
+  "base": "https://bluebrain.github.io/nexus/schemas/",
+  "description": "some description",
+  "vocab": "https://bluebrain.github.io/nexus/vocabulary/",
+  "_instant": "1970-01-01T00:00:00Z",
+  "_label": "myproj",
+  "_organizationLabel": "myorg",
+  "_organizationUuid": "b6bde92f-7836-4da6-8ead-2e0fd516ebe7",
+  "_projectId": "http://localhost/v1/projects/myorg/myproj",
+  "_resourceId": "http://localhost/v1/projects/myorg/myproj",
+  "_rev": 1,
+  "_subject": "http://localhost/v1/realms/myrealm/users/username",
+  "_uuid": "fe1301a6-a105-4966-84af-32723fd003d2"
+}

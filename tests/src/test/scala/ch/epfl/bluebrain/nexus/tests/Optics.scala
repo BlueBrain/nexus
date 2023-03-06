@@ -41,7 +41,9 @@ object Optics extends Optics {
   private val projectKeysToIgnore             = metadataKeys + "_effectiveApiMappings"
   val filterProjectMetadataKeys: Json => Json = filterKeys(projectKeysToIgnore)
 
-  val filterResultMetadata: Json => Json = root._results.arr.modify(_.map(filterMetadataKeys))
+  def filterResults(keys: Set[String]): Json => Json = root._results.arr.modify(_.map(filterKeys(keys)))
+
+  val filterResultMetadata: Json => Json = filterResults(metadataKeys)
 
   val filterSearchMetadata: Json => Json = filterKey("_next") andThen filterResultMetadata
 
@@ -63,7 +65,7 @@ object Optics extends Optics {
 
     val _label             = root._label.string
     val description        = root.description.string
-    val _rev               = root._rev.long
+    val _rev               = root._rev.int
     val _deprecated        = root._deprecated.boolean
     val _markedForDeletion = root._markedForDeletion.boolean
 
@@ -81,7 +83,7 @@ object Optics extends Optics {
         idPrefix: String,
         id: String,
         desc: String,
-        rev: Long,
+        rev: Int,
         label: String,
         deprecated: Boolean = false
     )(implicit config: TestsConfig): Assertion = {
@@ -137,6 +139,8 @@ object Optics extends Optics {
     val _results   = root._results.arr
     val _total     = root._total.long
   }
+
+  val projections = root.projections.each
 
   object events {
     val filterFields = filterKeys(Set("_instant", "_updatedAt"))

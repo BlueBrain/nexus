@@ -2,17 +2,17 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
 import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.Uri.Query
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.projectionIndex
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.ElasticSearchProjection
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{AuthorizationFailed, ViewIsDeprecated, WrappedElasticSearchClientError}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeView, CompositeViewRejection, ViewElasticSearchProjectionResource, ViewResource}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
-import ch.epfl.bluebrain.nexus.delta.sdk.Acls
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.HttpResult
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, IdSegmentRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SortList
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, IdSegmentRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.{Json, JsonObject}
 import monix.bio.IO
 
@@ -73,18 +73,20 @@ object ElasticSearchQuery {
     (IdSegment, IdSegment, ProjectRef) => IO[CompositeViewRejection, ViewElasticSearchProjectionResource]
 
   final def apply(
-      acls: Acls,
+      aclCheck: AclCheck,
       views: CompositeViews,
-      client: ElasticSearchClient
-  )(implicit config: ExternalIndexingConfig): ElasticSearchQuery =
-    apply(acls, views.fetch, views.fetchElasticSearchProjection, client.search(_, _, _)(SortList.empty))
+      client: ElasticSearchClient,
+      prefix: String
+  ): ElasticSearchQuery =
+    apply(aclCheck, views.fetch, views.fetchElasticSearchProjection, client.search(_, _, _)(SortList.empty), prefix)
 
   private[compositeviews] def apply(
-      acls: Acls,
+      aclCheck: AclCheck,
       fetchView: FetchView,
       fetchProjection: FetchProjection,
-      elasticSearchQuery: ElasticSearchClientQuery
-  )(implicit config: ExternalIndexingConfig): ElasticSearchQuery =
+      elasticSearchQuery: ElasticSearchClientQuery,
+      prefix: String
+  ): ElasticSearchQuery =
     new ElasticSearchQuery {
 
       override def query(
@@ -98,8 +100,8 @@ object ElasticSearchQuery {
           viewRes           <- fetchProjection(id, projectionId, project)
           _                 <- IO.raiseWhen(viewRes.deprecated)(ViewIsDeprecated(viewRes.id))
           (view, projection) = viewRes.value
-          _                 <- acls.authorizeForOr(project, projection.permission)(AuthorizationFailed)
-          index              = CompositeViews.index(projection, view, viewRes.rev, config.prefix).value
+          _                 <- aclCheck.authorizeForOr(project, projection.permission)(AuthorizationFailed)
+          index              = projectionIndex(projection, view.uuid, viewRes.rev, prefix).value
           search            <- elasticSearchQuery(query, Set(index), qp).mapError(WrappedElasticSearchClientError)
         } yield search
 
@@ -110,22 +112,25 @@ object ElasticSearchQuery {
           qp: Uri.Query
       )(implicit caller: Caller): IO[CompositeViewRejection, Json] =
         for {
-          viewRes     <- fetchView(id, project)
-          _           <- IO.raiseWhen(viewRes.deprecated)(ViewIsDeprecated(viewRes.id))
-          view         = viewRes.value
-          projections <- allowedProjections(view, project)
-          indices      = projections.map(p => CompositeViews.index(p, view, viewRes.rev, config.prefix).value).toSet
-          search      <- elasticSearchQuery(query, indices, qp).mapError(WrappedElasticSearchClientError)
+          viewRes <- fetchView(id, project)
+          _       <- IO.raiseWhen(viewRes.deprecated)(ViewIsDeprecated(viewRes.id))
+          view     = viewRes.value
+          indices <- allowedProjections(view, viewRes.rev, project)
+          search  <- elasticSearchQuery(query, indices, qp).mapError(WrappedElasticSearchClientError)
         } yield search
 
       private def allowedProjections(
           view: CompositeView,
+          rev: Int,
           project: ProjectRef
-      )(implicit caller: Caller): IO[AuthorizationFailed, Seq[ElasticSearchProjection]] = {
-        val projections = view.projections.value.collect { case p: ElasticSearchProjection => p }
-        IO.traverse(projections)(p => acls.authorizeFor(project, p.permission).map(p -> _))
-          .map(authorizations => authorizations.collect { case (p, true) => p })
-          .flatMap(projections => IO.raiseWhen(projections.isEmpty)(AuthorizationFailed).as(projections))
-      }
+      )(implicit caller: Caller): IO[AuthorizationFailed, Set[String]] =
+        aclCheck
+          .mapFilterAtAddress[ElasticSearchProjection, String](
+            view.projections.collect { case p: ElasticSearchProjection => p },
+            project,
+            p => p.permission,
+            p => projectionIndex(p, view.uuid, rev, prefix).value
+          )
+          .tapEval { indices => IO.raiseWhen(indices.isEmpty)(AuthorizationFailed) }
     }
 }

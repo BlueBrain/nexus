@@ -22,7 +22,7 @@ class AdminDsl(cl: HttpClient, config: TestsConfig) extends TestHelpers with Cir
 
   def createOrgRespJson(
       id: String,
-      rev: Long,
+      rev: Int,
       tpe: String = "projects",
       `@type`: String = "Project",
       authenticated: Authenticated,
@@ -47,7 +47,7 @@ class AdminDsl(cl: HttpClient, config: TestsConfig) extends TestHelpers with Cir
   def createProjectRespJson(
       id: String,
       orgId: String,
-      rev: Long,
+      rev: Int,
       tpe: String = "projects",
       `@type`: String = "Project",
       authenticated: Authenticated,
@@ -71,11 +71,11 @@ class AdminDsl(cl: HttpClient, config: TestsConfig) extends TestHelpers with Cir
     jsonContentOf("/admin/project-response.json", resp: _*)
   }
 
-  private def queryParams(revision: Long) =
-    if (revision == 0L) {
+  private def queryParams(rev: Int) =
+    if (rev == 0L) {
       ""
     } else {
-      s"?rev=$revision"
+      s"?rev=$rev"
     }
 
   def createOrganization(
@@ -84,29 +84,29 @@ class AdminDsl(cl: HttpClient, config: TestsConfig) extends TestHelpers with Cir
       authenticated: Authenticated,
       expectedResponse: Option[ExpectedResponse] = None
   ): Task[Assertion] =
-    updateOrganization(id, description, authenticated, 0L, expectedResponse)
+    updateOrganization(id, description, authenticated, 0, expectedResponse)
 
   def updateOrganization(
       id: String,
       description: String,
       authenticated: Authenticated,
-      revision: Long,
+      rev: Int,
       expectedResponse: Option[ExpectedResponse] = None
   ): Task[Assertion] = {
-    cl.put[Json](s"/orgs/$id${queryParams(revision)}", orgPayload(description), authenticated) { (json, response) =>
+    cl.put[Json](s"/orgs/$id${queryParams(rev)}", orgPayload(description), authenticated) { (json, response) =>
       expectedResponse match {
         case Some(e) =>
           response.status shouldEqual e.statusCode
           json shouldEqual e.json
         case None    =>
-          if (revision == 0L)
+          if (rev == 0L)
             response.status shouldEqual StatusCodes.Created
           else
             response.status shouldEqual StatusCodes.OK
 
           filterMetadataKeys(json) shouldEqual createOrgRespJson(
             id,
-            revision + 1L,
+            rev + 1,
             "orgs",
             "Organization",
             authenticated,
@@ -124,7 +124,7 @@ class AdminDsl(cl: HttpClient, config: TestsConfig) extends TestHelpers with Cir
         deleteResponse.status shouldEqual StatusCodes.OK
         filterMetadataKeys(deleteJson) shouldEqual createOrgRespJson(
           id,
-          rev + 1L,
+          rev + 1,
           "orgs",
           "Organization",
           authenticated,
@@ -163,31 +163,31 @@ class AdminDsl(cl: HttpClient, config: TestsConfig) extends TestHelpers with Cir
       authenticated: Authenticated,
       expectedResponse: Option[ExpectedResponse] = None
   ): Task[Assertion] =
-    updateProject(orgId, projectId, json, authenticated, 0L, expectedResponse)
+    updateProject(orgId, projectId, json, authenticated, 0, expectedResponse)
 
   def updateProject(
       orgId: String,
       projectId: String,
       payload: Json,
       authenticated: Authenticated,
-      revision: Long,
+      rev: Int,
       expectedResponse: Option[ExpectedResponse] = None
   ): Task[Assertion] =
-    cl.put[Json](s"/projects/$orgId/$projectId${queryParams(revision)}", payload, authenticated) { (json, response) =>
-      logger.info(s"Creating/updating project $orgId/$projectId at revision $revision")
+    cl.put[Json](s"/projects/$orgId/$projectId${queryParams(rev)}", payload, authenticated) { (json, response) =>
+      logger.info(s"Creating/updating project $orgId/$projectId at revision $rev")
       expectedResponse match {
         case Some(e) =>
           response.status shouldEqual e.statusCode
           json shouldEqual e.json
         case None    =>
-          if (revision == 0L)
+          if (rev == 0)
             response.status shouldEqual StatusCodes.Created
           else
             response.status shouldEqual StatusCodes.OK
           filterProjectMetadataKeys(json) shouldEqual createProjectRespJson(
             projectId,
             orgId,
-            revision + 1L,
+            rev + 1,
             authenticated = authenticated,
             schema = "projects"
           )

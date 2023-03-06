@@ -440,7 +440,6 @@ GET /v1/storages/{org_label}/{project_label}/{storage_id}/statistics
 ```
 It returns:
 
-- the instant of the latest consumed event (`lastProcessedEventDateTime`).
 - the number of physical files stored on the storage  (`files`).
 - the space used by this file on the given storage (`spaceUsed`).
 

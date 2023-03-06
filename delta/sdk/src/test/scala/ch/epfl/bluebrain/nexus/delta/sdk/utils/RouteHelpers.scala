@@ -27,12 +27,11 @@ trait RouteHelpers extends AnyWordSpecLike with ScalatestRouteTest with ScalaFut
   implicit def httpJsonSyntax(json: Json): JsonToHttpEntityOps                         = new JsonToHttpEntityOps(json)
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(6.seconds.dilated, 10.milliseconds)
-
-  // No need to persist any cache for tests related to routes
-  override def testConfigSource: String = "akka.cluster.distributed-data.durable.keys=[]"
 }
 
 trait Consumer extends ScalaFutures with Matchers {
+
+  implicit private val patience: PatienceConfig = PatienceConfig(6.seconds, 10.milliseconds)
 
   private def consume(source: Source[ByteString, Any])(implicit materializer: Materializer): String =
     source.runFold("")(_ ++ _.utf8String).futureValue

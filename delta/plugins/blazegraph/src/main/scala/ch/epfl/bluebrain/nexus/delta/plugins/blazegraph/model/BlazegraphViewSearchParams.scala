@@ -2,10 +2,11 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model
 
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{schema => blazegraphSchema}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import monix.bio.UIO
 
 /**
   * Search parameters for Blazegraph views.
@@ -28,16 +29,16 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams
 final case class BlazegraphViewSearchParams(
     project: Option[ProjectRef] = None,
     deprecated: Option[Boolean] = None,
-    rev: Option[Long] = None,
+    rev: Option[Int] = None,
     createdBy: Option[Subject] = None,
     updatedBy: Option[Subject] = None,
     types: Set[Iri] = Set.empty[Iri],
-    filter: BlazegraphView => Boolean
+    filter: BlazegraphView => UIO[Boolean]
 ) extends SearchParams[BlazegraphView] {
 
   override val schema: Option[ResourceRef] = Some(blazegraphSchema)
 
-  override def matches(resource: ViewResource): Boolean =
-    super.matches(resource) &&
-      project.forall(_ == resource.value.project)
+  override def matches(resource: ViewResource): UIO[Boolean] =
+    super.matches(resource).map(_ && project.forall(_ == resource.value.project))
+
 }

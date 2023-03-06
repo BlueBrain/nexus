@@ -1,9 +1,15 @@
 package ch.epfl.bluebrain.nexus.testkit.elasticsearch
 
+import akka.http.scaladsl.model.headers.BasicHttpCredentials
+import cats.effect.Resource
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchContainer.Version
+import monix.bio.Task
 import org.testcontainers.containers.GenericContainer
 import org.testcontainers.containers.wait.strategy.Wait
 import org.testcontainers.utility.DockerImageName
+
+import scala.concurrent.duration.DurationInt
+import scala.jdk.DurationConverters.ScalaDurationOps
 
 class ElasticSearchContainer(password: String)
     extends GenericContainer[ElasticSearchContainer](
@@ -21,5 +27,5 @@ class ElasticSearchContainer(password: String)
 }
 
 object ElasticSearchContainer {
-  private val Version = "8.4.3"
+  private val Version = "8.6.2"
 }

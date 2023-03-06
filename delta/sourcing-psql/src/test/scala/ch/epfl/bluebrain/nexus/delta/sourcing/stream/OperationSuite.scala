@@ -1,0 +1,103 @@
+package ch.epfl.bluebrain.nexus.delta.sourcing.stream
+
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label}
+import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Pipe
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.OperationSuite.{double, half, until}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionErr.{LeapingNotAllowedErr, OperationInOutMatchErr}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.GenericPipe
+import ch.epfl.bluebrain.nexus.testkit.bio.{BioSuite, StreamAssertions}
+import fs2.Stream
+import monix.bio.Task
+import shapeless.Typeable
+
+import java.time.Instant
+
+class OperationSuite extends BioSuite with StreamAssertions {
+
+  test("Run the double stream") {
+    val sink       = CacheSink.states[Int]
+    val operations = Operation.merge(double, sink).rightValue
+
+    for {
+      _ <- until(5).through(operations).rightValue.apply(Offset.Start).assertSize(5)
+      _  = assert(sink.failed.isEmpty, "No failure should be detected.")
+      _  = assert(sink.dropped.isEmpty, "No dropped should be detected.")
+      _  = assertEquals(sink.successes.values.toList.sorted, List(0, 2, 4, 6, 8))
+    } yield ()
+  }
+
+  test("Run the half stream") {
+    val sink       = CacheSink.states[Double]
+    val operations = Operation.merge(half, sink).rightValue
+
+    for {
+      _ <- until(5).through(operations).rightValue.apply(Offset.at(1L)).assertSize(4)
+      _  = assert(sink.failed.isEmpty, "No failure should be detected.")
+      _  = assert(sink.dropped.isEmpty, "No dropped should be detected.")
+      _  = assertEquals(sink.successes.values.toList.sorted, List(0.5, 1.0, 1.5, 2.0))
+    } yield ()
+  }
+
+  test("Fail as the input and output types don't match") {
+    val sink = CacheSink.states[Int]
+    Operation.merge(half, sink).assertLeft(OperationInOutMatchErr(half, sink))
+  }
+
+  test("Run the double stream as an tap operation") {
+    // The values should be doubled in the first sink
+    val sink1 = CacheSink.states[Int]
+    // We should have the originals here
+    val sink2 = CacheSink.states[Int]
+
+    val tap = Operation.merge(double, sink1).rightValue.tap
+    val all = Operation.merge(tap, sink2).rightValue
+
+    for {
+      _ <- until(5).through(all).rightValue.apply(Offset.Start).assertSize(5)
+      _  = assert(sink1.failed.isEmpty, "No failure should be detected.")
+      _  = assert(sink1.dropped.isEmpty, "No dropped should be detected.")
+      _  = assertEquals(sink1.successes.values.toList.sorted, List(0, 2, 4, 6, 8))
+      _  = assert(sink2.failed.isEmpty, "No failure should be detected.")
+      _  = assert(sink2.dropped.isEmpty, "No dropped should be detected.")
+      _  = assertEquals(sink2.successes.values.toList.sorted, List(0, 1, 2, 3, 4))
+    } yield ()
+  }
+
+  test("Run the double stream with a leaped part") {
+    val sink = CacheSink.states[Int]
+
+    val first  = double.identityLeap(Offset.at(2L)).rightValue
+    val second = Operation.merge(double, sink).rightValue
+    val all    = Operation.merge(first, second).rightValue
+
+    for {
+      _ <- until(5).through(all).rightValue.apply(Offset.Start).assertSize(5)
+      _  = assert(sink.failed.isEmpty, "No failure should be detected.")
+      _  = assert(sink.dropped.isEmpty, "No dropped should be detected.")
+      _  = assertEquals(sink.successes.values.toList.sorted, List(0, 2, 4, 12, 16))
+    } yield ()
+  }
+
+  test("Leaping is not possible for an operation where in and out are not aligned") {
+    half.identityLeap(Offset.at(2L)).assertLeft(LeapingNotAllowedErr(half, Typeable[Int]))
+  }
+
+}
+
+object OperationSuite {
+
+  private val numberType = EntityType("number")
+
+  private def until(n: Int): Source = Source(offset =>
+    Stream.range(offset.value.toInt, n).covary[Task].map { i =>
+      SuccessElem(numberType, nxv + i.toString, None, Instant.EPOCH, Offset.at(i.toLong), i, 1)
+    }
+  )
+
+  val double: Pipe = new GenericPipe[Int, Int](Label.unsafe("double"), _.evalMap { v => Task.pure(v * 2) })
+  val half: Pipe   = new GenericPipe[Int, Double](Label.unsafe("half"), _.evalMap { v => Task.pure((v.toDouble / 2)) })
+
+}

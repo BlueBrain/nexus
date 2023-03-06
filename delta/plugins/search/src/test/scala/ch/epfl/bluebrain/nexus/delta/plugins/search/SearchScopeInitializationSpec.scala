@@ -1,36 +1,31 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.search
 
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.ViewNotFound
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.{CompositeViews, CompositeViewsSetup}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{ProjectContextRejection, ViewNotFound}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.{CompositeViews, CompositeViewsFixture, Fixtures}
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchConfig.IndexingConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model.defaultViewId
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
-import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Subject, User}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ProjectSetup}
-import ch.epfl.bluebrain.nexus.testkit.IOValues
+import ch.epfl.bluebrain.nexus.delta.sdk.Defaults
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.testkit.{DoobieScalaTestFixture, IOValues}
 import io.circe.JsonObject
-import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
-import java.util.UUID
-
 class SearchScopeInitializationSpec
-    extends AbstractDBSpec
-    with CompositeViewsSetup
+    extends DoobieScalaTestFixture
     with AnyWordSpecLike
+    with CompositeViewsFixture
     with Matchers
-    with IOValues {
-
-  private val uuid                   = UUID.randomUUID()
-  implicit private val uuidF: UUIDF  = UUIDF.fixed(uuid)
-  implicit private val sc: Scheduler = Scheduler.global
+    with IOValues
+    with Fixtures {
 
   implicit val baseUri: BaseUri = BaseUri.withoutPrefix("http://localhost")
 
@@ -39,16 +34,21 @@ class SearchScopeInitializationSpec
   implicit private val sa: ServiceAccount = ServiceAccount(User("nexus-sa", saRealm))
   implicit private val bob: Subject       = User("bob", usersRealm)
 
-  private val org     = Label.unsafe("myorg")
-  private val project = ProjectGen.project("myorg", "myproject", base = nxv.base)
-
-  private val (orgs, projs)         = ProjectSetup.init(orgsToCreate = org :: Nil, projectsToCreate = project :: Nil).accepted
-  private val views: CompositeViews = initViews(orgs, projs).accepted
+  private val fetchContext               = FetchContextDummy[CompositeViewRejection](List(project), ProjectContextRejection)
+  private lazy val views: CompositeViews = CompositeViews(
+    fetchContext,
+    ResolverContextResolution(rcr),
+    alwaysValidate,
+    crypto,
+    config,
+    xas
+  ).accepted
 
   private val indexingConfig =
     IndexingConfig(Set.empty, JsonObject.empty, None, SparqlConstructQuery.unsafe(""), ContextObject(JsonObject.empty))
 
-  val scopeInit = new SearchScopeInitialization(views, indexingConfig, sa)
+  private val defaults = Defaults("viewName", "viewDescription")
+  lazy val scopeInit   = new SearchScopeInitialization(views, indexingConfig, sa, defaults)
 
   "An SearchScopeInitialization" should {
 

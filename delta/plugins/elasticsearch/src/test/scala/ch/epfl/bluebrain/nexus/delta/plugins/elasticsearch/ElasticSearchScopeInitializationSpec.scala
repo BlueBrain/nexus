@@ -2,19 +2,21 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.{AggregateElasticSearchView, IndexingElasticSearchView}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.ViewNotFound
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{ProjectContextRejection, ViewNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.permissions.{query => queryPermissions}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultElasticsearchMapping, defaultElasticsearchSettings, defaultViewId}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultElasticsearchMapping, defaultElasticsearchSettings, defaultViewId, ElasticSearchViewRejection}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schema => schemaorg}
+import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, Defaults}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Subject, User}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures}
-import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.{DefaultLabelPredicates, SourceAsText}
-import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
-import monix.execution.Scheduler
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.views.PipeStep
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{DefaultLabelPredicates, SourceAsText}
+import ch.epfl.bluebrain.nexus.testkit.{DoobieScalaTestFixture, EitherValuable, IOValues, TestHelpers}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{Inspectors, OptionValues}
@@ -22,40 +24,52 @@ import org.scalatest.{Inspectors, OptionValues}
 import java.util.UUID
 
 class ElasticSearchScopeInitializationSpec
-    extends AbstractDBSpec
+    extends DoobieScalaTestFixture
     with AnyWordSpecLike
     with Matchers
     with Inspectors
     with IOValues
     with OptionValues
+    with EitherValuable
     with TestHelpers
     with ConfigFixtures
     with Fixtures {
 
-  private val uuid                   = UUID.randomUUID()
-  implicit private val uuidF: UUIDF  = UUIDF.fixed(uuid)
-  implicit private val sc: Scheduler = Scheduler.global
+  private val uuid                  = UUID.randomUUID()
+  implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
 
   private val saRealm: Label              = Label.unsafe("service-accounts")
   private val usersRealm: Label           = Label.unsafe("users")
   implicit private val sa: ServiceAccount = ServiceAccount(User("nexus-sa", saRealm))
   implicit private val bob: Subject       = User("bob", usersRealm)
 
-  private val org      = Label.unsafe("org")
   private val am       = ApiMappings("nxv" -> nxv.base, "Person" -> schemaorg.Person)
   private val projBase = nxv.base
   private val project  =
     ProjectGen.project("org", "project", uuid = uuid, orgUuid = uuid, base = projBase, mappings = am)
 
-  private val mapping           = defaultElasticsearchMapping.accepted
-  private val settings          = defaultElasticsearchSettings.accepted
-  implicit val baseUri: BaseUri = BaseUri.withoutPrefix("http://localhost")
+  private val mapping  = defaultElasticsearchMapping.accepted
+  private val settings = defaultElasticsearchSettings.accepted
 
-  private val views: ElasticSearchViews =
-    ElasticSearchViewsSetup.init(org, project, queryPermissions)
+  private val fetchContext = FetchContextDummy[ElasticSearchViewRejection](
+    List(project),
+    ProjectContextRejection
+  )
+
+  private lazy val views: ElasticSearchViews = ElasticSearchViews(
+    fetchContext,
+    ResolverContextResolution(rcr),
+    alwaysValidate,
+    eventLogConfig,
+    "prefix",
+    xas
+  ).accepted
+
+  private val defaultName        = "defaultName"
+  private val defaultDescription = "defaultDescription"
 
   "An ElasticSearchScopeInitialization" should {
-    val init = new ElasticSearchScopeInitialization(views, sa)
+    lazy val init = new ElasticSearchScopeInitialization(views, sa, Defaults(defaultName, defaultDescription))
 
     "create a default ElasticSearchView on a newly created project" in {
       views.fetch(defaultViewId, project.ref).rejectedWith[ViewNotFound]
@@ -64,10 +78,15 @@ class ElasticSearchScopeInitializationSpec
       resource.value match {
         case v: IndexingElasticSearchView  =>
           v.resourceTag shouldEqual None
-          v.pipeline shouldEqual List(DefaultLabelPredicates(), SourceAsText())
+          v.pipeline shouldEqual List(
+            PipeStep.noConfig(DefaultLabelPredicates.ref),
+            PipeStep.noConfig(SourceAsText.ref)
+          )
           v.mapping shouldEqual mapping
           v.settings shouldEqual settings
           v.permission shouldEqual queryPermissions
+          v.name shouldEqual Some(defaultName)
+          v.description shouldEqual Some(defaultDescription)
         case _: AggregateElasticSearchView => fail("Expected an IndexingElasticSearchView to be created")
       }
       resource.rev shouldEqual 1L

@@ -149,7 +149,7 @@ class SparqlClient(client: HttpClient, endpoint: SparqlQueryEndpoint)(implicit
     indices.toList
       .foldLeftM(SparqlResults.empty) { (results, index) =>
         val req = Post(endpoint(index), FormData("query" -> q.value))
-          .withHeaders(accept(SparqlResultsJson.mediaTypes.value), additionalHeaders: _*)
+          .withHeaders(accept(SparqlResultsJson.mediaTypes.toList), additionalHeaders: _*)
           .withHttpCredentials
         client.fromJsonTo[SparqlResults](req).mapError(WrappedHttpClientError).map(results ++ _)
       }
@@ -163,7 +163,7 @@ class SparqlClient(client: HttpClient, endpoint: SparqlQueryEndpoint)(implicit
     indices.toList
       .foldLeftM(None: Option[Elem]) { case (elem, index) =>
         val req = Post(endpoint(index), FormData("query" -> q.value))
-          .withHeaders(accept(SparqlResultsXml.mediaTypes.value), additionalHeaders: _*)
+          .withHeaders(accept(SparqlResultsXml.mediaTypes.toList), additionalHeaders: _*)
           .withHttpCredentials
         client.fromEntityTo[NodeSeq](req).mapError(WrappedHttpClientError).map { nodeSeq =>
           elem match {
@@ -189,7 +189,7 @@ class SparqlClient(client: HttpClient, endpoint: SparqlQueryEndpoint)(implicit
     indices.toList
       .foldLeftM(Vector.empty[Json]) { (results, index) =>
         val req = Post(endpoint(index), FormData("query" -> q.value))
-          .withHeaders(accept(SparqlJsonLd.mediaTypes.value), additionalHeaders: _*)
+          .withHeaders(accept(SparqlJsonLd.mediaTypes.toList), additionalHeaders: _*)
           .withHttpCredentials
         client
           .toJson(req)
@@ -206,7 +206,7 @@ class SparqlClient(client: HttpClient, endpoint: SparqlQueryEndpoint)(implicit
     indices.toList
       .foldLeftM(NTriples.empty) { (results, index) =>
         val req = Post(endpoint(index), FormData("query" -> q.value))
-          .withHeaders(accept(SparqlNTriples.mediaTypes.value), additionalHeaders: _*)
+          .withHeaders(accept(SparqlNTriples.mediaTypes.toList), additionalHeaders: _*)
           .withHttpCredentials
         client.fromEntityTo[String](req).mapError(WrappedHttpClientError).map(s => results ++ NTriples(s, BNode.random))
       }
@@ -220,7 +220,7 @@ class SparqlClient(client: HttpClient, endpoint: SparqlQueryEndpoint)(implicit
     indices.toList
       .foldLeftM(None: Option[Elem]) { case (elem, index) =>
         val req = Post(endpoint(index), FormData("query" -> q.value))
-          .withHeaders(accept(SparqlRdfXml.mediaTypes.value), additionalHeaders: _*)
+          .withHeaders(accept(SparqlRdfXml.mediaTypes.toList), additionalHeaders: _*)
           .withHttpCredentials
         client.fromEntityTo[NodeSeq](req).mapError(WrappedHttpClientError).map { nodeSeq =>
           elem match {

@@ -1,22 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.cache
 
-import akka.actor.typed.ActorSystem
-import akka.actor.typed.scaladsl.AskPattern._
-import akka.cluster.ddata.LWWRegister.Clock
-import akka.cluster.ddata.typed.scaladsl.DistributedData
-import akka.cluster.ddata.typed.scaladsl.Replicator._
-import akka.cluster.ddata.{LWWMap, LWWMapKey, LWWRegister, SelfUniqueAddress}
-import akka.cluster.typed.Cluster
-import akka.util.Timeout
-import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
-import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreError.{DistributedDataError, ReadWriteConsistencyTimeout}
 import com.github.benmanes.caffeine.cache.{Cache, Caffeine}
-import com.typesafe.scalalogging.Logger
-import monix.bio.{IO, Task, UIO}
-import retry.syntax.all._
+import monix.bio.{IO, UIO}
 
-import java.time.Duration
+import scala.concurrent.duration._
 import scala.jdk.CollectionConverters._
+import scala.jdk.DurationConverters._
 
 /**
   * An arbitrary key value store.
@@ -149,6 +138,24 @@ trait KeyValueStore[K, V] {
     }
 
   /**
+    * Fetch the value for the given key and if not, compute the new value, insert it in the store if defined and return
+    * it This operation is not atomic.
+    * @param key
+    *   the key
+    * @param op
+    *   the computation yielding the value to associate with `key`, if `key` is previously unbound.
+    */
+  def getOrElseAttemptUpdate[E](key: K, op: => IO[E, Option[V]]): IO[E, Option[V]] =
+    get(key).flatMap {
+      case Some(value) => UIO.some(value)
+      case None        =>
+        op.flatMap {
+          case Some(newValue) => put(key, newValue).as(Some(newValue))
+          case None           => UIO.none
+        }
+    }
+
+  /**
     * @param key
     *   the key
     * @return
@@ -203,138 +210,26 @@ trait KeyValueStore[K, V] {
 
 object KeyValueStore {
 
-  implicit private val log: Logger = Logger[KeyValueStore.type]
-
-  private val worthRetryingOnWriteErrors: Throwable => Boolean = {
-    case _: ReadWriteConsistencyTimeout | _: DistributedDataError => true
-    case _                                                        => false
-  }
+  /**
+    * Constructs a local key-value store
+    */
+  final def apply[K, V](): UIO[KeyValueStore[K, V]] =
+    UIO.delay {
+      val cache: Cache[K, V] =
+        Caffeine
+          .newBuilder()
+          .build[K, V]()
+      new LocalLruCache(cache)
+    }
 
   /**
-    * Constructs a key value store backed by Akka Distributed Data with ReadLocal consistency configuration. The store
-    * is backed by a LWWMap.
+    * Constructs a local key-value store following a LRU policy
     *
-    * @param id
-    *   the ddata key
-    * @param clock
-    *   a clock function that determines the next timestamp for a provided value
-    * @param as
-    *   the implicitly underlying actor system
     * @param config
-    *   the key value store configuration
+    *   the cache configuration
     */
-  final def distributed[K, V](
-      id: String,
-      clock: (Long, V) => Long
-  )(implicit as: ActorSystem[Nothing], config: KeyValueStoreConfig): KeyValueStore[K, V] = {
-    val registerClock: Clock[V] = (currentTimestamp: Long, value: V) => clock(currentTimestamp, value)
-    new DDataKeyValueStore[K, V](id, registerClock)
-  }
-
-  /**
-    * Constructs a key value store backed by Akka Distributed Data with ReadLocal consistency configuration. It relies
-    * on the default clock so it means that either there are synchronized clocks or we have only one writer (e. g. a
-    * Cluster Singleton) The store is backed by a LWWMap.
-    *
-    * @param id
-    *   the ddata key
-    * @param as
-    *   the implicitly underlying actor system
-    * @param config
-    *   the key value store configuration
-    */
-  final def distributedWithDefaultClock[K, V](
-      id: String
-  )(implicit as: ActorSystem[Nothing], config: KeyValueStoreConfig): KeyValueStore[K, V] =
-    new DDataKeyValueStore[K, V](id, LWWRegister.defaultClock)
-
-  private class DDataKeyValueStore[K, V](
-      id: String,
-      registerClock: Clock[V]
-  )(implicit as: ActorSystem[Nothing], config: KeyValueStoreConfig)
-      extends KeyValueStore[K, V] {
-
-    private val retryStrategy = RetryStrategy[Throwable](
-      config.retry,
-      worthRetryingOnWriteErrors,
-      (err, details) =>
-        Task {
-          log.error(s"Retrying on cache with id '$id' on retry details '$details'", err)
-        }
-    )
-
-    private val writeConsistency = WriteAll(config.consistencyTimeout)
-
-    implicit private val node: Cluster        = Cluster(as)
-    private val uniqueAddr: SelfUniqueAddress = SelfUniqueAddress(node.selfMember.uniqueAddress)
-    implicit private val timeout: Timeout     = Timeout(config.askTimeout)
-
-    private val replicator              = DistributedData(as).replicator
-    private val mapKey                  = LWWMapKey[K, V](id)
-    private val consistencyTimeoutError = ReadWriteConsistencyTimeout(config.consistencyTimeout)
-    private val distributeWriteError    = DistributedDataError("The update couldn't be performed")
-    private val dataDeletedError        = DistributedDataError(
-      "The update couldn't be performed because the entry has been deleted"
-    )
-
-    override def put(key: K, value: V): UIO[Unit] = {
-      val msg =
-        Update(mapKey, LWWMap.empty[K, V], writeConsistency)(_.put(uniqueAddr, key, value, registerClock))
-      IO.deferFuture(replicator ? msg)
-        .flatMap {
-          case _: UpdateSuccess[_]     => IO.unit
-          // $COVERAGE-OFF$
-          case _: UpdateTimeout[_]     => IO.raiseError(consistencyTimeoutError)
-          case _: UpdateFailure[_]     => IO.raiseError(distributeWriteError)
-          case _: UpdateDataDeleted[_] => IO.raiseError(dataDeletedError)
-          // $COVERAGE-ON$
-        }
-        .retryingOnSomeErrors(retryStrategy.retryWhen, retryStrategy.policy, retryStrategy.onError)
-        .hideErrors
-    }
-
-    override def get(key: K): UIO[Option[V]] =
-      entries.map(_.get(key))
-
-    override def find(f: ((K, V)) => Boolean): UIO[Option[(K, V)]] =
-      entries.map(_.find(f))
-
-    override def collectFirst[A](pf: PartialFunction[(K, V), A]): UIO[Option[A]] =
-      entries.map(_.collectFirst(pf))
-
-    override def remove(key: K): UIO[Unit] = removeAll(Set(key))
-
-    override def removeAll(keys: Set[K]): UIO[Unit] = {
-      val msg = Update(mapKey, LWWMap.empty[K, V], writeConsistency) { node =>
-        keys.foldLeft(node) { case (n, k) => n.remove(uniqueAddr, k) }
-      }
-      IO.deferFuture(replicator ? msg)
-        .flatMap {
-          case _: UpdateSuccess[_]     => IO.unit
-          // $COVERAGE-OFF$
-          case _: UpdateTimeout[_]     => IO.raiseError(consistencyTimeoutError)
-          case _: UpdateFailure[_]     => IO.raiseError(distributeWriteError)
-          case _: UpdateDataDeleted[_] => IO.raiseError(dataDeletedError)
-          // $COVERAGE-ON$
-        }
-        .retryingOnSomeErrors(retryStrategy.retryWhen, retryStrategy.policy, retryStrategy.onError)
-        .hideErrors
-    }
-
-    override def entries: UIO[Map[K, V]] = {
-      val msg = Get(mapKey, ReadLocal)
-      IO.deferFuture(replicator ? msg)
-        .flatMap {
-          case g @ GetSuccess(`mapKey`) => IO.pure(g.get(mapKey).entries)
-          case _: GetFailure[_]         => IO.raiseError(consistencyTimeoutError)
-          case _                        => IO.pure(Map.empty[K, V])
-        }
-        .retryingOnSomeErrors(retryStrategy.retryWhen, retryStrategy.policy, retryStrategy.onError)
-        .hideErrors
-    }
-
-    override def flushChanges: UIO[Unit] = IO.pure(replicator ! FlushChanges)
-  }
+  final def localLRU[K, V](config: CacheConfig): UIO[KeyValueStore[K, V]] =
+    localLRU(config.maxSize.toLong, config.expireAfter)
 
   /**
     * Constructs a local key-value store following a LRU policy
@@ -342,12 +237,12 @@ object KeyValueStore {
     * @param maxSize
     *   the max number of entries in the Map
     */
-  final def localLRU[K, V](maxSize: Long): UIO[KeyValueStore[K, V]] =
+  final def localLRU[K, V](maxSize: Long, expireAfter: FiniteDuration = 1.hour): UIO[KeyValueStore[K, V]] =
     UIO.delay {
       val cache: Cache[K, V] =
         Caffeine
           .newBuilder()
-          .expireAfterAccess(Duration.ofHours(1L)) //TODO make this configurable
+          .expireAfterAccess(expireAfter.toJava)
           .maximumSize(maxSize)
           .build[K, V]()
       new LocalLruCache(cache)

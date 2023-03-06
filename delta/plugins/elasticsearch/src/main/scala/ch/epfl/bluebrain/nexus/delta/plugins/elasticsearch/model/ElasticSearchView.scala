@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 
+import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.Metadata
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
@@ -11,12 +11,15 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{NonEmptySet, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.ResourceShift
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.views.model.{ViewIndex, ViewRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe._
+import ch.epfl.bluebrain.nexus.delta.sdk.views.{PipeStep, ViewRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes._
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.parser.parse
@@ -34,6 +37,18 @@ sealed trait ElasticSearchView extends Product with Serializable {
 
   /**
     * @return
+    *   the name of the view
+    */
+  def name: Option[String]
+
+  /**
+    * @return
+    *   the description of the view
+    */
+  def description: Option[String]
+
+  /**
+    * @return
     *   the view id
     */
   def id: Iri
@@ -48,7 +63,7 @@ sealed trait ElasticSearchView extends Product with Serializable {
     * @return
     *   the tag -> rev mapping
     */
-  def tags: Map[TagLabel, Long]
+  def tags: Tags
 
   /**
     * @return
@@ -95,44 +110,28 @@ object ElasticSearchView {
     *   the collection of tags for this resource
     * @param source
     *   the original json value provided by the caller
+    * @param indexingRev
+    *   the indexing revision
     */
   final case class IndexingElasticSearchView(
       id: Iri,
+      name: Option[String],
+      description: Option[String],
       project: ProjectRef,
       uuid: UUID,
-      resourceTag: Option[TagLabel],
-      pipeline: List[PipeDef],
+      resourceTag: Option[UserTag],
+      pipeline: List[PipeStep],
       mapping: JsonObject,
       settings: JsonObject,
       context: Option[ContextObject],
       permission: Permission,
-      tags: Map[TagLabel, Long],
-      source: Json
+      tags: Tags,
+      source: Json,
+      indexingRev: Int
   ) extends ElasticSearchView {
-    override def metadata: Metadata = Metadata(Some(uuid))
+    override def metadata: Metadata = Metadata(Some(uuid), Some(indexingRev))
 
     override def tpe: ElasticSearchViewType = ElasticSearchViewType.ElasticSearch
-  }
-
-  object IndexingElasticSearchView {
-
-    /**
-      * Create the view index from the [[IndexingElasticSearchView]]
-      */
-    def resourceToViewIndex(
-        res: IndexingViewResource,
-        config: ElasticSearchViewsConfig
-    ): ViewIndex[IndexingElasticSearchView] =
-      ViewIndex(
-        res.value.project,
-        res.id,
-        ElasticSearchViews.projectionId(res),
-        ElasticSearchViews.index(res, config.indexing),
-        res.rev,
-        res.deprecated,
-        res.value.resourceTag,
-        res.value
-      )
   }
 
   /**
@@ -151,12 +150,14 @@ object ElasticSearchView {
     */
   final case class AggregateElasticSearchView(
       id: Iri,
+      name: Option[String],
+      description: Option[String],
       project: ProjectRef,
       views: NonEmptySet[ViewRef],
-      tags: Map[TagLabel, Long],
+      tags: Tags,
       source: Json
   ) extends ElasticSearchView {
-    override def metadata: Metadata         = Metadata(None)
+    override def metadata: Metadata         = Metadata(None, None)
     override def tpe: ElasticSearchViewType = ElasticSearchViewType.AggregateElasticSearch
   }
 
@@ -165,15 +166,16 @@ object ElasticSearchView {
     *
     * @param uuid
     *   the optionally available unique view identifier
+    * @param indexingRev
+    *   the optionally available indexing revision
     */
-  final case class Metadata(uuid: Option[UUID])
+  final case class Metadata(uuid: Option[UUID], indexingRev: Option[Int])
 
   val context: ContextValue = ContextValue(contexts.elasticsearch)
 
   @nowarn("cat=unused")
   implicit val elasticSearchViewEncoder: Encoder.AsObject[ElasticSearchView] = {
-    implicit val config: Configuration                     = Configuration.default.withDiscriminator(keywords.tpe)
-    implicit val encoderTags: Encoder[Map[TagLabel, Long]] = Encoder.instance(_ => Json.Null)
+    implicit val config: Configuration = Configuration.default.withDiscriminator(keywords.tpe)
 
     // To keep retro-compatibility, we compute legacy fields from the view pipeline
     def encodeLegacyFields(v: ElasticSearchView) =
@@ -190,17 +192,25 @@ object ElasticSearchView {
           ).deepMerge(
             i.pipeline
               .foldLeft(JsonObject.empty) {
-                case (obj, pipeDef) if pipeDef.name == FilterBySchema.name   =>
-                  obj.add("resourceSchemas", FilterBySchema.extractTypes(pipeDef).getOrElse(Set.empty[Iri]).asJson)
-                case (obj, pipeDef) if pipeDef.name == FilterByType.name     =>
-                  obj.add("resourceTypes", FilterByType.extractTypes(pipeDef).getOrElse(Set.empty[Iri]).asJson)
-                case (obj, pipeDef) if pipeDef.name == SourceAsText.name     =>
+                case (obj, step) if step.name == FilterBySchema.ref.label   =>
+                  step.config.fold(obj) { ldConfig =>
+                    FilterBySchema
+                      .configDecoder(ldConfig)
+                      .fold(_ => obj, cfg => obj.add("resourceSchemas", cfg.types.asJson))
+                  }
+                case (obj, step) if step.name == FilterByType.ref.label     =>
+                  step.config.fold(obj) { ldConfig =>
+                    FilterByType
+                      .configDecoder(ldConfig)
+                      .fold(_ => obj, cfg => obj.add("resourceTypes", cfg.types.asJson))
+                  }
+                case (obj, step) if step.name == SourceAsText.ref.label     =>
                   obj.add("sourceAsText", Json.True)
-                case (obj, pipeDef) if pipeDef.name == DiscardMetadata.name  =>
+                case (obj, step) if step.name == DiscardMetadata.ref.label  =>
                   obj.add("includeMetadata", Json.False)
-                case (obj, pipeDef) if pipeDef.name == FilterDeprecated.name =>
+                case (obj, step) if step.name == FilterDeprecated.ref.label =>
                   obj.add("includeDeprecated", Json.False)
-                case (obj, _)                                                =>
+                case (obj, _)                                               =>
                   obj
               }
           )
@@ -252,8 +262,24 @@ object ElasticSearchView {
   }
 
   implicit private val elasticSearchMetadataEncoder: Encoder.AsObject[Metadata] =
-    Encoder.encodeJsonObject.contramapObject(meta => JsonObject.empty.addIfExists("_uuid", meta.uuid))
+    Encoder.encodeJsonObject.contramapObject(meta =>
+      JsonObject.empty
+        .addIfExists("_uuid", meta.uuid)
+        .addIfExists("_indexingRev", meta.indexingRev)
+    )
 
   implicit val elasticSearchMetadataJsonLdEncoder: JsonLdEncoder[Metadata] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.elasticsearchMetadata))
+
+  type Shift = ResourceShift[ElasticSearchViewState, ElasticSearchView, Metadata]
+
+  def shift(views: ElasticSearchViews, defaultMapping: JsonObject, defaultSettings: JsonObject)(implicit
+      baseUri: BaseUri
+  ): Shift =
+    ResourceShift.withMetadata[ElasticSearchViewState, ElasticSearchView, Metadata](
+      ElasticSearchViews.entityType,
+      (ref, project) => views.fetch(IdSegmentRef(ref), project),
+      (context, state) => state.toResource(context.apiMappings, context.base, defaultMapping, defaultSettings),
+      value => JsonLdContent(value, value.value.source, Some(value.value.metadata))
+    )
 }

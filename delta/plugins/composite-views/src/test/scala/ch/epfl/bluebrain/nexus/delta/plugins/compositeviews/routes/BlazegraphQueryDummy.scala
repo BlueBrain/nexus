@@ -6,9 +6,9 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewR
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{ViewIsDeprecated, WrappedBlazegraphClientError}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.{BlazegraphQuery, CompositeViews}
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import monix.bio.IO
 
 class BlazegraphQueryDummy(client: SparqlQueryClient, views: CompositeViews) extends BlazegraphQuery {

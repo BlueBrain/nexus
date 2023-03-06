@@ -29,5 +29,6 @@
   "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
   "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
   "_rev": 1,
+  "_indexingRev": 1,
   "_deprecated": false
 }

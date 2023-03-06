@@ -4,23 +4,40 @@ import akka.http.scaladsl.model.Uri
 import akka.stream.alpakka.s3
 import akka.stream.alpakka.s3.{ApiVersion, MemoryBufferType}
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.AuthToken
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.AuthToken
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import io.circe.Encoder
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import io.circe.generic.extras.Configuration
-import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
+import io.circe.generic.extras.semiauto.{deriveConfiguredCodec, deriveConfiguredEncoder}
 import io.circe.syntax._
+import io.circe.{Codec, Decoder, Encoder}
 import software.amazon.awssdk.auth.credentials.{AnonymousCredentialsProvider, AwsBasicCredentials, StaticCredentialsProvider}
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.regions.providers.AwsRegionProvider
 
+import java.nio.file.Path
 import scala.annotation.nowarn
+import scala.util.Try
 
 sealed trait StorageValue extends Product with Serializable {
+
+  /**
+    * @return
+    *   name of the storage
+    */
+  def name: Option[String]
+
+  /**
+    * @return
+    *   description of the storage
+    */
+  def description: Option[String]
 
   /**
     * @return
@@ -80,6 +97,8 @@ object StorageValue {
     *   [[StorageFields.DiskStorageFields]]
     */
   final case class DiskStorageValue(
+      name: Option[String] = None,
+      description: Option[String] = None,
       default: Boolean,
       algorithm: DigestAlgorithm,
       volume: AbsolutePath,
@@ -93,6 +112,25 @@ object StorageValue {
     override val secrets: Set[Secret[String]] = Set.empty
   }
 
+  object DiskStorageValue {
+
+    /**
+      * @return
+      *   a DiskStorageValue without name or description
+      */
+    def apply(
+        default: Boolean,
+        algorithm: DigestAlgorithm,
+        volume: AbsolutePath,
+        readPermission: Permission,
+        writePermission: Permission,
+        capacity: Option[Long],
+        maxFileSize: Long
+    ): DiskStorageValue =
+      DiskStorageValue(None, None, default, algorithm, volume, readPermission, writePermission, capacity, maxFileSize)
+
+  }
+
   /**
     * Resolved values to create/update a S3 compatible storage
     *
@@ -100,6 +138,8 @@ object StorageValue {
     *   [[StorageFields.S3StorageFields]]
     */
   final case class S3StorageValue(
+      name: Option[String],
+      description: Option[String],
       default: Boolean,
       algorithm: DigestAlgorithm,
       bucket: String,
@@ -158,6 +198,40 @@ object StorageValue {
     }
   }
 
+  object S3StorageValue {
+
+    /**
+      * @return
+      *   a S3StorageValue without name or description
+      */
+    def apply(
+        default: Boolean,
+        algorithm: DigestAlgorithm,
+        bucket: String,
+        endpoint: Option[Uri],
+        accessKey: Option[Secret[String]],
+        secretKey: Option[Secret[String]],
+        region: Option[Region],
+        readPermission: Permission,
+        writePermission: Permission,
+        maxFileSize: Long
+    ): S3StorageValue =
+      S3StorageValue(
+        None,
+        None,
+        default,
+        algorithm,
+        bucket,
+        endpoint,
+        accessKey,
+        secretKey,
+        region,
+        readPermission,
+        writePermission,
+        maxFileSize
+      )
+  }
+
   /**
     * Resolved values to create/update a Remote disk storage
     *
@@ -165,6 +239,8 @@ object StorageValue {
     *   [[StorageFields.RemoteDiskStorageFields]]
     */
   final case class RemoteDiskStorageValue(
+      name: Option[String] = None,
+      description: Option[String] = None,
       default: Boolean,
       algorithm: DigestAlgorithm,
       endpoint: BaseUri,
@@ -191,6 +267,36 @@ object StorageValue {
 
   }
 
+  object RemoteDiskStorageValue {
+
+    /**
+      * @return
+      *   a RemoteDiskStorageValue without name or description
+      */
+    def apply(
+        default: Boolean,
+        algorithm: DigestAlgorithm,
+        endpoint: BaseUri,
+        credentials: Option[Secret[String]],
+        folder: Label,
+        readPermission: Permission,
+        writePermission: Permission,
+        maxFileSize: Long
+    ): RemoteDiskStorageValue =
+      RemoteDiskStorageValue(
+        None,
+        None,
+        default,
+        algorithm,
+        endpoint,
+        credentials,
+        folder,
+        readPermission,
+        writePermission,
+        maxFileSize
+      )
+  }
+
   @nowarn("cat=unused")
   implicit private[model] val storageValueEncoder: Encoder.AsObject[StorageValue] = {
     implicit val config: Configuration          = Configuration.default.withDiscriminator(keywords.tpe)
@@ -200,4 +306,25 @@ object StorageValue {
       deriveConfiguredEncoder[StorageValue].encodeObject(storage).add(keywords.tpe, storage.tpe.iri.asJson)
     }
   }
+
+  @SuppressWarnings(Array("TryGet"))
+  @nowarn("cat=unused")
+  def databaseCodec(crypto: Crypto)(implicit configuration: Configuration): Codec.AsObject[StorageValue] = {
+    implicit val pathEncoder: Encoder[Path]     = Encoder.encodeString.contramap(_.toString)
+    implicit val pathDecoder: Decoder[Path]     = Decoder.decodeString.emapTry(str => Try(Path.of(str)))
+    implicit val regionEncoder: Encoder[Region] = Encoder.encodeString.contramap(_.toString)
+    implicit val regionDecoder: Decoder[Region] = Decoder.decodeString.map(Region.of)
+
+    implicit val stringSecretEncryptEncoder: Encoder[Secret[String]] = Encoder.encodeString.contramap {
+      case Secret(value) => crypto.encrypt(value).get
+    }
+
+    implicit val stringSecretEncryptDecoder: Decoder[Secret[String]] =
+      Decoder.decodeString.emapTry(str => crypto.decrypt(str).map(Secret(_)))
+
+    implicit val digestCodec: Codec.AsObject[Digest] = deriveConfiguredCodec[Digest]
+
+    deriveConfiguredCodec[StorageValue]
+  }
+
 }
