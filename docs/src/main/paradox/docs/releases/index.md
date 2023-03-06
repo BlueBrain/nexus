@@ -1,5 +1,6 @@
 @@@ index
 
+- @ref:[v1.8 Release Notes](v1.8-release-notes.md)
 - @ref:[v1.7 Release Notes](v1.7-release-notes.md)
 - @ref:[v1.6 To v1.7 Migration](v1.6-to-v1.7-migration.md)
 - @ref:[v1.6 Release Notes](v1.6-release-notes.md)
