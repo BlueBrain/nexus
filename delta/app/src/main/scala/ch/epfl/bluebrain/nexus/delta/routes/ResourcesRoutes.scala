@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
-import akka.http.scaladsl.model.StatusCodes.Created
+import akka.http.scaladsl.model.StatusCodes.{Created, OK}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import cats.syntax.all._
@@ -164,6 +164,20 @@ final class ResourcesRoutes(
                               )
                             }
                           )
+                        }
+                      },
+                      (pathPrefix("refresh") & put & pathEndOrSingleSlash) {
+                        operationName(s"$prefixSegment/resources/{org}/{project}/{schema}/{id}/refresh") {
+                          authorizeFor(ref, Write).apply {
+                            emit(
+                              OK,
+                              resources
+                                .refresh(id, ref, schemaOpt)
+                                .tapEval(index(ref, _, mode))
+                                .map(_.void)
+                                .rejectWhen(wrongJsonOrNotFound)
+                            )
+                          }
                         }
                       },
                       // Fetch a resource original source

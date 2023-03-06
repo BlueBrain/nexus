@@ -110,6 +110,27 @@ Response
 :   @@snip [updated.json](assets/resources/updated.json)
 
 
+## Refresh
+
+This operation refreshes the payload.
+
+This is equivalent of doing an update with the same source as the last revision of the resource. It is useful when the 
+schema or project contexts have changed, in order for the changes to be reflected in the resources
+
+```
+PUT /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}/refresh
+```
+
+**Example**
+
+Request
+:   @@snip [refresh.sh](assets/resources/refresh.sh)
+
+Response
+:   @@snip [refreshed.json](assets/resources/updated.json)
+
+
+
 ## Tag
 
 Links a resource revision to a specific name. 

@@ -71,6 +71,7 @@ object EventMetric {
 
   val Created: Label    = Label.unsafe("Created")
   val Updated: Label    = Label.unsafe("Updated")
+  val Refreshed: Label  = Label.unsafe("Refreshed")
   val Tagged: Label     = Label.unsafe("Tagged")
   val TagDeleted: Label = Label.unsafe("TagDeleted")
   val Deprecated: Label = Label.unsafe("Deprecated")

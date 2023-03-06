@@ -364,6 +364,69 @@ class ResourcesImplSpec
       }
     }
 
+    "refreshing a resource" should {
+
+      "succeed" in {
+        val expectedData =
+          ResourceGen.resource(myId6, projectRef, source.removeKeys(keywords.id), Revision(schema1.id, 1))
+        resources.refresh(myId6, projectRef, Some(schema1.id)).accepted shouldEqual
+          ResourceGen.resourceFor(
+            expectedData,
+            types = types,
+            subject = subject,
+            rev = 2,
+            am = allApiMappings,
+            base = projBase
+          )
+      }
+
+      "succeed without specifying the schema" in {
+        val expectedData =
+          ResourceGen.resource(myId6, projectRef, source.removeKeys(keywords.id), Revision(schema1.id, 1))
+        resources.refresh("nxv:myid6", projectRef, None).accepted shouldEqual
+          ResourceGen.resourceFor(
+            expectedData,
+            types = types,
+            subject = subject,
+            rev = 3,
+            am = allApiMappings,
+            base = projBase
+          )
+      }
+
+      "reject if it doesn't exists" in {
+        resources
+          .refresh(nxv + "other", projectRef, None)
+          .rejectedWith[ResourceNotFound]
+      }
+
+      "reject if schemas do not match" in {
+        resources
+          .refresh(myId6, projectRef, Some(schemas.resources))
+          .rejectedWith[UnexpectedResourceSchema]
+      }
+
+      "reject if project does not exist" in {
+        val projectRef = ProjectRef(org, Label.unsafe("other"))
+
+        resources.refresh(myId6, projectRef, None).rejectedWith[ProjectContextRejection]
+      }
+
+      "reject if project is deprecated" in {
+        resources.refresh(myId6, projectDeprecated.ref, None).rejectedWith[ProjectContextRejection]
+      }
+
+      "reject if deprecated" in {
+        resources.deprecate(myId6, projectRef, None, 3).accepted
+        resources
+          .refresh(myId6, projectRef, None)
+          .rejectedWith[ResourceIsDeprecated]
+        resources
+          .refresh("nxv:myid6", projectRef, None)
+          .rejectedWith[ResourceIsDeprecated]
+      }
+    }
+
     "tagging a resource" should {
 
       "succeed" in {

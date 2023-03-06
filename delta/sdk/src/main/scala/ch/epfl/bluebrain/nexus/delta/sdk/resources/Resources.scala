@@ -94,6 +94,24 @@ trait Resources {
   )(implicit caller: Caller): IO[ResourceRejection, DataResource]
 
   /**
+    * Refreshes an existing resource. This is equivalent to posting an update with the latest source. Used for when the
+    * project or schema contexts have changes
+    *
+    * @param id
+    *   the identifier that will be expanded to the Iri of the resource
+    * @param projectRef
+    *   the project reference where the resource belongs
+    * @param schemaOpt
+    *   the optional identifier that will be expanded to the schema reference to validate the resource. A None value
+    *   uses the currently available resource schema reference.
+    */
+  def refresh(
+      id: IdSegment,
+      projectRef: ProjectRef,
+      schemaOpt: Option[IdSegment]
+  )(implicit caller: Caller): IO[ResourceRejection, DataResource]
+
+  /**
     * Adds a tag to an existing resource.
     *
     * @param id
@@ -220,6 +238,10 @@ object Resources {
       _.copy(rev = e.rev, types = e.types, source = e.source, compacted = e.compacted, expanded = e.expanded, updatedAt = e.instant, updatedBy = e.subject)
     }
 
+    def refreshed(e: ResourceRefreshed): Option[ResourceState] = state.map {
+      _.copy(rev = e.rev, types = e.types, compacted = e.compacted, expanded = e.expanded, updatedAt = e.instant, updatedBy = e.subject)
+    }
+
     def tagAdded(e: ResourceTagAdded): Option[ResourceState] = state.map { s =>
       s.copy(rev = e.rev, tags = s.tags + (e.tag -> e.targetRev), updatedAt = e.instant, updatedBy = e.subject)
     }
@@ -236,6 +258,7 @@ object Resources {
     event match {
       case e: ResourceCreated    => created(e)
       case e: ResourceUpdated    => updated(e)
+      case e: ResourceRefreshed  => refreshed(e)
       case e: ResourceTagAdded   => tagAdded(e)
       case e: ResourceTagDeleted => tagDeleted(e)
       case e: ResourceDeprecated => deprecated(e)
@@ -293,28 +316,7 @@ object Resources {
         case _ => IO.raiseError(ResourceAlreadyExists(c.id, c.project))
       }
 
-    def update(c: UpdateResource) =
-      state match {
-        case None                                                          =>
-          IO.raiseError(ResourceNotFound(c.id, c.project, c.schemaOpt))
-        case Some(s) if s.rev != c.rev                                     =>
-          IO.raiseError(IncorrectRev(c.rev, s.rev))
-        case Some(s) if s.deprecated                                       =>
-          IO.raiseError(ResourceIsDeprecated(c.id))
-        case Some(s) if c.schemaOpt.exists(cur => cur.iri != s.schema.iri) =>
-          IO.raiseError(UnexpectedResourceSchema(s.id, c.schemaOpt.get, s.schema))
-        case Some(s)                                                       =>
-          // format: off
-          for {
-            (schemaRev, schemaProject) <- validate(s.project, c.schemaOpt.getOrElse(s.schema), c.caller, c.id, c.expanded)
-            types                       = c.expanded.cursor.getTypes.getOrElse(Set.empty)
-            time                       <- IOUtils.instant
-          } yield ResourceUpdated(c.id, c.project, schemaRev, schemaProject, types, c.source, c.compacted, c.expanded, s.rev + 1, time, c.subject)
-        // format: on
-
-      }
-
-    def tag(c: TagResource) =
+    def validateStateResourceExists(c: ModifyCommand) = {
       state match {
         case None                                                          =>
           IO.raiseError(ResourceNotFound(c.id, c.project, c.schemaOpt))
@@ -322,43 +324,96 @@ object Resources {
           IO.raiseError(IncorrectRev(c.rev, s.rev))
         case Some(s) if c.schemaOpt.exists(cur => cur.iri != s.schema.iri) =>
           IO.raiseError(UnexpectedResourceSchema(s.id, c.schemaOpt.get, s.schema))
-        case Some(s) if c.targetRev <= 0 || c.targetRev > s.rev            =>
-          IO.raiseError(RevisionNotFound(c.targetRev, s.rev))
-        case Some(s)                                                       =>
-          IOUtils.instant.map(ResourceTagAdded(c.id, c.project, s.types, c.targetRev, c.tag, s.rev + 1, _, c.subject))
-
+        case Some(s)                                                       => IO.now(s)
       }
+    }
 
-    def deleteTag(c: DeleteResourceTag) =
-      state match {
-        case None                                                          =>
-          IO.raiseError(ResourceNotFound(c.id, c.project, c.schemaOpt))
-        case Some(s) if s.rev != c.rev                                     =>
-          IO.raiseError(IncorrectRev(c.rev, s.rev))
-        case Some(s) if c.schemaOpt.exists(cur => cur.iri != s.schema.iri) =>
-          IO.raiseError(UnexpectedResourceSchema(s.id, c.schemaOpt.get, s.schema))
-        case Some(s) if !s.tags.contains(c.tag)                            => IO.raiseError(TagNotFound(c.tag))
-        case Some(s)                                                       =>
-          IOUtils.instant.map(ResourceTagDeleted(c.id, c.project, s.types, c.tag, s.rev + 1, _, c.subject))
+    def validateStateResourceCanBeModified(c: ModifyCommand) = {
+      validateStateResourceExists(c).flatMap { s =>
+        IO.raiseWhen(s.deprecated)(ResourceIsDeprecated(c.id)).as(s)
       }
+    }
 
-    def deprecate(c: DeprecateResource) =
-      state match {
-        case None                                                          =>
-          IO.raiseError(ResourceNotFound(c.id, c.project, c.schemaOpt))
-        case Some(s) if s.rev != c.rev                                     =>
-          IO.raiseError(IncorrectRev(c.rev, s.rev))
-        case Some(s) if c.schemaOpt.exists(cur => cur.iri != s.schema.iri) =>
-          IO.raiseError(UnexpectedResourceSchema(s.id, c.schemaOpt.get, s.schema))
-        case Some(s) if s.deprecated                                       =>
-          IO.raiseError(ResourceIsDeprecated(c.id))
-        case Some(s)                                                       =>
-          IOUtils.instant.map(ResourceDeprecated(c.id, c.project, s.types, s.rev + 1, _, c.subject))
+    def validateStateTagExistsOnResource(c: ModifyCommand, tag: UserTag) = {
+      validateStateResourceExists(c).flatMap { s =>
+        IO.raiseWhen(!s.tags.contains(tag))(TagNotFound(tag)).as(s)
       }
+    }
+
+    def validateStateTagIsValid(c: ModifyCommand, targetRev: Int) = {
+      validateStateResourceExists(c).flatMap { s =>
+        IO.raiseWhen(targetRev <= 0 || targetRev > s.rev)(RevisionNotFound(targetRev, s.rev)).as(s)
+      }
+    }
+
+    def update(c: UpdateResource) = {
+      for {
+        s                          <- validateStateResourceCanBeModified(c)
+        (schemaRev, schemaProject) <- validate(s.project, c.schemaOpt.getOrElse(s.schema), c.caller, c.id, c.expanded)
+        types                       = c.expanded.cursor.getTypes.getOrElse(Set.empty)
+        time                       <- IOUtils.instant
+      } yield ResourceUpdated(
+        c.id,
+        c.project,
+        schemaRev,
+        schemaProject,
+        types,
+        c.source,
+        c.compacted,
+        c.expanded,
+        s.rev + 1,
+        time,
+        c.subject
+      )
+    }
+
+    def refresh(c: RefreshResource) = {
+      for {
+        s                          <- validateStateResourceCanBeModified(c)
+        (schemaRev, schemaProject) <- validate(s.project, c.schemaOpt.getOrElse(s.schema), c.caller, c.id, c.expanded)
+        types                       = c.expanded.cursor.getTypes.getOrElse(Set.empty)
+        time                       <- IOUtils.instant
+      } yield ResourceRefreshed(
+        c.id,
+        c.project,
+        schemaRev,
+        schemaProject,
+        types,
+        c.compacted,
+        c.expanded,
+        s.rev + 1,
+        time,
+        c.subject
+      )
+    }
+
+    def tag(c: TagResource) = {
+      for {
+        s    <- validateStateTagIsValid(c, c.targetRev)
+        time <- IOUtils.instant
+      } yield {
+        ResourceTagAdded(c.id, c.project, s.types, c.targetRev, c.tag, s.rev + 1, time, c.subject)
+      }
+    }
+
+    def deleteTag(c: DeleteResourceTag) = {
+      for {
+        s    <- validateStateTagExistsOnResource(c, c.tag)
+        time <- IOUtils.instant
+      } yield ResourceTagDeleted(c.id, c.project, s.types, c.tag, s.rev + 1, time, c.subject)
+    }
+
+    def deprecate(c: DeprecateResource) = {
+      for {
+        s    <- validateStateResourceCanBeModified(c)
+        time <- IOUtils.instant
+      } yield ResourceDeprecated(c.id, c.project, s.types, s.rev + 1, time, c.subject)
+    }
 
     cmd match {
       case c: CreateResource    => create(c)
       case c: UpdateResource    => update(c)
+      case c: RefreshResource   => refresh(c)
       case c: TagResource       => tag(c)
       case c: DeleteResourceTag => deleteTag(c)
       case c: DeprecateResource => deprecate(c)

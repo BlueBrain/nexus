@@ -26,17 +26,30 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
   private val orgId   = genId()
   private val projId1 = genId()
   private val projId2 = genId()
+  private val projId3 = genId()
   private val id1     = s"$orgId/$projId1"
   private val id2     = s"$orgId/$projId2"
+  private val id3     = s"$orgId/$projId3"
 
-  private val IdLens: Optional[Json, String] = root.`@id`.string
-  private def `@id`(expectedId: String)      = HavePropertyMatcher[Json, String] { json =>
+  private val IdLens: Optional[Json, String]   = root.`@id`.string
+  private val TypeLens: Optional[Json, String] = root.`@type`.string
+  private def `@id`(expectedId: String)        = HavePropertyMatcher[Json, String] { json =>
     val actualId = IdLens.getOption(json)
     HavePropertyMatchResult(
       actualId.contains(expectedId),
       "@id",
       expectedId,
       actualId.orNull
+    )
+  }
+
+  private def `@type`(expectedType: String) = HavePropertyMatcher[Json, String] { json =>
+    val actualType = TypeLens.getOption(json)
+    HavePropertyMatchResult(
+      actualType.contains(expectedType),
+      "@type",
+      expectedType,
+      actualType.orNull
     )
   }
 
@@ -593,4 +606,58 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
     }(PredefinedFromEntityUnmarshallers.stringUnmarshaller)
   }
 
+  "refreshing a resource" should {
+
+    val Base    = "http://my-original-base.com/"
+    val NewBase = "http://my-new-base.com/"
+
+    val ResourceId     = "resource-with-type"
+    val FullResourceId = s"$Base/$ResourceId"
+
+    val ResourceType        = "my-type"
+    val FullResourceType    = s"$Base$ResourceType"
+    val NewFullResourceType = s"$NewBase$ResourceType"
+
+    "create a project" in {
+      adminDsl.createProject(orgId, projId3, kgDsl.projectJsonWithCustomBase(name = id3, base = Base), Rick)
+    }
+
+    "create resource using the created project" in {
+      val payload =
+        jsonContentOf("/kg/resources/simple-resource-with-type.json", "id" -> FullResourceId, "type" -> ResourceType)
+
+      deltaClient.post[Json](s"/resources/$id3/", payload, Rick) { (_, response) =>
+        response.status shouldEqual StatusCodes.Created
+      }
+    }
+
+    "type should be expanded" in {
+      deltaClient.get[Json](s"/resources/$id3/_/${UrlUtils.encode(FullResourceId)}", Rick) { (json, response) =>
+        response.status shouldEqual StatusCodes.OK
+        json should have(`@type`(FullResourceType))
+      }
+    }
+
+    "update a project" in {
+      for {
+        _ <-
+          adminDsl.updateProject(orgId, projId3, kgDsl.projectJsonWithCustomBase(name = id3, base = NewBase), Rick, 1)
+      } yield succeed
+    }
+
+    "do a refresh" in {
+      deltaClient.put[Json](s"/resources/$id3/_/${UrlUtils.encode(FullResourceId)}/refresh?rev=1", Json.Null, Rick) {
+        (_, response) =>
+          response.status shouldEqual StatusCodes.OK
+      }
+    }
+
+    "type should be updated" in {
+      deltaClient.get[Json](s"/resources/$id3/_/${UrlUtils.encode(FullResourceId)}", Rick) { (json, response) =>
+        println(json)
+        response.status shouldEqual StatusCodes.OK
+        json should have(`@type`(NewFullResourceType))
+      }
+    }
+  }
 }

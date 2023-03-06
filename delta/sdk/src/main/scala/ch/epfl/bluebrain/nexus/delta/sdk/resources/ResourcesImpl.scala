@@ -82,6 +82,22 @@ final class ResourcesImpl private (
     } yield res
   }.span("updateResource")
 
+  override def refresh(
+      id: IdSegment,
+      projectRef: ProjectRef,
+      schemaOpt: Option[IdSegment]
+  )(implicit caller: Caller): IO[ResourceRejection, DataResource] = {
+    for {
+      projectContext        <- fetchContext.onModify(projectRef)
+      iri                   <- expandIri(id, projectContext)
+      schemaRefOpt          <- expandResourceRef(schemaOpt, projectContext)
+      resource              <- log.stateOr(projectRef, iri, ResourceNotFound(iri, projectRef, schemaRefOpt))
+      (compacted, expanded) <- sourceParser(projectRef, projectContext, iri, resource.source)
+      res                   <-
+        eval(RefreshResource(iri, projectRef, schemaRefOpt, compacted, expanded, resource.rev, caller), projectContext)
+    } yield res
+  }.span("refreshResource")
+
   override def tag(
       id: IdSegment,
       projectRef: ProjectRef,

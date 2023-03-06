@@ -204,6 +204,41 @@ class ResourcesRoutesSpec extends BaseRouteSpec {
       }
     }
 
+    "fail to refresh a resource without resources/write permission" in {
+      aclCheck.subtract(AclAddress.Root, Anonymous -> Set(resources.write)).accepted
+      Put("/v1/resources/myorg/myproject/_/myid/refresh", payload.toEntity) ~> routes ~> check {
+        response.status shouldEqual StatusCodes.Forbidden
+        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+      }
+    }
+
+    "refresh a resource" in {
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(resources.write)).accepted
+      val encodedSchema = UrlUtils.encode(schemas.resources.toString)
+      val endpoints     = List(
+        "/v1/resources/myorg/myproject/_/myid/refresh"               -> 5,
+        s"/v1/resources/myorg/myproject/_/$myIdEncoded/refresh"      -> 6,
+        "/v1/resources/myorg/myproject/resource/myid/refresh"        -> 7,
+        s"/v1/resources/myorg/myproject/$encodedSchema/myid/refresh" -> 8
+      )
+      forAll(endpoints) { case (endpoint, rev) =>
+        Put(s"$endpoint", payloadUpdated.toEntity(Printer.noSpaces)) ~> routes ~> check {
+          status shouldEqual StatusCodes.OK
+          response.asJson shouldEqual
+            resourceMetadata(projectRef, myId, schemas.resources, (nxv + "Custom").toString, rev = rev + 1)
+        }
+      }
+    }
+
+    "reject the refresh of a non-existent resource" in {
+      val payload = payloadUpdated.removeKeys(keywords.id)
+      Put("/v1/resources/myorg/myproject/_/myid10/refresh", payload.toEntity) ~> routes ~> check {
+        status shouldEqual StatusCodes.NotFound
+        response.asJson shouldEqual
+          jsonContentOf("/resources/errors/not-found.json", "id" -> (nxv + "myid10"), "proj" -> "myorg/myproject")
+      }
+    }
+
     "fail to deprecate a resource without resources/write permission" in {
       aclCheck.subtract(AclAddress.Root, Anonymous -> Set(resources.write)).accepted
       Delete("/v1/resources/myorg/myproject/_/myid?rev=4") ~> routes ~> check {
@@ -214,10 +249,10 @@ class ResourcesRoutesSpec extends BaseRouteSpec {
 
     "deprecate a resource" in {
       aclCheck.append(AclAddress.Root, Anonymous -> Set(resources.write)).accepted
-      Delete("/v1/resources/myorg/myproject/_/myid?rev=5") ~> routes ~> check {
+      Delete("/v1/resources/myorg/myproject/_/myid?rev=9") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual
-          resourceMetadata(projectRef, myId, schemas.resources, (nxv + "Custom").toString, deprecated = true, rev = 6)
+          resourceMetadata(projectRef, myId, schemas.resources, (nxv + "Custom").toString, deprecated = true, rev = 10)
       }
     }
 
@@ -229,7 +264,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec {
     }
 
     "reject the deprecation of a already deprecated resource" in {
-      Delete("/v1/resources/myorg/myproject/_/myid?rev=6") ~> routes ~> check {
+      Delete("/v1/resources/myorg/myproject/_/myid?rev=10") ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual jsonContentOf("/resources/errors/resource-deprecated.json", "id" -> myId)
       }
@@ -273,7 +308,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec {
       aclCheck.append(AclAddress.Root, Anonymous -> Set(resources.read)).accepted
       Get("/v1/resources/myorg/myproject/_/myid") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
-        val meta = resourceMetadata(projectRef, myId, schemas.resources, "Custom", deprecated = true, rev = 6)
+        val meta = resourceMetadata(projectRef, myId, schemas.resources, "Custom", deprecated = true, rev = 10)
         response.asJson shouldEqual payloadUpdated.dropNullValues.deepMerge(meta).deepMerge(resourceCtx)
       }
     }
@@ -385,15 +420,15 @@ class ResourcesRoutesSpec extends BaseRouteSpec {
     }
 
     "tag a deprecated resource" in {
-      val payload = json"""{"tag": "mytag", "rev": 6}"""
-      Post("/v1/resources/myorg/myproject/_/myid/tags?rev=6", payload.toEntity) ~> routes ~> check {
+      val payload = json"""{"tag": "mytag", "rev": 10}"""
+      Post("/v1/resources/myorg/myproject/_/myid/tags?rev=10", payload.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
         response.asJson shouldEqual resourceMetadata(
           projectRef,
           myId,
           schemas.resources,
           (nxv + "Custom").toString,
-          rev = 7,
+          rev = 11,
           deprecated = true
         )
       }
