@@ -42,9 +42,9 @@ CREATE TABLE IF NOT EXISTS public.scoped_events(
     rev      integer      NOT NULL,
     value    JSONB        NOT NULL,
     instant  timestamptz  NOT NULL,
-    PRIMARY KEY(type, org, project, id, rev),
-    UNIQUE (org, project, id, rev)
+    PRIMARY KEY(org, project, id, rev)
 );
+CREATE INDEX IF NOT EXISTS scoped_events_type_idx ON public.scoped_events(type);
 CREATE INDEX IF NOT EXISTS scoped_events_ordering_idx ON public.scoped_events (ordering);
 
 --
@@ -61,9 +61,9 @@ CREATE TABLE IF NOT EXISTS public.scoped_states(
     value      JSONB        NOT NULL,
     deprecated boolean      NOT NULL,
     instant    timestamptz  NOT NULL,
-    PRIMARY KEY(type, org, project, tag, id),
-    UNIQUE (org, project, tag, id)
+    PRIMARY KEY(org, project, tag, id)
 );
+CREATE INDEX IF NOT EXISTS scoped_states_type_idx ON public.scoped_states(type);
 CREATE INDEX IF NOT EXISTS scoped_states_ordering_idx ON public.scoped_states (ordering);
 CREATE INDEX IF NOT EXISTS project_uuid_idx ON public.scoped_states((value->>'uuid')) WHERE type = 'project';
 
@@ -105,9 +105,9 @@ CREATE TABLE IF NOT EXISTS public.ephemeral_states(
     value      JSONB        NOT NULL,
     instant    timestamptz  NOT NULL,
     expires    timestamptz  NOT NULL,
-    PRIMARY KEY(type, org, project, id),
-    UNIQUE (org, project, id)
+    PRIMARY KEY(org, project, id)
 );
+CREATE INDEX IF NOT EXISTS ephemeral_states_type_idx ON public.ephemeral_states(type);
 
 --
 -- Table for entity dependencies
