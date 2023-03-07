@@ -158,7 +158,6 @@ sealed trait Elem[+A] extends Product with Serializable {
     case _: DroppedElem    => None
   }
 
-
   override def toString: String =
     s"${this.getClass.getSimpleName}[${project.fold("")(_.toString)}/$id:$rev]{${offset.value}}"
 }
