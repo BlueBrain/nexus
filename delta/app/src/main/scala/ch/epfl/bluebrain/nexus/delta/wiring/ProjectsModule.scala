@@ -67,8 +67,8 @@ object ProjectsModule extends ModuleDef {
       )
   }
 
-  make[ProjectsStatistics].fromEffect { (xas: Transactors, config: ProjectsConfig) =>
-    ProjectsStatistics(xas, config.cache)
+  make[ProjectsStatistics].fromEffect { (xas: Transactors) =>
+    ProjectsStatistics(xas)
   }
 
   make[ProjectProvisioning].from {

@@ -132,7 +132,7 @@ object IdentitiesImpl {
       getUserInfo: (Uri, OAuth2BearerToken) => IO[HttpClientError, Json],
       config: CacheConfig
   ): UIO[Identities] =
-    KeyValueStore.localLRU(config).map { groups =>
+    KeyValueStore.local(config).map { groups =>
       new IdentitiesImpl(findActiveRealm, getUserInfo, groups)
     }
 }

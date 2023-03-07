@@ -219,7 +219,7 @@ object KeyValueStore {
         Caffeine
           .newBuilder()
           .build[K, V]()
-      new LocalLruCache(cache)
+      new LocalCache(cache)
     }
 
   /**
@@ -235,20 +235,51 @@ object KeyValueStore {
     * Constructs a local key-value store following a LRU policy
     *
     * @param maxSize
-    *   the max number of entries in the Map
+    *   the max number of entries
+    * @param expireAfterAccess
+    *   Entries will be removed one the givenduration has elapsed after the entry's creation, the most recent
+    *   replacement of its value, or its last access.
     */
-  final def localLRU[K, V](maxSize: Long, expireAfter: FiniteDuration = 1.hour): UIO[KeyValueStore[K, V]] =
+  final def localLRU[K, V](maxSize: Long, expireAfterAccess: FiniteDuration = 1.hour): UIO[KeyValueStore[K, V]] =
     UIO.delay {
       val cache: Cache[K, V] =
         Caffeine
           .newBuilder()
-          .expireAfterAccess(expireAfter.toJava)
+          .expireAfterAccess(expireAfterAccess.toJava)
           .maximumSize(maxSize)
           .build[K, V]()
-      new LocalLruCache(cache)
+      new LocalCache(cache)
     }
 
-  private class LocalLruCache[K, V](cache: Cache[K, V]) extends KeyValueStore[K, V] {
+  /**
+    * Constructs a local key-value store
+    *
+    * @param config
+    *   the cache configuration
+    */
+  final def local[K, V](config: CacheConfig): UIO[KeyValueStore[K, V]] =
+    local(config.maxSize.toLong, config.expireAfter)
+
+  /**
+    * Constructs a local key-value store
+    * @param maxSize
+    *   the max number of entries
+    * @param expireAfterWrite
+    *   Entries will be removed one the givenduration has elapsed after the entry's creation or the most recent
+    *   replacement of its value.
+    */
+  final def local[K, V](maxSize: Long, expireAfterWrite: FiniteDuration = 1.hour): UIO[KeyValueStore[K, V]] =
+    UIO.delay {
+      val cache: Cache[K, V] =
+        Caffeine
+          .newBuilder()
+          .expireAfterWrite(expireAfterWrite.toJava)
+          .maximumSize(maxSize)
+          .build[K, V]()
+      new LocalCache(cache)
+    }
+
+  private class LocalCache[K, V](cache: Cache[K, V]) extends KeyValueStore[K, V] {
 
     override def put(key: K, value: V): UIO[Unit] = UIO.delay(cache.put(key, value))
 
