@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.quotas.model.{Quota, QuotaRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import monix.bio.{IO, UIO}
+import monix.bio.IO
 
 final class QuotasImpl(
     projectsStatistics: ProjectsStatistics
@@ -24,10 +24,10 @@ final class QuotasImpl(
   override def reachedForResources(
       ref: ProjectRef,
       subject: Subject
-  ): IO[QuotaReached, Unit] =
-    IO.unless(subject == serviceAccountConfig.value.subject) {
+  ): IO[QuotaReached, Unit] = {
+    val quota = quotasFromConfig(ref).toOption
+    IO.unless(quota.isEmpty || subject == serviceAccountConfig.value.subject) {
       for {
-        quota     <- UIO.delay(quotasFromConfig(ref).toOption)
         countsOpt <- projectsStatistics.get(ref)
         _         <- countsOpt
                        .map { count =>
@@ -36,14 +36,15 @@ final class QuotasImpl(
                        .getOrElse(IO.unit)
       } yield ()
     }
+  }
 
   override def reachedForEvents(
       ref: ProjectRef,
       subject: Subject
-  ): IO[QuotaReached, Unit] =
-    IO.unless(subject == serviceAccountConfig.value.subject) {
+  ): IO[QuotaReached, Unit] = {
+    val quota = quotasFromConfig(ref).toOption
+    IO.unless(quota.isEmpty || subject == serviceAccountConfig.value.subject) {
       for {
-        quota     <- UIO.delay(quotasFromConfig(ref).toOption)
         countsOpt <- projectsStatistics.get(ref)
         _         <- countsOpt
                        .map { count =>
@@ -53,6 +54,7 @@ final class QuotasImpl(
 
       } yield ()
     }
+  }
 
   private def quotaReached(current: Long, config: Option[Int])(
       onQuotaReached: Int => QuotaReached

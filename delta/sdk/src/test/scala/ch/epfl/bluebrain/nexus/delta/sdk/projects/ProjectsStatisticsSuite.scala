@@ -47,7 +47,7 @@ class ProjectsStatisticsSuite extends BioSuite with Doobie.Fixture with ConfigFi
     xas
   )
 
-  private lazy val stats = ProjectsStatistics(xas, cacheConfig).runSyncUnsafe()
+  private lazy val stats = ProjectsStatistics(xas).runSyncUnsafe()
 
   private val org  = Label.unsafe("org")
   private val org2 = Label.unsafe("org2")

@@ -20,7 +20,7 @@ object ProjectContextCache {
 
   def apply(fetchContext: FetchContext[ContextRejection]): Task[ProjectContextCache] = {
     // TODO make the cache configurable
-    KeyValueStore.localLRU[ProjectRef, ProjectContext](500, 2.minutes).map { kv =>
+    KeyValueStore.local[ProjectRef, ProjectContext](500, 2.minutes).map { kv =>
       def f(projectRef: ProjectRef): UIO[ProjectContext] = kv.getOrElseUpdate(
         projectRef,
         fetchContext
