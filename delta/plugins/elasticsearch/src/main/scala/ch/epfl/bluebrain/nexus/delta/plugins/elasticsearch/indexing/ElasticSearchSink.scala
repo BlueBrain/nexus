@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearch
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchSink.BulkUpdateException
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.FailedElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
 import fs2.Chunk
 import io.circe.{Json, JsonObject}
@@ -60,10 +61,21 @@ final class ElasticSearchSink private (
         .map {
           case Success                           => elements.map(_.void)
           case BulkResponse.MixedOutcomes(items) =>
-            elements.zip(Chunk.seq(items)).map {
-              case (element, MixedOutcomes.Outcome.Success)     => element.void
-              case (element, MixedOutcomes.Outcome.Error(json)) =>
-                element.failed(BulkUpdateException(json))
+            elements.map {
+              case element: FailedElem => element
+              case element             =>
+                items.get(documentId(element)) match {
+                  case None                                    =>
+                    element.failed(
+                      BulkUpdateException(
+                        JsonObject(
+                          "reason" -> Json.fromString(s"${element.id} was not found in Elasticsearch response")
+                        )
+                      )
+                    )
+                  case Some(MixedOutcomes.Outcome.Success)     => element.void
+                  case Some(MixedOutcomes.Outcome.Error(json)) => element.failed(BulkUpdateException(json))
+                }
             }
         }
     } else {

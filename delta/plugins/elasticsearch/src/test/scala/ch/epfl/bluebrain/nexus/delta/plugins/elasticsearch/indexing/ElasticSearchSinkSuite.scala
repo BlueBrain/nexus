@@ -1,10 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing
 
 import akka.http.scaladsl.model.Uri.Query
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchClientSetup
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{IndexLabel, QueryBuilder}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchSink.BulkUpdateException
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
@@ -68,20 +69,42 @@ class ElasticSearchSinkSuite extends BioSuite with ElasticSearchClientSetup.Fixt
   }
 
   test("Report errors when a invalid json is submitted") {
+    val failed         = FailedElem(
+      membersEntity,
+      nxv + "fail",
+      None,
+      Instant.EPOCH,
+      Offset.at(1L),
+      new IllegalArgumentException("Boom"),
+      1
+    )
     val invalidElement = (nxv + "xxx", json"""{"name": 112, "age": "xxx"}""")
-    val chunk          = Chunk(invalidElement, alice).map { case (id, json) =>
-      SuccessElem(membersEntity, id, None, Instant.EPOCH, Offset.at(members.size.toLong + 1), json, rev)
-    }
+    val chunk          = Chunk.concat(
+      Seq(
+        Chunk.singleton(failed),
+        Chunk(invalidElement, alice).map { case (id, json) =>
+          SuccessElem(membersEntity, id, None, Instant.EPOCH, Offset.at(members.size.toLong + 1), json, rev)
+        }
+      )
+    )
 
     for {
-      _ <- sink
-             .apply(chunk)
-             .map(_.filter(_.isInstanceOf[FailedElem]).size)
-             .assert(1)
-      _ <- client
-             .search(QueryBuilder.empty, Set(index.value), Query.Empty)
-             .map(_.sources.toSet)
-             .assert(Set(bob, judy, alice).flatMap(_._2.asObject))
+      result <- sink.apply(chunk).map(_.toList)
+      _       =
+        assertEquals(result.size, 3, "3 elements were submitted to the sink, we expect 3 elements in the result chunk.")
+      // The failed elem should be return intact
+      _       = assertEquals(Some(failed), result.headOption)
+      // The invalid one should hold the Elasticsearch error
+      _       = assert(
+                  result.lift(1).flatMap(_.toThrowable).exists(_.isInstanceOf[BulkUpdateException]),
+                  "We expect a 'BulkUpdateException' as an error here"
+                )
+      // The valid one should remain a success and hold a Unit value
+      _       = assert(result.lift(2).flatMap(_.toOption).contains(()))
+      _      <- client
+                  .search(QueryBuilder.empty, Set(index.value), Query.Empty)
+                  .map(_.sources.toSet)
+                  .assert(Set(bob, judy, alice).flatMap(_._2.asObject))
     } yield ()
   }
 
