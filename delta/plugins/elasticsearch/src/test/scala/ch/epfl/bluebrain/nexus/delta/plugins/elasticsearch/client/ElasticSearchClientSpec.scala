@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchDocker
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, IOValues, TestHelpers}
 import io.circe.JsonObject
-import org.scalatest.DoNotDiscover
+import org.scalatest.{DoNotDiscover, OptionValues}
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -31,6 +31,7 @@ class ElasticSearchClientSpec(override val docker: ElasticSearchDocker)
     with Matchers
     with ScalaTestElasticSearchClientSetup
     with EitherValuable
+    with OptionValues
     with CirceLiteral
     with TestHelpers
     with IOValues
@@ -134,8 +135,11 @@ class ElasticSearchClientSpec(override val docker: ElasticSearchDocker)
       result match {
         case BulkResponse.Success              => fail("errors expected")
         case BulkResponse.MixedOutcomes(items) => {
-          every(items.take(5)) shouldBe Outcome.Success
-          items(5) shouldBe an[Outcome.Error]
+          items.size shouldEqual 4
+          items.get("1").value shouldEqual Outcome.Success
+          items.get("2").value shouldEqual Outcome.Success
+          items.get("3").value shouldEqual Outcome.Success
+          items.get("5").value shouldBe an[Outcome.Error]
         }
       }
     }

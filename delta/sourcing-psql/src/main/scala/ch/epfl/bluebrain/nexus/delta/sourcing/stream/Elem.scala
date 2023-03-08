@@ -149,6 +149,15 @@ sealed trait Elem[+A] extends Product with Serializable {
     case _: DroppedElem    => None
   }
 
+  /**
+    * Returns the underlying error for a [[FailedElem]]
+    */
+  def toThrowable: Option[Throwable] = this match {
+    case _: SuccessElem[A] => None
+    case f: FailedElem     => Some(f.throwable)
+    case _: DroppedElem    => None
+  }
+
   override def toString: String =
     s"${this.getClass.getSimpleName}[${project.fold("")(_.toString)}/$id:$rev]{${offset.value}}"
 }
