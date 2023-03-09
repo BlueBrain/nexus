@@ -316,7 +316,7 @@ object Resources {
         case _ => IO.raiseError(ResourceAlreadyExists(c.id, c.project))
       }
 
-    def validateStateResourceExists(c: ModifyCommand) = {
+    def stateWhereResourceExists(c: ModifyCommand) = {
       state match {
         case None                                                          =>
           IO.raiseError(ResourceNotFound(c.id, c.project, c.schemaOpt))
@@ -329,27 +329,27 @@ object Resources {
       }
     }
 
-    def validateStateResourceEditable(c: ModifyCommand) = {
-      validateStateResourceExists(c).flatMap { s =>
+    def stateWhereResourceIsEditable(c: ModifyCommand) = {
+      stateWhereResourceExists(c).flatMap { s =>
         IO.raiseWhen(s.deprecated)(ResourceIsDeprecated(c.id)).as(s)
       }
     }
 
-    def validateStateTagExistsOnResource(c: ModifyCommand, tag: UserTag) = {
-      validateStateResourceExists(c).flatMap { s =>
+    def stateWhereTagExistsOnResource(c: ModifyCommand, tag: UserTag) = {
+      stateWhereResourceExists(c).flatMap { s =>
         IO.raiseWhen(!s.tags.contains(tag))(TagNotFound(tag)).as(s)
       }
     }
 
-    def validateStateTagIsValid(c: ModifyCommand, targetRev: Int) = {
-      validateStateResourceExists(c).flatMap { s =>
+    def stateWhereRevisionExists(c: ModifyCommand, targetRev: Int) = {
+      stateWhereResourceExists(c).flatMap { s =>
         IO.raiseWhen(targetRev <= 0 || targetRev > s.rev)(RevisionNotFound(targetRev, s.rev)).as(s)
       }
     }
 
     def update(c: UpdateResource) = {
       for {
-        s                          <- validateStateResourceEditable(c)
+        s                          <- stateWhereResourceIsEditable(c)
         (schemaRev, schemaProject) <- validate(s.project, c.schemaOpt.getOrElse(s.schema), c.caller, c.id, c.expanded)
         types                       = c.expanded.cursor.getTypes.getOrElse(Set.empty)
         time                       <- IOUtils.instant
@@ -370,7 +370,7 @@ object Resources {
 
     def refresh(c: RefreshResource) = {
       for {
-        s                          <- validateStateResourceEditable(c)
+        s                          <- stateWhereResourceIsEditable(c)
         (schemaRev, schemaProject) <- validate(s.project, c.schemaOpt.getOrElse(s.schema), c.caller, c.id, c.expanded)
         types                       = c.expanded.cursor.getTypes.getOrElse(Set.empty)
         time                       <- IOUtils.instant
@@ -390,7 +390,7 @@ object Resources {
 
     def tag(c: TagResource) = {
       for {
-        s    <- validateStateTagIsValid(c, c.targetRev)
+        s    <- stateWhereRevisionExists(c, c.targetRev)
         time <- IOUtils.instant
       } yield {
         ResourceTagAdded(c.id, c.project, s.types, c.targetRev, c.tag, s.rev + 1, time, c.subject)
@@ -399,14 +399,14 @@ object Resources {
 
     def deleteTag(c: DeleteResourceTag) = {
       for {
-        s    <- validateStateTagExistsOnResource(c, c.tag)
+        s    <- stateWhereTagExistsOnResource(c, c.tag)
         time <- IOUtils.instant
       } yield ResourceTagDeleted(c.id, c.project, s.types, c.tag, s.rev + 1, time, c.subject)
     }
 
     def deprecate(c: DeprecateResource) = {
       for {
-        s    <- validateStateResourceEditable(c)
+        s    <- stateWhereResourceIsEditable(c)
         time <- IOUtils.instant
       } yield ResourceDeprecated(c.id, c.project, s.types, s.rev + 1, time, c.subject)
     }
