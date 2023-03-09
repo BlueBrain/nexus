@@ -112,10 +112,10 @@ Response
 
 ## Refresh
 
-This operation refreshes the payload.
+This operation refreshes the compacted and expanded representations of the resource.
 
 This is equivalent of doing an update with the same source as the last revision of the resource. It is useful when the 
-schema or project contexts have changed, in order for the changes to be reflected in the resources
+schema or project contexts have changed, in order for the changes to be reflected in the resources.
 
 ```
 PUT /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}/refresh

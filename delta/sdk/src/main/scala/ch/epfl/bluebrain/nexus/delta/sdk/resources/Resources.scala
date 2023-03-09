@@ -324,11 +324,12 @@ object Resources {
           IO.raiseError(IncorrectRev(c.rev, s.rev))
         case Some(s) if c.schemaOpt.exists(cur => cur.iri != s.schema.iri) =>
           IO.raiseError(UnexpectedResourceSchema(s.id, c.schemaOpt.get, s.schema))
-        case Some(s)                                                       => IO.now(s)
+        case Some(s)                                                       =>
+          IO.pure(s)
       }
     }
 
-    def validateStateResourceCanBeModified(c: ModifyCommand) = {
+    def validateStateResourceEditable(c: ModifyCommand) = {
       validateStateResourceExists(c).flatMap { s =>
         IO.raiseWhen(s.deprecated)(ResourceIsDeprecated(c.id)).as(s)
       }
@@ -348,7 +349,7 @@ object Resources {
 
     def update(c: UpdateResource) = {
       for {
-        s                          <- validateStateResourceCanBeModified(c)
+        s                          <- validateStateResourceEditable(c)
         (schemaRev, schemaProject) <- validate(s.project, c.schemaOpt.getOrElse(s.schema), c.caller, c.id, c.expanded)
         types                       = c.expanded.cursor.getTypes.getOrElse(Set.empty)
         time                       <- IOUtils.instant
@@ -369,7 +370,7 @@ object Resources {
 
     def refresh(c: RefreshResource) = {
       for {
-        s                          <- validateStateResourceCanBeModified(c)
+        s                          <- validateStateResourceEditable(c)
         (schemaRev, schemaProject) <- validate(s.project, c.schemaOpt.getOrElse(s.schema), c.caller, c.id, c.expanded)
         types                       = c.expanded.cursor.getTypes.getOrElse(Set.empty)
         time                       <- IOUtils.instant
@@ -405,7 +406,7 @@ object Resources {
 
     def deprecate(c: DeprecateResource) = {
       for {
-        s    <- validateStateResourceCanBeModified(c)
+        s    <- validateStateResourceEditable(c)
         time <- IOUtils.instant
       } yield ResourceDeprecated(c.id, c.project, s.types, s.rev + 1, time, c.subject)
     }
