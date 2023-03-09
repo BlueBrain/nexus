@@ -654,7 +654,6 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
 
     "type should be updated" in {
       deltaClient.get[Json](s"/resources/$id3/_/${UrlUtils.encode(FullResourceId)}", Rick) { (json, response) =>
-        println(json)
         response.status shouldEqual StatusCodes.OK
         json should have(`@type`(NewFullResourceType))
       }
