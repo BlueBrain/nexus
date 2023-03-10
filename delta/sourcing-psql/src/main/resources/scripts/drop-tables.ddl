@@ -7,6 +7,7 @@ DROP TABLE    IF EXISTS public.ephemeral_states;
 DROP TABLE    IF EXISTS public.entity_dependencies;
 DROP TABLE    IF EXISTS public.projection_restarts;
 DROP TABLE    IF EXISTS public.composite_restarts;
+DROP TABLE    IF EXISTS public.composite_offsets;
 DROP TABLE    IF EXISTS public.projection_offsets;
 DROP TABLE    IF EXISTS public.failed_elem_logs;
 DROP SEQUENCE IF EXISTS public.event_offset;
