@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
 import io.circe.parser._
 import io.circe.{Json, JsonObject}
 import monix.execution.Scheduler
-import munit.{Assertions, FunSuite}
+import munit.{Assertions, FunSuite, Location}
 
 import scala.collection.immutable.VectorMap
 
@@ -46,7 +46,9 @@ abstract class SerializationSuite
     parse(serializer.printer.print(serializer.codec(obtained)))
       .getOrElse(fail(s"$obtained could not be parsed back as a json"))
 
-  def assertOutput[Id, Value](serializer: Serializer[Id, Value], obtained: Value, expected: Json): Unit = {
+  def assertOutput[Id, Value](serializer: Serializer[Id, Value], obtained: Value, expected: Json)(implicit
+      loc: Location
+  ): Unit = {
     assertEquals(
       generateOutput(serializer, obtained),
       expected

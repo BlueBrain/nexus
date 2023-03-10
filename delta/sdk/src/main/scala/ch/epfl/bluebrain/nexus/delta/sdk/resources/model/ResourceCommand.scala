@@ -41,6 +41,13 @@ sealed trait ResourceCommand extends Product with Serializable {
 
 object ResourceCommand {
 
+  sealed trait ModifyCommand {
+    def id: Iri
+    def project: ProjectRef
+    def schemaOpt: Option[ResourceRef]
+    def rev: Int
+  }
+
   /**
     * Command that signals the intent to create a new resource.
     *
@@ -103,7 +110,39 @@ object ResourceCommand {
       expanded: ExpandedJsonLd,
       rev: Int,
       caller: Caller
-  ) extends ResourceCommand {
+  ) extends ResourceCommand
+      with ModifyCommand {
+    def subject: Subject = caller.subject
+  }
+
+  /**
+    * Command that signals the intent to refresh an existing resource.
+    *
+    * @param id
+    *   the resource identifier
+    * @param project
+    *   the project where the resource belongs
+    * @param schemaOpt
+    *   the optional schema of the resource. A None value ignores the schema from this command
+    * @param compacted
+    *   the compacted JSON-LD representation of the resource
+    * @param expanded
+    *   the expanded JSON-LD representation of the resource
+    * @param rev
+    *   the last known revision of the resource
+    * @param caller
+    *   the subject which created this event
+    */
+  final case class RefreshResource(
+      id: Iri,
+      project: ProjectRef,
+      schemaOpt: Option[ResourceRef],
+      compacted: CompactedJsonLd,
+      expanded: ExpandedJsonLd,
+      rev: Int,
+      caller: Caller
+  ) extends ResourceCommand
+      with ModifyCommand {
     def subject: Subject = caller.subject
   }
 
@@ -134,6 +173,7 @@ object ResourceCommand {
       rev: Int,
       subject: Subject
   ) extends ResourceCommand
+      with ModifyCommand
 
   /**
     * Command that signals the intent to delete a tag from an existing resource.
@@ -159,6 +199,7 @@ object ResourceCommand {
       rev: Int,
       subject: Subject
   ) extends ResourceCommand
+      with ModifyCommand
 
   /**
     * Command that signals the intent to deprecate a resource.
@@ -181,4 +222,5 @@ object ResourceCommand {
       rev: Int,
       subject: Subject
   ) extends ResourceCommand
+      with ModifyCommand
 }

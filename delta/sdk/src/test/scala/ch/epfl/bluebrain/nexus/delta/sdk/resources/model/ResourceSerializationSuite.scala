@@ -60,6 +60,18 @@ class ResourceSerializationSuite extends SerializationSuite {
       instant,
       subject
     )
+  private val refreshed  = ResourceRefreshed(
+    myId,
+    projectRef,
+    Revision(schemas.resources, 1),
+    projectRef,
+    Set(schema.Person),
+    resource.compacted,
+    resource.expanded,
+    2,
+    instant,
+    subject
+  )
   private val tagged     =
     ResourceTagAdded(
       myId,
@@ -94,6 +106,7 @@ class ResourceSerializationSuite extends SerializationSuite {
   private val resourcesMapping = List(
     (created, loadEvents("resources", "resource-created.json"), Created),
     (updated, loadEvents("resources", "resource-updated.json"), Updated),
+    (refreshed, loadEvents("resources", "resource-refreshed.json"), Refreshed),
     (tagged, loadEvents("resources", "resource-tagged.json"), Tagged),
     (deprecated, loadEvents("resources", "resource-deprecated.json"), Deprecated),
     (tagDeleted, loadEvents("resources", "resource-tag-deleted.json"), TagDeleted)
