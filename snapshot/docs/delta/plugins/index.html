@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="x-ua-compatible" content="ie=edge">
 <meta name="description" content="docs">
-<meta name="generator" content="Paradox, paradox-material-theme=0.5.1, mkdocs-material=3.0.3">
+<meta name="generator" content="Paradox, paradox-material-theme=0.6.0, mkdocs-material=3.0.3">
 
 <meta name="lang:clipboard.copy" content="Copy to clipboard">
 <meta name="lang:clipboard.copied" content="Copied to clipboard">
@@ -154,6 +154,7 @@ BlueBrain/nexus
   </ul></li>
   <li><a href="../../../docs/releases/index.html" class="page">Releases</a>
   <ul>
+    <li><a href="../../../docs/releases/v1.8-release-notes.html" class="page">v1.8 Release Notes</a></li>
     <li><a href="../../../docs/releases/v1.7-release-notes.html" class="page">v1.7 Release Notes</a></li>
     <li><a href="../../../docs/releases/v1.6-to-v1.7-migration.html" class="page">v1.6 To v1.7 Migration</a></li>
     <li><a href="../../../docs/releases/v1.6-release-notes.html" class="page">v1.6 Release Notes</a></li>
@@ -216,6 +217,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/graph-analytics-api.html" class="page">Graph analytics</a></li>
       <li><a href="../../../docs/delta/api/jira.html" class="page">Jira integration</a></li>
       <li><a href="../../../docs/delta/api/events-api.html" class="page">Global events</a></li>
+      <li><a href="../../../docs/delta/api/supervision-api.html" class="page">Supervision</a></li>
     </ul></li>
     <li><a href="../../../docs/delta/plugins/index.html" class="active page">Plugins</a></li>
     <li><a href="../../../docs/delta/benchmarks/index.html" class="page">Benchmarks</a>
@@ -317,15 +319,14 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import ch.epfl.bluebrain.nexus.delta.sdk.Permissions
-import monix.execution.Scheduler
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 
-class TestPluginRoutes(permissions: Permissions)(implicit sc: Scheduler) {
+class TestPluginRoutes(baseUri: BaseUri) {
   def routes: Route =
     pathPrefix(&quot;test-plugin&quot;) {
       concat(
         get {
-          complete(permissions.fetchPermissionSet.map(ps =&gt; s&quot;${ps.mkString(&quot;,&quot;)}&quot;).runToFuture)
+          complete(baseUri.toString)
         }
       )
     }
@@ -337,23 +338,21 @@ class TestPluginRoutes(permissions: Permissions)(implicit sc: Scheduler) {
   <dd>
   <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/delta/plugins/test-plugin/src/main/scala/ch/epfl/bluebrain/nexus/delta/testplugin/TestPluginDef.scala" target="_blank" title="Go to snippet source">source</a><code class="language-scala">package ch.epfl.bluebrain.nexus.delta.testplugin
 
+import ch.epfl.bluebrain.nexus.delta.sdk.PriorityRoute
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.PluginDescription
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Name}
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.{Plugin, PluginDef}
-import ch.epfl.bluebrain.nexus.delta.sdk.{Permissions, PriorityRoute}
 import izumi.distage.model.Locator
 import izumi.distage.model.definition.ModuleDef
 import monix.bio.Task
-import monix.execution.Scheduler
 
 case class TestPluginDef() extends PluginDef {
 
   override def module: ModuleDef =
     new ModuleDef {
       make[TestPlugin]
-      make[TestPluginRoutes].from { (permissions: Permissions, scheduler: Scheduler) =&gt;
-        implicit val sc = scheduler
-        new TestPluginRoutes(permissions)
+      make[TestPluginRoutes].from { (baseUri: BaseUri) =&gt;
+        new TestPluginRoutes(baseUri)
       }
       many[PriorityRoute].add((routes: TestPluginRoutes) =&gt;
         PriorityRoute(1, routes.routes, requiresStrictEntity = true)
@@ -436,7 +435,7 @@ Snapshot
 <footer class="md-footer">
 <div class="md-footer-nav">
 <nav class="md-footer-nav__inner md-grid">
-<a href="../../../docs/delta/api/events-api.html" title="Global events" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+<a href="../../../docs/delta/api/supervision-api.html" title="Supervision" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
 <div class="md-flex__cell md-flex__cell--shrink">
 <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
 </div>
@@ -445,7 +444,7 @@ Snapshot
 <span class="md-footer-nav__direction">
 Previous
 </span>
-Global events
+Supervision
 </span>
 </div>
 </a>

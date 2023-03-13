@@ -20,7 +20,7 @@
 
 <meta name="description" content="docs">
 <link rel="shortcut icon" href="../../.././assets/img/favicon-32x32.png">
-<title>Global search · Blue Brain Nexus</title>
+<title>Supervision · Blue Brain Nexus</title>
 <link rel="stylesheet" href="../../../assets/stylesheets/application.451f80e5.css">
 <link rel="stylesheet" href="../../../assets/stylesheets/application-palette.22915126.css">
 <meta name="theme-color" content="#03a9f4" />
@@ -61,7 +61,7 @@ data-md-color-accent="cyan"
 Blue Brain Nexus
 </span>
 <span class="md-header-nav__topic">
-Global search
+Supervision
 </span>
 </div>
 </div>
@@ -213,11 +213,11 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/storages-api.html" class="page">Storages</a></li>
       <li><a href="../../../docs/delta/api/files-api.html" class="page">Files</a></li>
       <li><a href="../../../docs/delta/api/archives-api.html" class="page">Archives</a></li>
-      <li><a href="../../../docs/delta/api/search-api.html" class="active page">Global search</a></li>
+      <li><a href="../../../docs/delta/api/search-api.html" class="page">Global search</a></li>
       <li><a href="../../../docs/delta/api/graph-analytics-api.html" class="page">Graph analytics</a></li>
       <li><a href="../../../docs/delta/api/jira.html" class="page">Jira integration</a></li>
       <li><a href="../../../docs/delta/api/events-api.html" class="page">Global events</a></li>
-      <li><a href="../../../docs/delta/api/supervision-api.html" class="page">Supervision</a></li>
+      <li><a href="../../../docs/delta/api/supervision-api.html" class="active page">Supervision</a></li>
     </ul></li>
     <li><a href="../../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
     <li><a href="../../../docs/delta/benchmarks/index.html" class="page">Benchmarks</a>
@@ -232,10 +232,9 @@ BlueBrain/nexus
 <nav class="md-nav md-nav--secondary">
 <label class="md-nav__title" for="__toc">Table of contents</label>
 <ul>
-  <li><a href="../../../docs/delta/api/search-api.html#global-search" class="header">Global search</a>
+  <li><a href="../../../docs/delta/api/supervision-api.html#supervision" class="header">Supervision</a>
   <ul>
-    <li><a href="../../../docs/delta/api/search-api.html#query" class="header">Query</a></li>
-    <li><a href="../../../docs/delta/api/search-api.html#configuration" class="header">Configuration</a></li>
+    <li><a href="../../../docs/delta/api/supervision-api.html#fetch-projections" class="header">Fetch projections</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -257,10 +256,9 @@ BlueBrain/nexus
 <nav class="md-nav md-nav--secondary">
 <label class="md-nav__title" for="__toc">Table of contents</label>
 <ul>
-  <li><a href="../../../docs/delta/api/search-api.html#global-search" class="header">Global search</a>
+  <li><a href="../../../docs/delta/api/supervision-api.html#supervision" class="header">Supervision</a>
   <ul>
-    <li><a href="../../../docs/delta/api/search-api.html#query" class="header">Query</a></li>
-    <li><a href="../../../docs/delta/api/search-api.html#configuration" class="header">Configuration</a></li>
+    <li><a href="../../../docs/delta/api/supervision-api.html#fetch-projections" class="header">Fetch projections</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -278,23 +276,66 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 </p>
 </div>
 <div class="md-content__searchable">
-<h1><a href="#global-search" name="global-search" class="anchor"><span class="anchor-link"></span></a>Global search</h1>
-<p>Nexus provides global search functionality across all projects through the <a href="https://github.com/BlueBrain/nexus/tree/master/delta/plugins/search/src" title="search plugin" target="_blank" rel="noopener noreferrer">search plugin</a>.</p><div class="callout warning "><div class="callout-title">Warning</div>
-<p>The search plugin is experimental and its functionality and API can change without notice.</p></div>
-<p>For instructions on how to configure global search in Nexus and how it works please visit the <a href="../../getting-started/running-nexus/search-configuration.html">Search configuration</a> page.</p>
-<h2><a href="#query" name="query" class="anchor"><span class="anchor-link"></span></a>Query</h2>
-<pre><code>POST /v1/search/query
-{payload}
+<h1><a href="#supervision" name="supervision" class="anchor"><span class="anchor-link"></span></a>Supervision</h1>
+<p>This endpoint returns information about the projections running on the current node.</p>
+<h2><a href="#fetch-projections" name="fetch-projections" class="anchor"><span class="anchor-link"></span></a>Fetch projections</h2>
+<pre><code>GET /v1/supervision/projections
 </code></pre>
-<p>&hellip; where <code>{payload}</code> is a <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl.html" title="Elasticsearch query" target="_blank" rel="noopener noreferrer">Elasticsearch query</a> and the response is forwarded from the underlying Elasticsearch indices.</p>
-<p>The endpoint filters the Elasticsearch projections from the underlying composite views and only returns results from indices to which user has access to, i.e. has <code>views/query</code> permission.</p>
-<h2><a href="#configuration" name="configuration" class="anchor"><span class="anchor-link"></span></a>Configuration</h2>
-<pre><code>GET /v1/search/config
-</code></pre>
-<p>This endpoint returns the search configuration. The contents of <code>plugins.search.fields</code> config file is the payload of this response.</p>
+<p>Fetches the projections running on the current node.</p>
+<p><strong>Example</strong></p>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/supervision/supervision-list.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl &quot;http://localhost:8080/v1/supervision/projections&quot;</code></pre></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/supervision/supervision-list.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
+  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/supervision.json&quot;,
+  &quot;projections&quot;: [
+    {
+      &quot;executionStrategy&quot;: &quot;PersistentSingleNode&quot;,
+      &quot;metadata&quot;: {
+        &quot;module&quot;: &quot;module&quot;,
+        &quot;name&quot;: &quot;name&quot;,
+        &quot;project&quot;: &quot;myorg/myproject&quot;
+      },
+      &quot;progress&quot;: {
+        &quot;discarded&quot;: 1,
+        &quot;failed&quot;: 1,
+        &quot;instant&quot;: &quot;1970-01-01T00:00:00Z&quot;,
+        &quot;offset&quot;: {
+          &quot;@type&quot;: &quot;Start&quot;
+        },
+        &quot;processed&quot;: 1
+      },
+      &quot;restarts&quot;: 1,
+      &quot;status&quot;: &quot;Running&quot;
+    },
+    {
+      &quot;executionStrategy&quot;: &quot;TransientSingleNode&quot;,
+      &quot;metadata&quot;: {
+        &quot;module&quot;: &quot;module&quot;,
+        &quot;name&quot;: &quot;name&quot;,
+        &quot;project&quot;: &quot;myorg/myproject&quot;
+      },
+      &quot;progress&quot;: {
+        &quot;discarded&quot;: 1,
+        &quot;failed&quot;: 1,
+        &quot;instant&quot;: &quot;1970-01-01T00:00:00Z&quot;,
+        &quot;offset&quot;: {
+          &quot;@type&quot;: &quot;Start&quot;
+        },
+        &quot;processed&quot;: 1
+      },
+      &quot;restarts&quot;: 0,
+      &quot;status&quot;: &quot;Running&quot;
+    }
+  ]
+}</code></pre></dd>
+</dl>
 </div>
 <div>
-<a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/search-api.md" title="Edit this page" class="md-source-file md-edit">
+<a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/supervision-api.md" title="Edit this page" class="md-source-file md-edit">
 Edit this page
 </a>
 </div>
@@ -310,7 +351,7 @@ Snapshot
 <footer class="md-footer">
 <div class="md-footer-nav">
 <nav class="md-footer-nav__inner md-grid">
-<a href="../../../docs/delta/api/archives-api.html" title="Archives" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+<a href="../../../docs/delta/api/events-api.html" title="Global events" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
 <div class="md-flex__cell md-flex__cell--shrink">
 <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
 </div>
@@ -319,17 +360,17 @@ Snapshot
 <span class="md-footer-nav__direction">
 Previous
 </span>
-Archives
+Global events
 </span>
 </div>
 </a>
-<a href="../../../docs/delta/api/graph-analytics-api.html" title="Graph analytics" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../../docs/delta/plugins/index.html" title="Plugins" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-Graph analytics
+Plugins
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">

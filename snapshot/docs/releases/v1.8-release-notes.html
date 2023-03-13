@@ -20,7 +20,7 @@
 
 <meta name="description" content="docs">
 <link rel="shortcut icon" href="../.././assets/img/favicon-32x32.png">
-<title>v1.6 To v1.7 Migration · Blue Brain Nexus</title>
+<title>v1.8 Release Notes · Blue Brain Nexus</title>
 <link rel="stylesheet" href="../../assets/stylesheets/application.451f80e5.css">
 <link rel="stylesheet" href="../../assets/stylesheets/application-palette.22915126.css">
 <meta name="theme-color" content="#03a9f4" />
@@ -61,7 +61,7 @@ data-md-color-accent="cyan"
 Blue Brain Nexus
 </span>
 <span class="md-header-nav__topic">
-v1.6 To v1.7 Migration
+v1.8 Release Notes
 </span>
 </div>
 </div>
@@ -154,9 +154,9 @@ BlueBrain/nexus
   </ul></li>
   <li><a href="../../docs/releases/index.html" class="page">Releases</a>
   <ul>
-    <li><a href="../../docs/releases/v1.8-release-notes.html" class="page">v1.8 Release Notes</a></li>
+    <li><a href="../../docs/releases/v1.8-release-notes.html" class="active page">v1.8 Release Notes</a></li>
     <li><a href="../../docs/releases/v1.7-release-notes.html" class="page">v1.7 Release Notes</a></li>
-    <li><a href="../../docs/releases/v1.6-to-v1.7-migration.html" class="active page">v1.6 To v1.7 Migration</a></li>
+    <li><a href="../../docs/releases/v1.6-to-v1.7-migration.html" class="page">v1.6 To v1.7 Migration</a></li>
     <li><a href="../../docs/releases/v1.6-release-notes.html" class="page">v1.6 Release Notes</a></li>
     <li><a href="../../docs/releases/v1.5-to-v1.6-migration.html" class="page">v1.5 To v1.6 Migration</a></li>
     <li><a href="../../docs/releases/v1.5-release-notes.html" class="page">v1.5 Release Notes</a></li>
@@ -232,10 +232,24 @@ BlueBrain/nexus
 <nav class="md-nav md-nav--secondary">
 <label class="md-nav__title" for="__toc">Table of contents</label>
 <ul>
-  <li><a href="../../docs/releases/v1.6-to-v1.7-migration.html#v1-6-to-v1-7-migration" class="header">v1.6 To v1.7 Migration</a>
+  <li><a href="../../docs/releases/v1.8-release-notes.html#v1-8-release-notes" class="header">v1.8 Release Notes</a>
   <ul>
-    <li><a href="../../docs/releases/v1.6-to-v1.7-migration.html#delta" class="header">Delta</a></li>
-    <li><a href="../../docs/releases/v1.6-to-v1.7-migration.html#fusion" class="header">Fusion</a></li>
+    <li><a href="../../docs/releases/v1.8-release-notes.html#nexus-delta" class="header">Nexus Delta</a>
+    <ul>
+      <li><a href="../../docs/releases/v1.8-release-notes.html#new-primary-store" class="header">New primary store</a></li>
+      <li><a href="../../docs/releases/v1.8-release-notes.html#new-sourcing-and-streaming-library" class="header">New sourcing and streaming library</a></li>
+      <li><a href="../../docs/releases/v1.8-release-notes.html#name-and-description-for-resolvers-storages-and-views" class="header">Name and description for resolvers, storages and views</a></li>
+      <li><a href="../../docs/releases/v1.8-release-notes.html#views" class="header">Views</a>
+      <ul>
+        <li><a href="../../docs/releases/v1.8-release-notes.html#better-reporting-of-indexing-errors" class="header">Better reporting of indexing errors</a></li>
+        <li><a href="../../docs/releases/v1.8-release-notes.html#only-trigger-reindexing-when-indexing-is-impacted" class="header">Only trigger reindexing when indexing is impacted</a></li>
+        <li><a href="../../docs/releases/v1.8-release-notes.html#indexing-id-for-custom-elasticsearch-views" class="header">Indexing @id for custom Elasticsearch views</a></li>
+      </ul></li>
+      <li><a href="../../docs/releases/v1.8-release-notes.html#annotated-original-payload" class="header">Annotated original payload</a></li>
+      <li><a href="../../docs/releases/v1.8-release-notes.html#supervision-api" class="header">Supervision API</a></li>
+    </ul></li>
+    <li><a href="../../docs/releases/v1.8-release-notes.html#nexus-fusion" class="header">Nexus Fusion</a></li>
+    <li><a href="../../docs/releases/v1.8-release-notes.html#nexus-forge" class="header">Nexus forge</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -257,10 +271,24 @@ BlueBrain/nexus
 <nav class="md-nav md-nav--secondary">
 <label class="md-nav__title" for="__toc">Table of contents</label>
 <ul>
-  <li><a href="../../docs/releases/v1.6-to-v1.7-migration.html#v1-6-to-v1-7-migration" class="header">v1.6 To v1.7 Migration</a>
+  <li><a href="../../docs/releases/v1.8-release-notes.html#v1-8-release-notes" class="header">v1.8 Release Notes</a>
   <ul>
-    <li><a href="../../docs/releases/v1.6-to-v1.7-migration.html#delta" class="header">Delta</a></li>
-    <li><a href="../../docs/releases/v1.6-to-v1.7-migration.html#fusion" class="header">Fusion</a></li>
+    <li><a href="../../docs/releases/v1.8-release-notes.html#nexus-delta" class="header">Nexus Delta</a>
+    <ul>
+      <li><a href="../../docs/releases/v1.8-release-notes.html#new-primary-store" class="header">New primary store</a></li>
+      <li><a href="../../docs/releases/v1.8-release-notes.html#new-sourcing-and-streaming-library" class="header">New sourcing and streaming library</a></li>
+      <li><a href="../../docs/releases/v1.8-release-notes.html#name-and-description-for-resolvers-storages-and-views" class="header">Name and description for resolvers, storages and views</a></li>
+      <li><a href="../../docs/releases/v1.8-release-notes.html#views" class="header">Views</a>
+      <ul>
+        <li><a href="../../docs/releases/v1.8-release-notes.html#better-reporting-of-indexing-errors" class="header">Better reporting of indexing errors</a></li>
+        <li><a href="../../docs/releases/v1.8-release-notes.html#only-trigger-reindexing-when-indexing-is-impacted" class="header">Only trigger reindexing when indexing is impacted</a></li>
+        <li><a href="../../docs/releases/v1.8-release-notes.html#indexing-id-for-custom-elasticsearch-views" class="header">Indexing @id for custom Elasticsearch views</a></li>
+      </ul></li>
+      <li><a href="../../docs/releases/v1.8-release-notes.html#annotated-original-payload" class="header">Annotated original payload</a></li>
+      <li><a href="../../docs/releases/v1.8-release-notes.html#supervision-api" class="header">Supervision API</a></li>
+    </ul></li>
+    <li><a href="../../docs/releases/v1.8-release-notes.html#nexus-fusion" class="header">Nexus Fusion</a></li>
+    <li><a href="../../docs/releases/v1.8-release-notes.html#nexus-forge" class="header">Nexus forge</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -278,17 +306,77 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 </p>
 </div>
 <div class="md-content__searchable">
-<h1><a href="#v1-6-to-v1-7-migration" name="v1-6-to-v1-7-migration" class="anchor"><span class="anchor-link"></span></a>v1.6 To v1.7 Migration</h1>
-<h2><a href="#delta" name="delta" class="anchor"><span class="anchor-link"></span></a>Delta</h2>
-<p>Migration is executed automatically by Delta by setting the environment variable MIGRATION_1_7=true. </p>
-<p>Additionally, if graph-analytics plugin was enabled, its indices need to be rebuilt. The removal of previous indices and reset of their progress is triggered by setting the environment variable GRAPH_ANALYTICS_CLEANUP=true.</p>
-<p>Check the logs to make sure the migration is doing ok and restart Delta after the migration and the tag repair operation are completed without forgetting to remove the environment variables.</p>
-<h2><a href="#fusion" name="fusion" class="anchor"><span class="anchor-link"></span></a>Fusion</h2>
-<p>The data model for Studios has changed in 1.7.</p>
-<p>//TODO Add Studio migration instructions here</p>
+<h1><a href="#v1-8-release-notes" name="v1-8-release-notes" class="anchor"><span class="anchor-link"></span></a>v1.8 Release Notes</h1>
+<blockquote>
+  <p>This release marks a turn in the Nexus Ecosystem with different important changes:</p>
+  <p>The support for Cassandra as a primary store is removed and PostgreSQL 15+ is now the only supported primary store.</p>
+  <p>The sourcing and indexing engine have been completely reworked to improve flexibility, scalability and performance.</p>
+</blockquote>
+<p>For the detailed list of updates in this release, see the <a href="https://github.com/BlueBrain/nexus/issues?&q=is%3Aissue+is%3Aclosed+created%3A2022-03-15..2023-02-21+" title="list of addressed issues" target="_blank" rel="noopener noreferrer">list of addressed issues</a> since v1.7. //TODO update date of issues</p>
+<p>If you are currently using Nexus Delta from 1.7.x, please visit the //TODO add migration page for the necessary steps to successfully upgrade.</p>
+<h2><a href="#nexus-delta" name="nexus-delta" class="anchor"><span class="anchor-link"></span></a>Nexus Delta</h2>
+<p>The goal of this release is to improve performance, flexibility, observability and developer productivity. This is an incremental software release that also brings several improvements.</p>
+<p>The API is mostly backwards compatible to v1.7 with two breaking changes due to changes in the sourcing and indexing engine:</p>
+<ul>
+  <li>The offset is not a time-based uuid anymore but a sequence which consists of a bigint,</li>
+  <li>As the indexing engine do not rely on events on anymore, the statistics for the different views returns the number of records that have been processed/remains to be processed.</li>
+</ul>
+<h3><a href="#new-primary-store" name="new-primary-store" class="anchor"><span class="anchor-link"></span></a>New primary store</h3>
+<p>Until Nexus 1.7, Nexus Delta was relying on <a href="https://cassandra.apache.org/_/index.html" title="Apache Cassandra" target="_blank" rel="noopener noreferrer">Apache Cassandra</a> as a primary store that is to say the source of truth on which the Nexus ecosystem depends.</p>
+<p>However, Cassandra became a growing problem for Nexus both in development and production contexts:</p>
+<ul>
+  <li>The learning curve is steep both for using it in a developer context and running it in production,</li>
+  <li>The tooling that allow to run it in a daily basis can be insufficient, time-consuming to properly set it up,</li>
+  <li>The data modeling it imposes did not allow to accommodate the growing variety of present and future usages of Nexus,</li>
+  <li>The eventual consistency was another hurdle for the Nexus usages</li>
+  <li>The <a href="https://doc.akka.io/docs/akka/current/typed/index-persistence.html" title="akka-persistence">akka-persistence</a> library we relied on which is part of the akka stack changed <a href="https://www.lightbend.com/blog/why-we-are-changing-the-license-for-akka" title="its license a few months ago">its license a few months ago</a>, so we could not get new updates from it,</li>
+  <li>This library also did not fit anymore our needs in terms of indexing to external systems as performance is degrading over time but also for data deletion.</li>
+</ul>
+<p>So this pushed us to look for alternatives that would better address our needs.</p>
+<p><a href="https://www.postgresql.org/" title="PostgreSQL" target="_blank" rel="noopener noreferrer">PostgreSQL</a> is a database system with a strong reputation for performance, reliability and flexibility. It allows to solve the pain points we were facing with Cassandra:</p>
+<ul>
+  <li>Easier to learn, to operate in a daily basis,</li>
+  <li>Can be run in different contexts from integration to large-scale production deployments,</li>
+  <li>Widely used, a lot of resources and tools to use/deploy/monitor it,</li>
+  <li>Flexible about data modeling,</li>
+  <li>Transaction support, data integrity,</li>
+  <li>Json support.</li>
+</ul>
+<p>These reasons make PostgreSQL a better solution to be the primary store from Nexus 1.8 and to create a new sourcing and indexing library on top of it.</p>
+<h3><a href="#new-sourcing-and-streaming-library" name="new-sourcing-and-streaming-library" class="anchor"><span class="anchor-link"></span></a>New sourcing and streaming library</h3>
+<p>This change of primary store in Nexus also comes with a new sourcing and streaming library. It relies on a custom schema and is designed to:</p>
+<ul>
+  <li>Embed directly the key concepts of project and entity type in the data model</li>
+  <li>Be extensible by allowing to introduce new entities both global and related to a project</li>
+  <li>Keep the history of changes by storing the log of events of the different entities</li>
+  <li>Keep snapshots of entity states to allow:</li>
+  <li>Faster responses from the API as latest and tagged states don&rsquo;t need to be recomputed read and write actions</li>
+  <li>Faster indexing by allowing to fetch directly states before processing them</li>
+  <li>Allow to delete undesirable projects in an efficient way</li>
+</ul>
+<h3><a href="#name-and-description-for-resolvers-storages-and-views" name="name-and-description-for-resolvers-storages-and-views" class="anchor"><span class="anchor-link"></span></a>Name and description for resolvers, storages and views</h3>
+<p>It could be difficult for users to identify these different entities (for example in Fusion). These two additional fields fills this gap by allowing users to add extra information.</p>
+<h3><a href="#views" name="views" class="anchor"><span class="anchor-link"></span></a>Views</h3>
+<h4><a href="#better-reporting-of-indexing-errors" name="better-reporting-of-indexing-errors" class="anchor"><span class="anchor-link"></span></a>Better reporting of indexing errors</h4>
+<p>Indexing errors for the different views are now available as Server Sent Events via the API making it easier to identify and fix them by either updating the resource or updating the view.</p>
+<p><a href="../delta/api/views/index.html#fetch-indexing-failures">More information</a></p>
+<p>Errors related to indexing into Elasticsearch have also been improved to give more precise and relevant feedback. </p>
+<h4><a href="#only-trigger-reindexing-when-indexing-is-impacted" name="only-trigger-reindexing-when-indexing-is-impacted" class="anchor"><span class="anchor-link"></span></a>Only trigger reindexing when indexing is impacted</h4>
+<p>Indexing views will now only restart if its new configuration changes the way, data is impacted. For example, updating the name, the description or the permission of the view won&rsquo;t trigger reindexing anymore.</p>
+<h4><a href="#indexing-id-for-custom-elasticsearch-views" name="indexing-id-for-custom-elasticsearch-views" class="anchor"><span class="anchor-link"></span></a>Indexing @id for custom Elasticsearch views</h4>
+<p>When a resource does not include an id in its original payload, the id of the resource (for example in the case, the <code>@id</code> is generated) will be injected in the Elasticsearch payload.</p>
+<h3><a href="#annotated-original-payload" name="annotated-original-payload" class="anchor"><span class="anchor-link"></span></a>Annotated original payload</h3>
+<p>It is now possible to fetch in a single the original payload of a resource alongside its metadata: <a href="../delta/api/resources-api.html#fetch-original-payload">More information</a></p>
+<h3><a href="#supervision-api" name="supervision-api" class="anchor"><span class="anchor-link"></span></a>Supervision API</h3>
+<p>A supervision API has been added to get information about the running projections on the current node:</p>
+<p><a href="../delta/api/supervision-api.html">More information</a></p>
+<h2><a href="#nexus-fusion" name="nexus-fusion" class="anchor"><span class="anchor-link"></span></a>Nexus Fusion</h2>
+<p>TODO</p>
+<h2><a href="#nexus-forge" name="nexus-forge" class="anchor"><span class="anchor-link"></span></a>Nexus forge</h2>
+<p>TODO</p>
 </div>
 <div>
-<a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/releases/v1.6-to-v1.7-migration.md" title="Edit this page" class="md-source-file md-edit">
+<a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/releases/v1.8-release-notes.md" title="Edit this page" class="md-source-file md-edit">
 Edit this page
 </a>
 </div>
@@ -304,7 +392,7 @@ Snapshot
 <footer class="md-footer">
 <div class="md-footer-nav">
 <nav class="md-footer-nav__inner md-grid">
-<a href="../../docs/releases/v1.7-release-notes.html" title="v1.7 Release Notes" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+<a href="../../docs/releases/index.html" title="Releases" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
 <div class="md-flex__cell md-flex__cell--shrink">
 <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
 </div>
@@ -313,17 +401,17 @@ Snapshot
 <span class="md-footer-nav__direction">
 Previous
 </span>
-v1.7 Release Notes
+Releases
 </span>
 </div>
 </a>
-<a href="../../docs/releases/v1.6-release-notes.html" title="v1.6 Release Notes" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../docs/releases/v1.7-release-notes.html" title="v1.7 Release Notes" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-v1.6 Release Notes
+v1.7 Release Notes
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">
