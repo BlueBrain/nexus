@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.schemas
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -72,6 +73,7 @@ class SchemasImplSpec
   private val mySchema          = nxv + "myschema"  // Create with id present in payload
   private val mySchema2         = nxv + "myschema2" // Create with id present in payload and passed
   private val mySchema3         = nxv + "myschema3" // Create with id passed
+  private val mySchema4         = nxv + "myschema4" // For refreshing
   private val source            = jsonContentOf("resources/schema.json").addContext(contexts.shacl, contexts.schemasMetadata)
   private val sourceNoId        = source.removeKeys(keywords.id)
   private val schema            = SchemaGen.schema(mySchema, project.ref, source)
@@ -83,6 +85,10 @@ class SchemasImplSpec
   private val config       = SchemasConfig(eventLogConfig)
 
   private lazy val schemas: Schemas = SchemasImpl(fetchContext, schemaImports, resolverContextResolution, config, xas)
+
+  private def schemaSourceWithId(id: Iri) = {
+    source deepMerge json"""{"@id": "$id"}"""
+  }
 
   "The Schemas operations bundle" when {
 
@@ -96,15 +102,15 @@ class SchemasImplSpec
       }
 
       "succeed with the id present on the payload and passed" in {
-        val sourceWithId = source deepMerge json"""{"@id": "$mySchema2"}"""
-        val schema       = SchemaGen.schema(mySchema2, project.ref, sourceWithId)
-        schemas.create("myschema2", projectRef, sourceWithId).accepted shouldEqual
+        val source = schemaSourceWithId(mySchema2)
+        val schema = SchemaGen.schema(mySchema2, project.ref, source)
+        schemas.create("myschema2", projectRef, source).accepted shouldEqual
           SchemaGen.resourceFor(schema, subject = subject, am = am, base = projBase)
       }
 
       "succeed with the passed id" in {
-        val sourceWithId = source deepMerge json"""{"@id": "$mySchema3"}"""
-        val schema       = SchemaGen.schema(mySchema3, project.ref, sourceWithId).copy(source = sourceNoId)
+        val source = schemaSourceWithId(mySchema3)
+        val schema = SchemaGen.schema(mySchema3, project.ref, source).copy(source = sourceNoId)
         schemas.create(mySchema3, projectRef, sourceNoId).accepted shouldEqual
           SchemaGen.resourceFor(schema, subject = subject, am = am, base = projBase)
       }
@@ -173,11 +179,42 @@ class SchemasImplSpec
       }
     }
 
+    "refreshing a schema" should {
+      val schema4 = SchemaGen.schema(mySchema4, project.ref, schemaSourceWithId(mySchema4))
+
+      "create the schema for subsequent tests" in {
+        schemas.create(projectRef, schemaSourceWithId(mySchema4)).accepted shouldEqual
+          SchemaGen.resourceFor(schema4, subject = subject, am = am, base = projBase)
+      }
+
+      "succeed" in {
+        schemas.refresh(mySchema4, projectRef).accepted shouldEqual
+          SchemaGen.resourceFor(schema4, rev = 2, subject = subject, am = am, base = projBase)
+      }
+
+      "reject if it doesn't exists" in {
+        schemas.refresh(nxv + "other", projectRef).rejectedWith[SchemaNotFound]
+      }
+
+      "reject if deprecated" in {
+        schemas.refresh(mySchema3, projectRef).rejectedWith[SchemaIsDeprecated]
+      }
+
+      "reject if project does not exist" in {
+        val projectRef = ProjectRef(org, Label.unsafe("other"))
+
+        schemas.refresh(mySchema4, projectRef).rejectedWith[ProjectContextRejection]
+      }
+
+      "reject if project is deprecated" in {
+        schemas.refresh(mySchema4, projectDeprecated.ref).rejectedWith[ProjectContextRejection]
+      }
+    }
+
     "tagging a schema" should {
 
       "succeed" in {
-        val sourceWithId = source deepMerge json"""{"@id": "$mySchema2"}"""
-        val schema       = SchemaGen.schema(mySchema2, project.ref, sourceWithId, tags = Tags(tag -> 1))
+        val schema = SchemaGen.schema(mySchema2, project.ref, schemaSourceWithId(mySchema2), tags = Tags(tag -> 1))
 
         schemas.tag(mySchema2, projectRef, tag, 1, 1).accepted shouldEqual
           SchemaGen.resourceFor(schema, subject = subject, rev = 2, am = am, base = projBase)
@@ -193,8 +230,9 @@ class SchemasImplSpec
       }
 
       "succeed if deprecated" in {
-        val sourceWithId = source deepMerge json"""{"@id": "$mySchema3"}"""
-        val schema       = SchemaGen.schema(mySchema3, project.ref, sourceWithId, Tags(tag -> 2)).copy(source = sourceNoId)
+        val schema = SchemaGen
+          .schema(mySchema3, project.ref, schemaSourceWithId(mySchema3), Tags(tag -> 2))
+          .copy(source = sourceNoId)
         schemas.tag(mySchema3, projectRef, tag, 2, 2).accepted shouldEqual
           SchemaGen.resourceFor(
             schema,
@@ -254,7 +292,7 @@ class SchemasImplSpec
     }
 
     "fetching a schema" should {
-      val schema2 = SchemaGen.schema(mySchema2, project.ref, source deepMerge json"""{"@id": "$mySchema2"}""")
+      val schema2 = SchemaGen.schema(mySchema2, project.ref, schemaSourceWithId(mySchema2))
 
       "succeed" in {
         schemas.fetch(mySchema, projectRef).accepted shouldEqual
@@ -297,7 +335,7 @@ class SchemasImplSpec
 
     "deleting a schema tag" should {
       "succeed" in {
-        val sourceWithId = source deepMerge json"""{"@id": "$mySchema2"}"""
+        val sourceWithId = schemaSourceWithId(mySchema2)
         val schema       = SchemaGen.schema(mySchema2, project.ref, sourceWithId)
         schemas.deleteTag(mySchema2, projectRef, tag, 2).accepted shouldEqual
           SchemaGen.resourceFor(schema, subject = subject, rev = 3, am = am, base = projBase)

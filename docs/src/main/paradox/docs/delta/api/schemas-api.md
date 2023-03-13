@@ -114,6 +114,26 @@ Response
 :   @@snip [updated.json](assets/schemas/updated.json)
 
 
+## Refresh
+
+This operation refreshes the compacted and expanded representations of the schema.
+
+This is equivalent of doing an update with the same source as the last revision of the schema. It is useful when schemas 
+imports have changed, in order for the changes to be reflected in the schema.
+
+```
+PUT /v1/schemas/{org_label}/{project_label}/{schema_id}
+```
+
+**Example**
+
+Request
+:   @@snip [refresh.sh](assets/schemas/refresh.sh)
+
+Response
+:   @@snip [refreshed.json](assets/schemas/updated.json)
+
+
 ## Tag
 
 Links a schema revision to a specific name. 
