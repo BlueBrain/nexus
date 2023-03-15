@@ -93,7 +93,6 @@ object GraphAnalyticsSink {
   final private case class Acc(bulk: List[ElasticSearchBulk], updates: Map[Iri, Set[Iri]]) {
     def add(index: ElasticSearchBulk): Acc    = copy(bulk = index :: bulk)
     def update(id: Iri, types: Set[Iri]): Acc = copy(updates = updates + (id -> types))
-    def remove(id: Iri): Acc                  = copy(updates = updates - id)
   }
 
 }

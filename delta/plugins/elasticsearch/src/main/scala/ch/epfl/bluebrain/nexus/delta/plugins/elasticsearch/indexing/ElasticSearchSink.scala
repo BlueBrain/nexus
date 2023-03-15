@@ -78,9 +78,12 @@ object ElasticSearchSink {
 
   /**
     * Mark and update the elements according to the elasticsearch response
-    * @param response the elasticsearch bulk response
-    * @param elements the chunk of elements
-    * @param documentId how to extract the document id from an element
+    * @param response
+    *   the elasticsearch bulk response
+    * @param elements
+    *   the chunk of elements
+    * @param documentId
+    *   how to extract the document id from an element
     */
   def markElems[A](response: BulkResponse, elements: Chunk[Elem[A]], documentId: Elem[A] => String): Chunk[Elem[Unit]] =
     response match {
@@ -103,7 +106,6 @@ object ElasticSearchSink {
             }
         }
     }
-
 
   /**
     * @param client

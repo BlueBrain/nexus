@@ -58,6 +58,9 @@ class GraphAnalyticsSinkSuite
   private def getTypes(expandedJsonLd: ExpandedJsonLd): UIO[Option[Set[Iri]]] =
     UIO.pure(expandedJsonLd.cursor.getTypes.toOption)
 
+  private val excludedEsFields = List("took", "_shards")
+  private val sortById         = SortList(Sort("@id") :: Nil)
+
   private val expanded1 = loadExpanded("expanded/resource1.json")
   private val expanded2 = loadExpanded("expanded/resource2.json")
 
@@ -116,12 +119,11 @@ class GraphAnalyticsSinkSuite
       chunk              = Chunk.seq(List(r1, r2, r3))
       // We expect no error
       _                 <- sink(chunk).assert(chunk.map(_.void))
-      // Elasticsearch should have taken into account the bulk query and the update query
+      // Elasticsearch should have taken into account the bulk query
       expectedDocuments <- ioJsonContentOf("indexed-documents.json")
-      sort               = SortList(Sort("@id") :: Nil)
       _                 <- client
-                             .search(JsonObject.empty, Set(index.value), Uri.Query.Empty)(sort)
-                             .map(_.removeKeys("took", "_shards"))
+                             .search(JsonObject.empty, Set(index.value), Uri.Query.Empty)(sortById)
+                             .map(_.removeKeys(excludedEsFields: _*))
                              .eventually(expectedDocuments)
     } yield ()
 
@@ -162,11 +164,12 @@ class GraphAnalyticsSinkSuite
 
     for {
       _                 <- sink(chunk).assert(chunk.map(_.void))
+      // The reference to file1 should have been resolved and introduced as a relationship
+      // The update query should not have an effect on the other resource
       expectedDocuments <- ioJsonContentOf("indexed-documents-after-query.json")
-      sort               = SortList(Sort("@id") :: Nil)
       _                 <- client
-                             .search(JsonObject.empty, Set(index.value), Uri.Query.Empty)(sort)
-                             .map(_.removeKeys("took", "_shards"))
+                             .search(JsonObject.empty, Set(index.value), Uri.Query.Empty)(sortById)
+                             .map(_.removeKeys(excludedEsFields: _*))
                              .eventually(expectedDocuments)
     } yield ()
   }
