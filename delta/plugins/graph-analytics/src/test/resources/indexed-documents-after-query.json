@@ -96,15 +96,28 @@
               "@type": [
                 "https://neuroshapes.org/Trace"
               ]
+            },
+            {
+              "path": "http://schema.org/distribution / http://schema.org/contentUrl",
+              "isInArray": false,
+              "found": true,
+              "dataType": "object",
+              "@id": "http://localhost/file1",
+              "@type": [
+                "https://bluebrain.github.io/nexus/vocabulary/File"
+              ]
             }
           ],
           "references": [
             {
               "path": "http://schema.org/distribution / http://schema.org/contentUrl",
               "isInArray": false,
+              "@type": [
+                "https://bluebrain.github.io/nexus/vocabulary/File"
+              ],
               "dataType": "object",
               "@id": "http://localhost/file1",
-              "found": false
+              "found": true
             },
             {
               "path": "http://www.w3.org/ns/prov#qualifiedGeneration",
