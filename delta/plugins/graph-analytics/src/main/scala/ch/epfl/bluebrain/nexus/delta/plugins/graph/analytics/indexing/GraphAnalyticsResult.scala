@@ -37,7 +37,7 @@ object GraphAnalyticsResult {
     * The value is indexed to Elasticsearch and an update by query action is required so that the type of this resource
     * is propagated to the resources pointing to it.
     *
-    * The other fields are metadata and matches the same definition as in [[ResourceState]].
+    * The other fields are metadata and match the same definition as in [[ResourceState]].
     *
     * @see
     *   [[ResouceState]]
