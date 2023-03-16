@@ -58,6 +58,7 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
   private val updateByQueryPath                                     = "_update_by_query"
   private val countPath                                             = "_count"
   private val searchPath                                            = "_search"
+  private val source                                                = "_source"
   private val newLine                                               = System.lineSeparator()
   private val `application/x-ndjson`: MediaType.WithFixedCharset    =
     MediaType.applicationWithFixedCharset("x-ndjson", HttpCharsets.`UTF-8`, "json")
@@ -265,6 +266,19 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
                     updateByQueryStrategy.onError
                   )
     } yield ()
+  }
+
+  /**
+    * Get the source of the Elasticsearch document
+    * @param index
+    *   the index to look in
+    * @param id
+    *   the identifier of the document
+    */
+  def getSource[R: Decoder: ClassTag](index: IndexLabel, id: String): HttpResult[R] = {
+    val sourceEndpoint = endpoint / index.value / source / id
+    val req            = Get(sourceEndpoint).withHttpCredentials
+    client.fromJsonTo[R](req)
   }
 
   /**

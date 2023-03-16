@@ -42,13 +42,13 @@ import scala.annotation.nowarn
   * @param tags
   *   the collection of tag aliases
   * @param createdAt
-  *   the instant when the organization was created
+  *   the instant when the resource was created
   * @param createdBy
-  *   the identity that created the organization
+  *   the identity that created the resource
   * @param updatedAt
-  *   the instant when the organization was last updated
+  *   the instant when the resource was last updated
   * @param updatedBy
-  *   the identity that last updated the organization
+  *   the identity that last updated the resource
   */
 final case class ResourceState(
     id: Iri,

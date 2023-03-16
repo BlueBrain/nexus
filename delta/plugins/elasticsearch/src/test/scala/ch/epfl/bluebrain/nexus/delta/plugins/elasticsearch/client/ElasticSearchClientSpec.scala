@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{SearchResults, Sort, Sort
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchDocker
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, IOValues, TestHelpers}
-import io.circe.JsonObject
+import io.circe.{Json, JsonObject}
 import org.scalatest.{DoNotDiscover, OptionValues}
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
@@ -142,6 +142,17 @@ class ElasticSearchClientSpec(override val docker: ElasticSearchDocker)
           items.get("5").value shouldBe an[Outcome.Error]
         }
       }
+    }
+
+    "get the source of the given document" in {
+      val index = IndexLabel(genString()).rightValue
+      val doc   = json"""{ "field1" : 1 }"""
+
+      val operations = List(ElasticSearchBulk.Index(index, "1", doc))
+      esClient.bulk(operations, Refresh.WaitFor).accepted
+
+      esClient.getSource[Json](index, "1").accepted shouldEqual doc
+      esClient.getSource[Json](index, "2").rejectedWith[HttpClientStatusError]
     }
 
     "perform the multiget query" in {
