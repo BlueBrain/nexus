@@ -97,6 +97,31 @@ object SchemaCommand {
   ) extends SchemaCommand
 
   /**
+    * Command that signals the intent to refresh an existing schema.
+    *
+    * @param id
+    *   the schema identifier
+    * @param project
+    *   the project where the schema belongs
+    * @param compacted
+    *   the compacted JSON-LD representation of the schema
+    * @param expanded
+    *   the list of expanded JSON-LD representation of the schema with the imports resolutions applied
+    * @param rev
+    *   the last known revision of the schema
+    * @param subject
+    *   the subject which created this event
+    */
+  final case class RefreshSchema(
+      id: Iri,
+      project: ProjectRef,
+      compacted: CompactedJsonLd,
+      expanded: NonEmptyList[ExpandedJsonLd],
+      rev: Int,
+      subject: Subject
+  ) extends SchemaCommand
+
+  /**
     * Command that signals the intent to add a tag to an existing schema.
     *
     * @param id

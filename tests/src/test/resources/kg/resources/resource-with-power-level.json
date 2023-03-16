@@ -1,0 +1,14 @@
+{
+  "@context": {
+    "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
+    "other": "https://some.other.prefix.com/"
+  },
+  "@id": "{{id}}",
+  "@type": "nxv:TestResource",
+  "other:powerlevel": {{powerLevel}},
+  "other:projects": [
+    "testProject",
+    "testProject2"
+  ],
+  "nullValue": null
+}
