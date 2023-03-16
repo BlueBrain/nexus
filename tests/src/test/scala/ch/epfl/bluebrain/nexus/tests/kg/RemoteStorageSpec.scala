@@ -12,15 +12,10 @@ import io.circe.{Decoder, Json}
 import monix.bio.Task
 import org.scalatest.Assertion
 
-import java.io.File
-import java.nio.file.attribute.PosixFilePermissions
-import java.nio.file.{Files, Paths}
 import scala.annotation.nowarn
-import scala.reflect.io.Directory
+import sys.process._
 
 class RemoteStorageSpec extends StorageSpec {
-
-  private val rwx = PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwxrwxrwx"))
 
   override def storageName: String = "external"
 
@@ -28,21 +23,23 @@ class RemoteStorageSpec extends StorageSpec {
 
   override def storageId: String = "myexternalstorage"
 
-  override def locationPrefix: Option[String] = Some(s"file:///data/$remoteFolder")
+  override def locationPrefix: Option[String] = Some(s"file:///tmp/$remoteFolder")
 
   val externalEndpoint: String = s"http://storage-service:8080/v1"
   private val remoteFolder     = genId()
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    // Create folder for remote storage
-    Files.createDirectories(Paths.get(s"/tmp/storage/$remoteFolder/protected"), rwx)
+    val createFolder = s"mkdir -p /tmp/$remoteFolder/protected"
+    s"docker exec docker-storage-service-1 bash -c \"$createFolder\"".!
     ()
   }
 
   override def afterAll(): Unit = {
-    new Directory(new File(s"/tmp/storage/$remoteFolder")).deleteRecursively()
     super.afterAll()
+    val deleteFolder = s"rm -rf /tmp/$remoteFolder"
+    s"docker exec docker-storage-service-1 bash -c \"$deleteFolder\"".!
+    ()
   }
 
   private def serviceAccountToken = tokensMap.get(Identity.ServiceAccount).credentials.token()
@@ -148,21 +145,12 @@ class RemoteStorageSpec extends StorageSpec {
 
   s"Linking in Remote storage" should {
     "link an existing file" in {
-      val mydir            = genString()
-      val remoteFolderPath = Paths.get(s"/tmp/storage/$remoteFolder")
-      val directory        = Files.createDirectory(remoteFolderPath.resolve(mydir), rwx)
-      val file             = directory.resolve("file.txt")
-      Files.createFile(file, rwx)
-      file.toFile.setWritable(true, false)
-      Files.writeString(file, "file content")
-
-      List(remoteFolderPath, directory).foreach { path =>
-        path.toFile.setWritable(true, false)
-      }
+      val createFile = s"echo 'file content' > /tmp/$remoteFolder/file.txt"
+      s"docker exec docker-storage-service-1 bash -c \"$createFile\"".!
 
       val payload = Json.obj(
         "filename"  -> Json.fromString("file.txt"),
-        "path"      -> Json.fromString(s"$mydir/file.txt"),
+        "path"      -> Json.fromString(s"file.txt"),
         "mediaType" -> Json.fromString("text/plain")
       )
 
