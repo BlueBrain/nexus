@@ -1,13 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing
 
-import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchClientSetup
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.JsonLdDocument
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.nxvFile
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Sort, SortList}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
@@ -17,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{FailedElem, SuccessEl
 import ch.epfl.bluebrain.nexus.testkit.bio.{BioSuite, PatienceConfig}
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
 import fs2.Chunk
-import io.circe.JsonObject
+import io.circe.Json
 import monix.bio.{Task, UIO}
 import munit.AnyFixture
 
@@ -57,9 +55,6 @@ class GraphAnalyticsSinkSuite
 
   private def getTypes(expandedJsonLd: ExpandedJsonLd): UIO[Option[Set[Iri]]] =
     UIO.pure(expandedJsonLd.cursor.getTypes.toOption)
-
-  private val excludedEsFields = List("took", "_shards")
-  private val sortById         = SortList(Sort("@id") :: Nil)
 
   private val expanded1 = loadExpanded("expanded/resource1.json")
   private val expanded2 = loadExpanded("expanded/resource2.json")
@@ -105,26 +100,26 @@ class GraphAnalyticsSinkSuite
     }
 
     for {
-      r1                <- toIndex(resource1, expanded1)
-      r2                <- toIndex(resource2, expanded2)
-      r3                 = SuccessElem(
-                             Resources.entityType,
-                             resource3,
-                             Some(project),
-                             Instant.EPOCH,
-                             Offset.start,
-                             GraphAnalyticsResult.Noop,
-                             1
-                           )
-      chunk              = Chunk.seq(List(r1, r2, r3))
+      r1        <- toIndex(resource1, expanded1)
+      r2        <- toIndex(resource2, expanded2)
+      r3         = SuccessElem(
+                     Resources.entityType,
+                     resource3,
+                     Some(project),
+                     Instant.EPOCH,
+                     Offset.start,
+                     GraphAnalyticsResult.Noop,
+                     1
+                   )
+      chunk      = Chunk.seq(List(r1, r2, r3))
       // We expect no error
-      _                 <- sink(chunk).assert(chunk.map(_.void))
+      _         <- sink(chunk).assert(chunk.map(_.void))
       // Elasticsearch should have taken into account the bulk query
-      expectedDocuments <- ioJsonContentOf("indexed-documents.json")
-      _                 <- client
-                             .search(JsonObject.empty, Set(index.value), Uri.Query.Empty)(sortById)
-                             .map(_.removeKeys(excludedEsFields: _*))
-                             .eventually(expectedDocuments)
+      _         <- client.count(index.value).eventually(2L)
+      expected1 <- ioJsonContentOf("result/resource1.json")
+      expected2 <- ioJsonContentOf("result/resource2.json")
+      _         <- client.getSource[Json](index, resource1.toString).eventually(expected1)
+      _         <- client.getSource[Json](index, resource2.toString).eventually(expected2)
     } yield ()
 
   }
@@ -163,14 +158,14 @@ class GraphAnalyticsSinkSuite
     )
 
     for {
-      _                 <- sink(chunk).assert(chunk.map(_.void))
+      _         <- sink(chunk).assert(chunk.map(_.void))
       // The reference to file1 should have been resolved and introduced as a relationship
       // The update query should not have an effect on the other resource
-      expectedDocuments <- ioJsonContentOf("indexed-documents-after-query.json")
-      _                 <- client
-                             .search(JsonObject.empty, Set(index.value), Uri.Query.Empty)(sortById)
-                             .map(_.removeKeys(excludedEsFields: _*))
-                             .eventually(expectedDocuments)
+      expected1 <- ioJsonContentOf("result/resource1_updated.json")
+      expected2 <- ioJsonContentOf("result/resource2.json")
+      _         <- client.count(index.value).eventually(2L)
+      _         <- client.getSource[Json](index, resource1.toString).eventually(expected1)
+      _         <- client.getSource[Json](index, resource2.toString).eventually(expected2)
     } yield ()
   }
 

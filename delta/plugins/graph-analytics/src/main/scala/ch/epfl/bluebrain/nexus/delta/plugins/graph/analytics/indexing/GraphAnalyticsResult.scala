@@ -35,23 +35,12 @@ object GraphAnalyticsResult {
 
   /**
     * The value is indexed to Elasticsearch and an update by query action is required so that the type of this resource
-    * is propagated to the resources pointing to it
-    * @param id
-    *   the id of the resource
-    * @param rev
-    *   its revision
-    * @param types
-    *   the types of the resources
-    * @param value
-    *   the document to push to elasticsearch
-    * @param createdAt
-    *   the instant when the resource was created
-    * @param createdBy
-    *   the identity that created the resource
-    * @param updatedAt
-    *   the instant when the resource was last updated
-    * @param updatedBy
-    *   the identity that last updated the resource
+    * is propagated to the resources pointing to it.
+    *
+    * The other fields are metadata and matches the same definition as in [[ResourceState]].
+    *
+    * @see
+    *   [[ResouceState]]
     */
   final case class Index(
       id: Iri,

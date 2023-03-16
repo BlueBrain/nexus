@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
   * @param values
   *   the values to be sorted in the provided order
   */
-final case class SortList(values: Seq[Sort]) {
+final case class SortList(values: List[Sort]) {
   def isEmpty: Boolean = values.isEmpty
 }
 
