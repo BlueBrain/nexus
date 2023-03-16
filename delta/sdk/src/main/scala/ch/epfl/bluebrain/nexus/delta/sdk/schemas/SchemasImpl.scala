@@ -79,6 +79,21 @@ final class SchemasImpl private (
     } yield res
   }.span("updateSchema")
 
+  override def refresh(
+      id: IdSegment,
+      projectRef: ProjectRef
+  )(implicit caller: Caller): IO[SchemaRejection, SchemaResource] = {
+    for {
+      pc                    <- fetchContext.onModify(projectRef)
+      iri                   <- expandIri(id, pc)
+      schema                <- log.stateOr(projectRef, iri, SchemaNotFound(iri, projectRef))
+      (compacted, expanded) <- sourceParser(projectRef, pc, iri, schema.source)
+      expandedResolved      <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
+      res                   <-
+        eval(RefreshSchema(iri, projectRef, compacted, expandedResolved, schema.rev, caller.subject), pc)
+    } yield res
+  }.span("refreshSchema")
+
   override def tag(
       id: IdSegment,
       projectRef: ProjectRef,

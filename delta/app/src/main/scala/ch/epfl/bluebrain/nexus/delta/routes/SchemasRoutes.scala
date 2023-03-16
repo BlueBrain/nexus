@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
-import akka.http.scaladsl.model.StatusCodes.Created
+import akka.http.scaladsl.model.StatusCodes.{Created, OK}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import cats.implicits._
@@ -22,8 +22,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.schemas.{read => Read, write => Write}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas
-import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.{Schema, SchemaRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaRejection.SchemaNotFound
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.{Schema, SchemaRejection}
 import io.circe.{Json, Printer}
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.execution.Scheduler
@@ -122,6 +122,16 @@ final class SchemasRoutes(
                           )
                         }
                       )
+                    }
+                  },
+                  (pathPrefix("refresh") & put & pathEndOrSingleSlash) {
+                    operationName(s"$prefixSegment/schemas/{org}/{project}/{id}/refresh") {
+                      authorizeFor(ref, Write).apply {
+                        emit(
+                          OK,
+                          schemas.refresh(id, ref).tapEval(index(ref, _, mode)).map(_.void)
+                        )
+                      }
                     }
                   },
                   // Fetch a schema original source
