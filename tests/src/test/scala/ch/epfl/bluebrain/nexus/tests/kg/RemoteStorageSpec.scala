@@ -31,14 +31,14 @@ class RemoteStorageSpec extends StorageSpec {
   override def beforeAll(): Unit = {
     super.beforeAll()
     val createFolder = s"mkdir -p /tmp/$remoteFolder/protected"
-    s"docker exec docker-storage-service-1 bash -c \"$createFolder\"".!
+    s"docker exec nexus-storage-service bash -c \"$createFolder\"".!
     ()
   }
 
   override def afterAll(): Unit = {
     super.afterAll()
     val deleteFolder = s"rm -rf /tmp/$remoteFolder"
-    s"docker exec docker-storage-service-1 bash -c \"$deleteFolder\"".!
+    s"docker exec nexus-storage-service bash -c \"$deleteFolder\"".!
     ()
   }
 
@@ -146,7 +146,7 @@ class RemoteStorageSpec extends StorageSpec {
   s"Linking in Remote storage" should {
     "link an existing file" in {
       val createFile = s"echo 'file content' > /tmp/$remoteFolder/file.txt"
-      s"docker exec docker-storage-service-1 bash -c \"$createFile\"".!
+      s"docker exec nexus-storage-service bash -c \"$createFile\"".!
 
       val payload = Json.obj(
         "filename"  -> Json.fromString("file.txt"),
