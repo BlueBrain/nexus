@@ -110,6 +110,34 @@ object SchemaEvent {
   ) extends SchemaEvent
 
   /**
+    * Event representing a schema refresh.
+    *
+    * @param id
+    *   the schema identifier
+    * @param project
+    *   the project where the schema belongs
+    * @param compacted
+    *   the compacted JSON-LD representation of the schema
+    * @param expanded
+    *   the list of expanded JSON-LD representation of the schema with the imports resolutions applied
+    * @param rev
+    *   the schema revision
+    * @param instant
+    *   the instant when this event was created
+    * @param subject
+    *   the subject which created this event
+    */
+  final case class SchemaRefreshed(
+      id: Iri,
+      project: ProjectRef,
+      compacted: CompactedJsonLd,
+      expanded: NonEmptyList[ExpandedJsonLd],
+      rev: Int,
+      instant: Instant,
+      subject: Subject
+  ) extends SchemaEvent
+
+  /**
     * Event representing a tag addition to a schema.
     *
     * @param id
@@ -207,6 +235,7 @@ object SchemaEvent {
           event match {
             case _: SchemaCreated    => Created
             case _: SchemaUpdated    => Updated
+            case _: SchemaRefreshed  => Refreshed
             case _: SchemaTagAdded   => Tagged
             case _: SchemaTagDeleted => TagDeleted
             case _: SchemaDeprecated => Deprecated

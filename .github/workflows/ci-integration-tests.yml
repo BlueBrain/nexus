@@ -29,13 +29,6 @@ jobs:
         run: docker-compose -f tests/docker/docker-compose-ci.yml up -d && sleep 60
       - name: Test
         run: sbt -Dsbt.color=always -Dsbt.supershell=false "project tests" test
-      - name: Stop Docker
+      - name: Stop & clean Docker
         if: ${{ always() }}
-        run: docker-compose -f tests/docker/docker-compose-ci.yml down
-      - name: Cleanup Docker Containers
-        if: ${{ always() }}
-        run: |
-          for container in `docker images | grep none | awk '{print $3}'`; do
-            echo "Deleting container: $container";
-            docker rmi $container;
-          done
+        run: docker-compose -f tests/docker/docker-compose-ci.yml down --rmi "local" --volumes

@@ -172,6 +172,37 @@ class SchemasRoutesSpec extends BaseRouteSpec {
       }
     }
 
+    "fail to refresh a schema without schemas/write permission" in {
+      aclCheck.subtract(AclAddress.Root, Anonymous -> Set(schemas.write)).accepted
+      Put(s"/v1/schemas/myorg/myproject/myid/refresh", payload.toEntity) ~> routes ~> check {
+        response.status shouldEqual StatusCodes.Forbidden
+        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+      }
+    }
+
+    "refresh a schema" in {
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(schemas.write)).accepted
+      val endpoints = List(
+        "/v1/schemas/myorg/myproject/myid",
+        s"/v1/schemas/myorg/myproject/$myIdEncoded"
+      )
+      forAll(endpoints.zipWithIndex) { case (endpoint, idx) =>
+        Put(s"$endpoint/refresh") ~> routes ~> check {
+          status shouldEqual StatusCodes.OK
+          response.asJson shouldEqual schemaMetadata(projectRef, myId, rev = idx + 4)
+        }
+      }
+    }
+
+    "reject the refresh of a non-existent schema" in {
+      val payload = payloadUpdated.removeKeys(keywords.id)
+      Put("/v1/schemas/myorg/myproject/myid10/refresh", payload.toEntity) ~> routes ~> check {
+        status shouldEqual StatusCodes.NotFound
+        response.asJson shouldEqual
+          jsonContentOf("/schemas/errors/not-found.json", "id" -> (nxv + "myid10"), "proj" -> "myorg/myproject")
+      }
+    }
+
     "fail to deprecate a schema without schemas/write permission" in {
       aclCheck.subtract(AclAddress.Root, Anonymous -> Set(schemas.write)).accepted
       Delete("/v1/schemas/myorg/myproject/myid?rev=3") ~> routes ~> check {
@@ -182,9 +213,9 @@ class SchemasRoutesSpec extends BaseRouteSpec {
 
     "deprecate a schema" in {
       aclCheck.append(AclAddress.Root, Anonymous -> Set(schemas.write)).accepted
-      Delete("/v1/schemas/myorg/myproject/myid?rev=3") ~> routes ~> check {
+      Delete("/v1/schemas/myorg/myproject/myid?rev=5") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual schemaMetadata(projectRef, myId, rev = 4, deprecated = true)
+        response.asJson shouldEqual schemaMetadata(projectRef, myId, rev = 6, deprecated = true)
       }
     }
 
@@ -196,7 +227,7 @@ class SchemasRoutesSpec extends BaseRouteSpec {
     }
 
     "reject the deprecation of a already deprecated schema" in {
-      Delete(s"/v1/schemas/myorg/myproject/myid?rev=4") ~> routes ~> check {
+      Delete(s"/v1/schemas/myorg/myproject/myid?rev=6") ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual jsonContentOf("/schemas/errors/schema-deprecated.json", "id" -> myId)
       }

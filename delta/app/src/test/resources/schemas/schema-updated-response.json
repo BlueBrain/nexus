@@ -16,7 +16,7 @@
   "_incoming": "http://localhost/v1/schemas/myorg/myproject/myid/incoming",
   "_outgoing": "http://localhost/v1/schemas/myorg/myproject/myid/outgoing",
   "_project": "http://localhost/v1/projects/myorg/myproject",
-  "_rev": 4,
+  "_rev": 6,
   "_self": "http://localhost/v1/schemas/myorg/myproject/myid",
   "_updatedAt": "1970-01-01T00:00:00Z",
   "_updatedBy": "http://localhost/v1/anonymous",
