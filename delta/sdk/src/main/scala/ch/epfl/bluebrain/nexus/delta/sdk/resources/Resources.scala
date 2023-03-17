@@ -4,26 +4,21 @@ import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
-import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
-import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclEngine
 import ch.epfl.bluebrain.nexus.delta.sdk.DataResource
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.ResourceResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.ValidateResource.ValidationResult
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceEvent._
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{IncorrectRev, InvalidJsonLdFormat, InvalidResource, InvalidResourceId, InvalidSchemaRejection, ReservedResourceId, ResourceAlreadyExists, ResourceFetchRejection, ResourceIsDeprecated, ResourceNotFound, ResourceShaclEngineRejection, RevisionNotFound, SchemaIsDeprecated, TagNotFound, UnexpectedResourceSchema}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{IncorrectRev, InvalidResourceId, ResourceAlreadyExists, ResourceFetchRejection, ResourceIsDeprecated, ResourceNotFound, RevisionNotFound, TagNotFound, UnexpectedResourceSchema}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{ResourceCommand, ResourceEvent, ResourceRejection, ResourceState}
-import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
 import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.{ScopedEntityDefinition, StateMachine}
@@ -110,6 +105,24 @@ trait Resources {
       projectRef: ProjectRef,
       schemaOpt: Option[IdSegment]
   )(implicit caller: Caller): IO[ResourceRejection, DataResource]
+
+  /**
+    * Refreshes an existing resource. This is equivalent to posting an update with the latest source. Used for when the
+    * project or schema contexts have changes
+    *
+    * @param id
+    *   the identifier that will be expanded to the Iri of the resource
+    * @param projectRef
+    *   the project reference where the resource belongs
+    * @param schemaOpt
+    *   the optional identifier that will be expanded to the schema reference to validate the resource. A None value
+    *   uses the currently available resource schema reference.
+    */
+  def validate(
+      id: IdSegmentRef,
+      projectRef: ProjectRef,
+      schemaOpt: Option[IdSegment]
+  )(implicit caller: Caller): IO[ResourceRejection, ValidationResult]
 
   /**
     * Adds a tag to an existing resource.
@@ -267,14 +280,10 @@ object Resources {
 
   @SuppressWarnings(Array("OptionGet"))
   private[delta] def evaluate(
-      resourceResolution: ResourceResolution[Schema]
+      resourceValidator: ValidateResource
   )(state: Option[ResourceState], cmd: ResourceCommand)(implicit
-      api: JsonLdApi,
       clock: Clock[UIO]
   ): IO[ResourceRejection, ResourceEvent] = {
-
-    def toGraph(id: Iri, expanded: ExpandedJsonLd): IO[ResourceRejection, Graph] =
-      IO.fromEither(expanded.toGraph).mapError(err => InvalidJsonLdFormat(Some(id), err))
 
     def validate(
         projectRef: ProjectRef,
@@ -282,25 +291,11 @@ object Resources {
         caller: Caller,
         id: Iri,
         expanded: ExpandedJsonLd
-    ): IO[ResourceRejection, (ResourceRef.Revision, ProjectRef)] =
-      if (schemaRef == Latest(schemas.resources) || schemaRef == ResourceRef.Revision(schemas.resources, 1))
-        IO.raiseWhen(id.startsWith(contexts.base))(ReservedResourceId(id)) >>
-          toGraph(id, expanded) >>
-          IO.pure((ResourceRef.Revision(schemas.resources, 1), projectRef))
-      else
-        for {
-          _        <- IO.raiseWhen(id.startsWith(contexts.base))(ReservedResourceId(id))
-          graph    <- toGraph(id, expanded)
-          resolved <- resourceResolution
-                        .resolve(schemaRef, projectRef)(caller)
-                        .mapError(InvalidSchemaRejection(schemaRef, projectRef, _))
-          schema   <-
-            if (resolved.deprecated) IO.raiseError(SchemaIsDeprecated(resolved.value.id)) else IO.pure(resolved)
-          dataGraph = graph ++ schema.value.ontologies
-          report   <- ShaclEngine(dataGraph, schema.value.shapes, reportDetails = true, validateShapes = false)
-                        .mapError(ResourceShaclEngineRejection(id, schemaRef, _))
-          _        <- IO.when(!report.isValid())(IO.raiseError(InvalidResource(id, schemaRef, report, expanded)))
-        } yield (ResourceRef.Revision(schema.id, schema.rev), schema.value.project)
+    ): IO[ResourceRejection, (ResourceRef.Revision, ProjectRef)] = {
+      resourceValidator
+        .apply(projectRef, schemaRef, caller, id, expanded)
+        .map(result => (result.schema, result.project))
+    }
 
     def create(c: CreateResource) =
       state match {
@@ -350,7 +345,8 @@ object Resources {
     def update(c: UpdateResource) = {
       for {
         s                          <- stateWhereResourceIsEditable(c)
-        (schemaRev, schemaProject) <- validate(s.project, c.schemaOpt.getOrElse(s.schema), c.caller, c.id, c.expanded)
+        (schemaRev, schemaProject) <-
+          validate(s.project, c.schemaOpt.getOrElse(ResourceRef.Latest(s.schema.iri)), c.caller, c.id, c.expanded)
         types                       = c.expanded.cursor.getTypes.getOrElse(Set.empty)
         time                       <- IOUtils.instant
       } yield ResourceUpdated(
@@ -425,14 +421,13 @@ object Resources {
     * Entity definition for [[Resources]]
     */
   def definition(
-      resourceResolution: ResourceResolution[Schema]
+      resourceValidator: ValidateResource
   )(implicit
-      api: JsonLdApi,
       clock: Clock[UIO]
   ): ScopedEntityDefinition[Iri, ResourceState, ResourceCommand, ResourceEvent, ResourceRejection] =
     ScopedEntityDefinition(
       entityType,
-      StateMachine(None, evaluate(resourceResolution), next),
+      StateMachine(None, evaluate(resourceValidator), next),
       ResourceEvent.serializer,
       ResourceState.serializer,
       Tagger[ResourceEvent](

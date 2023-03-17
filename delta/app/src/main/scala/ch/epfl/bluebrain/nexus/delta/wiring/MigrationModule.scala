@@ -18,11 +18,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ProjectCommand, ProjectEvent, ProjectRejection, ProjectState}
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.Realms
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.{RealmCommand, RealmEvent, RealmRejection, RealmState}
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.ResourceResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.Resolvers
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{ResolverCommand, ResolverEvent, ResolverRejection, ResolverState}
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{ResourceCommand, ResourceEvent, ResourceRejection, ResourceState}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.{Resources, ValidateResource}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
@@ -135,10 +134,9 @@ object MigrationModule extends ModuleDef {
   // Resources
   many[MigrationLog].add { (cfg: AppConfig, xas: Transactors, clock: Clock[UIO]) =>
     // Should not be called as no evaluation will be performed
-    val resourceResolution: ResourceResolution[Schema] = null
-    val jsonldApi: JsonLdApi                           = JsonLdJavaApi.lenient
+    val resourceValidator: ValidateResource = null
     MigrationLog.scoped[Iri, ResourceState, ResourceCommand, ResourceEvent, ResourceRejection](
-      Resources.definition(resourceResolution)(jsonldApi, clock),
+      Resources.definition(resourceValidator)(clock),
       e => e.id,
       identity,
       (e, _) => e,

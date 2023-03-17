@@ -27,6 +27,7 @@ trait RouteFixtures extends TestHelpers with IOValues {
       contexts.aclsMetadata          -> ContextValue.fromFile("contexts/acls-metadata.json").accepted,
       contexts.metadata              -> ContextValue.fromFile("contexts/metadata.json").accepted,
       contexts.error                 -> ContextValue.fromFile("contexts/error.json").accepted,
+      contexts.validation            -> ContextValue.fromFile("contexts/validation.json").accepted,
       contexts.organizations         -> ContextValue.fromFile("contexts/organizations.json").accepted,
       contexts.organizationsMetadata -> ContextValue.fromFile("contexts/organizations-metadata.json").accepted,
       contexts.identities            -> ContextValue.fromFile("contexts/identities.json").accepted,

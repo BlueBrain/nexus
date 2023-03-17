@@ -130,6 +130,26 @@ Response
 :   @@snip [refreshed.json](assets/resources/updated.json)
 
 
+## Validate
+
+This operation runs validation of a resource against a schema. This would be useful to test whether resources would
+match the shape of a new schema. 
+
+This is equivalent of doing an update with the same source as the last revision of the resource. It is useful when the
+schema or project contexts have changed, in order for the changes to be reflected in the resource.
+
+```
+GET /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}/validate
+```
+
+**Example**
+
+Request
+:   @@snip [validate.sh](assets/resources/validate.sh)
+
+Response
+:   @@snip [validated.json](assets/resources/validated.json)
+
 ## Tag
 
 Links a resource revision to a specific name. 
