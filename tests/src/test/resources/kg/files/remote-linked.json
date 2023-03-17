@@ -5,7 +5,7 @@
   ],
   "@id": "{{id}}",
   "@type": "File",
-  "_bytes": 12,
+  "_bytes": 13,
   "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/files.json",
   "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
   "_deprecated": false,

@@ -98,6 +98,7 @@ services:
       POSTGRES_PASSWORD: "postgres"
 
   storage-service:
+    container_name: "nexus-storage-service"
     image: bluebrain/nexus-storage:latest
     entrypoint: [ "./bin/storage",
                   "-Dapp.instance.interface=0.0.0.0",
@@ -106,7 +107,7 @@ services:
                   "-Dapp.subject.anonymous=false",
                   "-Dapp.subject.realm=internal",
                   "-Dapp.subject.name=service-account-delta",
-                  "-Dapp.storage.root-volume=/data",
+                  "-Dapp.storage.root-volume=/tmp",
                   "-Dapp.storage.protected-directory=protected",
                   "-Dapp.storage.fixer-enabled=false",
                   "-Dapp.delta.public-iri=https://test.nexus.bbp.epfl.ch",
@@ -115,9 +116,6 @@ services:
                   "-Dkamon.modules.jaeger.enabled=false" ]
     ports:
       - 8090:8090
-    volumes:
-      - /tmp/storage:/data
-    user: "1000"
 
   minio:
     image: minio/minio:RELEASE.2021-07-30T00-02-00Z
