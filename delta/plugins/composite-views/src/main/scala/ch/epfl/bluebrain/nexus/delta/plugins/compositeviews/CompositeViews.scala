@@ -34,9 +34,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax.nonEmptySetSyntax
 import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, EntityDependency, EntityType, Envelope, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Predicate, ScopedEntityDefinition, ScopedEventLog, StateMachine}
 import io.circe.Json
 import monix.bio.{IO, Task, UIO}
@@ -415,15 +414,9 @@ final class CompositeViews private (
     log.states(Predicate.Root, start).map(toCompositeViewDef)
 
   private def toCompositeViewDef(envelope: Envelope[CompositeViewState]) =
-    SuccessElem(
-      tpe = envelope.tpe,
-      id = envelope.id,
-      project = Some(envelope.value.project),
-      instant = envelope.instant,
-      offset = envelope.offset,
-      value = CompositeViewDef(envelope.value),
-      rev = envelope.rev
-    )
+    envelope.toElem { v => Some(v.project) }.map { v =>
+      CompositeViewDef(v)
+    }
 
   private def eval(
       cmd: CompositeViewCommand,

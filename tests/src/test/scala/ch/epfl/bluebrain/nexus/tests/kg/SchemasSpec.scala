@@ -108,7 +108,7 @@ class SchemasSpec extends BaseSpec with EitherValuable with CirceEq with BeforeA
       powerLevel: Int
   ): ((Json, HttpResponse) => Assertion) => Assertion = {
     val resourceId = genId()
-    val payload = jsonContentOf(
+    val payload    = jsonContentOf(
       "/kg/resources/resource-with-power-level.json",
       "id"         -> resourceId,
       "powerLevel" -> powerLevel
@@ -122,7 +122,7 @@ class SchemasSpec extends BaseSpec with EitherValuable with CirceEq with BeforeA
 
   "refresh a schema" in {
     val powerLevelSchemaId = "https://dev.nexus.test.com/schema-with-power-level"
-    val schemaId = "https://dev.nexus.test.com/refreshable-schema"
+    val schemaId           = "https://dev.nexus.test.com/refreshable-schema"
 
     thereIsASchema(withPowerLevelShape(id = powerLevelSchemaId, maxPowerLevel = 10000))
     thereIsASchema(withImportOfPowerLevelShape(id = schemaId, importedSchemaId = powerLevelSchemaId))

@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import cats.effect.Clock
-import cats.implicits.catsSyntaxTuple3Semigroupal
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
@@ -36,7 +36,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import io.circe.{Json, JsonObject}
 import monix.bio.{IO, Task, UIO}
 
@@ -367,16 +366,8 @@ final class ElasticSearchViews private (
     }
 
   private def toIndexViewDef(envelope: Envelope[ElasticSearchViewState]) =
-    IndexingViewDef(envelope.value, defaultElasticsearchMapping, defaultElasticsearchSettings, prefix).map { viewDef =>
-      SuccessElem(
-        tpe = envelope.tpe,
-        id = envelope.id,
-        project = Some(envelope.value.project),
-        instant = envelope.instant,
-        offset = envelope.offset,
-        value = viewDef,
-        rev = envelope.rev
-      )
+    envelope.toElem { v => Some(v.project) }.traverse { v =>
+      IndexingViewDef(v, defaultElasticsearchMapping, defaultElasticsearchSettings, prefix)
     }
 
   private def eval(

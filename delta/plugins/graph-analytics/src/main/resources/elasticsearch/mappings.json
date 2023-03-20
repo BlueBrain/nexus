@@ -1,5 +1,8 @@
 {
   "properties": {
+    "project": {
+      "type": "keyword"
+    },
     "@id": {
       "type": "keyword"
     },

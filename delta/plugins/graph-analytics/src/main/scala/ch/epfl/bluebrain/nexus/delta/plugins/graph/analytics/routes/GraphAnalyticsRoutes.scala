@@ -13,8 +13,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources.{read => Read}
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projections
+import ch.epfl.bluebrain.nexus.delta.sourcing.ProgressStatistics
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
+import monix.bio.UIO
 import monix.execution.Scheduler
 
 /**
@@ -26,8 +28,8 @@ import monix.execution.Scheduler
   *   to check acls
   * @param graphAnalytics
   *   analytics the graph analytics module
-  * @param projections
-  *   the projections module
+  * @param fetchStatistics
+  *   how to fetch the statistics for the graph analytics for a given project
   * @param schemeDirectives
   *   directives related to orgs and projects
   */
@@ -35,7 +37,7 @@ class GraphAnalyticsRoutes(
     identities: Identities,
     aclCheck: AclCheck,
     graphAnalytics: GraphAnalytics,
-    projections: Projections,
+    fetchStatistics: ProjectRef => UIO[ProgressStatistics],
     schemeDirectives: DeltaSchemeDirectives
 )(implicit baseUri: BaseUri, s: Scheduler, cr: RemoteContextResolution, ordering: JsonKeyOrdering)
     extends AuthDirectives(identities, aclCheck)
@@ -66,12 +68,11 @@ class GraphAnalyticsRoutes(
                   }
                 }
               },
-              // Fetch the indexing progress
-              // TODO: Other endpoints have this as statistics, but in this case that word would be dup. See what to do
-              (pathPrefix("progress") & get & pathEndOrSingleSlash) {
-                operationName(s"$prefixSegment/graph-analytics/{org}/{project}/progress") {
+              // Fetch the statistics
+              (pathPrefix("statistics") & get & pathEndOrSingleSlash) {
+                operationName(s"$prefixSegment/graph-analytics/{org}/{project}/statistics") {
                   authorizeFor(projectRef, Read).apply {
-                    emit(projections.statistics(projectRef, None, GraphAnalytics.projectionId(projectRef)))
+                    emit(fetchStatistics(projectRef))
                   }
                 }
               }
