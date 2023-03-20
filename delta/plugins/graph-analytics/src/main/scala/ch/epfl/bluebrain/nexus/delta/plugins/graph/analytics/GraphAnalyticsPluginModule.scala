@@ -4,7 +4,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchC
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.config.GraphAnalyticsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.GraphAnalyticsRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.routes.GraphAnalyticsRoutes
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
@@ -14,7 +13,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projections
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.execution.Scheduler
@@ -27,8 +25,6 @@ class GraphAnalyticsPluginModule(priority: Int) extends ModuleDef {
   implicit private val classLoader: ClassLoader = getClass.getClassLoader
 
   make[GraphAnalyticsConfig].from { GraphAnalyticsConfig.load _ }
-
-  make[ResourceParser].from((resources: Resources, files: Files) => ResourceParser(resources, files))
 
   make[GraphAnalytics]
     .fromEffect {

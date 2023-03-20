@@ -27,14 +27,15 @@ class JsonLdDocumentSpec
     val expanded                      = ExpandedJsonLd(input).accepted
 
     "be generated from expanded Json resource" in {
-      val nodeRef1                                       = iri"http://api.brain-map.org/api/v2/data/Structure/733"
-      val nodeRef2                                       = iri"http://localhost/nexus/v1/files/my-file"
-      def findRelationship: Iri => UIO[Option[Set[Iri]]] = {
-        case `nodeRef1` => UIO.some(Set(iri"https://neuroshapes.org/NeuronMorphology"))
-        case `nodeRef2` => UIO.some(Set(nxvFile))
-        case _          => UIO.none
-      }
-      val document                                       = JsonLdDocument.fromExpanded(expanded, findRelationship)
+      val nodeRef1                                   = iri"http://api.brain-map.org/api/v2/data/Structure/733"
+      val nodeRef2                                   = iri"http://localhost/nexus/v1/files/my-file"
+      def findRelationships: UIO[Map[Iri, Set[Iri]]] = UIO.pure(
+        Map(
+          nodeRef1 -> Set(iri"https://neuroshapes.org/NeuronMorphology"),
+          nodeRef2 -> Set(nxvFile)
+        )
+      )
+      val document                                   = JsonLdDocument.fromExpanded(expanded, _ => findRelationships)
       document.accepted.asJson should equalIgnoreArrayOrder(jsonContentOf("reconstructed-cell-document.json"))
     }
   }

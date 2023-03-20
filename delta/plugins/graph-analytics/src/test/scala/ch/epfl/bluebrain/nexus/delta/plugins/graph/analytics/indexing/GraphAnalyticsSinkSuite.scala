@@ -40,10 +40,20 @@ class GraphAnalyticsSinkSuite
 
   private val project = ProjectRef.unsafe("myorg", "myproject")
 
+  // resource1 has references to 'resource3', 'file1' and 'generatedBy',
+  // 'generatedBy' remains unresolved
   private val resource1 = iri"http://localhost/resource1"
+  private val expanded1 = loadExpanded("expanded/resource1.json")
+
+  // resource2 has references to other resources
+  // All of them should remain unresolved
   private val resource2 = iri"http://localhost/resource2"
-  val resource3         = iri"http://localhost/resource3"
-  val file1             = iri"http://localhost/file1"
+  private val expanded2 = loadExpanded("expanded/resource2.json")
+
+  // Resource linked by 'resource1', resolved while indexing
+  private val resource3 = iri"http://localhost/resource3"
+  // File linked by 'resource1', resolved after an update by query
+  private val file1     = iri"http://localhost/file1"
 
   private def loadExpanded(path: String): UIO[ExpandedJsonLd] =
     ioJsonContentOf(path)
@@ -53,20 +63,18 @@ class GraphAnalyticsSinkSuite
       .memoizeOnSuccess
       .hideErrors
 
-  private def getTypes(expandedJsonLd: ExpandedJsonLd): UIO[Option[Set[Iri]]] =
-    UIO.pure(expandedJsonLd.cursor.getTypes.toOption)
+  private def getTypes(expandedJsonLd: ExpandedJsonLd): UIO[Set[Iri]] =
+    UIO.pure(expandedJsonLd.cursor.getTypes.getOrElse(Set.empty))
 
-  private val expanded1 = loadExpanded("expanded/resource1.json")
-  private val expanded2 = loadExpanded("expanded/resource2.json")
-
-  val findRelationship: Iri => UIO[Option[Set[Iri]]] = {
-    case `resource1` =>
-      expanded1.flatMap(getTypes)
-    case `resource2` =>
-      expanded2.flatMap(getTypes)
-    case `resource3` =>
-      UIO.some(Set(iri"https://neuroshapes.org/Trace"))
-    case _           => UIO.none
+  private val findRelationships: UIO[Map[Iri, Set[Iri]]] = {
+    for {
+      resource1Types <- expanded1.flatMap(getTypes)
+      resource2Types <- expanded2.flatMap(getTypes)
+    } yield Map(
+      resource1 -> resource1Types,
+      resource2 -> resource2Types,
+      resource3 -> Set(iri"https://neuroshapes.org/Trace")
+    )
   }
 
   test("Create the update script and the index") {
@@ -78,43 +86,31 @@ class GraphAnalyticsSinkSuite
     } yield ()
   }
 
+  private def success(id: Iri, result: GraphAnalyticsResult) =
+    SuccessElem(Resources.entityType, id, Some(project), Instant.EPOCH, Offset.start, result, 1)
+
   test("Push index results") {
     def toIndex(id: Iri, io: UIO[ExpandedJsonLd]) = {
       for {
         expanded <- io
         types    <- getTypes(expanded)
-        doc      <- JsonLdDocument.fromExpanded(expanded, findRelationship)
+        doc      <- JsonLdDocument.fromExpanded(expanded, _ => findRelationships)
       } yield {
-        val result = GraphAnalyticsResult.Index(
-          id,
-          1,
-          types.getOrElse(Set.empty),
-          Instant.EPOCH,
-          Anonymous,
-          Instant.EPOCH,
-          Anonymous,
-          doc
-        )
-        SuccessElem(Resources.entityType, id, Some(project), Instant.EPOCH, Offset.start, result, 1)
+        val result = GraphAnalyticsResult.Index(id, 1, types, Instant.EPOCH, Anonymous, Instant.EPOCH, Anonymous, doc)
+        success(id, result)
       }
     }
 
     for {
       r1        <- toIndex(resource1, expanded1)
       r2        <- toIndex(resource2, expanded2)
-      r3         = SuccessElem(
-                     Resources.entityType,
-                     resource3,
-                     Some(project),
-                     Instant.EPOCH,
-                     Offset.start,
-                     GraphAnalyticsResult.Noop,
-                     1
-                   )
+      r3         = success(resource3, GraphAnalyticsResult.Noop)
       chunk      = Chunk.seq(List(r1, r2, r3))
       // We expect no error
       _         <- sink(chunk).assert(chunk.map(_.void))
-      // Elasticsearch should have taken into account the bulk query
+      // 2 documents should have been indexed correctly:
+      // - `resource1` with the relationship to `resource3` resolved
+      // - `resource2` with no reference resolved
       _         <- client.count(index.value).eventually(2L)
       expected1 <- ioJsonContentOf("result/resource1.json")
       expected2 <- ioJsonContentOf("result/resource2.json")
@@ -127,24 +123,8 @@ class GraphAnalyticsSinkSuite
   test("Push update by query result results") {
     val chunk = Chunk.seq(
       List(
-        SuccessElem(
-          Resources.entityType,
-          resource3,
-          Some(project),
-          Instant.EPOCH,
-          Offset.start,
-          GraphAnalyticsResult.UpdateByQuery(file1, Set(nxvFile)),
-          1
-        ),
-        SuccessElem(
-          Resources.entityType,
-          resource3,
-          Some(project),
-          Instant.EPOCH,
-          Offset.start,
-          GraphAnalyticsResult.Noop,
-          1
-        ),
+        success(file1, GraphAnalyticsResult.UpdateByQuery(file1, Set(nxvFile))),
+        success(resource3, GraphAnalyticsResult.Noop),
         FailedElem(
           Resources.entityType,
           resource3,
@@ -161,6 +141,7 @@ class GraphAnalyticsSinkSuite
       _         <- sink(chunk).assert(chunk.map(_.void))
       // The reference to file1 should have been resolved and introduced as a relationship
       // The update query should not have an effect on the other resource
+      _         <- client.refresh(index)
       expected1 <- ioJsonContentOf("result/resource1_updated.json")
       expected2 <- ioJsonContentOf("result/resource2.json")
       _         <- client.count(index.value).eventually(2L)
