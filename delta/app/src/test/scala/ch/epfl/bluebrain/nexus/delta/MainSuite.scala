@@ -66,6 +66,7 @@ object MainSuite {
 
   trait Fixture { self: BioSuite =>
 
+    // Overload config via system properties
     private def acquire(postgres: PostgresContainer, elastic: ElasticSearchContainer) = Task.delay {
       val resourceTypesFile = Files.createTempFile("resource-types", ".json")
       Files.writeString(resourceTypesFile, """["https://neuroshapes.org/Entity"]""")
@@ -97,6 +98,7 @@ object MainSuite {
       ConfigImpl.reloadSystemPropertiesConfig()
     }
 
+    // Resetting system properties
     private def release = Task.delay {
       System.clearProperty("app.defaults.database.access.host")
       System.clearProperty("app.defaults.database.access.port")
@@ -115,6 +117,7 @@ object MainSuite {
       ConfigImpl.reloadSystemPropertiesConfig()
     }
 
+    // Start the necessary containers
     private def resource() =
       for {
         postgres <- PostgresContainer.resource(PostgresUser, PostgresPassword)
