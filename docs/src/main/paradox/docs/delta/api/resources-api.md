@@ -110,6 +110,26 @@ Response
 :   @@snip [updated.json](assets/resources/updated.json)
 
 
+## Refresh
+
+This operation refreshes the compacted and expanded representations of the resource.
+
+This is equivalent of doing an update with the same source as the last revision of the resource. It is useful when the 
+schema or project contexts have changed, in order for the changes to be reflected in the resource.
+
+```
+PUT /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}/refresh
+```
+
+**Example**
+
+Request
+:   @@snip [refresh.sh](assets/resources/refresh.sh)
+
+Response
+:   @@snip [refreshed.json](assets/resources/updated.json)
+
+
 ## Tag
 
 Links a resource revision to a specific name. 
@@ -210,14 +230,17 @@ if the `Accept` header is set to `text/html`, a redirection to the fusion repres
 ## Fetch original payload
 
 ```
-GET /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}/source?rev={rev}&tag={tag}
+GET /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}/source?rev={rev}&tag={tag}&annotate={annotate}
 ```
 where ...
 
 - `{rev}`: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.
 - `{tag}`: String - the targeted tag to be fetched. This field is optional.
+- `{annotate}`: Boolean - annotate the response with the resource metadata. This field only applies to standard resources. This field is optional.
 
 `{rev}` and `{tag}` fields cannot be simultaneously present.
+
+If `{annotate}` is set, fields present in the metadata will override fields with the same name from the payload. The `@id` field is an exception to this rule
 
 **Example**
 

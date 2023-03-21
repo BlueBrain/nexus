@@ -3,28 +3,22 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils.simpleName
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.{RdfError, Vocabulary}
-import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.IndexingActionFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.UnexpectedId
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
-import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
-import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.{EvaluationError, EvaluationFailure, EvaluationTimeout}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import com.typesafe.scalalogging.Logger
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
-
-import scala.reflect.ClassTag
 
 /**
   * Enumeration of Storage rejection types.
@@ -52,7 +46,7 @@ object StorageRejection {
     * @param current
     *   the last known revision
     */
-  final case class RevisionNotFound(provided: Long, current: Long)
+  final case class RevisionNotFound(provided: Int, current: Int)
       extends StorageFetchRejection(s"Revision requested '$provided' not found, last known revision is '$current'.")
 
   /**
@@ -62,7 +56,7 @@ object StorageRejection {
     * @param tag
     *   the provided tag
     */
-  final case class TagNotFound(tag: TagLabel) extends StorageFetchRejection(s"Tag requested '$tag' not found.")
+  final case class TagNotFound(tag: UserTag) extends StorageFetchRejection(s"Tag requested '$tag' not found.")
 
   /**
     * Rejection returned when attempting to update/fetch a storage with an id that doesn't exist.
@@ -171,7 +165,7 @@ object StorageRejection {
     * @param expected
     *   the expected revision
     */
-  final case class IncorrectRev(provided: Long, expected: Long)
+  final case class IncorrectRev(provided: Int, expected: Int)
       extends StorageRejection(
         s"Incorrect revision '$provided' provided, expected '$expected', the storage may have been updated since last seen."
       )
@@ -208,40 +202,10 @@ object StorageRejection {
       )
 
   /**
-    * Rejection returned when the associated project is invalid
-    *
-    * @param rejection
-    *   the rejection which occurred with the project
+    * Signals a rejection caused when interacting with other APIs when fetching a resource
     */
-  final case class WrappedProjectRejection(rejection: ProjectRejection) extends StorageFetchRejection(rejection.reason)
-
-  /**
-    * Rejection returned when the associated organization is invalid
-    *
-    * @param rejection
-    *   the rejection which occurred with the organization
-    */
-  final case class WrappedOrganizationRejection(rejection: OrganizationRejection)
-      extends StorageFetchRejection(rejection.reason)
-
-  /**
-    * Signals a rejection caused by a failure to perform indexing.
-    */
-  final case class WrappedIndexingActionRejection(rejection: IndexingActionFailed)
-      extends StorageRejection(rejection.reason)
-
-  /**
-    * Rejection returned when the returned state is the initial state after a Storages.evaluation plus a Storages.next
-    * Note: This should never happen since the evaluation method already guarantees that the next function returns a
-    * current
-    */
-  final case class UnexpectedInitialState(id: Iri, project: ProjectRef)
-      extends StorageRejection(s"Unexpected initial state for storage '$id' of project '$project'.")
-
-  /**
-    * Rejection returned when attempting to evaluate a command but the evaluation failed
-    */
-  final case class StorageEvaluationError(err: EvaluationError) extends StorageRejection("Unexpected evaluation error")
+  final case class ProjectContextRejection(rejection: ContextRejection)
+      extends StorageFetchRejection("Something went wrong while interacting with another module.")
 
   private val logger: Logger = Logger("StorageRejection")
 
@@ -251,62 +215,36 @@ object StorageRejection {
     case JsonLdRejection.DecodingFailed(error)             => DecodingFailed(error)
   }
 
-  implicit val storageProjectRejectionMapper: Mapper[ProjectRejection, StorageFetchRejection] = {
-    case ProjectRejection.WrappedOrganizationRejection(r) => WrappedOrganizationRejection(r)
-    case value                                            => WrappedProjectRejection(value)
-  }
-
-  implicit val storageOrgRejectionMapper: Mapper[OrganizationRejection, WrappedOrganizationRejection] =
-    (value: OrganizationRejection) => WrappedOrganizationRejection(value)
-
-  implicit val storageIndexingActionRejectionMapper: Mapper[IndexingActionFailed, WrappedIndexingActionRejection] =
-    (value: IndexingActionFailed) => WrappedIndexingActionRejection(value)
-
-  implicit private[plugins] def storageRejectionEncoder(implicit
-      C: ClassTag[StorageCommand]
-  ): Encoder.AsObject[StorageRejection] =
+  implicit private[plugins] val storageRejectionEncoder: Encoder.AsObject[StorageRejection] =
     Encoder.AsObject.instance { r =>
       val tpe = ClassUtils.simpleName(r)
       val obj = JsonObject(keywords.tpe -> tpe.asJson, "reason" -> r.reason.asJson)
       r.loggedDetails.foreach(logger.error(_))
       r match {
-        case StorageEvaluationError(EvaluationFailure(C(cmd), _)) =>
-          val reason = s"Unexpected failure while evaluating the command '${simpleName(cmd)}' for storage '${cmd.id}'"
-          JsonObject(keywords.tpe -> "StorageEvaluationFailure".asJson, "reason" -> reason.asJson)
-        case StorageEvaluationError(EvaluationTimeout(C(cmd), t)) =>
-          val reason = s"Timeout while evaluating the command '${simpleName(cmd)}' for storage '${cmd.id}' after '$t'"
-          JsonObject(keywords.tpe -> "StorageEvaluationTimeout".asJson, "reason" -> reason.asJson)
-        case StorageNotAccessible(_, details)                     => obj.add("details", details.asJson)
-        case WrappedOrganizationRejection(rejection)              => rejection.asJsonObject
-        case WrappedProjectRejection(rejection)                   => rejection.asJsonObject
-        case InvalidJsonLdFormat(_, rdf)                          => obj.add("rdf", rdf.asJson)
-        case IncorrectRev(provided, expected)                     => obj.add("provided", provided.asJson).add("expected", expected.asJson)
-        case _: StorageNotFound                                   => obj.add(keywords.tpe, "ResourceNotFound".asJson)
-        case _                                                    => obj
+        case StorageNotAccessible(_, details)   => obj.add("details", details.asJson)
+        case ProjectContextRejection(rejection) => rejection.asJsonObject
+        case InvalidJsonLdFormat(_, rdf)        => obj.add("rdf", rdf.asJson)
+        case IncorrectRev(provided, expected)   => obj.add("provided", provided.asJson).add("expected", expected.asJson)
+        case _: StorageNotFound                 => obj.add(keywords.tpe, "ResourceNotFound".asJson)
+        case _                                  => obj
       }
     }
 
   implicit final val storageRejectionJsonLdEncoder: JsonLdEncoder[StorageRejection] =
     JsonLdEncoder.computeFromCirce(ContextValue(Vocabulary.contexts.error))
 
-  implicit final val evaluationErrorMapper: Mapper[EvaluationError, StorageRejection] = StorageEvaluationError.apply
-
   implicit final val storageRejectionHttpResponseFields: HttpResponseFields[StorageRejection] =
     HttpResponseFields {
-      case RevisionNotFound(_, _)            => StatusCodes.NotFound
-      case TagNotFound(_)                    => StatusCodes.NotFound
-      case StorageNotFound(_, _)             => StatusCodes.NotFound
-      case DefaultStorageNotFound(_)         => StatusCodes.NotFound
-      case ResourceAlreadyExists(_, _)       => StatusCodes.Conflict
-      case IncorrectRev(_, _)                => StatusCodes.Conflict
-      case WrappedProjectRejection(rej)      => rej.status
-      case WrappedOrganizationRejection(rej) => rej.status
-      case StorageNotAccessible(_, _)        => StatusCodes.BadRequest
-      case InvalidEncryptionSecrets(_, _)    => StatusCodes.InternalServerError
-      case StorageEvaluationError(_)         => StatusCodes.InternalServerError
-      case UnexpectedInitialState(_, _)      => StatusCodes.InternalServerError
-      case WrappedIndexingActionRejection(_) => StatusCodes.InternalServerError
-      case _                                 => StatusCodes.BadRequest
+      case RevisionNotFound(_, _)         => StatusCodes.NotFound
+      case TagNotFound(_)                 => StatusCodes.NotFound
+      case StorageNotFound(_, _)          => StatusCodes.NotFound
+      case DefaultStorageNotFound(_)      => StatusCodes.NotFound
+      case ResourceAlreadyExists(_, _)    => StatusCodes.Conflict
+      case IncorrectRev(_, _)             => StatusCodes.Conflict
+      case ProjectContextRejection(rej)   => rej.status
+      case StorageNotAccessible(_, _)     => StatusCodes.BadRequest
+      case InvalidEncryptionSecrets(_, _) => StatusCodes.InternalServerError
+      case _                              => StatusCodes.BadRequest
     }
 
 }

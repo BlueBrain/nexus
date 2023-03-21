@@ -5,13 +5,15 @@ import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.GraphAnalytics
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.resources.{read => Read}
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.{baseUriPrefix, emit, idSegment, projectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.{baseUriPrefix, emit, idSegment}
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, ProgressesStatistics, Projects}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources.{read => Read}
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projections
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.execution.Scheduler
 
@@ -20,32 +22,33 @@ import monix.execution.Scheduler
   *
   * @param identities
   *   the identity module
-  * @param acls
-  *   the acls module
-  * @param projects
-  *   the projects module
+  * @param aclCheck
+  *   to check acls
   * @param graphAnalytics
   *   analytics the graph analytics module
-  * @param progresses
-  *   the progresses for graph analytics
+  * @param projections
+  *   the projections module
+  * @param schemeDirectives
+  *   directives related to orgs and projects
   */
 class GraphAnalyticsRoutes(
     identities: Identities,
-    acls: Acls,
-    projects: Projects,
+    aclCheck: AclCheck,
     graphAnalytics: GraphAnalytics,
-    progresses: ProgressesStatistics
+    projections: Projections,
+    schemeDirectives: DeltaSchemeDirectives
 )(implicit baseUri: BaseUri, s: Scheduler, cr: RemoteContextResolution, ordering: JsonKeyOrdering)
-    extends AuthDirectives(identities, acls)
+    extends AuthDirectives(identities, aclCheck)
     with CirceUnmarshalling
     with RdfMarshalling {
   import baseUri.prefixSegment
+  import schemeDirectives._
 
   def routes: Route =
     baseUriPrefix(baseUri.prefix) {
       pathPrefix("graph-analytics") {
         extractCaller { implicit caller =>
-          (get & projectRef(projects)) { projectRef =>
+          (get & resolveProjectRef) { projectRef =>
             concat(
               // Fetch relationships
               (pathPrefix("relationships") & pathEndOrSingleSlash) {
@@ -68,7 +71,7 @@ class GraphAnalyticsRoutes(
               (pathPrefix("progress") & get & pathEndOrSingleSlash) {
                 operationName(s"$prefixSegment/graph-analytics/{org}/{project}/progress") {
                   authorizeFor(projectRef, Read).apply {
-                    emit(progresses.statistics(projectRef, GraphAnalytics.projectionId(projectRef)))
+                    emit(projections.statistics(projectRef, None, GraphAnalytics.projectionId(projectRef)))
                   }
                 }
               }

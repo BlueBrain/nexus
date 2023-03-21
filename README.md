@@ -84,5 +84,5 @@ Please refer to the [CONTRIBUTING](CONTRIBUTING.md) page in order to know how to
 The development of this software was supported by funding to the Blue Brain Project, a research center of the École polytechnique fédérale de
 Lausanne (EPFL), from the Swiss government's ETH Board of the Swiss Federal Institutes of Technology.
 
-Copyright © 2015-2022 Blue Brain Project/EPFL
+Copyright © 2015-2023 Blue Brain Project/EPFL
 

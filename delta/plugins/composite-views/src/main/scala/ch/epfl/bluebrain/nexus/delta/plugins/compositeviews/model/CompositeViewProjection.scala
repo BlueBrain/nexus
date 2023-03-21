@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 
+import cats.Order
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.ProjectionType._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel.IndexGroup
@@ -7,8 +8,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
-import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.PipeChain
 import io.circe.{Encoder, JsonObject}
 
 import java.util.UUID
@@ -52,7 +54,7 @@ sealed trait CompositeViewProjection extends Product with Serializable {
     * @return
     *   the optional tag to filter by
     */
-  def resourceTag: Option[TagLabel]
+  def resourceTag: Option[UserTag]
 
   /**
     * @return
@@ -89,6 +91,11 @@ sealed trait CompositeViewProjection extends Product with Serializable {
     *   Some(projection) if the current projection is an [[ElasticSearchProjection]], None otherwise
     */
   def asElasticSearch: Option[ElasticSearchProjection]
+
+  /**
+    * Translates the projection into a [[PipeChain]]
+    */
+  def pipeChain: Option[PipeChain] = PipeChain(resourceSchemas, resourceTypes, includeMetadata, includeDeprecated)
 }
 
 object CompositeViewProjection {
@@ -107,10 +114,10 @@ object CompositeViewProjection {
       query: SparqlConstructQuery,
       resourceSchemas: Set[Iri],
       resourceTypes: Set[Iri],
-      resourceTag: Option[TagLabel],
+      resourceTag: Option[UserTag],
       includeMetadata: Boolean,
       includeDeprecated: Boolean,
-      includeContext: Boolean = false,
+      includeContext: Boolean,
       permission: Permission,
       indexGroup: Option[IndexGroup],
       mapping: JsonObject,
@@ -132,7 +139,7 @@ object CompositeViewProjection {
       query: SparqlConstructQuery,
       resourceSchemas: Set[Iri],
       resourceTypes: Set[Iri],
-      resourceTag: Option[TagLabel],
+      resourceTag: Option[UserTag],
       includeMetadata: Boolean,
       includeDeprecated: Boolean,
       permission: Permission
@@ -159,5 +166,11 @@ object CompositeViewProjection {
     )
     deriveConfiguredEncoder[CompositeViewProjection]
   }
+
+  implicit final def compositeViewProjectionOrdering[A <: CompositeViewProjection]: Ordering[A] =
+    Ordering.by(_.id)
+
+  implicit final def compositeViewProjectionOrder[A <: CompositeViewProjection]: Order[A] =
+    Order.by(_.id)
 
 }

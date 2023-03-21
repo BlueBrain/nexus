@@ -2,11 +2,11 @@ package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder
 
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLdCursor
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.DecodingDerivationFailure
-import magnolia.{CaseClass, SealedTrait}
+import magnolia1.{CaseClass, SealedTrait}
 
 private[decoder] object MagnoliaJsonLdDecoder {
 
-  def combine[A](caseClass: CaseClass[JsonLdDecoder, A])(implicit config: Configuration): JsonLdDecoder[A] = {
+  def join[A](caseClass: CaseClass[JsonLdDecoder, A])(implicit config: Configuration): JsonLdDecoder[A] = {
     val keysMap = caseClass.parameters
       .filter { p => p.label != config.idPredicateName }
       .map { p =>
@@ -39,20 +39,17 @@ private[decoder] object MagnoliaJsonLdDecoder {
     }
   }
 
-  def dispatch[A](sealedTrait: SealedTrait[JsonLdDecoder, A])(implicit config: Configuration): JsonLdDecoder[A] =
-    new JsonLdDecoder[A] {
-
-      override def apply(c: ExpandedJsonLdCursor): Either[JsonLdDecoderError, A] =
-        c.getTypes match {
-          case Right(types) =>
-            sealedTrait.subtypes
-              .find(st => types.exists(config.context.expand(st.typeName.short, useVocab = true).contains)) match {
-              case Some(st) => st.typeclass.apply(c)
-              case None     =>
-                val err = s"Unable to find type discriminator for '${sealedTrait.typeName.short}'"
-                Left(DecodingDerivationFailure(err))
-            }
-          case Left(err)    => Left(err)
-        }
-    }
+  def split[A](sealedTrait: SealedTrait[JsonLdDecoder, A])(implicit config: Configuration): JsonLdDecoder[A] =
+    (c: ExpandedJsonLdCursor) =>
+      c.getTypes match {
+        case Right(types) =>
+          sealedTrait.subtypes
+            .find(st => types.exists(config.context.expand(st.typeName.short, useVocab = true).contains)) match {
+            case Some(st) => st.typeclass.apply(c)
+            case None     =>
+              val err = s"Unable to find type discriminator for '${sealedTrait.typeName.short}'"
+              Left(DecodingDerivationFailure(err))
+          }
+        case Left(err)    => Left(err)
+      }
 }

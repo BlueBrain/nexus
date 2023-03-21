@@ -2,5 +2,5 @@
   "@context": "https://bluebrain.github.io/nexus/contexts/error.json",
   "@type": "InvalidRemoteProjectSource",
   "reason": "RemoteProjectSource RemoteProjectEventStream is invalid: either provided endpoint 'http://delta:8080/v1' is invalid or there are insufficient permissions to access this endpoint. ",
-  "details": "an HTTP response to endpoint 'http://delta:8080/v1/resources/{{project}}/events' with method 'HttpMethod(HEAD)' that should have been successful, returned the HTTP status code '401 Unauthorized'"
+  "details": "an HTTP response to endpoint 'http://delta:8080/v1/elems/{{project}}' with method 'HttpMethod(HEAD)' that should have been successful, returned the HTTP status code '401 Unauthorized'"
 }

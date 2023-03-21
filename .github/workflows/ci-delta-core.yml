@@ -15,7 +15,7 @@ jobs:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Static Analysis
@@ -35,7 +35,7 @@ jobs:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Tests
@@ -47,17 +47,11 @@ jobs:
             kernel/test \
             rdf/test \
             sdk/test \
-            sdkTestkit/test \
-            sdkViews/test \
-            service/test \
-            sourcing/test \
+            sourcingPsql/test \
             testkit/test \
             app/coverageReport \
             kernel/coverageReport \
             rdf/coverageReport \
             sdk/coverageReport \
-            sdkTestkit/coverageReport \
-            sdkViews/coverageReport \
-            service/coverageReport \
-            sourcing/coverageReport \
+            sourcingPsql/coverageReport \
             testkit/coverageReport

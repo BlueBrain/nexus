@@ -8,15 +8,17 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.VersionRoutes.VersionBundle
-import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.version
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.{PluginDescription, ServiceDescription}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ComponentDescription}
-import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, ServiceDependency}
-import io.circe.{Encoder, JsonObject}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.version
+import ch.epfl.bluebrain.nexus.delta.sdk.ServiceDependency
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import io.circe.syntax._
+import io.circe.{Encoder, JsonObject}
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.bio.UIO
 import monix.execution.Scheduler
@@ -25,7 +27,7 @@ import scala.collection.immutable.Iterable
 
 class VersionRoutes(
     identities: Identities,
-    acls: Acls,
+    aclCheck: AclCheck,
     main: ServiceDescription,
     plugins: Iterable[PluginDescription],
     dependencies: Iterable[ServiceDependency]
@@ -34,7 +36,7 @@ class VersionRoutes(
     s: Scheduler,
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering
-) extends AuthDirectives(identities, acls) {
+) extends AuthDirectives(identities, aclCheck) {
 
   import baseUri.prefixSegment
 
@@ -85,7 +87,7 @@ object VersionRoutes {
     */
   final def apply(
       identities: Identities,
-      acls: Acls,
+      aclCheck: AclCheck,
       plugins: Iterable[PluginDescription],
       depdendencies: Iterable[ServiceDependency],
       cfg: DescriptionConfig
@@ -95,5 +97,5 @@ object VersionRoutes {
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering
   ): VersionRoutes =
-    new VersionRoutes(identities, acls, ServiceDescription(cfg.name, cfg.version), plugins, depdendencies)
+    new VersionRoutes(identities, aclCheck, ServiceDescription(cfg.name, cfg.version), plugins, depdendencies)
 }

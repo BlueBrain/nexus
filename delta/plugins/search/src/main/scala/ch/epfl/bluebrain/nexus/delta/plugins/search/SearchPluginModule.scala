@@ -7,8 +7,10 @@ import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
 import distage.ModuleDef
 import izumi.distage.model.definition.Id
 import monix.execution.Scheduler
@@ -18,13 +20,13 @@ class SearchPluginModule(priority: Int) extends ModuleDef {
   make[SearchConfig].fromEffect { cfg => SearchConfig.load(cfg) }
 
   make[Search].from {
-    (compositeViews: CompositeViews, acls: Acls, esClient: ElasticSearchClient, config: CompositeViewsConfig) =>
-      Search(compositeViews, acls, esClient, config.elasticSearchIndexing)
+    (compositeViews: CompositeViews, aclCheck: AclCheck, esClient: ElasticSearchClient, config: CompositeViewsConfig) =>
+      Search(compositeViews, aclCheck, esClient, config.prefix)
   }
 
   make[SearchScopeInitialization].from {
     (views: CompositeViews, config: SearchConfig, serviceAccount: ServiceAccount, baseUri: BaseUri) =>
-      new SearchScopeInitialization(views, config.indexing, serviceAccount)(baseUri)
+      new SearchScopeInitialization(views, config.indexing, serviceAccount, config.defaults)(baseUri)
   }
 
   many[ScopeInitialization].ref[SearchScopeInitialization]
@@ -32,14 +34,14 @@ class SearchPluginModule(priority: Int) extends ModuleDef {
   make[SearchRoutes].from {
     (
         identities: Identities,
-        acls: Acls,
+        aclCheck: AclCheck,
         search: Search,
         config: SearchConfig,
         baseUri: BaseUri,
         s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
-    ) => new SearchRoutes(identities, acls, search, config)(baseUri, s, cr, ordering)
+    ) => new SearchRoutes(identities, aclCheck, search, config)(baseUri, s, cr, ordering)
   }
 
   many[PriorityRoute].add { (route: SearchRoutes) =>

@@ -2,9 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.Json
 
 /**
@@ -23,6 +23,12 @@ sealed trait StorageCommand extends Product with Serializable {
     *   the storage identifier
     */
   def id: Iri
+
+  /**
+    * the last known revision of the storage
+    * @return
+    */
+  def rev: Int
 
   /**
     * @return
@@ -53,7 +59,9 @@ object StorageCommand {
       fields: StorageFields,
       source: Secret[Json],
       subject: Subject
-  ) extends StorageCommand
+  ) extends StorageCommand {
+    override def rev: Int = 0
+  }
 
   /**
     * Command to update an existing storage
@@ -76,7 +84,7 @@ object StorageCommand {
       project: ProjectRef,
       fields: StorageFields,
       source: Secret[Json],
-      rev: Long,
+      rev: Int,
       subject: Subject
   ) extends StorageCommand
 
@@ -96,7 +104,7 @@ object StorageCommand {
     * @param subject
     *   the identity associated to this command
     */
-  final case class TagStorage(id: Iri, project: ProjectRef, targetRev: Long, tag: TagLabel, rev: Long, subject: Subject)
+  final case class TagStorage(id: Iri, project: ProjectRef, targetRev: Int, tag: UserTag, rev: Int, subject: Subject)
       extends StorageCommand
 
   /**
@@ -111,6 +119,6 @@ object StorageCommand {
     * @param subject
     *   the identity associated to this command
     */
-  final case class DeprecateStorage(id: Iri, project: ProjectRef, rev: Long, subject: Subject) extends StorageCommand
+  final case class DeprecateStorage(id: Iri, project: ProjectRef, rev: Int, subject: Subject) extends StorageCommand
 
 }

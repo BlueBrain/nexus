@@ -10,24 +10,24 @@
       "sourceId" : "http://example.com/cross-project-source",
       "projectionId" : "http://example.com/blazegraph-projection",
       "offset" : {
-        "@type" : "SequenceBasedOffset",
-        "value" : 1
+        "@type" : "At",
+        "value" : 6
       }
     },
     {
       "sourceId" : "http://example.com/project-source",
       "projectionId" : "http://example.com/blazegraph-projection",
       "offset" : {
-        "@type" : "SequenceBasedOffset",
-        "value" : 1
+        "@type" : "At",
+        "value" : 3
       }
     },
     {
       "sourceId" : "http://example.com/remote-project-source",
       "projectionId" : "http://example.com/blazegraph-projection",
       "offset" : {
-        "@type" : "SequenceBasedOffset",
-        "value" : 1
+        "@type" : "At",
+        "value" : 7
       }
     }
   ]

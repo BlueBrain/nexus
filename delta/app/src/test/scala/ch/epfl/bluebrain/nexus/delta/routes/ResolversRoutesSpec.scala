@@ -1,52 +1,43 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
-import akka.http.scaladsl.model.MediaRanges.`*/*`
-import akka.http.scaladsl.model.MediaTypes.{`text/event-stream`, `text/html`}
-import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept, Location, OAuth2BearerToken}
+import akka.http.scaladsl.model.MediaTypes.`text/html`
+import akka.http.scaladsl.model.headers.{Accept, Location, OAuth2BearerToken}
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas}
-import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.{Defaults, IndexingAction}
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen, SchemaGen}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.{Latest, Revision}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, Subject}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverResolutionRejection.ResourceNotFound
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverType.{CrossProject, InProject}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{MultiResolution, ResolverContextResolution, ResourceResolutionReport}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.Resource
-import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
-import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
-import ch.epfl.bluebrain.nexus.delta.utils.RouteFixtures
-import ch.epfl.bluebrain.nexus.testkit._
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers._
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.ProjectContextRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverType.{CrossProject, InProject}
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{ResolverRejection, ResolverType, ResourceResolutionReport}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.Resource
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
+import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
 import io.circe.Json
 import io.circe.syntax._
-import monix.bio.IO
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
+import monix.bio.{IO, UIO}
 
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 
-class ResolversRoutesSpec
-    extends RouteHelpers
-    with Matchers
-    with CirceLiteral
-    with CirceEq
-    with CancelAfterFailure
-    with IOFixedClock
-    with IOValues
-    with OptionValues
-    with TestMatchers
-    with Inspectors
-    with RouteFixtures {
+class ResolversRoutesSpec extends BaseRouteSpec {
 
   private val uuid                  = UUID.randomUUID()
   implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
@@ -63,28 +54,10 @@ class ResolversRoutesSpec
   private val project2           =
     ProjectGen.project("org", "project2", uuid = uuid, orgUuid = uuid, base = projBase, mappings = am)
 
-  private val (orgs, projects) = {
-    implicit val subject: Subject = Identity.Anonymous
-    ProjectSetup
-      .init(
-        orgsToCreate = List(org),
-        projectsToCreate = List(project, project2)
-      )
-      .accepted
-  }
-
   private val identities = IdentitiesDummy(
     Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm))),
     Caller(bob, Set(bob))
   )
-
-  private val acls = AclSetup
-    .init(
-      (Anonymous, AclAddress.Root, Set(Permissions.events.read)),
-      (alice, AclAddress.Organization(org), Set(Permissions.resolvers.read, Permissions.resolvers.write)),
-      (bob, AclAddress.Project(project.ref), Set(Permissions.resolvers.read, Permissions.resolvers.write))
-    )
-    .accepted
 
   val resolverContextResolution: ResolverContextResolution = new ResolverContextResolution(
     rcr,
@@ -105,36 +78,54 @@ class ResolversRoutesSpec
   )
   private val resourceFS     = SchemaGen.resourceFor(schemaResource)
 
-  def fetchResource: (ResourceRef, ProjectRef) => IO[ResourceNotFound, DataResource] =
-    (ref: ResourceRef, p: ProjectRef) =>
+  def fetchResource: (ResourceRef, ProjectRef) => UIO[Option[JsonLdContent[Resource, Nothing]]] =
+    (ref: ResourceRef, _: ProjectRef) =>
       ref match {
-        case Latest(`resourceId`) => IO.pure(resourceFR)
-        case _                    => IO.raiseError(ResourceNotFound(ref.iri, p))
+        case Latest(`resourceId`) => UIO.some(JsonLdContent(resourceFR, resourceFR.value.source, None))
+        case _                    => UIO.none
       }
 
-  def fetchSchema: (ResourceRef, ProjectRef) => IO[ResourceNotFound, SchemaResource] =
-    (ref: ResourceRef, p: ProjectRef) =>
+  def fetchSchema: (ResourceRef, ProjectRef) => UIO[Option[JsonLdContent[Schema, Nothing]]] =
+    (ref: ResourceRef, _: ProjectRef) =>
       ref match {
-        case Revision(_, `schemaId`, 5L) => IO.pure(resourceFS)
-        case _                           => IO.raiseError(ResourceNotFound(ref.iri, p))
+        case Revision(_, `schemaId`, 5) => UIO.some(JsonLdContent(resourceFS, resourceFS.value.source, None))
+        case _                          => UIO.none
       }
 
-  private val resolvers =
-    ResolversDummy(orgs, projects, resolverContextResolution, (_, _) => IO.unit).accepted
+  private val defaults = Defaults("resolverName", "resolverDescription")
 
-  private val resolverResolution = ResolverResolution(
-    acls,
-    resolvers,
-    List(
-      ReferenceExchange[Resource](fetchResource, _.source),
-      ReferenceExchange[Schema](fetchSchema, _.source)
-    )
+  private lazy val resolvers = ResolversImpl(
+    fetchContext,
+    resolverContextResolution,
+    ResolversConfig(eventLogConfig, pagination, defaults),
+    xas
   )
 
-  private val multiResolution = MultiResolution(projects, resolverResolution)
+  private val aclCheck = AclSimpleCheck(
+    (Anonymous, AclAddress.Root, Set(Permissions.events.read)),
+    (alice, AclAddress.Organization(org), Set(Permissions.resolvers.read, Permissions.resolvers.write)),
+    (bob, AclAddress.Project(project.ref), Set(Permissions.resolvers.read, Permissions.resolvers.write))
+  ).accepted
 
-  private val routes =
-    Route.seal(ResolversRoutes(identities, acls, orgs, projects, resolvers, multiResolution, IndexingActionDummy()))
+  private lazy val resolverResolution = ResolverResolution(
+    aclCheck,
+    resolvers,
+    (ref: ResourceRef, project: ProjectRef) =>
+      fetchResource(ref, project).flatMap {
+        case Some(c) => UIO.some(c)
+        case None    => fetchSchema(ref, project)
+      }
+  )
+
+  private val fetchContext    = FetchContextDummy[ResolverRejection](List(project, project2), ProjectContextRejection)
+  private val groupDirectives = DeltaSchemeDirectives(fetchContext)
+
+  private lazy val multiResolution = MultiResolution(fetchContext, resolverResolution)
+
+  private lazy val routes =
+    Route.seal(
+      ResolversRoutes(identities, aclCheck, resolvers, multiResolution, groupDirectives, IndexingAction.noop)
+    )
 
   private def withId(id: String, payload: Json) =
     payload.deepMerge(Json.obj("@id" -> id.asJson))
@@ -260,7 +251,7 @@ class ResolversRoutesSpec
         ) ~> asBob ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           response.asJson shouldEqual
-            resolverMetadata(nxv + "in-project-put", InProject, project.ref, rev = 2L, createdBy = bob, updatedBy = bob)
+            resolverMetadata(nxv + "in-project-put", InProject, project.ref, rev = 2, createdBy = bob, updatedBy = bob)
         }
       }
 
@@ -274,7 +265,7 @@ class ResolversRoutesSpec
             nxv + "cross-project-use-current-put",
             CrossProject,
             project2.ref,
-            rev = 2L,
+            rev = 2,
             createdBy = alice,
             updatedBy = alice
           )
@@ -289,7 +280,7 @@ class ResolversRoutesSpec
             nxv + "cross-project-provided-entities-put",
             CrossProject,
             project2.ref,
-            rev = 2L,
+            rev = 2,
             createdBy = alice,
             updatedBy = alice
           )
@@ -304,8 +295,8 @@ class ResolversRoutesSpec
           status shouldEqual StatusCodes.Conflict
           response.asJson shouldEqual jsonContentOf(
             "/resolvers/errors/incorrect-rev.json",
-            "provided" -> 5L,
-            "expected" -> 2L
+            "provided" -> 5,
+            "expected" -> 2
           )
         }
       }
@@ -354,7 +345,7 @@ class ResolversRoutesSpec
             nxv + "in-project-put",
             InProject,
             project.ref,
-            rev = 3L,
+            rev = 3,
             createdBy = bob,
             updatedBy = alice
           )
@@ -382,7 +373,7 @@ class ResolversRoutesSpec
               nxv + "in-project-put",
               InProject,
               project.ref,
-              rev = 4L,
+              rev = 4,
               deprecated = true,
               createdBy = bob,
               updatedBy = alice
@@ -431,7 +422,7 @@ class ResolversRoutesSpec
               nxv + "in-project-put",
               InProject,
               project.ref,
-              rev = 5L,
+              rev = 5,
               deprecated = true,
               createdBy = bob,
               updatedBy = alice
@@ -456,8 +447,8 @@ class ResolversRoutesSpec
 
     def inProject(
         id: Iri,
-        priority: Long,
-        rev: Long = 1,
+        priority: Int,
+        rev: Int = 1,
         deprecated: Boolean = false,
         createdBy: Subject = bob,
         updatedBy: Subject = bob
@@ -483,7 +474,7 @@ class ResolversRoutesSpec
           nxv + "cross-project-use-current-put",
           CrossProject,
           project2.ref,
-          rev = 2L,
+          rev = 2,
           createdBy = alice,
           updatedBy = alice
         )
@@ -497,7 +488,7 @@ class ResolversRoutesSpec
           nxv + "cross-project-provided-entities-put",
           CrossProject,
           project2.ref,
-          rev = 2L,
+          rev = 2,
           createdBy = alice,
           updatedBy = alice
         )
@@ -648,8 +639,8 @@ class ResolversRoutesSpec
           status shouldEqual StatusCodes.NotFound
           response.asJson shouldEqual jsonContentOf(
             "/errors/revision-not-found.json",
-            "provided" -> 10L,
-            "current"  -> 5L
+            "provided" -> 10,
+            "current"  -> 5
           )
         }
       }
@@ -690,10 +681,12 @@ class ResolversRoutesSpec
           s"/v1/resolvers/${project.ref}/caches?type=$encodedResolver&type=$encodedInProjectResolver"
         ) ~> asBob ~> routes ~> check {
           status shouldEqual StatusCodes.OK
-          response.asJson shouldEqual expectedResults(
-            inProjectLast,
-            inProject(nxv + "in-project-put2", 3),
-            inProject(nxv + "in-project-post", 1)
+          response.asJson should equalIgnoreArrayOrder(
+            expectedResults(
+              inProjectLast,
+              inProject(nxv + "in-project-put2", 3),
+              inProject(nxv + "in-project-post", 1)
+            )
           )
         }
       }
@@ -722,29 +715,6 @@ class ResolversRoutesSpec
         ) { request =>
           request ~> check {
             status shouldEqual StatusCodes.Forbidden
-          }
-        }
-      }
-    }
-
-    "getting the events" should {
-
-      "succeed from the given offset" in {
-        val endpoints = List("/v1/resolvers/events", "/v1/resolvers/org/events")
-        forAll(endpoints) { endpoint =>
-          Get(endpoint) ~> Accept(`*/*`) ~> `Last-Event-ID`("2") ~> routes ~> check {
-            mediaType shouldBe `text/event-stream`
-            response.asString.strip shouldEqual contentOf("resolvers/eventstream-2-14.txt", "uuid" -> uuid).strip
-          }
-        }
-      }
-
-      "fail to get event stream without permission" in {
-        val endpoints = List("/v1/resolvers/events", "/v1/resolvers/org/events", "/v1/resolvers/org/project/events")
-        forAll(endpoints) { endpoint =>
-          Get(endpoint) ~> Accept(`*/*`) ~> `Last-Event-ID`("1") ~> asBob ~> routes ~> check {
-            response.status shouldEqual StatusCodes.Forbidden
-            response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
           }
         }
       }
@@ -860,4 +830,25 @@ class ResolversRoutesSpec
       }
     }
   }
+
+  def resolverMetadata(
+      id: Iri,
+      resolverType: ResolverType,
+      projectRef: ProjectRef,
+      rev: Int = 1,
+      deprecated: Boolean = false,
+      createdBy: Subject = Anonymous,
+      updatedBy: Subject = Anonymous
+  ): Json =
+    jsonContentOf(
+      "resolvers/resolver-route-metadata-response.json",
+      "project"    -> projectRef,
+      "id"         -> id,
+      "rev"        -> rev,
+      "deprecated" -> deprecated,
+      "createdBy"  -> createdBy.asIri,
+      "updatedBy"  -> updatedBy.asIri,
+      "type"       -> resolverType,
+      "label"      -> lastSegment(id)
+    )
 }

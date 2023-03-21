@@ -1,13 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
+import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.RebuildStrategy
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.semiauto.deriveJsonLdDecoder
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, NonEmptySet}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.semiauto.deriveDefaultJsonLdDecoder
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import io.circe.syntax.EncoderOps
 import io.circe.{Encoder, Json}
 
@@ -25,6 +25,8 @@ import scala.concurrent.duration.FiniteDuration
   *   retry strategy
   */
 final case class CompositeViewFields(
+    name: Option[String],
+    description: Option[String],
     sources: NonEmptySet[CompositeViewSourceFields],
     projections: NonEmptySet[CompositeViewProjectionFields],
     rebuildStrategy: Option[RebuildStrategy]
@@ -35,6 +37,14 @@ final case class CompositeViewFields(
 
 object CompositeViewFields {
 
+  /** Construct a [[CompositeViewFields]] without name and description */
+  def apply(
+      sources: NonEmptySet[CompositeViewSourceFields],
+      projections: NonEmptySet[CompositeViewProjectionFields],
+      rebuildStrategy: Option[RebuildStrategy]
+  ): CompositeViewFields =
+    CompositeViewFields(None, None, sources, projections, rebuildStrategy)
+
   @nowarn("cat=unused")
   implicit final def compositeViewFieldsEncoder(implicit base: BaseUri): Encoder.AsObject[CompositeViewFields] = {
     import io.circe.generic.extras.Configuration
@@ -44,25 +54,23 @@ object CompositeViewFields {
   }
 
   @nowarn("cat=unused")
-  implicit final def compositeViewFieldsJsonLdDecoder(implicit
-      cfg: CompositeViewsConfig
-  ): JsonLdDecoder[CompositeViewFields] = {
+  final def jsonLdDecoder(minIntervalRebuild: FiniteDuration): JsonLdDecoder[CompositeViewFields] = {
     implicit val rebuildStrategyDecoder: JsonLdDecoder[RebuildStrategy] = {
       implicit val scopedFiniteDurationDecoder: JsonLdDecoder[FiniteDuration] =
         JsonLdDecoder.finiteDurationJsonLdDecoder.andThen { case (cursor, duration) =>
           Option
-            .when(duration.gteq(cfg.minIntervalRebuild))(duration)
+            .when(duration.gteq(minIntervalRebuild))(duration)
             .toRight(
               ParsingFailure(
                 "Duration",
                 duration.toString,
                 cursor.history,
-                s"duration must be greater than ${cfg.minIntervalRebuild}"
+                s"duration must be greater than $minIntervalRebuild"
               )
             )
         }
-      deriveJsonLdDecoder[RebuildStrategy]
+      deriveDefaultJsonLdDecoder[RebuildStrategy]
     }
-    deriveJsonLdDecoder[CompositeViewFields]
+    deriveDefaultJsonLdDecoder[CompositeViewFields]
   }
 }

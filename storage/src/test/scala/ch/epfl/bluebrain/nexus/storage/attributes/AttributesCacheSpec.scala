@@ -34,7 +34,7 @@ class AttributesCacheSpec
     with Eventually
     with ScalaFutures {
 
-  implicit override def patienceConfig: PatienceConfig = PatienceConfig(12.second, 100.milliseconds)
+  implicit override def patienceConfig: PatienceConfig = PatienceConfig(20.second, 100.milliseconds)
 
   implicit val config                                           = DigestConfig("SHA-256", maxInMemory = 10, concurrentComputations = 3, 20, 5.seconds)
   implicit val computation: AttributesComputation[Task, String] = mock[AttributesComputation[Task, String]]

@@ -2,16 +2,18 @@ package ch.epfl.bluebrain.nexus.delta
 
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.Acl
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.Organization
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionSet
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.Realm
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{Resolver, ResourceResolutionReport}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.Resource
-import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.Acl
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.PermissionSet
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.Project
+import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.Realm
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{Resolver, ResourceResolutionReport}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.Resource
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import monix.bio.IO
 
 package object sdk {

@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.testkit.elasticsearch
 
-import akka.http.scaladsl.model.headers.BasicHttpCredentials
-import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchDocker.ElasticSearchHostConfig
+import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchContainer.ElasticSearchHostConfig
 import org.scalatest.{BeforeAndAfterAll, Suite}
 
 import scala.concurrent.duration.DurationInt
@@ -10,7 +9,7 @@ import scala.jdk.DurationConverters.ScalaDurationOps
 trait ElasticSearchDocker extends BeforeAndAfterAll { this: Suite =>
 
   private val container: ElasticSearchContainer =
-    new ElasticSearchContainer(ElasticSearchDocker.ElasticSearchPassword)
+    new ElasticSearchContainer(ElasticSearchContainer.ElasticSearchPassword)
       .withReuse(false)
       .withStartupTimeout(60.seconds.toJava)
 
@@ -28,17 +27,4 @@ trait ElasticSearchDocker extends BeforeAndAfterAll { this: Suite =>
     container.stop()
     super.afterAll()
   }
-}
-
-object ElasticSearchDocker {
-
-  val ElasticSearchUser                         = "elastic"
-  val ElasticSearchPassword                     = "password"
-  val Credentials: Option[BasicHttpCredentials] = Some(BasicHttpCredentials(ElasticSearchUser, ElasticSearchPassword))
-
-  final case class ElasticSearchHostConfig(host: String, port: Int) {
-    def endpoint: String = s"http://$host:$port"
-  }
-
-  implicit lazy val credentials: Option[BasicHttpCredentials] = Some(BasicHttpCredentials("elastic", "password"))
 }

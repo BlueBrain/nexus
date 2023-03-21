@@ -5,7 +5,6 @@ import ch.epfl.bluebrain.nexus.tests.BaseSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.events.BugsBunny
 import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Events, Organizations, Resources}
-import com.fasterxml.uuid.Generators
 import io.circe.Json
 import monix.bio.Task
 import monix.execution.Scheduler.Implicits.global
@@ -18,13 +17,10 @@ class EventsSpec extends BaseSpec with Inspectors {
   private val projId                         = genId()
   private val id                             = s"$orgId/$projId"
   private val id2                            = s"$orgId2/$projId"
-  private var initialEventId: Option[String] = None
+  private val initialEventId: Option[String] = None
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    initialEventId = Option.when(isCassandra) {
-      Generators.timeBasedGenerator().generate().toString
-    }
   }
 
   "creating projects" should {
@@ -122,7 +118,7 @@ class EventsSpec extends BaseSpec with Inspectors {
         //ResourceTagAdded event
         _ <- deltaClient.post[Json](
                s"/resources/$id/_/test-resource:1/tags?rev=2",
-               tag("v1.0.0", 1L),
+               tag("v1.0.0", 1),
                BugsBunny
              ) { (_, response) =>
                response.status shouldEqual StatusCodes.Created
@@ -187,8 +183,8 @@ class EventsSpec extends BaseSpec with Inspectors {
     "fetch resource events filtered by organization 1" in {
       for {
         uuids <- adminDsl.getUuids(orgId, projId, BugsBunny)
-        _     <- deltaClient.sseEvents(s"/resources/$orgId/events", BugsBunny, initialEventId, take = 13L) { seq =>
-                   val projectEvents = seq.drop(7)
+        _     <- deltaClient.sseEvents(s"/resources/$orgId/events", BugsBunny, initialEventId, take = 12L) { seq =>
+                   val projectEvents = seq.drop(6)
                    projectEvents.size shouldEqual 6
                    projectEvents.flatMap(_._1) should contain theSameElementsInOrderAs List(
                      "ResourceCreated",
@@ -218,8 +214,8 @@ class EventsSpec extends BaseSpec with Inspectors {
       for {
         uuids <- adminDsl.getUuids(orgId2, projId, BugsBunny)
         _     <-
-          deltaClient.sseEvents(s"/resources/$orgId2/events", BugsBunny, initialEventId, take = 8L) { seq =>
-            val projectEvents = seq.drop(7)
+          deltaClient.sseEvents(s"/resources/$orgId2/events", BugsBunny, initialEventId, take = 7L) { seq =>
+            val projectEvents = seq.drop(6)
             projectEvents.size shouldEqual 1
             projectEvents.flatMap(_._1) should contain theSameElementsInOrderAs List("ResourceCreated")
             val json          = Json.arr(projectEvents.flatMap(_._2.map(events.filterFields)): _*)
@@ -238,8 +234,14 @@ class EventsSpec extends BaseSpec with Inspectors {
       } yield succeed
     }
 
+    "fetch acls events" in {
+      deltaClient.sseEvents(s"/acls/events", BugsBunny, initialEventId, take = 1L) { sses =>
+        sses.flatMap(_._1) should contain theSameElementsInOrderAs List("AclAppended")
+      }
+    }
+
     "fetch global events" in {
-      // Only for cassandra, it is difficult to get the current sequence value with PostgreSQL
+      // TODO: find a way to get the current event sequence in postgres
       Task
         .when(initialEventId.isDefined) {
           for {

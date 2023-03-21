@@ -13,6 +13,7 @@ import ch.epfl.bluebrain.nexus.tests.Optics._
 import com.typesafe.scalalogging.Logger
 import io.circe.Json
 import monix.bio.Task
+import scala.jdk.CollectionConverters._
 
 class KeycloakDsl(implicit as: ActorSystem, materializer: Materializer, um: FromEntityUnmarshaller[Json])
     extends TestHelpers {
@@ -34,12 +35,12 @@ class KeycloakDsl(implicit as: ActorSystem, materializer: Materializer, um: From
       userCredentials: List[UserCredentials]
   ): Task[StatusCode] = {
     logger.info(s"Creating realm $realm in Keycloak...")
-    val users: List[Map[String, Any]] = userCredentials.map { u =>
+    val users = userCredentials.map { u =>
       Map(
         s"username" -> u.name,
         s"password" -> u.password
-      )
-    }
+      ).asJava
+    }.asJava
 
     val json = jsonContentOf(
       "/iam/keycloak/import.json",

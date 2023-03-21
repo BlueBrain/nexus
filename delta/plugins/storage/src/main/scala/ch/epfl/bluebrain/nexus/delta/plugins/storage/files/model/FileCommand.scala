@@ -3,9 +3,10 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model
 import akka.http.scaladsl.model.ContentType
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceRef, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 
 /**
   * Enumeration of File command types.
@@ -23,6 +24,12 @@ sealed trait FileCommand extends Product with Serializable {
     *   the file identifier
     */
   def id: Iri
+
+  /**
+    * the last known revision of the file
+    * @return
+    */
+  def rev: Int
 
   /**
     * @return
@@ -56,7 +63,9 @@ object FileCommand {
       storageType: StorageType,
       attributes: FileAttributes,
       subject: Subject
-  ) extends FileCommand
+  ) extends FileCommand {
+    override def rev: Int = 0
+  }
 
   /**
     * Command to update an existing file
@@ -80,7 +89,7 @@ object FileCommand {
       storage: ResourceRef.Revision,
       storageType: StorageType,
       attributes: FileAttributes,
-      rev: Long,
+      rev: Int,
       subject: Subject
   ) extends FileCommand
 
@@ -108,7 +117,7 @@ object FileCommand {
       mediaType: Option[ContentType],
       bytes: Long,
       digest: Digest,
-      rev: Long,
+      rev: Int,
       subject: Subject
   ) extends FileCommand
 
@@ -128,7 +137,7 @@ object FileCommand {
     * @param subject
     *   the identity associated to this command
     */
-  final case class TagFile(id: Iri, project: ProjectRef, targetRev: Long, tag: TagLabel, rev: Long, subject: Subject)
+  final case class TagFile(id: Iri, project: ProjectRef, targetRev: Int, tag: UserTag, rev: Int, subject: Subject)
       extends FileCommand
 
   /**
@@ -145,7 +154,7 @@ object FileCommand {
     * @param subject
     *   the identity associated to this command
     */
-  final case class DeleteFileTag(id: Iri, project: ProjectRef, tag: TagLabel, rev: Long, subject: Subject)
+  final case class DeleteFileTag(id: Iri, project: ProjectRef, tag: UserTag, rev: Int, subject: Subject)
       extends FileCommand
 
   /**
@@ -160,5 +169,5 @@ object FileCommand {
     * @param subject
     *   the identity associated to this command
     */
-  final case class DeprecateFile(id: Iri, project: ProjectRef, rev: Long, subject: Subject) extends FileCommand
+  final case class DeprecateFile(id: Iri, project: ProjectRef, rev: Int, subject: Subject) extends FileCommand
 }

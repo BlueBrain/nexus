@@ -14,7 +14,7 @@ import io.circe.{Encoder, JsonObject}
 
 import java.time.Instant
 
-final case class SimpleResource(id: Iri, rev: Long, createdAt: Instant, name: String, age: Int)
+final case class SimpleResource(id: Iri, rev: Int, createdAt: Instant, name: String, age: Int)
 
 object SimpleResource extends CirceLiteral {
 

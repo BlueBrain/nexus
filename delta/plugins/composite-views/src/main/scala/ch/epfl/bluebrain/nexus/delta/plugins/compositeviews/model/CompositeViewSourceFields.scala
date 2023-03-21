@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 
 import akka.http.scaladsl.model.Uri
+import cats.Order
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.{AccessToken, CrossProjectSource, ProjectSource, RemoteProjectSource}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.SourceType._
@@ -8,12 +9,12 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.configuration.semiauto.deriveConfigJsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{Configuration, JsonLdDecoder}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Authenticated, Group, User}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Authenticated, Group, User}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
-
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
 import io.circe.Encoder
 import io.circe.generic.semiauto.deriveEncoder
 
@@ -47,7 +48,7 @@ sealed trait CompositeViewSourceFields {
     * @return
     *   the optional tag to filter by
     */
-  def resourceTag: Option[TagLabel]
+  def resourceTag: Option[UserTag]
 
   /**
     * @return
@@ -69,6 +70,9 @@ sealed trait CompositeViewSourceFields {
 
 object CompositeViewSourceFields {
 
+  implicit def compositeViewSourceFieldsOrder[A <: CompositeViewSourceFields]: Order[A] =
+    Order.by(_.id)
+
   /**
     * Necessary fields to create/update a project source.
     */
@@ -76,7 +80,7 @@ object CompositeViewSourceFields {
       id: Option[Iri] = None,
       resourceSchemas: Set[Iri] = Set.empty,
       resourceTypes: Set[Iri] = Set.empty,
-      resourceTag: Option[TagLabel] = None,
+      resourceTag: Option[UserTag] = None,
       includeDeprecated: Boolean = false
   ) extends CompositeViewSourceFields {
     override def tpe: SourceType = ProjectSourceType
@@ -101,7 +105,7 @@ object CompositeViewSourceFields {
       identities: Set[Identity],
       resourceSchemas: Set[Iri] = Set.empty,
       resourceTypes: Set[Iri] = Set.empty,
-      resourceTag: Option[TagLabel] = None,
+      resourceTag: Option[UserTag] = None,
       includeDeprecated: Boolean = false
   ) extends CompositeViewSourceFields {
     override def tpe: SourceType = CrossProjectSourceType
@@ -128,7 +132,7 @@ object CompositeViewSourceFields {
       token: Option[Secret[String]] = None,
       resourceSchemas: Set[Iri] = Set.empty,
       resourceTypes: Set[Iri] = Set.empty,
-      resourceTag: Option[TagLabel] = None,
+      resourceTag: Option[UserTag] = None,
       includeDeprecated: Boolean = false
   ) extends CompositeViewSourceFields {
     override def tpe: SourceType = RemoteProjectSourceType

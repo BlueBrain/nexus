@@ -1,9 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.Json
 
 /**
@@ -22,6 +22,12 @@ sealed trait BlazegraphViewCommand extends Product with Serializable {
     *   a reference to the parent project
     */
   def project: ProjectRef
+
+  /**
+    * @return
+    *   the last known revision of the view
+    */
+  def rev: Int
 
   /**
     * @return
@@ -52,7 +58,9 @@ object BlazegraphViewCommand {
       value: BlazegraphViewValue,
       source: Json,
       subject: Subject
-  ) extends BlazegraphViewCommand
+  ) extends BlazegraphViewCommand {
+    override def rev: Int = 0
+  }
 
   /**
     * Command for the update of a BlazegraphView.
@@ -74,7 +82,7 @@ object BlazegraphViewCommand {
       id: Iri,
       project: ProjectRef,
       value: BlazegraphViewValue,
-      rev: Long,
+      rev: Int,
       source: Json,
       subject: Subject
   ) extends BlazegraphViewCommand
@@ -91,7 +99,7 @@ object BlazegraphViewCommand {
     * @param subject
     *   the identity associated with this command
     */
-  final case class DeprecateBlazegraphView(id: Iri, project: ProjectRef, rev: Long, subject: Subject)
+  final case class DeprecateBlazegraphView(id: Iri, project: ProjectRef, rev: Int, subject: Subject)
       extends BlazegraphViewCommand
 
   /**
@@ -113,9 +121,9 @@ object BlazegraphViewCommand {
   final case class TagBlazegraphView(
       id: Iri,
       project: ProjectRef,
-      targetRev: Long,
-      tag: TagLabel,
-      rev: Long,
+      targetRev: Int,
+      tag: UserTag,
+      rev: Int,
       subject: Subject
   ) extends BlazegraphViewCommand
 }

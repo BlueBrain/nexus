@@ -3,12 +3,11 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config
 import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.headers.BasicHttpCredentials
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
-import ch.epfl.bluebrain.nexus.delta.kernel.CacheIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
-import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.Defaults
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.{AggregateConfig, ExternalIndexingConfig}
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.{BatchConfig, EventLogConfig, QueryConfig}
 import com.typesafe.config.Config
 import pureconfig.error.{CannotConvert, FailureReason}
 import pureconfig.generic.semiauto.deriveReader
@@ -26,38 +25,45 @@ import scala.concurrent.duration._
   *   the credentials to authenticate to the Elasticsearch endpoint
   * @param client
   *   configuration of the Elasticsearch client
-  * @param aggregate
-  *   configuration of the underlying aggregate
-  * @param keyValueStore
-  *   configuration of the underlying key/value store
+  * @param eventLog
+  *   configuration of the event log
   * @param pagination
   *   configuration for how pagination should behave in listing operations
-  * @param cacheIndexing
-  *   configuration of the cache indexing process
-  * @param indexing
-  *   configuration of the external indexing process
+  * @param batch
+  *   a configuration definition how often we want to push to Elasticsearch
+  * @param prefix
+  *   prefix for indices
   * @param maxViewRefs
   *   configuration of the maximum number of view references allowed on an aggregated view
   * @param idleTimeout
   *   the maximum idle duration in between events on the indexing stream after which the stream will be stopped
+  * @param syncIndexingTimeout
+  *   the maximum duration for synchronous indexing to complete
   * @param syncIndexingRefresh
   *   the value for `refresh` Elasticsearch parameter for synchronous indexing
   * @param maxIndexPathLength
   *   the maximum length of the URL path for elasticsearch queries
+  * @param defaults
+  *   default values for the view
+  * @param metricsQuery
+  *   query configuration for the metrics projection
   */
 final case class ElasticSearchViewsConfig(
     base: Uri,
     credentials: Option[BasicHttpCredentials],
     client: HttpClientConfig,
-    aggregate: AggregateConfig,
-    keyValueStore: KeyValueStoreConfig,
+    eventLog: EventLogConfig,
     pagination: PaginationConfig,
-    cacheIndexing: CacheIndexingConfig,
-    indexing: ExternalIndexingConfig,
+    batch: BatchConfig,
+    prefix: String,
     maxViewRefs: Int,
     idleTimeout: Duration,
+    syncIndexingTimeout: FiniteDuration,
     syncIndexingRefresh: Refresh,
-    maxIndexPathLength: Int
+    maxIndexPathLength: Int,
+    defaults: Defaults,
+    metricsQuery: QueryConfig,
+    disableMetricsProjection: Boolean
 )
 
 object ElasticSearchViewsConfig {

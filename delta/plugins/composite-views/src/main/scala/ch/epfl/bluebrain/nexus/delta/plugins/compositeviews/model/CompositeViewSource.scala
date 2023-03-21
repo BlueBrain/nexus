@@ -1,16 +1,18 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 
 import akka.http.scaladsl.model.Uri
+import cats.Order
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.SourceType._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.semiauto.deriveJsonLdDecoder
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, TagLabel}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.semiauto.deriveDefaultJsonLdDecoder
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.PipeChain
 import io.circe.{Encoder, Json}
 
 import java.util.UUID
@@ -50,7 +52,7 @@ sealed trait CompositeViewSource extends Product with Serializable {
     *   an optional tag to consider for indexing; when set, all resources that are tagged with the value of the field
     *   are indexed with the corresponding revision
     */
-  def resourceTag: Option[TagLabel]
+  def resourceTag: Option[UserTag]
 
   /**
     * @return
@@ -63,6 +65,12 @@ sealed trait CompositeViewSource extends Product with Serializable {
     *   the type of the source
     */
   def tpe: SourceType
+
+  /**
+    * Translates the source into a [[PipeChain]]
+    */
+  def pipeChain: Option[PipeChain] =
+    PipeChain(resourceSchemas, resourceTypes, includeMetadata = true, includeDeprecated = includeDeprecated)
 }
 
 object CompositeViewSource {
@@ -89,7 +97,7 @@ object CompositeViewSource {
       uuid: UUID,
       resourceSchemas: Set[Iri],
       resourceTypes: Set[Iri],
-      resourceTag: Option[TagLabel],
+      resourceTag: Option[UserTag],
       includeDeprecated: Boolean
   ) extends CompositeViewSource {
 
@@ -122,7 +130,7 @@ object CompositeViewSource {
       uuid: UUID,
       resourceSchemas: Set[Iri],
       resourceTypes: Set[Iri],
-      resourceTag: Option[TagLabel],
+      resourceTag: Option[UserTag],
       includeDeprecated: Boolean,
       project: ProjectRef,
       identities: Set[Identity]
@@ -157,7 +165,7 @@ object CompositeViewSource {
       uuid: UUID,
       resourceSchemas: Set[Iri],
       resourceTypes: Set[Iri],
-      resourceTag: Option[TagLabel],
+      resourceTag: Option[UserTag],
       includeDeprecated: Boolean,
       project: ProjectRef,
       endpoint: Uri,
@@ -196,8 +204,14 @@ object CompositeViewSource {
 
   @nowarn("cat=unused")
   implicit final val sourceLdDecoder: JsonLdDecoder[CompositeViewSource] = {
-    implicit val identityLdDecoder: JsonLdDecoder[Identity]       = deriveJsonLdDecoder[Identity]
-    implicit val accessTokenLdDecoder: JsonLdDecoder[AccessToken] = deriveJsonLdDecoder[AccessToken]
-    deriveJsonLdDecoder[CompositeViewSource]
+    implicit val identityLdDecoder: JsonLdDecoder[Identity]       = deriveDefaultJsonLdDecoder[Identity]
+    implicit val accessTokenLdDecoder: JsonLdDecoder[AccessToken] = deriveDefaultJsonLdDecoder[AccessToken]
+    deriveDefaultJsonLdDecoder[CompositeViewSource]
   }
+
+  implicit final def compositeViewSourceOrdering[A <: CompositeViewSource]: Ordering[A] =
+    Ordering.by(_.id)
+
+  implicit final def compositeViewSourceOrder[A <: CompositeViewSource]: Order[A] =
+    Order.fromOrdering
 }

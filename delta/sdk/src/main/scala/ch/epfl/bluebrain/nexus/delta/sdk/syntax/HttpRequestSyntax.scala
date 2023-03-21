@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.syntax
 
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.headers.{HttpCredentials, OAuth2BearerToken}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.AuthToken
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.AuthToken
 
 trait HttpRequestSyntax {
   implicit final def httpRequestSyntax(req: HttpRequest): HttpRequestOpts = new HttpRequestOpts(req)

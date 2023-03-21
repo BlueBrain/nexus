@@ -125,7 +125,7 @@ class HttpClientSpec
 }
 
 object HttpClientSpec {
-  final case class Value(name: String, rev: Long, deprecated: Boolean)
+  final case class Value(name: String, rev: Int, deprecated: Boolean)
 
   final case class Count(
       reqGetValue: AtomicInteger,

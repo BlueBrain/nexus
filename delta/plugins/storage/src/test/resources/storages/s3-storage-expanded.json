@@ -1,0 +1,59 @@
+[
+  {
+    "@id": "https://bluebrain.github.io/nexus/vocabulary/s3",
+    "@type": [
+      "https://bluebrain.github.io/nexus/vocabulary/Storage",
+      "https://bluebrain.github.io/nexus/vocabulary/S3Storage"
+    ],
+    "http://schema.org/name": [
+      {
+        "@value": "s3name"
+      }
+    ],
+    "http://schema.org/description": [
+      {
+        "@value": "s3description"
+      }
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/algorithm": [
+      {
+        "@value": "SHA-256"
+      }
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/bucket": [
+      {
+        "@value": "mybucket"
+      }
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/default": [
+      {
+        "@value": true
+      }
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/endpoint": [
+      {
+        "@value": "http://localhost"
+      }
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/maxFileSize": [
+      {
+        "@value": 51
+      }
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/readPermission": [
+      {
+        "@value": "s3/read"
+      }
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/region": [
+      {
+        "@value": "eu-west-1"
+      }
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/writePermission": [
+      {
+        "@value": "s3/write"
+      }
+    ]
+  }
+]

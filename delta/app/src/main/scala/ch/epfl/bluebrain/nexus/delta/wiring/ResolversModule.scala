@@ -1,9 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
-import akka.actor.typed.ActorSystem
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
+import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
@@ -11,15 +11,20 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.ResolversRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk._
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{MultiResolution, ResolverContextResolution, ResolverEvent}
-import ch.epfl.bluebrain.nexus.delta.service.resolvers.ResolversImpl.{ResolversAggregate, ResolversCache}
-import ch.epfl.bluebrain.nexus.delta.service.resolvers.{ResolverEventExchange, ResolversDeletion, ResolversImpl}
-import ch.epfl.bluebrain.nexus.delta.service.utils.ResolverScopeInitialization
-import ch.epfl.bluebrain.nexus.delta.sourcing.{DatabaseCleanup, EventLog}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers._
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.ProjectContextRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{Resolver, ResolverEvent}
+import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
 import monix.execution.Scheduler
@@ -30,62 +35,34 @@ import monix.execution.Scheduler
 object ResolversModule extends ModuleDef {
   implicit private val classLoader: ClassLoader = getClass.getClassLoader
 
-  make[EventLog[Envelope[ResolverEvent]]].fromEffect { databaseEventLog[ResolverEvent](_, _) }
-
-  make[ResolversCache].from { (config: AppConfig, as: ActorSystem[Nothing]) =>
-    ResolversImpl.cache(config.resolvers)(as)
-  }
-
-  make[ResolversAggregate].fromEffect {
+  make[Resolvers].from {
     (
-        config: AppConfig,
-        cache: ResolversCache,
-        resourceIdCheck: ResourceIdCheck,
-        as: ActorSystem[Nothing],
-        clock: Clock[UIO]
-    ) =>
-      ResolversImpl.aggregate(config.resources.aggregate, cache, resourceIdCheck)(as, clock)
-  }
-
-  make[Resolvers].fromEffect {
-    (
-        config: AppConfig,
-        eventLog: EventLog[Envelope[ResolverEvent]],
-        orgs: Organizations,
-        projects: Projects,
-        cache: ResolversCache,
-        agg: ResolversAggregate,
-        api: JsonLdApi,
+        fetchContext: FetchContext[ContextRejection],
         resolverContextResolution: ResolverContextResolution,
-        as: ActorSystem[Nothing],
-        uuidF: UUIDF,
-        scheduler: Scheduler
+        config: AppConfig,
+        xas: Transactors,
+        api: JsonLdApi,
+        clock: Clock[UIO],
+        uuidF: UUIDF
     ) =>
       ResolversImpl(
-        config.resolvers,
-        eventLog,
-        orgs,
-        projects,
+        fetchContext.mapRejection(ProjectContextRejection),
         resolverContextResolution,
-        cache,
-        agg
-      )(api, uuidF, scheduler, as)
-  }
-
-  many[ResourcesDeletion].add {
-    (cache: ResolversCache, agg: ResolversAggregate, resolvers: Resolvers, dbCleanup: DatabaseCleanup) =>
-      ResolversDeletion(cache, agg, resolvers, dbCleanup)
-  }
-
-  many[ProjectReferenceFinder].add { (resolvers: Resolvers) =>
-    Resolvers.projectReferenceFinder(resolvers)
+        config.resolvers,
+        xas
+      )(api, clock, uuidF)
   }
 
   make[MultiResolution].from {
-    (acls: Acls, projects: Projects, resolvers: Resolvers, exchanges: Set[ReferenceExchange]) =>
+    (
+        aclCheck: AclCheck,
+        fetchContext: FetchContext[ContextRejection],
+        resolvers: Resolvers,
+        shifts: ResourceShifts
+    ) =>
       MultiResolution(
-        projects,
-        ResolverResolution(acls, resolvers, exchanges.toList)
+        fetchContext.mapRejection(ProjectContextRejection),
+        ResolverResolution(aclCheck, resolvers, shifts)
       )
   }
 
@@ -93,11 +70,11 @@ object ResolversModule extends ModuleDef {
     (
         config: AppConfig,
         identities: Identities,
-        acls: Acls,
-        organizations: Organizations,
-        projects: Projects,
+        aclCheck: AclCheck,
         resolvers: Resolvers,
+        schemeDirectives: DeltaSchemeDirectives,
         indexingAction: IndexingAction @Id("aggregate"),
+        shift: Resolver.Shift,
         multiResolution: MultiResolution,
         baseUri: BaseUri,
         s: Scheduler,
@@ -105,7 +82,14 @@ object ResolversModule extends ModuleDef {
         ordering: JsonKeyOrdering,
         fusionConfig: FusionConfig
     ) =>
-      new ResolversRoutes(identities, acls, organizations, projects, resolvers, multiResolution, indexingAction)(
+      new ResolversRoutes(
+        identities,
+        aclCheck,
+        resolvers,
+        multiResolution,
+        schemeDirectives,
+        indexingAction(_, _, _)(shift, cr)
+      )(
         baseUri,
         config.resolvers.pagination,
         s,
@@ -115,7 +99,13 @@ object ResolversModule extends ModuleDef {
       )
   }
 
-  make[ResolverScopeInitialization]
+  many[SseEncoder[_]].add { base: BaseUri => ResolverEvent.sseEncoder(base) }
+
+  many[ScopedEventMetricEncoder[_]].add { ResolverEvent.resolverEventMetricEncoder }
+
+  make[ResolverScopeInitialization].from { (resolvers: Resolvers, serviceAccount: ServiceAccount, config: AppConfig) =>
+    new ResolverScopeInitialization(resolvers, serviceAccount, config.resolvers.defaults)
+  }
   many[ScopeInitialization].ref[ResolverScopeInitialization]
 
   many[ApiMappings].add(Resolvers.mappings)
@@ -137,13 +127,9 @@ object ResolversModule extends ModuleDef {
     PriorityRoute(pluginsMaxPriority + 9, route.routes, requiresStrictEntity = true)
   }
 
-  many[ReferenceExchange].add { (resolvers: Resolvers, baseUri: BaseUri) =>
-    Resolvers.referenceExchange(resolvers)(baseUri)
+  make[Resolver.Shift].from { (resolvers: Resolvers, base: BaseUri) =>
+    Resolver.shift(resolvers)(base)
   }
 
-  make[ResolverEventExchange]
-  many[EventExchange].ref[ResolverEventExchange]
-  many[EventExchange].named("resources").ref[ResolverEventExchange]
-  many[EntityType].add(EntityType(Resolvers.moduleType))
-
+  many[ResourceShift[_, _, _]].ref[Resolver.Shift]
 }

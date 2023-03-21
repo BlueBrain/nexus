@@ -3,8 +3,9 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri.Query
 import akka.testkit.TestKit
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchClientSetup
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ScalaTestElasticSearchClientSetup
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.BulkResponse.MixedOutcomes.Outcome
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.{BulkResponse, Refresh}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
@@ -13,11 +14,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.ScoredResultEn
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.ScoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{SearchResults, Sort, SortList}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ConfigFixtures
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchDocker
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, IOValues, TestHelpers}
-import io.circe.JsonObject
-import org.scalatest.DoNotDiscover
+import io.circe.{Json, JsonObject}
+import org.scalatest.{DoNotDiscover, OptionValues}
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -29,9 +29,9 @@ class ElasticSearchClientSpec(override val docker: ElasticSearchDocker)
     extends TestKit(ActorSystem("ElasticSearchClientSpec"))
     with AnyWordSpecLike
     with Matchers
-    with ElasticSearchClientSetup
-    with ConfigFixtures
+    with ScalaTestElasticSearchClientSetup
     with EitherValuable
+    with OptionValues
     with CirceLiteral
     with TestHelpers
     with IOValues
@@ -121,6 +121,40 @@ class ElasticSearchClientSpec(override val docker: ElasticSearchDocker)
       }
     }
 
+    "run bulk operation with errors" in {
+      val index      = IndexLabel(genString()).rightValue
+      val operations = List(
+        ElasticSearchBulk.Index(index, "1", json"""{ "field1" : "value1" }"""),
+        ElasticSearchBulk.Delete(index, "2"),
+        ElasticSearchBulk.Index(index, "2", json"""{ "field1" : 27 }"""),
+        ElasticSearchBulk.Delete(index, "3"),
+        ElasticSearchBulk.Create(index, "3", json"""{ "field1" : "value3" }"""),
+        ElasticSearchBulk.Update(index, "5", json"""{ "doc" : {"field2" : "value2"} }""")
+      )
+      val result     = esClient.bulk(operations).accepted
+      result match {
+        case BulkResponse.Success              => fail("errors expected")
+        case BulkResponse.MixedOutcomes(items) => {
+          items.size shouldEqual 4
+          items.get("1").value shouldEqual Outcome.Success
+          items.get("2").value shouldEqual Outcome.Success
+          items.get("3").value shouldEqual Outcome.Success
+          items.get("5").value shouldBe an[Outcome.Error]
+        }
+      }
+    }
+
+    "get the source of the given document" in {
+      val index = IndexLabel(genString()).rightValue
+      val doc   = json"""{ "field1" : 1 }"""
+
+      val operations = List(ElasticSearchBulk.Index(index, "1", doc))
+      esClient.bulk(operations, Refresh.WaitFor).accepted
+
+      esClient.getSource[Json](index, "1").accepted shouldEqual doc
+      esClient.getSource[Json](index, "2").rejectedWith[HttpClientStatusError]
+    }
+
     "perform the multiget query" in {
       val index = IndexLabel(genString()).rightValue
 
@@ -136,6 +170,19 @@ class ElasticSearchClientSpec(override val docker: ElasticSearchDocker)
         "2" -> Some(2),
         "3" -> None
       )
+    }
+
+    "count" in {
+      val index = IndexLabel(genString()).rightValue
+
+      val operations = List(
+        ElasticSearchBulk.Index(index, "1", json"""{ "field1" : 1 }"""),
+        ElasticSearchBulk.Index(index, "2", json"""{ "field1" : 2 }"""),
+        ElasticSearchBulk.Index(index, "3", json"""{ "doc" : {"field2" : 4} }""")
+      )
+      esClient.bulk(operations, Refresh.WaitFor).accepted
+
+      esClient.count(index.value).accepted shouldEqual 3L
     }
 
     "search" in {

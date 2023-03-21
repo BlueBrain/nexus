@@ -72,6 +72,8 @@ Currently, the following permissions are required:
 - default permissions for the version endpoint
     - `version/read`
 
+- default permissions for supervision
+    - `supervision/read`
 
 ## Replace
 

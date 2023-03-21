@@ -2,8 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.config
 
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.config.GraphAnalyticsConfig.TermAggregationsConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import com.typesafe.config.Config
 import pureconfig.error.FailureReason
 import pureconfig.generic.semiauto.deriveReader
@@ -15,18 +13,12 @@ import scala.concurrent.duration._
 /**
   * Configuration for the graph analytics plugin.
   *
-  * @param keyValueStore
-  *   configuration of the underlying key/value store
-  * @param indexing
-  *   configuration of the external indexing process
   * @param idleTimeout
   *   the maximum idle duration in between events on the indexing stream after which the stream will be stopped
   * @param termAggregations
   *   the term aggregations query configuration
   */
 final case class GraphAnalyticsConfig(
-    keyValueStore: KeyValueStoreConfig,
-    indexing: ExternalIndexingConfig,
     idleTimeout: Duration,
     termAggregations: TermAggregationsConfig
 )

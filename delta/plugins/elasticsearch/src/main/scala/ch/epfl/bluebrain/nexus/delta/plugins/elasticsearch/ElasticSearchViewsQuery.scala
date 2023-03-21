@@ -1,26 +1,25 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import akka.http.scaladsl.model.Uri
-import cats.syntax.functor._
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews.ElasticSearchViewCache
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViewsQuery.{FetchDefaultView, FetchView, FetchViews}
+import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.{AggregateElasticSearchView, IndexingElasticSearchView}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{projectToElasticSearchRejectionMapper, AuthorizationFailed, InvalidResourceId, ViewIsDeprecated, WrappedElasticSearchClientError}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{AuthorizationFailed, InvalidResourceId, ViewIsDeprecated, ViewNotFound, WrappedElasticSearchClientError}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress.{Project => ProjectAcl}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectFetchOptions.notDeprecatedOrDeleted
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectBase, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress.{Project => ProjectAcl}
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchResults, SortList}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, IdSegmentRef, Label, ResourceF, ResourceRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor
-import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor.VisitedView.IndexedVisitedView
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Projects}
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectBase, ProjectContext}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.View.{AggregateView, IndexingView}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.{ViewRef, ViewsStore}
+import ch.epfl.bluebrain.nexus.delta.sourcing.Predicate
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
 import io.circe.{Json, JsonObject}
-import monix.bio.{IO, UIO}
+import monix.bio.IO
 
 trait ElasticSearchViewsQuery {
 
@@ -39,7 +38,7 @@ trait ElasticSearchViewsQuery {
       pagination: Pagination,
       params: ResourcesSearchParams,
       sort: SortList
-  )(implicit caller: Caller, baseUri: BaseUri): IO[ElasticSearchViewRejection, SearchResults[JsonObject]]
+  )(implicit caller: Caller): IO[ElasticSearchViewRejection, SearchResults[JsonObject]]
 
   /**
     * Retrieves a list of resources from all the available default elasticsearch views using specific pagination, filter
@@ -59,7 +58,7 @@ trait ElasticSearchViewsQuery {
       pagination: Pagination,
       params: ResourcesSearchParams,
       sort: SortList
-  )(implicit caller: Caller, baseUri: BaseUri): IO[ElasticSearchViewRejection, SearchResults[JsonObject]]
+  )(implicit caller: Caller): IO[ElasticSearchViewRejection, SearchResults[JsonObject]]
 
   /**
     * Retrieves a list of resources from all the available default elasticsearch views inside the passed ''org'' using
@@ -79,7 +78,7 @@ trait ElasticSearchViewsQuery {
       pagination: Pagination,
       params: ResourcesSearchParams,
       sort: SortList
-  )(implicit caller: Caller, baseUri: BaseUri): IO[ElasticSearchViewRejection, SearchResults[JsonObject]]
+  )(implicit caller: Caller): IO[ElasticSearchViewRejection, SearchResults[JsonObject]]
 
   /**
     * Retrieves a list of resources from all the available default elasticsearch views inside the passed ''org'' using
@@ -102,7 +101,7 @@ trait ElasticSearchViewsQuery {
       pagination: Pagination,
       params: ResourcesSearchParams,
       sort: SortList
-  )(implicit caller: Caller, baseUri: BaseUri): IO[ElasticSearchViewRejection, SearchResults[JsonObject]]
+  )(implicit caller: Caller): IO[ElasticSearchViewRejection, SearchResults[JsonObject]]
 
   /**
     * Retrieves a list of resources from the default elasticsearch view using specific pagination, filter and ordering
@@ -122,7 +121,7 @@ trait ElasticSearchViewsQuery {
       pagination: Pagination,
       params: ResourcesSearchParams,
       sort: SortList
-  )(implicit caller: Caller, baseUri: BaseUri): IO[ElasticSearchViewRejection, SearchResults[JsonObject]]
+  )(implicit caller: Caller): IO[ElasticSearchViewRejection, SearchResults[JsonObject]]
 
   /**
     * Retrieves a list of resources from the default elasticsearch view using specific pagination, filter and ordering
@@ -145,7 +144,7 @@ trait ElasticSearchViewsQuery {
       pagination: Pagination,
       params: ResourcesSearchParams,
       sort: SortList
-  )(implicit caller: Caller, baseUri: BaseUri): IO[ElasticSearchViewRejection, SearchResults[JsonObject]]
+  )(implicit caller: Caller): IO[ElasticSearchViewRejection, SearchResults[JsonObject]]
 
   /**
     * Queries the elasticsearch index (or indices) managed by the view with the passed ''id''. We check for the caller
@@ -173,43 +172,29 @@ trait ElasticSearchViewsQuery {
   * Operations that interact with the elasticsearch indices managed by ElasticSearchViews.
   */
 final class ElasticSearchViewsQueryImpl private[elasticsearch] (
-    listDefaultViews: FetchViews,
-    fetchDefaultView: FetchDefaultView,
-    fetchView: FetchView,
-    visitor: ViewRefVisitor[ElasticSearchViewRejection],
-    acls: Acls,
-    projects: Projects,
+    viewStore: ViewsStore[ElasticSearchViewRejection],
+    aclCheck: AclCheck,
+    fetchContext: FetchContext[ElasticSearchViewRejection],
     client: ElasticSearchClient
-)(implicit config: ExternalIndexingConfig)
+)(implicit baseUri: BaseUri)
     extends ElasticSearchViewsQuery {
 
   override def list(
       pagination: Pagination,
       params: ResourcesSearchParams,
       sort: SortList
-  )(implicit caller: Caller, baseUri: BaseUri): IO[ElasticSearchViewRejection, SearchResults[JsonObject]] =
-    for {
-      views            <- listDefaultViews()
-      accessible       <- acls.authorizeForAny(views.map(v => ProjectAcl(v.value.project) -> permissions.read))
-      accessibleIndices = views.collect {
-                            case v if accessible.getOrElse(v.value.project, false) =>
-                              ElasticSearchViews.index(v, config)
-                          }
-      search           <- client
-                            .search(params, accessibleIndices.toSet, Uri.Query.Empty)(pagination, sort)
-                            .mapError(WrappedElasticSearchClientError)
-    } yield search
+  )(implicit caller: Caller): IO[ElasticSearchViewRejection, SearchResults[JsonObject]] =
+    list(Predicate.Root, pagination, params, sort)
 
   override def list(
       schema: IdSegment,
       pagination: Pagination,
       params: ResourcesSearchParams,
       sort: SortList
-  )(implicit caller: Caller, baseUri: BaseUri): IO[ElasticSearchViewRejection, SearchResults[JsonObject]] =
+  )(implicit caller: Caller): IO[ElasticSearchViewRejection, SearchResults[JsonObject]] =
     for {
-      schemeRef <- expandResourceRef(schema, projects.defaultApiMappings, ProjectBase(iri""))
-      p          = params.withSchema(schemeRef)
-      search    <- list(pagination, p, sort)
+      schemeRef <- expandResourceRef(schema, fetchContext.defaultApiMappings, ProjectBase(iri""))
+      search    <- list(pagination, params.withSchema(schemeRef), sort)
     } yield search
 
   override def list(
@@ -217,18 +202,26 @@ final class ElasticSearchViewsQueryImpl private[elasticsearch] (
       pagination: Pagination,
       params: ResourcesSearchParams,
       sort: SortList
-  )(implicit caller: Caller, baseUri: BaseUri): IO[ElasticSearchViewRejection, SearchResults[JsonObject]] =
+  )(implicit caller: Caller): IO[ElasticSearchViewRejection, SearchResults[JsonObject]] =
+    list(Predicate.Org(org), pagination, params, sort)
+
+  private def list(
+      predicate: Predicate,
+      pagination: Pagination,
+      params: ResourcesSearchParams,
+      sort: SortList
+  )(implicit caller: Caller): IO[ElasticSearchViewRejection, SearchResults[JsonObject]] =
     for {
-      views            <- listDefaultViews()
-      viewsForOrg       = views.filter(_.value.project.organization == org)
-      accessible       <- acls.authorizeForAny(viewsForOrg.map(v => ProjectAcl(v.value.project) -> permissions.read))
-      accessibleIndices = viewsForOrg.collect {
-                            case v if accessible.getOrElse(v.value.project, false) =>
-                              ElasticSearchViews.index(v, config)
-                          }
-      search           <- client
-                            .search(params, accessibleIndices.toSet, Uri.Query.Empty)(pagination, sort)
-                            .mapError(WrappedElasticSearchClientError)
+      view              <- viewStore.fetchDefaultViews(predicate)
+      accessibleIndices <- aclCheck.mapFilter[IndexingView, String](
+                             view.views,
+                             v => ProjectAcl(v.ref.project) -> permissions.read,
+                             _.index
+                           )
+      search            <-
+        client
+          .search(params, accessibleIndices, Uri.Query.Empty)(pagination, sort)
+          .mapError(WrappedElasticSearchClientError)
     } yield search
 
   override def list(
@@ -237,11 +230,10 @@ final class ElasticSearchViewsQueryImpl private[elasticsearch] (
       pagination: Pagination,
       params: ResourcesSearchParams,
       sort: SortList
-  )(implicit caller: Caller, baseUri: BaseUri): IO[ElasticSearchViewRejection, SearchResults[JsonObject]] =
+  )(implicit caller: Caller): IO[ElasticSearchViewRejection, SearchResults[JsonObject]] =
     for {
-      schemeRef <- expandResourceRef(schema, projects.defaultApiMappings, ProjectBase(iri""))
-      p          = params.withSchema(schemeRef)
-      search    <- list(org, pagination, p, sort)
+      schemeRef <- expandResourceRef(schema, fetchContext.defaultApiMappings, ProjectBase(iri""))
+      search    <- list(org, pagination, params.withSchema(schemeRef), sort)
     } yield search
 
   override def list(
@@ -250,27 +242,26 @@ final class ElasticSearchViewsQueryImpl private[elasticsearch] (
       pagination: Pagination,
       params: ResourcesSearchParams,
       sort: SortList
-  )(implicit caller: Caller, baseUri: BaseUri): IO[ElasticSearchViewRejection, SearchResults[JsonObject]] =
+  )(implicit caller: Caller): IO[ElasticSearchViewRejection, SearchResults[JsonObject]] =
     for {
-      projectValue <- projects.fetchProject(project, notDeprecatedOrDeleted)
-      view         <- fetchDefaultView(project)
-      schemeRef    <- expandResourceRef(schema, projectValue)
-      p             = params.withSchema(schemeRef)
-      search       <- client
-                        .search(p, ElasticSearchViews.index(view, config), Uri.Query.Empty)(pagination, sort)
-                        .mapError(WrappedElasticSearchClientError)
+      projectContext <- fetchContext.onRead(project)
+      schemeRef      <- expandResourceRef(schema, projectContext)
+      search         <- list(project, pagination, params.withSchema(schemeRef), sort)
     } yield search
 
-  def list(
+  override def list(
       project: ProjectRef,
       pagination: Pagination,
       params: ResourcesSearchParams,
       sort: SortList
-  )(implicit caller: Caller, baseUri: BaseUri): IO[ElasticSearchViewRejection, SearchResults[JsonObject]] =
+  )(implicit caller: Caller): IO[ElasticSearchViewRejection, SearchResults[JsonObject]] =
     for {
-      view   <- fetchDefaultView(project)
+      view   <- viewStore.fetchDefaultViews(Predicate.Project(project)).flatMap { agg =>
+                  // Should not happened as default views are always created
+                  IO.fromOption(agg.views.headOption, ViewNotFound(defaultViewId, project))
+                }
       search <- client
-                  .search(params, ElasticSearchViews.index(view, config), Uri.Query.Empty)(pagination, sort)
+                  .search(params, view.index, Uri.Query.Empty)(pagination, sort)
                   .mapError(WrappedElasticSearchClientError)
     } yield search
 
@@ -279,37 +270,28 @@ final class ElasticSearchViewsQueryImpl private[elasticsearch] (
       project: ProjectRef,
       query: JsonObject,
       qp: Uri.Query
-  )(implicit caller: Caller): IO[ElasticSearchViewRejection, Json] =
-    fetchView(id, project).flatMap { view =>
-      view.value match {
-        case v: IndexingElasticSearchView  =>
-          for {
-            _      <- acls.authorizeForOr(v.project, v.permission)(AuthorizationFailed)
-            _      <- IO.raiseWhen(view.deprecated)(ViewIsDeprecated(v.id))
-            index   = ElasticSearchViews.index(view.as(v), config)
-            search <- client.search(query, Set(index), qp)(SortList.empty).mapError(WrappedElasticSearchClientError)
-          } yield search
-        case v: AggregateElasticSearchView =>
-          for {
-            _       <- IO.raiseWhen(view.deprecated)(ViewIsDeprecated(v.id))
-            indices <- collectAccessibleIndices(v)
-            search  <-
-              client.search(query, indices, qp)(SortList.empty).mapError(WrappedElasticSearchClientError)
-          } yield search
-      }
-    }
-
-  private def collectAccessibleIndices(view: AggregateElasticSearchView)(implicit caller: Caller) = {
-
+  )(implicit caller: Caller): IO[ElasticSearchViewRejection, Json] = {
     for {
-      views             <- visitor.visitAll(view.views).map(_.collect { case v: IndexedVisitedView => v })
-      accessible        <- acls.authorizeForAny(views.map(v => ProjectAcl(v.ref.project) -> v.permission))
-      accessibleProjects = accessible.collect { case (p: ProjectAcl, true) => ProjectRef(p.org, p.project) }.toSet
-    } yield views.collect { case v if accessibleProjects.contains(v.ref.project) => v.index }
+      view    <- viewStore.fetch(id, project)
+      indices <- view match {
+                   case v: IndexingView  =>
+                     aclCheck.authorizeForOr(v.ref.project, v.permission)(AuthorizationFailed).as(Set(v.index))
+                   case v: AggregateView =>
+                     aclCheck.mapFilter[IndexingView, String](
+                       v.views,
+                       v => ProjectAcl(v.ref.project) -> v.permission,
+                       _.index
+                     )
+                 }
+      search  <- client.search(query, indices, qp)(SortList.empty).mapError(WrappedElasticSearchClientError)
+    } yield search
   }
 
-  private def expandResourceRef(segment: IdSegment, project: Project): IO[InvalidResourceId, ResourceRef] =
-    expandResourceRef(segment, project.apiMappings, project.base)
+  private def expandResourceRef(
+      segment: IdSegment,
+      projectContext: ProjectContext
+  ): IO[InvalidResourceId, ResourceRef] =
+    expandResourceRef(segment, projectContext.apiMappings, projectContext.base)
 
   private def expandResourceRef(
       segment: IdSegment,
@@ -325,30 +307,39 @@ final class ElasticSearchViewsQueryImpl private[elasticsearch] (
 
 object ElasticSearchViewsQuery {
 
-  private[elasticsearch] type FetchDefaultView = ProjectRef => IO[ElasticSearchViewRejection, IndexingViewResource]
-  private[elasticsearch] type FetchView        = (IdSegmentRef, ProjectRef) => IO[ElasticSearchViewRejection, ViewResource]
-  private[elasticsearch] type FetchViews       = () => UIO[Seq[IndexingViewResource]]
-
   final def apply(
-      acls: Acls,
-      projects: Projects,
+      aclCheck: AclCheck,
+      fetchContext: FetchContext[ElasticSearchViewRejection],
       views: ElasticSearchViews,
-      cache: ElasticSearchViewCache,
-      client: ElasticSearchClient
-  )(implicit
-      config: ExternalIndexingConfig
-  ): ElasticSearchViewsQuery =
+      client: ElasticSearchClient,
+      prefix: String,
+      xas: Transactors
+  )(implicit baseUri: BaseUri): ElasticSearchViewsQuery =
     new ElasticSearchViewsQueryImpl(
-      () =>
-        cache.values.map(_.collect {
-          case r @ ResourceF(`defaultViewId`, _, _, _, _, _, _, _, _, _, v: IndexingElasticSearchView) =>
-            r.as(v)
-        }),
-      views.fetchIndexingView(defaultViewId, _),
-      views.fetch,
-      ElasticSearchViewRefVisitor(views, config),
-      acls,
-      projects,
+      ViewsStore[ElasticSearchViewRejection, ElasticSearchViewState](
+        ElasticSearchViews.entityType,
+        ElasticSearchViewState.serializer,
+        defaultViewId,
+        views.fetchState(_, _).map(_._2),
+        view =>
+          IO.raiseWhen(view.deprecated)(ViewIsDeprecated(view.id)).as {
+            view.value match {
+              case _: AggregateElasticSearchViewValue =>
+                Left(view.id)
+              case i: IndexingElasticSearchViewValue  =>
+                Right(
+                  IndexingView(
+                    ViewRef(view.project, view.id),
+                    ElasticSearchViews.index(view.uuid, view.indexingRev, prefix).value,
+                    i.permission
+                  )
+                )
+            }
+          },
+        xas
+      ),
+      aclCheck,
+      fetchContext,
       client
     )
 }

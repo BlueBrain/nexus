@@ -15,13 +15,13 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.MoveFileRejection.FileNotFound
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions.{read, write}
+import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ConfigFixtures
-import ch.epfl.bluebrain.nexus.testkit.IOValues
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.remotestorage.RemoteStorageDocker
+import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOValues}
 import io.circe.Json
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
@@ -36,6 +36,7 @@ class RemoteStorageLinkFileSpec(docker: RemoteStorageDocker)
     extends TestKit(ActorSystem("RemoteStorageMoveFileSpec"))
     with AnyWordSpecLike
     with AkkaSourceHelpers
+    with EitherValuable
     with Matchers
     with IOValues
     with StorageFixtures
@@ -67,7 +68,7 @@ class RemoteStorageLinkFileSpec(docker: RemoteStorageDocker)
       write,
       10
     )
-    storage = RemoteDiskStorage(iri, project, storageValue, Map.empty, Secret(Json.obj()))
+    storage = RemoteDiskStorage(iri, project, storageValue, Tags.empty, Secret(Json.obj()))
   }
 
   "RemoteDiskStorage linking operations" should {

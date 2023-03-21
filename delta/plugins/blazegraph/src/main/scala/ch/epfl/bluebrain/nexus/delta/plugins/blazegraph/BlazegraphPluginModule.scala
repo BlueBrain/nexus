@@ -2,32 +2,43 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
 import akka.actor.typed.ActorSystem
 import cats.effect.Clock
-import cats.effect.concurrent.Deferred
+import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews.{BlazegraphViewsAggregate, BlazegraphViewsCache}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphPluginModule.injectBlazegraphViewDefaults
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.fix.BlazegraphIndexing3266
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphIndexingCoordinator.{BlazegraphIndexingController, BlazegraphIndexingCoordinator}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.{BlazegraphIndexingCleanup, BlazegraphIndexingCoordinator, BlazegraphIndexingStream, BlazegraphOnEventInstant}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.IndexingBlazegraphView
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{contexts, schema => viewsSchemaId, BlazegraphViewEvent, BlazegraphViewsConfig}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.config.BlazegraphViewsConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphCoordinator
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewEvent.{BlazegraphViewCreated, BlazegraphViewUpdated}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.ProjectContextRejection
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue._
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{contexts, schema => viewsSchemaId, BlazegraphView, BlazegraphViewCommand, BlazegraphViewEvent, BlazegraphViewRejection, BlazegraphViewState, BlazegraphViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.BlazegraphViewsRoutes
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
 import ch.epfl.bluebrain.nexus.delta.sdk._
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
+import ch.epfl.bluebrain.nexus.delta.sdk.migration.{MigrationLog, MigrationState}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStreamController, OnEventInstant}
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projection
-import ch.epfl.bluebrain.nexus.delta.sourcing.{DatabaseCleanup, EventLog}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projections
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{ReferenceRegistry, Supervisor}
 import izumi.distage.model.definition.{Id, ModuleDef}
-import monix.bio.{Task, UIO}
+import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
 
 /**
@@ -38,8 +49,6 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
   implicit private val classLoader: ClassLoader = getClass.getClassLoader
 
   make[BlazegraphViewsConfig].from { BlazegraphViewsConfig.load(_) }
-
-  make[EventLog[Envelope[BlazegraphViewEvent]]].fromEffect { databaseEventLog[BlazegraphViewEvent](_, _) }
 
   make[HttpClient].named("http-indexing-client").from {
     (cfg: BlazegraphViewsConfig, as: ActorSystem[Nothing], sc: Scheduler) =>
@@ -61,170 +70,87 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
       BlazegraphClient(client, cfg.base, cfg.credentials, cfg.queryTimeout)(as.classicSystem)
   }
 
-  make[IndexingSource].named("blazegraph-source").from {
+  make[ValidateBlazegraphView].from {
     (
-        cfg: BlazegraphViewsConfig,
-        projects: Projects,
-        eventLog: EventLog[Envelope[Event]],
-        exchanges: Set[EventExchange]
-    ) =>
-      IndexingSource(
-        projects,
-        eventLog,
-        exchanges,
-        cfg.indexing.maxBatchSize,
-        cfg.indexing.maxTimeWindow,
-        cfg.indexing.retry
-      )
-  }
-
-  make[ProgressesCache].named("blazegraph-progresses").from { (cfg: BlazegraphViewsConfig, as: ActorSystem[Nothing]) =>
-    ProgressesStatistics.cache("blazegraph-views-progresses")(as, cfg.keyValueStore)
-  }
-
-  make[BlazegraphIndexingStream].from {
-    (
-        client: BlazegraphClient @Id("blazegraph-indexing-client"),
-        projection: Projection[Unit],
-        indexingSource: IndexingSource @Id("blazegraph-source"),
-        cache: ProgressesCache @Id("blazegraph-progresses"),
-        config: BlazegraphViewsConfig,
-        scheduler: Scheduler,
-        cr: RemoteContextResolution @Id("aggregate"),
-        base: BaseUri
-    ) =>
-      new BlazegraphIndexingStream(client, indexingSource, cache, config, projection)(cr, base, scheduler)
-  }
-
-  make[BlazegraphIndexingController].from { (as: ActorSystem[Nothing]) =>
-    new IndexingStreamController[IndexingBlazegraphView](BlazegraphViews.moduleType)(as)
-  }
-
-  make[BlazegraphIndexingCleanup].from {
-    (
-        client: BlazegraphClient @Id("blazegraph-indexing-client"),
-        cache: ProgressesCache @Id("blazegraph-progresses"),
-        projection: Projection[Unit]
-    ) =>
-      new BlazegraphIndexingCleanup(client, cache, projection)
-  }
-
-  make[BlazegraphIndexingCoordinator].fromEffect {
-    (
-        log: EventLog[Envelope[BlazegraphViewEvent]],
-        views: BlazegraphViews,
-        indexingStream: BlazegraphIndexingStream,
-        indexingCleanup: BlazegraphIndexingCleanup,
-        indexingController: BlazegraphIndexingController,
-        config: BlazegraphViewsConfig,
-        as: ActorSystem[Nothing],
-        scheduler: Scheduler,
-        uuidF: UUIDF
-    ) =>
-      val fix = Task.when(sys.env.getOrElse("FIX_3266", "false").toBoolean) {
-        new BlazegraphIndexing3266(log, views, indexingCleanup, config).run()
-      }
-      BlazegraphIndexingCoordinator(views, indexingController, indexingStream, indexingCleanup, config, fix)(
-        uuidF,
-        as,
-        scheduler
-      )
-  }
-
-  make[BlazegraphViewsCache].from { (config: BlazegraphViewsConfig, as: ActorSystem[Nothing]) =>
-    BlazegraphViews.cache(config)(as)
-  }
-
-  make[Deferred[Task, BlazegraphViews]].fromEffect(Deferred[Task, BlazegraphViews])
-
-  make[BlazegraphViewsAggregate].fromEffect {
-    (
-        config: BlazegraphViewsConfig,
-        deferred: Deferred[Task, BlazegraphViews],
         permissions: Permissions,
-        resourceIdCheck: ResourceIdCheck,
-        as: ActorSystem[Nothing],
-        uuidF: UUIDF,
-        clock: Clock[UIO]
-    ) => BlazegraphViews.aggregate(config, deferred, permissions, resourceIdCheck)(as, uuidF, clock)
+        config: BlazegraphViewsConfig,
+        xas: Transactors
+    ) =>
+      ValidateBlazegraphView(
+        permissions.fetchPermissionSet,
+        config.maxViewRefs,
+        xas
+      )
   }
 
   make[BlazegraphViews]
     .fromEffect {
       (
-          cfg: BlazegraphViewsConfig,
-          log: EventLog[Envelope[BlazegraphViewEvent]],
+          fetchContext: FetchContext[ContextRejection],
           contextResolution: ResolverContextResolution,
+          validate: ValidateBlazegraphView,
           client: BlazegraphClient @Id("blazegraph-indexing-client"),
-          cache: BlazegraphViewsCache,
-          deferred: Deferred[Task, BlazegraphViews],
-          agg: BlazegraphViewsAggregate,
-          orgs: Organizations,
-          projects: Projects,
+          config: BlazegraphViewsConfig,
+          xas: Transactors,
           api: JsonLdApi,
-          uuidF: UUIDF,
-          as: ActorSystem[Nothing],
-          scheduler: Scheduler
+          clock: Clock[UIO],
+          uuidF: UUIDF
       ) =>
         BlazegraphViews(
-          cfg,
-          log,
+          fetchContext.mapRejection(ProjectContextRejection),
           contextResolution,
-          cache,
-          deferred,
-          agg,
-          orgs,
-          projects,
-          client
-        )(
-          api,
-          uuidF,
-          scheduler,
-          as
-        )
+          validate,
+          client,
+          config.eventLog,
+          config.prefix,
+          xas
+        )(api, clock, uuidF)
     }
 
-  many[ResourcesDeletion].add {
-    (
-        cache: BlazegraphViewsCache,
-        agg: BlazegraphViewsAggregate,
-        views: BlazegraphViews,
-        dbCleanup: DatabaseCleanup,
-        coordinator: BlazegraphIndexingCoordinator
-    ) =>
-      BlazegraphViewsDeletion(cache, agg, views, dbCleanup, coordinator)
+  if (!MigrationState.isBgIndexingDisabled) {
+    make[BlazegraphCoordinator].fromEffect {
+      (
+          views: BlazegraphViews,
+          graphStream: GraphResourceStream,
+          registry: ReferenceRegistry,
+          supervisor: Supervisor,
+          client: BlazegraphClient @Id("blazegraph-indexing-client"),
+          config: BlazegraphViewsConfig,
+          baseUri: BaseUri
+      ) =>
+        BlazegraphCoordinator(
+          views,
+          graphStream,
+          registry,
+          supervisor,
+          client,
+          config.batch
+        )(baseUri)
+    }
   }
 
-  many[ProjectReferenceFinder].add { (views: BlazegraphViews) =>
-    BlazegraphViews.projectReferenceFinder(views)
-  }
-
-  make[BlazegraphViewsQuery].from {
+  make[BlazegraphViewsQuery].fromEffect {
     (
-        acls: Acls,
+        aclCheck: AclCheck,
+        fetchContext: FetchContext[ContextRejection],
         views: BlazegraphViews,
-        projects: Projects,
         client: BlazegraphClient @Id("blazegraph-query-client"),
-        cfg: BlazegraphViewsConfig
+        cfg: BlazegraphViewsConfig,
+        xas: Transactors
     ) =>
-      BlazegraphViewsQuery(acls, views, projects, client)(cfg.indexing)
-  }
-
-  make[ProgressesStatistics].named("blazegraph-statistics").from {
-    (cache: ProgressesCache @Id("blazegraph-progresses"), projectsCounts: ProjectsCounts) =>
-      new ProgressesStatistics(cache, projectsCounts)
+      BlazegraphViewsQuery(aclCheck, fetchContext.mapRejection(ProjectContextRejection), views, client, cfg.prefix, xas)
   }
 
   make[BlazegraphViewsRoutes].from {
     (
         identities: Identities,
-        acls: Acls,
-        projects: Projects,
+        aclCheck: AclCheck,
         views: BlazegraphViews,
+        projections: Projections,
         viewsQuery: BlazegraphViewsQuery,
+        schemeDirectives: DeltaSchemeDirectives,
         indexingAction: IndexingAction @Id("aggregate"),
-        progresses: ProgressesStatistics @Id("blazegraph-statistics"),
-        indexingController: BlazegraphIndexingController,
+        shift: BlazegraphView.Shift,
         baseUri: BaseUri,
         cfg: BlazegraphViewsConfig,
         s: Scheduler,
@@ -236,11 +162,10 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         views,
         viewsQuery,
         identities,
-        acls,
-        projects,
-        progresses,
-        indexingController.restart,
-        indexingAction
+        aclCheck,
+        projections,
+        schemeDirectives,
+        indexingAction(_, _, _)(shift, cr)
       )(
         baseUri,
         s,
@@ -251,10 +176,17 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
       )
   }
 
-  make[BlazegraphScopeInitialization]
+  make[BlazegraphScopeInitialization].from {
+    (views: BlazegraphViews, serviceAccount: ServiceAccount, config: BlazegraphViewsConfig) =>
+      new BlazegraphScopeInitialization(views, serviceAccount, config.defaults)
+  }
   many[ScopeInitialization].ref[BlazegraphScopeInitialization]
 
   many[MetadataContextValue].addEffect(MetadataContextValue.fromFile("contexts/sparql-metadata.json"))
+
+  many[SseEncoder[_]].add { base: BaseUri => BlazegraphViewEvent.sseEncoder(base) }
+
+  many[ScopedEventMetricEncoder[_]].add { BlazegraphViewEvent.bgViewMetricEncoder }
 
   many[RemoteContextResolution].addEffect(
     for {
@@ -280,27 +212,59 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
     new BlazegraphServiceDependency(client)
   }
 
-  many[ReferenceExchange].add { (views: BlazegraphViews) =>
-    BlazegraphViews.referenceExchange(views)
-  }
-
   many[IndexingAction].add {
     (
-        client: BlazegraphClient @Id("blazegraph-query-client"),
-        cache: BlazegraphViewsCache,
+        views: BlazegraphViews,
+        registry: ReferenceRegistry,
+        client: BlazegraphClient @Id("blazegraph-indexing-client"),
         config: BlazegraphViewsConfig,
-        baseUri: BaseUri,
-        cr: RemoteContextResolution @Id("aggregate")
+        baseUri: BaseUri
     ) =>
-      new BlazegraphIndexingAction(client, cache, config.indexing)(cr, baseUri)
+      BlazegraphIndexingAction(views, registry, client, config.syncIndexingTimeout)(baseUri)
   }
 
-  make[BlazegraphViewEventExchange]
-  many[EventExchange].named("view").ref[BlazegraphViewEventExchange]
-  many[EventExchange].named("resources").ref[BlazegraphViewEventExchange]
-  many[EventExchange].ref[BlazegraphViewEventExchange]
-  many[EntityType].add(EntityType(BlazegraphViews.moduleType))
-  make[BlazegraphOnEventInstant]
-  many[OnEventInstant].ref[BlazegraphOnEventInstant]
+  make[BlazegraphView.Shift].from { (views: BlazegraphViews, base: BaseUri) =>
+    BlazegraphView.shift(views)(base)
+  }
 
+  many[ResourceShift[_, _, _]].ref[BlazegraphView.Shift]
+
+  if (MigrationState.isRunning) {
+    many[MigrationLog].add { (cfg: BlazegraphViewsConfig, xas: Transactors, clock: Clock[UIO], uuidF: UUIDF) =>
+      MigrationLog
+        .scoped[Iri, BlazegraphViewState, BlazegraphViewCommand, BlazegraphViewEvent, BlazegraphViewRejection](
+          BlazegraphViews.definition(_ =>
+            IO.terminate(new IllegalStateException("BlazegraphView command evaluation should not happen"))
+          )(clock, uuidF),
+          e => e.id,
+          identity,
+          (e, _) => injectBlazegraphViewDefaults(cfg.defaults)(e),
+          cfg.eventLog,
+          xas
+        )
+    }
+  }
+
+}
+
+// TODO: This object contains migration helpers, and should be deleted when the migration module is removed
+object BlazegraphPluginModule {
+
+  import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.defaultViewId
+
+  private def setViewDefaults(
+      name: Option[String],
+      description: Option[String]
+  ): BlazegraphViewValue => BlazegraphViewValue = {
+    case iv: IndexingBlazegraphViewValue  => iv.copy(name = name, description = description)
+    case av: AggregateBlazegraphViewValue => av.copy(name = name, description = description)
+  }
+
+  def injectBlazegraphViewDefaults(defaults: Defaults): BlazegraphViewEvent => BlazegraphViewEvent = {
+    case b @ BlazegraphViewCreated(id, _, _, value, _, _, _, _) if id == defaultViewId =>
+      b.copy(value = setViewDefaults(Some(defaults.name), Some(defaults.description))(value))
+    case b @ BlazegraphViewUpdated(id, _, _, value, _, _, _, _) if id == defaultViewId =>
+      b.copy(value = setViewDefaults(Some(defaults.name), Some(defaults.description))(value))
+    case event                                                                         => event
+  }
 }

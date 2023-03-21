@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.archive.model
 import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils.simpleName
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.AbsolutePath
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -12,19 +11,15 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.{RdfError, Vocabulary}
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
-import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields.responseFieldsProjects
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.{EvaluationError, EvaluationFailure, EvaluationTimeout}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import io.circe.syntax.EncoderOps
 import io.circe.{Encoder, JsonObject}
-
-import scala.reflect.ClassTag
 
 /**
   * Enumeration of archive rejection types.
@@ -100,20 +95,10 @@ object ArchiveRejection {
       extends ArchiveRejection(s"Archive identifier '$id' cannot be expanded to an Iri.")
 
   /**
-    * Wrapper for project rejections.
-    *
-    * @param rejection
-    *   the underlying project rejection
+    * Signals a rejection caused when interacting with other APIs when fetching a resource
     */
-  final case class WrappedProjectRejection(rejection: ProjectRejection) extends ArchiveRejection(rejection.reason)
-
-  /**
-    * Rejection returned when the returned state is the initial state after a successful command evaluation. Note: This
-    * should never happen since the evaluation method already guarantees that the next function returns a non initial
-    * state.
-    */
-  final case class UnexpectedInitialState(id: Iri, project: ProjectRef)
-      extends ArchiveRejection(s"Unexpected initial state for Archive '$id' of project '$project'.")
+  final case class ProjectContextRejection(rejection: ContextRejection)
+      extends ArchiveRejection("Something went wrong while interacting with another module.")
 
   /**
     * Rejection returned when attempting to create an Archive where the passed id does not match the id on the source
@@ -177,34 +162,20 @@ object ArchiveRejection {
     */
   final case class WrappedFileRejection(rejection: FileRejection) extends ArchiveRejection(rejection.reason)
 
-  /**
-    * Rejection returned when attempting to evaluate a command but the evaluation failed
-    */
-  final case class ArchiveEvaluationError(err: EvaluationError) extends ArchiveRejection("Unexpected evaluation error")
-
-  implicit final val projectToArchiveRejectionMapper: Mapper[ProjectRejection, ArchiveRejection] =
-    (value: ProjectRejection) => WrappedProjectRejection(value)
-
   implicit final val jsonLdRejectionMapper: Mapper[JsonLdRejection, ArchiveRejection] = {
     case JsonLdRejection.UnexpectedId(id, sourceId)        => UnexpectedArchiveId(id, sourceId)
     case JsonLdRejection.InvalidJsonLdFormat(id, rdfError) => InvalidJsonLdFormat(id, rdfError)
     case JsonLdRejection.DecodingFailed(error)             => DecodingFailed(error)
   }
 
-  implicit final def archiveRejectionEncoder(implicit C: ClassTag[CreateArchive]): Encoder.AsObject[ArchiveRejection] =
+  implicit final val archiveRejectionEncoder: Encoder.AsObject[ArchiveRejection] =
     Encoder.AsObject.instance { r =>
       val tpe = ClassUtils.simpleName(r)
       val obj = JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
       r match {
-        case ArchiveEvaluationError(EvaluationFailure(C(cmd), _))     =>
-          val reason = s"Unexpected failure while evaluating the command '${simpleName(cmd)}' for archive '${cmd.id}'"
-          JsonObject(keywords.tpe -> "ArchiveEvaluationFailure".asJson, "reason" -> reason.asJson)
-        case ArchiveEvaluationError(EvaluationTimeout(C(cmd), t))     =>
-          val reason = s"Timeout while evaluating the command '${simpleName(cmd)}' for archive '${cmd.id}' after '$t'"
-          JsonObject(keywords.tpe -> "ArchiveEvaluationTimeout".asJson, "reason" -> reason.asJson)
         case InvalidResourceCollection(duplicates, invalids, longIds) =>
           obj.add("duplicates", duplicates.asJson).add("invalids", invalids.asJson).add("longIds", longIds.asJson)
-        case WrappedProjectRejection(rejection)                       => rejection.asJsonObject
+        case ProjectContextRejection(rejection)                       => rejection.asJsonObject
         case InvalidJsonLdFormat(_, rdf)                              => obj.add("rdf", rdf.asJson)
         case _: ArchiveNotFound                                       => obj.add(keywords.tpe, "ResourceNotFound".asJson)
         case _                                                        => obj
@@ -214,8 +185,6 @@ object ArchiveRejection {
   implicit final val archiveRejectionJsonLdEncoder: JsonLdEncoder[ArchiveRejection] =
     JsonLdEncoder.computeFromCirce(ContextValue(Vocabulary.contexts.error))
 
-  implicit final val evaluationErrorMapper: Mapper[EvaluationError, ArchiveRejection] = ArchiveEvaluationError.apply
-
   implicit final val archiveResponseFields: HttpResponseFields[ArchiveRejection] =
     HttpResponseFields {
       case ResourceAlreadyExists(_, _)        => StatusCodes.Conflict
@@ -223,14 +192,12 @@ object ArchiveRejection {
       case FilenameTooLong(_, _, _)           => StatusCodes.BadRequest
       case ArchiveNotFound(_, _)              => StatusCodes.NotFound
       case InvalidArchiveId(_)                => StatusCodes.BadRequest
-      case WrappedProjectRejection(rejection) => rejection.status
-      case UnexpectedInitialState(_, _)       => StatusCodes.InternalServerError
+      case ProjectContextRejection(rejection) => rejection.status
       case UnexpectedArchiveId(_, _)          => StatusCodes.BadRequest
       case DecodingFailed(_)                  => StatusCodes.BadRequest
       case InvalidJsonLdFormat(_, _)          => StatusCodes.BadRequest
       case ResourceNotFound(_, _)             => StatusCodes.NotFound
       case AuthorizationFailed(_, _)          => StatusCodes.Forbidden
       case WrappedFileRejection(rejection)    => rejection.status
-      case ArchiveEvaluationError(_)          => StatusCodes.BadRequest
     }
 }

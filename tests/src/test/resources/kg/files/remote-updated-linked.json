@@ -1,0 +1,30 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/files.json",
+    "https://bluebrain.github.io/nexus/contexts/metadata.json"
+  ],
+  "@id": "{{id}}",
+  "@type": "File",
+  "_bytes": 13,
+  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/files.json",
+  "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
+  "_deprecated": false,
+  "_digest": {
+    "_algorithm": "SHA-256",
+    "_value": "694b27f021c4861b3373cd5ddbc42695c056d0a4297d2d85e2dae040a84e61df"
+  },
+  "_filename": "{{filename}}",
+  "_incoming": "{{deltaUri}}/files/{{projId}}/{{filename}}/incoming",
+  "_mediaType": "text/plain",
+  "_origin": "Storage",
+  "_outgoing": "{{deltaUri}}/files/{{projId}}/{{filename}}/outgoing",
+  "_project": "{{project}}",
+  "_rev": 2,
+  "_self": "{{deltaUri}}/files/{{projId}}/{{filename}}",
+  "_storage": {
+    "@id": "https://bluebrain.github.io/nexus/vocabulary/{{storageId}}",
+    "@type": "{{storageType}}",
+    "_rev": 1
+  },
+  "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
+}

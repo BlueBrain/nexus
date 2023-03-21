@@ -14,5 +14,4 @@ class ElasticSearchPluginDef extends PluginDef {
   override val info: PluginDescription = PluginDescription(Name.unsafe("elasticsearch"), BuildInfo.version)
 
   override def initialize(locator: Locator): Task[Plugin] = Task.pure(ElasticSearchPlugin)
-
 }

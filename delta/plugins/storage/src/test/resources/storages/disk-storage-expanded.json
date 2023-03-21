@@ -1,0 +1,54 @@
+[
+  {
+    "@id": "https://bluebrain.github.io/nexus/vocabulary/disk",
+    "@type": [
+      "https://bluebrain.github.io/nexus/vocabulary/Storage",
+      "https://bluebrain.github.io/nexus/vocabulary/DiskStorage"
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/algorithm": [
+      {
+        "@value": "SHA-256"
+      }
+    ],
+    "http://schema.org/name": [
+      {
+        "@value": "diskName"
+      }
+    ],
+    "http://schema.org/description": [
+      {
+        "@value": "diskDescription"
+      }
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/default": [
+      {
+        "@value": true
+      }
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/capacity": [
+      {
+        "@value": 1000
+      }
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/maxFileSize": [
+      {
+        "@value": 50
+      }
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/readPermission": [
+      {
+        "@value": "disk/read"
+      }
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/volume": [
+      {
+        "@value": "/tmp"
+      }
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/writePermission": [
+      {
+        "@value": "disk/write"
+      }
+    ]
+  }
+]

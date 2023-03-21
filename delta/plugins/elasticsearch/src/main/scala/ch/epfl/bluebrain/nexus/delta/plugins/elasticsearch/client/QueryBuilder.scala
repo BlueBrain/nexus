@@ -4,12 +4,12 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.QueryBuilder.a
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.IriEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.{FromPagination, SearchAfterPagination}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, Sort, SortList}
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
 
@@ -18,7 +18,7 @@ final case class QueryBuilder private[client] (private val query: JsonObject) {
   private val trackTotalHits                                                       = "track_total_hits"
   private val searchAfter                                                          = "search_after"
   private val source                                                               = "_source"
-  implicit private def subjectEncoder(implicit baseUri: BaseUri): Encoder[Subject] = Identity.subjectIdEncoder
+  implicit private def subjectEncoder(implicit baseUri: BaseUri): Encoder[Subject] = IriEncoder.jsonEncoder[Subject]
 
   implicit private val sortEncoder: Encoder[Sort] =
     Encoder.encodeJson.contramap(sort => Json.obj(sort.value -> sort.order.asJson))

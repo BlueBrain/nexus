@@ -25,7 +25,7 @@ class CirceUnmarshallingSpec
     with ScalaFutures {
 
   private val id       = nxv + "myresource"
-  private val resource = SimpleResource(id, 1L, Instant.EPOCH, "Maria", 20)
+  private val resource = SimpleResource(id, 1, Instant.EPOCH, "Maria", 20)
   private val json     = json"""{"id": "$id", "rev": 1, "createdAt": ${Instant.EPOCH.asJson}, "name": "Maria", "age": 20}"""
 
   "Converting HttpEntity to a SimpleResource" should {

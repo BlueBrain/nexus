@@ -6,8 +6,11 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceRef, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.ResourceShift
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef, Tags}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
 
@@ -33,7 +36,7 @@ final case class File(
     storage: ResourceRef.Revision,
     storageType: StorageType,
     attributes: FileAttributes,
-    tags: Map[TagLabel, Long]
+    tags: Tags
 )
 
 object File {
@@ -51,5 +54,15 @@ object File {
 
   implicit def fileJsonLdEncoder(implicit config: StorageTypeConfig): JsonLdEncoder[File] =
     JsonLdEncoder.computeFromCirce(_.id, Files.context)
+
+  type Shift = ResourceShift[FileState, File, Nothing]
+
+  def shift(files: Files)(implicit baseUri: BaseUri, config: StorageTypeConfig): Shift =
+    ResourceShift.apply[FileState, File](
+      Files.entityType,
+      (ref, project) => files.fetch(IdSegmentRef(ref), project),
+      (context, state) => state.toResource(context.apiMappings, context.base),
+      value => JsonLdContent(value, value.value.asJson, None)
+    )
 
 }

@@ -1,51 +1,75 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
-import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews.BlazegraphViewsCache
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphIndexingStreamEntry
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.IndexingBlazegraphView
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphViewType, ViewResource}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.IndexingViewDef.{ActiveViewDef, DeprecatedViewDef}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.{BlazegraphSink, IndexingViewDef}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError
-import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.IndexingFailed
+import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.{EventExchange, IndexingAction}
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
-import monix.bio.IO
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
+import fs2.Stream
+import monix.bio.{Task, UIO}
 
-class BlazegraphIndexingAction(
-    client: BlazegraphClient,
-    cache: BlazegraphViewsCache,
-    indexingConfig: ExternalIndexingConfig
-)(implicit cr: RemoteContextResolution, baseUri: BaseUri)
-    extends IndexingAction {
-  override protected def execute(
-      project: ProjectRef,
-      res: EventExchange.EventExchangeValue[_, _]
-  ): IO[ServiceError.IndexingActionFailed, Unit] = {
-    for {
-      projectViews <- cache.values(project).map {
-                        _.mapFilter {
-                          case v: ViewResource
-                              if v.value.tpe == BlazegraphViewType.IndexingBlazegraphView && !v.deprecated =>
-                            val indexing = v.map(_.asInstanceOf[IndexingBlazegraphView])
-                            Option.when(indexing.value.resourceTag.isEmpty)(indexing)
-                          case _ => None
-                        }
-                      }
-      streamEntry  <- BlazegraphIndexingStreamEntry.fromEventExchange(res)
-      queries      <- projectViews
-                        .traverse { v =>
-                          streamEntry
-                            .writeOrNone(v.value)
-                            .map(_.map(q => (BlazegraphViews.namespace(v, indexingConfig), q)))
-                        }
-                        .map(_.flatten)
-      _            <- queries.parTraverse { case (index, query) =>
-                        client.bulk(index, Seq(query))
-                      }
-    } yield ()
-  }.mapError(err => IndexingFailed(err.getMessage, res.value.resource.void))
+import scala.concurrent.duration.FiniteDuration
+
+/**
+  * To synchronously index a resource in the different Blazegraph views of a project
+  * @param fetchCurrentViews
+  *   get the views of the projects in a finite stream
+  * @param compilePipeChain
+  *   to compile the views
+  * @param sink
+  *   the Blazegraph sink
+  * @param timeout
+  *   a maximum duration for the indexing
+  */
+final class BlazegraphIndexingAction(
+    fetchCurrentViews: ProjectRef => ElemStream[IndexingViewDef],
+    compilePipeChain: PipeChain => Either[ProjectionErr, Operation],
+    sink: ActiveViewDef => Sink,
+    override val timeout: FiniteDuration
+) extends IndexingAction {
+
+  private def compile(view: IndexingViewDef, elem: Elem[GraphResource]): Task[Option[CompiledProjection]] = view match {
+    // Synchronous indexing only applies to views that index the latest version
+    case active: ActiveViewDef if active.resourceTag.isEmpty =>
+      IndexingViewDef
+        .compile(
+          active,
+          compilePipeChain,
+          Stream(elem),
+          sink(active)
+        )
+        .map(Some(_))
+    case _: ActiveViewDef                                    => UIO.none
+    case _: DeprecatedViewDef                                => UIO.none
+  }
+
+  def projections(project: ProjectRef, elem: Elem[GraphResource])(implicit
+      cr: RemoteContextResolution
+  ): ElemStream[CompiledProjection] =
+    fetchCurrentViews(project).evalMap { _.evalMapFilter(compile(_, elem)) }
+}
+
+object BlazegraphIndexingAction {
+
+  def apply(
+      views: BlazegraphViews,
+      registry: ReferenceRegistry,
+      client: BlazegraphClient,
+      timeout: FiniteDuration
+  )(implicit baseUri: BaseUri): BlazegraphIndexingAction = {
+    val batchConfig = BatchConfig.individual
+    new BlazegraphIndexingAction(
+      views.currentIndexingViews,
+      PipeChain.compile(_, registry),
+      (v: ActiveViewDef) => new BlazegraphSink(client, batchConfig.maxElements, batchConfig.maxInterval, v.namespace),
+      timeout
+    )
+  }
+
 }

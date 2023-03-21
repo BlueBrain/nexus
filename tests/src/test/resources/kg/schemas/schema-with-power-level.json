@@ -1,0 +1,21 @@
+{
+  "@context": {
+    "this": "https://dev.nexus.test.com/schema-with-power-level/shapes/",
+    "other": "https://some.other.prefix.com/"
+  },
+  "@id": "https://dev.nexus.test.com/schema-with-power-level",
+  "shapes": [
+    {
+      "@id": "this:powerlevel",
+      "@type": "sh:PropertyShape",
+      "path": "other:powerlevel",
+      "name": "Priority",
+      "description": "The battle power of the warrior.",
+      "datatype": "xsd:integer",
+      "minInclusive": 0,
+      "maxInclusive": {{maxPowerLevel}},
+      "minCount": 1,
+      "maxCount": 1
+    }
+  ]
+}

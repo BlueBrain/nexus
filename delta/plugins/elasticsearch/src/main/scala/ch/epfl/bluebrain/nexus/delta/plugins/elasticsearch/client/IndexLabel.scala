@@ -1,10 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client
 
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.error.FormatError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLdCursor
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
-import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatError
 import io.circe.{Decoder, Encoder}
 
 import java.util.UUID
@@ -76,9 +76,16 @@ object IndexLabel {
     *   the index prefix retrieved from configuration
     * @param uuid
     *   the view unique identifier
-    * @param rev
-    *   the view revision
+    * @param indexingRev
+    *   the view's indexing revision
     */
-  final def fromView(prefix: String, uuid: UUID, rev: Long): IndexLabel = new IndexLabel(s"${prefix}_${uuid}_$rev")
+  final def fromView(prefix: String, uuid: UUID, indexingRev: Int): IndexLabel =
+    new IndexLabel(s"${prefix}_${uuid}_$indexingRev")
+
+  implicit val indexLabelJsonLdDecoder: JsonLdDecoder[IndexLabel] =
+    (cursor: ExpandedJsonLdCursor) =>
+      cursor.get[String].flatMap {
+        IndexLabel(_).leftMap { e => ParsingFailure(e.getMessage) }
+      }
 
 }

@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{JsonLdDecoder, JsonLdDe
 import ch.epfl.bluebrain.nexus.delta.rdf.{IriOrBNode, RdfError}
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import io.circe.syntax._
-import io.circe.{Json, JsonObject}
+import io.circe.{Decoder, Encoder, Json, JsonObject}
 import monix.bio.{IO, UIO}
 
 import java.util.UUID
@@ -258,5 +258,11 @@ object ExpandedJsonLd {
 
   private def extractId(obj: JsonObject): Either[RdfError.InvalidIri, IriOrBNode] =
     obj(keywords.id).map(_.as[Iri]).getOrElse(Right(BNode.random)).leftMap(_ => InvalidIri)
+
+  object Database {
+    implicit final val expandedEncoder: Encoder[ExpandedJsonLd] = Encoder.instance(_.json)
+    implicit final val expandedDecoder: Decoder[ExpandedJsonLd] =
+      Decoder.decodeJson.emap(ExpandedJsonLd.expanded(_).leftMap(_.getMessage))
+  }
 
 }

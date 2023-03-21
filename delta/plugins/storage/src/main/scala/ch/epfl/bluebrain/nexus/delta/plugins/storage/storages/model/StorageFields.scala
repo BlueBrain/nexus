@@ -9,8 +9,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.configuration.semiauto.deriveConfigJsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{Configuration => JsonLdConfiguration, JsonLdDecoder}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import io.circe.{Encoder, Json}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
@@ -23,6 +24,18 @@ import scala.annotation.nowarn
 sealed trait StorageFields extends Product with Serializable { self =>
 
   type Value <: StorageValue
+
+  /**
+    * @return
+    *   the name of the storage
+    */
+  def name: Option[String]
+
+  /**
+    * @return
+    *   the description of the storage
+    */
+  def description: Option[String]
 
   /**
     * @return
@@ -84,6 +97,8 @@ object StorageFields {
     *   the maximum allowed file size (in bytes) for uploaded files
     */
   final case class DiskStorageFields(
+      name: Option[String],
+      description: Option[String],
       default: Boolean,
       volume: Option[AbsolutePath],
       readPermission: Option[Permission],
@@ -98,6 +113,8 @@ object StorageFields {
     override def toValue(config: StorageTypeConfig): Option[Value] =
       Some(
         DiskStorageValue(
+          name,
+          description,
           default,
           config.disk.digestAlgorithm,
           volume.getOrElse(config.disk.defaultVolume),
@@ -132,6 +149,8 @@ object StorageFields {
     *   the maximum allowed file size (in bytes) for uploaded files
     */
   final case class S3StorageFields(
+      name: Option[String],
+      description: Option[String],
       default: Boolean,
       bucket: String,
       endpoint: Option[Uri],
@@ -149,6 +168,8 @@ object StorageFields {
     override def toValue(config: StorageTypeConfig): Option[Value] =
       config.amazon.map { cfg =>
         S3StorageValue(
+          name,
+          description,
           default,
           cfg.digestAlgorithm,
           bucket,
@@ -182,6 +203,8 @@ object StorageFields {
     *   the maximum allowed file size (in bytes) for uploaded files
     */
   final case class RemoteDiskStorageFields(
+      name: Option[String],
+      description: Option[String],
       default: Boolean,
       endpoint: Option[BaseUri],
       credentials: Option[Secret[String]],
@@ -198,6 +221,8 @@ object StorageFields {
     override def toValue(config: StorageTypeConfig): Option[Value] =
       config.remoteDisk.map { cfg =>
         RemoteDiskStorageValue(
+          name,
+          description,
           default,
           cfg.digestAlgorithm,
           endpoint = endpoint.getOrElse(cfg.defaultEndpoint),
@@ -224,16 +249,9 @@ object StorageFields {
 
   private val regions = Region.regions().asScala
 
-  implicit val storageFieldsJsonLdDecoder: JsonLdDecoder[StorageFields] = {
-    val ctx = JsonLdConfiguration.default.context
-      .addAlias("DiskStorageFields", StorageType.DiskStorage.iri)
-      .addAlias("S3StorageFields", StorageType.S3Storage.iri)
-      .addAlias("RemoteDiskStorageFields", StorageType.RemoteDiskStorage.iri)
+  implicit val regionJsonLdDecoder: JsonLdDecoder[Region] =
+    _.getValue(s => Option.when(regions.contains(Region.of(s)))(Region.of(s)))
 
-    implicit val regionJsonLdDecoder: JsonLdDecoder[Region] =
-      _.getValue(s => Option.when(regions.contains(Region.of(s)))(Region.of(s)))
-
-    implicit val config: JsonLdConfiguration = JsonLdConfiguration.default.copy(context = ctx)
+  implicit def storageFieldsJsonLdDecoder(implicit cfg: JsonLdConfiguration): JsonLdDecoder[StorageFields] =
     deriveConfigJsonLdDecoder[StorageFields]
-  }
 }

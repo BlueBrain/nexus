@@ -1,15 +1,17 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 
+import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.Fixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.{AggregateElasticSearchView, IndexingElasticSearchView}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{NonEmptySet, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
-import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.{DiscardMetadata, FilterBySchema, FilterByType, FilterDeprecated, PipeDef, SourceAsText}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.{PipeStep, ViewRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes._
 import ch.epfl.bluebrain.nexus.testkit.{CirceEq, CirceLiteral, IOValues, TestHelpers}
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
@@ -29,34 +31,40 @@ class ElasticSearchViewSpec
 
   private val id      = nxv + "myview"
   private val project = ProjectRef.unsafe("org", "project")
-  private val tagsMap = Map(TagLabel.unsafe("tag") -> 1L)
+  private val tagsMap = Tags(UserTag.unsafe("tag") -> 1)
   private val source  = json"""{"source": "value"}"""
   private val perm    = Permission.unsafe("views/query")
 
   "An IndexingElasticSearchView" should {
-    val uuid                                                     = UUID.fromString("f85d862a-9ec0-4b9a-8aed-2938d7ca9981")
-    def indexingView(pipeline: List[PipeDef]): ElasticSearchView = IndexingElasticSearchView(
+    val uuid                                                      = UUID.fromString("f85d862a-9ec0-4b9a-8aed-2938d7ca9981")
+    def indexingView(pipeline: List[PipeStep]): ElasticSearchView = IndexingElasticSearchView(
       id,
+      Some("viewName"),
+      Some("viewDescription"),
       project,
       uuid,
-      Some(TagLabel.unsafe("mytag")),
+      Some(UserTag.unsafe("mytag")),
       pipeline,
       jobj"""{"properties": {"@type": {"type": "keyword"}, "@id": {"type": "keyword"} } }""",
       jobj"""{"analysis": {"analyzer": {"nexus": {} } } }""",
       context = Some(ContextObject(jobj"""{"@vocab": "http://schema.org/"}""")),
       perm,
       tagsMap,
-      source
+      source,
+      1
     )
     "be converted to compacted Json-LD" in {
       forAll(
         List(
-          FilterBySchema(Set(nxv.Schema)),
-          FilterByType(Set(nxv + "Morphology")),
-          SourceAsText().description("Formatting source as text")
-        )                                             -> "jsonld/indexing-view-compacted-1.json" ::
-          List(FilterDeprecated(), DiscardMetadata()) -> "jsonld/indexing-view-compacted-2.json" ::
-          List()                                      -> "jsonld/indexing-view-compacted-3.json" :: Nil
+          PipeStep(FilterBySchema(Set(nxv.Schema))),
+          PipeStep(FilterByType(Set(nxv + "Morphology"))),
+          PipeStep.noConfig(SourceAsText.ref).description("Formatting source as text")
+        )        -> "jsonld/indexing-view-compacted-1.json" ::
+          List(
+            PipeStep.noConfig(FilterDeprecated.ref),
+            PipeStep.noConfig(DiscardMetadata.ref)
+          )      -> "jsonld/indexing-view-compacted-2.json" ::
+          List() -> "jsonld/indexing-view-compacted-3.json" :: Nil
       ) { case (pipeline, expected) =>
         indexingView(pipeline).toCompactedJsonLd.accepted.json shouldEqual jsonContentOf(expected)
       }
@@ -64,9 +72,9 @@ class ElasticSearchViewSpec
     "be converted to expanded Json-LD" in {
       indexingView(
         List(
-          FilterBySchema(Set(nxv.Schema)),
-          FilterByType(Set(nxv + "Morphology")),
-          SourceAsText().description("Formatting source as text")
+          PipeStep(FilterBySchema(Set(nxv.Schema))),
+          PipeStep(FilterByType(Set(nxv + "Morphology"))),
+          PipeStep.noConfig(SourceAsText.ref).description("Formatting source as text")
         )
       ).toExpandedJsonLd.accepted.json shouldEqual jsonContentOf("jsonld/indexing-view-expanded.json")
     }
@@ -74,6 +82,8 @@ class ElasticSearchViewSpec
   "An AggregateElasticSearchView" should {
     val view: ElasticSearchView = AggregateElasticSearchView(
       id,
+      Some("viewName"),
+      Some("viewDescription"),
       project,
       NonEmptySet.of(ViewRef(project, nxv + "view1"), ViewRef(project, nxv + "view2")),
       tagsMap,

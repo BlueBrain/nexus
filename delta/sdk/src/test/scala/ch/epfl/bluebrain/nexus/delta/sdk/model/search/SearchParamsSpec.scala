@@ -1,34 +1,37 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.search
 
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{OrganizationGen, ProjectGen, RealmGen, WellKnownGen}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, Name}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Anonymous
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.{OrganizationSearchParams, ProjectSearchParams, RealmSearchParams}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.testkit.IOValues
+import monix.bio.UIO
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
-class SearchParamsSpec extends AnyWordSpecLike with Matchers with Inspectors {
+class SearchParamsSpec extends AnyWordSpecLike with IOValues with Matchers with Inspectors {
 
   private val subject = User("myuser", Label.unsafe("myrealm"))
 
   "A RealmSearchParams" should {
     val issuer              = "myrealm"
     val (wellKnownUri, wk)  = WellKnownGen.create(issuer)
-    val resource            = RealmGen.resourceFor(RealmGen.realm(wellKnownUri, wk, None), 1L, subject)
+    val resource            = RealmGen.resourceFor(RealmGen.realm(wellKnownUri, wk, None), 1, subject)
     val searchWithAllParams = RealmSearchParams(
       issuer = Some(issuer),
       deprecated = Some(false),
-      rev = Some(1L),
+      rev = Some(1),
       createdBy = Some(subject),
       updatedBy = Some(subject),
-      r => r.name == resource.value.name
+      r => UIO.pure(r.name == resource.value.name)
     )
 
     "match a realm resource" in {
       forAll(List(searchWithAllParams, RealmSearchParams(), RealmSearchParams(issuer = Some(issuer)))) { search =>
-        search.matches(resource) shouldEqual true
+        search.matches(resource).accepted shouldEqual true
       }
     }
 
@@ -36,12 +39,12 @@ class SearchParamsSpec extends AnyWordSpecLike with Matchers with Inspectors {
       forAll(
         List(
           resource.copy(deprecated = true),
-          resource.copy(rev = 2L),
+          resource.copy(rev = 2),
           resource.map(_.copy(issuer = "other")),
           resource.map(_.copy(name = Name.unsafe("other")))
         )
       ) { resource =>
-        searchWithAllParams.matches(resource) shouldEqual false
+        searchWithAllParams.matches(resource).accepted shouldEqual false
       }
     }
   }
@@ -49,24 +52,24 @@ class SearchParamsSpec extends AnyWordSpecLike with Matchers with Inspectors {
   "An OrganizationSearchParams" should {
     val searchWithAllParams = OrganizationSearchParams(
       deprecated = Some(false),
-      rev = Some(1L),
+      rev = Some(1),
       createdBy = Some(subject),
       updatedBy = Some(subject),
       label = Some("myorg"),
-      _ => true
+      _ => UIO.pure(true)
     )
-    val resource            = OrganizationGen.resourceFor(OrganizationGen.organization("myorg"), 1L, subject)
+    val resource            = OrganizationGen.resourceFor(OrganizationGen.organization("myorg"), 1, subject)
 
     "match an organization resource" in {
       forAll(
         List(
           searchWithAllParams,
-          OrganizationSearchParams(label = Some("my"), filter = _ => true),
-          OrganizationSearchParams(filter = _ => true),
-          OrganizationSearchParams(rev = Some(1L), filter = _ => true)
+          OrganizationSearchParams(label = Some("my"), filter = _ => UIO.pure(true)),
+          OrganizationSearchParams(filter = _ => UIO.pure(true)),
+          OrganizationSearchParams(rev = Some(1), filter = _ => UIO.pure(true))
         )
       ) { search =>
-        search.matches(resource) shouldEqual true
+        search.matches(resource).accepted shouldEqual true
       }
     }
 
@@ -78,7 +81,7 @@ class SearchParamsSpec extends AnyWordSpecLike with Matchers with Inspectors {
           resource.copy(createdBy = Anonymous)
         )
       ) { resource =>
-        searchWithAllParams.matches(resource) shouldEqual false
+        searchWithAllParams.matches(resource).accepted shouldEqual false
       }
     }
   }
@@ -88,24 +91,24 @@ class SearchParamsSpec extends AnyWordSpecLike with Matchers with Inspectors {
     val searchWithAllParams = ProjectSearchParams(
       organization = Some(org),
       deprecated = Some(false),
-      rev = Some(1L),
+      rev = Some(1),
       createdBy = Some(subject),
       updatedBy = Some(subject),
       label = Some("myproj"),
-      _ => true
+      _ => UIO.pure(true)
     )
-    val resource            = ProjectGen.resourceFor(ProjectGen.project("myorg", "myproj"), 1L, subject)
+    val resource            = ProjectGen.resourceFor(ProjectGen.project("myorg", "myproj"), 1, subject)
 
     "match a project resource" in {
       forAll(
         List(
           searchWithAllParams,
-          ProjectSearchParams(label = Some("my"), filter = _ => true),
-          ProjectSearchParams(filter = _ => true),
-          ProjectSearchParams(rev = Some(1L), filter = _ => true)
+          ProjectSearchParams(label = Some("my"), filter = _ => UIO.pure(true)),
+          ProjectSearchParams(filter = _ => UIO.pure(true)),
+          ProjectSearchParams(rev = Some(1), filter = _ => UIO.pure(true))
         )
       ) { search =>
-        search.matches(resource) shouldEqual true
+        search.matches(resource).accepted shouldEqual true
       }
     }
 
@@ -117,7 +120,7 @@ class SearchParamsSpec extends AnyWordSpecLike with Matchers with Inspectors {
           resource.map(_.copy(organizationLabel = Label.unsafe("o")))
         )
       ) { resource =>
-        searchWithAllParams.matches(resource) shouldEqual false
+        searchWithAllParams.matches(resource).accepted shouldEqual false
       }
     }
   }

@@ -1,12 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.IndexingBlazegraphView
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts => nxvContexts, nxv, schemas}
-import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.resources
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 
 package object model {
 
@@ -14,11 +14,6 @@ package object model {
     * Type alias for a view specific resource.
     */
   type ViewResource = ResourceF[BlazegraphView]
-
-  /**
-    * Type alias for a indexing view specific resource.
-    */
-  type IndexingViewResource = ResourceF[IndexingBlazegraphView]
 
   /**
     * The fixed virtual schema of a BlazegraphView.

@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.rdf
 
 import akka.http.scaladsl.model.Uri.Query
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{owl, schema, xsd}
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
@@ -102,6 +103,14 @@ class IriSpec extends AnyWordSpecLike with Matchers with Inspectors with EitherV
     "return None when getting last path segment" in {
       val list = List(iri"http://example.com/", iri"http://example.com//")
       forAll(list)(_.lastSegment shouldEqual None)
+    }
+
+    "be correctly ordered" in {
+      val list = List(
+        iri"http://example.com/a" -> iri"http://example.com/b",
+        iri"http://example.com/a" -> iri"http://example.com/a/"
+      )
+      forAll(list) { case (first, second) => (first < second) shouldEqual true }
     }
   }
 

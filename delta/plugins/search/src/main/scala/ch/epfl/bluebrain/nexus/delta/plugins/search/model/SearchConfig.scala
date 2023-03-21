@@ -7,15 +7,21 @@ import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchConfigError.{Inv
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
+import ch.epfl.bluebrain.nexus.delta.sdk.Defaults
 import com.typesafe.config.Config
 import io.circe.parser._
 import io.circe.{Decoder, JsonObject}
 import monix.bio.IO
+import pureconfig.ConfigSource
 
 import java.nio.file.{Files, Path}
 import scala.util.Try
 
-final case class SearchConfig(indexing: IndexingConfig, fields: Option[JsonObject])
+final case class SearchConfig(
+    indexing: IndexingConfig,
+    fields: Option[JsonObject],
+    defaults: Defaults
+)
 
 object SearchConfig {
 
@@ -31,6 +37,7 @@ object SearchConfig {
       settings      <- loadOption(pluginConfig, "indexing.settings", loadExternalConfig[JsonObject])
       query         <- loadSparqlQuery(pluginConfig.getString("indexing.query"))
       context       <- loadOption(pluginConfig, "indexing.context", loadExternalConfig[JsonObject])
+      defaults      <- loadDefaults(pluginConfig)
     } yield SearchConfig(
       IndexingConfig(
         resourceTypes,
@@ -39,7 +46,8 @@ object SearchConfig {
         query = query,
         context = ContextObject(context.getOrElse(JsonObject.empty))
       ),
-      fields
+      fields,
+      defaults
     )
   }
 
@@ -65,6 +73,14 @@ object SearchConfig {
                    InvalidSparqlConstructQuery(filePath, e)
                  })
     } yield json
+
+  private def loadDefaults(config: Config): IO[SearchConfigError, Defaults] =
+    IO.fromEither(
+      Try(
+        ConfigSource.fromConfig(config).at("defaults").loadOrThrow[Defaults]
+        // TODO: Use a correct error
+      ).toEither.leftMap(_ => InvalidJsonError("string", "string"))
+    )
 
   final case class IndexingConfig(
       resourceTypes: Set[Iri],

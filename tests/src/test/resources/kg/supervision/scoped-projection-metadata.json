@@ -1,0 +1,9 @@
+{
+  "metadata": {
+    "module": "{{module}}",
+    "name": "{{projectionName}}-{{revision}}",
+    "project": "{{project}}",
+    "resourceId": "{{viewId}}"
+  },
+  "restarts": {{restarts}}
+}

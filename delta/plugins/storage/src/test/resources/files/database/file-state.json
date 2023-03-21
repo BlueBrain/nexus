@@ -1,0 +1,37 @@
+{
+  "attributes": {
+    "bytes": 12,
+    "digest": {
+      "@type": "ComputedDigest",
+      "algorithm": "SHA-256",
+      "value": "digest-value"
+    },
+    "filename": "file.txt",
+    "location": "http://localhost/file.txt",
+    "mediaType": "text/plain; charset=UTF-8",
+    "origin": "Client",
+    "path": "file.txt",
+    "uuid": "8049ba90-7cc6-4de5-93a1-802c04200dcc"
+  },
+  "createdAt": "1970-01-01T00:00:00Z",
+  "createdBy": {
+    "@type": "User",
+    "realm": "myrealm",
+    "subject": "username"
+  },
+  "deprecated": false,
+  "id": "https://bluebrain.github.io/nexus/vocabulary/file",
+  "project": "myorg/myproj",
+  "rev": 5,
+  "storage": "https://bluebrain.github.io/nexus/vocabulary/disk-storage?rev=1",
+  "storageType": "DiskStorage",
+  "tags": {
+    "mytag": 3
+  },
+  "updatedAt": "1970-01-01T00:00:00Z",
+  "updatedBy": {
+    "@type": "User",
+    "realm": "myrealm",
+    "subject": "username"
+  }
+}

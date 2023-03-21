@@ -1,134 +1,108 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
-import akka.http.scaladsl.model.MediaTypes.{`text/event-stream`, `text/html`}
-import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept, Location, OAuth2BearerToken}
+import akka.http.scaladsl.model.MediaTypes.`text/html`
+import akka.http.scaladsl.model.headers.{Accept, Location, OAuth2BearerToken}
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
-import akka.persistence.query.Sequence
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.sdk.JsonValue
-import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, resources}
-import ch.epfl.bluebrain.nexus.delta.sdk.ResolverResolution.{FetchResource, ResourceResolution}
+import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceResolutionGen, SchemaGen}
-import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, Subject}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Identity}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent.{ResourceDeprecated, ResourceTagAdded}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
-import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
-import ch.epfl.bluebrain.nexus.delta.utils.RouteFixtures
-import ch.epfl.bluebrain.nexus.testkit._
-import io.circe.Printer
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{events, resources}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.{FetchResource, ResourceResolution}
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.ProjectContextRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.{Resources, ResourcesConfig, ResourcesImpl}
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
+import io.circe.{Json, Printer}
 import monix.bio.{IO, UIO}
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
 
-import java.time.Instant
 import java.util.UUID
 
-class ResourcesRoutesSpec
-    extends RouteHelpers
-    with Matchers
-    with CancelAfterFailure
-    with CirceLiteral
-    with CirceEq
-    with IOFixedClock
-    with IOValues
-    with OptionValues
-    with TestMatchers
-    with Inspectors
-    with RouteFixtures {
+class ResourcesRoutesSpec extends BaseRouteSpec {
 
-  private val uuid                  = UUID.randomUUID()
-  implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
-
-  implicit private val subject: Subject = Identity.Anonymous
+  private val uuid = UUID.randomUUID()
 
   implicit private val caller: Caller =
     Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
 
-  private val identities = IdentitiesDummy(Map(AuthToken("alice") -> caller))
-
   private val asAlice = addCredentials(OAuth2BearerToken("alice"))
 
-  private val org          = Label.unsafe("myorg")
   private val am           = ApiMappings("nxv" -> nxv.base, "Person" -> schema.Person)
   private val projBase     = nxv.base
   private val project      = ProjectGen.resourceFor(
-    ProjectGen.project("myorg", "myproject", uuid = uuid, orgUuid = uuid, base = projBase, mappings = am)
+    ProjectGen.project(
+      "myorg",
+      "myproject",
+      uuid = uuid,
+      orgUuid = uuid,
+      base = projBase,
+      mappings = am + Resources.mappings
+    )
   )
   private val projectRef   = project.value.ref
   private val schemaSource = jsonContentOf("resources/schema.json").addContext(contexts.shacl, contexts.schemasMetadata)
   private val schema1      = SchemaGen.schema(nxv + "myschema", project.value.ref, schemaSource.removeKeys(keywords.id))
   private val schema2      = SchemaGen.schema(schema.Person, project.value.ref, schemaSource.removeKeys(keywords.id))
 
-  private val (orgs, projs) =
-    ProjectSetup
-      .init(orgsToCreate = List(org), projectsToCreate = List(project.value))
-      .accepted
+  private val myId                = nxv + "myid"  // Resource created against no schema with id present on the payload
+  private val myId2               = nxv + "myid2" // Resource created against schema1 with id present on the payload
+  private val myId3               = nxv + "myid3" // Resource created against no schema with id passed and present on the payload
+  private val myId4               = nxv + "myid4" // Resource created against schema1 with id passed and present on the payload
+  private val myIdEncoded         = UrlUtils.encode(myId.toString)
+  private val myId2Encoded        = UrlUtils.encode(myId2.toString)
+  private val payload             = jsonContentOf("resources/resource.json", "id" -> myId)
+  private val payloadWithMetadata = jsonContentOf("resources/resource-with-metadata.json", "id" -> myId)
 
-  val resolverContextResolution: ResolverContextResolution = new ResolverContextResolution(
-    rcr,
-    (_, _, _) => IO.raiseError(ResourceResolutionReport())
-  )
+  private val aclCheck = AclSimpleCheck().accepted
 
   private val fetchSchema: (ResourceRef, ProjectRef) => FetchResource[Schema] = {
     case (ref, _) if ref.iri == schema2.id => UIO.some(SchemaGen.resourceFor(schema2, deprecated = true))
     case (ref, _) if ref.iri == schema1.id => UIO.some(SchemaGen.resourceFor(schema1))
     case _                                 => UIO.none
   }
-
-  private val myId         = nxv + "myid"  // Resource created against no schema with id present on the payload
-  private val myId2        = nxv + "myid2" // Resource created against schema1 with id present on the payload
-  private val myId3        = nxv + "myid3" // Resource created against no schema with id passed and present on the payload
-  private val myId4        = nxv + "myid4" // Resource created against schema1 with id passed and present on the payload
-  private val myIdEncoded  = UrlUtils.encode(myId.toString)
-  private val myId2Encoded = UrlUtils.encode(myId2.toString)
-  private val payload      = jsonContentOf("resources/resource.json", "id" -> myId)
-
-  private val resourceResolution: ResourceResolution[Schema] =
+  private val resourceResolution: ResourceResolution[Schema]                  =
     ResourceResolutionGen.singleInProject(projectRef, fetchSchema)
-
-  private val acls = AclSetup.init(Set(resources.write, resources.read, events.read), Set(realm)).accepted
-
-  private val resourcesDummy =
-    ResourcesDummy(
-      orgs,
-      projs,
-      resourceResolution,
-      (_, _) => IO.unit,
-      resolverContextResolution
-    ).accepted
-  private val sseEventLog    = new SseEventLogDummy(
-    List(
-      Envelope(
-        ResourceTagAdded(myId, projectRef, Set.empty, 1, TagLabel.unsafe("mytag"), 1, Instant.EPOCH, subject),
-        Sequence(1),
-        "p1",
-        1
-      ),
-      Envelope(ResourceDeprecated(myId, projectRef, Set.empty, 1, Instant.EPOCH, subject), Sequence(2), "p1", 2)
-    ),
-    { case ev: ResourceEvent => JsonValue(ev).asInstanceOf[JsonValue.Aux[Event]] }
+  private val fetchContext                                                    = FetchContextDummy(List(project.value), ProjectContextRejection)
+  private val resolverContextResolution: ResolverContextResolution            = new ResolverContextResolution(
+    rcr,
+    (_, _, _) => IO.raiseError(ResourceResolutionReport())
   )
+  private val config                                                          = ResourcesConfig(eventLogConfig)
 
-  private val routes =
-    Route.seal(ResourcesRoutes(identities, acls, orgs, projs, resourcesDummy, sseEventLog, IndexingActionDummy()))
+  private lazy val routes =
+    Route.seal(
+      ResourcesRoutes(
+        IdentitiesDummy(caller),
+        aclCheck,
+        ResourcesImpl(resourceResolution, fetchContext, resolverContextResolution, config, xas),
+        DeltaSchemeDirectives(fetchContext, ioFromMap(uuid -> projectRef.organization), ioFromMap(uuid -> projectRef)),
+        IndexingAction.noop
+      )
+    )
 
-  val payloadUpdated = payload deepMerge json"""{"name": "Alice", "address": null}"""
+  private val payloadUpdated = payload deepMerge json"""{"name": "Alice", "address": null}"""
+
+  private val payloadUpdatedWithMetdata = payloadWithMetadata deepMerge json"""{"name": "Alice", "address": null}"""
 
   "A resource route" should {
 
     "fail to create a resource without resources/write permission" in {
-      acls.append(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 0L).accepted
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(events.read)).accepted
       Post("/v1/resources/myorg/myproject", payload.toEntity) ~> routes ~> check {
         response.status shouldEqual StatusCodes.Forbidden
         response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
@@ -136,8 +110,8 @@ class ResourcesRoutesSpec
     }
 
     "create a resource" in {
-      acls
-        .append(Acl(AclAddress.Root, Anonymous -> Set(resources.write), caller.subject -> Set(resources.write)), 1L)
+      aclCheck
+        .append(AclAddress.Root, Anonymous -> Set(resources.write), caller.subject -> Set(resources.write))
         .accepted
 
       val endpoints = List(
@@ -188,7 +162,7 @@ class ResourcesRoutesSpec
     }
 
     "fail to update a resource without resources/write permission" in {
-      acls.subtract(Acl(AclAddress.Root, Anonymous -> Set(resources.write)), 2L).accepted
+      aclCheck.subtract(AclAddress.Root, Anonymous -> Set(resources.write)).accepted
       Put("/v1/resources/myorg/myproject/_/myid?rev=1", payload.toEntity) ~> routes ~> check {
         response.status shouldEqual StatusCodes.Forbidden
         response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
@@ -196,13 +170,13 @@ class ResourcesRoutesSpec
     }
 
     "update a resource" in {
-      acls.append(Acl(AclAddress.Root, Anonymous -> Set(resources.write)), 3L).accepted
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(resources.write)).accepted
       val encodedSchema = UrlUtils.encode(schemas.resources.toString)
       val endpoints     = List(
-        "/v1/resources/myorg/myproject/_/myid"               -> 1L,
-        s"/v1/resources/myorg/myproject/_/$myIdEncoded"      -> 2L,
-        "/v1/resources/myorg/myproject/resource/myid"        -> 3L,
-        s"/v1/resources/myorg/myproject/$encodedSchema/myid" -> 4L
+        "/v1/resources/myorg/myproject/_/myid"               -> 1,
+        s"/v1/resources/myorg/myproject/_/$myIdEncoded"      -> 2,
+        "/v1/resources/myorg/myproject/resource/myid"        -> 3,
+        s"/v1/resources/myorg/myproject/$encodedSchema/myid" -> 4
       )
       forAll(endpoints) { case (endpoint, rev) =>
         Put(s"$endpoint?rev=$rev", payloadUpdated.toEntity(Printer.noSpaces)) ~> routes ~> check {
@@ -226,12 +200,47 @@ class ResourcesRoutesSpec
       Put("/v1/resources/myorg/myproject/_/myid?rev=10", payloadUpdated.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.Conflict
         response.asJson shouldEqual
-          jsonContentOf("/resources/errors/incorrect-rev.json", "provided" -> 10L, "expected" -> 5L)
+          jsonContentOf("/resources/errors/incorrect-rev.json", "provided" -> 10, "expected" -> 5)
+      }
+    }
+
+    "fail to refresh a resource without resources/write permission" in {
+      aclCheck.subtract(AclAddress.Root, Anonymous -> Set(resources.write)).accepted
+      Put("/v1/resources/myorg/myproject/_/myid/refresh", payload.toEntity) ~> routes ~> check {
+        response.status shouldEqual StatusCodes.Forbidden
+        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+      }
+    }
+
+    "refresh a resource" in {
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(resources.write)).accepted
+      val encodedSchema = UrlUtils.encode(schemas.resources.toString)
+      val endpoints     = List(
+        "/v1/resources/myorg/myproject/_/myid/refresh"               -> 5,
+        s"/v1/resources/myorg/myproject/_/$myIdEncoded/refresh"      -> 6,
+        "/v1/resources/myorg/myproject/resource/myid/refresh"        -> 7,
+        s"/v1/resources/myorg/myproject/$encodedSchema/myid/refresh" -> 8
+      )
+      forAll(endpoints) { case (endpoint, rev) =>
+        Put(s"$endpoint", payloadUpdated.toEntity(Printer.noSpaces)) ~> routes ~> check {
+          status shouldEqual StatusCodes.OK
+          response.asJson shouldEqual
+            resourceMetadata(projectRef, myId, schemas.resources, (nxv + "Custom").toString, rev = rev + 1)
+        }
+      }
+    }
+
+    "reject the refresh of a non-existent resource" in {
+      val payload = payloadUpdated.removeKeys(keywords.id)
+      Put("/v1/resources/myorg/myproject/_/myid10/refresh", payload.toEntity) ~> routes ~> check {
+        status shouldEqual StatusCodes.NotFound
+        response.asJson shouldEqual
+          jsonContentOf("/resources/errors/not-found.json", "id" -> (nxv + "myid10"), "proj" -> "myorg/myproject")
       }
     }
 
     "fail to deprecate a resource without resources/write permission" in {
-      acls.subtract(Acl(AclAddress.Root, Anonymous -> Set(resources.write)), 4L).accepted
+      aclCheck.subtract(AclAddress.Root, Anonymous -> Set(resources.write)).accepted
       Delete("/v1/resources/myorg/myproject/_/myid?rev=4") ~> routes ~> check {
         response.status shouldEqual StatusCodes.Forbidden
         response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
@@ -239,11 +248,11 @@ class ResourcesRoutesSpec
     }
 
     "deprecate a resource" in {
-      acls.append(Acl(AclAddress.Root, Anonymous -> Set(resources.write)), 5L).accepted
-      Delete("/v1/resources/myorg/myproject/_/myid?rev=5") ~> routes ~> check {
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(resources.write)).accepted
+      Delete("/v1/resources/myorg/myproject/_/myid?rev=9") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual
-          resourceMetadata(projectRef, myId, schemas.resources, (nxv + "Custom").toString, deprecated = true, rev = 6L)
+          resourceMetadata(projectRef, myId, schemas.resources, (nxv + "Custom").toString, deprecated = true, rev = 10)
       }
     }
 
@@ -255,7 +264,7 @@ class ResourcesRoutesSpec
     }
 
     "reject the deprecation of a already deprecated resource" in {
-      Delete("/v1/resources/myorg/myproject/_/myid?rev=6") ~> routes ~> check {
+      Delete("/v1/resources/myorg/myproject/_/myid?rev=10") ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual jsonContentOf("/resources/errors/resource-deprecated.json", "id" -> myId)
       }
@@ -265,7 +274,7 @@ class ResourcesRoutesSpec
       val payload = json"""{"tag": "mytag", "rev": 1}"""
       Post("/v1/resources/myorg/myproject/_/myid2/tags?rev=1", payload.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
-        response.asJson shouldEqual resourceMetadata(projectRef, myId2, schema1.id, (nxv + "Custom").toString, rev = 2L)
+        response.asJson shouldEqual resourceMetadata(projectRef, myId2, schema1.id, (nxv + "Custom").toString, rev = 2)
       }
     }
 
@@ -284,13 +293,22 @@ class ResourcesRoutesSpec
       }
     }
 
+    "fail fetching a resource original payload without resources/read permission" in {
+      forAll(List("", "?annotate=true")) { suffix =>
+        Get(s"/v1/resources/myorg/myproject/_/myid2/source$suffix") ~> routes ~> check {
+          response.status shouldEqual StatusCodes.Forbidden
+          response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+        }
+      }
+    }
+
     val resourceCtx = json"""{"@context": ["${contexts.metadata}", {"@vocab": "${nxv.base}"}]}"""
 
     "fetch a resource" in {
-      acls.append(Acl(AclAddress.Root, Anonymous -> Set(resources.read)), 6L).accepted
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(resources.read)).accepted
       Get("/v1/resources/myorg/myproject/_/myid") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
-        val meta = resourceMetadata(projectRef, myId, schemas.resources, "Custom", deprecated = true, rev = 6L)
+        val meta = resourceMetadata(projectRef, myId, schemas.resources, "Custom", deprecated = true, rev = 10)
         response.asJson shouldEqual payloadUpdated.dropNullValues.deepMerge(meta).deepMerge(resourceCtx)
       }
     }
@@ -304,7 +322,7 @@ class ResourcesRoutesSpec
         s"/v1/resources/$uuid/$uuid/_/myid2?tag=mytag"
       )
       val payload   = jsonContentOf("resources/resource.json", "id" -> myId2)
-      val meta      = resourceMetadata(projectRef, myId2, schema1.id, "Custom", rev = 1L)
+      val meta      = resourceMetadata(projectRef, myId2, schema1.id, "Custom", rev = 1)
       forAll(endpoints) { endpoint =>
         Get(endpoint) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
@@ -317,6 +335,45 @@ class ResourcesRoutesSpec
       Get("/v1/resources/myorg/myproject/_/myid/source") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual payloadUpdated
+      }
+    }
+
+    "return not found if fetching a resource original payload that does not exist" in {
+      Get("/v1/resources/myorg/myproject/_/wrongid/source") ~> routes ~> check {
+        status shouldEqual StatusCodes.NotFound
+        response.asJson shouldEqual jsonContentOf(
+          "/resources/errors/not-found.json",
+          "id"   -> "https://bluebrain.github.io/nexus/vocabulary/wrongid",
+          "proj" -> "myorg/myproject"
+        )
+      }
+    }
+
+    "fetch a resource original payload with metadata" in {
+      Get("/v1/resources/myorg/myproject/_/myid/source?annotate=true") ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        response.asJson shouldEqual payloadUpdatedWithMetdata
+      }
+    }
+
+    "fetch a resource original payload with metadata using tags and revisions" in {
+      val endpoints = List(
+        "/v1/resources/myorg/myproject/myschema/myid2/source?rev=1&annotate=true",
+        "/v1/resources/myorg/myproject/_/myid2/source?rev=1&annotate=true",
+        s"/v1/resources/$uuid/$uuid/_/myid2/source?rev=1&annotate=true",
+        "/v1/resources/myorg/myproject/myschema/myid2/source?tag=mytag&annotate=true",
+        s"/v1/resources/$uuid/$uuid/_/myid2/source?tag=mytag&annotate=true"
+      )
+
+      val payload = jsonContentOf("resources/resource.json", "id" -> myId2)
+      val meta    =
+        resourceMetadata(projectRef, myId2, schema1.id, "https://bluebrain.github.io/nexus/vocabulary/Custom", rev = 1)
+
+      forAll(endpoints) { endpoint =>
+        Get(endpoint) ~> routes ~> check {
+          status shouldEqual StatusCodes.OK
+          response.asJson shouldEqual payload.deepMerge(meta)
+        }
       }
     }
 
@@ -363,15 +420,15 @@ class ResourcesRoutesSpec
     }
 
     "tag a deprecated resource" in {
-      val payload = json"""{"tag": "mytag", "rev": 6}"""
-      Post("/v1/resources/myorg/myproject/_/myid/tags?rev=6", payload.toEntity) ~> routes ~> check {
+      val payload = json"""{"tag": "mytag", "rev": 10}"""
+      Post("/v1/resources/myorg/myproject/_/myid/tags?rev=10", payload.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
         response.asJson shouldEqual resourceMetadata(
           projectRef,
           myId,
           schemas.resources,
           (nxv + "Custom").toString,
-          rev = 7L,
+          rev = 11,
           deprecated = true
         )
       }
@@ -380,7 +437,7 @@ class ResourcesRoutesSpec
     "delete a tag on resource" in {
       Delete("/v1/resources/myorg/myproject/_/myid2/tags/mytag?rev=2") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual resourceMetadata(projectRef, myId2, schema1.id, (nxv + "Custom").toString, rev = 3L)
+        response.asJson shouldEqual resourceMetadata(projectRef, myId2, schema1.id, (nxv + "Custom").toString, rev = 3)
       }
     }
 
@@ -398,46 +455,6 @@ class ResourcesRoutesSpec
       }
     }
 
-    "fail to get the events stream without events/read permission" in {
-      acls.subtract(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 7L).accepted
-
-      Head("/v1/resources/myorg/myproject/events") ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-      }
-
-      forAll(List("/v1/resources/events", "/v1/resources/myorg/events", "/v1/resources/myorg/myproject/events")) {
-        endpoint =>
-          Get(endpoint) ~> `Last-Event-ID`("2") ~> routes ~> check {
-            response.status shouldEqual StatusCodes.Forbidden
-            response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
-          }
-      }
-    }
-
-    "get the events stream" in {
-      acls.append(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 8L).accepted
-      forAll(
-        List(
-          "/v1/resources/events",
-          "/v1/resources/myorg/events",
-          s"/v1/resources/$uuid/events",
-          "/v1/resources/myorg/myproject/events",
-          s"/v1/resources/$uuid/$uuid/events"
-        )
-      ) { endpoint =>
-        Get(endpoint) ~> `Last-Event-ID`("0") ~> routes ~> check {
-          mediaType shouldBe `text/event-stream`
-          chunksStream.asString(2).strip shouldEqual contentOf("/resources/eventstream-0-2.txt", "uuid" -> uuid).strip
-        }
-      }
-    }
-
-    "check access to SSEs" in {
-      Head("/v1/resources/myorg/myproject/events") ~> routes ~> check {
-        response.status shouldEqual StatusCodes.OK
-      }
-    }
-
     "redirect to fusion with a given tag if the Accept header is set to text/html" in {
       Get("/v1/resources/myorg/myproject/_/myid2?tag=mytag") ~> Accept(`text/html`) ~> routes ~> check {
         response.status shouldEqual StatusCodes.SeeOther
@@ -447,4 +464,29 @@ class ResourcesRoutesSpec
       }
     }
   }
+
+  def resourceMetadata(
+      ref: ProjectRef,
+      id: Iri,
+      schema: Iri,
+      tpe: String,
+      rev: Int = 1,
+      deprecated: Boolean = false,
+      createdBy: Subject = Anonymous,
+      updatedBy: Subject = Anonymous
+  ): Json =
+    jsonContentOf(
+      "resources/resource-route-metadata-response.json",
+      "project"     -> ref,
+      "id"          -> id,
+      "rev"         -> rev,
+      "type"        -> tpe,
+      "deprecated"  -> deprecated,
+      "createdBy"   -> createdBy.asIri,
+      "updatedBy"   -> updatedBy.asIri,
+      "schema"      -> schema,
+      "label"       -> lastSegment(id),
+      "schemaLabel" -> (if (schema == schemas.resources) "_" else lastSegment(schema))
+    )
+
 }

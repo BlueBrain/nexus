@@ -1,13 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.IndexingElasticSearchView
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts => nxvContexts, nxv, schemas}
-import ch.epfl.bluebrain.nexus.delta.sdk.Permissions
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 import com.typesafe.scalalogging.Logger
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
@@ -19,11 +19,6 @@ package object model {
     * Type alias for a view specific resource.
     */
   type ViewResource = ResourceF[ElasticSearchView]
-
-  /**
-    * Type alias for a indexing view specific resource.
-    */
-  type IndexingViewResource = ResourceF[IndexingElasticSearchView]
 
   /**
     * The fixed virtual schema of an ElasticSearchView.
@@ -76,5 +71,17 @@ package object model {
     .ioJsonObjectContentOf("defaults/empty-results.json")
     .logAndDiscardErrors("loading empty elasticsearch results")
     .map(_.asJson)
+    .memoize
+
+  /** Mapping for the event metrics index */
+  val metricsMapping: UIO[JsonObject] = ClasspathResourceUtils
+    .ioJsonObjectContentOf("metrics/metrics-mapping.json")
+    .logAndDiscardErrors("loading metrics mapping")
+    .memoize
+
+  /** Settings for the event metrics index */
+  val metricsSettings: UIO[JsonObject] = ClasspathResourceUtils
+    .ioJsonObjectContentOf("metrics/metrics-settings.json")
+    .logAndDiscardErrors("loading metrics settings")
     .memoize
 }

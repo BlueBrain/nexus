@@ -666,7 +666,7 @@ Since this is the _primary store_ it is the most important system to be
 that Nexus uses in other stores can be recomputed from the one stored in Cassandra as the other stores are used as
 mere indexing systems.
 
-Please have a look at the @link:[Planning and Testing](https://docs.datastax.com/en/dse-planning/doc/){ open=new } section in the
+Please have a look at the @link:[Planning and Testing](https://docs.datastax.com/en/dseplanning/docs/capacityPlanning.html){ open=new } section in the
 DataStax documentation as it contains recommendations in terms of hardware and capacity.
 
 As described in the @ref:[architecture section](../../delta/architecture.md) the generally adopted

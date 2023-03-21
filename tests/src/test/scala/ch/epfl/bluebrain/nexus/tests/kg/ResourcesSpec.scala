@@ -5,14 +5,18 @@ import akka.http.scaladsl.model.headers.{Accept, Location}
 import akka.http.scaladsl.model.{MediaRange, StatusCodes}
 import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.testkit.{CirceEq, EitherValuable}
 import ch.epfl.bluebrain.nexus.tests.BaseSpec
-import ch.epfl.bluebrain.nexus.tests.Identity.resources.Rick
+import ch.epfl.bluebrain.nexus.tests.Identity.resources.{Morty, Rick}
 import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Organizations
 import io.circe.Json
+import io.circe.optics.JsonPath.root
 import monix.bio.Task
 import monix.execution.Scheduler.Implicits.global
+import monocle.Optional
+import org.scalatest.matchers.{HavePropertyMatchResult, HavePropertyMatcher}
 
 import java.net.URLEncoder
 import scala.concurrent.duration._
@@ -22,8 +26,32 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
   private val orgId   = genId()
   private val projId1 = genId()
   private val projId2 = genId()
+  private val projId3 = genId()
   private val id1     = s"$orgId/$projId1"
   private val id2     = s"$orgId/$projId2"
+  private val id3     = s"$orgId/$projId3"
+
+  private val IdLens: Optional[Json, String]   = root.`@id`.string
+  private val TypeLens: Optional[Json, String] = root.`@type`.string
+  private def `@id`(expectedId: String)        = HavePropertyMatcher[Json, String] { json =>
+    val actualId = IdLens.getOption(json)
+    HavePropertyMatchResult(
+      actualId.contains(expectedId),
+      "@id",
+      expectedId,
+      actualId.orNull
+    )
+  }
+
+  private def `@type`(expectedType: String) = HavePropertyMatcher[Json, String] { json =>
+    val actualType = TypeLens.getOption(json)
+    HavePropertyMatchResult(
+      actualType.contains(expectedType),
+      "@type",
+      expectedType,
+      actualType.orNull
+    )
+  }
 
   "creating projects" should {
 
@@ -137,6 +165,81 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
           )
         response.status shouldEqual StatusCodes.OK
         json should equalIgnoreArrayOrder(expected)
+      }
+    }
+
+    "fetch the original payload with metadata" in {
+      deltaClient.get[Json](s"/resources/$id1/test-schema/test-resource:1/source?annotate=true", Rick) {
+        (json, response) =>
+          val expected = jsonContentOf(
+            "/kg/resources/simple-resource-with-metadata.json",
+            replacements(
+              Rick,
+              "rev"        -> "1",
+              "resources"  -> s"${config.deltaUri}/resources/$id1",
+              "project"    -> s"${config.deltaUri}/projects/$id1",
+              "resourceId" -> "1",
+              "priority"   -> "5"
+            ): _*
+          )
+          response.status shouldEqual StatusCodes.OK
+          filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
+      }
+    }
+
+    "fetch the original payload with unexpanded id with metadata" in {
+      val payload =
+        jsonContentOf(
+          "/kg/resources/simple-resource-with-id.json",
+          "priority"   -> "5",
+          "resourceId" -> "42"
+        )
+
+      for {
+        _ <- deltaClient.post[Json](s"/resources/$id1/_/", payload, Rick) { (_, response) =>
+               response.status shouldEqual StatusCodes.Created
+             }
+        _ <- deltaClient.get[Json](s"/resources/$id1/_/42/source?annotate=true", Rick) { (json, response) =>
+               response.status shouldEqual StatusCodes.OK
+               json should have(`@id`(s"42"))
+             }
+      } yield succeed
+    }
+
+    "fetch the original payload with generated id with metadata" in {
+      val payload =
+        jsonContentOf(
+          "/kg/resources/simple-resource-with-id.json",
+          "priority" -> "5"
+        )
+
+      var generatedId: String = ""
+
+      for {
+        _ <- deltaClient.post[Json](s"/resources/$id1/_/", payload, Rick) { (json, response) =>
+               response.status shouldEqual StatusCodes.Created
+               generatedId = IdLens.getOption(json).getOrElse(fail("could not find @id of created resource"))
+               succeed
+             }
+        _ <- deltaClient.get[Json](s"/resources/$id1/_/${UrlUtils.encode(generatedId)}/source?annotate=true", Rick) {
+               (json, response) =>
+                 response.status shouldEqual StatusCodes.OK
+                 json should have(`@id`(generatedId))
+             }
+      } yield succeed
+    }
+
+    "return not found if a resource is missing" in {
+      deltaClient.get[Json](s"/resources/$id1/test-schema/does-not-exist-resource:1/source?annotate=true", Rick) {
+        (_, response) =>
+          response.status shouldEqual StatusCodes.NotFound
+      }
+    }
+
+    "return forbidden if the user does not have access to the resource" in {
+      deltaClient.get[Json](s"/resources/$id1/test-schema/test-resource:1/source?annotate=true", Morty) {
+        (_, response) =>
+          response.status shouldEqual StatusCodes.Forbidden
       }
     }
 
@@ -325,6 +428,25 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
         }
       }
     }
+
+    "fetch previous revision original payload with metadata" in {
+      deltaClient.get[Json](s"/resources/$id1/test-schema/test-resource:1/source?rev=1&annotate=true", Rick) {
+        (json, response) =>
+          val expected = jsonContentOf(
+            "/kg/resources/simple-resource-with-metadata.json",
+            replacements(
+              Rick,
+              "rev"        -> "1",
+              "resources"  -> s"${config.deltaUri}/resources/$id1",
+              "project"    -> s"${config.deltaUri}/projects/$id1",
+              "resourceId" -> "1",
+              "priority"   -> "5"
+            ): _*
+          )
+          response.status shouldEqual StatusCodes.OK
+          filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
+      }
+    }
   }
 
   "tagging a resource" should {
@@ -333,13 +455,13 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
         _ <- deltaClient
                .post[Json](
                  s"/resources/$id1/test-schema/test-resource:1/tags?rev=2&indexing=sync",
-                 tag("v1.0.0", 1L),
+                 tag("v1.0.0", 1),
                  Rick
                ) { (_, response) =>
                  response.status shouldEqual StatusCodes.Created
                }
         _ <- deltaClient
-               .post[Json](s"/resources/$id1/_/test-resource:1/tags?rev=3&indexing=sync", tag("v1.0.1", 2L), Rick) {
+               .post[Json](s"/resources/$id1/_/test-resource:1/tags?rev=3&indexing=sync", tag("v1.0.1", 2), Rick) {
                  (_, response) =>
                    response.status shouldEqual StatusCodes.Created
                }
@@ -348,7 +470,7 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
                  response.status shouldEqual StatusCodes.OK
                }
         _ <- deltaClient
-               .post[Json](s"/resources/$id1/_/test-resource:1/tags?rev=5&indexing=sync", tag("v1.0.2", 5L), Rick) {
+               .post[Json](s"/resources/$id1/_/test-resource:1/tags?rev=5&indexing=sync", tag("v1.0.2", 5), Rick) {
                  (_, response) =>
                    response.status shouldEqual StatusCodes.Created
                }
@@ -406,6 +528,25 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
                filterMetadataKeys(json) should equalIgnoreArrayOrder(expectedTag3)
              }
       } yield succeed
+    }
+
+    "fetch tagged original payload with metadata" in {
+      deltaClient.get[Json](s"/resources/$id1/test-schema/test-resource:1/source?tag=v1.0.1&annotate=true", Rick) {
+        (json, response) =>
+          val expected = jsonContentOf(
+            "/kg/resources/simple-resource-with-metadata.json",
+            replacements(
+              Rick,
+              "rev"        -> "2",
+              "resources"  -> s"${config.deltaUri}/resources/$id1",
+              "project"    -> s"${config.deltaUri}/projects/$id1",
+              "resourceId" -> "1",
+              "priority"   -> "3"
+            ): _*
+          )
+          response.status shouldEqual StatusCodes.OK
+          filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
+      }
     }
   }
 
@@ -465,4 +606,57 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
     }(PredefinedFromEntityUnmarshallers.stringUnmarshaller)
   }
 
+  "refreshing a resource" should {
+
+    val Base    = "http://my-original-base.com/"
+    val NewBase = "http://my-new-base.com/"
+
+    val ResourceId     = "resource-with-type"
+    val FullResourceId = s"$Base/$ResourceId"
+
+    val ResourceType        = "my-type"
+    val FullResourceType    = s"$Base$ResourceType"
+    val NewFullResourceType = s"$NewBase$ResourceType"
+
+    "create a project" in {
+      adminDsl.createProject(orgId, projId3, kgDsl.projectJsonWithCustomBase(name = id3, base = Base), Rick)
+    }
+
+    "create resource using the created project" in {
+      val payload =
+        jsonContentOf("/kg/resources/simple-resource-with-type.json", "id" -> FullResourceId, "type" -> ResourceType)
+
+      deltaClient.post[Json](s"/resources/$id3/", payload, Rick) { (_, response) =>
+        response.status shouldEqual StatusCodes.Created
+      }
+    }
+
+    "type should be expanded" in {
+      deltaClient.get[Json](s"/resources/$id3/_/${UrlUtils.encode(FullResourceId)}", Rick) { (json, response) =>
+        response.status shouldEqual StatusCodes.OK
+        json should have(`@type`(FullResourceType))
+      }
+    }
+
+    "update a project" in {
+      for {
+        _ <-
+          adminDsl.updateProject(orgId, projId3, kgDsl.projectJsonWithCustomBase(name = id3, base = NewBase), Rick, 1)
+      } yield succeed
+    }
+
+    "do a refresh" in {
+      deltaClient.put[Json](s"/resources/$id3/_/${UrlUtils.encode(FullResourceId)}/refresh?rev=1", Json.Null, Rick) {
+        (_, response) =>
+          response.status shouldEqual StatusCodes.OK
+      }
+    }
+
+    "type should be updated" in {
+      deltaClient.get[Json](s"/resources/$id3/_/${UrlUtils.encode(FullResourceId)}", Rick) { (json, response) =>
+        response.status shouldEqual StatusCodes.OK
+        json should have(`@type`(NewFullResourceType))
+      }
+    }
+  }
 }
