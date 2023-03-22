@@ -17,7 +17,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.{Incorr
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, EntityType, Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.{ScopedEntityDefinition, StateMachine}
 import monix.bio.{IO, Task, UIO}
 import fs2.Stream
@@ -131,6 +132,11 @@ trait Projects {
     * Stream all references of existing projects in a finite stream
     */
   def currentRefs: Stream[Task, ProjectRef]
+
+  /**
+    * Stream project states in a non-finite stream
+    */
+  def states(offset: Offset): ElemStream[ProjectState]
 
   /**
     * The default api mappings

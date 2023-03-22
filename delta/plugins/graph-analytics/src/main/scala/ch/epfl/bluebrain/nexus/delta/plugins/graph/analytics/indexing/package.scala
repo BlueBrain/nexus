@@ -17,6 +17,7 @@ package object indexing {
       .logAndDiscardErrors("ElasticSearch script 'update_relationships_script.painless' template not found")
 
   val graphAnalyticsMappings = ioJsonObjectContentOf("elasticsearch/mappings.json")
+    .logAndDiscardErrors("ElasticSearch mapping 'mappings.json' template not found")
 
   def propertiesAggQuery(config: TermAggregationsConfig) = ioJsonObjectContentOf(
     "elasticsearch/paths-properties-aggregations.json",

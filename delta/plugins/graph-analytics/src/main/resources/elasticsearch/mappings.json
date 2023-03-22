@@ -6,6 +6,9 @@
     "@type": {
       "type": "keyword"
     },
+    "_project": {
+      "type": "keyword"
+    },
     "_rev": {
       "type": "long"
     },

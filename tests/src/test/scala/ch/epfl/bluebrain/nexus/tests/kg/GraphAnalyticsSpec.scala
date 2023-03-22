@@ -5,10 +5,7 @@ import ch.epfl.bluebrain.nexus.tests.BaseSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.projects.Bojack
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Events, Organizations, Projects, Resources}
 import io.circe.Json
-import org.scalatest.DoNotDiscover
 
-//TODO Reenable when graph analytics is reimplemented
-@DoNotDiscover
 final class GraphAnalyticsSpec extends BaseSpec with CirceEq {
   private val org  = genId()
   private val proj = genId()

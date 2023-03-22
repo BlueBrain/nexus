@@ -24,16 +24,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.ProgressStatistics
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projections
-import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
-import monix.bio.IO
+import monix.bio.{IO, UIO}
 import org.scalatest.CancelAfterFailure
 
+import java.time.Instant
 import java.util.UUID
-import scala.concurrent.duration._
 
 class GraphAnalyticsRoutesSpec extends BaseRouteSpec with CancelAfterFailure {
 
@@ -80,15 +78,13 @@ class GraphAnalyticsRoutesSpec extends BaseRouteSpec with CancelAfterFailure {
         )
   }
 
-  private lazy val projections = Projections(xas, QueryConfig(10, RefreshStrategy.Stop), 1.hour)
-
   private lazy val routes =
     Route.seal(
       new GraphAnalyticsRoutes(
         identities,
         aclCheck,
         graphAnalytics,
-        projections,
+        _ => UIO.pure(ProgressStatistics(0L, 0L, 0L, 10L, Some(Instant.EPOCH), None)),
         DeltaSchemeDirectives.empty
       ).routes
     )
@@ -132,14 +128,14 @@ class GraphAnalyticsRoutesSpec extends BaseRouteSpec with CancelAfterFailure {
     "dealing with stream progress" should {
 
       "fail to fetch without resources/read permission" in {
-        Get("/v1/graph-analytics/org/project/progress") ~> routes ~> check {
+        Get("/v1/graph-analytics/org/project/statistics") ~> routes ~> check {
           response.status shouldEqual StatusCodes.Forbidden
           response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
         }
       }
 
-      "fetch" ignore {
-        Get("/v1/graph-analytics/org/project/progress") ~> asAlice ~> routes ~> check {
+      "fetch" in {
+        Get("/v1/graph-analytics/org/project/statistics") ~> asAlice ~> routes ~> check {
           response.status shouldEqual StatusCodes.OK
           response.asJson shouldEqual jsonContentOf("routes/statistics.json")
         }

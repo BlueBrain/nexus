@@ -5,6 +5,7 @@
     "http://www.w3.org/ns/prov#Entity",
     "https://neuroshapes.org/ResponseTrace"
   ],
+  "_project": "myorg/myproject",
   "_rev": 1,
   "_createdAt": "1970-01-01T00:00:00Z",
   "_createdBy": {
