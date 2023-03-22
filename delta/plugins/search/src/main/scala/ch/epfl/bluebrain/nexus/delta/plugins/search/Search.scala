@@ -6,12 +6,13 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.projectionI
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.ElasticSearchProjection
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeView, CompositeViewSearchParams}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
-import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchRejection.WrappedElasticSearchClientError
+import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchRejection.{UnknownSuite, WrappedElasticSearchClientError}
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress.{Project => ProjectAcl}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import io.circe.{Json, JsonObject}
 import monix.bio.{IO, UIO}
 
@@ -24,6 +25,16 @@ trait Search {
     *   the query payload
     */
   def query(payload: JsonObject, qp: Uri.Query)(implicit caller: Caller): IO[SearchRejection, Json]
+
+  /**
+    * Queries the underlying elasticsearch search indices for the provided suite that the ''caller'' has access to
+    *
+    * @param suite
+    *   the suite where the search query has to be applied
+    * @param payload
+    *   the query payload
+    */
+  def query(suite: Label, payload: JsonObject, qp: Uri.Query)(implicit caller: Caller): IO[SearchRejection, Json]
 }
 
 object Search {
@@ -39,7 +50,8 @@ object Search {
       compositeViews: CompositeViews,
       aclCheck: AclCheck,
       client: ElasticSearchClient,
-      prefix: String
+      prefix: String,
+      suites: SearchConfig.Suite
   ): Search = {
 
     val listProjections: ListProjections = () =>
@@ -59,7 +71,7 @@ object Search {
               } yield TargetProjection(esProjection, res.value, res.rev)
             }
         )
-    apply(listProjections, aclCheck, client, prefix)
+    apply(listProjections, aclCheck, client, prefix, suites)
   }
 
   /**
@@ -69,12 +81,16 @@ object Search {
       listProjections: ListProjections,
       aclCheck: AclCheck,
       client: ElasticSearchClient,
-      prefix: String
+      prefix: String,
+      suites: SearchConfig.Suite
   ): Search =
     new Search {
-      override def query(payload: JsonObject, qp: Uri.Query)(implicit caller: Caller): IO[SearchRejection, Json] = {
+
+      private def query(projectionPredicate: TargetProjection => Boolean, payload: JsonObject, qp: Uri.Query)(implicit
+          caller: Caller
+      ) =
         for {
-          allProjections    <- listProjections()
+          allProjections    <- listProjections().map(_.filter(projectionPredicate))
           accessibleIndices <- aclCheck.mapFilter[TargetProjection, String](
                                  allProjections,
                                  p => ProjectAcl(p.view.project) -> p.projection.permission,
@@ -82,6 +98,20 @@ object Search {
                                )
           results           <- client.search(payload, accessibleIndices, qp)().mapError(WrappedElasticSearchClientError)
         } yield results
-      }
+
+      override def query(payload: JsonObject, qp: Uri.Query)(implicit caller: Caller): IO[SearchRejection, Json] =
+        query(_ => true, payload, qp)
+
+      override def query(suite: Label, payload: JsonObject, qp: Uri.Query)(implicit
+          caller: Caller
+      ): IO[SearchRejection, Json] =
+        IO.fromOption(
+          suites.get(suite),
+          UnknownSuite(suite)
+        ).flatMap { projects =>
+          def predicate(p: TargetProjection): Boolean = projects.contains(p.view.project)
+          query(predicate(_), payload, qp)
+        }
+
     }
 }

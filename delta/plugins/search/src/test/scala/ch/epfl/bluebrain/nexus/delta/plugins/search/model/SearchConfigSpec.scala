@@ -44,6 +44,12 @@ class SearchConfigSpec extends AnyWordSpecLike with Matchers with Inspectors wit
         |    name = ${defaults.name}
         |    description = ${defaults.description}
         |  }
+        |
+        |  suites {
+        |    my-suite   = [ "myorg/myproject", "myorg/myproject2" ]
+        |    my-suite-2 = [ "myorg2/myproject", "myorg2/myproject" ]
+        |  }
+        |
         |}
         |""".stripMargin
     )

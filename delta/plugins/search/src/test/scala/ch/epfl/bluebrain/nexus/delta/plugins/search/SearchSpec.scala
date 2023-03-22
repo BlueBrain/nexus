@@ -15,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel.Ind
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.permissions
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{Fixtures, ScalaTestElasticSearchClientSetup}
 import ch.epfl.bluebrain.nexus.delta.plugins.search.Search.{ListProjections, TargetProjection}
+import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchRejection.UnknownSuite
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
@@ -118,9 +119,12 @@ class SearchSpec
     projectionProj2
   )
 
-  private val tpe1 = nxv + "Type1"
-
   private val listViews: ListProjections = () => UIO.pure(projections)
+
+  private val proj2Suite = Label.unsafe("mySuite")
+  private val allSuites  = Map(proj2Suite -> Set(project2.ref))
+
+  private val tpe1 = nxv + "Type1"
 
   private def createDocuments(proj: TargetProjection): Seq[Json] =
     (0 until 3).map { idx =>
@@ -145,7 +149,14 @@ class SearchSpec
   private val prefix = "prefix"
 
   "Search" should {
-    lazy val search = Search(listViews, aclCheck, esClient, prefix)
+    lazy val search = Search(listViews, aclCheck, esClient, prefix, allSuites)
+
+    val payload         = jobj"""{"size": 100}"""
+    val queryParameters = Query.Empty
+
+    val project1Documents = createDocuments(projectionProj1).toSet
+    val project2Documents = createDocuments(projectionProj2).toSet
+    val allDocuments      = project1Documents ++ project2Documents
 
     "index documents" in {
       val bulkSeq = projections.foldLeft(Seq.empty[ElasticSearchBulk]) { (bulk, p) =>
@@ -159,14 +170,28 @@ class SearchSpec
       esClient.bulk(bulkSeq, Refresh.WaitFor).accepted
     }
 
-    "search all indices" in {
-      val results = search.query(jobj"""{"size": 100}""", Query.Empty)(bob).accepted
-      extractSources(results).toSet shouldEqual projections.flatMap(createDocuments).toSet
+    "search all indices accordingly to Bob's acls" in {
+      val results = search.query(payload, queryParameters)(bob).accepted
+      extractSources(results).toSet shouldEqual allDocuments
     }
 
-    "search only indices the user has access to" in {
-      val results = search.query(jobj"""{"size": 100}""", Query.Empty)(alice).accepted
-      extractSources(results).toSet shouldEqual createDocuments(projectionProj1).toSet
+    "search only the project 1 index according to Alice's acls" in {
+      val results = search.query(payload, queryParameters)(alice).accepted
+      extractSources(results).toSet shouldEqual project1Documents
+    }
+
+    "search within an unknown suite" in {
+      search.query(Label.unsafe("xxx"), payload, queryParameters)(bob).rejectedWith[UnknownSuite]
+    }
+
+    "search within a suite as Bob" in {
+      val results = search.query(proj2Suite, payload, queryParameters)(bob).accepted
+      extractSources(results).toSet shouldEqual project2Documents
+    }
+
+    "search within a suite as Alice" in {
+      val results = search.query(proj2Suite, payload, queryParameters)(alice).accepted
+      extractSources(results).toSet shouldEqual Set.empty
     }
 
   }
