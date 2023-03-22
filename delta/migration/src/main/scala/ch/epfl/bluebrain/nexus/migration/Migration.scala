@@ -23,8 +23,11 @@ import com.typesafe.scalalogging.Logger
 import doobie._
 import doobie.implicits._
 import doobie.postgres.implicits._
+import doobie.postgres.sqlstate.class22.UNTRANSLATABLE_CHARACTER
 import fs2.{Chunk, Stream}
+import io.circe.{Json, JsonObject}
 import io.circe.optics.JsonPath.root
+import io.circe.syntax.EncoderOps
 import monix.bio.Task
 import pureconfig.generic.semiauto.deriveReader
 import pureconfig.{ConfigReader, ConfigSource}
@@ -133,6 +136,12 @@ object Migration {
               )
             }
           }
+          .exceptSomeSqlState { case UNTRANSLATABLE_CHARACTER =>
+            val cleanPayload = removeFromJson(event.payload, "\u0000")
+            Task.delay(logger.warn("Encountered an untranslatable character. Attempting to clean JSON...")) >>
+              migrationLog(event.copy(payload = cleanPayload)) >>
+              Task.delay(logger.info("... processed clean JSON."))
+          }
       case None               =>
         val message = s"The logMap has no entry for ${event.entityType}"
         Task.delay {
@@ -140,6 +149,29 @@ object Migration {
         } >>
           Task.raiseError(new NoSuchElementException(message))
     }
+  }
+
+  /**
+    * Removes the `toRemove` string from all strings in the provided `json`.
+    */
+  def removeFromJson(json: Json, toRemove: String): Json = {
+    def inner(obj: JsonObject): JsonObject =
+      JsonObject.fromIterable {
+        obj.toMap.view.mapValues(replace)
+      }
+
+    def replace(json: Json): Json = json match {
+      case j if j.isString => j.asString.get.replace(toRemove, "").asJson
+      case j if j.isArray  => removeFromJson(j, toRemove)
+      case j if j.isObject => removeFromJson(j, toRemove)
+      case j               => j
+    }
+
+    json.arrayOrObject(
+      replace(json),
+      arr => Json.fromValues(arr.map(replace)),
+      obj => Json.fromJsonObject(inner(obj))
+    )
   }
 
   /**
