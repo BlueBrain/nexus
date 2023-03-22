@@ -51,7 +51,7 @@ object Search {
       aclCheck: AclCheck,
       client: ElasticSearchClient,
       prefix: String,
-      suites: SearchConfig.Suite
+      suites: SearchConfig.Suites
   ): Search = {
 
     val listProjections: ListProjections = () =>
@@ -82,7 +82,7 @@ object Search {
       aclCheck: AclCheck,
       client: ElasticSearchClient,
       prefix: String,
-      suites: SearchConfig.Suite
+      suites: SearchConfig.Suites
   ): Search =
     new Search {
 

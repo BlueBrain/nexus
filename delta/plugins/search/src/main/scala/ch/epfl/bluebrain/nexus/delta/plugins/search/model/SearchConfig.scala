@@ -24,7 +24,7 @@ final case class SearchConfig(
     indexing: IndexingConfig,
     fields: Option[JsonObject],
     defaults: Defaults,
-    suites: SearchConfig.Suite
+    suites: SearchConfig.Suites
 )
 
 object SearchConfig {
@@ -40,8 +40,8 @@ object SearchConfig {
     }
   }
 
-  type Suite = Map[Label, Set[ProjectRef]]
-  implicit private val suitesMapReader: ConfigReader[Suite] =
+  type Suites = Map[Label, Set[ProjectRef]]
+  implicit private val suitesMapReader: ConfigReader[Suites] =
     genericMapReader(str => Label(str).leftMap(e => CannotConvert(str, classOf[Label].getSimpleName, e.getMessage)))
 
   /**
@@ -58,7 +58,7 @@ object SearchConfig {
       query         <- loadSparqlQuery(pluginConfig.getString("indexing.query"))
       context       <- loadOption(pluginConfig, "indexing.context", loadExternalConfig[JsonObject])
       defaults      <- loadDefaults(pluginConfig)
-      suites        <- IO.fromEither(suiteSource.load[Suite]).mapError(InvalidSuites)
+      suites        <- IO.fromEither(suiteSource.load[Suites]).mapError(InvalidSuites)
     } yield SearchConfig(
       IndexingConfig(
         resourceTypes,
