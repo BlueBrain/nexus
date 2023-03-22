@@ -24,7 +24,7 @@ final case class SearchConfig(
     indexing: IndexingConfig,
     fields: Option[JsonObject],
     defaults: Defaults,
-    suites: Map[Label, Set[ProjectRef]]
+    suites: SearchConfig.Suite
 )
 
 object SearchConfig {

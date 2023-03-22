@@ -19,7 +19,7 @@ import monix.bio.{IO, UIO}
 trait Search {
 
   /**
-    * Queries the underlying elasticsearch search indices that the ''caller'' has access to
+    * Queries all the underlying search indices that the ''caller'' has access to
     *
     * @param payload
     *   the query payload
@@ -27,7 +27,7 @@ trait Search {
   def query(payload: JsonObject, qp: Uri.Query)(implicit caller: Caller): IO[SearchRejection, Json]
 
   /**
-    * Queries the underlying elasticsearch search indices for the provided suite that the ''caller'' has access to
+    * Queries the underlying search indices for the provided suite that the ''caller'' has access to
     *
     * @param suite
     *   the suite where the search query has to be applied

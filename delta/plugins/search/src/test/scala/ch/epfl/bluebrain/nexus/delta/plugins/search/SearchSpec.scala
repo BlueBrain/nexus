@@ -151,8 +151,8 @@ class SearchSpec
   "Search" should {
     lazy val search = Search(listViews, aclCheck, esClient, prefix, allSuites)
 
-    val payload         = jobj"""{"size": 100}"""
-    val queryParameters = Query.Empty
+    val matchAll     = jobj"""{"size": 100}"""
+    val noParameters = Query.Empty
 
     val project1Documents = createDocuments(projectionProj1).toSet
     val project2Documents = createDocuments(projectionProj2).toSet
@@ -170,27 +170,27 @@ class SearchSpec
       esClient.bulk(bulkSeq, Refresh.WaitFor).accepted
     }
 
-    "search all indices accordingly to Bob's acls" in {
-      val results = search.query(payload, queryParameters)(bob).accepted
+    "search all indices accordingly to Bob's full access" in {
+      val results = search.query(matchAll, noParameters)(bob).accepted
       extractSources(results).toSet shouldEqual allDocuments
     }
 
-    "search only the project 1 index according to Alice's acls" in {
-      val results = search.query(payload, queryParameters)(alice).accepted
+    "search only the project 1 index accordingly to Alice's restricted access" in {
+      val results = search.query(matchAll, noParameters)(alice).accepted
       extractSources(results).toSet shouldEqual project1Documents
     }
 
     "search within an unknown suite" in {
-      search.query(Label.unsafe("xxx"), payload, queryParameters)(bob).rejectedWith[UnknownSuite]
+      search.query(Label.unsafe("xxx"), matchAll, noParameters)(bob).rejectedWith[UnknownSuite]
     }
 
-    "search within a suite as Bob" in {
-      val results = search.query(proj2Suite, payload, queryParameters)(bob).accepted
+    "search within a suite accordingly to Bob's full access" in {
+      val results = search.query(proj2Suite, matchAll, noParameters)(bob).accepted
       extractSources(results).toSet shouldEqual project2Documents
     }
 
-    "search within a suite as Alice" in {
-      val results = search.query(proj2Suite, payload, queryParameters)(alice).accepted
+    "search within a suite accordingly to Alice's restricted access" in {
+      val results = search.query(proj2Suite, matchAll, noParameters)(alice).accepted
       extractSources(results).toSet shouldEqual Set.empty
     }
 
