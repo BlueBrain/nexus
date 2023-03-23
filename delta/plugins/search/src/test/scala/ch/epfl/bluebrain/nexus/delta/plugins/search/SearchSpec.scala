@@ -121,8 +121,12 @@ class SearchSpec
 
   private val listViews: ListProjections = () => UIO.pure(projections)
 
-  private val proj2Suite = Label.unsafe("mySuite")
-  private val allSuites  = Map(proj2Suite -> Set(project2.ref))
+  private val allSuite   = Label.unsafe("allSuite")
+  private val proj2Suite = Label.unsafe("proj2Suite")
+  private val allSuites  = Map(
+    allSuite   -> Set(project1.ref, project2.ref),
+    proj2Suite -> Set(project2.ref)
+  )
 
   private val tpe1 = nxv + "Type1"
 
@@ -184,15 +188,24 @@ class SearchSpec
       search.query(Label.unsafe("xxx"), matchAll, noParameters)(bob).rejectedWith[UnknownSuite]
     }
 
-    "search within a suite accordingly to Bob's full access" in {
-      val results = search.query(proj2Suite, matchAll, noParameters)(bob).accepted
-      extractSources(results).toSet shouldEqual project2Documents
+    List(
+      (allSuite, allDocuments),
+      (proj2Suite, project2Documents)
+    ).foreach { case (suite, expected) =>
+      s"search within suite $suite accordingly to Bob's full access" in {
+        val results = search.query(suite, matchAll, noParameters)(bob).accepted
+        extractSources(results).toSet shouldEqual expected
+      }
     }
 
-    "search within a suite accordingly to Alice's restricted access" in {
-      val results = search.query(proj2Suite, matchAll, noParameters)(alice).accepted
-      extractSources(results).toSet shouldEqual Set.empty
+    List(
+      (allSuite, project1Documents),
+      (proj2Suite, Set.empty)
+    ).foreach { case (suite, expected) =>
+      s"search within suite $suite accordingly to Alice's restricted access" in {
+        val results = search.query(suite, matchAll, noParameters)(alice).accepted
+        extractSources(results).toSet shouldEqual expected
+      }
     }
-
   }
 }

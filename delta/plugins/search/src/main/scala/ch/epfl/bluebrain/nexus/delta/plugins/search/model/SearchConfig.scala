@@ -49,7 +49,10 @@ object SearchConfig {
     */
   def load(config: Config): IO[SearchConfigError, SearchConfig] = {
     val pluginConfig = config.getConfig("plugins.search")
-    val suiteSource  = ConfigSource.fromConfig(pluginConfig).at("suites")
+    def loadSuites = {
+      val suiteSource = ConfigSource.fromConfig(pluginConfig).at("suites")
+      IO.fromEither(suiteSource.load[Suites]).mapError(InvalidSuites)
+    }
     for {
       fields        <- loadOption(pluginConfig, "fields", loadExternalConfig[JsonObject])
       resourceTypes <- loadExternalConfig[Set[Iri]](pluginConfig.getString("indexing.resource-types"))
@@ -58,7 +61,7 @@ object SearchConfig {
       query         <- loadSparqlQuery(pluginConfig.getString("indexing.query"))
       context       <- loadOption(pluginConfig, "indexing.context", loadExternalConfig[JsonObject])
       defaults      <- loadDefaults(pluginConfig)
-      suites        <- IO.fromEither(suiteSource.load[Suites]).mapError(InvalidSuites)
+      suites        <- loadSuites
     } yield SearchConfig(
       IndexingConfig(
         resourceTypes,
