@@ -107,8 +107,7 @@ trait Resources {
   )(implicit caller: Caller): IO[ResourceRejection, DataResource]
 
   /**
-    * Refreshes an existing resource. This is equivalent to posting an update with the latest source. Used for when the
-    * project or schema contexts have changes
+    * Validates an existing resource.
     *
     * @param id
     *   the identifier that will be expanded to the Iri of the resource
