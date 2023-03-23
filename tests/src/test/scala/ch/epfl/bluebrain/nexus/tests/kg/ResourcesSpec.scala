@@ -7,10 +7,10 @@ import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.testkit.{CirceEq, EitherValuable}
-import ch.epfl.bluebrain.nexus.tests.BaseSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.resources.{Morty, Rick}
-import ch.epfl.bluebrain.nexus.tests.Optics._
+import ch.epfl.bluebrain.nexus.tests.Optics.{filterKey, filterMetadataKeys, filterSearchMetadata}
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Organizations
+import ch.epfl.bluebrain.nexus.tests.{BaseSpec, Optics}
 import io.circe.Json
 import io.circe.optics.JsonPath.root
 import monix.bio.Task
@@ -33,7 +33,8 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
 
   private val IdLens: Optional[Json, String]   = root.`@id`.string
   private val TypeLens: Optional[Json, String] = root.`@type`.string
-  private def `@id`(expectedId: String)        = HavePropertyMatcher[Json, String] { json =>
+
+  private def `@id`(expectedId: String) = HavePropertyMatcher[Json, String] { json =>
     val actualId = IdLens.getOption(json)
     HavePropertyMatchResult(
       actualId.contains(expectedId),
@@ -218,7 +219,7 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
       for {
         _ <- deltaClient.post[Json](s"/resources/$id1/_/", payload, Rick) { (json, response) =>
                response.status shouldEqual StatusCodes.Created
-               generatedId = IdLens.getOption(json).getOrElse(fail("could not find @id of created resource"))
+               generatedId = Optics.`@id`.getOption(json).getOrElse(fail("could not find @id of created resource"))
                succeed
              }
         _ <- deltaClient.get[Json](s"/resources/$id1/_/${UrlUtils.encode(generatedId)}/source?annotate=true", Rick) {

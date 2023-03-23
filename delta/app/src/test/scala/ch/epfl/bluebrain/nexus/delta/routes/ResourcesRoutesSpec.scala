@@ -15,16 +15,16 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceResolutionGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{events, resources}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.{FetchResource, ResourceResolution}
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.FetchResource
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.ProjectContextRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.{Resources, ResourcesConfig, ResourcesImpl}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.{Resources, ResourcesConfig, ResourcesImpl, ValidateResource, ValidateResourceImpl}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
@@ -75,8 +75,8 @@ class ResourcesRoutesSpec extends BaseRouteSpec {
     case (ref, _) if ref.iri == schema1.id => UIO.some(SchemaGen.resourceFor(schema1))
     case _                                 => UIO.none
   }
-  private val resourceResolution: ResourceResolution[Schema]                  =
-    ResourceResolutionGen.singleInProject(projectRef, fetchSchema)
+  private val validator: ValidateResource                                     =
+    new ValidateResourceImpl(ResourceResolutionGen.singleInProject(projectRef, fetchSchema))
   private val fetchContext                                                    = FetchContextDummy(List(project.value), ProjectContextRejection)
   private val resolverContextResolution: ResolverContextResolution            = new ResolverContextResolution(
     rcr,
@@ -89,7 +89,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec {
       ResourcesRoutes(
         IdentitiesDummy(caller),
         aclCheck,
-        ResourcesImpl(resourceResolution, fetchContext, resolverContextResolution, config, xas),
+        ResourcesImpl(validator, fetchContext, resolverContextResolution, config, xas),
         DeltaSchemeDirectives(fetchContext, ioFromMap(uuid -> projectRef.organization), ioFromMap(uuid -> projectRef)),
         IndexingAction.noop
       )
@@ -394,7 +394,70 @@ class ResourcesRoutesSpec extends BaseRouteSpec {
       }
     }
 
+    "validate a resource successfully against the unconstrained schema" in {
+      Get(
+        s"/v1/resources/myorg/myproject/${UrlUtils.encode(schemas.resources.toString)}/myid2/validate"
+      ) ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        response.asJson shouldEqual
+          json"""{
+                   "@context" : "https://bluebrain.github.io/nexus/contexts/validation.json",
+                   "@type" : "NoValidation",
+                   "project": "myorg/myproject",
+                   "schema" : "https://bluebrain.github.io/nexus/schemas/unconstrained.json?rev=1"
+                 }"""
+      }
+    }
+
+    "validate a resource successfully against its latest schema" in {
+      Get("/v1/resources/myorg/myproject/_/myid2/validate") ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        response.asJson shouldEqual
+          json"""{
+                   "@context" : [
+                     "https://bluebrain.github.io/nexus/contexts/shacl-20170720.json",
+                     "https://bluebrain.github.io/nexus/contexts/validation.json"
+                   ],
+                   "@type" : "Validated",
+                   "project": "myorg/myproject",
+                   "schema" : "https://bluebrain.github.io/nexus/vocabulary/myschema?rev=1",
+                   "report": {
+                     "@type" : "sh:ValidationReport",
+                     "conforms" : true,
+                     "targetedNodes" : 10
+                   }
+                 }"""
+      }
+    }
+
+    "validate a resource against a schema that does not exist" in {
+      Get("/v1/resources/myorg/myproject/pretendschema/myid2/validate") ~> routes ~> check {
+        status shouldEqual StatusCodes.NotFound
+        response.asJson shouldEqual jsonContentOf("/schemas/errors/invalid-schema-2.json")
+      }
+    }
+
+    "validate a resource that does not exist" in {
+      Get("/v1/resources/myorg/myproject/_/pretendresource/validate") ~> routes ~> check {
+        status shouldEqual StatusCodes.NotFound
+        response.asJson shouldEqual jsonContentOf(
+          "/resources/errors/not-found.json",
+          "id"   -> (nxv + "pretendresource").toString,
+          "proj" -> "myorg/myproject"
+        )
+      }
+    }
+
+    "fail to validate a resource without resources/write permission" in {
+      aclCheck.subtract(AclAddress.Root, Anonymous -> Set(resources.write)).accepted
+      Get("/v1/resources/myorg/myproject/_/myid2/validate") ~> routes ~> check {
+        response.status shouldEqual StatusCodes.Forbidden
+        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+      }
+    }
+
     "fetch the resource tags" in {
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(resources.write)).accepted
       Get("/v1/resources/myorg/myproject/_/myid2/tags?rev=1", payload.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual json"""{"tags": []}""".addContext(contexts.tags)

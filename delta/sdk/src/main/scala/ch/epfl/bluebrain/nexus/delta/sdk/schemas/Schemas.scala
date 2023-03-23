@@ -268,7 +268,7 @@ object Schemas {
       for {
         _      <- IO.raiseWhen(id.startsWith(schemas.base))(ReservedSchemaId(id))
         report <- ShaclEngine(graph, reportDetails = true).mapError(SchemaShaclEngineRejection(id, _: String))
-        result <- IO.when(!report.isValid())(IO.raiseError(InvalidSchema(id, report)))
+        result <- IO.raiseWhen(!report.isValid())(InvalidSchema(id, report))
       } yield result
 
     def create(c: CreateSchema) =
