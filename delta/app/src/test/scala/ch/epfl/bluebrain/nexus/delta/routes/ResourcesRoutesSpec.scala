@@ -28,7 +28,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
-import ch.epfl.bluebrain.nexus.testkit.matchers.JsonMatchers._
 import io.circe.{Json, Printer}
 import monix.bio.{IO, UIO}
 
@@ -434,14 +433,18 @@ class ResourcesRoutesSpec extends BaseRouteSpec {
     "validate a resource against a schema that does not exist" in {
       Get("/v1/resources/myorg/myproject/pretendschema/myid2/validate") ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
-        response.asJson should have(`@type`("InvalidSchemaRejection"))
+        response.asJson shouldEqual jsonContentOf("/schemas/errors/invalid-schema-2.json")
       }
     }
 
     "validate a resource that does not exist" in {
       Get("/v1/resources/myorg/myproject/_/pretendresource/validate") ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
-        response.asJson should have(`@type`("ResourceNotFound"))
+        response.asJson shouldEqual jsonContentOf(
+          "/resources/errors/not-found.json",
+          "id"   -> (nxv + "pretendresource").toString,
+          "proj" -> "myorg/myproject"
+        )
       }
     }
 

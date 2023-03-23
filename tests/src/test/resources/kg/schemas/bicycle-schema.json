@@ -1,0 +1,17 @@
+{
+  "@context": {
+    "bicycles": "https://bicycles.epfl.ch/"
+  },
+  "@id": "{{id}}",
+  "shapes": [
+    {
+      "@id": "bicycles:gears",
+      "@type": "sh:PropertyShape",
+      "path": "bicycles:gears",
+      "name": "Number of gears",
+      "targetClass": "bicycles:RoadBicycle",
+      "datatype": "xsd:integer",
+      "maxInclusive": {{maxNumberOfGears}}
+    }
+  ]
+}

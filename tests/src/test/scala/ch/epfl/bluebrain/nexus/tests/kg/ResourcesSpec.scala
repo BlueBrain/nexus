@@ -9,12 +9,14 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.testkit.{CirceEq, EitherValuable}
 import ch.epfl.bluebrain.nexus.tests.Identity.resources.{Morty, Rick}
 import ch.epfl.bluebrain.nexus.tests.Optics.{filterKey, filterMetadataKeys, filterSearchMetadata}
-import ch.epfl.bluebrain.nexus.testkit.matchers.JsonMatchers._
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Organizations
 import ch.epfl.bluebrain.nexus.tests.{BaseSpec, Optics}
 import io.circe.Json
+import io.circe.optics.JsonPath.root
 import monix.bio.Task
 import monix.execution.Scheduler.Implicits.global
+import monocle.Optional
+import org.scalatest.matchers.{HavePropertyMatchResult, HavePropertyMatcher}
 
 import java.net.URLEncoder
 import scala.concurrent.duration._
@@ -28,6 +30,29 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
   private val id1     = s"$orgId/$projId1"
   private val id2     = s"$orgId/$projId2"
   private val id3     = s"$orgId/$projId3"
+
+  private val IdLens: Optional[Json, String]   = root.`@id`.string
+  private val TypeLens: Optional[Json, String] = root.`@type`.string
+
+  private def `@id`(expectedId: String) = HavePropertyMatcher[Json, String] { json =>
+    val actualId = IdLens.getOption(json)
+    HavePropertyMatchResult(
+      actualId.contains(expectedId),
+      "@id",
+      expectedId,
+      actualId.orNull
+    )
+  }
+
+  private def `@type`(expectedType: String) = HavePropertyMatcher[Json, String] { json =>
+    val actualType = TypeLens.getOption(json)
+    HavePropertyMatchResult(
+      actualType.contains(expectedType),
+      "@type",
+      expectedType,
+      actualType.orNull
+    )
+  }
 
   "creating projects" should {
 
