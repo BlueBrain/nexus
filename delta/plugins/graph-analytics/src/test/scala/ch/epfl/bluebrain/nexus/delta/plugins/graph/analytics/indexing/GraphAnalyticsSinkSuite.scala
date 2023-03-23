@@ -96,7 +96,8 @@ class GraphAnalyticsSinkSuite
         types    <- getTypes(expanded)
         doc      <- JsonLdDocument.fromExpanded(expanded, _ => findRelationships)
       } yield {
-        val result = GraphAnalyticsResult.Index(id, 1, types, Instant.EPOCH, Anonymous, Instant.EPOCH, Anonymous, doc)
+        val result =
+          GraphAnalyticsResult.Index(project, id, 1, types, Instant.EPOCH, Anonymous, Instant.EPOCH, Anonymous, doc)
         success(id, result)
       }
     }

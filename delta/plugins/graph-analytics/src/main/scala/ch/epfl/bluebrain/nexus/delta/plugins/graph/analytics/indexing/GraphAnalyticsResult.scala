@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import io.circe.{Encoder, Json}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.syntax.EncoderOps
 
 import java.time.Instant
@@ -43,6 +44,7 @@ object GraphAnalyticsResult {
     *   [[ResouceState]]
     */
   final case class Index(
+      project: ProjectRef,
       id: Iri,
       rev: Int,
       types: Set[Iri],
@@ -59,6 +61,7 @@ object GraphAnalyticsResult {
       Json
         .obj(
           keywords.id  -> g.id.asJson,
+          "_project"   -> g.project.asJson,
           "_rev"       -> g.rev.asJson,
           "_createdAt" -> g.createdAt.asJson,
           "_createdBy" -> g.createdBy.asJson,

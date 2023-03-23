@@ -57,7 +57,7 @@ object Main extends BIOApp {
       _                             <- Resource.eval(KamonMonitoring.initialize(config))
       modules                        = DeltaModule(cfg, config, cl)
       (plugins, locator)            <- WiringInitializer(modules, pluginDefs)
-      _                             <- Resource.eval(bootstrap(locator, plugins))
+      _                             <- bootstrap(locator, plugins)
     } yield locator
 
   private[delta] def loadPluginsAndConfig(
@@ -132,14 +132,14 @@ object Main extends BIOApp {
     }
   }
 
-  private def bootstrap(locator: Locator, plugins: List[Plugin]): Task[Unit] = {
+  private def bootstrap(locator: Locator, plugins: List[Plugin]): Resource[Task, Unit] = {
     implicit val as: ActorSystemClassic = locator.get[ActorSystem[Nothing]].toClassic
     implicit val cfg: AppConfig         = locator.get[AppConfig]
     val logger                          = locator.get[Logger]
 
     logger.info("Booting up service....")
 
-    Task
+    val acquire = Task
       .fromFutureLike(
         Task.delay(
           Http()
@@ -164,5 +164,9 @@ object Main extends BIOApp {
           .traverse(plugins)(_.stop())
           .timeout(30.seconds) >> KamonMonitoring.terminate
       }
+
+    val release = Task.deferFuture(as.terminate())
+
+    Resource.make(acquire)(_ => release.void)
   }
 }

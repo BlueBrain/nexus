@@ -3,11 +3,10 @@ package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics
 import akka.http.scaladsl.model.Uri.Query
 import cats.data.NonEmptySeq
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel, QueryBuilder}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.WrappedElasticSearchClientError
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.config.GraphAnalyticsConfig.TermAggregationsConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.{propertiesAggQuery, relationshipsAggQuery, scriptContent, updateRelationshipsScriptId}
+import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.{propertiesAggQuery, relationshipsAggQuery}
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.GraphAnalyticsRejection.{InvalidPropertyType, WrappedElasticSearchRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.PropertiesStatistics.propertiesDecoderFromEsAggregations
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.{AnalyticsGraph, GraphAnalyticsRejection, PropertiesStatistics}
@@ -18,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.{Decoder, JsonObject}
-import monix.bio.{IO, Task}
+import monix.bio.IO
 
 trait GraphAnalytics {
 
@@ -38,12 +37,11 @@ object GraphAnalytics {
 
   final def apply(
       client: ElasticSearchClient,
-      fetchContext: FetchContext[GraphAnalyticsRejection]
-  )(implicit config: TermAggregationsConfig): Task[GraphAnalytics] =
-    for {
-      script <- scriptContent
-      _      <- client.createScript(updateRelationshipsScriptId, script)
-    } yield new GraphAnalytics {
+      fetchContext: FetchContext[GraphAnalyticsRejection],
+      prefix: String,
+      config: TermAggregationsConfig
+  ): GraphAnalytics =
+    new GraphAnalytics {
 
       private val expandIri: ExpandIri[InvalidPropertyType] = new ExpandIri(InvalidPropertyType.apply)
 
@@ -55,7 +53,7 @@ object GraphAnalytics {
           _     <- fetchContext.onRead(projectRef)
           query <- relationshipsAggQuery(config)
           stats <- client
-                     .searchAs[AnalyticsGraph](QueryBuilder(query), idx(projectRef).value, Query.Empty)
+                     .searchAs[AnalyticsGraph](QueryBuilder(query), index(prefix, projectRef).value, Query.Empty)
                      .mapError(err => WrappedElasticSearchRejection(WrappedElasticSearchClientError(err)))
         } yield stats
 
@@ -75,7 +73,7 @@ object GraphAnalytics {
           pc     <- fetchContext.onRead(projectRef)
           tpeIri <- expandIri(tpe, pc)
           query  <- propertiesAggQueryFor(tpeIri)
-          stats  <- search(tpeIri, idx(projectRef), query)
+          stats  <- search(tpeIri, index(prefix, projectRef), query)
         } yield stats
 
       }
@@ -87,11 +85,10 @@ object GraphAnalytics {
       case _                     => Left("Empty Path")
     }
 
-  private[analytics] def idx(projectRef: ProjectRef): IndexLabel =
-    IndexLabel.unsafe(s"${UrlUtils.encode(projectRef.toString)}_graph_analytics")
+  private[analytics] def index(prefix: String, ref: ProjectRef): IndexLabel =
+    IndexLabel.unsafe(s"${prefix}_ga_${ref.organization}_${ref.project}}")
 
-  private[analytics] def projectionId(projectRef: ProjectRef): String =
-    s"graph_analytics-$projectRef"
+  private[analytics] def projectionName(ref: ProjectRef): String = s"ga-$ref"
 
   private[analytics] def name(iri: Iri): String =
     (iri.fragment orElse iri.lastSegment) getOrElse iri.toString

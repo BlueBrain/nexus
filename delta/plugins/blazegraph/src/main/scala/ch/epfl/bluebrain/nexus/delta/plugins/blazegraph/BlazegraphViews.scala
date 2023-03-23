@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
 import cats.effect.Clock
-import cats.implicits._
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
@@ -36,9 +36,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, EntityDependency, EntityType, Envelope, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import io.circe.Json
 import monix.bio.{IO, Task, UIO}
 
@@ -338,16 +337,8 @@ final class BlazegraphViews(
     }
 
   private def toIndexViewDef(envelope: Envelope[BlazegraphViewState]) =
-    IndexingViewDef(envelope.value, prefix).map { viewDef =>
-      SuccessElem(
-        tpe = envelope.tpe,
-        id = envelope.id,
-        project = Some(envelope.value.project),
-        instant = envelope.instant,
-        offset = envelope.offset,
-        value = viewDef,
-        rev = envelope.rev
-      )
+    envelope.toElem { v => Some(v.project) }.traverse { v =>
+      IndexingViewDef(v, prefix)
     }
 
   private def eval(cmd: BlazegraphViewCommand, pc: ProjectContext): IO[BlazegraphViewRejection, ViewResource] =

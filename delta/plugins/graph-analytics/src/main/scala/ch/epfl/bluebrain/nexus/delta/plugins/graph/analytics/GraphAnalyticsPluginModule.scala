@@ -1,7 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics
 
+import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.config.GraphAnalyticsConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.GraphAnalyticsStream
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.GraphAnalyticsRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.routes.GraphAnalyticsRoutes
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
@@ -10,10 +12,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
+import ch.epfl.bluebrain.nexus.delta.sdk.migration.MigrationState
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, Projects}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projections
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Supervisor
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.execution.Scheduler
 
@@ -27,12 +32,25 @@ class GraphAnalyticsPluginModule(priority: Int) extends ModuleDef {
   make[GraphAnalyticsConfig].from { GraphAnalyticsConfig.load _ }
 
   make[GraphAnalytics]
-    .fromEffect {
-      (client: ElasticSearchClient, fetchContext: FetchContext[ContextRejection], config: GraphAnalyticsConfig) =>
-        GraphAnalytics(client, fetchContext.mapRejection(ProjectContextRejection))(
-          config.termAggregations
-        )
+    .from { (client: ElasticSearchClient, fetchContext: FetchContext[ContextRejection], config: GraphAnalyticsConfig) =>
+      GraphAnalytics(client, fetchContext.mapRejection(ProjectContextRejection), config.prefix, config.termAggregations)
     }
+
+  if (!MigrationState.isEsIndexingDisabled) {
+    make[GraphAnalyticsStream].from { (qc: QueryConfig, xas: Transactors) =>
+      GraphAnalyticsStream(qc, xas)
+    }
+
+    make[GraphAnalyticsCoordinator].fromEffect {
+      (
+          projects: Projects,
+          analyticsStream: GraphAnalyticsStream,
+          supervisor: Supervisor,
+          client: ElasticSearchClient,
+          config: GraphAnalyticsConfig
+      ) => GraphAnalyticsCoordinator(projects, analyticsStream, supervisor, client, config)
+    }
+  }
 
   make[GraphAnalyticsRoutes].from {
     (
@@ -50,7 +68,7 @@ class GraphAnalyticsPluginModule(priority: Int) extends ModuleDef {
         identities,
         aclCheck,
         graphAnalytics,
-        projections,
+        project => projections.statistics(project, None, GraphAnalytics.projectionName(project)),
         schemeDirectives
       )(
         baseUri,

@@ -8,6 +8,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.StreamingQuery
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import doobie._
 import doobie.postgres.implicits._
 import doobie.util.query.Query0
@@ -35,6 +37,14 @@ import scala.annotation.nowarn
 final case class Envelope[+Value](tpe: EntityType, id: Iri, rev: Int, value: Value, instant: Instant, offset: Offset) {
 
   def valueClass: String = ClassUtils.simpleName(value)
+
+  /**
+    * Translates the envelope for an elem
+    * @param project
+    *   how to extract the project reference from the value
+    */
+  def toElem(project: Value => Option[ProjectRef]): Elem[Value] =
+    SuccessElem(tpe, id, project(value), instant, offset, value, rev)
 
 }
 

@@ -44,7 +44,6 @@ class GraphAnalyticsSpec(docker: ElasticSearchDocker)
   implicit val sc: Scheduler         = Scheduler.global
   implicit val cfg: HttpClientConfig =
     HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never, true)
-  implicit private val aggCfg        = TermAggregationsConfig(100, 300)
 
   private val project      = ProjectGen.project("org", "project", uuid = UUID.randomUUID(), orgUuid = UUID.randomUUID())
   private val fetchContext = FetchContextDummy[GraphAnalyticsRejection](
@@ -52,15 +51,16 @@ class GraphAnalyticsSpec(docker: ElasticSearchDocker)
     ProjectContextRejection
   )
 
-  private lazy val endpoint                  = docker.esHostConfig.endpoint
-  private lazy val client                    = new ElasticSearchClient(HttpClient(), endpoint, 2000)
-  private var graphAnalytics: GraphAnalytics = null
+  private lazy val endpoint                       = docker.esHostConfig.endpoint
+  private lazy val client                         = new ElasticSearchClient(HttpClient(), endpoint, 2000)
+  private val prefix                              = "test"
+  private lazy val graphAnalytics: GraphAnalytics =
+    GraphAnalytics(client, fetchContext, "test", TermAggregationsConfig(100, 300))
 
   "GraphAnalytics" should {
 
     "initialize" in {
-      graphAnalytics = GraphAnalytics(client, fetchContext).accepted
-      val idx    = GraphAnalytics.idx(project.ref)
+      val idx    = GraphAnalytics.index(prefix, project.ref)
       client.createIndex(idx, Some(jsonObjectContentOf("elasticsearch/mappings.json")), None).accepted
       val robert = iri"http://localhost/Robert"
       val sam    = iri"http://localhost/Sam"

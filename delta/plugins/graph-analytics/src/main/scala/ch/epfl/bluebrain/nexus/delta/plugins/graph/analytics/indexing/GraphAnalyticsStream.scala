@@ -94,7 +94,7 @@ object GraphAnalyticsStream {
         case Resources.entityType =>
           Task.fromEither(ResourceState.serializer.codec.decodeJson(json)).flatMap { s =>
             JsonLdDocument.fromExpanded(s.expanded, findRelationships(project, xas, relationshipBatch)).map { d =>
-              Index(s.id, s.rev, s.types, s.createdAt, s.createdBy, s.updatedAt, s.updatedBy, d)
+              Index(s.project, s.id, s.rev, s.types, s.createdAt, s.createdBy, s.updatedAt, s.updatedBy, d)
             }
           }
         case _                    => Task.pure(Noop)
