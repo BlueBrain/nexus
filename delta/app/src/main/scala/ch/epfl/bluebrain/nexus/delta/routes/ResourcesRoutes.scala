@@ -182,7 +182,7 @@ final class ResourcesRoutes(
                       },
                       (pathPrefix("validate") & get & pathEndOrSingleSlash & idSegmentRef(id)) { id =>
                         operationName(s"$prefixSegment/resources/{org}/{project}/{schema}/{id}/validate") {
-                          authorizeFor(ref, Read).apply {
+                          authorizeFor(ref, Write).apply {
                             emit(
                               resources
                                 .validate(id, ref, schemaOpt)

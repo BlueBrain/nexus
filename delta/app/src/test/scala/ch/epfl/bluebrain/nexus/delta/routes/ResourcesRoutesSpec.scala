@@ -448,7 +448,16 @@ class ResourcesRoutesSpec extends BaseRouteSpec {
       }
     }
 
+    "fail to validate a resource without resources/write permission" in {
+      aclCheck.subtract(AclAddress.Root, Anonymous -> Set(resources.write)).accepted
+      Get("/v1/resources/myorg/myproject/_/myid2/validate") ~> routes ~> check {
+        response.status shouldEqual StatusCodes.Forbidden
+        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+      }
+    }
+
     "fetch the resource tags" in {
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(resources.write)).accepted
       Get("/v1/resources/myorg/myproject/_/myid2/tags?rev=1", payload.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual json"""{"tags": []}""".addContext(contexts.tags)
