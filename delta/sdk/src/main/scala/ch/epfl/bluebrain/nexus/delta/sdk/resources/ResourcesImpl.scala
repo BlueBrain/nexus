@@ -15,13 +15,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.ResourceResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources.{entityType, expandIri}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.ResourcesImpl.ResourcesLog
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.ValidateResource.ValidationResult
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{InvalidResourceId, ProjectContextRejection, ResourceFetchRejection, ResourceNotFound, RevisionNotFound, TagNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{ResourceCommand, ResourceEvent, ResourceRejection, ResourceState}
-import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
@@ -32,7 +31,8 @@ import monix.bio.{IO, UIO}
 final class ResourcesImpl private (
     log: ResourcesLog,
     fetchContext: FetchContext[ProjectContextRejection],
-    sourceParser: JsonLdSourceResolvingParser[ResourceRejection]
+    sourceParser: JsonLdSourceResolvingParser[ResourceRejection],
+    validateResource: ValidateResource
 ) extends Resources {
 
   implicit private val kamonComponent: KamonMetricComponent = KamonMetricComponent(entityType.value)
@@ -97,6 +97,26 @@ final class ResourcesImpl private (
         eval(RefreshResource(iri, projectRef, schemaRefOpt, compacted, expanded, resource.rev, caller), projectContext)
     } yield res
   }.span("refreshResource")
+
+  override def validate(id: IdSegmentRef, projectRef: ProjectRef, schemaOpt: Option[IdSegment])(implicit
+      caller: Caller
+  ): IO[ResourceRejection, ValidationResult] = {
+    fetch(id, projectRef, schemaOpt)
+    for {
+      projectContext <- fetchContext.onRead(projectRef)
+      resourceRef    <- expandIri(id.value, projectContext)
+      schemaRefOpt   <- expandResourceRef(schemaOpt, projectContext)
+      notFound        = ResourceNotFound(resourceRef, projectRef, schemaRefOpt)
+      state          <- id match {
+                          case Latest(_)        => log.stateOr(projectRef, resourceRef, notFound)
+                          case Revision(_, rev) =>
+                            log.stateOr(projectRef, resourceRef, rev, notFound, RevisionNotFound)
+                          case Tag(_, tag)      =>
+                            log.stateOr(projectRef, resourceRef, tag, notFound, TagNotFound(tag))
+                        }
+      report         <- validateResource(projectRef, schemaRefOpt.getOrElse(state.schema), caller, state.id, state.expanded)
+    } yield report
+  }
 
   override def tag(
       id: IdSegment,
@@ -200,16 +220,17 @@ object ResourcesImpl {
     *   the database context
     */
   final def apply(
-      resourceResolution: ResourceResolution[Schema],
+      validator: ValidateResource,
       fetchContext: FetchContext[ProjectContextRejection],
       contextResolution: ResolverContextResolution,
       config: ResourcesConfig,
       xas: Transactors
   )(implicit api: JsonLdApi, clock: Clock[UIO], uuidF: UUIDF = UUIDF.random): Resources =
     new ResourcesImpl(
-      ScopedEventLog(Resources.definition(resourceResolution), config.eventLog, xas),
+      ScopedEventLog(Resources.definition(validator), config.eventLog, xas),
       fetchContext,
-      JsonLdSourceResolvingParser[ResourceRejection](contextResolution, uuidF)
+      JsonLdSourceResolvingParser[ResourceRejection](contextResolution, uuidF),
+      validator
     )
 
 }
