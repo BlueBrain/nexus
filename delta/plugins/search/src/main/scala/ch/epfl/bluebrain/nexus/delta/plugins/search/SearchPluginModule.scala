@@ -20,8 +20,14 @@ class SearchPluginModule(priority: Int) extends ModuleDef {
   make[SearchConfig].fromEffect { cfg => SearchConfig.load(cfg) }
 
   make[Search].from {
-    (compositeViews: CompositeViews, aclCheck: AclCheck, esClient: ElasticSearchClient, config: CompositeViewsConfig) =>
-      Search(compositeViews, aclCheck, esClient, config.prefix)
+    (
+        compositeViews: CompositeViews,
+        aclCheck: AclCheck,
+        esClient: ElasticSearchClient,
+        compositeConfig: CompositeViewsConfig,
+        searchConfig: SearchConfig
+    ) =>
+      Search(compositeViews, aclCheck, esClient, compositeConfig.prefix, searchConfig.suites)
   }
 
   make[SearchScopeInitialization].from {
