@@ -6,13 +6,12 @@ on:
       - 'build.sbt'
       - 'project/**'
       - '.github/workflows/ci-delta-core.yml'
-defaults:
-  env:
-    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 jobs:
   static-analysis:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     timeout-minutes: 10
     steps:
       - name: Checkout
@@ -38,6 +37,8 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
