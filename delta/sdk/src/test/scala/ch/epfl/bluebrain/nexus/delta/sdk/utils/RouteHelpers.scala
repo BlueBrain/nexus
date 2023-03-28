@@ -10,13 +10,14 @@ import akka.testkit.TestDuration
 import akka.util.ByteString
 import ch.epfl.bluebrain.nexus.testkit.EitherValuable
 import io.circe.parser.parse
-import io.circe.{Json, Printer}
+import io.circe.{Decoder, Json, Printer}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
 import java.nio.charset.StandardCharsets
 import scala.concurrent.duration._
+import scala.reflect.ClassTag
 
 trait RouteHelpers extends AnyWordSpecLike with ScalatestRouteTest with ScalaFutures with EitherValuable {
 
@@ -67,6 +68,12 @@ final class HttpResponseOps(private val http: HttpResponse) extends Consumer {
 
   def asJson(implicit materializer: Materializer): Json =
     asJson(http.entity.dataBytes)
+
+  def as[A: Decoder](implicit materializer: Materializer, A: ClassTag[A]): A =
+    asJson.as[A] match {
+      case Left(err)    => fail(s"Error converting th json to '${A.runtimeClass.getName}'. Details: '${err.getMessage()}'")
+      case Right(value) => value
+    }
 }
 
 final class HttpChunksOps(private val chunks: Source[ChunkStreamPart, Any]) extends Consumer {

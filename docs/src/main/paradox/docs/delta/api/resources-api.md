@@ -279,7 +279,11 @@ There are three available endpoints to list resources in different scopes.
 ```
 GET /v1/resources/{org_label}/{project_label}?from={from}
                                              &size={size}
+                                             &locate={locate}
+                                             &id={id}
                                              &deprecated={deprecated}
+                                             &locate={locate}
+                                             &id={id}
                                              &rev={rev}
                                              &type={type}
                                              &createdBy={createdBy}
@@ -296,6 +300,8 @@ This operation returns only resources from projects defined in the organisation 
 ```
 GET /v1/resources/{org_label}?from={from}
                              &size={size}
+                             &locate={locate}
+                             &id={id}
                              &deprecated={deprecated}
                              &rev={rev}
                              &type={type}
@@ -313,6 +319,8 @@ This operation returns only resources from projects where the caller has the `re
 ```
 GET /v1/resources?from={from}
                  &size={size}
+                 &locate={locate}
+                 &id={id}
                  &deprecated={deprecated}
                  &rev={rev}
                  &type={type}
@@ -327,6 +335,8 @@ GET /v1/resources?from={from}
 
 - `{from}`: Number - is the parameter that describes the offset for the current query; defaults to `0`
 - `{size}`: Number - is the parameter that limits the number of results; defaults to `20`
+- `{locate}`: Iri - can be used to find a resource by its `@id` or its address (`_self`)
+- `{id}`: Iri - can be used to find a resource by its `@id`
 - `{deprecated}`: Boolean - can be used to filter the resulting resources based on their deprecation status
 - `{rev}`: Number - can be used to filter the resulting resources based on their revision value
 - `{type}`: Iri - can be used to filter the resulting resources based on their `@type` value. This parameter can appear 
