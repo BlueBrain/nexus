@@ -6,18 +6,25 @@ on:
       - 'build.sbt'
       - 'project/**'
       - '.github/workflows/ci-delta-core.yml'
+defaults:
+  runs-on: ubuntu-latest
+  env:
+    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 jobs:
   static-analysis:
     if: github.event_name == 'pull_request'
-    runs-on: it
     timeout-minutes: 10
-    env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
+      - name: Setup JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: sbt
       - name: Static Analysis
         run: |
           sbt -Dsbt.color=always -Dsbt.supershell=false \
@@ -29,15 +36,18 @@ jobs:
             scapegoat
   review:
     if: github.event_name == 'pull_request'
-    runs-on: it
     timeout-minutes: 20
-    env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
+      - name: Setup JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: sbt
       - name: Tests
         run: |
           sbt -Dsbt.color=always -Dsbt.supershell=false \
