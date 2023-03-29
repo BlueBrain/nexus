@@ -8,8 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.{baseUriPrefix, emit}
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
@@ -27,7 +26,8 @@ class SearchRoutes(
 )(implicit baseUri: BaseUri, s: Scheduler, cr: RemoteContextResolution, ordering: JsonKeyOrdering)
     extends AuthDirectives(identities, aclCheck)
     with CirceUnmarshalling
-    with RdfMarshalling {
+    with RdfMarshalling
+    with DeltaDirectives {
 
   import baseUri.prefixSegment
 
@@ -37,9 +37,17 @@ class SearchRoutes(
         extractCaller { implicit caller =>
           concat(
             // Query the underlying aggregate elasticsearch view for global search
-            (pathPrefix("query") & post & pathEndOrSingleSlash) {
-              operationName(s"$prefixSegment/search/query") {
-                (extractQueryParams & entity(as[JsonObject])) { (qp, payload) =>
+            (pathPrefix("query") & post) {
+              (extractQueryParams & entity(as[JsonObject])) { (qp, payload) =>
+                concat(
+                  pathEndOrSingleSlash {
+                    emit(search.query(payload, qp))
+                  },
+                  (pathPrefix("suite") & label & pathEndOrSingleSlash) { suite =>
+                    emit(search.query(suite, payload, qp))
+                  }
+                )
+                pathEndOrSingleSlash {
                   emit(search.query(payload, qp))
                 }
               }

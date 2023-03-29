@@ -60,10 +60,10 @@ class ResourcesSpec
       case _                                 => UIO.none
     }
 
-    val resourceResolution = ResourceResolutionGen.singleInProject(projectRef, fetchSchema)
+    val resourceValidator = new ValidateResourceImpl(ResourceResolutionGen.singleInProject(projectRef, fetchSchema))
 
     val eval: (Option[ResourceState], ResourceCommand) => IO[ResourceRejection, ResourceEvent] =
-      evaluate(resourceResolution)
+      evaluate(resourceValidator)
 
     val myId   = nxv + "myid"
     val types  = Set(nxv + "Custom")

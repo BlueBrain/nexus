@@ -91,7 +91,7 @@ class ResourcesImplSpec
   )
 
   private lazy val resources: Resources = ResourcesImpl(
-    resourceResolution,
+    new ValidateResourceImpl(resourceResolution),
     fetchContext,
     resolverContextResolution,
     config,
@@ -479,6 +479,23 @@ class ResourcesImplSpec
 
       "reject if project is deprecated" in {
         resources.tag(myId, projectDeprecated.ref, None, tag, 2, 1).rejectedWith[ProjectContextRejection]
+      }
+    }
+
+    "validating a resource" should {
+      "succeed when the resource is valid" in {
+        resources.validate(myId, projectRef, Some(schema1.id)).accepted
+      }
+
+      "succeed when the resource is valid against its own schema" in {
+        resources.validate(myId, projectRef, None).accepted
+      }
+
+      "fail when the resource is invalid against the specified schema" in {
+        val otherId     = nxv + "validation-resource"
+        val wrongSource = source deepMerge json"""{"@id": "$otherId", "number": "wrong"}"""
+        resources.create(otherId, projectRef, schemas.resources, wrongSource).accepted
+        resources.validate(otherId, projectRef, Some(schema1.id)).rejectedWith[InvalidResource]
       }
     }
 

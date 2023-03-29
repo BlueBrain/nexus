@@ -80,20 +80,22 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
 
   make[RemoteContextResolution].named("aggregate").fromEffect { (otherCtxResolutions: Set[RemoteContextResolution]) =>
     for {
-      errorCtx    <- ContextValue.fromFile("contexts/error.json")
-      metadataCtx <- ContextValue.fromFile("contexts/metadata.json")
-      searchCtx   <- ContextValue.fromFile("contexts/search.json")
-      pipelineCtx <- ContextValue.fromFile("contexts/pipeline.json")
-      tagsCtx     <- ContextValue.fromFile("contexts/tags.json")
-      versionCtx  <- ContextValue.fromFile("contexts/version.json")
+      errorCtx      <- ContextValue.fromFile("contexts/error.json")
+      metadataCtx   <- ContextValue.fromFile("contexts/metadata.json")
+      searchCtx     <- ContextValue.fromFile("contexts/search.json")
+      pipelineCtx   <- ContextValue.fromFile("contexts/pipeline.json")
+      tagsCtx       <- ContextValue.fromFile("contexts/tags.json")
+      versionCtx    <- ContextValue.fromFile("contexts/version.json")
+      validationCtx <- ContextValue.fromFile("contexts/validation.json")
     } yield RemoteContextResolution
       .fixed(
-        contexts.error    -> errorCtx,
-        contexts.metadata -> metadataCtx,
-        contexts.search   -> searchCtx,
-        contexts.pipeline -> pipelineCtx,
-        contexts.tags     -> tagsCtx,
-        contexts.version  -> versionCtx
+        contexts.error      -> errorCtx,
+        contexts.metadata   -> metadataCtx,
+        contexts.search     -> searchCtx,
+        contexts.pipeline   -> pipelineCtx,
+        contexts.tags       -> tagsCtx,
+        contexts.version    -> versionCtx,
+        contexts.validation -> validationCtx
       )
       .merge(otherCtxResolutions.toSeq: _*)
   }
