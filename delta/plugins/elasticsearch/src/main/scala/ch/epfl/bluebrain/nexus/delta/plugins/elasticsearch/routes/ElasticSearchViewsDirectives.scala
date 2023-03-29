@@ -34,6 +34,9 @@ trait ElasticSearchViewsDirectives extends UriDirectives {
   private def schema(implicit um: FromStringUnmarshaller[IriBase]): Directive1[Option[ResourceRef]] =
     parameter("schema".as[IriBase].?).map(_.map(iri => ResourceRef(iri.value)))
 
+  private def locate(implicit um: FromStringUnmarshaller[IriBase]): Directive1[Option[Iri]] =
+    parameter("locate".as[IriBase].?).map(_.map(_.value))
+
   private def id(implicit um: FromStringUnmarshaller[IriBase]): Directive1[Option[Iri]] =
     parameter("id".as[IriBase].?).map(_.map(_.value))
 
@@ -54,10 +57,10 @@ trait ElasticSearchViewsDirectives extends UriDirectives {
       baseUri: BaseUri,
       pc: ProjectContext
   ): Directive1[ResourcesSearchParams] = {
-    (searchParams & typesSchemaAndId & parameter("q".?)).tmap {
-      case (deprecated, rev, createdBy, updatedBy, types, schema, id, q) =>
+    (searchParams & typesSchemaAndId & locate & parameter("q".?)).tmap {
+      case (deprecated, rev, createdBy, updatedBy, types, schema, id, locate, q) =>
         val qq = q.filter(_.trim.nonEmpty).map(_.toLowerCase)
-        ResourcesSearchParams(id, deprecated, rev, createdBy, updatedBy, types, schema, qq)
+        ResourcesSearchParams(locate, id, deprecated, rev, createdBy, updatedBy, types, schema, qq)
     }
   }
 
@@ -67,10 +70,10 @@ trait ElasticSearchViewsDirectives extends UriDirectives {
     implicit val typesUm: FromStringUnmarshaller[Type]      = Type.typeFromStringUnmarshallerNoExpansion
     implicit val baseIriUm: FromStringUnmarshaller[IriBase] =
       DeltaSchemeDirectives.iriBaseFromStringUnmarshallerNoExpansion
-    def searchParameters                                    = (searchParams & types & schema & id & parameter("q".?)).tmap {
-      case (deprecated, rev, createdBy, updatedBy, types, schema, id, q) =>
+    def searchParameters                                    = (searchParams & types & schema & id & locate & parameter("q".?)).tmap {
+      case (deprecated, rev, createdBy, updatedBy, types, schema, id, locate, q) =>
         val qq = q.filter(_.trim.nonEmpty).map(_.toLowerCase)
-        ResourcesSearchParams(id, deprecated, rev, createdBy, updatedBy, types, schema, qq)
+        ResourcesSearchParams(locate, id, deprecated, rev, createdBy, updatedBy, types, schema, qq)
     }
 
     (searchParameters & sortList).tflatMap { case (params, sortList) =>
