@@ -81,6 +81,13 @@ final case class ResourceF[A](
     */
   def resolvedId(implicit base: BaseUri): Iri =
     id.resolvedAgainst(base.endpoint.toIri)
+
+  /**
+    * @return
+    *   the [[Iri]] resulting from resolving the self against the ''base''
+    */
+  def self(implicit base: BaseUri): Iri =
+    uris.accessUriShortForm.toIri
 }
 
 object ResourceF {
