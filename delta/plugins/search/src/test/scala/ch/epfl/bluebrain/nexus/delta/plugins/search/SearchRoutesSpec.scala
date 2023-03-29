@@ -14,7 +14,7 @@ import monix.bio.IO
 
 class SearchRoutesSpec extends BaseRouteSpec {
 
-  // Dummy implementation of search just returning the payload
+  // Dummy implementation of search which just returns the payload
   private val search = new Search {
     override def query(payload: JsonObject, qp: Uri.Query)(implicit caller: Caller): IO[SearchRejection, Json] =
       IO.pure(payload.asJson)
