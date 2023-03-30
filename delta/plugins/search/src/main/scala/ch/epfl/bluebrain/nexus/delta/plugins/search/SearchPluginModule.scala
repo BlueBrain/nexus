@@ -12,6 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import distage.ModuleDef
+import io.circe.syntax.EncoderOps
 import izumi.distage.model.definition.Id
 import monix.execution.Scheduler
 
@@ -47,7 +48,7 @@ class SearchPluginModule(priority: Int) extends ModuleDef {
         s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
-    ) => new SearchRoutes(identities, aclCheck, search, config)(baseUri, s, cr, ordering)
+    ) => new SearchRoutes(identities, aclCheck, search, config.fields.asJson)(baseUri, s, cr, ordering)
   }
 
   many[PriorityRoute].add { (route: SearchRoutes) =>
