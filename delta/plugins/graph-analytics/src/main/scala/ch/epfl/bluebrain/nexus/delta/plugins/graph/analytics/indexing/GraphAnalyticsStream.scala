@@ -82,9 +82,7 @@ object GraphAnalyticsStream {
     // of references
     val relationshipBatch = 500
 
-    /**
-      * Decode the json payloads to [[GraphAnalyticsResult]] We only care for resources and files
-      */
+    // Decode the json payloads to [[GraphAnalyticsResult]] We only care for resources and files
     def decode(entityType: EntityType, json: Json): Task[GraphAnalyticsResult] =
       entityType match {
         case Files.entityType     =>
