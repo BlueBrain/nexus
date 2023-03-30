@@ -11,8 +11,10 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
 /**
   * Search parameters for any generic resource type.
   *
+  * @param locate
+  *   an [[Iri]] that could be either the id of a resource or its _self
   * @param id
-  *   the optional id status of the resource
+  *   the optional id of the resource
   * @param deprecated
   *   the optional deprecation status of the resource
   * @param rev
@@ -29,6 +31,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
   *   a full text search query parameter
   */
 final case class ResourcesSearchParams(
+    locate: Option[Iri] = None,
     id: Option[Iri] = None,
     deprecated: Option[Boolean] = None,
     rev: Option[Int] = None,

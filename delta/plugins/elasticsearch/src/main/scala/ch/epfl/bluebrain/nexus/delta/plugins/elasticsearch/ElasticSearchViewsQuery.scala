@@ -21,6 +21,13 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, Resource
 import io.circe.{Json, JsonObject}
 import monix.bio.IO
 
+/**
+  * Allows two types of operations on Elasticsearch views
+  *   - List which allows to query default elasticsearch views using a Nexus DSL, the caller needs the `resources/read`
+  *     permission to perform this operation
+  *   - Query which allows to query all elasticsearch views using the Elasticsearch DSL, the caller need the
+  *     `views/query` permission or a custom one if the required permission is overridden at the view level
+  */
 trait ElasticSearchViewsQuery {
 
   /**
@@ -165,6 +172,21 @@ trait ElasticSearchViewsQuery {
       query: JsonObject,
       qp: Uri.Query
   )(implicit caller: Caller): IO[ElasticSearchViewRejection, Json]
+
+  /**
+    * Queries the elasticsearch index (or indices) managed by the view. We check for the caller to have the necessary
+    * query permissions on the view before performing the query.
+    * @param view
+    *   the reference to the view
+    * @param query
+    *   the elasticsearch query to run
+    * @param qp
+    *   the extra query parameters for the elasticsearch index
+    */
+  def query(view: ViewRef, query: JsonObject, qp: Uri.Query)(implicit
+      caller: Caller
+  ): IO[ElasticSearchViewRejection, Json] =
+    this.query(view.viewId, view.project, query, qp)
 
 }
 

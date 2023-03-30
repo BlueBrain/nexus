@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.StatusCodes
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.testkit.{CirceEq, EitherValuable}
 import ch.epfl.bluebrain.nexus.tests.BaseSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.listings.{Alice, Bob}
@@ -93,20 +94,41 @@ final class ListingsSpec extends BaseSpec with Inspectors with EitherValuable wi
       }
     }
 
-    "get the resources with schema" in {
-      val expected = jsonContentOf(
-        "/kg/listings/project/resource-by-schema.json",
-        replacements(
-          Bob,
-          "org"  -> org1,
-          "proj" -> proj11
-        ): _*
-      )
-      eventually {
-        deltaClient.get[Json](s"/resources/$ref11/test-schema", Bob) { (json, response) =>
-          response.status shouldEqual StatusCodes.OK
-          filterSearchMetadata(json) should equalIgnoreArrayOrder(expected)
-        }
+    val resource11WithSchemaResult = jsonContentOf(
+      "/kg/listings/project/resource11-schema.json",
+      replacements(
+        Bob,
+        "org"  -> org1,
+        "proj" -> proj11
+      ): _*
+    )
+
+    "get the resources with schema" in eventually {
+      deltaClient.get[Json](s"/resources/$ref11/test-schema", Bob) { (json, response) =>
+        response.status shouldEqual StatusCodes.OK
+        filterSearchMetadata(json) should equalIgnoreArrayOrder(resource11WithSchemaResult)
+      }
+    }
+
+    "get the resource via locate with an id and id parameters" in {
+      val id = UrlUtils.encode(s"${config.deltaUri}/resources/$proj11/_/resource11_with_schema")
+      deltaClient.get[Json](s"/resources?id=$id", Bob) { (json, response) =>
+        response.status shouldEqual StatusCodes.OK
+        filterSearchMetadata(json) should equalIgnoreArrayOrder(resource11WithSchemaResult)
+      }
+
+      deltaClient.get[Json](s"/resources?locate=$id", Bob) { (json, response) =>
+        response.status shouldEqual StatusCodes.OK
+        filterSearchMetadata(json) should equalIgnoreArrayOrder(resource11WithSchemaResult)
+      }
+    }
+
+    "get the resource via locate with a self " in {
+      val self = UrlUtils.encode(s"${config.deltaUri}/resources/$ref11/test-schema/resource11_with_schema")
+
+      deltaClient.get[Json](s"/resources?locate=$self", Bob) { (json, response) =>
+        response.status shouldEqual StatusCodes.OK
+        filterSearchMetadata(json) should equalIgnoreArrayOrder(resource11WithSchemaResult)
       }
     }
 
