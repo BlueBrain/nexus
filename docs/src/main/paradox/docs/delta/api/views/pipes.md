@@ -135,9 +135,10 @@ index resources as the pipeline will be broken. They will have to be updated wit
 
 Besides these core pipes, it is possible to define custom pipes through plugins.
 
-Please visit @link:
-* [Elem source](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/sourcing-psql/src/main/scala/ch/epfl/bluebrain/nexus/delta/sourcing/stream/Elem.scala){ open=new } for documentation about this class.
-* [GraphResource source](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/sourcing-psql/src/main/scala/ch/epfl/bluebrain/nexus/delta/sourcing/state/GraphResource.scala){ open=new } for documentation about this class.
+Please visit:
+
+* @link:[Elem source](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/sourcing-psql/src/main/scala/ch/epfl/bluebrain/nexus/delta/sourcing/stream/Elem.scala){ open=new } for documentation about this class.
+* @link:[GraphResource source](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/sourcing-psql/src/main/scala/ch/epfl/bluebrain/nexus/delta/sourcing/state/GraphResource.scala){ open=new } for documentation about this class.
 
 Please visit  @ref:[Plugins](../../plugins/index.md) to learn about how to create/package/deploy a plugin.
 
