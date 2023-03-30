@@ -245,7 +245,13 @@ BlueBrain/nexus
         <li><a href="../../docs/releases/v1.8-release-notes.html#only-trigger-reindexing-when-indexing-is-impacted" class="header">Only trigger reindexing when indexing is impacted</a></li>
         <li><a href="../../docs/releases/v1.8-release-notes.html#indexing-id-for-custom-elasticsearch-views" class="header">Indexing @id for custom Elasticsearch views</a></li>
       </ul></li>
-      <li><a href="../../docs/releases/v1.8-release-notes.html#annotated-original-payload" class="header">Annotated original payload</a></li>
+      <li><a href="../../docs/releases/v1.8-release-notes.html#resources-and-schemas" class="header">Resources and schemas</a>
+      <ul>
+        <li><a href="../../docs/releases/v1.8-release-notes.html#search-by-id-and-" class="header">Search by @id and _self</a></li>
+        <li><a href="../../docs/releases/v1.8-release-notes.html#refresh-resources-and-schemas" class="header">Refresh resources and schemas</a></li>
+        <li><a href="../../docs/releases/v1.8-release-notes.html#validate" class="header">Validate</a></li>
+        <li><a href="../../docs/releases/v1.8-release-notes.html#annotated-original-payload" class="header">Annotated original payload</a></li>
+      </ul></li>
       <li><a href="../../docs/releases/v1.8-release-notes.html#supervision-api" class="header">Supervision API</a></li>
     </ul></li>
     <li><a href="../../docs/releases/v1.8-release-notes.html#nexus-fusion" class="header">Nexus Fusion</a></li>
@@ -284,7 +290,13 @@ BlueBrain/nexus
         <li><a href="../../docs/releases/v1.8-release-notes.html#only-trigger-reindexing-when-indexing-is-impacted" class="header">Only trigger reindexing when indexing is impacted</a></li>
         <li><a href="../../docs/releases/v1.8-release-notes.html#indexing-id-for-custom-elasticsearch-views" class="header">Indexing @id for custom Elasticsearch views</a></li>
       </ul></li>
-      <li><a href="../../docs/releases/v1.8-release-notes.html#annotated-original-payload" class="header">Annotated original payload</a></li>
+      <li><a href="../../docs/releases/v1.8-release-notes.html#resources-and-schemas" class="header">Resources and schemas</a>
+      <ul>
+        <li><a href="../../docs/releases/v1.8-release-notes.html#search-by-id-and-" class="header">Search by @id and _self</a></li>
+        <li><a href="../../docs/releases/v1.8-release-notes.html#refresh-resources-and-schemas" class="header">Refresh resources and schemas</a></li>
+        <li><a href="../../docs/releases/v1.8-release-notes.html#validate" class="header">Validate</a></li>
+        <li><a href="../../docs/releases/v1.8-release-notes.html#annotated-original-payload" class="header">Annotated original payload</a></li>
+      </ul></li>
       <li><a href="../../docs/releases/v1.8-release-notes.html#supervision-api" class="header">Supervision API</a></li>
     </ul></li>
     <li><a href="../../docs/releases/v1.8-release-notes.html#nexus-fusion" class="header">Nexus Fusion</a></li>
@@ -365,7 +377,16 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <p>Indexing views will now only restart if its new configuration changes the way, data is impacted. For example, updating the name, the description or the permission of the view won&rsquo;t trigger reindexing anymore.</p>
 <h4><a href="#indexing-id-for-custom-elasticsearch-views" name="indexing-id-for-custom-elasticsearch-views" class="anchor"><span class="anchor-link"></span></a>Indexing @id for custom Elasticsearch views</h4>
 <p>When a resource does not include an id in its original payload, the id of the resource (for example in the case, the <code>@id</code> is generated) will be injected in the Elasticsearch payload.</p>
-<h3><a href="#annotated-original-payload" name="annotated-original-payload" class="anchor"><span class="anchor-link"></span></a>Annotated original payload</h3>
+<h3><a href="#resources-and-schemas" name="resources-and-schemas" class="anchor"><span class="anchor-link"></span></a>Resources and schemas</h3>
+<h4><a href="#search-by-id-and-" name="search-by-id-and-" class="anchor"><span class="anchor-link"></span></a>Search by @id and _self</h4>
+<p>A new parameter <code>locate</code> has been introduced in the listing API that enables searching a resource within a project, an org or within all projects by providing its <code>@id</code> or its <code>_self</code></p>
+<p><a href="../delta/api/schemas-api.html#list">More information</a></p>
+<h4><a href="#refresh-resources-and-schemas" name="refresh-resources-and-schemas" class="anchor"><span class="anchor-link"></span></a>Refresh resources and schemas</h4>
+<p>A new <code>refresh</code> operation is available for resources and schemas. It allows to update a resource/schema when one of its upstream dependencies has changed without having to provide again its original payload. <a href="../delta/api/resources-api.html#refresh">More information for resources</a> <a href="../delta/api/schemas-api.html#refresh">More information for schemas</a></p>
+<h4><a href="#validate" name="validate" class="anchor"><span class="anchor-link"></span></a>Validate</h4>
+<p>This new validate operation allows to check a resource against a provided schema. This operation is read-only and allows to test a schema against different resources</p>
+<p><a href="../delta/api/resources-api.html#validate">More information</a></p>
+<h4><a href="#annotated-original-payload" name="annotated-original-payload" class="anchor"><span class="anchor-link"></span></a>Annotated original payload</h4>
 <p>It is now possible to fetch in a single the original payload of a resource alongside its metadata: <a href="../delta/api/resources-api.html#fetch-original-payload">More information</a></p>
 <h3><a href="#supervision-api" name="supervision-api" class="anchor"><span class="anchor-link"></span></a>Supervision API</h3>
 <p>A supervision API has been added to get information about the running projections on the current node:</p>
