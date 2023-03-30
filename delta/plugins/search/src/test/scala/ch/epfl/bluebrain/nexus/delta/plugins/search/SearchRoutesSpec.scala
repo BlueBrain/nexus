@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import io.circe.syntax.EncoderOps
+import io.circe.syntax._
 import io.circe.{Json, JsonObject}
 import monix.bio.IO
 
@@ -25,7 +25,7 @@ class SearchRoutesSpec extends BaseRouteSpec {
       IO.pure(Json.obj(suite.value -> payload.asJson))
   }
 
-  private val fields = Json.obj("fields" -> true.asJson)
+  private val fields = Json.obj("fields" := true)
 
   private lazy val routes = Route.seal(
     new SearchRoutes(
@@ -38,7 +38,7 @@ class SearchRoutesSpec extends BaseRouteSpec {
 
   "The search route" should {
     "fetch a result related to a search across all projects" in {
-      val payload = Json.obj("searchAll" -> true.asJson)
+      val payload = Json.obj("searchAll" := true)
       Post("/v1/search/query", payload.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual payload
@@ -47,15 +47,16 @@ class SearchRoutesSpec extends BaseRouteSpec {
 
     "fetch a result related to a search in a suite" in {
       val searchSuiteName = "public"
-      val payload         = Json.obj("searchSuite" -> true.asJson)
+      val payload         = Json.obj("searchSuite" := true)
 
       Post(s"/v1/search/query/suite/$searchSuiteName", payload.toEntity) ~> routes ~> check {
+        val expectedResponse = Json.obj(searchSuiteName -> payload)
         status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual Json.obj(searchSuiteName -> payload)
+        response.asJson shouldEqual expectedResponse
       }
     }
 
-    "fetch a result related to a search across all project" in {
+    "fetch fields configuration" in {
       Get("/v1/search/config") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual fields
