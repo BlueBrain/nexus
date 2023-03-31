@@ -50,12 +50,13 @@ object GraphAnalyticsStream {
          | AND $inIds
          | AND tag = ${Tag.latest.value}
          |""".stripMargin
-      .query[(Iri, Json)]
+      .query[(Iri, Option[Json])]
       .to[List]
       .transact(xas.streaming)
       .map { l =>
         l.foldLeft(emptyMapType) { case (acc, (id, json)) =>
-          acc ++ json.as[Set[Iri]].toOption.map(id -> _)
+          val types = json.flatMap(_.as[Set[Iri]].toOption).getOrElse(Set.empty)
+          acc + (id -> types)
         }
       }
   }.hideErrors

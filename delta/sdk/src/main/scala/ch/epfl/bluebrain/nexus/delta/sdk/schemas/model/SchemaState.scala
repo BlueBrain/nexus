@@ -99,7 +99,7 @@ object SchemaState {
     import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd.Database._
     implicit val configuration: Configuration       = Serializer.circeConfiguration
     implicit val codec: Codec.AsObject[SchemaState] = deriveConfiguredCodec[SchemaState]
-    Serializer()
+    Serializer.dropNullsInjectType()
   }
 
 }

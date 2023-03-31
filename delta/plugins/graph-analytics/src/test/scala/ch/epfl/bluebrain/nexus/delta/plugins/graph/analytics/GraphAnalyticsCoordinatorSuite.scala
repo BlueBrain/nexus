@@ -133,7 +133,7 @@ class GraphAnalyticsCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtu
     } yield ()
   }
 
-  test(s"'$project2' is marked for deletetion, the associated projection should be destroyed.") {
+  test(s"'$project2' is marked for deletion, the associated projection should be destroyed.") {
     val projectionName = s"ga-$project2"
     for {
       _ <- sv.describe(projectionName).eventuallyNone

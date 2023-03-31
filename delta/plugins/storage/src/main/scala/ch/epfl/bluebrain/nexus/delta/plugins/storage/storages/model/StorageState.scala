@@ -102,6 +102,6 @@ object StorageState {
 
     implicit val storageValueCodec: Codec.AsObject[StorageValue] = StorageValue.databaseCodec(crypto)
     implicit val codec: Codec.AsObject[StorageState]             = deriveConfiguredCodec[StorageState]
-    Serializer.dropNulls()
+    Serializer.dropNullsInjectType()
   }
 }
