@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.kernel.database
 
+import cats.effect.concurrent.Ref
 import cats.effect.{Blocker, Resource}
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.kernel.database.DatabaseConfig.DatabaseAccess
@@ -18,7 +19,8 @@ import monix.bio.Task
 final case class Transactors(
     read: Transactor[Task],
     write: Transactor[Task],
-    streaming: Transactor[Task]
+    streaming: Transactor[Task],
+    cache: Ref[Task, Set[String]]
 ) {
 
   def execDDL(filePath: String)(implicit cl: ClassLoader): Task[Unit] =
@@ -68,7 +70,8 @@ object Transactors {
       read      <- transactor(config.read, readOnly = true, poolName = "ReadPool")
       write     <- transactor(config.write, readOnly = false, poolName = "WritePool")
       streaming <- transactor(config.streaming, readOnly = true, poolName = "StreamingPool")
-    } yield Transactors(read, write, streaming)
+      cache     <- Resource.liftK[Task].apply(Ref.of[Task, Set[String]](Set.empty))
+    } yield Transactors(read, write, streaming, cache)
   }.evalTap { xas =>
     Task.when(config.tablesAutocreate)(xas.execDDL("/scripts/schema.ddl"))
   }
