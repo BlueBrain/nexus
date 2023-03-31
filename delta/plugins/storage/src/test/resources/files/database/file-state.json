@@ -1,4 +1,11 @@
 {
+  "project": "myorg/myproj",
+  "id": "https://bluebrain.github.io/nexus/vocabulary/file",
+  "types": [
+    "https://bluebrain.github.io/nexus/vocabulary/File"
+  ],
+  "rev": 5,
+  "deprecated": false,
   "attributes": {
     "bytes": 12,
     "digest": {
@@ -19,10 +26,6 @@
     "realm": "myrealm",
     "subject": "username"
   },
-  "deprecated": false,
-  "id": "https://bluebrain.github.io/nexus/vocabulary/file",
-  "project": "myorg/myproj",
-  "rev": 5,
   "storage": "https://bluebrain.github.io/nexus/vocabulary/disk-storage?rev=1",
   "storageType": "DiskStorage",
   "tags": {

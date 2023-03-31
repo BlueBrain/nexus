@@ -1,28 +1,32 @@
 {
-  "id" : "https://bluebrain.github.io/nexus/vocabulary/myId",
-  "project" : "myorg/myproj",
-  "deprecated" : false,
-  "rev" : 1,
-  "value" : {
-    "@type" : "InProjectValue",
-    "priority" : 42
+  "id": "https://bluebrain.github.io/nexus/vocabulary/myId",
+  "project": "myorg/myproj",
+  "types": [
+    "https://bluebrain.github.io/nexus/vocabulary/Resolver",
+    "https://bluebrain.github.io/nexus/vocabulary/InProject"
+  ],
+  "rev": 1,
+  "deprecated": false,
+  "value": {
+    "@type": "InProjectValue",
+    "priority": 42
   },
-  "source" : {
-    "resolver" : "value"
+  "source": {
+    "resolver": "value"
   },
-  "tags" : {
-    "mytag" : 3
+  "tags": {
+    "mytag": 3
   },
-  "createdAt" : "1970-01-01T00:00:00Z",
-  "createdBy" : {
-    "@type" : "User",
-    "realm" : "myrealm",
-    "subject" : "username"
+  "createdAt": "1970-01-01T00:00:00Z",
+  "createdBy": {
+    "@type": "User",
+    "realm": "myrealm",
+    "subject": "username"
   },
-  "updatedAt" : "1970-01-01T00:00:00Z",
-  "updatedBy" : {
-    "@type" : "User",
-    "realm" : "myrealm",
-    "subject" : "username"
+  "updatedAt": "1970-01-01T00:00:00Z",
+  "updatedBy": {
+    "@type": "User",
+    "realm": "myrealm",
+    "subject": "username"
   }
 }

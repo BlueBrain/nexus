@@ -223,7 +223,7 @@ object PullRequest {
       import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
       implicit val configuration: Configuration            = Configuration.default.withDiscriminator("@type")
       implicit val coder: Codec.AsObject[PullRequestState] = deriveConfiguredCodec[PullRequestState]
-      Serializer()
+      Serializer.dropNullsInjectType()
     }
 
     def toGraphResource(state: PullRequestState, base: Iri): GraphResource =

@@ -124,7 +124,7 @@ object BlazegraphViewState {
     implicit val configuration: Configuration                    = Serializer.circeConfiguration
     implicit val valueCodec: Codec.AsObject[BlazegraphViewValue] = deriveConfiguredCodec[BlazegraphViewValue]
     implicit val codec: Codec.AsObject[BlazegraphViewState]      = deriveConfiguredCodec[BlazegraphViewState]
-    Serializer.dropNulls()
+    Serializer.dropNullsInjectType()
   }
 
 }
