@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.state
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.sourcing.Partition._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.IriInstances
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.Latest
@@ -25,14 +26,20 @@ import monix.bio.IO
 trait ScopedStateStore[Id, S <: ScopedState] {
 
   /**
-    * Persist the state as latest
+    * Persist the state as latest. Attempts to CREATE necessary partitions each time.
     */
   def save(state: S): ConnectionIO[Unit] = save(state, Latest)
 
   /**
-    * Persist the state with the given tag
+    * Persist the state with the given tag. Attempts to CREATE partitions each time.
     */
   def save(state: S, tag: Tag): ConnectionIO[Unit]
+
+  /**
+    * Persist the state as latest. Attempts to CREATE partitions only if the necessary partition is not already in the
+    * cache.
+    */
+  def save(state: S, cache: Set[String]): ConnectionIO[Unit]
 
   /**
     * Delete the state for the given tag
@@ -176,34 +183,34 @@ object ScopedStateStore {
     implicit val putValue: Put[S]    = serializer.putValue
     implicit val decoder: Decoder[S] = serializer.codec
 
-    override def save(state: S, tag: Tag): doobie.ConnectionIO[Unit] = {
+    private def insertState(state: S, tag: Tag) =
       sql"SELECT 1 FROM scoped_states WHERE type = $tpe AND org = ${state.organization} AND project = ${state.project.project}  AND id = ${state.id} AND tag = $tag"
         .query[Int]
         .option
         .flatMap {
           _.fold(sql"""
-                      | INSERT INTO scoped_states (
-                      |  type,
-                      |  org,
-                      |  project,
-                      |  id,
-                      |  tag,
-                      |  rev,
-                      |  value,
-                      |  deprecated,
-                      |  instant
-                      | )
-                      | VALUES (
-                      |  $tpe,
-                      |  ${state.organization},
-                      |  ${state.project.project},
-                      |  ${state.id},
-                      |  $tag,
-                      |  ${state.rev},
-                      |  $state,
-                      |  ${state.deprecated},
-                      |  ${state.updatedAt}
-                      | )
+                 | INSERT INTO scoped_states (
+                 |  type,
+                 |  org,
+                 |  project,
+                 |  id,
+                 |  tag,
+                 |  rev,
+                 |  value,
+                 |  deprecated,
+                 |  instant
+                 | )
+                 | VALUES (
+                 |  $tpe,
+                 |  ${state.organization},
+                 |  ${state.project.project},
+                 |  ${state.id},
+                 |  $tag,
+                 |  ${state.rev},
+                 |  $state,
+                 |  ${state.deprecated},
+                 |  ${state.updatedAt}
+                 | )
             """.stripMargin) { _ =>
             sql"""
                  | UPDATE scoped_states SET
@@ -221,7 +228,14 @@ object ScopedStateStore {
             """.stripMargin
           }.update.run.void
         }
-    }
+
+    override def save(state: S, tag: Tag): doobie.ConnectionIO[Unit] =
+      createPartitions("scoped_states", state.project) >>
+        insertState(state, tag)
+
+    override def save(state: S, cache: Set[String]): doobie.ConnectionIO[Unit] =
+      if (!cache.contains(projectRefHash(state.project))) save(state)
+      else insertState(state, Latest)
 
     override def delete(ref: ProjectRef, id: Id, tag: Tag): ConnectionIO[Unit] =
       sql"""DELETE FROM scoped_states WHERE type = $tpe AND org = ${ref.organization} AND project = ${ref.project}  AND id = $id AND tag = $tag""".stripMargin.update.run.void

@@ -261,29 +261,38 @@ object ScopedEventLog {
             EntityDependencyStore.delete(ref, state.id) >> EntityDependencyStore.save(ref, state.id, dependencies)
           }
 
-        def persist(event: E, original: Option[S], newState: S): IO[Rejection, Unit] =
-          saveTag(event, newState)
-            .flatMap { tagQuery =>
-              val queries = for {
-                _ <- TombstoneStore.save(entityType, original, newState)
-                _ <- eventStore.save(event)
-                _ <- stateStore.save(newState)
-                _ <- tagQuery
-                _ <- deleteTag(event, newState)
-                _ <- updateDependencies(newState)
-              } yield ()
-              queries
-                .attemptSomeSqlState { case sqlstate.class23.UNIQUE_VIOLATION =>
-                  onUniqueViolation(id, command)
-                }
-                .transact(xas.write)
-            }
-            .hideErrors
+        def persist(event: E, original: Option[S], newState: S): IO[Rejection, Unit] = {
+
+          def queries(tagQuery: ConnectionIO[Unit], cache: Set[String]) =
+            for {
+              _ <- TombstoneStore.save(entityType, original, newState)
+              _ <- eventStore.save(event, cache)
+              _ <- stateStore.save(newState, cache)
+              _ <- tagQuery
+              _ <- deleteTag(event, newState)
+              _ <- updateDependencies(newState)
+            } yield ()
+
+          {
+            for {
+              cache    <- xas.cache.get
+              tagQuery <- saveTag(event, newState)
+              res      <- queries(tagQuery, cache)
+                            .attemptSomeSqlState { case sqlstate.class23.UNIQUE_VIOLATION =>
+                              onUniqueViolation(id, command)
+                            }
+                            .transact(xas.write)
+              _        <- xas.cache.update(_ + Partition.projectRefHash(event.project))
+            } yield res
+          }.hideErrors
             .flatMap {
               IO.fromEither(_).tapError { _ =>
-                UIO.delay(logger.info(s"An event for the '$id' in project '$ref' already exists for rev ${event.rev}."))
+                UIO.delay(
+                  logger.info(s"An event for the '$id' in project '$ref' already exists for rev ${event.rev}.")
+                )
               }
             }
+        }
 
         for {
           originalState <- stateStore.get(ref, id).redeem(_ => None, Some(_))

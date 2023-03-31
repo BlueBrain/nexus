@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Envelope, Envel
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.{RefreshStrategy, StreamingQuery}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Predicate, Serializer}
+import ch.epfl.bluebrain.nexus.delta.sourcing.Partition._
 import doobie._
 import doobie.implicits._
 import doobie.postgres.implicits._
@@ -22,9 +23,14 @@ import monix.bio.Task
 trait ScopedEventStore[Id, E <: ScopedEvent] {
 
   /**
-    * Persist the event
+    * Persist the event. Attempts CREATE necessary partitions each time.
     */
   def save(event: E): ConnectionIO[Unit]
+
+  /**
+    * Persist the event. Attempts to CREATE partitions only if the necessary partition is not already in the cache.
+    */
+  def save(event: E, cache: Set[String]): ConnectionIO[Unit]
 
   /**
     * Fetches the history for the event up to the provided revision
@@ -77,27 +83,35 @@ object ScopedEventStore {
       implicit val putValue: Put[E]    = serializer.putValue
       implicit val decoder: Decoder[E] = serializer.codec
 
-      override def save(event: E): doobie.ConnectionIO[Unit] =
+      private def insertEvent(event: E) =
         sql"""
-           | INSERT INTO scoped_events (
-           |  type,
-           |  org,
-           |  project,
-           |  id,
-           |  rev,
-           |  value,
-           |  instant
-           | )
-           | VALUES (
-           |  $tpe,
-           |  ${event.organization},
-           |  ${event.project.project},
-           |  ${event.id},
-           |  ${event.rev},
-           |  $event,
-           |  ${event.instant}
-           | )
-         """.stripMargin.update.run.void
+             | INSERT INTO scoped_events (
+             |  type,
+             |  org,
+             |  project,
+             |  id,
+             |  rev,
+             |  value,
+             |  instant
+             | )
+             | VALUES (
+             |  $tpe,
+             |  ${event.organization},
+             |  ${event.project.project},
+             |  ${event.id},
+             |  ${event.rev},
+             |  $event,
+             |  ${event.instant}
+             | )
+       """.stripMargin.update.run.void
+
+      override def save(event: E, cache: Set[String]): doobie.ConnectionIO[Unit] =
+        if (!cache.contains(projectRefHash(event.project))) save(event)
+        else insertEvent(event)
+
+      override def save(event: E): doobie.ConnectionIO[Unit] =
+        createPartitions("scoped_events", event.project) >>
+          insertEvent(event)
 
       override def history(ref: ProjectRef, id: Id, to: Option[Int]): Stream[Task, E] = {
         val select =
