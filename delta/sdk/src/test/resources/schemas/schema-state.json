@@ -1,6 +1,11 @@
 {
-  "id": "https://bluebrain.github.io/nexus/vocabulary/myId",
   "project": "myorg/myproj",
+  "id": "https://bluebrain.github.io/nexus/vocabulary/myId",
+  "types": [
+    "https://bluebrain.github.io/nexus/vocabulary/Schema"
+  ],
+  "rev": 2,
+  "deprecated": false,
   "source": {
     "@id": "https://bluebrain.github.io/nexus/vocabulary/myId",
     "@context": [
@@ -166,8 +171,6 @@
       }
     ]
   ],
-  "rev": 2,
-  "deprecated": false,
   "tags": {
     "mytag": 3
   },

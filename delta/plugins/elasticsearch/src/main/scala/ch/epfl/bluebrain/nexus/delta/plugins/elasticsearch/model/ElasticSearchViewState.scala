@@ -139,6 +139,6 @@ object ElasticSearchViewState {
     implicit val configuration: Configuration                       = Serializer.circeConfiguration
     implicit val valueCodec: Codec.AsObject[ElasticSearchViewValue] = deriveConfiguredCodec[ElasticSearchViewValue]
     implicit val codec: Codec.AsObject[ElasticSearchViewState]      = deriveConfiguredCodec[ElasticSearchViewState]
-    Serializer.dropNulls()
+    Serializer.dropNullsInjectType()
   }
 }

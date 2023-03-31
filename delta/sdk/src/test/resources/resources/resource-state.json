@@ -1,6 +1,12 @@
 {
-  "id": "https://bluebrain.github.io/nexus/vocabulary/myId",
   "project": "myorg/myproj",
+  "id": "https://bluebrain.github.io/nexus/vocabulary/myId",
+  "types": [
+    "http://schema.org/Person"
+  ],
+  "rev": 2,
+  "deprecated": false,
+  "schema": "https://bluebrain.github.io/nexus/schemas/unconstrained.json?rev=1",
   "schemaProject": "myorg/myproj",
   "source": {
     "@context": {
@@ -44,12 +50,6 @@
         }
       ]
     }
-  ],
-  "rev": 2,
-  "deprecated": false,
-  "schema": "https://bluebrain.github.io/nexus/schemas/unconstrained.json?rev=1",
-  "types": [
-    "http://schema.org/Person"
   ],
   "tags": {
     "mytag": 3
