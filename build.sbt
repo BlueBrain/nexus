@@ -968,20 +968,21 @@ lazy val servicePackaging = {
   import com.typesafe.sbt.packager.docker.{DockerChmodType, DockerVersion}
   import com.typesafe.sbt.packager.universal.UniversalPlugin.autoImport.Universal
   Seq(
-    Universal / mappings += (WaitForIt.download(target.value) -> "bin/wait-for-it.sh"),
+    Universal / mappings  += (WaitForIt.download(target.value) -> "bin/wait-for-it.sh"),
     // docker publishing settings
-    Docker / maintainer  := "Nexus Team <noreply@epfl.ch>",
-    Docker / version     := {
+    Docker / maintainer   := "Nexus Team <noreply@epfl.ch>",
+    Docker / version      := {
       if (isSnapshot.value) "latest"
       else version.value
     },
-    Docker / daemonUser  := "nexus",
-    dockerBaseImage      := "eclipse-temurin:11-jre",
-    dockerExposedPorts   := Seq(8080),
-    dockerUsername       := Some("bluebrain"),
-    dockerUpdateLatest   := false,
-    dockerChmodType      := DockerChmodType.UserGroupWriteExecute,
-    dockerVersion        := Some(
+    Docker / daemonUser   := "nexus",
+    dockerBaseImage       := "eclipse-temurin:11-jre",
+    dockerBuildxPlatforms := Seq("linux/arm64/v8", "linux/amd64"),
+    dockerExposedPorts    := Seq(8080),
+    dockerUsername        := Some("bluebrain"),
+    dockerUpdateLatest    := false,
+    dockerChmodType       := DockerChmodType.UserGroupWriteExecute,
+    dockerVersion         := Some(
       DockerVersion(19, 3, 5, Some("ce"))
     ) // forces the version because gh-actions version is 3.0.x which is not recognized to support multistage
   )
