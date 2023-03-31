@@ -527,7 +527,7 @@ $ curl -s "http://$NEXUS/v1/version" | jq
   "delta": "1.8.0",
   "dependencies": {
     "blazegraph": "2.1.6-RC",
-    "postgres": "3.11.10",
+    "postgres": "15.1",
     "elasticsearch": "7.16.2"
   },
   "plugins": {
