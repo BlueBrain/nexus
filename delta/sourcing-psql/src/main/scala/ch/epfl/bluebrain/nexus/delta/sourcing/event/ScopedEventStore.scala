@@ -2,14 +2,13 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.event
 
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
-import ch.epfl.bluebrain.nexus.delta.sourcing.PartitionInit.createPartitions
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.ScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.IriInstances
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Envelope, EnvelopeStream, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.{RefreshStrategy, StreamingQuery}
-import ch.epfl.bluebrain.nexus.delta.sourcing.{Execute, Noop, PartitionInit, Predicate, Serializer}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{Execute, PartitionInit, Predicate, Serializer}
 import doobie._
 import doobie.implicits._
 import doobie.postgres.implicits._
@@ -23,14 +22,20 @@ import monix.bio.Task
 trait ScopedEventStore[Id, E <: ScopedEvent] {
 
   /**
-    * Persist the event. Attempts CREATE necessary partitions each time.
-    */
-  def save(event: E): ConnectionIO[Unit]
-
-  /**
-    * Persist the event. Attempts to CREATE partitions only if the necessary partition is not already in the cache.
+    * @param event
+    *   The event to persist
+    * @param init
+    *   The type of partition initialization to run prior to persisting
+    * @return
+    *   A [[ConnectionIO]] describing how to persist the event.
     */
   def save(event: E, init: PartitionInit): ConnectionIO[Unit]
+
+  /**
+    * Persist the event with forced partition initialization.
+    */
+  def save(event: E): ConnectionIO[Unit] =
+    save(event, Execute(event.project))
 
   /**
     * Fetches the history for the event up to the provided revision
@@ -106,14 +111,7 @@ object ScopedEventStore {
        """.stripMargin.update.run.void
 
       override def save(event: E, init: PartitionInit): doobie.ConnectionIO[Unit] =
-        init match {
-          case Execute(_) => save(event)
-          case Noop()     => insertEvent(event)
-        }
-
-      override def save(event: E): doobie.ConnectionIO[Unit] =
-        createPartitions("scoped_events", event.project) >>
-          insertEvent(event)
+        init.initializePartition("scoped_events") >> insertEvent(event)
 
       override def history(ref: ProjectRef, id: Id, to: Option[Int]): Stream[Task, E] = {
         val select =
