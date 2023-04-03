@@ -134,7 +134,7 @@ object ProjectState {
       Encoder.encodeMap[String, Iri].contramapObject(_.value)
 
     implicit val coder: Codec.AsObject[ProjectState] = deriveConfiguredCodec[ProjectState]
-    Serializer(Projects.encodeId)
+    Serializer.dropNullsInjectType(Projects.encodeId)
   }
 
 }
