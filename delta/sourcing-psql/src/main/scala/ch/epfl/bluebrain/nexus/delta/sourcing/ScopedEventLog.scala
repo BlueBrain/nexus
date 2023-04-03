@@ -244,11 +244,11 @@ object ScopedEventLog {
         def saveTag(event: E, state: S): UIO[ConnectionIO[Unit]] =
           tagger.tagWhen(event).fold(UIO.pure(noop)) { case (tag, rev) =>
             if (rev == state.rev)
-              UIO.pure(stateStore.save(state, tag))
+              UIO.pure(stateStore.save(state, tag, Noop))
             else
               stateMachine
                 .computeState(eventStore.history(ref, id, Some(rev)))
-                .map(_.fold(noop) { s => stateStore.save(s, tag) })
+                .map(_.fold(noop) { s => stateStore.save(s, tag, Noop) })
           }
 
         def deleteTag(event: E, state: S): ConnectionIO[Unit] = tagger.untagWhen(event).fold(noop) { tag =>
