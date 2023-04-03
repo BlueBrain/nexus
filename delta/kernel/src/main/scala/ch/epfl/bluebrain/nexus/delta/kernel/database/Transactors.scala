@@ -70,7 +70,7 @@ object Transactors {
       read      <- transactor(config.read, readOnly = true, poolName = "ReadPool")
       write     <- transactor(config.write, readOnly = false, poolName = "WritePool")
       streaming <- transactor(config.streaming, readOnly = true, poolName = "StreamingPool")
-      cache     <- Resource.liftK[Task].apply(Ref.of[Task, Set[String]](Set.empty))
+      cache     <- Resource.eval(Ref.of[Task, Set[String]](Set.empty))
     } yield Transactors(read, write, streaming, cache)
   }.evalTap { xas =>
     Task.when(config.tablesAutocreate)(xas.execDDL("/scripts/schema.ddl"))
