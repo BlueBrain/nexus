@@ -981,10 +981,7 @@ lazy val servicePackaging = {
     dockerExposedPorts    := Seq(8080),
     dockerUsername        := Some("bluebrain"),
     dockerUpdateLatest    := false,
-    dockerChmodType       := DockerChmodType.UserGroupWriteExecute,
-    dockerVersion         := Some(
-      DockerVersion(19, 3, 5, Some("ce"))
-    ) // forces the version because gh-actions version is 3.0.x which is not recognized to support multistage
+    dockerChmodType       := DockerChmodType.UserGroupWriteExecute
   )
 }
 
