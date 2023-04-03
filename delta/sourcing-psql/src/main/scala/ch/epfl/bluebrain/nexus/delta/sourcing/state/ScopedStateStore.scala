@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.state
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sourcing.Partition._
+import ch.epfl.bluebrain.nexus.delta.sourcing.PartitionInit.createPartitions
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.IriInstances
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.Latest
@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.query.{RefreshStrategy, StreamingQ
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore.StateNotFound
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore.StateNotFound.{TagNotFound, UnknownState}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
-import ch.epfl.bluebrain.nexus.delta.sourcing.{Predicate, Serializer}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{Execute, Noop, PartitionInit, Predicate, Serializer}
 import doobie._
 import doobie.implicits._
 import doobie.postgres.implicits._
@@ -39,7 +39,7 @@ trait ScopedStateStore[Id, S <: ScopedState] {
     * Persist the state as latest. Attempts to CREATE partitions only if the necessary partition is not already in the
     * cache.
     */
-  def save(state: S, cache: Set[String]): ConnectionIO[Unit]
+  def save(state: S, init: PartitionInit): ConnectionIO[Unit]
 
   /**
     * Delete the state for the given tag
@@ -233,9 +233,11 @@ object ScopedStateStore {
       createPartitions("scoped_states", state.project) >>
         insertState(state, tag)
 
-    override def save(state: S, cache: Set[String]): doobie.ConnectionIO[Unit] =
-      if (!cache.contains(projectRefHash(state.project))) save(state)
-      else insertState(state, Latest)
+    override def save(state: S, init: PartitionInit): doobie.ConnectionIO[Unit] =
+      init match {
+        case Execute(_) => save(state)
+        case Noop()     => insertState(state, Latest)
+      }
 
     override def delete(ref: ProjectRef, id: Id, tag: Tag): ConnectionIO[Unit] =
       sql"""DELETE FROM scoped_states WHERE type = $tpe AND org = ${ref.organization} AND project = ${ref.project}  AND id = $id AND tag = $tag""".stripMargin.update.run.void

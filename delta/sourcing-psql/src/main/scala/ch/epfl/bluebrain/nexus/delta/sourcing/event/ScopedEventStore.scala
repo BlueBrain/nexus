@@ -2,14 +2,14 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.event
 
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
+import ch.epfl.bluebrain.nexus.delta.sourcing.PartitionInit.createPartitions
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.ScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.IriInstances
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Envelope, EnvelopeStream, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.{RefreshStrategy, StreamingQuery}
-import ch.epfl.bluebrain.nexus.delta.sourcing.{Predicate, Serializer}
-import ch.epfl.bluebrain.nexus.delta.sourcing.Partition._
+import ch.epfl.bluebrain.nexus.delta.sourcing.{Execute, Noop, PartitionInit, Predicate, Serializer}
 import doobie._
 import doobie.implicits._
 import doobie.postgres.implicits._
@@ -30,7 +30,7 @@ trait ScopedEventStore[Id, E <: ScopedEvent] {
   /**
     * Persist the event. Attempts to CREATE partitions only if the necessary partition is not already in the cache.
     */
-  def save(event: E, cache: Set[String]): ConnectionIO[Unit]
+  def save(event: E, init: PartitionInit): ConnectionIO[Unit]
 
   /**
     * Fetches the history for the event up to the provided revision
@@ -105,9 +105,11 @@ object ScopedEventStore {
              | )
        """.stripMargin.update.run.void
 
-      override def save(event: E, cache: Set[String]): doobie.ConnectionIO[Unit] =
-        if (!cache.contains(projectRefHash(event.project))) save(event)
-        else insertEvent(event)
+      override def save(event: E, init: PartitionInit): doobie.ConnectionIO[Unit] =
+        init match {
+          case Execute(_) => save(event)
+          case Noop()     => insertEvent(event)
+        }
 
       override def save(event: E): doobie.ConnectionIO[Unit] =
         createPartitions("scoped_events", event.project) >>

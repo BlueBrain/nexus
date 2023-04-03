@@ -263,11 +263,11 @@ object ScopedEventLog {
 
         def persist(event: E, original: Option[S], newState: S): IO[Rejection, Unit] = {
 
-          def queries(tagQuery: ConnectionIO[Unit], cache: Set[String]) =
+          def queries(tagQuery: ConnectionIO[Unit], init: PartitionInit) =
             for {
               _ <- TombstoneStore.save(entityType, original, newState)
-              _ <- eventStore.save(event, cache)
-              _ <- stateStore.save(newState, cache)
+              _ <- eventStore.save(event, init)
+              _ <- stateStore.save(newState, init)
               _ <- tagQuery
               _ <- deleteTag(event, newState)
               _ <- updateDependencies(newState)
@@ -275,14 +275,14 @@ object ScopedEventLog {
 
           {
             for {
-              cache    <- xas.cache.get
+              init     <- PartitionInit(event.project, xas.cache)
               tagQuery <- saveTag(event, newState)
-              res      <- queries(tagQuery, cache)
+              res      <- queries(tagQuery, init)
                             .attemptSomeSqlState { case sqlstate.class23.UNIQUE_VIOLATION =>
                               onUniqueViolation(id, command)
                             }
                             .transact(xas.write)
-              _        <- xas.cache.update(_ + Partition.projectRefHash(event.project))
+              _        <- init.updateCache(xas.cache)
             } yield res
           }.hideErrors
             .flatMap {
