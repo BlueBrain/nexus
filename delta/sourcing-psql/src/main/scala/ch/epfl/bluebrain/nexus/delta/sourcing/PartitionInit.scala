@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
-import cats.effect.concurrent.Ref
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.sourcing.PartitionInit.{createOrgPartition, createProjectPartition, projectRefHash, PartitionsCache}
+import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors.PartitionsCache
+import ch.epfl.bluebrain.nexus.delta.sourcing.PartitionInit.{createOrgPartition, createProjectPartition, projectRefHash}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import doobie.Fragment
 import doobie.free.connection
@@ -52,8 +52,6 @@ case object Noop extends PartitionInit {
 }
 
 object PartitionInit {
-
-  type PartitionsCache = Ref[Task, Set[String]]
 
   /**
     * Constructs a PartitionInit based on the given project and provided cache. If the projectRef was already in the

@@ -4,6 +4,7 @@ import cats.effect.concurrent.Ref
 import cats.effect.{Blocker, Resource}
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.kernel.database.DatabaseConfig.DatabaseAccess
+import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors.PartitionsCache
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
 import com.zaxxer.hikari.HikariDataSource
 import doobie.Fragment
@@ -20,7 +21,7 @@ final case class Transactors(
     read: Transactor[Task],
     write: Transactor[Task],
     streaming: Transactor[Task],
-    cache: Ref[Task, Set[String]]
+    cache: PartitionsCache
 ) {
 
   def execDDL(filePath: String)(implicit cl: ClassLoader): Task[Unit] =
@@ -29,6 +30,9 @@ final case class Transactors(
 }
 
 object Transactors {
+
+  /** Type of a cache that contains the hashed names of the projectRefs for which a partition was already created. */
+  type PartitionsCache = Ref[Task, Set[String]]
 
   /**
     * Create a test `Transactors` from the provided parameters
