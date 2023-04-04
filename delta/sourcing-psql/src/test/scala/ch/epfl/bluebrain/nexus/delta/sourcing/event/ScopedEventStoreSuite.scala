@@ -76,13 +76,6 @@ class ScopedEventStoreSuite extends BioSuite with Doobie.Fixture with Doobie.Ass
     } yield ()
   }
 
-//  test("Save many events") {
-//    for {
-//      _ <- (1 to 2).map(nb => event1.copy(id = nxv + (nb + 100).toString)).toList.traverse(store.save(_, Execute)).transact(xas.write)
-//      _ <- (3 to 10000).map(nb => event1.copy(id = nxv + (nb + 100).toString)).toList.traverse(store.save(_, Set("a26036207a0fbfafec04bd169456a5d8"))).transact(xas.write)
-//    } yield ()
-//  }
-
   test("Fetch all events for a given id") {
     store.history(project1, id1).assert(event1, event2, event3)
   }
