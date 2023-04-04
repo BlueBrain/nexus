@@ -57,7 +57,6 @@ The Delta SDK can be included as following dependencies:
 All the above dependencies should be used in `provided` scope and must not be bundled in the plugin.
 ```sbt
 libraryDependencies += "ch.epfl.bluebrain.nexus" %% "delta-sdk" % deltaVersion % Provided
-libraryDependencies += "ch.epfl.bluebrain.nexus" %% "delta-sdk-views" % deltaVersion % Provided
 ```
 
 ### Dependency injection
@@ -72,15 +71,16 @@ The plugin can also define instances of following traits/classes, which will be 
   - @link:[PriorityRoute](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/PriorityRoute.scala){ open=new } - allows the plugin to define @link:[Akka HTTP Route](https://doc.akka.io/docs/akka-http/current/routing-dsl/index.html){ open=new } with priority. The priority is used
     by Delta to prioritize route evaluation
   - @link:[ScopeInitialization](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/ScopeInitialization.scala){ open=new } - allows the plugin to define hooks which will be run on organization and project creation. 
-  - @link:[EventExchange](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/EventExchange.scala){ open=new }  - enables Delta to exchange plugin events for their different representation. Needs to be defined by the plugin in order for resources created by the plugin to be indexed or available via SSE endpoints.
-  - @link:[ReferenceExchange](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/ReferenceExchange.scala){ open=new } - enables Delta to exchange a resource reference for a JSON-LD value allowing Delta to handle multiple resources in a uniform way 
+  - @link:[ScopedEntityDefinition](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/sourcing-psql/src/main/scala/ch/epfl/bluebrain/nexus/delta/sourcing/ScopedEntityDefinition.scala){ open=new }  - allows to define the required information to be able to handle a custom scoped entity
+  - @link:[Serializer](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/sourcing-psql/src/main/scala/ch/epfl/bluebrain/nexus/delta/sourcing/Serializer.scala){ open=new }  - allows to define how to serialize and deserialize an event / a state to database
+  - @link:[ResourceShift](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/ResourceShift.scala){ open=new }  - enables Delta to retrieve the different resources in a common format for tasks like indexing or resolving operations.
+  - @link:[SseEncoder](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/sse/SseEncoder.scala){ open=new } - enables Delta to convert a database event to a SSE event
+  - @link:[EventMetricEncoder](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/model/metrics/EventMetricEncoder.scala){ open=new } - enables Delta to convert a database event to an event metric
   - @link:[MetadataContextValue](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/model/MetadataContextValue.scala){ open=new } - registers metadata context of this plugin into global metadata context 
   - @link:[RemoteContextResolution](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/rdf/src/main/scala/ch/epfl/bluebrain/nexus/delta/rdf/jsonld/context/RemoteContextResolution.scala){ open=new } - enables Delta to resolve static contexts defined by the plugin
   - @link:[ServiceDependency](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/ServiceDependency.scala){ open=new } - allows the plugin to define dependencies which will be displayed in `/version` endpoint.
-  - @link:[ApiMappings](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/model/projects/ApiMappings.scala){ open=new } - allows the plugin to define default API mappings used to shorten URLs
+  - @link:[ApiMappings](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/projects/model/ApiMappings.scala){ open=new } - allows the plugin to define default API mappings used to shorten URLs
   - @link:[ResourceToSchemaMappings](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/model/ResourceToSchemaMappings.scala){ open=new } - allows the plugin to define mapping from the resource type to schema, which can be used to interact with resources created by the plugin through `/resources` endpoints.
-  - @link:[EntityType](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/model/EntityType.scala){ open=new } - allows plugin to define its entity type in order to create Akka Persistence `persistence_id`s. 
-
 
 ### Class loading
 
@@ -91,9 +91,8 @@ Libraries can be easily excluded from dependencies in `sbt`:
 
 ```sbt
 libraryDependencies       ++= Seq(
-  "com.lightbend.akka" %% "akka-stream-alpakka-sse" % alpakkaVersion excludeAll (
-        ExclusionRule(organization = "com.typesafe.akka", name = "akka-stream_2.13"),
-        ExclusionRule(organization = "com.typesafe.akka", name = "akka-http_2.13")
+  "ch.epfl.bluebrain.nexus" %% "my-custom-library" % 1.0.0 excludeAll (
+        ExclusionRule(organization = "ch.epfl.bluebrain.nexus", name = "shared-library_2.13")
       )
 ```
 
