@@ -55,7 +55,7 @@ class GraphAnalyticsStreamSuite extends BioSuite with Doobie.Fixture with Config
 
     for {
       // Saving samples
-      _ <- (project1Samples ++ project2Samples).traverse(sampleStore.save).transact(xas.write)
+      _ <- (project1Samples ++ project2Samples).traverse(sampleStore.unsafeSave).transact(xas.write)
       // Asserting relationships
       _ <- findRelationships(project1, expectedProject1.keySet).assert(expectedProject1)
       _ <- findRelationships(project2, expectedProject2.keySet).assert(expectedProject2)

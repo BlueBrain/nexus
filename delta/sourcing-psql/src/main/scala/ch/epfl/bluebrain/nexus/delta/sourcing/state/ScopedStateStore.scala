@@ -36,17 +36,23 @@ trait ScopedStateStore[Id, S <: ScopedState] {
     */
   def save(state: S, tag: Tag, init: PartitionInit): ConnectionIO[Unit]
 
-  /** Persist the state using the `latest` tag, and with forced partition initialization */
-  def save(state: S): ConnectionIO[Unit] =
-    save(state, Latest)
-
-  /** Persist the state using the provided tag, and with forced partition initialization */
-  def save(state: S, tag: Tag): ConnectionIO[Unit] =
-    save(state, tag, Execute(state.project))
-
   /** Persist the state using the `latest` tag, and using the provided partition initialization */
   def save(state: S, init: PartitionInit): ConnectionIO[Unit] =
     save(state, Latest, init)
+
+  /**
+    * Persist the state using the `latest` tag, and with forced partition initialization. Forcing partition
+    * initialization can have a negative impact on performance.
+    */
+  def unsafeSave(state: S): ConnectionIO[Unit] =
+    unsafeSave(state, Latest)
+
+  /**
+    * Persist the state using the provided tag, and with forced partition initialization. Forcing partition
+    * initialization can have a negative impact on performance.
+    */
+  def unsafeSave(state: S, tag: Tag): ConnectionIO[Unit] =
+    save(state, tag, Execute(state.project))
 
   /**
     * Delete the state for the given tag

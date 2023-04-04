@@ -32,9 +32,10 @@ trait ScopedEventStore[Id, E <: ScopedEvent] {
   def save(event: E, init: PartitionInit): ConnectionIO[Unit]
 
   /**
-    * Persist the event with forced partition initialization.
+    * Persist the event with forced partition initialization. Forcing partition initialization can have a negative
+    * impact on performance.
     */
-  def save(event: E): ConnectionIO[Unit] =
+  def unsafeSave(event: E): ConnectionIO[Unit] =
     save(event, Execute(event.project))
 
   /**

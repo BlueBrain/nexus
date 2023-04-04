@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.{GlobalState, ScopedState}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.{GlobalStateStore, ScopedStateStore}
 import ch.epfl.bluebrain.nexus.delta.sourcing.tombstone.TombstoneStore
-import ch.epfl.bluebrain.nexus.delta.sourcing.{EntityDependencyStore, GlobalEntityDefinition, ScopedEntityDefinition}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{EntityDependencyStore, GlobalEntityDefinition, PartitionInit, ScopedEntityDefinition}
 import com.typesafe.scalalogging.Logger
 import doobie.ConnectionIO
 import doobie.implicits._
@@ -102,11 +102,11 @@ object MigrationLog {
         def saveTag(event: E, state: S): UIO[ConnectionIO[Unit]] =
           tagger.tagWhen(event).fold(UIO.pure(noop)) { case (tag, rev) =>
             if (rev == state.rev)
-              UIO.pure(stateStore.save(state, tag))
+              UIO.pure(stateStore.unsafeSave(state, tag))
             else
               stateMachine
                 .computeState(eventStore.history(ref, id, Some(rev)))
-                .map(_.fold(noop) { s => stateStore.save(s, tag) })
+                .map(_.fold(noop) { s => stateStore.unsafeSave(s, tag) })
           }
 
         def deleteTag(event: E, state: S): ConnectionIO[Unit] = tagger.untagWhen(event).fold(noop) { tag =>
@@ -119,13 +119,13 @@ object MigrationLog {
             EntityDependencyStore.delete(ref, state.id) >> EntityDependencyStore.save(ref, state.id, dependencies)
           }
 
-        def persist(event: E, original: Option[S], newState: S) =
+        def persist(event: E, original: Option[S], newState: S, init: PartitionInit) =
           saveTag(event, newState)
             .flatMap { tagQuery =>
               val queries = for {
                 _ <- TombstoneStore.save(entityType, original, newState)
-                _ <- eventStore.save(event)
-                _ <- stateStore.save(newState)
+                _ <- eventStore.save(event, init)
+                _ <- stateStore.save(newState, init)
                 _ <- tagQuery
                 _ <- deleteTag(event, newState)
                 _ <- updateDependencies(newState)
@@ -138,10 +138,11 @@ object MigrationLog {
             }
 
         for {
+          init     <- PartitionInit(event.project, xas.cache)
           original <- stateStore.get(event.project, extractId(event)).redeem(_ => None, Some(_))
           enriched  = enrich(event, original)
           newState <- IO.fromOption(stateMachine.next(original, enriched), InvalidState(original, enriched))
-          result   <- persist(enriched, original, newState)
+          result   <- persist(enriched, original, newState, init)
           _        <- result.fold(
                         _ =>
                           Task.delay(
@@ -151,6 +152,7 @@ object MigrationLog {
                           ),
                         _ => Task.delay(logger.debug(s"Event and state for {}:{}of type {}", event.id, event.rev, entityType))
                       )
+          _        <- init.updateCache(xas.cache)
         } yield (enriched, newState)
       }
 
