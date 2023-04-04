@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.{GlobalState, ScopedState}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.{GlobalStateStore, ScopedStateStore}
 import ch.epfl.bluebrain.nexus.delta.sourcing.tombstone.TombstoneStore
-import ch.epfl.bluebrain.nexus.delta.sourcing.{EntityDependencyStore, GlobalEntityDefinition, PartitionInit, ScopedEntityDefinition}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{EntityDependencyStore, GlobalEntityDefinition, Noop, PartitionInit, ScopedEntityDefinition}
 import com.typesafe.scalalogging.Logger
 import doobie.ConnectionIO
 import doobie.implicits._
@@ -102,11 +102,11 @@ object MigrationLog {
         def saveTag(event: E, state: S): UIO[ConnectionIO[Unit]] =
           tagger.tagWhen(event).fold(UIO.pure(noop)) { case (tag, rev) =>
             if (rev == state.rev)
-              UIO.pure(stateStore.unsafeSave(state, tag))
+              UIO.pure(stateStore.save(state, tag, Noop))
             else
               stateMachine
                 .computeState(eventStore.history(ref, id, Some(rev)))
-                .map(_.fold(noop) { s => stateStore.unsafeSave(s, tag) })
+                .map(_.fold(noop) { s => stateStore.save(s, tag, Noop) })
           }
 
         def deleteTag(event: E, state: S): ConnectionIO[Unit] = tagger.untagWhen(event).fold(noop) { tag =>
