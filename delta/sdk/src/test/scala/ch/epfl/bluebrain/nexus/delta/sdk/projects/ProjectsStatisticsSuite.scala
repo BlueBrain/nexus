@@ -58,12 +58,12 @@ class ProjectsStatisticsSuite extends BioSuite with Doobie.Fixture with ConfigFi
 
   test("Insert some fruits and cheeses") {
     (
-      fruitStore.save(Fruit(proj, nxv + "banana", 3, epoch)) >>
-        fruitStore.save(Fruit(proj, nxv + "apple", 1, epoch.plusSeconds(10L))) >>
-        fruitStore.save(Fruit(proj, nxv + "banana", 1, epoch), UserTag.unsafe("v1")) >>
-        cheeseStore.save(Cheese(proj, nxv + "gruyere", 5, epoch.plusSeconds(15L))) >>
-        fruitStore.save(Fruit(proj2, nxv + "pineapple", 3, epoch)) >>
-        cheeseStore.save(Cheese(proj2, nxv + "morbier", 3, epoch))
+      fruitStore.unsafeSave(Fruit(proj, nxv + "banana", 3, epoch)) >>
+        fruitStore.unsafeSave(Fruit(proj, nxv + "apple", 1, epoch.plusSeconds(10L))) >>
+        fruitStore.unsafeSave(Fruit(proj, nxv + "banana", 1, epoch), UserTag.unsafe("v1")) >>
+        cheeseStore.unsafeSave(Cheese(proj, nxv + "gruyere", 5, epoch.plusSeconds(15L))) >>
+        fruitStore.unsafeSave(Fruit(proj2, nxv + "pineapple", 3, epoch)) >>
+        cheeseStore.unsafeSave(Cheese(proj2, nxv + "morbier", 3, epoch))
     ).transact(xas.write).assert(())
   }
 

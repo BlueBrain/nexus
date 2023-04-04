@@ -61,7 +61,7 @@ class ScopedEventStoreSuite extends BioSuite with Doobie.Fixture with Doobie.Ass
 
   test("Save events") {
     for {
-      _ <- List(event1, event2, event3, event4, event5, event6).traverse(store.save).transact(xas.write)
+      _ <- List(event1, event2, event3, event4, event5, event6).traverse(store.unsafeSave).transact(xas.write)
       _ <- assertCount
     } yield ()
   }
@@ -69,7 +69,7 @@ class ScopedEventStoreSuite extends BioSuite with Doobie.Fixture with Doobie.Ass
   test("Fail when the PK already exists") {
     for {
       _ <- store
-             .save(PullRequestMerged(id1, project1, 2, Instant.EPOCH, Anonymous))
+             .unsafeSave(PullRequestMerged(id1, project1, 2, Instant.EPOCH, Anonymous))
              .transact(xas.write)
              .expectUniqueViolation
       _ <- assertCount

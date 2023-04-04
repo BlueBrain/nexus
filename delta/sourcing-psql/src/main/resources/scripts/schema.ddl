@@ -43,7 +43,8 @@ CREATE TABLE IF NOT EXISTS public.scoped_events(
     value    JSONB        NOT NULL,
     instant  timestamptz  NOT NULL,
     PRIMARY KEY(org, project, id, rev)
-);
+) PARTITION BY LIST (org);
+
 CREATE INDEX IF NOT EXISTS scoped_events_type_idx ON public.scoped_events(type);
 CREATE INDEX IF NOT EXISTS scoped_events_ordering_idx ON public.scoped_events (ordering);
 
@@ -62,7 +63,7 @@ CREATE TABLE IF NOT EXISTS public.scoped_states(
     deprecated boolean      NOT NULL,
     instant    timestamptz  NOT NULL,
     PRIMARY KEY(org, project, tag, id)
-);
+) PARTITION BY LIST (org);
 CREATE INDEX IF NOT EXISTS scoped_states_type_idx ON public.scoped_states(type);
 CREATE INDEX IF NOT EXISTS scoped_states_ordering_idx ON public.scoped_states (ordering);
 CREATE INDEX IF NOT EXISTS project_uuid_idx ON public.scoped_states((value->>'uuid')) WHERE type = 'project';

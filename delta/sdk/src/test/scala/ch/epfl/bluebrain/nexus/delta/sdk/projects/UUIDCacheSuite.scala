@@ -41,8 +41,8 @@ class UUIDCacheSuite extends BioSuite with Doobie.Fixture {
   test("Save some orgs and projects") {
     (orgStore.save(OrganizationGen.state("org", 1, orgUuid)) >>
       orgStore.save(OrganizationGen.state("anotherOrg", 1, UUID.randomUUID())) >>
-      projectStore.save(ProjectGen.state("org", "proj", 1, projUuid)) >>
-      projectStore.save(ProjectGen.state("org", "anotherProj", 1, UUID.randomUUID()))).transact(xas.write)
+      projectStore.unsafeSave(ProjectGen.state("org", "proj", 1, projUuid)) >>
+      projectStore.unsafeSave(ProjectGen.state("org", "anotherProj", 1, UUID.randomUUID()))).transact(xas.write)
   }
 
   test("Return the label for an org from an uuid") {

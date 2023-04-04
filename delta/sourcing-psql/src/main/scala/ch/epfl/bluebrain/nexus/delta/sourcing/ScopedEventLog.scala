@@ -244,11 +244,11 @@ object ScopedEventLog {
         def saveTag(event: E, state: S): UIO[ConnectionIO[Unit]] =
           tagger.tagWhen(event).fold(UIO.pure(noop)) { case (tag, rev) =>
             if (rev == state.rev)
-              UIO.pure(stateStore.save(state, tag))
+              UIO.pure(stateStore.save(state, tag, Noop))
             else
               stateMachine
                 .computeState(eventStore.history(ref, id, Some(rev)))
-                .map(_.fold(noop) { s => stateStore.save(s, tag) })
+                .map(_.fold(noop) { s => stateStore.save(s, tag, Noop) })
           }
 
         def deleteTag(event: E, state: S): ConnectionIO[Unit] = tagger.untagWhen(event).fold(noop) { tag =>
@@ -261,29 +261,38 @@ object ScopedEventLog {
             EntityDependencyStore.delete(ref, state.id) >> EntityDependencyStore.save(ref, state.id, dependencies)
           }
 
-        def persist(event: E, original: Option[S], newState: S): IO[Rejection, Unit] =
-          saveTag(event, newState)
-            .flatMap { tagQuery =>
-              val queries = for {
-                _ <- TombstoneStore.save(entityType, original, newState)
-                _ <- eventStore.save(event)
-                _ <- stateStore.save(newState)
-                _ <- tagQuery
-                _ <- deleteTag(event, newState)
-                _ <- updateDependencies(newState)
-              } yield ()
-              queries
-                .attemptSomeSqlState { case sqlstate.class23.UNIQUE_VIOLATION =>
-                  onUniqueViolation(id, command)
-                }
-                .transact(xas.write)
-            }
-            .hideErrors
+        def persist(event: E, original: Option[S], newState: S): IO[Rejection, Unit] = {
+
+          def queries(tagQuery: ConnectionIO[Unit], init: PartitionInit) =
+            for {
+              _ <- TombstoneStore.save(entityType, original, newState)
+              _ <- eventStore.save(event, init)
+              _ <- stateStore.save(newState, init)
+              _ <- tagQuery
+              _ <- deleteTag(event, newState)
+              _ <- updateDependencies(newState)
+            } yield ()
+
+          {
+            for {
+              init     <- PartitionInit(event.project, xas.cache)
+              tagQuery <- saveTag(event, newState)
+              res      <- queries(tagQuery, init)
+                            .attemptSomeSqlState { case sqlstate.class23.UNIQUE_VIOLATION =>
+                              onUniqueViolation(id, command)
+                            }
+                            .transact(xas.write)
+              _        <- init.updateCache(xas.cache)
+            } yield res
+          }.hideErrors
             .flatMap {
               IO.fromEither(_).tapError { _ =>
-                UIO.delay(logger.info(s"An event for the '$id' in project '$ref' already exists for rev ${event.rev}."))
+                UIO.delay(
+                  logger.info(s"An event for the '$id' in project '$ref' already exists for rev ${event.rev}.")
+                )
               }
             }
+        }
 
         for {
           originalState <- stateStore.get(ref, id).redeem(_ => None, Some(_))
