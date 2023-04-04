@@ -55,12 +55,23 @@ object PartitionInit {
 
   type PartitionsCache = Ref[Task, Set[String]]
 
+  /**
+    * Constructs a PartitionInit based on the given project and provided cache. If the projectRef was already in the
+    * cache, Noop is returned; otherwise Execute is returned.
+    */
   def apply(projectRef: ProjectRef, cache: PartitionsCache): Task[PartitionInit] =
     cache.get.map { c =>
       if (c.contains(projectRefHash(projectRef))) Noop
       else Execute(projectRef)
     }
 
+  /**
+    * A query creating an org partition of the provided mainTable. The partition is itself partitioned by project.
+    * @param mainTable
+    *   The name of the main table we partition
+    * @param projectRef
+    *   The information used to name the partitions
+    */
   def createOrgPartition(mainTable: String, projectRef: ProjectRef): Fragment =
     Fragment.const(s"""
          | CREATE TABLE IF NOT EXISTS ${orgPartition(mainTable, projectRef)}
@@ -68,6 +79,14 @@ object PartitionInit {
          | PARTITION BY LIST (project);
          |""".stripMargin)
 
+  /**
+    * A query creating a project partition of the org partition (for the provided mainTable). The provided projectRef is
+    * used to name the partitions.
+    * @param mainTable
+    *   The name of the main table we partition
+    * @param projectRef
+    *   The information used to name the partitions
+    */
   def createProjectPartition(mainTable: String, projectRef: ProjectRef): Fragment =
     Fragment.const(s"""
          | CREATE TABLE IF NOT EXISTS ${projectRefPartition(mainTable, projectRef)}
