@@ -50,12 +50,13 @@ object GraphAnalyticsStream {
          | AND $inIds
          | AND tag = ${Tag.latest.value}
          |""".stripMargin
-      .query[(Iri, Json)]
+      .query[(Iri, Option[Json])]
       .to[List]
       .transact(xas.streaming)
       .map { l =>
         l.foldLeft(emptyMapType) { case (acc, (id, json)) =>
-          acc ++ json.as[Set[Iri]].toOption.map(id -> _)
+          val types = json.flatMap(_.as[Set[Iri]].toOption).getOrElse(Set.empty)
+          acc + (id -> types)
         }
       }
   }.hideErrors
@@ -82,9 +83,7 @@ object GraphAnalyticsStream {
     // of references
     val relationshipBatch = 500
 
-    /**
-      * Decode the json payloads to [[GraphAnalyticsResult]] We only care for resources and files
-      */
+    // Decode the json payloads to [[GraphAnalyticsResult]] We only care for resources and files
     def decode(entityType: EntityType, json: Json): Task[GraphAnalyticsResult] =
       entityType match {
         case Files.entityType     =>

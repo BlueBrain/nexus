@@ -1,8 +1,12 @@
 {
   "id": "https://bluebrain.github.io/nexus/vocabulary/myId",
   "project": "myorg/myproj",
-  "deprecated": false,
+  "types": [
+    "https://bluebrain.github.io/nexus/vocabulary/CrossProject",
+    "https://bluebrain.github.io/nexus/vocabulary/Resolver"
+  ],
   "rev": 1,
+  "deprecated": false,
   "value": {
     "@type": "CrossProjectValue",
     "identityResolution": {

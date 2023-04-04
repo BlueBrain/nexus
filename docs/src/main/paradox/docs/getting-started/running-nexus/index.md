@@ -47,7 +47,7 @@ Example
 :
 ```
 $ docker version
-Docker version 20.10.2, build 20.10.2-0ubuntu1~18.04.2
+Docker version 20.10.15 build 20.10.2-0ubuntu1~18.04.2
 ```
 
 #### Memory and CPU limits
@@ -62,10 +62,10 @@ of a slower startup and a decreased overall performance, you should be able to g
 
 |    Service    | Memory [MiB] |
 |:-------------:|:------------:|
-| Cassandra     |          512 |
+|   Postgres    |          512 |
 | Elasticsearch |          512 |
-| Blazegraph    |         1024 |
-| Delta         |         1024 |
+|  Blazegraph   |         1024 |
+|     Delta     |         1024 |
 
 ### Recommended: Docker Swarm
 
@@ -95,10 +95,10 @@ To add a manager to this swarm, run 'docker swarm join-token manager' and follow
 
 #### Deployment
 
-Download the @link:[Docker Compose template](docker-swarm/docker-compose.yaml){ open=new } into a directory of your choice, for instance
+* Download the @link:[Docker Compose template](docker-swarm/docker-compose.yaml){ open=new } into a directory of your choice, for instance
 `~/docker/nexus/`.
-
-Download the @link:[http proxy configuration](docker-swarm/nginx.conf){ open=new } to the same directory.
+* Download the @link:[Delta configuration](docker-swarm/delta.conf){ open=new } to the same directory.
+* Download the @link:[http proxy configuration](docker-swarm/nginx.conf){ open=new } to the same directory.
 
 #### Starting Nexus
 
@@ -119,7 +119,7 @@ Creating network nexus_default
 Creating service nexus_router
 Creating service nexus_delta
 Creating service nexus_elasticsearch
-Creating service nexus_cassandra
+Creating service nexus_postgres
 Creating service nexus_blazegraph
 Creating service nexus_web
 ```
@@ -140,16 +140,16 @@ $ curl http://localhost/v1/version | jq
   "@context": "https://bluebrain.github.io/nexus/contexts/version.json",
   "delta": "1.5.0",
   "dependencies": {
-    "blazegraph": "2.1.5",
-    "cassandra": "3.11.10",
+    "blazegraph": "2.1.6-RC",
+    "postgres": "15.1",
     "elasticsearch": "7.16.2"
   },
   "plugins": {
-    "archive": "1.5.0",
-    "blazegraph": "1.5.0",
-    "composite-views": "1.5.0",
-    "elasticsearch": "1.5.0",
-    "storage": "1.5.0"
+    "archive": "1.8.0",
+    "blazegraph": "1.8.0",
+    "composite-views": "1.8.0",
+    "elasticsearch": "1.8.0",
+    "storage": "1.8.0"
   }
 }
 ```
@@ -176,12 +176,10 @@ Example
 :
 ```
 $ docker stack rm nexus
-Removing service nexus_admin
 Removing service nexus_blazegraph
-Removing service nexus_cassandra
+Removing service nexus_postgres
 Removing service nexus_elasticsearch
-Removing service nexus_iam
-Removing service nexus_kg
+Removing service nexus_delta
 Removing service nexus_router
 Removing network nexus_default
 ```
@@ -410,30 +408,7 @@ $ echo $NEXUS
 $
 ```
 
-#### Deploy Cassandra
-
-Command
-:
-```
-kubectl apply -f $MINI/cassandra.yaml && \
-  kubectl wait pod cassandra-0 --for condition=ready --timeout=180s
-```
-
-Example
-:
-```
-$ kubectl apply -f $MINI/cassandra.yaml
-service/cassandra created
-statefulset.apps/cassandra created
-$ kubectl exec -it cassandra-0 -- nodetool status
-Datacenter: datacenter1
-=======================
-Status=Up/Down
-|/ State=Normal/Leaving/Joining/Moving
---  Address     Load       Tokens       Owns (effective)  Host ID                               Rack
-UN  172.17.0.4  103.71 KiB  256          100.0%            80c0bdfa-1f5e-41aa-8a7e-f0dea7fe7ef0  rack1
-$
-```
+#### Deploy PostgreSQL (TODO)
 
 #### Deploy Elasticsearch
 
@@ -549,18 +524,18 @@ pod/kg-0 condition met
 $ curl -s "http://$NEXUS/v1/version" | jq
 {
   "@context": "https://bluebrain.github.io/nexus/contexts/version.json",
-  "delta": "1.5.0",
+  "delta": "1.8.0",
   "dependencies": {
-    "blazegraph": "2.1.5",
-    "cassandra": "3.11.10",
+    "blazegraph": "2.1.6-RC",
+    "postgres": "15.1",
     "elasticsearch": "7.16.2"
   },
   "plugins": {
-    "archive": "1.5.0",
-    "blazegraph": "1.5.0",
-    "composite-views": "1.5.0",
-    "elasticsearch": "1.5.0",
-    "storage": "1.5.0"
+    "archive": "1.8.0",
+    "blazegraph": "1.8.0",
+    "composite-views": "1.8.0",
+    "elasticsearch": "1.8.0",
+    "storage": "1.8.0"
   }
 }
 $ curl -s "http://$NEXUS/v1/resources/org/proj" | jq # the 404 error is expected
@@ -634,7 +609,7 @@ take a look at the @ref:[benchmarks section](../../delta/benchmarks/v1.4.2.md) t
 of throughput with various hardware configurations. When the usage profiles are unknown a couple of rules of thumb
 should narrow the scope:
 
-1.  Nexus uses a collection of data stores (@link:[Cassandra](https://cassandra.apache.org/_/index.html){ open=new },
+1.  Nexus uses a collection of data stores (@link:[PostgreSQL](https://www.postgresql.org/){ open=new },
     @link:[ElasticSearch](https://www.elastic.co/elasticsearch/){ open=new }, 
     @link:[BlazeGraph](https://blazegraph.com/){ open=new }) which depend performance wise to the underlying disk 
     access, so:
@@ -655,44 +630,23 @@ should narrow the scope:
     vertical scalability is desirable over horizontal scalability: fewer host nodes with better specifications is better
     over more commodity hardware host nodes.
 
-### Cassandra
+### PostgreSQL
 
-Nexus uses @link:[Cassandra](https://cassandra.apache.org/_/index.html){ open=new } as its _primary store_ as it scales well in terms of reads with the
-number of nodes in the cluster. It offers data replication out of the box, which allows the system to continue to be
-available in case of node failures or network partitions.
+Nexus uses @link:[PostgreSQL](https://www.postgresql.org/){ open=new } as its _primary store_ as for its strong reputation for performance, reliability and flexibility.
+It can also be run in different contexts from integration to 
 
 Since this is the _primary store_ it is the most important system to be
-@link:[backed up](https://docs.datastax.com/en/archived/cassandra/3.0/cassandra/operations/opsBackupRestore.html){ open=new }. All of the data
-that Nexus uses in other stores can be recomputed from the one stored in Cassandra as the other stores are used as
+@link:[backed up](https://www.postgresql.org/docs/current/backup.html){ open=new }. All of the data
+that Nexus uses in other stores can be recomputed from the one stored in PostgreSQL as the other stores are used as
 mere indexing systems.
 
-Please have a look at the @link:[Planning and Testing](https://docs.datastax.com/en/dseplanning/docs/capacityPlanning.html){ open=new } section in the
-DataStax documentation as it contains recommendations in terms of hardware and capacity.
+// TODO capacity planning + recommendations
 
 As described in the @ref:[architecture section](../../delta/architecture.md) the generally adopted
 persistence model is an EventSourced model in which the data store is used as an _append only_ store. This has
 implications to the total amount of disk used by the primary store.
 
-A formula for computing the required disk space:
-```
-total = (resource_size + nexus_metadata_size) * count * number_updates * replication_factor * 2 (compaction requirement)
-```
-
-The `nexus_metadata_size` varies depending on many things, but it's generally less than or equal to the `resource_size`.
-
-An example, assuming:
-
-*   10KB per resource
-*   1.000.000 distinct resources
-*   10 updates per resource
-*   replication factor of 3
-
-... the total required disk size would be:
-```
-(10KB + 10KB) * 1.000.000 * 10 * 3 * 2 = 1.000.000.000KB ~= 955GB
-```
-The resulting size represents the total disk space of the cluster; a 5 node cluster with the data volume in the
-example above would have to be configured with 200GB disks per node.
+// TODO formula computing disk space
 
 ### ElasticSearch
 
