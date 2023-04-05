@@ -20,7 +20,7 @@ import scala.collection.mutable
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.util.matching.Regex
 
-class ProjectDeletionSpec extends AnyWordSpec with Matchers with IOValues {
+class ProjectDeletionLogicSpec extends AnyWordSpec with Matchers with IOValues {
   case class ProjectFixture(
       deprecated: Boolean,
       updatedAt: Instant,
@@ -98,7 +98,7 @@ class ProjectDeletionSpec extends AnyWordSpec with Matchers with IOValues {
   ) = {
     val deletedProjects = mutable.Set.empty[ProjectResource]
 
-    ProjectDeletionPlugin
+    ProjectDeletionLogic
       .projectDeletionPass(
         allProjects = UIO.pure(projects.map(_.resource)),
         deleteProject = addTo(deletedProjects),
