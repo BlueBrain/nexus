@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.ProjectResource
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceUris}
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{Project, ProjectRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.Project
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
 import ch.epfl.bluebrain.nexus.testkit.IOValues
@@ -80,14 +80,13 @@ class ProjectDeletionSpec extends AnyWordSpec with Matchers with IOValues {
     )
   }
 
-  private def addTo(deletedProjects: mutable.Set[ProjectResource]): ProjectResource => IO[ProjectRejection, Unit] = {
-    pr =>
-      {
-        IO.evalTotal {
-          deletedProjects.add(pr)
-          ()
-        }
+  private def addTo(deletedProjects: mutable.Set[ProjectResource]): ProjectResource => UIO[Unit] = { pr =>
+    {
+      IO.evalTotal {
+        deletedProjects.add(pr)
+        ()
       }
+    }
   }
 
   private def runWith(
@@ -104,11 +103,7 @@ class ProjectDeletionSpec extends AnyWordSpec with Matchers with IOValues {
         allProjects = UIO.pure(projects.map(_.resource)),
         deleteProject = addTo(deletedProjects),
         config(deleteDeprecatedProjects, idleInterval, includedProjects, excludedProjects),
-        lastEventTime = pr =>
-          projects.find(_.id == pr.id).map(_.updatedAt) match {
-            case Some(value) => IO.pure(value)
-            case None        => IO.raiseError(new IllegalArgumentException(s"Project '${pr.value.ref}' was not found."))
-          }
+        lastEventTime = (pr, now) => UIO.pure(projects.find(_.id == pr.id).map(_.updatedAt).getOrElse(now))
       )
       .accepted
 

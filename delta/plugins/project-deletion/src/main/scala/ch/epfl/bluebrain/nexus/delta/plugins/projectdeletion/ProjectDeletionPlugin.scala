@@ -1,20 +1,19 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion
 
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion.model.ProjectDeletionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.ProjectResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ProjectSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.Plugin
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{Projects, ProjectsStatistics}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import monix.bio.{Fiber, IO, Task, UIO}
-import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 
 import java.time.{Duration, Instant}
 import scala.concurrent.duration.DurationInt
@@ -38,30 +37,32 @@ class ProjectDeletionPlugin private (fiber: Fiber[Throwable, Unit]) extends Plug
 }
 
 object ProjectDeletionPlugin {
+
+  private val logger: Logger = Logger[ProjectDeletionPlugin]
   implicit private class BooleanTaskOps(val left: Boolean) extends AnyVal {
-    def `<||>`(right: Task[Boolean]): Task[Boolean] = {
+    def `<||>`(right: UIO[Boolean]): UIO[Boolean] = {
       if (left) {
-        Task.pure(true)
+        UIO.pure(true)
       } else {
         right
       }
     }
 
-    def `<&&>`(right: Task[Boolean]): Task[Boolean] = {
+    def `<&&>`(right: UIO[Boolean]): UIO[Boolean] = {
       if (left) {
         right
       } else {
-        Task.pure(false)
+        UIO.pure(false)
       }
     }
   }
 
   def projectDeletionPass(
       allProjects: UIO[Seq[ProjectResource]],
-      deleteProject: ProjectResource => IO[ProjectRejection, Unit],
+      deleteProject: ProjectResource => UIO[Unit],
       config: ProjectDeletionConfig,
-      lastEventTime: ProjectResource => Task[Instant]
-  ): Task[Unit] = {
+      lastEventTime: (ProjectResource, Instant) => UIO[Instant]
+  ): UIO[Unit] = {
 
     def isIncluded(pr: ProjectResource): Boolean = {
       config.includedProjects.exists(regex => regex.matches(pr.value.ref.toString))
@@ -75,7 +76,7 @@ object ProjectDeletionPlugin {
       config.deleteDeprecatedProjects && pr.deprecated
     }
 
-    def deletableDueToBeingIdle(pr: ProjectResource, now: Instant): Task[Boolean] = {
+    def deletableDueToBeingIdle(pr: ProjectResource, now: Instant): UIO[Boolean] = {
       projectIsIdle(pr, now) <&&> resourcesAreIdle(pr, now)
     }
 
@@ -83,8 +84,8 @@ object ProjectDeletionPlugin {
       (now diff pr.updatedAt).toSeconds > config.idleInterval.toSeconds
     }
 
-    def resourcesAreIdle(pr: ProjectResource, now: Instant) = {
-      lastEventTime(pr).map(_.isBefore(now.minus(Duration.ofMillis(config.idleInterval.toMillis))))
+    def resourcesAreIdle(pr: ProjectResource, now: Instant): UIO[Boolean] = {
+      lastEventTime(pr, now).map(_.isBefore(now.minus(Duration.ofMillis(config.idleInterval.toMillis))))
     }
 
     def allProjectsNotAlreadyDeleted: IO[Nothing, Seq[ProjectResource]] = {
@@ -92,24 +93,20 @@ object ProjectDeletionPlugin {
         .map(_.filter(!_.value.markedForDeletion))
     }
 
-    def shouldBeDeleted(now: Instant): ProjectResource => Task[Boolean] = { pr =>
+    def shouldBeDeleted(now: Instant): ProjectResource => UIO[Boolean] = { pr =>
       {
         (isIncluded(pr) && notExcluded(pr)) <&&> (deletableDueToDeprecation(pr) <||> deletableDueToBeingIdle(pr, now))
       }
     }
 
-    def deleteProjects(projects: Seq[ProjectResource]): Task[Unit] = {
-      Task
-        .traverse(projects)(
-          deleteProject(_).void.mapError(e => new RuntimeException(s"error deleting project from plugin: ${e}"))
-        )
-        .void
+    def deleteProjects(projects: Seq[ProjectResource]): UIO[Unit] = {
+      projects.traverse(deleteProject).void
     }
 
     for {
       allProjects      <- allProjectsNotAlreadyDeleted
       now              <- IOUtils.instant
-      projectsToDelete <- allProjects.filterA[Task](shouldBeDeleted(now))
+      projectsToDelete <- allProjects.filterA(shouldBeDeleted(now))
       _                <- deleteProjects(projectsToDelete)
     } yield {
       ()
@@ -125,11 +122,13 @@ object ProjectDeletionPlugin {
       projectStatistics: ProjectsStatistics
   ): Task[ProjectDeletionPlugin] = {
 
-    def lastEventTime(pr: ProjectResource): Task[Instant] = {
-      projectStatistics.get(pr.value.ref).flatMap {
-        case Some(stats) => IO.pure(stats.lastEventTime)
-        case None        => IO.raiseError(new IllegalArgumentException(s"Project '${pr.value.ref}' was not found."))
-      }
+    def lastEventTime(pr: ProjectResource, now: Instant): UIO[Instant] = {
+      projectStatistics
+        .get(pr.value.ref)
+        .map(_.map(_.lastEventTime).getOrElse {
+          logger.error(s"statistics for project '${pr.value.ref}' were not found")
+          now
+        })
     }
 
     val allProjects: UIO[Seq[ProjectResource]] = {
@@ -143,10 +142,12 @@ object ProjectDeletionPlugin {
         .map(_.map(_.source))
     }
 
-    def deleteProject(pr: ProjectResource): IO[ProjectRejection, Unit] = {
+    def deleteProject(pr: ProjectResource): UIO[Unit] = {
       implicit val caller: Subject = Identity.Anonymous
       projects
         .delete(pr.value.ref, pr.rev)
+        .void
+        .onErrorHandle(e => logger.error(s"error deleting project from plugin: ${e}"))
         .void
     }
 
