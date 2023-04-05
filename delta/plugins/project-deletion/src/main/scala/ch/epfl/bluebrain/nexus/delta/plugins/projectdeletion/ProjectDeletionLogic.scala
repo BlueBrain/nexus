@@ -58,8 +58,12 @@ object ProjectDeletionLogic {
       lastEventTime(pr, now).map(_.isBefore(now.minus(Duration.ofMillis(config.idleInterval.toMillis))))
     }
 
+    def alreadyDeleted(pr: ProjectResource): Boolean = {
+      pr.value.markedForDeletion
+    }
+
     def shouldBeDeleted(pr: ProjectResource, now: Instant): UIO[Boolean] = {
-      (isIncluded(pr) && notExcluded(pr) && !pr.value.markedForDeletion) <&&> (deletableDueToDeprecation(
+      (isIncluded(pr) && notExcluded(pr) && !alreadyDeleted(pr)) <&&> (deletableDueToDeprecation(
         pr
       ) <||> deletableDueToBeingIdle(pr, now))
     }
