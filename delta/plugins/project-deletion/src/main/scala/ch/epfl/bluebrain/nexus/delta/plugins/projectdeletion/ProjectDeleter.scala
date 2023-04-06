@@ -6,11 +6,31 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion.model.ProjectDeletionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.ProjectResource
 import monix.bio.UIO
+import ProjectDeleter._
 
 import java.time.{Duration, Instant}
 
-object ProjectDeletionLogic {
-  implicit private class BooleanTaskOps(val left: Boolean) extends AnyVal {
+object ProjectDeleter {
+
+  def projectDeletionPass(
+      allProjects: UIO[Seq[ProjectResource]],
+      deleteProject: ProjectResource => UIO[Unit],
+      config: ProjectDeletionConfig,
+      lastEventTime: (ProjectResource, Instant) => UIO[Instant]
+  ): UIO[Unit] = {
+
+    val deleter = new ProjectDeleter(deleteProject, config, lastEventTime)
+
+    for {
+      allProjects <- allProjects
+      now         <- IOUtils.instant
+      _           <- allProjects.traverse(deleter.processProject(_, now))
+    } yield {
+      ()
+    }
+  }
+
+  implicit class BooleanTaskOps(val left: Boolean) extends AnyVal {
     def `<||>`(right: UIO[Boolean]): UIO[Boolean] = {
       if (left) {
         UIO.pure(true)
@@ -27,12 +47,15 @@ object ProjectDeletionLogic {
       }
     }
   }
-  def projectDeletionPass(
-      allProjects: UIO[Seq[ProjectResource]],
-      deleteProject: ProjectResource => UIO[Unit],
-      config: ProjectDeletionConfig,
-      lastEventTime: (ProjectResource, Instant) => UIO[Instant]
-  ): UIO[Unit] = {
+}
+
+class ProjectDeleter(
+    deleteProject: ProjectResource => UIO[Unit],
+    config: ProjectDeletionConfig,
+    lastEventTime: (ProjectResource, Instant) => UIO[Instant]
+) {
+
+  def processProject(pr: ProjectResource, now: Instant) = {
 
     def isIncluded(pr: ProjectResource): Boolean = {
       config.includedProjects.exists(regex => regex.matches(pr.value.ref.toString))
@@ -68,20 +91,9 @@ object ProjectDeletionLogic {
       ) <||> deletableDueToBeingIdle(pr, now))
     }
 
-    def processProject(pr: ProjectResource, now: Instant): UIO[Unit] = {
-      shouldBeDeleted(pr, now).flatMap {
-        case true  => deleteProject(pr)
-        case false => UIO.unit
-      }
-    }
-
-    for {
-      allProjects <- allProjects
-      now         <- IOUtils.instant
-      _           <- allProjects.traverse(processProject(_, now))
-    } yield {
-      ()
+    shouldBeDeleted(pr, now).flatMap {
+      case true  => deleteProject(pr)
+      case false => UIO.unit
     }
   }
-
 }

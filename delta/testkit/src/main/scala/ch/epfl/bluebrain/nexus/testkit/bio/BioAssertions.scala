@@ -13,7 +13,13 @@ import scala.util.control.NonFatal
 
 trait BioAssertions { self: Assertions =>
 
-  def assertIO[E, A, B](
+  def assertUIO[A](io: UIO[A], cond: A => Boolean, clue: => Any = "assertion failed")(implicit
+      loc: Location
+  ): UIO[Unit] = {
+    io.map(result => assert(cond(result), clue))
+  }
+
+  def assertEqualsIO[E, A, B](
       obtained: IO[E, A],
       returns: B,
       clue: => Any = "values are not the same"

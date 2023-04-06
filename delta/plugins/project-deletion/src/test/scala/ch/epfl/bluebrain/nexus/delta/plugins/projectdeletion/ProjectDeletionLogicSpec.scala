@@ -1,5 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion
 
+import ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion.ProjectDeletionLogicSpec.{assertDeleted, assertNotDeleted, configWhere, projectWhere, runWith, ThreeHoursAgo, TwoDaysAgo}
+import ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion.Result.{Deleted, NotDeleted}
 import ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion.model.ProjectDeletionConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
@@ -9,18 +11,92 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.Project
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
-import ch.epfl.bluebrain.nexus.testkit.IOValues
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers.genString
+import ch.epfl.bluebrain.nexus.testkit.bio.{BioAssertions, BioSuite}
 import monix.bio.{IO, UIO}
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
+import munit.{Assertions, Location}
 
 import java.time.{Duration, Instant}
 import scala.collection.mutable
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.util.matching.Regex
 
-class ProjectDeletionLogicSpec extends AnyWordSpec with Matchers with IOValues {
+class ProjectDeletionLogicSpec extends BioSuite {
+
+  test("delete a deprecated project") {
+    assertDeleted(
+      runWith(
+        configWhere(deleteDeprecatedProjects = true),
+        projectWhere(deprecated = true)
+      )
+    )
+  }
+
+  test("not delete a non-deprecated project") {
+    assertNotDeleted(
+      runWith(
+        configWhere(deleteDeprecatedProjects = true),
+        projectWhere(deprecated = false)
+      )
+    )
+  }
+
+  test("not delete a deprecated project if the feature is disabled") {
+    assertNotDeleted(
+      runWith(
+        configWhere(deleteDeprecatedProjects = false),
+        projectWhere(deprecated = true)
+      )
+    )
+  }
+
+  test("delete a project which has been inactive too long") {
+    assertDeleted(
+      runWith(
+        configWhere(idleInterval = 24.hours),
+        projectWhere(updatedAt = TwoDaysAgo)
+      )
+    )
+  }
+
+  test("not delete a project which has been active recently") {
+    assertNotDeleted(
+      runWith(
+        configWhere(idleInterval = 24.hours),
+        projectWhere(updatedAt = ThreeHoursAgo)
+      )
+    )
+  }
+
+  test("not delete a project if the org/label does not match the inclusion regex") {
+    assertNotDeleted(
+      runWith(
+        configWhere(idleInterval = 24.hours, includedProjects = List("look.+".r, ".*magnum".r)),
+        projectWhere(updatedAt = ThreeHoursAgo, org = "cinelli", label = "vigorelli")
+      )
+    )
+  }
+
+  test("not delete a project if the org/label matches the exclusion regex") {
+    assertNotDeleted(
+      runWith(
+        configWhere(idleInterval = 24.hours, excludedProjects = List("look.+".r, ".*magnum".r)),
+        projectWhere(updatedAt = ThreeHoursAgo, org = "skream", label = "magnum")
+      )
+    )
+  }
+
+  test("not run against already deleted projects") {
+    assertNotDeleted(
+      runWith(
+        configWhere(idleInterval = 24.hours),
+        projectWhere(updatedAt = TwoDaysAgo, markedForDeletion = true)
+      )
+    )
+  }
+}
+
+object ProjectDeletionLogicSpec extends Assertions with BioAssertions {
   case class ProjectFixture(
       deprecated: Boolean,
       updatedAt: Instant,
@@ -52,7 +128,7 @@ class ProjectDeletionLogicSpec extends AnyWordSpec with Matchers with IOValues {
     }
   }
 
-  private def projectWith(
+  def projectWhere(
       deprecated: Boolean = false,
       updatedAt: Instant = Instant.now(),
       org: String = genId(),
@@ -63,13 +139,14 @@ class ProjectDeletionLogicSpec extends AnyWordSpec with Matchers with IOValues {
     ProjectFixture(deprecated, updatedAt, org, label, id, markedForDeletion)
   }
 
-  private def genId(length: Int = 15): String =
+  def genId(length: Int = 15): String =
     genString(length = length, Vector.range('a', 'z') ++ Vector.range('0', '9'))
-  private def config(
-      deleteDeprecatedProjects: Boolean,
-      idleInterval: FiniteDuration,
-      includedProjects: List[Regex],
-      excludedProjects: List[Regex]
+
+  def configWhere(
+      deleteDeprecatedProjects: Boolean = false,
+      idleInterval: FiniteDuration = 1.second,
+      includedProjects: List[Regex] = List(".*".r),
+      excludedProjects: List[Regex] = Nil
   ): ProjectDeletionConfig = {
     ProjectDeletionConfig(
       idleInterval,
@@ -80,109 +157,51 @@ class ProjectDeletionLogicSpec extends AnyWordSpec with Matchers with IOValues {
     )
   }
 
-  private def addTo(deletedProjects: mutable.Set[ProjectResource]): ProjectResource => UIO[Unit] = { pr =>
-    {
-      IO.evalTotal {
-        deletedProjects.add(pr)
-        ()
-      }
+  def addTo(deletedProjects: mutable.Set[ProjectResource]): ProjectResource => UIO[Unit] = { pr =>
+    IO.evalTotal {
+      deletedProjects.add(pr)
+      ()
     }
   }
 
-  private def runWith(
-      projects: List[ProjectFixture],
-      deleteDeprecatedProjects: Boolean = false,
-      idleInterval: FiniteDuration = 1.second,
-      includedProjects: List[Regex] = List(".*".r),
-      excludedProjects: List[Regex] = Nil
-  ) = {
+  def assertDeleted(result: UIO[Result])(implicit loc: Location): UIO[Unit] = {
+    assertUIO[Result](result, _ == Result.Deleted, "project was not deleted")
+  }
+
+  def assertNotDeleted(result: UIO[Result])(implicit loc: Location): UIO[Unit] = {
+    assertUIO[Result](result, _ == Result.NotDeleted, "project was deleted")
+  }
+
+  val TwoDaysAgo    = Instant.now().minus(Duration.ofDays(2))
+  val ThreeHoursAgo = Instant.now().minus(Duration.ofHours(3))
+
+  def runWith(
+      config: ProjectDeletionConfig,
+      project: ProjectFixture
+  ): UIO[Result] = {
     val deletedProjects = mutable.Set.empty[ProjectResource]
 
-    ProjectDeletionLogic
-      .projectDeletionPass(
-        allProjects = UIO.pure(projects.map(_.resource)),
-        deleteProject = addTo(deletedProjects),
-        config(deleteDeprecatedProjects, idleInterval, includedProjects, excludedProjects),
-        lastEventTime = (pr, now) => UIO.pure(projects.find(_.id == pr.id).map(_.updatedAt).getOrElse(now))
+    val deleter = new ProjectDeleter(addTo(deletedProjects), config, (_, _) => UIO.pure(project.updatedAt))
+    deleter
+      .processProject(
+        project.resource,
+        Instant.now()
       )
-      .accepted
-
-    deletedProjects
+      .map { _ =>
+        if (deletedProjects.isEmpty) {
+          NotDeleted
+        } else {
+          Deleted
+        }
+      }
   }
 
-  "Project deletion" should {
-    "delete a project when deprecated" when {
-      "if enabled" in {
-        val deprecatedProject    = projectWith(deprecated = true)
-        val nonDeprecatedProject = projectWith(deprecated = false)
+}
 
-        val deletedProjects =
-          runWith(projects = List(deprecatedProject, nonDeprecatedProject), deleteDeprecatedProjects = true)
+sealed trait Result
 
-        deletedProjects should contain(deprecatedProject.resource)
-        deletedProjects should not contain nonDeprecatedProject.resource
-      }
+object Result {
+  case object Deleted extends Result
 
-      "not if disabled" in {
-        val deprecatedProject = projectWith(deprecated = true)
-
-        val deletedProjects = runWith(projects = List(deprecatedProject), deleteDeprecatedProjects = false)
-
-        deletedProjects should not contain deprecatedProject.resource
-      }
-    }
-
-    val TwoDaysAgo    = Instant.now().minus(Duration.ofDays(2))
-    val ThreeHoursAgo = Instant.now().minus(Duration.ofHours(3))
-
-    "delete a project if it has been inactive for too long" in {
-      val inactiveProject = projectWith(updatedAt = TwoDaysAgo)
-      val activeProject   = projectWith(updatedAt = ThreeHoursAgo)
-
-      val deletedProjects = runWith(projects = List(inactiveProject, activeProject), idleInterval = 24.hours)
-
-      deletedProjects should contain(inactiveProject.resource)
-      deletedProjects should not contain activeProject.resource
-    }
-
-    "only delete projects which match the specified inclusion regex" in {
-      val matchingProject       = projectWith(updatedAt = TwoDaysAgo, org = "cinelli", label = "vigorelli")
-      val secondMatchingProject = projectWith(updatedAt = TwoDaysAgo, org = "skream", label = "magnum")
-      val nonMatchingProject    = projectWith(updatedAt = TwoDaysAgo, org = "genesis", label = "flyer")
-
-      val deletedProjects = runWith(
-        projects = List(matchingProject, secondMatchingProject, nonMatchingProject),
-        idleInterval = 24.hours,
-        includedProjects = List("cinelli.+".r, ".*magnum".r)
-      )
-
-      deletedProjects should contain(matchingProject.resource)
-      deletedProjects should contain(secondMatchingProject.resource)
-      deletedProjects should not contain nonMatchingProject.resource
-    }
-
-    "not delete projects which match the specified exclusion regex" in {
-      val matchingProject       = projectWith(updatedAt = TwoDaysAgo, org = "cinelli", label = "vigorelli")
-      val secondMatchingProject = projectWith(updatedAt = TwoDaysAgo, org = "skream", label = "magnum")
-      val nonMatchingProject    = projectWith(updatedAt = TwoDaysAgo, org = "genesis", label = "flyer")
-
-      val deletedProjects = runWith(
-        projects = List(matchingProject, secondMatchingProject, nonMatchingProject),
-        idleInterval = 24.hours,
-        excludedProjects = List("cinelli.+".r, ".*magnum".r)
-      )
-
-      deletedProjects should contain(nonMatchingProject.resource)
-      deletedProjects should not contain secondMatchingProject.resource
-      deletedProjects should not contain matchingProject.resource
-    }
-
-    "not run against already deleted projects" in {
-      val alreadyDeletedProject = projectWith(updatedAt = TwoDaysAgo, markedForDeletion = true)
-
-      val deletedProjects = runWith(projects = List(alreadyDeletedProject), idleInterval = 24.hours)
-
-      deletedProjects should not contain alreadyDeletedProject.resource
-    }
-  }
+  case object NotDeleted extends Result
 }
