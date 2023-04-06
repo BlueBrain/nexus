@@ -54,16 +54,25 @@ class ProjectDeletionLogicSpec extends BioSuite {
     assertDeleted(
       runWith(
         configWhere(idleInterval = 24.hours),
-        projectWhere(updatedAt = TwoDaysAgo)
+        projectWhere(updatedAt = TwoDaysAgo, lastEventTime = TwoDaysAgo)
       )
     )
   }
 
-  test("not delete a project which has been active recently") {
+  test("not delete a project which has been updated recently") {
     assertNotDeleted(
       runWith(
         configWhere(idleInterval = 24.hours),
-        projectWhere(updatedAt = ThreeHoursAgo)
+        projectWhere(updatedAt = ThreeHoursAgo, lastEventTime = TwoDaysAgo)
+      )
+    )
+  }
+
+  test("not delete a project which has recent events") {
+    assertNotDeleted(
+      runWith(
+        configWhere(idleInterval = 24.hours),
+        projectWhere(updatedAt = TwoDaysAgo, lastEventTime = ThreeHoursAgo)
       )
     )
   }
@@ -98,12 +107,13 @@ class ProjectDeletionLogicSpec extends BioSuite {
 
 object ProjectDeletionLogicSpec extends Assertions with BioAssertions {
   case class ProjectFixture(
-      deprecated: Boolean,
-      updatedAt: Instant,
-      org: String,
-      label: String,
-      id: Iri,
-      markedForDeletion: Boolean
+                             deprecated: Boolean,
+                             updatedAt: Instant,
+                             lastEventTime: Instant,
+                             org: String,
+                             label: String,
+                             id: Iri,
+                             markedForDeletion: Boolean
   ) {
     val resource = {
       val project = ProjectGen.project(
@@ -129,14 +139,15 @@ object ProjectDeletionLogicSpec extends Assertions with BioAssertions {
   }
 
   def projectWhere(
-      deprecated: Boolean = false,
-      updatedAt: Instant = Instant.now(),
-      org: String = genId(),
-      label: String = genId(),
-      id: Iri = nxv + genId(),
-      markedForDeletion: Boolean = false
+                    deprecated: Boolean = false,
+                    updatedAt: Instant = Instant.now(),
+                    lastEventTime: Instant = Instant.now(),
+                    org: String = genId(),
+                    label: String = genId(),
+                    id: Iri = nxv + genId(),
+                    markedForDeletion: Boolean = false
   ) = {
-    ProjectFixture(deprecated, updatedAt, org, label, id, markedForDeletion)
+    ProjectFixture(deprecated, updatedAt, lastEventTime, org, label, id, markedForDeletion)
   }
 
   def genId(length: Int = 15): String =
@@ -181,7 +192,10 @@ object ProjectDeletionLogicSpec extends Assertions with BioAssertions {
   ): UIO[Result] = {
     val deletedProjects = mutable.Set.empty[ProjectResource]
 
-    val deleter = new ProjectDeleter(addTo(deletedProjects), config, (_, _) => UIO.pure(project.updatedAt))
+    val deleter = new ProjectDeleter(
+      deleteProject = addTo(deletedProjects),
+      config,
+      lastEventTime = (_, _) => UIO.pure(project.lastEventTime))
     deleter
       .processProject(
         project.resource,
