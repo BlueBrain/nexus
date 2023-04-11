@@ -1,12 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion
 
+import cats.Semigroup
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax.instantSyntax
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion.model.ProjectDeletionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.ProjectResource
 import monix.bio.UIO
-import ProjectDeleter._
 
 import java.time.{Duration, Instant}
 
@@ -29,24 +29,6 @@ object ProjectDeleter {
       ()
     }
   }
-
-  implicit class BooleanTaskOps(val left: Boolean) extends AnyVal {
-    def `<||>`(right: UIO[Boolean]): UIO[Boolean] = {
-      if (left) {
-        UIO.pure(true)
-      } else {
-        right
-      }
-    }
-
-    def `<&&>`(right: UIO[Boolean]): UIO[Boolean] = {
-      if (left) {
-        right
-      } else {
-        UIO.pure(false)
-      }
-    }
-  }
 }
 
 class ProjectDeleter(
@@ -54,6 +36,17 @@ class ProjectDeleter(
     config: ProjectDeletionConfig,
     lastEventTime: (ProjectResource, Instant) => UIO[Instant]
 ) {
+
+  private val andSemigroup: Semigroup[UIO[Boolean]] = (x: UIO[Boolean], y: UIO[Boolean]) =>
+    x.flatMap {
+      case true  => y
+      case false => x
+    }
+  private val orSemigroup: Semigroup[UIO[Boolean]]  = (x: UIO[Boolean], y: UIO[Boolean]) =>
+    x.flatMap {
+      case true  => x
+      case false => y
+    }
 
   def processProject(pr: ProjectResource, now: Instant) = {
 
@@ -70,7 +63,7 @@ class ProjectDeleter(
     }
 
     def deletableDueToBeingIdle(pr: ProjectResource, now: Instant): UIO[Boolean] = {
-      projectIsIdle(pr, now) <&&> resourcesAreIdle(pr, now)
+      (projectIsIdle(pr, now), resourcesAreIdle(pr, now)).reduce(andSemigroup)
     }
 
     def projectIsIdle(pr: ProjectResource, now: Instant) = {
@@ -86,9 +79,12 @@ class ProjectDeleter(
     }
 
     def shouldBeDeleted(pr: ProjectResource, now: Instant): UIO[Boolean] = {
-      (isIncluded(pr) && notExcluded(pr) && !alreadyDeleted(pr)) <&&> (deletableDueToDeprecation(
-        pr
-      ) <||> deletableDueToBeingIdle(pr, now))
+      (
+        isIncluded(pr),
+        notExcluded(pr),
+        !alreadyDeleted(pr),
+        (deletableDueToDeprecation(pr), deletableDueToBeingIdle(pr, now)).reduce(orSemigroup)
+      ).reduce(andSemigroup)
     }
 
     shouldBeDeleted(pr, now).flatMap {

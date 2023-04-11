@@ -5,7 +5,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.PriorityRoute
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sdk.plugin.Plugin
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{Projects, ProjectsStatistics}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Supervisor
 import izumi.distage.model.definition.{Id, ModuleDef}
@@ -35,12 +34,12 @@ class ProjectDeletionModule(priority: Int) extends ModuleDef {
     PriorityRoute(priority, route.routes, requiresStrictEntity = true)
   }
 
-  many[Plugin].addEffect {
+  make[ProjectDeletionRunner].fromEffect {
     (
         projects: Projects,
         config: ProjectDeletionConfig,
         projectStatistics: ProjectsStatistics,
         supervisor: Supervisor
-    ) => ProjectDeletionPlugin.started(projects, config, projectStatistics, supervisor)
+    ) => ProjectDeletionRunner.start(projects, config, projectStatistics, supervisor)
   }
 }
