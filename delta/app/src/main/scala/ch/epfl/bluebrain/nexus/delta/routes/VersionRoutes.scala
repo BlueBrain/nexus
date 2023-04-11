@@ -8,15 +8,15 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.VersionRoutes.VersionBundle
+import ch.epfl.bluebrain.nexus.delta.sdk.ServiceDependency
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.{PluginDescription, ServiceDescription}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ComponentDescription}
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.version
-import ch.epfl.bluebrain.nexus.delta.sdk.ServiceDependency
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.{PluginDescription, ServiceDescription}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ComponentDescription, Name}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.version
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
@@ -30,7 +30,8 @@ class VersionRoutes(
     aclCheck: AclCheck,
     main: ServiceDescription,
     plugins: Iterable[PluginDescription],
-    dependencies: Iterable[ServiceDependency]
+    dependencies: Iterable[ServiceDependency],
+    env: Name
 )(implicit
     baseUri: BaseUri,
     s: Scheduler,
@@ -47,7 +48,7 @@ class VersionRoutes(
           (get & pathEndOrSingleSlash) {
             operationName(s"$prefixSegment/version") {
               authorizeFor(AclAddress.Root, version.read).apply {
-                emit(UIO.traverse(dependencies)(_.serviceDescription).map(VersionBundle(main, _, plugins)))
+                emit(UIO.traverse(dependencies)(_.serviceDescription).map(VersionBundle(main, _, plugins, env)))
               }
             }
           }
@@ -62,7 +63,8 @@ object VersionRoutes {
   final private[routes] case class VersionBundle(
       main: ServiceDescription,
       dependencies: Iterable[ServiceDescription],
-      plugins: Iterable[PluginDescription]
+      plugins: Iterable[PluginDescription],
+      env: Name
   )
 
   private[routes] object VersionBundle {
@@ -70,11 +72,12 @@ object VersionRoutes {
       values.map(desc => desc.name.value -> desc.version).toMap
 
     implicit private val versionBundleEncoder: Encoder.AsObject[VersionBundle]     =
-      Encoder.encodeJsonObject.contramapObject { case VersionBundle(main, dependencies, plugins) =>
+      Encoder.encodeJsonObject.contramapObject { case VersionBundle(main, dependencies, plugins, env) =>
         JsonObject(
           main.name.value -> main.version.asJson,
           "dependencies"  -> toMap(dependencies).asJson,
-          "plugins"       -> toMap(plugins).asJson
+          "plugins"       -> toMap(plugins).asJson,
+          "env"           -> env.asJson
         )
       }
 
@@ -97,5 +100,5 @@ object VersionRoutes {
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering
   ): VersionRoutes =
-    new VersionRoutes(identities, aclCheck, ServiceDescription(cfg.name, cfg.version), plugins, depdendencies)
+    new VersionRoutes(identities, aclCheck, ServiceDescription(cfg.name, cfg.version), plugins, depdendencies, cfg.env)
 }

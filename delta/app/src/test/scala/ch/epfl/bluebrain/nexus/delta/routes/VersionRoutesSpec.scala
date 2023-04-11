@@ -37,7 +37,7 @@ class VersionRoutesSpec extends BaseRouteSpec {
       UIO.pure(ServiceDescription(Name.unsafe("remoteStorage"), "1.0.0"))
   }
 
-  private val descriptionConfig = DescriptionConfig(Name.unsafe("delta"))
+  private val descriptionConfig = DescriptionConfig(Name.unsafe("delta"), Name.unsafe("dev"))
 
   private val aclCheck    = AclSimpleCheck().accepted
   private lazy val routes = Route.seal(
