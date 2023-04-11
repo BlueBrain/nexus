@@ -9,5 +9,5 @@
     "pluginA": "1.0",
     "pluginB": "2.0"
   },
-  "env": "dev"
+  "environment": "dev"
 } 

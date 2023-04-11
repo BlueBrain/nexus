@@ -77,7 +77,7 @@ object VersionRoutes {
           main.name.value -> main.version.asJson,
           "dependencies"  -> toMap(dependencies).asJson,
           "plugins"       -> toMap(plugins).asJson,
-          "env"           -> env.asJson
+          "environment"   -> env.asJson
         )
       }
 
