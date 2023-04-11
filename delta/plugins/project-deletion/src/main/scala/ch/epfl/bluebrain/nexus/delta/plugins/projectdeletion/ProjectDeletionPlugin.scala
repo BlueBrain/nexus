@@ -57,7 +57,7 @@ object ProjectDeletionPlugin {
       projectStatistics
         .get(pr.value.ref)
         .map(_.map(_.lastEventTime).getOrElse {
-          logger.error(s"statistics for project '${pr.value.ref}' were not found")
+          logger.error(s"Statistics for project '${pr.value.ref}' were not found")
           now
         })
     }
@@ -78,7 +78,7 @@ object ProjectDeletionPlugin {
       projects
         .delete(pr.value.ref, pr.rev)
         .void
-        .onErrorHandle(e => logger.error(s"error deleting project from plugin: ${e}"))
+        .onErrorHandleWith(e => UIO.eval(logger.error(s"Error deleting project from plugin: ${e}")))
         .void
     }
 
