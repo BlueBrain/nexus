@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion
 
-import ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion.ProjectDeleterSuite.{assertDeleted, assertNotDeleted, configWhere, projectWhere, runWith, ThreeHoursAgo, TwoDaysAgo}
-import ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion.Result.{Deleted, NotDeleted}
+import ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion.ShouldDeleteProjectSuite.{assertDeleted, assertNotDeleted, configWhere, projectWhere, shouldBeDeleted, ThreeHoursAgo, TwoDaysAgo}
 import ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion.model.ProjectDeletionConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
@@ -21,11 +20,11 @@ import scala.collection.mutable
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.util.matching.Regex
 
-class ProjectDeleterSuite extends BioSuite {
+class ShouldDeleteProjectSuite extends BioSuite {
 
   test("delete a deprecated project") {
     assertDeleted(
-      runWith(
+      shouldBeDeleted(
         configWhere(deleteDeprecatedProjects = true),
         projectWhere(deprecated = true)
       )
@@ -34,7 +33,7 @@ class ProjectDeleterSuite extends BioSuite {
 
   test("not delete a non-deprecated project") {
     assertNotDeleted(
-      runWith(
+      shouldBeDeleted(
         configWhere(deleteDeprecatedProjects = true),
         projectWhere(deprecated = false)
       )
@@ -43,7 +42,7 @@ class ProjectDeleterSuite extends BioSuite {
 
   test("not delete a deprecated project if the feature is disabled") {
     assertNotDeleted(
-      runWith(
+      shouldBeDeleted(
         configWhere(deleteDeprecatedProjects = false),
         projectWhere(deprecated = true)
       )
@@ -52,7 +51,7 @@ class ProjectDeleterSuite extends BioSuite {
 
   test("delete a project which has been inactive too long") {
     assertDeleted(
-      runWith(
+      shouldBeDeleted(
         configWhere(idleInterval = 24.hours),
         projectWhere(updatedAt = TwoDaysAgo, lastEventTime = TwoDaysAgo)
       )
@@ -61,7 +60,7 @@ class ProjectDeleterSuite extends BioSuite {
 
   test("not delete a project which has been updated recently") {
     assertNotDeleted(
-      runWith(
+      shouldBeDeleted(
         configWhere(idleInterval = 24.hours),
         projectWhere(updatedAt = ThreeHoursAgo, lastEventTime = TwoDaysAgo)
       )
@@ -70,7 +69,7 @@ class ProjectDeleterSuite extends BioSuite {
 
   test("not delete a project which has recent events") {
     assertNotDeleted(
-      runWith(
+      shouldBeDeleted(
         configWhere(idleInterval = 24.hours),
         projectWhere(updatedAt = TwoDaysAgo, lastEventTime = ThreeHoursAgo)
       )
@@ -79,25 +78,25 @@ class ProjectDeleterSuite extends BioSuite {
 
   test("not delete a project if the org/label does not match the inclusion regex") {
     assertNotDeleted(
-      runWith(
-        configWhere(idleInterval = 24.hours, includedProjects = List("look.+".r, ".*magnum".r)),
-        projectWhere(updatedAt = ThreeHoursAgo, org = "cinelli", label = "vigorelli")
+      shouldBeDeleted(
+        configWhere(idleInterval = 24.hours, includedProjects = List("hippocampus.+".r, ".*neuron".r)),
+        projectWhere(updatedAt = ThreeHoursAgo, lastEventTime = ThreeHoursAgo, org = "hippocampus", label = "mouse")
       )
     )
   }
 
   test("not delete a project if the org/label matches the exclusion regex") {
     assertNotDeleted(
-      runWith(
-        configWhere(idleInterval = 24.hours, excludedProjects = List("look.+".r, ".*magnum".r)),
-        projectWhere(updatedAt = ThreeHoursAgo, org = "skream", label = "magnum")
+      shouldBeDeleted(
+        configWhere(idleInterval = 24.hours, excludedProjects = List("hippocampus.+".r, ".*neuron".r)),
+        projectWhere(updatedAt = ThreeHoursAgo, lastEventTime = ThreeHoursAgo, org = "thalamus", label = "neuron")
       )
     )
   }
 
   test("not run against already deleted projects") {
     assertNotDeleted(
-      runWith(
+      shouldBeDeleted(
         configWhere(idleInterval = 24.hours),
         projectWhere(updatedAt = TwoDaysAgo, markedForDeletion = true)
       )
@@ -105,7 +104,7 @@ class ProjectDeleterSuite extends BioSuite {
   }
 }
 
-object ProjectDeleterSuite extends Assertions with BioAssertions {
+object ShouldDeleteProjectSuite extends Assertions with BioAssertions {
   case class ProjectFixture(
       deprecated: Boolean,
       updatedAt: Instant,
@@ -175,48 +174,26 @@ object ProjectDeleterSuite extends Assertions with BioAssertions {
     }
   }
 
-  def assertDeleted(result: UIO[Result])(implicit loc: Location): UIO[Unit] = {
-    assertUIO[Result](result, _ == Result.Deleted, "project was not deleted")
+  def assertDeleted(result: UIO[Boolean])(implicit loc: Location): UIO[Unit] = {
+    assertUIO[Boolean](result, _ == true, "project was not deleted")
   }
 
-  def assertNotDeleted(result: UIO[Result])(implicit loc: Location): UIO[Unit] = {
-    assertUIO[Result](result, _ == Result.NotDeleted, "project was deleted")
+  def assertNotDeleted(result: UIO[Boolean])(implicit loc: Location): UIO[Unit] = {
+    assertUIO[Boolean](result, _ == false, "project was deleted")
   }
 
   val TwoDaysAgo    = Instant.now().minus(Duration.ofDays(2))
   val ThreeHoursAgo = Instant.now().minus(Duration.ofHours(3))
 
-  def runWith(
+  def shouldBeDeleted(
       config: ProjectDeletionConfig,
       project: ProjectFixture
-  ): UIO[Result] = {
-    val deletedProjects = mutable.Set.empty[ProjectResource]
-
-    val deleter = new ProjectDeleter(
-      deleteProject = addTo(deletedProjects),
+  ): UIO[Boolean] = {
+    val shouldDeleteProject = ShouldDeleteProject(
       config,
       lastEventTime = (_, _) => UIO.pure(project.lastEventTime)
     )
-    deleter
-      .processProject(
-        project.resource,
-        Instant.now()
-      )
-      .map { _ =>
-        if (deletedProjects.isEmpty) {
-          NotDeleted
-        } else {
-          Deleted
-        }
-      }
+
+    shouldDeleteProject(project.resource)
   }
-
-}
-
-sealed trait Result
-
-object Result {
-  case object Deleted extends Result
-
-  case object NotDeleted extends Result
 }

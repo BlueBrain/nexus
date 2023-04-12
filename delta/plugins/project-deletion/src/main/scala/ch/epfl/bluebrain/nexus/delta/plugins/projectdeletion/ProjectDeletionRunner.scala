@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion
 
-import ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion.ProjectDeleter.projectDeletionPass
+import cats.implicits.toTraverseOps
 import ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion.model.ProjectDeletionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.ProjectResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination
@@ -48,8 +48,23 @@ class ProjectDeletionRunner(projects: Projects, config: ProjectDeletionConfig, p
       .void
   }
 
-  def doProjectDeletionPass(): UIO[Unit] = {
-    projectDeletionPass(allProjects, deleteProject, config, lastEventTime)
+  def projectDeletionPass: UIO[Unit] = {
+
+    val shouldDeleteProject = ShouldDeleteProject(config, lastEventTime)
+
+    def possiblyDelete(project: ProjectResource): UIO[Unit] = {
+      shouldDeleteProject(project).flatMap {
+        case true  => deleteProject(project)
+        case false => UIO.unit
+      }
+    }
+
+    for {
+      allProjects <- allProjects
+      _           <- allProjects.traverse(possiblyDelete)
+    } yield {
+      ()
+    }
   }
 }
 
@@ -70,7 +85,7 @@ object ProjectDeletionRunner {
 
     val continuousStream = Stream
       .fixedRate[Task](config.idleCheckPeriod)
-      .evalMap(_ => runner.doProjectDeletionPass())
+      .evalMap(_ => runner.projectDeletionPass)
       .drain
 
     val compiledProjection =
