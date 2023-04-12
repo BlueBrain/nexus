@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers.genString
 import ch.epfl.bluebrain.nexus.testkit.bio.{BioAssertions, BioSuite}
-import monix.bio.{IO, UIO}
+import monix.bio.UIO
 import munit.{Assertions, Location}
 
 import java.time.{Duration, Instant}
@@ -168,7 +168,7 @@ object ShouldDeleteProjectSuite extends Assertions with BioAssertions {
   }
 
   def addTo(deletedProjects: mutable.Set[ProjectResource]): ProjectResource => UIO[Unit] = { pr =>
-    IO.evalTotal {
+    UIO.delay {
       deletedProjects.add(pr)
       ()
     }

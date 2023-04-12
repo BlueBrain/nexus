@@ -44,7 +44,7 @@ class ProjectDeletionRunner(projects: Projects, config: ProjectDeletionConfig, p
     projects
       .delete(pr.value.ref, pr.rev)
       .void
-      .onErrorHandleWith(e => UIO.eval(logger.error(s"Error deleting project from plugin: $e")))
+      .onErrorHandleWith(e => UIO.delay(logger.error(s"Error deleting project from plugin: $e")))
       .void
   }
 
@@ -59,12 +59,9 @@ class ProjectDeletionRunner(projects: Projects, config: ProjectDeletionConfig, p
       }
     }
 
-    for {
-      allProjects <- allProjects
-      _           <- allProjects.traverse(possiblyDelete)
-    } yield {
-      ()
-    }
+    allProjects
+      .flatMap(_.traverse(possiblyDelete))
+      .void
   }
 }
 
