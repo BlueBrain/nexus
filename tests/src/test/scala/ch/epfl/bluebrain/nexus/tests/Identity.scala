@@ -28,7 +28,7 @@ object Identity extends TestHelpers {
   // Client
   val ServiceAccount: ClientCredentials = ClientCredentials("delta", "shhh", internal)
 
-  val Delta: UserCredentials = UserCredentials("delta", "shhh", internal)
+  val Delta: UserCredentials = UserCredentials("service-account-delta", "shhh", internal)
 
   val testRealm  = Realm("test-" + genString())
   val testClient = Identity.ClientCredentials(genString(), genString(), testRealm)
