@@ -84,13 +84,12 @@ final class ListingsSpec extends BaseSpec with Inspectors with EitherValuable wi
       )
 
       forAll(endpoints) { case (endpoint, expected) =>
-        deltaClient.get[Json](endpoint, Bob) { (json, response) =>
-          eventually {
+        eventually {
+          deltaClient.get[Json](endpoint, Bob) { (json, response) =>
             response.status shouldEqual StatusCodes.OK
             filterSearchMetadata(json) should equalIgnoreArrayOrder(expected)
           }
         }
-        succeed
       }
     }
 
@@ -193,9 +192,11 @@ final class ListingsSpec extends BaseSpec with Inspectors with EitherValuable wi
         ): _*
       )
 
-      deltaClient.get[Json](s"/resources/$org1?type=$projectType", Bob) { (json, response) =>
-        response.status shouldEqual StatusCodes.OK
-        filterSearchMetadata(json) should equalIgnoreArrayOrder(expected)
+      eventually {
+        deltaClient.get[Json](s"/resources/$org1?type=$projectType", Bob) { (json, response) =>
+          response.status shouldEqual StatusCodes.OK
+          filterSearchMetadata(json) should equalIgnoreArrayOrder(expected)
+        }
       }
     }
 
@@ -209,9 +210,11 @@ final class ListingsSpec extends BaseSpec with Inspectors with EitherValuable wi
         ): _*
       )
 
-      deltaClient.get[Json](s"/resources/$org1?type=$projectType", Alice) { (json, response) =>
-        response.status shouldEqual StatusCodes.OK
-        filterSearchMetadata(json) should equalIgnoreArrayOrder(expected)
+      eventually {
+        deltaClient.get[Json](s"/resources/$org1?type=$projectType", Alice) { (json, response) =>
+          response.status shouldEqual StatusCodes.OK
+          filterSearchMetadata(json) should equalIgnoreArrayOrder(expected)
+        }
       }
     }
 
@@ -240,8 +243,8 @@ final class ListingsSpec extends BaseSpec with Inspectors with EitherValuable wi
         ): _*
       )
 
-      deltaClient.get[Json](s"/resources?type=$testResourceType", Bob) { (json, response) =>
-        eventually {
+      eventually {
+        deltaClient.get[Json](s"/resources?type=$testResourceType", Bob) { (json, response) =>
           response.status shouldEqual StatusCodes.OK
           filterSearchMetadata(json) should equalIgnoreArrayOrder(expected)
         }

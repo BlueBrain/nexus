@@ -17,10 +17,11 @@
       "_self": "{{deltaUri}}/resolvers/{{project-label}}/defaultResolver",
       "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/resolvers.json",
       "_project": "{{project}}",
+      "name" : "Default resolver",
       "_rev": 1,
       "_deprecated": false,
-      "_createdBy": "{{deltaUri}}/realms/internal/users/delta",
-      "_updatedBy": "{{deltaUri}}/realms/internal/users/delta"
+      "_createdBy": "{{deltaUri}}/realms/internal/users/service-account-delta",
+      "_updatedBy": "{{deltaUri}}/realms/internal/users/service-account-delta"
     }
   ]
 }
