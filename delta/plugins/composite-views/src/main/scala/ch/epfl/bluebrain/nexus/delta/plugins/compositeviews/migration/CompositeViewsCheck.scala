@@ -45,8 +45,8 @@ class CompositeViewsCheck(
           val common17 = commonNamespace(view.uuid, view.rev, previousPrefix)
           val common18 = commonNamespace(view.uuid, view.rev, currentPrefix)
           for {
-            count17 <- fetchBG17Count(common17)
-            count18 <- fetchBG18Count(common18)
+            count17 <- fetchBG17Count(common17).onErrorHandle(_ => -1L)
+            count18 <- fetchBG18Count(common18).onErrorHandle(_ => -1L)
             _       <- saveCount(view.ref, commonSpaceId, count18, count17)
             _       <- view.value.projections.toNonEmptyList.traverse {
                          case s: SparqlProjection        =>
@@ -61,8 +61,8 @@ class CompositeViewsCheck(
                            val index17 = projectionIndex(e, view.uuid, view.rev, previousPrefix)
                            val index18 = projectionIndex(e, view.uuid, view.rev, currentPrefix)
                            for {
-                             count17 <- fetchESCount(index17.value)
-                             count18 <- fetchESCount(index18.value)
+                             count17 <- fetchESCount(index17.value).onErrorHandle(_ => -1L)
+                             count18 <- fetchESCount(index18.value).onErrorHandle(_ => -1L)
                              _       <- saveCount(view.ref, e.id, count18, count17)
                            } yield ()
                        }
