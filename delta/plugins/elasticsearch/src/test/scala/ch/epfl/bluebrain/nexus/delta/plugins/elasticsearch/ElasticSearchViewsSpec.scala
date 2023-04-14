@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{DifferentElasticSearchViewType, IncorrectRev, InvalidPipeline, InvalidViewReferences, PermissionIsNotDefined, ProjectContextRejection, ResourceAlreadyExists, RevisionNotFound, TagNotFound, TooManyViewReferences, ViewIsDeprecated, ViewNotFound}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewType.AggregateElasticSearch
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.permissions.{query => queryPermissions}
@@ -14,7 +13,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, Project}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
@@ -490,45 +488,6 @@ class ElasticSearchViewsSpec
         val source = json"""{"@type": "ElasticSearchView", "mapping": $mapping}"""
         views.create(id, projectRef, source).accepted
         views.fetch(IdSegmentRef(id, tag), projectRef).rejectedWith[TagNotFound]
-      }
-    }
-
-    "list views" when {
-      val id              = iri"http://localhost/${genString()}"
-      val idDeprecated    = iri"http://localhost/${genString()}"
-      val aggregateId     = iri"http://localhost/${genString()}"
-      val source          = json"""{"@type": "ElasticSearchView", "mapping": $mapping}"""
-      val aggregateSource = json"""
-            {"@type": "AggregateElasticSearchView",
-             "views": [
-               {
-                 "project": ${listProject.ref.toString},
-                 "viewId": $id
-               }
-             ]}"""
-      "there are no specific filters" in {
-        views.create(id, listProject.ref, source).accepted
-        views.create(idDeprecated, listProject.ref, source).accepted
-        views.deprecate(idDeprecated, listProject.ref, 1).accepted
-        views.create(aggregateId, listProject.ref, aggregateSource).accepted
-        val params = ElasticSearchViewSearchParams(project = Some(listProject.ref), filter = _ => UIO.pure(true))
-        views.list(Pagination.OnePage, params, Ordering.by(_.createdAt)).accepted.total shouldEqual 3
-      }
-      "only deprecated views are selected" in {
-        val params = ElasticSearchViewSearchParams(
-          project = Some(listProject.ref),
-          deprecated = Some(true),
-          filter = _ => UIO.pure(true)
-        )
-        views.list(Pagination.OnePage, params, Ordering.by(_.createdAt)).accepted.total shouldEqual 1
-      }
-      "only AggregateElasticSearchViews are selected" in {
-        val params = ElasticSearchViewSearchParams(
-          project = Some(listProject.ref),
-          types = Set(AggregateElasticSearch.tpe),
-          filter = _ => UIO.pure(true)
-        )
-        views.list(Pagination.OnePage, params, Ordering.by(_.createdAt)).accepted.total shouldEqual 1
       }
     }
   }

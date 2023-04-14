@@ -117,7 +117,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with TryValues with StorageFixtur
 
   private lazy val routes      =
     Route.seal(
-      StoragesRoutes(cfg, identities, aclCheck, storages, storageStatistics, schemeDirectives, IndexingAction.noop)
+      StoragesRoutes(identities, aclCheck, storages, storageStatistics, schemeDirectives, IndexingAction.noop)
     )
 
   "Storage routes" should {

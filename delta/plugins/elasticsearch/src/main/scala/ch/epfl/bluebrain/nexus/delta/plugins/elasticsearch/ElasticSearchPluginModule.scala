@@ -207,6 +207,8 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
 
   many[ScopeInitialization].ref[ElasticSearchScopeInitialization]
 
+  many[ProjectDeletionTask].add { (views: ElasticSearchViews) => ElasticSearchDeletionTask(views) }
+
   many[MetadataContextValue].addEffect(MetadataContextValue.fromFile("contexts/elasticsearch-metadata.json"))
 
   make[MetadataContextValue]

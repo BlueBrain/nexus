@@ -182,6 +182,8 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
   }
   many[ScopeInitialization].ref[BlazegraphScopeInitialization]
 
+  many[ProjectDeletionTask].add { (views: BlazegraphViews) => BlazegraphDeletionTask(views) }
+
   many[MetadataContextValue].addEffect(MetadataContextValue.fromFile("contexts/sparql-metadata.json"))
 
   many[SseEncoder[_]].add { base: BaseUri => BlazegraphViewEvent.sseEncoder(base) }

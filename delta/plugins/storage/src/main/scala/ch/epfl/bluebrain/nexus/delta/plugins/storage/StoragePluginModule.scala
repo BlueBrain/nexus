@@ -24,7 +24,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.routes.StoragesRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.schemas.{storage => storagesSchemaId}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{Storages, StoragesStatistics}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageDeletionTask, Storages, StoragesStatistics}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
@@ -40,7 +40,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.migration.{MigrationLog, MigrationState}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
@@ -126,7 +125,6 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
 
   make[StoragesRoutes].from {
     (
-        cfg: StoragePluginConfig,
         crypto: Crypto,
         identities: Identities,
         aclCheck: AclCheck,
@@ -142,7 +140,6 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         fusionConfig: FusionConfig
     ) =>
       {
-        val paginationConfig: PaginationConfig = cfg.storages.pagination
         new StoragesRoutes(
           identities,
           aclCheck,
@@ -153,7 +150,6 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         )(
           baseUri,
           crypto,
-          paginationConfig,
           s,
           cr,
           ordering,
@@ -256,6 +252,8 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
   }
 
   many[ScopeInitialization].ref[StorageScopeInitialization]
+
+  many[ProjectDeletionTask].add { (storages: Storages) => StorageDeletionTask(storages) }
 
   many[MetadataContextValue].addEffect(MetadataContextValue.fromFile("contexts/storages-metadata.json"))
 

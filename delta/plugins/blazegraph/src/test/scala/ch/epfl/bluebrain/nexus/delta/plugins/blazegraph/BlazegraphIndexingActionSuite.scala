@@ -31,6 +31,7 @@ class BlazegraphIndexingActionSuite extends BioSuite with Fixtures {
 
   private val instant     = Instant.EPOCH
   private val indexingRev = 1
+  private val currentRev  = 1
 
   private val project = ProjectRef.unsafe("org", "proj")
   private val id1     = nxv + "view1"
@@ -40,7 +41,8 @@ class BlazegraphIndexingActionSuite extends BioSuite with Fixtures {
     None,
     None,
     namespace = "view1",
-    indexingRev
+    indexingRev,
+    currentRev
   )
 
   private val id2   = nxv + "view2"
@@ -50,7 +52,8 @@ class BlazegraphIndexingActionSuite extends BioSuite with Fixtures {
     Some(UserTag.unsafe("tag")),
     None,
     namespace = "view2",
-    indexingRev
+    indexingRev,
+    currentRev
   )
 
   private val id3         = nxv + "view3"
@@ -61,7 +64,8 @@ class BlazegraphIndexingActionSuite extends BioSuite with Fixtures {
     None,
     Some(PipeChain(PipeRef.unsafe("xxx") -> ExpandedJsonLd.empty)),
     namespace = "view3",
-    indexingRev
+    indexingRev,
+    currentRev
   )
 
   private val id4   = nxv + "view4"

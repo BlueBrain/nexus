@@ -34,6 +34,7 @@ class ElasticSearchIndexingActionSuite extends BioSuite with CirceLiteral with F
   private val instant = Instant.EPOCH
 
   private val indexingRev = 1
+  private val rev         = 2
 
   private val project = ProjectRef.unsafe("org", "proj")
   private val id1     = nxv + "view1"
@@ -46,7 +47,8 @@ class ElasticSearchIndexingActionSuite extends BioSuite with CirceLiteral with F
     mapping = jobj"""{"properties": { }}""",
     settings = jobj"""{"analysis": { }}""",
     None,
-    indexingRev
+    indexingRev,
+    rev
   )
 
   private val id2   = nxv + "view2"
@@ -59,7 +61,8 @@ class ElasticSearchIndexingActionSuite extends BioSuite with CirceLiteral with F
     mapping = jobj"""{"properties": { }}""",
     settings = jobj"""{"analysis": { }}""",
     None,
-    indexingRev
+    indexingRev,
+    rev
   )
 
   private val id3         = nxv + "view3"
@@ -73,7 +76,8 @@ class ElasticSearchIndexingActionSuite extends BioSuite with CirceLiteral with F
     mapping = jobj"""{"properties": { }}""",
     settings = jobj"""{"analysis": { }}""",
     None,
-    indexingRev
+    indexingRev,
+    rev
   )
 
   private val id4   = nxv + "view4"
