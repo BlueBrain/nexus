@@ -9,7 +9,7 @@ Knowledge Graph. You can find out more information on our @link:[product home pa
 
 ### Is Blue Brain Nexus free to use?
 
-Yes, Nexus is a free, Open Source platform released under @link:[Apache Licence 2.0](https://opensource.org/licenses/Apache-2.0){ open=new }
+Yes, Nexus is a free, Open Source platform released under @link:[Apache Licence 2.0](https://opensource.org/license/apache-2-0/){ open=new }
 
 ### How do I run Blue Brain Nexus?
 
