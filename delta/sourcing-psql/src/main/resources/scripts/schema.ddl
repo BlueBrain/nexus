@@ -220,7 +220,7 @@ CREATE TABLE IF NOT EXISTS public.deleted_project_reports(
     PRIMARY KEY(ordering)
 );
 
-CREATE TABLE IF NOT EXISTS public.blazegraph_slow_queries (
+CREATE TABLE IF NOT EXISTS public.blazegraph_queries (
     ordering bigserial,
     project  text        NOT NULL,
     view_id  text        NOT NULL,
