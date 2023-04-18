@@ -16,7 +16,7 @@ class BlazegraphSlowQueryStoreSuite extends BioSuite with IOFixedClock with Doob
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 
   private lazy val xas   = doobie()
-  private lazy val store = BlazegraphSlowQueryStore(xas, true).runSyncUnsafe()
+  private lazy val store = BlazegraphSlowQueryStore(xas)
 
   test("Return an empty offset when not found") {
     store

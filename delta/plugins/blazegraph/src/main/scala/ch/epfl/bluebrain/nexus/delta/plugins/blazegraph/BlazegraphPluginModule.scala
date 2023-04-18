@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
 import akka.actor.typed.ActorSystem
 import cats.effect.Clock
-import ch.epfl.bluebrain.nexus.delta.kernel.database.{DatabaseConfig, Transactors}
+import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphPluginModule.injectBlazegraphViewDefaults
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphCoord
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewEvent.{BlazegraphViewCreated, BlazegraphViewUpdated}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue._
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{contexts, schema => viewsSchemaId, BlazegraphView, BlazegraphViewCommand, BlazegraphViewEvent, BlazegraphViewRejection, BlazegraphViewState, BlazegraphViewValue}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphView, BlazegraphViewCommand, BlazegraphViewEvent, BlazegraphViewRejection, BlazegraphViewState, BlazegraphViewValue, contexts, schema => viewsSchemaId}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.BlazegraphViewsRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries.{BlazegraphSlowQueryLogger, BlazegraphSlowQueryLoggerImpl, BlazegraphSlowQueryStore}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -57,10 +57,9 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
       HttpClient()(cfg.indexingClient, as.classicSystem, sc)
   }
 
-  make[BlazegraphSlowQueryStore].fromEffect { (xas: Transactors, databaseConfig: DatabaseConfig) =>
+  make[BlazegraphSlowQueryStore].from { (xas: Transactors) =>
     BlazegraphSlowQueryStore(
-      xas,
-      databaseConfig.tablesAutocreate
+      xas
     )
   }
 
