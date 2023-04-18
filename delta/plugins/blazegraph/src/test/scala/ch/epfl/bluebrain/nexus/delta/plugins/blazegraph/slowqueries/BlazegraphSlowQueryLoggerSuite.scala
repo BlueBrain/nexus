@@ -58,6 +58,32 @@ class BlazegraphSlowQueryLoggerSuite extends BioSuite {
     }
   }
 
+  test("test slow failure logged") {
+
+    val (service, getSaved) = fixture
+
+    for {
+      _ <- service
+             .logSlowQueries(
+               BlazegraphQueryContext(
+                 view,
+                 sparqlQuery,
+                 user
+               ),
+               Task.sleep(101.milliseconds) >> Task.raiseError(new RuntimeException())
+             )
+             .failed
+    } yield {
+      val saved      = getSaved()
+      assertEquals(saved.size, 1)
+      val onlyRecord = saved.head
+      assertEquals(onlyRecord.view, view)
+      assertEquals(onlyRecord.query, sparqlQuery)
+      assertEquals(onlyRecord.subject, user)
+      assert(onlyRecord.duration > 100.milliseconds)
+    }
+  }
+
   test("test fast query not logged") {
 
     val (service, getSaved) = fixture

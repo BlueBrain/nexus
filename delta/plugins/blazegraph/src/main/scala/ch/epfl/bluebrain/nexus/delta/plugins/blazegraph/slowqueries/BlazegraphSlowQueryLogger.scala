@@ -30,11 +30,11 @@ class BlazegraphSlowQueryLoggerImpl(store: BlazegraphSlowQueryStore, longQueryTh
   private val logger = Logger[BlazegraphSlowQueryLogger]
 
   def logSlowQueries[E, A](context: BlazegraphQueryContext, query: IO[E, A]): IO[E, A] = {
-    query.timed
-      .flatMap { case (duration, r) =>
+    query.attempt.timed
+      .flatMap { case (duration, outcome) =>
         UIO
           .when(duration >= longQueryThreshold)(logSlowQuery(context, duration))
-          .map(_ => r)
+          .flatMap(_ => IO.fromEither(outcome))
       }
   }
 

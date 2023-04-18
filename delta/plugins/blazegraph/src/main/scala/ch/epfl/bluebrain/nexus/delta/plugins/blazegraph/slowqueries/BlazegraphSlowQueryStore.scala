@@ -25,11 +25,11 @@ object BlazegraphSlowQueryStore {
 }
 
 case class BlazegraphSlowQuery(
-                                view: ViewRef,
-                                query: SparqlQuery,
-                                duration: FiniteDuration,
-                                occurredAt: Instant,
-                                subject: Subject
+    view: ViewRef,
+    query: SparqlQuery,
+    duration: FiniteDuration,
+    occurredAt: Instant,
+    subject: Subject
 )
 
 class BlazegraphSlowQueryStoreImpl(xas: Transactors) extends BlazegraphSlowQueryStore {
