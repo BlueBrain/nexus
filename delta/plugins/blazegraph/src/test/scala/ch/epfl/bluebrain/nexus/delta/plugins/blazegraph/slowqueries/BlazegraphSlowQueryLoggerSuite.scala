@@ -39,7 +39,7 @@ class BlazegraphSlowQueryLoggerSuite extends BioSuite {
     val (service, getSaved) = fixture
 
     for {
-      _ <- service.logSlowQueries(
+      _ <- service.apply(
              BlazegraphQueryContext(
                view,
                sparqlQuery,
@@ -60,19 +60,17 @@ class BlazegraphSlowQueryLoggerSuite extends BioSuite {
 
   test("test slow failure logged") {
 
-    val (service, getSaved) = fixture
+    val (logSlowQueries, getSaved) = fixture
 
     for {
-      _ <- service
-             .logSlowQueries(
-               BlazegraphQueryContext(
-                 view,
-                 sparqlQuery,
-                 user
-               ),
-               Task.sleep(101.milliseconds) >> Task.raiseError(new RuntimeException())
-             )
-             .failed
+      _ <- logSlowQueries(
+             BlazegraphQueryContext(
+               view,
+               sparqlQuery,
+               user
+             ),
+             Task.sleep(101.milliseconds) >> Task.raiseError(new RuntimeException())
+           ).failed
     } yield {
       val saved      = getSaved()
       assertEquals(saved.size, 1)
@@ -86,10 +84,10 @@ class BlazegraphSlowQueryLoggerSuite extends BioSuite {
 
   test("test fast query not logged") {
 
-    val (service, getSaved) = fixture
+    val (logSlowQueries, getSaved) = fixture
 
     for {
-      _ <- service.logSlowQueries(
+      _ <- logSlowQueries(
              BlazegraphQueryContext(
                view,
                sparqlQuery,

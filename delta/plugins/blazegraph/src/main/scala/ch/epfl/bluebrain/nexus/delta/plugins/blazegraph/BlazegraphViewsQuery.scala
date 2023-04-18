@@ -98,7 +98,7 @@ object BlazegraphViewsQuery {
       fetchContext: FetchContext[BlazegraphViewRejection],
       views: BlazegraphViews,
       client: SparqlQueryClient,
-      slowQueryLogger: BlazegraphSlowQueryLogger,
+      logSlowQueries: BlazegraphSlowQueryLogger,
       prefix: String,
       xas: Transactors
   ): Task[BlazegraphViewsQuery] = {
@@ -188,7 +188,7 @@ object BlazegraphViewsQuery {
                            _.index
                          )
                      }
-          qr      <- slowQueryLogger.logSlowQueries(
+          qr      <- logSlowQueries(
                        BlazegraphQueryContext(ViewRef.apply(project, iri), query, caller.subject),
                        client.query(indices, query, responseType).mapError(WrappedBlazegraphClientError)
                      )

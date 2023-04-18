@@ -9,12 +9,12 @@ import monix.bio.{IO, UIO}
 import scala.concurrent.duration.{Duration, FiniteDuration}
 
 trait BlazegraphSlowQueryLogger {
-  def logSlowQueries[E, A](context: BlazegraphQueryContext, query: IO[E, A]): IO[E, A]
+  def apply[E, A](context: BlazegraphQueryContext, query: IO[E, A]): IO[E, A]
 }
 
 object BlazegraphSlowQueryLogger {
   val noop: BlazegraphSlowQueryLogger = new BlazegraphSlowQueryLogger {
-    override def logSlowQueries[E, A](context: BlazegraphQueryContext, query: IO[E, A]): IO[E, A] = query
+    override def apply[E, A](context: BlazegraphQueryContext, query: IO[E, A]): IO[E, A] = query
   }
   def store(store: BlazegraphSlowQueryStore, longQueryThreshold: Duration)(implicit
       clock: Clock[UIO]
@@ -29,7 +29,7 @@ class BlazegraphSlowQueryLoggerImpl(store: BlazegraphSlowQueryStore, longQueryTh
 
   private val logger = Logger[BlazegraphSlowQueryLogger]
 
-  def logSlowQueries[E, A](context: BlazegraphQueryContext, query: IO[E, A]): IO[E, A] = {
+  def apply[E, A](context: BlazegraphQueryContext, query: IO[E, A]): IO[E, A] = {
     query.attempt.timed
       .flatMap { case (duration, outcome) =>
         UIO
