@@ -18,17 +18,22 @@ class BlazegraphSlowQueryStoreSuite extends BioSuite with IOFixedClock with Doob
   private lazy val xas   = doobie()
   private lazy val store = BlazegraphSlowQueryStore(xas)
 
-  test("Return an empty offset when not found") {
-    store
-      .save(
-        BlazegraphSlowQuery(
-          ViewRef(ProjectRef.unsafe("epfl", "blue-brain"), Iri.unsafe("brain")),
-          SparqlQuery(""),
-          1.second,
-          Instant.now(),
-          Identity.User("Ted Lasso", Label.unsafe("epfl"))
-        )
-      )
-      .assert(())
+  test("Save a slow query") {
+
+    val view      = ViewRef(ProjectRef.unsafe("epfl", "blue-brain"), Iri.unsafe("brain"))
+    val slowQuery = BlazegraphSlowQuery(
+      view,
+      SparqlQuery(""),
+      1.second,
+      Instant.now(),
+      Identity.User("Ted Lasso", Label.unsafe("epfl"))
+    )
+
+    for {
+      _      <- store.save(slowQuery)
+      lookup <- store.listForTestingOnly(view)
+    } yield {
+      assertEquals(lookup, List(slowQuery))
+    }
   }
 }

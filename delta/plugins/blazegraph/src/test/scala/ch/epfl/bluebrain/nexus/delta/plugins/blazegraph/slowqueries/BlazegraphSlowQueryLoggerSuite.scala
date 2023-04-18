@@ -23,10 +23,11 @@ class BlazegraphSlowQueryLoggerSuite extends BioSuite {
     val saved   = new util.ArrayList[BlazegraphSlowQuery]()
     val service = BlazegraphSlowQueryLogger.store(
       new BlazegraphSlowQueryStore {
-        override def save(query: BlazegraphSlowQuery): Task[Unit] = Task.delay {
+        override def save(query: BlazegraphSlowQuery): Task[Unit]                       = Task.delay {
           saved.add(query)
           ()
         }
+        override def listForTestingOnly(view: ViewRef): Task[List[BlazegraphSlowQuery]] = Task.pure(Nil)
       },
       LongQueryThreshold
     )
