@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
+package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries
 
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.{ioContentOf => resourceFrom}
@@ -10,16 +10,14 @@ import com.typesafe.scalalogging.Logger
 import doobie.implicits._
 import doobie.util.fragment.Fragment
 import monix.bio.Task
-import doobie.postgres.implicits._
-import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 
 import java.time.Instant
 import scala.concurrent.duration.FiniteDuration
+
 trait BlazegraphSlowQueryStore {
   def save(query: BlazegraphSlowQuery): Task[Unit]
 }
 
-case class BlazegraphQueryContext(viewId: Iri, project: ProjectRef, query: SparqlQuery, subject: Subject)
 case class BlazegraphSlowQuery(
     viewId: Iri,
     project: ProjectRef,
@@ -35,9 +33,6 @@ object BlazegraphSlowQueryStore {
 
   private val logger: Logger = Logger[BlazegraphSlowQueryStore.type]
 
-  /**
-    * Create a token store
-    */
   def apply(xas: Transactors, tablesAutocreate: Boolean): Task[BlazegraphSlowQueryStore] = {
     implicit val classLoader: ClassLoader = getClass.getClassLoader
     Task

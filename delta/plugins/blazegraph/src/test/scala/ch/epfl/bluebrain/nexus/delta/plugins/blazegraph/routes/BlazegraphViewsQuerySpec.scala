@@ -13,7 +13,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewReje
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.{AggregateBlazegraphViewValue, IndexingBlazegraphViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.SparqlLink.{SparqlExternalLink, SparqlResourceLink}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{BlazegraphSlowQueryLogger, BlazegraphViews, BlazegraphViewsQuery, Fixtures}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries.BlazegraphSlowQueryLogger
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{BlazegraphViews, BlazegraphViewsQuery, Fixtures}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Graph, NTriples}

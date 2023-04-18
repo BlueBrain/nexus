@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewReje
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.{AggregateBlazegraphViewValue, IndexingBlazegraphViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.SparqlLink.{SparqlExternalLink, SparqlResourceLink}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries.BlazegraphSlowQueryLogger
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
@@ -24,6 +25,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectBase}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.View.{AggregateView, IndexingView}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.{ViewRef, ViewsStore}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import monix.bio.{IO, Task}
 
@@ -86,6 +88,8 @@ trait BlazegraphViewsQuery {
       responseType: SparqlQueryResponseType.Aux[R]
   )(implicit caller: Caller): IO[BlazegraphViewRejection, R]
 }
+
+case class BlazegraphQueryContext(viewId: Iri, project: ProjectRef, query: SparqlQuery, subject: Subject)
 
 object BlazegraphViewsQuery {
 

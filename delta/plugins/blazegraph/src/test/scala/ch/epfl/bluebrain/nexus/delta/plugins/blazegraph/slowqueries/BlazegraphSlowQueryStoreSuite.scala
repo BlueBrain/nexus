@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
+package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery

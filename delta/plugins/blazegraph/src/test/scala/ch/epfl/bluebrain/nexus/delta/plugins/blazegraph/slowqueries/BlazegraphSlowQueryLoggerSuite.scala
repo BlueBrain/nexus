@@ -1,5 +1,6 @@
-package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
+package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries
 
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphQueryContext
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
@@ -10,7 +11,7 @@ import java.util
 import scala.concurrent.duration.DurationInt
 import scala.jdk.CollectionConverters._
 
-class BlazegraphSlowQueryLoggerTest extends BioSuite {
+class BlazegraphSlowQueryLoggerSuite extends BioSuite {
   private val LongQueryThreshold = 100.milliseconds
 
   private val viewId      = Iri.unsafe("brain")

@@ -1,7 +1,8 @@
-package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
+package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries
 
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphQueryContext
 import com.typesafe.scalalogging.Logger
 import monix.bio.{IO, UIO}
 
@@ -10,8 +11,11 @@ import scala.concurrent.duration.{Duration, FiniteDuration}
 trait BlazegraphSlowQueryLogger  {
   def logSlowQueries[E, A](context: BlazegraphQueryContext, query: IO[E, A]): IO[E, A]
 }
+
 object BlazegraphSlowQueryLogger {
-  def noop: BlazegraphSlowQueryLogger = new NoopBlazegraphSlowQueryLogger
+  def noop: BlazegraphSlowQueryLogger = new BlazegraphSlowQueryLogger {
+    override def logSlowQueries[E, A](context: BlazegraphQueryContext, query: IO[E, A]): IO[E, A] = query
+  }
   def store(store: BlazegraphSlowQueryStore, longQueryThreshold: Duration)(implicit
       clock: Clock[UIO]
   ): BlazegraphSlowQueryLogger = {
@@ -19,14 +23,12 @@ object BlazegraphSlowQueryLogger {
   }
 }
 
-class NoopBlazegraphSlowQueryLogger extends BlazegraphSlowQueryLogger {
-  override def logSlowQueries[E, A](context: BlazegraphQueryContext, query: IO[E, A]): IO[E, A] = query
-}
 class BlazegraphSlowQueryLoggerImpl(store: BlazegraphSlowQueryStore, longQueryThreshold: Duration)(implicit
     clock: Clock[UIO]
 )                                   extends BlazegraphSlowQueryLogger {
 
   private val logger = Logger[BlazegraphSlowQueryLogger]
+
   def logSlowQueries[E, A](context: BlazegraphQueryContext, query: IO[E, A]): IO[E, A] = {
     query.timed
       .flatMap { case (duration, r) =>
@@ -42,6 +44,5 @@ class BlazegraphSlowQueryLoggerImpl(store: BlazegraphSlowQueryStore, longQueryTh
         .save(BlazegraphSlowQuery(context.viewId, context.project, context.query, duration, now, context.subject))
         .redeemWith[Nothing, Unit](e => UIO.delay(logger.error("error logging blazegraph slow query", e)), UIO.pure)
     }
-
   }
 }
