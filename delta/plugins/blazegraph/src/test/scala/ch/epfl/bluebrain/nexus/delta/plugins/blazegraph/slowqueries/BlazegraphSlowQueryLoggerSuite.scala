@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphQueryContext
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
+import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
 import monix.bio.Task
@@ -14,8 +15,7 @@ import scala.jdk.CollectionConverters._
 class BlazegraphSlowQueryLoggerSuite extends BioSuite {
   private val LongQueryThreshold = 100.milliseconds
 
-  private val viewId      = Iri.unsafe("brain")
-  private val project     = ProjectRef.unsafe("epfl", "blue-brain")
+  private val view        = ViewRef(ProjectRef.unsafe("epfl", "blue-brain"), Iri.unsafe("hippocampus"))
   private val sparqlQuery = SparqlQuery("")
   private val user        = Identity.User("Ted Lasso", Label.unsafe("epfl"))
 
@@ -41,8 +41,7 @@ class BlazegraphSlowQueryLoggerSuite extends BioSuite {
     for {
       _ <- service.logSlowQueries(
              BlazegraphQueryContext(
-               viewId,
-               project,
+               view,
                sparqlQuery,
                user
              ),
@@ -52,8 +51,7 @@ class BlazegraphSlowQueryLoggerSuite extends BioSuite {
       val saved      = getSaved()
       assertEquals(saved.size, 1)
       val onlyRecord = saved.head
-      assertEquals(onlyRecord.viewId, viewId)
-      assertEquals(onlyRecord.project, project)
+      assertEquals(onlyRecord.view, view)
       assertEquals(onlyRecord.query, sparqlQuery)
       assertEquals(onlyRecord.subject, user)
       assert(onlyRecord.duration > 100.milliseconds)
@@ -67,8 +65,7 @@ class BlazegraphSlowQueryLoggerSuite extends BioSuite {
     for {
       _ <- service.logSlowQueries(
              BlazegraphQueryContext(
-               viewId,
-               project,
+               view,
                sparqlQuery,
                user
              ),

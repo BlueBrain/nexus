@@ -2,12 +2,13 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries
 
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.{ioContentOf => resourceFrom}
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
+import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import com.typesafe.scalalogging.Logger
 import doobie.implicits._
+import doobie.postgres.implicits._
+import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import doobie.util.fragment.Fragment
 import monix.bio.Task
 
@@ -19,8 +20,7 @@ trait BlazegraphSlowQueryStore {
 }
 
 case class BlazegraphSlowQuery(
-    viewId: Iri,
-    project: ProjectRef,
+    view: ViewRef,
     query: SparqlQuery,
     duration: FiniteDuration,
     occurredAt: Instant,
@@ -47,7 +47,7 @@ object BlazegraphSlowQueryStore {
         new BlazegraphSlowQueryStore {
           override def save(query: BlazegraphSlowQuery): Task[Unit] = {
             sql""" INSERT INTO blazegraph_slow_queries(project, view_id, instant, duration, subject, query)
-                 | VALUES(${query.project}, ${query.viewId}, ${query.occurredAt}, ${query.duration}, ${query.subject.toString}, ${query.query.value})
+                 | VALUES(${query.view.project}, ${query.view.viewId}, ${query.occurredAt}, ${query.duration}, ${query.subject.toString}, ${query.query.value})
             """.stripMargin.update.run.transact(xas.write).void
           }
         }

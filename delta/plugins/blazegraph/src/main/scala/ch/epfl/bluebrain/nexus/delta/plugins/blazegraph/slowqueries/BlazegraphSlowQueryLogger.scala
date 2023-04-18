@@ -41,8 +41,8 @@ class BlazegraphSlowQueryLoggerImpl(store: BlazegraphSlowQueryStore, longQueryTh
   private def logSlowQuery(context: BlazegraphQueryContext, duration: FiniteDuration): UIO[Unit] = {
     IOUtils.instant.flatMap { now =>
       store
-        .save(BlazegraphSlowQuery(context.viewId, context.project, context.query, duration, now, context.subject))
-        .redeemWith[Nothing, Unit](e => UIO.delay(logger.error("error logging blazegraph slow query", e)), UIO.pure)
+        .save(BlazegraphSlowQuery(context.view, context.query, duration, now, context.subject))
+        .onErrorHandleWith(e => UIO.delay(logger.error("error logging blazegraph slow query", e)))
     }
   }
 }

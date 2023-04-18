@@ -89,7 +89,7 @@ trait BlazegraphViewsQuery {
   )(implicit caller: Caller): IO[BlazegraphViewRejection, R]
 }
 
-case class BlazegraphQueryContext(viewId: Iri, project: ProjectRef, query: SparqlQuery, subject: Subject)
+case class BlazegraphQueryContext(view: ViewRef, query: SparqlQuery, subject: Subject)
 
 object BlazegraphViewsQuery {
 
@@ -189,7 +189,7 @@ object BlazegraphViewsQuery {
                          )
                      }
           qr      <- slowQueryLogger.logSlowQueries(
-                       BlazegraphQueryContext(iri, project, query, caller.subject),
+                       BlazegraphQueryContext(ViewRef.apply(project, iri), query, caller.subject),
                        client.query(indices, query, responseType).mapError(WrappedBlazegraphClientError)
                      )
         } yield qr

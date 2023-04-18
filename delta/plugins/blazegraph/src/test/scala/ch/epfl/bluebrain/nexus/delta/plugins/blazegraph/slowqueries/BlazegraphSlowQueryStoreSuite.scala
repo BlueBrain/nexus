@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
+import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.IOFixedClock
 import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
@@ -21,8 +22,7 @@ class BlazegraphSlowQueryStoreSuite extends BioSuite with IOFixedClock with Doob
     store
       .save(
         BlazegraphSlowQuery(
-          Iri.unsafe("brain"),
-          ProjectRef.unsafe("epfl", "blue-brain"),
+          ViewRef(ProjectRef.unsafe("epfl", "blue-brain"), Iri.unsafe("brain")),
           SparqlQuery(""),
           1.second,
           Instant.now(),
