@@ -13,7 +13,7 @@ trait BlazegraphSlowQueryLogger {
 }
 
 object BlazegraphSlowQueryLogger {
-  def noop: BlazegraphSlowQueryLogger = new BlazegraphSlowQueryLogger {
+  val noop: BlazegraphSlowQueryLogger = new BlazegraphSlowQueryLogger {
     override def logSlowQueries[E, A](context: BlazegraphQueryContext, query: IO[E, A]): IO[E, A] = query
   }
   def store(store: BlazegraphSlowQueryStore, longQueryThreshold: Duration)(implicit
@@ -39,10 +39,12 @@ class BlazegraphSlowQueryLoggerImpl(store: BlazegraphSlowQueryStore, longQueryTh
   }
 
   private def logSlowQuery(context: BlazegraphQueryContext, duration: FiniteDuration): UIO[Unit] = {
-    IOUtils.instant.flatMap { now =>
-      store
-        .save(BlazegraphSlowQuery(context.view, context.query, duration, now, context.subject))
-        .onErrorHandleWith(e => UIO.delay(logger.error("error logging blazegraph slow query", e)))
-    }
+    IOUtils.instant
+      .tapEval(_ => UIO.delay(logger.warn(s"slow blazegraph query recorded (duration $duration): $context")))
+      .flatMap { now =>
+        store
+          .save(BlazegraphSlowQuery(context.view, context.query, duration, now, context.subject))
+          .onErrorHandleWith(e => UIO.delay(logger.error("error logging blazegraph slow query", e)))
+      }
   }
 }
