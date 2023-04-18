@@ -40,7 +40,7 @@ class BlazegraphSlowQueryLoggerImpl(store: BlazegraphSlowQueryStore, longQueryTh
 
   private def logSlowQuery(context: BlazegraphQueryContext, duration: FiniteDuration): UIO[Unit] = {
     IOUtils.instant
-      .tapEval(_ => UIO.delay(logger.warn(s"slow blazegraph query recorded (duration $duration): $context")))
+      .tapEval(_ => UIO.delay(logger.warn(s"slow blazegraph query recorded: duration $duration, view ${context.view}")))
       .flatMap { now =>
         store
           .save(BlazegraphSlowQuery(context.view, context.query, duration, now, context.subject))
