@@ -94,6 +94,7 @@ object BlazegraphViewsQuery {
       fetchContext: FetchContext[BlazegraphViewRejection],
       views: BlazegraphViews,
       client: SparqlQueryClient,
+      slowQueryLogger: BlazegraphSlowQueryLogger,
       prefix: String,
       xas: Transactors
   ): Task[BlazegraphViewsQuery] = {
@@ -169,6 +170,8 @@ object BlazegraphViewsQuery {
       )(implicit caller: Caller): IO[BlazegraphViewRejection, R] =
         for {
           view    <- viewsStore.fetch(id, project)
+          p       <- fetchContext.onRead(project)
+          iri     <- expandIri(id, p)
           indices <- view match {
                        case i: IndexingView  =>
                          aclCheck
@@ -181,7 +184,10 @@ object BlazegraphViewsQuery {
                            _.index
                          )
                      }
-          qr      <- client.query(indices, query, responseType).mapError(WrappedBlazegraphClientError)
+          qr      <- slowQueryLogger.logSlowQueries(
+                       BlazegraphQueryContext(iri, project, query, caller.subject),
+                       client.query(indices, query, responseType).mapError(WrappedBlazegraphClientError)
+                     )
         } yield qr
 
       private def toSparqlLinks(sparqlResults: SparqlResults, mappings: ApiMappings, projectBase: ProjectBase)(implicit

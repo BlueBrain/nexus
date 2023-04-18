@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewReje
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.{AggregateBlazegraphViewValue, IndexingBlazegraphViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.SparqlLink.{SparqlExternalLink, SparqlResourceLink}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{BlazegraphViews, BlazegraphViewsQuery, Fixtures}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{BlazegraphSlowQueryLogger, BlazegraphViews, BlazegraphViewsQuery, Fixtures}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Graph, NTriples}
@@ -70,7 +70,8 @@ class BlazegraphViewsQuerySpec(docker: BlazegraphDocker)
   implicit private val uuidF: UUIDF = UUIDF.random
 
   private lazy val endpoint = docker.hostConfig.endpoint
-  private lazy val client   = BlazegraphClient(HttpClient(), endpoint, None, 10.seconds)
+  private lazy val client   =
+    BlazegraphClient(HttpClient(), endpoint, None, 10.seconds)
 
   private val realm                  = Label.unsafe("myrealm")
   implicit private val alice: Caller = Caller(User("Alice", realm), Set(User("Alice", realm), Group("users", realm)))
@@ -171,7 +172,9 @@ class BlazegraphViewsQuerySpec(docker: BlazegraphDocker)
       (alice.subject, AclAddress.Project(project1.ref), Set(queryPermission)),
       (bob.subject, AclAddress.Root, Set(queryPermission)),
       (Anonymous, AclAddress.Project(project2.ref), Set(queryPermission))
-    ).flatMap { acls => BlazegraphViewsQuery(acls, fetchContext, views, client, "prefix", xas) }.accepted
+    ).flatMap { acls =>
+      BlazegraphViewsQuery(acls, fetchContext, views, client, BlazegraphSlowQueryLogger.noop, "prefix", xas)
+    }.accepted
 
     "create the indexing views" in {
       indexingViews.traverse { v =>

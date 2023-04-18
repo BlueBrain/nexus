@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
 import akka.actor.typed.ActorSystem
 import cats.effect.Clock
-import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
+import ch.epfl.bluebrain.nexus.delta.kernel.database.{DatabaseConfig, Transactors}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphPluginModule.injectBlazegraphViewDefaults
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
@@ -56,8 +56,23 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
       HttpClient()(cfg.indexingClient, as.classicSystem, sc)
   }
 
+  make[BlazegraphSlowQueryStore].fromEffect { (xas: Transactors, databaseConfig: DatabaseConfig) =>
+    BlazegraphSlowQueryStore(
+      xas,
+      databaseConfig.tablesAutocreate
+    )
+  }
+
+  make[BlazegraphSlowQueryLogger].from { (cfg: BlazegraphViewsConfig, store: BlazegraphSlowQueryStore) =>
+    new BlazegraphSlowQueryLoggerImpl(store, cfg.slowQueryThreshold)
+  }
+
   make[BlazegraphClient].named("blazegraph-indexing-client").from {
-    (cfg: BlazegraphViewsConfig, client: HttpClient @Id("http-indexing-client"), as: ActorSystem[Nothing]) =>
+    (
+        cfg: BlazegraphViewsConfig,
+        client: HttpClient @Id("http-indexing-client"),
+        as: ActorSystem[Nothing]
+    ) =>
       BlazegraphClient(client, cfg.base, cfg.credentials, cfg.queryTimeout)(as.classicSystem)
   }
 
@@ -67,7 +82,11 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
   }
 
   make[BlazegraphClient].named("blazegraph-query-client").from {
-    (cfg: BlazegraphViewsConfig, client: HttpClient @Id("http-query-client"), as: ActorSystem[Nothing]) =>
+    (
+        cfg: BlazegraphViewsConfig,
+        client: HttpClient @Id("http-query-client"),
+        as: ActorSystem[Nothing]
+    ) =>
       BlazegraphClient(client, cfg.base, cfg.credentials, cfg.queryTimeout)(as.classicSystem)
   }
 
@@ -136,10 +155,19 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         fetchContext: FetchContext[ContextRejection],
         views: BlazegraphViews,
         client: BlazegraphClient @Id("blazegraph-query-client"),
+        slowQueryLogger: BlazegraphSlowQueryLogger,
         cfg: BlazegraphViewsConfig,
         xas: Transactors
     ) =>
-      BlazegraphViewsQuery(aclCheck, fetchContext.mapRejection(ProjectContextRejection), views, client, cfg.prefix, xas)
+      BlazegraphViewsQuery(
+        aclCheck,
+        fetchContext.mapRejection(ProjectContextRejection),
+        views,
+        client,
+        slowQueryLogger,
+        cfg.prefix,
+        xas
+      )
   }
 
   make[BlazegraphViewsRoutes].from {
