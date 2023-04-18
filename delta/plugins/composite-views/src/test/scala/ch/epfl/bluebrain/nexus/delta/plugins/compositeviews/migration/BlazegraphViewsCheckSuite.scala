@@ -34,7 +34,7 @@ class BlazegraphViewsCheckSuite extends BioSuite with Doobie.Fixture {
     val project          = ProjectRef.unsafe("org", "proj")
     val id1              = nxv + "view1"
     val view1            =
-      ActiveViewDef(ViewRef(project, id1), projection = id1.toString, None, None, namespace = "nexus_id1_1", 1)
+      ActiveViewDef(ViewRef(project, id1), projection = id1.toString, None, None, namespace = "nexus_id1_1", 1, 1)
     val id2              = nxv + "view2"
     val view2            = ActiveViewDef(
       ViewRef(project, id2),
@@ -42,6 +42,7 @@ class BlazegraphViewsCheckSuite extends BioSuite with Doobie.Fixture {
       None,
       None,
       namespace = "nexus_id2_1",
+      1,
       1
     )
 

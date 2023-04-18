@@ -42,14 +42,12 @@ class BlazegraphDeletionTaskSuite extends BioSuite {
 
   test("Deprecate all active views for project") {
     for {
-      deprecated  <- Ref.of[Task, Set[ViewRef]](Set.empty)
-      deletionTask = new BlazegraphDeletionTask(
-                       _ => viewStream,
-                       (view, _) => deprecated.getAndUpdate(_ + view.ref).void.hideErrors
-                     )
-      result      <- deletionTask(project)
-      _            = assertEquals(result.log.size, 2, s"'$active1' and '$active2' should appear here.")
-      _            = deprecated.get.assert(Set(active1, active2))
+      deprecated   <- Ref.of[Task, Set[ViewRef]](Set.empty)
+      deprecateView = (view: ActiveViewDef) => deprecated.getAndUpdate(_ + view.ref).void.hideErrors
+      deletionTask  = new BlazegraphDeletionTask(_ => viewStream, (view, _) => deprecateView(view))
+      result       <- deletionTask(project)
+      _             = assertEquals(result.log.size, 2, s"'$active1' and '$active2' should appear in the result:\n$result")
+      _             = deprecated.get.assert(Set(active1, active2))
     } yield ()
   }
 

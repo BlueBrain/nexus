@@ -165,7 +165,7 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
       defaultMapping,
       defaultSettings,
       indexingDefault.context,
-      1,
+      indexingRev,
       rev
     )
 

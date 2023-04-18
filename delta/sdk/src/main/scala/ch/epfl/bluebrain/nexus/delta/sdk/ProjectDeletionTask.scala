@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
-import ch.epfl.bluebrain.nexus.delta.sdk.error.SDKError
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import monix.bio.Task
@@ -27,17 +26,11 @@ object ProjectDeletionTask {
     */
   final case class Result(name: String, log: Vector[String]) {
     def ++(line: String): Result = copy(log = log :+ line)
+
+    override def toString = s"""Progress of deletion task $name:\n${log.mkString("* ", "\n* ", "")}"""
   }
 
   object Result {
     def empty(name: String): Result = Result(name, Vector.empty)
-  }
-
-  final case class Error(message: String) extends SDKError {
-    override def getMessage: String = message
-  }
-
-  object Error {
-    def apply(throwable: Throwable): Error = Error(throwable.getMessage)
   }
 }

@@ -33,8 +33,8 @@ class StorageDeletionTaskSuite extends BioSuite with StorageFixtures {
       _           <- fileExists.assert(true, s"'$file' should have been created.")
       deletionTask = new StorageDeletionTask(_ => storageStream)
       result      <- deletionTask(project)
-      _            = assertEquals(result.log.size, 3, "The three storages must have been processed.")
-      _            = assert(!file.toFile.exists(), s"'$file' should have been deleted.")
+      _            = assertEquals(result.log.size, 3, s"The three storages should have been processed:\n$result")
+      _            = fileExists.assert(false, s"'$file' should have been deleted.")
       _            = assert(!storageDir.exists, s"The directory '$storageDir' should have been deleted.")
 
     } yield ()

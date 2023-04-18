@@ -68,7 +68,7 @@ class MigrationCheckRoutes(
             )
           }
         }
-      } delta_copy_to_test
+      }
     }
 
 }
