@@ -12,6 +12,11 @@ trait BlazegraphSlowQueryLogger  {
 }
 object BlazegraphSlowQueryLogger {
   def noop: BlazegraphSlowQueryLogger = new NoopBlazegraphSlowQueryLogger
+  def store(store: BlazegraphSlowQueryStore, longQueryThreshold: Duration)(implicit
+      clock: Clock[UIO]
+  ): BlazegraphSlowQueryLogger = {
+    new BlazegraphSlowQueryLoggerImpl(store, longQueryThreshold)
+  }
 }
 
 class NoopBlazegraphSlowQueryLogger extends BlazegraphSlowQueryLogger {
