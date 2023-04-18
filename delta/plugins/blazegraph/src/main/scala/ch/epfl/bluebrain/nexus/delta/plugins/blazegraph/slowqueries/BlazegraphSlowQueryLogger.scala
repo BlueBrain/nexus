@@ -8,7 +8,7 @@ import monix.bio.{IO, UIO}
 
 import scala.concurrent.duration.{Duration, FiniteDuration}
 
-trait BlazegraphSlowQueryLogger  {
+trait BlazegraphSlowQueryLogger {
   def logSlowQueries[E, A](context: BlazegraphQueryContext, query: IO[E, A]): IO[E, A]
 }
 
@@ -25,7 +25,7 @@ object BlazegraphSlowQueryLogger {
 
 class BlazegraphSlowQueryLoggerImpl(store: BlazegraphSlowQueryStore, longQueryThreshold: Duration)(implicit
     clock: Clock[UIO]
-)                                   extends BlazegraphSlowQueryLogger {
+) extends BlazegraphSlowQueryLogger {
 
   private val logger = Logger[BlazegraphSlowQueryLogger]
 
