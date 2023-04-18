@@ -321,28 +321,6 @@ class StoragesRoutesSpec extends BaseRouteSpec with TryValues with StorageFixtur
       }
     }
 
-    "list storages" in {
-      Get("/v1/storages/myorg/myproject/caches") ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual jsonContentOf("storages/storages-list.json")
-      }
-    }
-
-    "list remote disk storages" in {
-      val encodedStorage = UrlUtils.encode(nxvStorage.toString)
-      Get(s"/v1/storages/myorg/myproject/caches?type=$encodedStorage&type=nxv:RemoteDiskStorage") ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual jsonContentOf("storages/storages-list-not-deprecated.json")
-      }
-    }
-
-    "list not deprecated storages" in {
-      Get("/v1/storages/myorg/myproject/caches?deprecated=false") ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual jsonContentOf("storages/storages-list-not-deprecated.json")
-      }
-    }
-
     "fetch the storage tags" in {
       Get("/v1/resources/myorg/myproject/_/remote-disk-storage/tags?rev=1") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
