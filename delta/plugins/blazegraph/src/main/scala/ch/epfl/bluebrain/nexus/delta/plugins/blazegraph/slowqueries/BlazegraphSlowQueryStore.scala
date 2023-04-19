@@ -12,9 +12,6 @@ import io.circe.syntax.EncoderOps
 import monix.bio.Task
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionProgress
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionStore.ProjectionProgressRow
 import doobie.Read
 import io.circe.Json
 
@@ -52,20 +49,6 @@ object BlazegraphSlowQueryStore {
 }
 
 object BlazegraphSlowQuery {
-  implicit val projectionProgressRowRead: Read[ProjectionProgressRow] = {
-    Read[(String, String, Option[ProjectRef], Option[Iri], Long, Long, Long, Long, Instant, Instant)].map {
-      case (name, module, project, resourceId, offset, processed, discarded, failed, createdAt, updatedAt) =>
-        ProjectionProgressRow(
-          name,
-          module,
-          project,
-          resourceId,
-          ProjectionProgress(Offset.from(offset), updatedAt, processed, discarded, failed),
-          createdAt,
-          updatedAt
-        )
-    }
-  }
 
   implicit val read: Read[BlazegraphSlowQuery] = {
     Read[(ProjectRef, Iri, Instant, Long, Json, String)].map {
