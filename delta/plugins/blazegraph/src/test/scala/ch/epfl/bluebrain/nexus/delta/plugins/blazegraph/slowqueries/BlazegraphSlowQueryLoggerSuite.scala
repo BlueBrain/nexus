@@ -14,15 +14,16 @@ import scala.concurrent.duration.DurationInt
 import scala.jdk.CollectionConverters._
 
 class BlazegraphSlowQueryLoggerSuite extends BioSuite {
-  private val LongQueryThreshold = 100.milliseconds
-  private val SinkWhichFails: BlazegraphSlowQuerySink = (_: BlazegraphSlowQuery) => Task.raiseError(new RuntimeException("error saving slow log"))
+  private val LongQueryThreshold                      = 100.milliseconds
+  private val SinkWhichFails: BlazegraphSlowQuerySink = (_: BlazegraphSlowQuery) =>
+    Task.raiseError(new RuntimeException("error saving slow log"))
 
   private val view        = ViewRef(ProjectRef.unsafe("epfl", "blue-brain"), Iri.unsafe("hippocampus"))
   private val sparqlQuery = SparqlQuery("")
   private val user        = Identity.User("Ted Lasso", Label.unsafe("epfl"))
 
   private def inMemorySink(): (BlazegraphSlowQuerySink, () => List[BlazegraphSlowQuery]) = {
-    val saved   = new util.ArrayList[BlazegraphSlowQuery]()
+    val saved                          = new util.ArrayList[BlazegraphSlowQuery]()
     val store: BlazegraphSlowQuerySink = (query: BlazegraphSlowQuery) =>
       Task.delay {
         saved.add(query)
@@ -33,7 +34,7 @@ class BlazegraphSlowQueryLoggerSuite extends BioSuite {
 
   private def fixture: (BlazegraphSlowQueryLogger, () => List[BlazegraphSlowQuery]) = {
     val (sink, getSaved) = inMemorySink()
-    val service = BlazegraphSlowQueryLogger(
+    val service          = BlazegraphSlowQueryLogger(
       sink,
       LongQueryThreshold
     )

@@ -18,14 +18,14 @@ object BlazegraphSlowQueryLogger {
     override def apply[E, A](context: BlazegraphQueryContext, query: IO[E, A]): IO[E, A] = query
   }
   def apply(sink: BlazegraphSlowQuerySink, longQueryThreshold: Duration)(implicit
-                                                                         clock: Clock[UIO]
+      clock: Clock[UIO]
   ): BlazegraphSlowQueryLogger = {
     new BlazegraphSlowQueryLoggerImpl(sink, longQueryThreshold)
   }
 }
 
 class BlazegraphSlowQueryLoggerImpl(sink: BlazegraphSlowQuerySink, longQueryThreshold: Duration)(implicit
-                                                                                                 clock: Clock[UIO]
+    clock: Clock[UIO]
 ) extends BlazegraphSlowQueryLogger {
 
   private val logger = Logger[BlazegraphSlowQueryLogger]
