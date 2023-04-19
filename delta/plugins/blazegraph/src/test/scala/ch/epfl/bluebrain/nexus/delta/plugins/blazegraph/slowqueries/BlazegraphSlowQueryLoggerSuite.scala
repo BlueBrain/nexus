@@ -21,7 +21,7 @@ class BlazegraphSlowQueryLoggerSuite extends BioSuite {
 
   private def fixture: (BlazegraphSlowQueryLogger, () => List[BlazegraphSlowQuery]) = {
     val saved   = new util.ArrayList[BlazegraphSlowQuery]()
-    val service = BlazegraphSlowQueryLogger.store(
+    val service = BlazegraphSlowQueryLogger(
       new BlazegraphSlowQueryStore {
         override def save(query: BlazegraphSlowQuery): Task[Unit]                       = Task.delay {
           saved.add(query)

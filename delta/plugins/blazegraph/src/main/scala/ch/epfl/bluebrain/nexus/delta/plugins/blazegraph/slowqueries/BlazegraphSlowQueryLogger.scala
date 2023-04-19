@@ -16,7 +16,7 @@ object BlazegraphSlowQueryLogger {
   val noop: BlazegraphSlowQueryLogger = new BlazegraphSlowQueryLogger {
     override def apply[E, A](context: BlazegraphQueryContext, query: IO[E, A]): IO[E, A] = query
   }
-  def store(store: BlazegraphSlowQueryStore, longQueryThreshold: Duration)(implicit
+  def apply(store: BlazegraphSlowQueryStore, longQueryThreshold: Duration)(implicit
       clock: Clock[UIO]
   ): BlazegraphSlowQueryLogger = {
     new BlazegraphSlowQueryLoggerImpl(store, longQueryThreshold)

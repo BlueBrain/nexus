@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewReje
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{contexts, schema => viewsSchemaId, BlazegraphView, BlazegraphViewCommand, BlazegraphViewEvent, BlazegraphViewRejection, BlazegraphViewState, BlazegraphViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.BlazegraphViewsRoutes
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries.{BlazegraphSlowQueryLogger, BlazegraphSlowQueryLoggerImpl, BlazegraphSlowQueryStore}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries.{BlazegraphSlowQueryLogger, BlazegraphSlowQueryStore}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
@@ -63,8 +63,8 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
     )
   }
 
-  make[BlazegraphSlowQueryLogger].from { (cfg: BlazegraphViewsConfig, store: BlazegraphSlowQueryStore) =>
-    new BlazegraphSlowQueryLoggerImpl(store, cfg.slowQueryThreshold)
+  make[BlazegraphSlowQueryLogger].from { (cfg: BlazegraphViewsConfig, xas: Transactors) =>
+    BlazegraphSlowQueryLogger(BlazegraphSlowQueryStore(xas), cfg.slowQueryThreshold)
   }
 
   make[BlazegraphClient].named("blazegraph-indexing-client").from {
