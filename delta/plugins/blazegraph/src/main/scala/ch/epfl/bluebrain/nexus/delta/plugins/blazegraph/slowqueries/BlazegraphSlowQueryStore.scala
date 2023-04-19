@@ -28,7 +28,26 @@ trait BlazegraphSlowQueryStore {
 
 object BlazegraphSlowQueryStore {
   def apply(xas: Transactors): BlazegraphSlowQueryStore = {
-    new BlazegraphSlowQueryStoreImpl(xas)
+    new BlazegraphSlowQueryStore {
+      override def save(query: BlazegraphSlowQuery): Task[Unit] = {
+        sql""" INSERT INTO blazegraph_queries(project, view_id, instant, duration, subject, query)
+             | VALUES(${query.view.project}, ${query.view.viewId}, ${query.occurredAt}, ${query.duration}, ${query.subject.asJson}, ${query.query.value})
+        """.stripMargin.update.run
+          .transact(xas.write)
+          .void
+      }
+
+      override def listForTestingOnly(view: ViewRef): Task[List[BlazegraphSlowQuery]] = {
+        sql""" SELECT project, view_id, instant, duration, subject, query FROM public.blazegraph_queries
+             |WHERE view_id = ${view.viewId} AND project = ${view.project}
+           """.stripMargin
+          .query[BlazegraphSlowQuery]
+          .stream
+          .transact(xas.read)
+          .compile
+          .toList
+      }
+    }
   }
 }
 
@@ -72,24 +91,3 @@ case class BlazegraphSlowQuery(
     occurredAt: Instant,
     subject: Subject
 )
-
-class BlazegraphSlowQueryStoreImpl(xas: Transactors) extends BlazegraphSlowQueryStore {
-  override def save(query: BlazegraphSlowQuery): Task[Unit] = {
-    sql""" INSERT INTO blazegraph_queries(project, view_id, instant, duration, subject, query)
-         | VALUES(${query.view.project}, ${query.view.viewId}, ${query.occurredAt}, ${query.duration}, ${query.subject.asJson}, ${query.query.value})
-    """.stripMargin.update.run
-      .transact(xas.write)
-      .void
-  }
-
-  override def listForTestingOnly(view: ViewRef): Task[List[BlazegraphSlowQuery]] = {
-    sql""" SELECT project, view_id, instant, duration, subject, query FROM public.blazegraph_queries
-         |WHERE view_id = ${view.viewId} AND project = ${view.project}
-       """.stripMargin
-      .query[BlazegraphSlowQuery]
-      .stream
-      .transact(xas.read)
-      .compile
-      .toList
-  }
-}
