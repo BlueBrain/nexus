@@ -89,8 +89,6 @@ trait BlazegraphViewsQuery {
   )(implicit caller: Caller): IO[BlazegraphViewRejection, R]
 }
 
-case class BlazegraphQueryContext(view: ViewRef, query: SparqlQuery, subject: Subject)
-
 object BlazegraphViewsQuery {
 
   final def apply(
@@ -210,4 +208,6 @@ object BlazegraphViewsQuery {
       }
     }
   }
+
+  final case class BlazegraphQueryContext(view: ViewRef, query: SparqlQuery, subject: Subject)
 }

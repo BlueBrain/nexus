@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries
 
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphQueryContext
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsQuery.BlazegraphQueryContext
 import com.typesafe.scalalogging.Logger
 import monix.bio.{IO, UIO}
 

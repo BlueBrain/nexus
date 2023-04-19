@@ -1,12 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries
 
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphQueryContext
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
 import monix.bio.Task
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsQuery.BlazegraphQueryContext
 
 import java.util
 import scala.concurrent.duration.DurationInt
