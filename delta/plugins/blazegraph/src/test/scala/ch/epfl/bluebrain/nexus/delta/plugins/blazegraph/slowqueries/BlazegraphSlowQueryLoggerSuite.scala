@@ -15,6 +15,12 @@ import scala.jdk.CollectionConverters._
 
 class BlazegraphSlowQueryLoggerSuite extends BioSuite {
   private val LongQueryThreshold = 100.milliseconds
+  private val StoreWhichFails = new BlazegraphSlowQueryStore {
+    override def save(query: BlazegraphSlowQuery): Task[Unit] =
+      Task.raiseError(new RuntimeException("error saving slow log"))
+
+    override def listForTestingOnly(view: ViewRef): Task[List[BlazegraphSlowQuery]] = Task.pure(Nil)
+  }
 
   private val view        = ViewRef(ProjectRef.unsafe("epfl", "blue-brain"), Iri.unsafe("hippocampus"))
   private val sparqlQuery = SparqlQuery("")
@@ -36,7 +42,7 @@ class BlazegraphSlowQueryLoggerSuite extends BioSuite {
     (service, () => saved.asScala.toList)
   }
 
-  test("test slow query logged") {
+  test("slow query logged") {
 
     val (service, getSaved) = fixture
 
@@ -61,7 +67,7 @@ class BlazegraphSlowQueryLoggerSuite extends BioSuite {
     }
   }
 
-  test("test slow failure logged") {
+  test("slow failure logged") {
 
     val (logSlowQueries, getSaved) = fixture
 
@@ -86,7 +92,7 @@ class BlazegraphSlowQueryLoggerSuite extends BioSuite {
     }
   }
 
-  test("test fast query not logged") {
+  test("fast query not logged") {
 
     val (logSlowQueries, getSaved) = fixture
 
@@ -102,6 +108,26 @@ class BlazegraphSlowQueryLoggerSuite extends BioSuite {
     } yield {
       val saved = getSaved()
       assert(saved.isEmpty, s"expected no queries logged, actually logged $saved")
+    }
+  }
+
+  test("continue when saving slow query log fails") {
+    val logSlowQueries = BlazegraphSlowQueryLogger(
+      StoreWhichFails,
+      LongQueryThreshold
+    )
+
+    for {
+      result <- logSlowQueries(
+                  BlazegraphQueryContext(
+                    view,
+                    sparqlQuery,
+                    user
+                  ),
+                  Task.sleep(101.milliseconds) >> Task.pure("result")
+                )
+    } yield {
+      assertEquals(result, "result")
     }
   }
 }
