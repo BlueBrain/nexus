@@ -56,7 +56,10 @@ object BlazegraphSlowQuery {
           SparqlQuery(query),
           duration.milliseconds,
           occurredAt,
-          subject.as[Subject].toTry.get
+          subject.as[Subject] match {
+            case Right(value) => value
+            case Left(e)      => throw e
+          }
         )
     }
   }
