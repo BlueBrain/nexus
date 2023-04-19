@@ -17,15 +17,15 @@ object BlazegraphSlowQueryLogger {
   val noop: BlazegraphSlowQueryLogger = new BlazegraphSlowQueryLogger {
     override def apply[E, A](context: BlazegraphQueryContext, query: IO[E, A]): IO[E, A] = query
   }
-  def apply(store: BlazegraphSlowQueryStore, longQueryThreshold: Duration)(implicit
-      clock: Clock[UIO]
+  def apply(sink: BlazegraphSlowQuerySink, longQueryThreshold: Duration)(implicit
+                                                                         clock: Clock[UIO]
   ): BlazegraphSlowQueryLogger = {
-    new BlazegraphSlowQueryLoggerImpl(store, longQueryThreshold)
+    new BlazegraphSlowQueryLoggerImpl(sink, longQueryThreshold)
   }
 }
 
-class BlazegraphSlowQueryLoggerImpl(store: BlazegraphSlowQueryStore, longQueryThreshold: Duration)(implicit
-    clock: Clock[UIO]
+class BlazegraphSlowQueryLoggerImpl(sink: BlazegraphSlowQuerySink, longQueryThreshold: Duration)(implicit
+                                                                                                 clock: Clock[UIO]
 ) extends BlazegraphSlowQueryLogger {
 
   private val logger = Logger[BlazegraphSlowQueryLogger]
@@ -49,7 +49,7 @@ class BlazegraphSlowQueryLoggerImpl(store: BlazegraphSlowQueryStore, longQueryTh
         UIO.delay(logger.warn(s"Slow blazegraph query recorded: duration '$duration', view '${context.view}'"))
       )
       .flatMap { now =>
-        store
+        sink
           .save(BlazegraphSlowQuery(context.view, context.query, isError, duration, now, context.subject))
           .onErrorHandleWith(e => UIO.delay(logger.error("error logging blazegraph slow query", e)))
       }

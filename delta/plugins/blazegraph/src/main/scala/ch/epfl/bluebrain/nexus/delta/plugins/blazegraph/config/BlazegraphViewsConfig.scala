@@ -49,6 +49,8 @@ final case class BlazegraphViewsConfig(
     queryClient: HttpClientConfig,
     queryTimeout: Duration,
     slowQueryThreshold: Duration,
+    slowQueryLogExpiryThreshold: FiniteDuration,
+    slowQueryLogDeletionInterval: FiniteDuration,
     eventLog: EventLogConfig,
     pagination: PaginationConfig,
     batch: BatchConfig,

@@ -1,49 +1,43 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries
 
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsQuery.BlazegraphQueryContext
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries.model.BlazegraphSlowQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
 import monix.bio.Task
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsQuery.BlazegraphQueryContext
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries.model.BlazegraphSlowQuery
 
-import java.time.Instant
 import java.util
 import scala.concurrent.duration.DurationInt
 import scala.jdk.CollectionConverters._
 
 class BlazegraphSlowQueryLoggerSuite extends BioSuite {
   private val LongQueryThreshold = 100.milliseconds
-  private val StoreWhichFails    = new BlazegraphSlowQueryStore {
-    override def save(query: BlazegraphSlowQuery): Task[Unit] =
-      Task.raiseError(new RuntimeException("error saving slow log"))
-
-    override def listForTestingOnly(view: ViewRef): Task[List[BlazegraphSlowQuery]] = Task.pure(Nil)
-
-    override def removeQueriesOlderThan(instant: Instant): Task[Unit] = Task.unit
-  }
+  private val SinkWhichFails: BlazegraphSlowQuerySink = (_: BlazegraphSlowQuery) => Task.raiseError(new RuntimeException("error saving slow log"))
 
   private val view        = ViewRef(ProjectRef.unsafe("epfl", "blue-brain"), Iri.unsafe("hippocampus"))
   private val sparqlQuery = SparqlQuery("")
   private val user        = Identity.User("Ted Lasso", Label.unsafe("epfl"))
 
-  private def fixture: (BlazegraphSlowQueryLogger, () => List[BlazegraphSlowQuery]) = {
+  private def inMemorySink(): (BlazegraphSlowQuerySink, () => List[BlazegraphSlowQuery]) = {
     val saved   = new util.ArrayList[BlazegraphSlowQuery]()
+    val store: BlazegraphSlowQuerySink = (query: BlazegraphSlowQuery) =>
+      Task.delay {
+        saved.add(query)
+        ()
+      }
+    (store, () => saved.asScala.toList)
+  }
+
+  private def fixture: (BlazegraphSlowQueryLogger, () => List[BlazegraphSlowQuery]) = {
+    val (sink, getSaved) = inMemorySink()
     val service = BlazegraphSlowQueryLogger(
-      new BlazegraphSlowQueryStore {
-        override def save(query: BlazegraphSlowQuery): Task[Unit]                       = Task.delay {
-          saved.add(query)
-          ()
-        }
-        override def listForTestingOnly(view: ViewRef): Task[List[BlazegraphSlowQuery]] = Task.pure(Nil)
-        override def removeQueriesOlderThan(instant: Instant): Task[Unit]               = Task.unit
-      },
+      sink,
       LongQueryThreshold
     )
-
-    (service, () => saved.asScala.toList)
+    (service, getSaved)
   }
 
   test("slow query logged") {
@@ -117,7 +111,7 @@ class BlazegraphSlowQueryLoggerSuite extends BioSuite {
 
   test("continue when saving slow query log fails") {
     val logSlowQueries = BlazegraphSlowQueryLogger(
-      StoreWhichFails,
+      SinkWhichFails,
       LongQueryThreshold
     )
 
