@@ -10,8 +10,11 @@ import io.circe.syntax.EncoderOps
 import monix.bio.Task
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
 
+import java.time.Instant
+
 trait BlazegraphSlowQueryStore {
   def save(query: BlazegraphSlowQuery): Task[Unit]
+  def removeQueriesOlderThan(instant: Instant): Task[Unit]
   def listForTestingOnly(view: ViewRef): Task[List[BlazegraphSlowQuery]]
 }
 
@@ -35,6 +38,14 @@ object BlazegraphSlowQueryStore {
           .transact(xas.read)
           .compile
           .toList
+      }
+
+      override def removeQueriesOlderThan(instant: Instant): Task[Unit] = {
+        sql""" DELETE FROM public.blazegraph_queries
+             |WHERE instant < $instant
+           """.stripMargin.update.run
+          .transact(xas.write)
+          .void
       }
     }
   }

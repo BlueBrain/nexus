@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
 import ch.epfl.bluebrain.nexus.testkit.postgres.Doobie
 import munit.AnyFixture
 
-import java.time.Instant
+import java.time.{Duration, Instant}
 import scala.concurrent.duration.DurationInt
 
 class BlazegraphSlowQueryStoreSuite extends BioSuite with IOFixedClock with Doobie.Fixture with Doobie.Assertions {
@@ -18,10 +18,10 @@ class BlazegraphSlowQueryStoreSuite extends BioSuite with IOFixedClock with Doob
 
   private lazy val xas   = doobie()
   private lazy val store = BlazegraphSlowQueryStore(xas)
+  private val view       = ViewRef(ProjectRef.unsafe("epfl", "blue-brain"), Iri.unsafe("brain"))
 
   test("Save a slow query") {
 
-    val view      = ViewRef(ProjectRef.unsafe("epfl", "blue-brain"), Iri.unsafe("brain"))
     val slowQuery = BlazegraphSlowQuery(
       view,
       SparqlQuery(""),
@@ -36,6 +36,35 @@ class BlazegraphSlowQueryStoreSuite extends BioSuite with IOFixedClock with Doob
       lookup <- store.listForTestingOnly(view)
     } yield {
       assertEquals(lookup, List(slowQuery))
+    }
+  }
+
+  private def queryAtTime(instant: Instant): BlazegraphSlowQuery = {
+    BlazegraphSlowQuery(
+      view,
+      SparqlQuery(""),
+      wasError = false,
+      1.second,
+      instant,
+      Identity.User("Ted Lasso", Label.unsafe("epfl"))
+    )
+  }
+
+  private val Now          = Instant.now()
+  private val OneWeekAgo   = Now.minus(Duration.ofDays(7))
+  private val EightDaysAgo = Now.minus(Duration.ofDays(8))
+  private val RecentQuery  = queryAtTime(Now)
+  private val OldQuery     = queryAtTime(EightDaysAgo)
+
+  test("Remove old queries") {
+    for {
+      _       <- store.save(OldQuery)
+      _       <- store.save(RecentQuery)
+      _       <- store.removeQueriesOlderThan(OneWeekAgo)
+      results <- store.listForTestingOnly(view)
+    } yield {
+      assert(results.contains(RecentQuery), "recent query was deleted")
+      assert(!results.contains(OldQuery), "old query was not deleted")
     }
   }
 }

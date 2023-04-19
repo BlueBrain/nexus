@@ -9,6 +9,7 @@ import monix.bio.Task
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsQuery.BlazegraphQueryContext
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries.model.BlazegraphSlowQuery
 
+import java.time.Instant
 import java.util
 import scala.concurrent.duration.DurationInt
 import scala.jdk.CollectionConverters._
@@ -20,6 +21,8 @@ class BlazegraphSlowQueryLoggerSuite extends BioSuite {
       Task.raiseError(new RuntimeException("error saving slow log"))
 
     override def listForTestingOnly(view: ViewRef): Task[List[BlazegraphSlowQuery]] = Task.pure(Nil)
+
+    override def removeQueriesOlderThan(instant: Instant): Task[Unit] = Task.unit
   }
 
   private val view        = ViewRef(ProjectRef.unsafe("epfl", "blue-brain"), Iri.unsafe("hippocampus"))
@@ -35,6 +38,7 @@ class BlazegraphSlowQueryLoggerSuite extends BioSuite {
           ()
         }
         override def listForTestingOnly(view: ViewRef): Task[List[BlazegraphSlowQuery]] = Task.pure(Nil)
+        override def removeQueriesOlderThan(instant: Instant): Task[Unit]               = Task.unit
       },
       LongQueryThreshold
     )
