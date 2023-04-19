@@ -34,17 +34,21 @@ class BlazegraphSlowQueryLoggerImpl(store: BlazegraphSlowQueryStore, longQueryTh
     query.attempt.timed
       .flatMap { case (duration, outcome) =>
         UIO
-          .when(duration >= longQueryThreshold)(logSlowQuery(context, duration))
+          .when(duration >= longQueryThreshold)(logSlowQuery(context, outcome.isLeft, duration))
           .flatMap(_ => IO.fromEither(outcome))
       }
   }
 
-  private def logSlowQuery(context: BlazegraphQueryContext, duration: FiniteDuration): UIO[Unit] = {
+  private def logSlowQuery(
+      context: BlazegraphQueryContext,
+      isError: Boolean,
+      duration: FiniteDuration
+  ): UIO[Unit] = {
     IOUtils.instant
       .tapEval(_ => UIO.delay(logger.warn(s"slow blazegraph query recorded: duration $duration, view ${context.view}")))
       .flatMap { now =>
         store
-          .save(BlazegraphSlowQuery(context.view, context.query, duration, now, context.subject))
+          .save(BlazegraphSlowQuery(context.view, context.query, isError, duration, now, context.subject))
           .onErrorHandleWith(e => UIO.delay(logger.error("error logging blazegraph slow query", e)))
       }
   }
