@@ -15,7 +15,7 @@ import scala.jdk.CollectionConverters._
 
 class BlazegraphSlowQueryLoggerSuite extends BioSuite {
   private val LongQueryThreshold = 100.milliseconds
-  private val StoreWhichFails = new BlazegraphSlowQueryStore {
+  private val StoreWhichFails    = new BlazegraphSlowQueryStore {
     override def save(query: BlazegraphSlowQuery): Task[Unit] =
       Task.raiseError(new RuntimeException("error saving slow log"))
 
