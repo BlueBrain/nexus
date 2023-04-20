@@ -59,7 +59,7 @@ class BlazegraphSlowQueryLoggerSuite extends BioSuite {
       assertEquals(onlyRecord.view, view)
       assertEquals(onlyRecord.query, sparqlQuery)
       assertEquals(onlyRecord.subject, user)
-      assertEquals(onlyRecord.wasError, false)
+      assertEquals(onlyRecord.failed, false)
       assert(onlyRecord.duration > 100.milliseconds)
     }
   }
@@ -84,7 +84,7 @@ class BlazegraphSlowQueryLoggerSuite extends BioSuite {
       assertEquals(onlyRecord.view, view)
       assertEquals(onlyRecord.query, sparqlQuery)
       assertEquals(onlyRecord.subject, user)
-      assertEquals(onlyRecord.wasError, true)
+      assertEquals(onlyRecord.failed, true)
       assert(onlyRecord.duration > 100.milliseconds)
     }
   }

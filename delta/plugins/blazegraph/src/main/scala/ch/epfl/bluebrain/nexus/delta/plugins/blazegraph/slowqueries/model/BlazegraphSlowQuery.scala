@@ -14,23 +14,23 @@ import java.time.Instant
 import scala.concurrent.duration.{DurationLong, FiniteDuration}
 
 final case class BlazegraphSlowQuery(
-    view: ViewRef,
-    query: SparqlQuery,
-    wasError: Boolean,
-    duration: FiniteDuration,
-    occurredAt: Instant,
-    subject: Subject
+                                      view: ViewRef,
+                                      query: SparqlQuery,
+                                      failed: Boolean,
+                                      duration: FiniteDuration,
+                                      occurredAt: Instant,
+                                      subject: Subject
 )
 
 object BlazegraphSlowQuery {
 
   implicit val read: Read[BlazegraphSlowQuery] = {
     Read[(ProjectRef, Iri, Instant, Long, Json, String, Boolean)].map {
-      case (project, viewId, occurredAt, duration, subject, query, wasError) =>
+      case (project, viewId, occurredAt, duration, subject, query, failed) =>
         BlazegraphSlowQuery(
           ViewRef(project, viewId),
           SparqlQuery(query),
-          wasError,
+          failed,
           duration.milliseconds,
           occurredAt,
           subject.as[Subject] match {

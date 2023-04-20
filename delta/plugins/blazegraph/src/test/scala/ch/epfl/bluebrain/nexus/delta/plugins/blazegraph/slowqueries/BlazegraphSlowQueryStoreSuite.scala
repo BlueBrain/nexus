@@ -25,7 +25,7 @@ class BlazegraphSlowQueryStoreSuite extends BioSuite with IOFixedClock with Doob
     val slowQuery = BlazegraphSlowQuery(
       view,
       SparqlQuery(""),
-      wasError = true,
+      failed = true,
       1.second,
       Instant.now(),
       Identity.User("Ted Lasso", Label.unsafe("epfl"))
@@ -43,7 +43,7 @@ class BlazegraphSlowQueryStoreSuite extends BioSuite with IOFixedClock with Doob
     BlazegraphSlowQuery(
       view,
       SparqlQuery(""),
-      wasError = false,
+      failed = false,
       1.second,
       instant,
       Identity.User("Ted Lasso", Label.unsafe("epfl"))
