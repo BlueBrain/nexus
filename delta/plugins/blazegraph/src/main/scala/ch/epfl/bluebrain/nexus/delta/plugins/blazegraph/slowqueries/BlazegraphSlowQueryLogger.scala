@@ -31,7 +31,7 @@ object BlazegraphSlowQueryLogger {
 
   private val logger = Logger[BlazegraphSlowQueryLogger]
 
-  def apply(sink: BlazegraphSlowQuerySink, longQueryThreshold: Duration)(implicit
+  def apply(sink: BlazegraphSlowQueryStore, longQueryThreshold: Duration)(implicit
       clock: Clock[UIO]
   ): BlazegraphSlowQueryLogger = new BlazegraphSlowQueryLogger {
     def apply[E, A](context: BlazegraphQueryContext, query: IO[E, A]): IO[E, A] = {

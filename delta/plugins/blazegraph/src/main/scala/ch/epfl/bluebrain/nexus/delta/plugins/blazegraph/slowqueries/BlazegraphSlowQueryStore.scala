@@ -13,16 +13,10 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
 import java.time.Instant
 
 /**
-  * Operation for persisting slow query logs
-  */
-trait BlazegraphSlowQuerySink {
-  def save(query: BlazegraphSlowQuery): Task[Unit]
-}
-
-/**
   * Persistence operations for slow query logs
   */
-trait BlazegraphSlowQueryStore extends BlazegraphSlowQuerySink {
+trait BlazegraphSlowQueryStore {
+  def save(query: BlazegraphSlowQuery): Task[Unit]
   def removeQueriesOlderThan(instant: Instant): Task[Unit]
   def listForTestingOnly(view: ViewRef): Task[List[BlazegraphSlowQuery]]
 }
@@ -31,7 +25,7 @@ object BlazegraphSlowQueryStore {
   def apply(xas: Transactors): BlazegraphSlowQueryStore = {
     new BlazegraphSlowQueryStore {
       override def save(query: BlazegraphSlowQuery): Task[Unit] = {
-        sql""" INSERT INTO blazegraph_queries(project, view_id, instant, duration, subject, query, was_error)
+        sql""" INSERT INTO blazegraph_queries(project, view_id, instant, duration, subject, query, failed)
              | VALUES(${query.view.project}, ${query.view.viewId}, ${query.occurredAt}, ${query.duration}, ${query.subject.asJson}, ${query.query.value}, ${query.failed})
         """.stripMargin.update.run
           .transact(xas.write)

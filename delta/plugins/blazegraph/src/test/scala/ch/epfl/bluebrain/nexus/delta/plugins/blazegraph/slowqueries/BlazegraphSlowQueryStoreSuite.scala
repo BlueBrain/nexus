@@ -12,13 +12,17 @@ import munit.AnyFixture
 
 import java.time.{Duration, Instant}
 import scala.concurrent.duration.DurationInt
+import BlazegraphSlowQueryStoreSuite._
 
-class BlazegraphSlowQueryStoreSuite extends BioSuite with IOFixedClock with Doobie.Fixture with Doobie.Assertions {
-  override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
+class BlazegraphSlowQueryStoreSuite
+    extends BioSuite
+    with IOFixedClock
+    with Doobie.Fixture
+    with Doobie.Assertions
+    with BlazegraphSlowQueryStoreFixture {
+  override def munitFixtures: Seq[AnyFixture[_]] = List(doobie, blazegraphSlowQueryStore)
 
-  private lazy val xas   = doobie()
-  private lazy val store = BlazegraphSlowQueryStore(xas)
-  private val view       = ViewRef(ProjectRef.unsafe("epfl", "blue-brain"), Iri.unsafe("brain"))
+  private lazy val store = blazegraphSlowQueryStore()
 
   test("Save a slow query") {
 
@@ -39,6 +43,21 @@ class BlazegraphSlowQueryStoreSuite extends BioSuite with IOFixedClock with Doob
     }
   }
 
+  test("Remove old queries") {
+    for {
+      _       <- store.save(OldQuery)
+      _       <- store.save(RecentQuery)
+      _       <- store.removeQueriesOlderThan(OneWeekAgo)
+      results <- store.listForTestingOnly(view)
+    } yield {
+      assert(results.contains(RecentQuery), "recent query was deleted")
+      assert(!results.contains(OldQuery), "old query was not deleted")
+    }
+  }
+}
+
+object BlazegraphSlowQueryStoreSuite {
+  private val view = ViewRef(ProjectRef.unsafe("epfl", "blue-brain"), Iri.unsafe("brain"))
   private def queryAtTime(instant: Instant): BlazegraphSlowQuery = {
     BlazegraphSlowQuery(
       view,
@@ -55,16 +74,4 @@ class BlazegraphSlowQueryStoreSuite extends BioSuite with IOFixedClock with Doob
   private val EightDaysAgo = Now.minus(Duration.ofDays(8))
   private val RecentQuery  = queryAtTime(Now)
   private val OldQuery     = queryAtTime(EightDaysAgo)
-
-  test("Remove old queries") {
-    for {
-      _       <- store.save(OldQuery)
-      _       <- store.save(RecentQuery)
-      _       <- store.removeQueriesOlderThan(OneWeekAgo)
-      results <- store.listForTestingOnly(view)
-    } yield {
-      assert(results.contains(RecentQuery), "recent query was deleted")
-      assert(!results.contains(OldQuery), "old query was not deleted")
-    }
-  }
 }
