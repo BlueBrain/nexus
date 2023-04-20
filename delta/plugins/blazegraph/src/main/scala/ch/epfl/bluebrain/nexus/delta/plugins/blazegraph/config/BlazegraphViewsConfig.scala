@@ -29,6 +29,8 @@ import scala.concurrent.duration._
   *   configuration of the query Blazegraph client
   * @param queryTimeout
   *   the Blazegraph query timeout
+ *  @param slowQueries
+ *    configuration of slow queries
   * @param eventLog
   *   configuration of the event log
   * @param pagination

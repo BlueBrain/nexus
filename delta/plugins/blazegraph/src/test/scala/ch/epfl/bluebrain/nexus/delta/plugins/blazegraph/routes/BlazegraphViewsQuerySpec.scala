@@ -7,6 +7,7 @@ import cats.data.NonEmptySet
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig.AlwaysGiveUp
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsQuery.BlazegraphQueryContext
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.SparqlNTriples
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{BlazegraphClient, SparqlWriteQuery}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{AuthorizationFailed, ProjectContextRejection, ViewIsDeprecated}
@@ -38,6 +39,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Group, 
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.testkit._
 import ch.epfl.bluebrain.nexus.testkit.blazegraph.BlazegraphDocker
+import monix.bio.IO
 import monix.execution.Scheduler
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
@@ -63,6 +65,10 @@ class BlazegraphViewsQuerySpec(docker: BlazegraphDocker)
     with Fixtures
     with Eventually {
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(6.seconds, 100.millis)
+
+  private val noopSlowQueryLogger: BlazegraphSlowQueryLogger = new BlazegraphSlowQueryLogger {
+    override def apply[E, A](context: BlazegraphQueryContext, query: IO[E, A]): IO[E, A] = query
+  }
 
   implicit private val sc: Scheduler                = Scheduler.global
   implicit private val httpConfig: HttpClientConfig = HttpClientConfig(AlwaysGiveUp, HttpClientWorthRetry.never, true)
@@ -174,7 +180,7 @@ class BlazegraphViewsQuerySpec(docker: BlazegraphDocker)
       (bob.subject, AclAddress.Root, Set(queryPermission)),
       (Anonymous, AclAddress.Project(project2.ref), Set(queryPermission))
     ).flatMap { acls =>
-      BlazegraphViewsQuery(acls, fetchContext, views, client, BlazegraphSlowQueryLogger.noop, "prefix", xas)
+      BlazegraphViewsQuery(acls, fetchContext, views, client, noopSlowQueryLogger, "prefix", xas)
     }.accepted
 
     "create the indexing views" in {

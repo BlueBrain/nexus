@@ -12,10 +12,16 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
 
 import java.time.Instant
 
+/**
+ * Operation for persisting slow query logs
+ */
 trait BlazegraphSlowQuerySink {
   def save(query: BlazegraphSlowQuery): Task[Unit]
 }
 
+/**
+ * Persistence operations for slow query logs
+ */
 trait BlazegraphSlowQueryStore extends BlazegraphSlowQuerySink {
   def removeQueriesOlderThan(instant: Instant): Task[Unit]
   def listForTestingOnly(view: ViewRef): Task[List[BlazegraphSlowQuery]]
