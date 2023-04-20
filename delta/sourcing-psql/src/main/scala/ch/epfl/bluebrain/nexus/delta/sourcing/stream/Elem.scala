@@ -150,6 +150,15 @@ sealed trait Elem[+A] extends Product with Serializable {
   }
 
   /**
+    * Returns the value as a [[Task]], raising a error on the failed case
+    */
+  def toTask: Task[Option[A]] = this match {
+    case e: SuccessElem[A] => Task.some(e.value)
+    case f: FailedElem     => Task.raiseError(f.throwable)
+    case _: DroppedElem    => Task.none
+  }
+
+  /**
     * Returns the underlying error for a [[FailedElem]]
     */
   def toThrowable: Option[Throwable] = this match {

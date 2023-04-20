@@ -44,6 +44,7 @@ class IndexingViewDefSuite extends BioSuite {
   private val subject: Subject = Anonymous
   private val tag              = UserTag.unsafe("mytag")
   private val indexingRev      = 1
+  private val currentRev       = 1
 
   private val namespace = s"${prefix}_${uuid}_1"
 
@@ -83,7 +84,8 @@ class IndexingViewDefSuite extends BioSuite {
           indexing.resourceTag,
           indexing.pipeChain,
           namespace,
-          indexingRev
+          indexingRev,
+          currentRev
         )
       )
     )
@@ -110,7 +112,8 @@ class IndexingViewDefSuite extends BioSuite {
       indexing.resourceTag,
       Some(PipeChain(PipeRef.unsafe("xxx") -> ExpandedJsonLd.empty)),
       namespace,
-      indexingRev
+      indexingRev,
+      currentRev
     )
 
     val expectedError = CouldNotFindTypedPipeErr(PipeRef.unsafe("xxx"), "xxx")
@@ -138,7 +141,8 @@ class IndexingViewDefSuite extends BioSuite {
       indexing.resourceTag,
       Some(PipeChain(FilterDeprecated())),
       namespace,
-      indexingRev
+      indexingRev,
+      currentRev
     )
 
     val expectedProgress: ProjectionProgress = ProjectionProgress(

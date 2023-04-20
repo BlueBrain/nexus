@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.AuthToken
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.{deriveConfiguredCodec, deriveConfiguredEncoder}
 import io.circe.syntax._
@@ -21,8 +21,10 @@ import software.amazon.awssdk.auth.credentials.{AnonymousCredentialsProvider, Aw
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.regions.providers.AwsRegionProvider
 
+import java.io.File
 import java.nio.file.Path
 import scala.annotation.nowarn
+import scala.reflect.io.Directory
 import scala.util.Try
 
 sealed trait StorageValue extends Product with Serializable {
@@ -110,6 +112,9 @@ object StorageValue {
 
     override val tpe: StorageType             = StorageType.DiskStorage
     override val secrets: Set[Secret[String]] = Set.empty
+
+    def rootDirectory(project: ProjectRef): Directory =
+      new Directory(new File(volume.value.toFile, project.toString))
   }
 
   object DiskStorageValue {

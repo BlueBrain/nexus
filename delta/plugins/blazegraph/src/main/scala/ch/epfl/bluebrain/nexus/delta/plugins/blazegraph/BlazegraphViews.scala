@@ -25,9 +25,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceResolvingDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
@@ -220,6 +217,21 @@ final class BlazegraphViews(
   }.span("deprecateBlazegraphView")
 
   /**
+    * Deprecate a view without applying preliminary checks on the project status
+    *
+    * @param id
+    *   the view identifier
+    * @param project
+    *   the view parent project
+    * @param rev
+    *   the current view revision
+    */
+  private[blazegraph] def internalDeprecate(id: Iri, project: ProjectRef, rev: Int)(implicit
+      subject: Subject
+  ): IO[BlazegraphViewRejection, Unit] =
+    eval(DeprecateBlazegraphView(id, project, rev, subject)).void
+
+  /**
     * Fetch the latest revision of a view.
     *
     * @param id
@@ -278,41 +290,6 @@ final class BlazegraphViews(
     }
 
   /**
-    * List views.
-    *
-    * @param pagination
-    *   the pagination settings
-    * @param params
-    *   filtering parameters for the listing
-    * @param ordering
-    *   the response ordering
-    */
-  def list(
-      pagination: FromPagination,
-      params: BlazegraphViewSearchParams,
-      ordering: Ordering[ViewResource]
-  ): UIO[UnscoredSearchResults[ViewResource]] = {
-    val predicate = params.project.fold[Predicate](Predicate.Root)(ref => Predicate.Project(ref))
-    SearchResults(
-      log.currentStates(predicate, identity(_)).evalMapFilter[Task, ViewResource] { state =>
-        fetchContext.cacheOnReads
-          .onRead(state.project)
-          .redeemWith(
-            _ => UIO.none,
-            pc => {
-              val res =
-                state.toResource(pc.apiMappings, pc.base)
-              params.matches(res).map(Option.when(_)(res))
-            }
-          )
-      },
-      pagination,
-      ordering
-    )
-      .span("listBlazegraphViews")
-  }
-
-  /**
     * Return the existing indexing views in a project in a finite stream
     */
   def currentIndexingViews(project: ProjectRef): ElemStream[IndexingViewDef] =
@@ -341,9 +318,11 @@ final class BlazegraphViews(
       IndexingViewDef(v, prefix)
     }
 
+  private def eval(cmd: BlazegraphViewCommand) =
+    log.evaluate(cmd.project, cmd.id, cmd)
+
   private def eval(cmd: BlazegraphViewCommand, pc: ProjectContext): IO[BlazegraphViewRejection, ViewResource] =
-    log
-      .evaluate(cmd.project, cmd.id, cmd)
+    eval(cmd)
       .map(_._2.toResource(pc.apiMappings, pc.base))
 }
 
