@@ -12,6 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.config.BlazegraphViewsCo
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViewsPluginModule.{enrichCompositeViewEvent, injectSearchViewDefaults, logger}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.DeltaClient
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.deletion.CompositeViewsDeletionTask
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.{CompositeSpaces, CompositeViewsCoordinator, MetadataPredicates}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.migration.{BlazegraphViewsCheck, CompositeViewsCheck, ElasticSearchViewsCheck, MigrationCheckConfig, MigrationCheckRoutes, ProjectsStatsCheck, ResourcesCheck}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewEvent._
@@ -35,6 +36,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
+import ch.epfl.bluebrain.nexus.delta.sdk.deletion.ProjectDeletionTask
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
@@ -198,6 +200,8 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         )(cr)
     }
   }
+
+  many[ProjectDeletionTask].add { (views: CompositeViews) => CompositeViewsDeletionTask(views) }
 
   many[MetadataContextValue].addEffect(MetadataContextValue.fromFile("contexts/composite-views-metadata.json"))
 
