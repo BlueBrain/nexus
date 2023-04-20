@@ -90,4 +90,11 @@ class GlobalEventStoreSuite extends BioSuite with Doobie.Fixture with Doobie.Ass
     store.events(Offset.at(2L)).assert(envelope3, envelope4)
   }
 
+  test(s"Delete events for $id") {
+    for {
+      _ <- store.delete(id).transact(xas.write)
+      _ <- store.history(id).assertSize(0)
+    } yield ()
+  }
+
 }

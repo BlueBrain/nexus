@@ -59,7 +59,7 @@ class ProjectsImplSpec
 
   private val order = ResourceF.sortBy[Project]("_label").value
 
-  private val config = ProjectsConfig(eventLogConfig, pagination, cacheConfig)
+  private val config = ProjectsConfig(eventLogConfig, pagination, cacheConfig, deletionConfig)
 
   private def fetchOrg: FetchOrganization = {
     case `org1`          => UIO.pure(Organization(org1, orgUuid, None))

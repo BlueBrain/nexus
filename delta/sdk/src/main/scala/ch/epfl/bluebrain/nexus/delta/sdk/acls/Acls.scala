@@ -7,16 +7,18 @@ import ch.epfl.bluebrain.nexus.delta.sdk.AclResource
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclCommand.{AppendAcl, DeleteAcl, ReplaceAcl, SubtractAcl}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclEvent.{AclAppended, AclDeleted, AclReplaced, AclSubtracted}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclRejection._
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.deletion.ProjectDeletionTask
+import ch.epfl.bluebrain.nexus.delta.sdk.deletion.model.ProjectDeletionReport
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceUris
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{IdentityRealm, Subject}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, EnvelopeStream, Label}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, EnvelopeStream, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.{GlobalEntityDefinition, StateMachine}
-import monix.bio.{IO, UIO}
+import monix.bio.{IO, Task, UIO}
 
 import java.time.Instant
 
@@ -198,6 +200,12 @@ trait Acls {
     */
   def delete(address: AclAddress, rev: Int)(implicit caller: Subject): IO[AclRejection, AclResource]
 
+  /**
+    * Hard deletes events and states for the given acl address This is meant to be used internally for the project
+    * deletion feature
+    */
+  def internalDelete(project: AclAddress): UIO[Unit]
+
   private def filterSelf(resource: AclResource)(implicit caller: Caller): AclResource =
     resource.map(_.filter(caller.identities))
 
@@ -347,4 +355,17 @@ object Acls {
           case c => IncorrectRev(address, c.rev, c.rev + 1)
         }
     )
+
+  /**
+    * Project deletion task to delete the related ACL. If the project is deleted, we don't want it to inherit the former
+    * acls
+    */
+  def projectDeletionTask(acls: Acls): ProjectDeletionTask = new ProjectDeletionTask {
+    override def apply(project: ProjectRef)(implicit subject: Subject): Task[ProjectDeletionReport.Stage] =
+      acls
+        .internalDelete(project)
+        .as(
+          ProjectDeletionReport.Stage("acls", "The acl has been deleted.")
+        )
+  }
 }
