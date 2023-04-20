@@ -9,9 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef
 import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
 import monix.bio.Task
 
-import java.util
 import scala.concurrent.duration.DurationInt
-import scala.jdk.CollectionConverters._
 
 class BlazegraphSlowQueryLoggerSuite extends BioSuite {
   private val LongQueryThreshold                      = 100.milliseconds
@@ -23,13 +21,13 @@ class BlazegraphSlowQueryLoggerSuite extends BioSuite {
   private val user        = Identity.User("Ted Lasso", Label.unsafe("epfl"))
 
   private def inMemorySink(): (BlazegraphSlowQuerySink, () => List[BlazegraphSlowQuery]) = {
-    val saved                          = new util.ArrayList[BlazegraphSlowQuery]()
+    val saved                          = scala.collection.mutable.ListBuffer[BlazegraphSlowQuery]()
     val store: BlazegraphSlowQuerySink = (query: BlazegraphSlowQuery) =>
       Task.delay {
-        saved.add(query)
+        saved.addOne(query)
         ()
       }
-    (store, () => saved.asScala.toList)
+    (store, () => saved.toList)
   }
 
   private def fixture: (BlazegraphSlowQueryLogger, () => List[BlazegraphSlowQuery]) = {
