@@ -68,13 +68,13 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
       BlazegraphSlowQueryDeleter.start(
         supervisor,
         store,
-        cfg.slowQueryLogExpiryThreshold,
-        cfg.slowQueryLogDeletionInterval
+        cfg.slowQueries.logTtl,
+        cfg.slowQueries.deleteExpiredLogsEvery
       )
   }
 
   make[BlazegraphSlowQueryLogger].from { (cfg: BlazegraphViewsConfig, xas: Transactors) =>
-    BlazegraphSlowQueryLogger(BlazegraphSlowQueryStore(xas), cfg.slowQueryThreshold)
+    BlazegraphSlowQueryLogger(BlazegraphSlowQueryStore(xas), cfg.slowQueries.slowQueryThreshold)
   }
 
   make[BlazegraphClient].named("blazegraph-indexing-client").from {
