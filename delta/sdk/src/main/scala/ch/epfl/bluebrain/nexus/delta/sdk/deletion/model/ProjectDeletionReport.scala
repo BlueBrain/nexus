@@ -59,7 +59,7 @@ object ProjectDeletionReport {
   final case class Stage(name: String, log: Vector[String]) {
     def ++(line: String): Stage = copy(log = log :+ line)
 
-    //override def toString = s"""Progress of deletion task $name:\n${log.mkString("* ", "\n* ", "")}"""
+    override def toString = s"""Progress of deletion task $name:\n${log.mkString("* ", "\n* ", "")}"""
   }
 
   object Stage {

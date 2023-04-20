@@ -80,9 +80,6 @@ object ProjectDeletionCoordinator {
         _         <- Task.delay(logger.info(s"Project ${project.project} has been successfully deleted."))
       } yield ()
 
-    /**
-      * Save the deletion report for the given project
-      */
     private[deletion] def list(project: ProjectRef): Task[List[ProjectDeletionReport]] =
       deletionStore.list(project)
   }

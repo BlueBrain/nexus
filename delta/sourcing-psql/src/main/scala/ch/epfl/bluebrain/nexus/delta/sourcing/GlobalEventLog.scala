@@ -80,7 +80,6 @@ trait GlobalEventLog[Id, S <: GlobalState, Command, E <: GlobalEvent, Rejection]
   /**
     * Delete both states and events for the given id
     * @param id
-    * @return
     */
   def delete(id: Id): UIO[Unit]
 
