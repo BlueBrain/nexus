@@ -10,19 +10,20 @@ import monix.bio.{IO, UIO}
 import scala.concurrent.duration.{Duration, FiniteDuration}
 
 /**
- * Logs slow queries in order to help us determine problematic queries
- */
+  * Logs slow queries in order to help us determine problematic queries
+  */
 trait BlazegraphSlowQueryLogger {
+
   /**
-   * When a query is slow, record this with context.
-   *
-   * @param context
-   *   information about the query which can be used in logs
-   * @param query
-   *   the query which should be timed, and logged if it is too slow
-   * @return
-   *   the query
-   */
+    * When a query is slow, record this with context.
+    *
+    * @param context
+    *   information about the query which can be used in logs
+    * @param query
+    *   the query which should be timed, and logged if it is too slow
+    * @return
+    *   the query
+    */
   def apply[E, A](context: BlazegraphQueryContext, query: IO[E, A]): IO[E, A]
 }
 
@@ -43,10 +44,10 @@ object BlazegraphSlowQueryLogger {
     }
 
     private def logSlowQuery(
-                              context: BlazegraphQueryContext,
-                              isError: Boolean,
-                              duration: FiniteDuration
-                            ): UIO[Unit] = {
+        context: BlazegraphQueryContext,
+        isError: Boolean,
+        duration: FiniteDuration
+    ): UIO[Unit] = {
       IOUtils.instant
         .tapEval(_ =>
           UIO.delay(logger.warn(s"Slow blazegraph query recorded: duration '$duration', view '${context.view}'"))
