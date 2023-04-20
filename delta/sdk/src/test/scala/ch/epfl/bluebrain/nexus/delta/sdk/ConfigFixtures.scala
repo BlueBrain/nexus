@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.cache.CacheConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClientConfig, HttpClientWorthRetry}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.ProjectsConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{EventLogConfig, QueryConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 
@@ -31,4 +32,9 @@ trait ConfigFixtures {
 
   def fusionConfig: FusionConfig = FusionConfig(Uri("https://bbp.epfl.ch/nexus/web/"), enableRedirects = true)
 
+  def deletionConfig: ProjectsConfig.DeletionConfig = ProjectsConfig.DeletionConfig(
+    enabled = true,
+    1.second,
+    RetryStrategyConfig.AlwaysGiveUp
+  )
 }

@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.{ArithmeticEvent, Total
 import ch.epfl.bluebrain.nexus.delta.sourcing.EvaluationError.{EvaluationFailure, EvaluationTimeout}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.GlobalEventStore
+import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GlobalStateStore
 import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
@@ -121,8 +122,16 @@ class GlobalEventLogSuite extends BioSuite with Doobie.Fixture {
     eventLog.stateOr(nxv + "xxx", 1, NotFound, RevisionNotFound).error(NotFound)
   }
 
-  test("Raise an error when prov" + id + "ing a nonexistent revision") {
+  test(s"Raise an error when providing a nonexistent revision") {
     eventLog.stateOr(id, 10, NotFound, RevisionNotFound).error(RevisionNotFound(10, 2))
+  }
+
+  test(s"Delete events and state for $id") {
+    for {
+      _ <- eventLog.delete(id)
+      _ <- eventLog.stateOr(id, 1, NotFound, RevisionNotFound).error(NotFound)
+      _ <- eventLog.currentEvents(Offset.start).assertSize(0)
+    } yield ()
   }
 
 }

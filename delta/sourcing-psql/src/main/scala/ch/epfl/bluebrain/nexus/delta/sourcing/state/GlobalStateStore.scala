@@ -24,7 +24,7 @@ import monix.bio.{Task, UIO}
 trait GlobalStateStore[Id, S <: GlobalState] {
 
   /**
-    * Persist the state at the given tag
+    * Persist the state
     */
   def save(state: S): ConnectionIO[Unit]
 
