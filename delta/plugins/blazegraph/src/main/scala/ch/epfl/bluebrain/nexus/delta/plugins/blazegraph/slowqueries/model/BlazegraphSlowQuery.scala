@@ -13,6 +13,21 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import java.time.Instant
 import scala.concurrent.duration.{DurationLong, FiniteDuration}
 
+/**
+ * A blazegraph query which took too long
+ * @param view
+ *   the view
+ * @param query
+ *   the query
+ * @param failed
+ *   whether the query failed
+ * @param duration
+ *   how long the query took
+ * @param instant
+ *   when the query finished
+ * @param subject
+ *   who ran the query
+ */
 final case class BlazegraphSlowQuery(
                                       view: ViewRef,
                                       query: SparqlQuery,

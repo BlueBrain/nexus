@@ -121,17 +121,13 @@ class BlazegraphSlowQueryLoggerSuite extends BioSuite with Doobie.Fixture with B
       LongQueryThreshold
     )
 
-    for {
-      result <- logSlowQueries(
-                  BlazegraphQueryContext(
-                    view,
-                    sparqlQuery,
-                    user
-                  ),
-                  Task.sleep(101.milliseconds) >> Task.pure("result")
-                )
-    } yield {
-      assertEquals(result, "result")
-    }
+    logSlowQueries(
+      BlazegraphQueryContext(
+        view,
+        sparqlQuery,
+        user
+      ),
+      Task.sleep(101.milliseconds).as("result")
+    ).assert("result")
   }
 }
