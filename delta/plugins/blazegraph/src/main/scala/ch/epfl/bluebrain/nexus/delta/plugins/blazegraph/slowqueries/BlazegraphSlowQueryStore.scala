@@ -26,7 +26,7 @@ object BlazegraphSlowQueryStore {
     new BlazegraphSlowQueryStore {
       override def save(query: BlazegraphSlowQuery): Task[Unit] = {
         sql""" INSERT INTO blazegraph_queries(project, view_id, instant, duration, subject, query, failed)
-             | VALUES(${query.view.project}, ${query.view.viewId}, ${query.occurredAt}, ${query.duration}, ${query.subject.asJson}, ${query.query.value}, ${query.failed})
+             | VALUES(${query.view.project}, ${query.view.viewId}, ${query.instant}, ${query.duration}, ${query.subject.asJson}, ${query.query.value}, ${query.failed})
         """.stripMargin.update.run
           .transact(xas.write)
           .void

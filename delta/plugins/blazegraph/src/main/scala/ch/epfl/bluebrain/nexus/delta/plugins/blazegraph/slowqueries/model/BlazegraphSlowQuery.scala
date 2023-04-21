@@ -14,12 +14,12 @@ import java.time.Instant
 import scala.concurrent.duration.{DurationLong, FiniteDuration}
 
 final case class BlazegraphSlowQuery(
-    view: ViewRef,
-    query: SparqlQuery,
-    failed: Boolean,
-    duration: FiniteDuration,
-    occurredAt: Instant,
-    subject: Subject
+                                      view: ViewRef,
+                                      query: SparqlQuery,
+                                      failed: Boolean,
+                                      duration: FiniteDuration,
+                                      instant: Instant,
+                                      subject: Subject
 )
 
 object BlazegraphSlowQuery {
