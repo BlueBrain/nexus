@@ -65,6 +65,7 @@ class BlazegraphSlowQueryLoggerSuite extends BioSuite with Doobie.Fixture with B
       assertEquals(onlyRecord.query, sparqlQuery)
       assertEquals(onlyRecord.subject, user)
       assertEquals(onlyRecord.failed, false)
+      assertEquals(onlyRecord.instant, Instant.EPOCH)
       assert(onlyRecord.duration > 100.milliseconds)
     }
   }
@@ -90,6 +91,7 @@ class BlazegraphSlowQueryLoggerSuite extends BioSuite with Doobie.Fixture with B
       assertEquals(onlyRecord.query, sparqlQuery)
       assertEquals(onlyRecord.subject, user)
       assertEquals(onlyRecord.failed, true)
+      assertEquals(onlyRecord.instant, Instant.EPOCH)
       assert(onlyRecord.duration > 100.milliseconds)
     }
   }
