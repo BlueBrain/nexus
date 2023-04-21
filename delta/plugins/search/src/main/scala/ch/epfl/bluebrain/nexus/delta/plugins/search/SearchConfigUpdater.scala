@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewF
 import ch.epfl.bluebrain.nexus.delta.plugins.search.SearchConfigUpdater.logger
 import ch.epfl.bluebrain.nexus.delta.plugins.search.SearchScopeInitialization._
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchConfig.IndexingConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.search.model.{defaultViewId, SearchConfig}
+import ch.epfl.bluebrain.nexus.delta.plugins.search.model.{SearchConfig, defaultViewId}
 import ch.epfl.bluebrain.nexus.delta.sdk.Defaults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ElemStream
@@ -46,8 +46,8 @@ final class SearchConfigUpdater(defaults: Defaults, config: IndexingConfig) {
       .compile
       .drain
       .doOnFinish {
-        case Some(value) => UIO.delay(logger.error(s"Error $value"))
-        case None        => UIO.delay(logger.info("All default composite views have been updated."))
+        case Some(cause) => UIO.delay(logger.error("Updating default composite views failed.", cause.toThrowable))
+        case None        => UIO.delay(logger.info("Stopping stream. All default composite views have been updated."))
       }
 
   private def configHasChanged(v: ActiveViewDef)(implicit baseUri: BaseUri): Boolean =
@@ -93,5 +93,5 @@ object SearchConfigUpdater {
           fields
         )
         .void
-        .onErrorHandle(_ => ())
+        .onErrorHandle(e => logger.error(s"Could not update view ${viewDef.ref}", e))
 }
