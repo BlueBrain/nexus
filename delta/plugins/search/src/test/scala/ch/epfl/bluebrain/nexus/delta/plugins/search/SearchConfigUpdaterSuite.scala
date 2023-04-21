@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.search
 
 import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewFields.fromValue
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeViewFields, CompositeViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.{CompositeViews, CompositeViewsFixture, Fixtures}
@@ -75,29 +76,32 @@ class SearchConfigUpdaterSuite extends BioSuite with CompositeViewsFixture with 
           rev = 1
         )
     }
-  private val updatedViews = MutableSet.empty[CompositeViewDef]
+  private val updatedViews = MutableSet.empty[(CompositeViewDef, CompositeViewFields)]
+  implicit private class CompositeViewTestOps(x: (CompositeViewDef, CompositeViewFields)) {
+    def viewDef: CompositeViewDef = x._1
+  }
 
   private val update: (ActiveViewDef, CompositeViewFields) => Task[Unit] =
-    (c, _) => Task { updatedViews.add(c) }.void
+    (viewDef, fields) => Task { updatedViews.add((viewDef, fields)) }.void
 
   test("Update the views") {
     new SearchConfigUpdater(defaults, indexingConfig)(views, update)
   }
 
   test("A default active view whose sources do not match the current config should be updated") {
-    assert(updatedViews.contains(defaultOutdatedView))
+    assert(updatedViews.contains((defaultOutdatedView, fromValue(upToDateView.value))))
   }
 
   test("A default active view whose sources match the current config should not be updated") {
-    assert(!updatedViews.contains(upToDateView))
+    assert(!updatedViews.exists(_.viewDef == upToDateView))
   }
 
   test("A non-default active view should not be updated") {
-    assert(!updatedViews.contains(customOutdatedView))
+    assert(!updatedViews.exists(_.viewDef == customOutdatedView))
   }
 
   test("Deprecated view should not be updated") {
-    assert(!updatedViews.contains(deprecatedView))
+    assert(!updatedViews.exists(_.viewDef == deprecatedView))
   }
 
 }
