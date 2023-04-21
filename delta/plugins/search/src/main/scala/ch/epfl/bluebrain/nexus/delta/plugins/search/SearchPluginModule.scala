@@ -55,4 +55,17 @@ class SearchPluginModule(priority: Int) extends ModuleDef {
     PriorityRoute(priority, route.routes, requiresStrictEntity = true)
   }
 
+  make[SearchConfigUpdater].fromEffect {
+    (
+        compositeViews: CompositeViews,
+        config: SearchConfig,
+        baseUri: BaseUri,
+        serviceAccount: ServiceAccount
+    ) =>
+      SearchConfigUpdater(
+        compositeViews,
+        config
+      )(baseUri, serviceAccount.subject)
+  }
+
 }

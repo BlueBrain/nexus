@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 import akka.http.scaladsl.model.Uri
 import cats.Order
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSourceFields.{CrossProjectSourceFields, ProjectSourceFields, RemoteProjectSourceFields}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.SourceType._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -71,6 +72,12 @@ sealed trait CompositeViewSource extends Product with Serializable {
     */
   def pipeChain: Option[PipeChain] =
     PipeChain(resourceSchemas, resourceTypes, includeMetadata = true, includeDeprecated = includeDeprecated)
+
+  /**
+    * @return
+    *   the [[CompositeViewSource]] projected as [[CompositeViewSourceFields]]
+    */
+  def toFields: CompositeViewSourceFields
 }
 
 object CompositeViewSource {
@@ -102,6 +109,15 @@ object CompositeViewSource {
   ) extends CompositeViewSource {
 
     override def tpe: SourceType = ProjectSourceType
+
+    override def toFields: CompositeViewSourceFields =
+      ProjectSourceFields(
+        Some(id),
+        resourceSchemas,
+        resourceTypes,
+        resourceTag,
+        includeDeprecated
+      )
   }
 
   /**
@@ -137,6 +153,17 @@ object CompositeViewSource {
   ) extends CompositeViewSource {
 
     override def tpe: SourceType = CrossProjectSourceType
+
+    override def toFields: CompositeViewSourceFields =
+      CrossProjectSourceFields(
+        Some(id),
+        project,
+        identities,
+        resourceSchemas,
+        resourceTypes,
+        resourceTag,
+        includeDeprecated
+      )
   }
 
   /**
@@ -173,6 +200,18 @@ object CompositeViewSource {
   ) extends CompositeViewSource {
 
     override def tpe: SourceType = RemoteProjectSourceType
+
+    override def toFields: CompositeViewSourceFields =
+      RemoteProjectSourceFields(
+        Some(id),
+        project,
+        endpoint,
+        token.map(_.value),
+        resourceTypes,
+        resourceTypes,
+        resourceTag,
+        includeDeprecated
+      )
   }
 
   final case class AccessToken(value: Secret[String])

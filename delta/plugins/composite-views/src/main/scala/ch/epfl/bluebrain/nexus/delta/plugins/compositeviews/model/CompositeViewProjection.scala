@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 
 import cats.Order
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjectionFields.{ElasticSearchProjectionFields, SparqlProjectionFields}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.ProjectionType._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel.IndexGroup
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -96,6 +97,12 @@ sealed trait CompositeViewProjection extends Product with Serializable {
     * Translates the projection into a [[PipeChain]]
     */
   def pipeChain: Option[PipeChain] = PipeChain(resourceSchemas, resourceTypes, includeMetadata, includeDeprecated)
+
+  /**
+    * @return
+    *   the [[CompositeViewProjection]] projected as [[CompositeViewProjectionFields]]
+    */
+  def toFields: CompositeViewProjectionFields
 }
 
 object CompositeViewProjection {
@@ -128,6 +135,23 @@ object CompositeViewProjection {
     override def tpe: ProjectionType                              = ElasticSearchProjectionType
     override def asSparql: Option[SparqlProjection]               = None
     override def asElasticSearch: Option[ElasticSearchProjection] = Some(this)
+
+    override def toFields: CompositeViewProjectionFields =
+      ElasticSearchProjectionFields(
+        Some(id),
+        query,
+        indexGroup,
+        mapping,
+        context,
+        settings,
+        resourceSchemas,
+        resourceTypes,
+        resourceTag,
+        includeDeprecated,
+        includeMetadata,
+        includeContext,
+        permission
+      )
   }
 
   /**
@@ -148,6 +172,18 @@ object CompositeViewProjection {
     override def tpe: ProjectionType                              = SparqlProjectionType
     override def asSparql: Option[SparqlProjection]               = Some(this)
     override def asElasticSearch: Option[ElasticSearchProjection] = None
+
+    override def toFields: CompositeViewProjectionFields =
+      SparqlProjectionFields(
+        Some(id),
+        query,
+        resourceSchemas,
+        resourceTypes,
+        resourceTag,
+        includeDeprecated,
+        includeMetadata,
+        permission
+      )
   }
 
   @nowarn("cat=unused")

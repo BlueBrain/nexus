@@ -45,6 +45,16 @@ object CompositeViewFields {
   ): CompositeViewFields =
     CompositeViewFields(None, None, sources, projections, rebuildStrategy)
 
+  /** Project the [[CompositeViewValue]] as [[CompositeViewFields]] */
+  def fromValue(value: CompositeViewValue): CompositeViewFields =
+    CompositeViewFields(
+      value.name,
+      value.description,
+      value.sources.map(_.toFields),
+      value.projections.map(_.toFields),
+      value.rebuildStrategy
+    )
+
   @nowarn("cat=unused")
   implicit final def compositeViewFieldsEncoder(implicit base: BaseUri): Encoder.AsObject[CompositeViewFields] = {
     import io.circe.generic.extras.Configuration
