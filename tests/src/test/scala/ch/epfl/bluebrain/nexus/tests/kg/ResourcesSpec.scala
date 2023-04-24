@@ -113,6 +113,19 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
         )
       }
     }
+
+    "fail if the id is blank" in {
+      deltaClient
+        .post[Json](s"/resources/$id1/_/", jsonContentOf("/kg/resources/simple-resource-with-blank-id.json"), Rick) {
+          (json, response) =>
+            response.status shouldEqual StatusCodes.BadRequest
+            json shouldEqual jsonContentOf(
+              "/kg/resources/invalid-resource-id.json",
+              "id" -> ""
+            )
+        }
+    }
+
     "succeed if the payload is correct" in {
       val payload =
         jsonContentOf(

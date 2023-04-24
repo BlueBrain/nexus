@@ -1,0 +1,5 @@
+{
+  "@context": "https://bluebrain.github.io/nexus/contexts/error.json",
+  "@type": "InvalidResourceId",
+  "reason": "Resource identifier '{{id}}' cannot be expanded to an Iri."
+}
