@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewF
 import ch.epfl.bluebrain.nexus.delta.plugins.search.SearchConfigUpdater.logger
 import ch.epfl.bluebrain.nexus.delta.plugins.search.SearchScopeInitialization._
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchConfig.IndexingConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.search.model.{SearchConfig, defaultViewId}
+import ch.epfl.bluebrain.nexus.delta.plugins.search.model.{defaultViewId, SearchConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.Defaults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ElemStream
