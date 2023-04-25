@@ -25,7 +25,7 @@ jobs:
           java-version: 17
           cache: sbt
       - name: Setup SBT
-        uses: shinyhappydan/coursier-setup-action
+        uses: shinyhappydan/coursier-setup-action@main
         with:
           apps: sbt
           cs-args: -J-Dhttps.proxyHost=bbpproxy.epfl.ch -J-Dhttps.proxyPort=80
