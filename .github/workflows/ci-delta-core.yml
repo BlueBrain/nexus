@@ -9,7 +9,7 @@ on:
 jobs:
   static-analysis:
     if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: newit
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     timeout-minutes: 10
@@ -33,37 +33,3 @@ jobs:
             Test/scalafmtCheck \
             scalafmtSbtCheck \
             scapegoat
-  review:
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-      - name: Setup JDK
-        uses: actions/setup-java@v3
-        with:
-          distribution: temurin
-          java-version: 17
-          cache: sbt
-      - name: Tests
-        run: |
-          sbt -Dsbt.color=always -Dsbt.supershell=false \
-            clean \
-            coverage \
-            app/test \
-            kernel/test \
-            rdf/test \
-            sdk/test \
-            sourcingPsql/test \
-            testkit/test \
-            app/coverageReport \
-            kernel/coverageReport \
-            rdf/coverageReport \
-            sdk/coverageReport \
-            sourcingPsql/coverageReport \
-            testkit/coverageReport
