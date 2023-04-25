@@ -166,6 +166,7 @@ object ArchiveRejection {
     case JsonLdRejection.UnexpectedId(id, sourceId)        => UnexpectedArchiveId(id, sourceId)
     case JsonLdRejection.InvalidJsonLdFormat(id, rdfError) => InvalidJsonLdFormat(id, rdfError)
     case JsonLdRejection.DecodingFailed(error)             => DecodingFailed(error)
+    case JsonLdRejection.BlankId                           => InvalidArchiveId("")
   }
 
   implicit final val archiveRejectionEncoder: Encoder.AsObject[ArchiveRejection] =

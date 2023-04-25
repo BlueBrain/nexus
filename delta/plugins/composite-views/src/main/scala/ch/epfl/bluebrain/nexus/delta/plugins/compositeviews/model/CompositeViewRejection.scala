@@ -301,6 +301,7 @@ object CompositeViewRejection {
     case UnexpectedId(id, payloadIri)                      => UnexpectedCompositeViewId(id, payloadIri)
     case JsonLdRejection.InvalidJsonLdFormat(id, rdfError) => InvalidJsonLdFormat(id, rdfError)
     case JsonLdRejection.DecodingFailed(error)             => DecodingFailed(error)
+    case JsonLdRejection.BlankId                           => InvalidCompositeViewId("")
   }
 
   implicit private[plugins] val compositeViewRejectionEncoder: Encoder.AsObject[CompositeViewRejection] =

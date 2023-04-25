@@ -232,6 +232,7 @@ object ElasticSearchViewRejection {
     case JsonLdRejection.UnexpectedId(id, sourceId)        => UnexpectedElasticSearchViewId(id, sourceId)
     case JsonLdRejection.InvalidJsonLdFormat(id, rdfError) => InvalidJsonLdFormat(id, rdfError)
     case JsonLdRejection.DecodingFailed(error)             => DecodingFailed(error)
+    case JsonLdRejection.BlankId                           => InvalidElasticSearchViewId("")
   }
 
   implicit val elasticSearchRejectionEncoder: Encoder.AsObject[ElasticSearchViewRejection] =

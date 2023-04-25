@@ -213,6 +213,7 @@ object StorageRejection {
     case UnexpectedId(id, payloadIri)                      => UnexpectedStorageId(id, payloadIri)
     case JsonLdRejection.InvalidJsonLdFormat(id, rdfError) => InvalidJsonLdFormat(id, rdfError)
     case JsonLdRejection.DecodingFailed(error)             => DecodingFailed(error)
+    case JsonLdRejection.BlankId                           => InvalidStorageId("")
   }
 
   implicit private[plugins] val storageRejectionEncoder: Encoder.AsObject[StorageRejection] =
