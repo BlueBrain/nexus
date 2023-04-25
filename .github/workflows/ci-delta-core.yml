@@ -24,10 +24,11 @@ jobs:
           distribution: temurin
           java-version: 17
           cache: sbt
-      - name: Setup JDK
-        uses: coursier/setup-action@v1
+      - name: Setup SBT
+        uses: shinyhappydan/coursiersetup-action@v1
         with:
           apps: sbt
+          cs-args: -J-Dhttps.proxyHost=bbpproxy.epfl.ch -J-Dhttps.proxyPort=80
       - name: Static Analysis
         run: |
           sbt -Dsbt.color=always -Dsbt.supershell=false \
