@@ -24,6 +24,10 @@ jobs:
           distribution: temurin
           java-version: 17
           cache: sbt
+      - name: Setup JDK
+        uses: coursier/setup-action@v1
+        with:
+          apps: sbt
       - name: Static Analysis
         run: |
           sbt -Dsbt.color=always -Dsbt.supershell=false \
