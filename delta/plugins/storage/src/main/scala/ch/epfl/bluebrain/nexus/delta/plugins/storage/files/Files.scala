@@ -469,16 +469,8 @@ final class Files(
                          .states(Predicate.root, offset)
                          .map { envelope =>
                            envelope.value match {
-                             case f if f.deprecated                                                                    =>
-                               DroppedElem(
-                                 entityType,
-                                 envelope.id,
-                                 Some(envelope.value.project),
-                                 envelope.instant,
-                                 envelope.offset,
-                                 envelope.rev
-                               )
-                             case f if f.storageType == StorageType.RemoteDiskStorage && !f.attributes.digest.computed =>
+                             case f
+                                 if f.storageType == StorageType.RemoteDiskStorage && !f.attributes.digest.computed && !f.deprecated =>
                                SuccessElem(
                                  entityType,
                                  envelope.id,
@@ -488,7 +480,7 @@ final class Files(
                                  f,
                                  envelope.rev
                                )
-                             case _                                                                                    =>
+                             case _ =>
                                DroppedElem(
                                  entityType,
                                  envelope.id,
