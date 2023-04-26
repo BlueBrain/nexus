@@ -7,12 +7,12 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeVi
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewFields
 import ch.epfl.bluebrain.nexus.delta.plugins.search.SearchScopeInitialization._
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchConfig.IndexingConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.search.model.{defaultViewId, SearchConfig}
+import ch.epfl.bluebrain.nexus.delta.plugins.search.model.{SearchConfig, defaultViewId}
 import ch.epfl.bluebrain.nexus.delta.sdk.Defaults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ElemStream
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{CompiledProjection, Elem, ExecutionStrategy, ProjectionMetadata, Supervisor}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import monix.bio.Task
@@ -87,11 +87,11 @@ object SearchConfigUpdater {
     (viewDef, fields) =>
       views
         .update(
-          IdSegment.IriSegment(viewDef.ref.viewId),
+          viewDef.ref.viewId,
           viewDef.ref.project,
           viewDef.rev,
           fields
         )
         .void
-        .onErrorHandle(e => logger.error(s"Could not update view ${viewDef.ref}", e))
+        .onErrorHandle(e => logger.error(s"Could not update view ${viewDef.ref}. Reason: ${e.reason}"))
 }
