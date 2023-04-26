@@ -28,7 +28,7 @@ final class BlazegraphDeletionTask(
     currentViews(project)
       .evalScan(init) {
         case (acc, _: DeprecatedViewDef) => Task.pure(acc)
-        case (acc, view: ActiveViewDef)     =>
+        case (acc, view: ActiveViewDef)  =>
           deprecate(view, subject).as(acc ++ s"Blazegraph view '${view.ref}' has been deprecated.")
       }
       .compile
