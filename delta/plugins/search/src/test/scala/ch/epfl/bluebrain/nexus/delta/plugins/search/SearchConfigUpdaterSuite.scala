@@ -31,7 +31,14 @@ class SearchConfigUpdaterSuite extends BioSuite with CompositeViewsFixture with 
   implicit val baseUri: BaseUri = BaseUri.withoutPrefix("http://localhost")
 
   private val indexingConfig =
-    IndexingConfig(Set.empty, JsonObject.empty, None, SparqlConstructQuery.unsafe(""), ContextObject(JsonObject.empty))
+    IndexingConfig(
+      Set.empty,
+      JsonObject.empty,
+      None,
+      SparqlConstructQuery.unsafe(""),
+      ContextObject(JsonObject.empty),
+      None
+    )
 
   private val defaults              = Defaults("viewName", "viewDescription")
   private val defaultEsProjection   = esProjection.copy(

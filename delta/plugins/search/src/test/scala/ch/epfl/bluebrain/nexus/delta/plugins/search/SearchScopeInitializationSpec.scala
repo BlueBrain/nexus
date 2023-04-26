@@ -45,7 +45,14 @@ class SearchScopeInitializationSpec
   ).accepted
 
   private val indexingConfig =
-    IndexingConfig(Set.empty, JsonObject.empty, None, SparqlConstructQuery.unsafe(""), ContextObject(JsonObject.empty))
+    IndexingConfig(
+      Set.empty,
+      JsonObject.empty,
+      None,
+      SparqlConstructQuery.unsafe(""),
+      ContextObject(JsonObject.empty),
+      None
+    )
 
   private val defaults = Defaults("viewName", "viewDescription")
   lazy val scopeInit   = new SearchScopeInitialization(views, indexingConfig, sa, defaults)

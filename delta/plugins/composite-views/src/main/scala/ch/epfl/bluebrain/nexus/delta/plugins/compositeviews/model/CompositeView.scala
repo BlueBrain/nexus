@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 
 import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.{Metadata, RebuildStrategy}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
@@ -81,11 +80,7 @@ object CompositeView {
   /**
     * Rebuild strategy defining rebuilding at a certain interval.
     */
-  final case class Interval private[model] (value: FiniteDuration) extends RebuildStrategy
-  object Interval {
-    def apply(value: FiniteDuration, config: CompositeViewsConfig): Option[Interval] =
-      Option.when(value gteq config.minIntervalRebuild)(new Interval(value))
-  }
+  final case class Interval(value: FiniteDuration) extends RebuildStrategy
 
   final case class Metadata(uuid: UUID)
 

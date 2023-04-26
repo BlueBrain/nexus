@@ -38,6 +38,7 @@ class SearchConfigSpec extends AnyWordSpecLike with Matchers with Inspectors wit
         |    query = $query
         |    context = ${context.orNull}
         |    resource-types = $resourceTypes
+        |    rebuild-strategy = 2 minutes
         |  }
         |
         |  defaults {

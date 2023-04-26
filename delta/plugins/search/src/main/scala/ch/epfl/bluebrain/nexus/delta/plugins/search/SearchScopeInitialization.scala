@@ -84,6 +84,6 @@ object SearchScopeInitialization {
           resourceTypes = config.resourceTypes
         )
       ),
-      None
+      config.rebuildStrategy
     )
 }

@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.search.model
 
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.{Interval, RebuildStrategy}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.TemplateSparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchConfig.IndexingConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchConfigError.{InvalidJsonError, InvalidSparqlConstructQuery, InvalidSuites, LoadingFileError}
@@ -18,6 +19,7 @@ import pureconfig.error.CannotConvert
 import pureconfig.{ConfigReader, ConfigSource}
 
 import java.nio.file.{Files, Path}
+import scala.concurrent.duration.{DurationLong, MILLISECONDS}
 import scala.util.Try
 
 final case class SearchConfig(
@@ -60,6 +62,7 @@ object SearchConfig {
       settings      <- loadOption(pluginConfig, "indexing.settings", loadExternalConfig[JsonObject])
       query         <- loadSparqlQuery(pluginConfig.getString("indexing.query"))
       context       <- loadOption(pluginConfig, "indexing.context", loadExternalConfig[JsonObject])
+      rebuild        = Try(pluginConfig.getDuration("indexing.rebuild-strategy", MILLISECONDS)).toOption
       defaults      <- loadDefaults(pluginConfig)
       suites        <- loadSuites
     } yield SearchConfig(
@@ -68,7 +71,8 @@ object SearchConfig {
         mapping,
         settings = settings,
         query = query,
-        context = ContextObject(context.getOrElse(JsonObject.empty))
+        context = ContextObject(context.getOrElse(JsonObject.empty)),
+        rebuildStrategy = rebuild.map(duration => Interval(duration.millis))
       ),
       fields,
       defaults,
@@ -112,7 +116,8 @@ object SearchConfig {
       mapping: JsonObject,
       settings: Option[JsonObject],
       query: SparqlConstructQuery,
-      context: ContextObject
+      context: ContextObject,
+      rebuildStrategy: Option[RebuildStrategy]
   )
 
 }
