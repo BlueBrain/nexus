@@ -5,7 +5,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef.ActiveViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewFields
-import ch.epfl.bluebrain.nexus.delta.plugins.search.SearchConfigUpdater.logger
 import ch.epfl.bluebrain.nexus.delta.plugins.search.SearchScopeInitialization._
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchConfig.IndexingConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model.{defaultViewId, SearchConfig}
@@ -13,8 +12,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.Defaults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ElemStream
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{CompiledProjection, Elem, ExecutionStrategy, ProjectionMetadata, Supervisor}
 import com.typesafe.scalalogging.Logger
-import monix.bio.{Task, UIO}
+import fs2.Stream
+import monix.bio.Task
 
 /**
   * Allows to update the search config of default composite views. The provided defaults and indexing config provide the
@@ -32,7 +33,7 @@ final class SearchConfigUpdater(defaults: Defaults, config: IndexingConfig) {
   def apply(
       views: ElemStream[CompositeViewDef],
       update: (ActiveViewDef, CompositeViewFields) => Task[Unit]
-  )(implicit baseUri: BaseUri): Task[Unit] =
+  )(implicit baseUri: BaseUri): Stream[Task, Elem[CompositeViewDef]] =
     views
       .filter(_.id == defaultViewId)
       .evalTap { elem =>
@@ -42,12 +43,6 @@ final class SearchConfigUpdater(defaults: Defaults, config: IndexingConfig) {
           case _                                             =>
             Task.unit
         }
-      }
-      .compile
-      .drain
-      .doOnFinish {
-        case Some(cause) => UIO.delay(logger.error("Updating default composite views failed.", cause.toThrowable))
-        case None        => UIO.delay(logger.info("Stopping stream. All default composite views have been updated."))
       }
 
   private def configHasChanged(v: ActiveViewDef)(implicit baseUri: BaseUri): Boolean =
@@ -61,12 +56,14 @@ final class SearchConfigUpdater(defaults: Defaults, config: IndexingConfig) {
 object SearchConfigUpdater {
 
   private val logger: Logger = Logger[SearchConfigUpdater]
+  private val metadata       = ProjectionMetadata("system", "search-config-updater", None, None)
 
   /**
     * Creates a [[SearchConfigUpdater]] and returns the [[Task]] that updates all default composite view that are not in
     * line with the given search config.
     */
   def apply(
+      supervisor: Supervisor,
       compositeViews: CompositeViews,
       config: SearchConfig
   )(implicit
@@ -74,11 +71,14 @@ object SearchConfigUpdater {
       subject: Subject
   ): Task[SearchConfigUpdater] = {
     val updater = new SearchConfigUpdater(config.defaults, config.indexing)
-    updater(compositeViews.currentViews, update(compositeViews))
+    val stream  = updater(compositeViews.currentViews, update(compositeViews)).drain
+
+    supervisor
+      .run(CompiledProjection.fromStream(metadata, ExecutionStrategy.TransientSingleNode, _ => stream))
       .as(updater)
   }
 
-  private def update(
+  private[search] def update(
       views: CompositeViews
   )(implicit
       subject: Subject,

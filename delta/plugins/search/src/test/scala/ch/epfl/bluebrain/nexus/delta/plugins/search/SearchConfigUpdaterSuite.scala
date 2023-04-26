@@ -85,7 +85,7 @@ class SearchConfigUpdaterSuite extends BioSuite with CompositeViewsFixture with 
     (viewDef, fields) => Task { updatedViews.add((viewDef, fields)) }.void
 
   test("Update the views") {
-    new SearchConfigUpdater(defaults, indexingConfig)(views, update)
+    new SearchConfigUpdater(defaults, indexingConfig)(views, update).compile.drain
   }
 
   test("A default active view whose sources do not match the current config should be updated") {
