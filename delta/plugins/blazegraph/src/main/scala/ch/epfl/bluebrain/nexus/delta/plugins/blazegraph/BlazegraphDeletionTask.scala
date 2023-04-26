@@ -21,14 +21,13 @@ final class BlazegraphDeletionTask(
 ) extends ProjectDeletionTask {
 
   override def apply(project: ProjectRef)(implicit subject: Subject): Task[ProjectDeletionReport.Stage] =
-    UIO.delay(logger.info(s"Starting deprecation of Blazegraph views for $project")) >>
+    UIO.delay(logger.info(s"Starting deprecation of Blazegraph views for '$project'")) >>
       run(project)
 
   private def run(project: ProjectRef)(implicit subject: Subject) =
     currentViews(project)
       .evalScan(init) {
-        case (acc, view: DeprecatedViewDef) =>
-          UIO.delay(logger.info(s"Blazegraph view '${view.ref}' is already deprecated.")).as(acc)
+        case (acc, _: DeprecatedViewDef) => Task.pure(acc)
         case (acc, view: ActiveViewDef)     =>
           deprecate(view, subject).as(acc ++ s"Blazegraph view '${view.ref}' has been deprecated.")
       }

@@ -12,19 +12,22 @@ import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import monix.bio.{Task, UIO}
 
+/**
+  * Creates a project deletion step that deprecates all views within a project when a project is deleted so that the
+  * coordinator stops the running composite view projections on the different Delta nodes
+  */
 final class CompositeViewsDeletionTask(
     currentViews: ProjectRef => Stream[Task, CompositeViewDef],
     deprecate: (ActiveViewDef, Subject) => UIO[Unit]
 ) extends ProjectDeletionTask {
   override def apply(project: ProjectRef)(implicit subject: Subject): Task[ProjectDeletionReport.Stage] =
-    UIO.delay(logger.info(s"Starting deprecation of Composite views for $project")) >>
+    UIO.delay(logger.info(s"Starting deprecation of composite views for '$project'")) >>
       run(project)
 
   private def run(project: ProjectRef)(implicit subject: Subject) =
     currentViews(project)
       .evalScan(init) {
-        case (acc, view: DeprecatedViewDef) =>
-          UIO.delay(logger.info(s"Composite view '${view.ref}' is already deprecated.")).as(acc)
+        case (acc, _: DeprecatedViewDef) => Task.pure(acc)
         case (acc, view: ActiveViewDef)     =>
           deprecate(view, subject).as(acc ++ s"Composite view '${view.ref}' has been deprecated.")
       }
