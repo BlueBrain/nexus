@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewReje
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.{AggregateBlazegraphViewValue, IndexingBlazegraphViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.SparqlLink.{SparqlExternalLink, SparqlResourceLink}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries.BlazegraphSlowQueryLogger
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
@@ -24,6 +25,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectBase}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.View.{AggregateView, IndexingView}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.{ViewRef, ViewsStore}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import monix.bio.{IO, Task}
 
@@ -94,6 +96,7 @@ object BlazegraphViewsQuery {
       fetchContext: FetchContext[BlazegraphViewRejection],
       views: BlazegraphViews,
       client: SparqlQueryClient,
+      logSlowQueries: BlazegraphSlowQueryLogger,
       prefix: String,
       xas: Transactors
   ): Task[BlazegraphViewsQuery] = {
@@ -169,6 +172,8 @@ object BlazegraphViewsQuery {
       )(implicit caller: Caller): IO[BlazegraphViewRejection, R] =
         for {
           view    <- viewsStore.fetch(id, project)
+          p       <- fetchContext.onRead(project)
+          iri     <- expandIri(id, p)
           indices <- view match {
                        case i: IndexingView  =>
                          aclCheck
@@ -181,7 +186,10 @@ object BlazegraphViewsQuery {
                            _.index
                          )
                      }
-          qr      <- client.query(indices, query, responseType).mapError(WrappedBlazegraphClientError)
+          qr      <- logSlowQueries(
+                       BlazegraphQueryContext(ViewRef.apply(project, iri), query, caller.subject),
+                       client.query(indices, query, responseType).mapError(WrappedBlazegraphClientError)
+                     )
         } yield qr
 
       private def toSparqlLinks(sparqlResults: SparqlResults, mappings: ApiMappings, projectBase: ProjectBase)(implicit
@@ -200,4 +208,6 @@ object BlazegraphViewsQuery {
       }
     }
   }
+
+  final case class BlazegraphQueryContext(view: ViewRef, query: SparqlQuery, subject: Subject)
 }
