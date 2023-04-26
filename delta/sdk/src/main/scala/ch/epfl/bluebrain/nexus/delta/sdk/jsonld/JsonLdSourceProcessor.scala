@@ -54,7 +54,7 @@ sealed abstract class JsonLdSourceProcessor(implicit api: JsonLdApi) {
 
   protected def validateIdNotBlank(source: Json): IO[BlankId.type, Unit] = {
     IO.raiseWhen(
-      source.hcursor.downField("@id").as[String].map(_.trim).contains("")
+      source.hcursor.downField("@id").as[String].exists(_.isBlank)
     )(BlankId)
   }
 
