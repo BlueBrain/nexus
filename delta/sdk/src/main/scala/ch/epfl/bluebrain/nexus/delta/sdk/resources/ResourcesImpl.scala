@@ -43,19 +43,12 @@ final class ResourcesImpl private (
       source: Json
   )(implicit caller: Caller): IO[ResourceRejection, DataResource] = {
     for {
-      _                          <- validateIdNotBlank(source)
       projectContext             <- fetchContext.onCreate(projectRef)
       schemeRef                  <- expandResourceRef(schema, projectContext)
       (iri, compacted, expanded) <- sourceParser(projectRef, projectContext, source)
       res                        <- eval(CreateResource(iri, projectRef, schemeRef, source, compacted, expanded, caller), projectContext)
     } yield res
   }.span("createResource")
-
-  private def validateIdNotBlank(source: Json): IO[InvalidResourceId, Unit] = {
-    IO.raiseWhen(idIsBlank(source))(ResourceRejection.InvalidResourceId(""))
-  }
-
-  private def idIsBlank(source: Json): Boolean = source.hcursor.downField("@id").as[String].map(_.trim).contains("")
 
   override def create(
       id: IdSegment,
@@ -64,7 +57,6 @@ final class ResourcesImpl private (
       source: Json
   )(implicit caller: Caller): IO[ResourceRejection, DataResource] = {
     for {
-      _                     <- validateIdNotBlank(source)
       projectContext        <- fetchContext.onCreate(projectRef)
       iri                   <- expandIri(id, projectContext)
       schemeRef             <- expandResourceRef(schema, projectContext)
