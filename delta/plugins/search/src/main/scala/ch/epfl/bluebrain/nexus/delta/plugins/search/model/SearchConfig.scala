@@ -4,7 +4,7 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.{Interval, RebuildStrategy}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.TemplateSparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchConfig.IndexingConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchConfigError.{InvalidFiniteDuration, InvalidJsonError, InvalidSparqlConstructQuery, InvalidSuites, LoadingFileError}
+import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchConfigError.{InvalidJsonError, InvalidSparqlConstructQuery, InvalidSuites, LoadingFileError}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
@@ -62,7 +62,7 @@ object SearchConfig {
       settings      <- loadOption(pluginConfig, "indexing.settings", loadExternalConfig[JsonObject])
       query         <- loadSparqlQuery(pluginConfig.getString("indexing.query"))
       context       <- loadOption(pluginConfig, "indexing.context", loadExternalConfig[JsonObject])
-      rebuild       <- loadRebuildStrategy(pluginConfig)
+      rebuild        = loadRebuildStrategy(pluginConfig)
       defaults      <- loadDefaults(pluginConfig)
       suites        <- loadSuites
     } yield SearchConfig(
@@ -111,18 +111,23 @@ object SearchConfig {
       ).toEither.leftMap(_ => InvalidJsonError("string", "string"))
     )
 
-  private def loadRebuildStrategy(config: Config): IO[SearchConfigError, Option[RebuildStrategy]] =
-    IO.fromEither {
-      for {
-        rebuild            <- readFiniteDuration(config, "indexing.rebuild-strategy")
-        minIntervalRebuild <- readFiniteDuration(config, "indexing.min-interval-rebuild")
-      } yield Option.when(rebuild gteq minIntervalRebuild)(Interval(rebuild))
-    }
+  /**
+    * Load the rebuild strategy from the search config. If either of the required fields is null, missing, or not a
+    * correct finite duration, there will be no rebuild strategy. If both finite durations are present, then the rebuild
+    * strategy interval is used only it is greater or equal to the min-interval-rebuild; if not then there is no
+    * strategy.
+    */
+  private def loadRebuildStrategy(config: Config): Option[RebuildStrategy] =
+    for {
+      rebuild            <- readFiniteDuration(config, "indexing.rebuild-strategy")
+      minIntervalRebuild <- readFiniteDuration(config, "indexing.min-interval-rebuild")
+      rebuildStrategy    <- Option.when(rebuild gteq minIntervalRebuild)(Interval(rebuild))
+    } yield rebuildStrategy
 
-  private def readFiniteDuration(config: Config, path: String) =
-    ConfigReader[FiniteDuration]
-      .from(config.getValue(path))
-      .leftMap(_ => InvalidFiniteDuration(path))
+  private def readFiniteDuration(config: Config, path: String): Option[FiniteDuration] =
+    Try(
+      ConfigSource.fromConfig(config).at(path).loadOrThrow[FiniteDuration]
+    ).toOption
 
   final case class IndexingConfig(
       resourceTypes: Set[Iri],
