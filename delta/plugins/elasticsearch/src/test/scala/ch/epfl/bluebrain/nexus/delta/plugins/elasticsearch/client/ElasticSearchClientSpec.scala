@@ -224,5 +224,31 @@ class ElasticSearchClientSpec(override val docker: ElasticSearchDocker)
           jsonContentOf("elasticsearch-results.json", "index" -> index)
       }
     }
+
+    "delete documents by" in {
+      val index = IndexLabel(genString()).rightValue
+
+      val operations = List(
+        ElasticSearchBulk.Index(index, "1", json"""{ "field1" : 1 }"""),
+        ElasticSearchBulk.Create(index, "3", json"""{ "field1" : 3 }"""),
+        ElasticSearchBulk.Update(index, "1", json"""{ "doc" : {"field2" : "value2"} }""")
+      )
+
+      {
+        for {
+          // Indexing and checking count
+          _        <- esClient.bulk(operations)
+          _        <- esClient.refresh(index)
+          original <- esClient.count(index.value)
+          _         = original shouldEqual 2L
+          // Deleting document matching the given query
+          query     = jobj"""{"query": {"bool": {"must": {"term": {"field1": 3} } } } }"""
+          _        <- esClient.deleteByQuery(query, index)
+          // Checking count again
+          newCount <- esClient.count(index.value)
+          _         = newCount shouldEqual 1L
+        } yield ()
+      }.accepted
+    }
   }
 }

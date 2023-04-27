@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
+package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.deletion
 
 import cats.effect.concurrent.Ref
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel
