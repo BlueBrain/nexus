@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 
+import cats.Eq
 import cats.data.NonEmptySet
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
@@ -39,6 +40,13 @@ final case class CompositeViewValue(
 )
 
 object CompositeViewValue {
+
+  val indexingEq: Eq[CompositeViewValue] =
+    Eq.instance((a, b) =>
+      a.sources.toSortedSet.toSet == b.sources.toSortedSet.toSet &&
+        a.projections.toSortedSet.toSet == b.projections.toSortedSet.toSet &&
+        a.rebuildStrategy == b.rebuildStrategy
+    )
 
   /**
     * Create a [[CompositeViewValue]] from [[CompositeViewFields]] and previous Ids/UUIDs.

@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.search
 
 import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef.ActiveViewDef
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.Interval
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.{Interval, RebuildStrategy}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.{CompositeViews, CompositeViewsFixture}
@@ -51,7 +51,7 @@ class SearchConfigUpdateFunctionSuite extends BioSuite with CompositeViewsFixtur
     NonEmptySet.of(esProjectionFields)
   private val newSources: NonEmptySet[CompositeViewSourceFields]         =
     NonEmptySet.of(projectFields)
-  private val newRebuildStrategy                                         =
+  private val newRebuildStrategy: Option[RebuildStrategy]                =
     Some(Interval(2.minutes))
   private val newViewFields                                              =
     viewFields.copy(
@@ -82,8 +82,8 @@ class SearchConfigUpdateFunctionSuite extends BioSuite with CompositeViewsFixtur
       views   <- compositeViews
       updated <- views.fetch(id, projectRef)
       _        = assertEquals(updated.rev, 2)
-      _        = assertEquals(updated.value.sources.map(_.toFields), newSources)
-      _        = assertEquals(updated.value.projections.map(_.toFields), newProjections)
+      _        = assertEquals(updated.value.sources, newSources.map(_.toSource(uuid, id)))
+      _        = assertEquals(updated.value.projections, newProjections.map(_.toProjection(uuid, id)))
       _        = assertEquals(updated.value.rebuildStrategy, newRebuildStrategy)
     } yield ()
   }

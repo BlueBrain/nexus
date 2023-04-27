@@ -1,10 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.search
 
+import cats.Eq
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef.ActiveViewDef
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewFields
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewValue.indexingEq
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeViewFields, CompositeViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.search.SearchScopeInitialization._
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchConfig.IndexingConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model.{defaultViewId, SearchConfig}
@@ -33,7 +35,7 @@ final class SearchConfigUpdater(defaults: Defaults, config: IndexingConfig) {
   def apply(
       views: ElemStream[CompositeViewDef],
       update: (ActiveViewDef, CompositeViewFields) => Task[Unit]
-  )(implicit baseUri: BaseUri): Stream[Task, Elem[CompositeViewDef]] =
+  ): Stream[Task, Elem[CompositeViewDef]] =
     views
       .filter(_.id == defaultViewId)
       .evalTap { elem =>
@@ -45,8 +47,21 @@ final class SearchConfigUpdater(defaults: Defaults, config: IndexingConfig) {
         }
       }
 
-  private def configHasChanged(v: ActiveViewDef)(implicit baseUri: BaseUri): Boolean =
-    CompositeViewFields.fromValue(v.value).toJson(v.ref.viewId) != defaultSearchViewFields.toJson(v.ref.viewId)
+  private def configHasChanged(
+      v: ActiveViewDef
+  )(implicit eq: Eq[CompositeViewValue] = indexingEq): Boolean =
+    v.value =!= defaultSearchViewValue(v)
+
+  private def defaultSearchViewValue(v: ActiveViewDef): CompositeViewValue = {
+    val d = defaultSearchCompositeViewFields(defaults, config)
+    CompositeViewValue(
+      d.name,
+      d.description,
+      d.sources.map(_.toSource(v.uuid, v.ref.viewId)),
+      d.projections.map(_.toProjection(v.uuid, v.ref.viewId)),
+      d.rebuildStrategy
+    )
+  }
 
   private def defaultSearchViewFields: CompositeViewFields =
     defaultSearchCompositeViewFields(defaults, config)
