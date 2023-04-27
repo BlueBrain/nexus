@@ -244,6 +244,23 @@ final class CompositeViews private (
   }.span("deprecateCompositeView")
 
   /**
+    * Deprecates an existing composite view without applying preliminary checks on the project status
+    *
+    * @param id
+    *   the view identifier
+    * @param project
+    *   the view parent project
+    * @param rev
+    *   the current view revision
+    * @param subject
+    *   the subject that initiated the action
+    */
+  private[compositeviews] def internalDeprecate(id: Iri, project: ProjectRef, rev: Int)(implicit
+      subject: Subject
+  ): IO[CompositeViewRejection, Unit] =
+    eval(DeprecateCompositeView(id, project, rev, subject)).void
+
+  /**
     * Retrieves a current composite view resource.
     *
     * @param id
@@ -402,6 +419,12 @@ final class CompositeViews private (
   }
 
   /**
+    * Return all existing views for the given project in a finite stream
+    */
+  def currentViews(project: ProjectRef): ElemStream[CompositeViewDef] =
+    log.currentStates(Predicate.Project(project)).map(toCompositeViewDef)
+
+  /**
     * Return all existing indexing views in a finite stream
     */
   def currentViews: ElemStream[CompositeViewDef] =
@@ -418,11 +441,14 @@ final class CompositeViews private (
       CompositeViewDef(v)
     }
 
+  private def eval(cmd: CompositeViewCommand) =
+    log.evaluate(cmd.project, cmd.id, cmd)
+
   private def eval(
       cmd: CompositeViewCommand,
       pc: ProjectContext
   ): IO[CompositeViewRejection, ViewResource] =
-    log.evaluate(cmd.project, cmd.id, cmd).map(_._2.toResource(pc.apiMappings, pc.base))
+    eval(cmd).map(_._2.toResource(pc.apiMappings, pc.base))
 
 }
 
