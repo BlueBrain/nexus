@@ -60,26 +60,30 @@ class SearchConfigUpdateFunctionSuite extends BioSuite with CompositeViewsFixtur
       rebuildStrategy = newRebuildStrategy
     )
 
-  test("SearchConfigUpdater should run successfully") {
+  /** Create a view using [[CompositeViewsFixture]] defaults and check it is correctly created */
+  private def viewCreated(views: CompositeViews) =
     for {
-      views   <- compositeViews
-      // Create the view
       created <- views.create(id, projectRef, viewFields)
       _        = assertEquals(
                    created.copy(value = created.value.copy(source = Json.obj())),
                    resourceFor(id, viewValue, source = Json.obj())
                  )
-      // Start the updater
-      updater  = SearchConfigUpdater.update(views)
-      _       <- updater(viewDef, newViewFields)
-      // Check that the update was successful
-
     } yield ()
+
+  /**
+    * Using the SearchConfigUpdater update function update the given [[ActiveViewDef]] using the new
+    * [[CompositeViewFields]]
+    */
+  private def updateView(views: CompositeViews, viewDef: ActiveViewDef, newFields: CompositeViewFields) = {
+    val update = SearchConfigUpdater.update(views)
+    update(viewDef, newFields)
   }
 
   test("Sources, projections, and rebuild strategy should be updated") {
     for {
       views   <- compositeViews
+      _       <- viewCreated(views)
+      _       <- updateView(views, viewDef, newViewFields)
       updated <- views.fetch(id, projectRef)
       _        = assertEquals(updated.rev, 2)
       _        = assertEquals(updated.value.sources, newSources.map(_.toSource(uuid, id)))
