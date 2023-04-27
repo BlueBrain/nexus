@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.{FetchResource, ResourceResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport.ResolverReport
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{ResolverResolutionRejection, ResourceResolutionReport}
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{IncorrectRev, InvalidJsonLdFormat, InvalidResource, InvalidSchemaRejection, ProjectContextRejection, ResourceAlreadyExists, ResourceIsDeprecated, ResourceNotFound, RevisionNotFound, SchemaIsDeprecated, TagNotFound, UnexpectedResourceId, UnexpectedResourceSchema}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{BlankResourceId, IncorrectRev, InvalidJsonLdFormat, InvalidResource, InvalidSchemaRejection, ProjectContextRejection, ResourceAlreadyExists, ResourceIsDeprecated, ResourceNotFound, RevisionNotFound, SchemaIsDeprecated, TagNotFound, UnexpectedResourceId, UnexpectedResourceSchema}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
@@ -115,6 +115,7 @@ class ResourcesImplSpec
     val myId2          = nxv + "myid2" // Resource created against the schema1 with id present on the payload
     val types          = Set(nxv + "Custom")
     val source         = jsonContentOf("resources/resource.json", "id" -> myId)
+    def sourceWithBlankId = source deepMerge json"""{"@id": ""}"""
     val tag            = UserTag.unsafe("tag")
 
     "creating a resource" should {
@@ -225,6 +226,11 @@ class ResourcesImplSpec
         val otherId = nxv + "other"
         resources.create(otherId, projectRef, schemas.resources, source).rejected shouldEqual
           UnexpectedResourceId(id = otherId, payloadId = myId)
+      }
+
+      "reject if the id is blank" in {
+        resources.create(projectRef, schemas.resources, sourceWithBlankId).rejected shouldEqual
+          BlankResourceId
       }
 
       "reject if it already exists" in {
