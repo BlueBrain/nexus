@@ -19,4 +19,6 @@ object SearchConfigError {
   final case class InvalidSuites(failures: ConfigReaderFailures)
       extends SearchConfigError(s"Configuration for search suites is invalid:\n${failures.prettyPrint()}")
 
+  final case class InvalidFiniteDuration(path: String) extends SearchConfigError(s"Invalid duration at path '$path'")
+
 }

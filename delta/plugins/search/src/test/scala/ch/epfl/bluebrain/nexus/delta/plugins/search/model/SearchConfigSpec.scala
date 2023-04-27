@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.search.model
 
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.Interval
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchConfigError.{InvalidJsonError, InvalidSparqlConstructQuery, LoadingFileError}
 import ch.epfl.bluebrain.nexus.delta.sdk.Defaults
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
@@ -8,6 +9,8 @@ import com.typesafe.config.ConfigFactory
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+
+import scala.concurrent.duration.DurationInt
 
 class SearchConfigSpec extends AnyWordSpecLike with Matchers with Inspectors with IOValues {
 
@@ -39,6 +42,7 @@ class SearchConfigSpec extends AnyWordSpecLike with Matchers with Inspectors wit
         |    context = ${context.orNull}
         |    resource-types = $resourceTypes
         |    rebuild-strategy = 2 minutes
+        |    min-interval-rebuild = 1 minute
         |  }
         |
         |  defaults {
@@ -65,6 +69,8 @@ class SearchConfigSpec extends AnyWordSpecLike with Matchers with Inspectors wit
           .unsafe("my-suite")      -> Set(ProjectRef.unsafe("myorg", "myproject"), ProjectRef.unsafe("myorg", "myproject2")),
         Label.unsafe("my-suite-2") -> Set(ProjectRef.unsafe("myorg2", "myproject"))
       )
+
+      searchConfig.indexing.rebuildStrategy shouldEqual Some(Interval(2.minutes))
       searchConfig.suites shouldEqual expectedSuites
     }
 
