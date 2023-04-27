@@ -113,6 +113,7 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
         )
       }
     }
+
     "succeed if the payload is correct" in {
       val payload =
         jsonContentOf(

@@ -95,6 +95,11 @@ object ArchiveRejection {
       extends ArchiveRejection(s"Archive identifier '$id' cannot be expanded to an Iri.")
 
   /**
+    * Rejection returned when attempting to create an Archive while providing an id that is blank.
+    */
+  final case object BlankArchiveId extends ArchiveRejection(s"Archive identifier cannot be blank.")
+
+  /**
     * Signals a rejection caused when interacting with other APIs when fetching a resource
     */
   final case class ProjectContextRejection(rejection: ContextRejection)
@@ -166,6 +171,7 @@ object ArchiveRejection {
     case JsonLdRejection.UnexpectedId(id, sourceId)        => UnexpectedArchiveId(id, sourceId)
     case JsonLdRejection.InvalidJsonLdFormat(id, rdfError) => InvalidJsonLdFormat(id, rdfError)
     case JsonLdRejection.DecodingFailed(error)             => DecodingFailed(error)
+    case JsonLdRejection.BlankId                           => BlankArchiveId
   }
 
   implicit final val archiveRejectionEncoder: Encoder.AsObject[ArchiveRejection] =
@@ -198,6 +204,7 @@ object ArchiveRejection {
       case InvalidJsonLdFormat(_, _)          => StatusCodes.BadRequest
       case ResourceNotFound(_, _)             => StatusCodes.NotFound
       case AuthorizationFailed(_, _)          => StatusCodes.Forbidden
+      case BlankArchiveId                     => StatusCodes.BadRequest
       case WrappedFileRejection(rejection)    => rejection.status
     }
 }
