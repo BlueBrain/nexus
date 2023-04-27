@@ -21,15 +21,14 @@ final class ElasticSearchDeletionTask(
 ) extends ProjectDeletionTask {
 
   override def apply(project: ProjectRef)(implicit subject: Subject): Task[ProjectDeletionReport.Stage] =
-    UIO.delay(logger.info(s"Starting deprecation of Elasticsearch views for $project")) >>
+    UIO.delay(logger.info(s"Starting deprecation of Elasticsearch views for '$project'")) >>
       run(project)
 
   private def run(project: ProjectRef)(implicit subject: Subject) =
     currentViews(project)
       .evalScan(init) {
-        case (acc, view: DeprecatedViewDef) =>
-          UIO.delay(logger.info(s"Elasticsearch view '${view.ref}' is already deprecated.")).as(acc)
-        case (acc, view: ActiveViewDef)     =>
+        case (acc, _: DeprecatedViewDef) => Task.pure(acc)
+        case (acc, view: ActiveViewDef)  =>
           deprecate(view, subject).as(acc ++ s"Elasticsearch view '${view.ref}' has been deprecated.")
       }
       .compile
