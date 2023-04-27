@@ -166,7 +166,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec {
       Post("/v1/resources/myorg/myproject/_/", payloadWithBlankId.toEntity) ~> routes ~> check {
         response.status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual jsonContentOf(
-          "/resources/errors/blank-id.json",
+          "/resources/errors/blank-id.json"
         )
       }
     }

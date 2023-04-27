@@ -111,12 +111,12 @@ class ResourcesImplSpec
     val myId9  = nxv + "myid9" // Resource created against the resource schema with id present on the payload and having its context pointing on metadata and myId8 so therefore myId1 and myId2
 
     // format: on
-    val resourceSchema = Latest(schemas.resources)
-    val myId2          = nxv + "myid2" // Resource created against the schema1 with id present on the payload
-    val types          = Set(nxv + "Custom")
-    val source         = jsonContentOf("resources/resource.json", "id" -> myId)
+    val resourceSchema    = Latest(schemas.resources)
+    val myId2             = nxv + "myid2" // Resource created against the schema1 with id present on the payload
+    val types             = Set(nxv + "Custom")
+    val source            = jsonContentOf("resources/resource.json", "id" -> myId)
     def sourceWithBlankId = source deepMerge json"""{"@id": ""}"""
-    val tag            = UserTag.unsafe("tag")
+    val tag               = UserTag.unsafe("tag")
 
     "creating a resource" should {
       "succeed with the id present on the payload" in {
