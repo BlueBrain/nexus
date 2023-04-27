@@ -179,6 +179,12 @@ object BlazegraphViewRejection {
       extends BlazegraphViewRejection(s"Blazegraph view identifier '$id' cannot be expanded to an Iri.")
 
   /**
+    * Rejection returned when attempting to create a Blazegraph view while providing an id that is blank.
+    */
+  final case object BlankBlazegraphViewId
+      extends BlazegraphViewRejection(s"Blazegraph view identifier cannot be blank.")
+
+  /**
     * Rejection returned when a resource id cannot be expanded to [[Iri]].
     *
     * @param id
@@ -214,7 +220,7 @@ object BlazegraphViewRejection {
     case UnexpectedId(id, payloadIri)                      => UnexpectedBlazegraphViewId(id, payloadIri)
     case JsonLdRejection.InvalidJsonLdFormat(id, rdfError) => InvalidJsonLdFormat(id, rdfError)
     case JsonLdRejection.DecodingFailed(error)             => DecodingFailed(error)
-    case BlankId                                           => InvalidBlazegraphViewId("")
+    case BlankId                                           => BlankBlazegraphViewId
   }
 
   implicit private[plugins] val blazegraphViewRejectionEncoder: Encoder.AsObject[BlazegraphViewRejection] =

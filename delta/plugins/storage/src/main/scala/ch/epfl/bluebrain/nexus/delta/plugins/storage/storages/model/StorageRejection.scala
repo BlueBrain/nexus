@@ -79,6 +79,11 @@ object StorageRejection {
       extends StorageFetchRejection(s"Storage identifier '$id' cannot be expanded to an Iri.")
 
   /**
+    * Rejection returned when attempting to create a storage while providing an id that is blank.
+    */
+  final case object BlankStorageId extends StorageRejection(s"Storage identifier cannot be blank.")
+
+  /**
     * Rejection returned when attempting to create a storage but the id already exists.
     *
     * @param id
@@ -213,7 +218,7 @@ object StorageRejection {
     case UnexpectedId(id, payloadIri)                      => UnexpectedStorageId(id, payloadIri)
     case JsonLdRejection.InvalidJsonLdFormat(id, rdfError) => InvalidJsonLdFormat(id, rdfError)
     case JsonLdRejection.DecodingFailed(error)             => DecodingFailed(error)
-    case JsonLdRejection.BlankId                           => InvalidStorageId("")
+    case JsonLdRejection.BlankId                           => BlankStorageId
   }
 
   implicit private[plugins] val storageRejectionEncoder: Encoder.AsObject[StorageRejection] =

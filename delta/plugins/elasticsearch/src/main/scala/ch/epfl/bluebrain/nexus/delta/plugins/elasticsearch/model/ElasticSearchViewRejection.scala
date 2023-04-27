@@ -179,6 +179,12 @@ object ElasticSearchViewRejection {
       extends ElasticSearchViewRejection(s"ElasticSearch view identifier '$id' cannot be expanded to an Iri.")
 
   /**
+    * Rejection returned when attempting to create an ElasticSearchView while providing an id that is blank.
+    */
+  final case object BlankElasticSearchViewId
+      extends ElasticSearchViewRejection(s"Elastic search view identifier cannot be blank.")
+
+  /**
     * Rejection when attempting to decode an expanded JsonLD as an ElasticSearchViewValue.
     *
     * @param error
@@ -232,7 +238,7 @@ object ElasticSearchViewRejection {
     case JsonLdRejection.UnexpectedId(id, sourceId)        => UnexpectedElasticSearchViewId(id, sourceId)
     case JsonLdRejection.InvalidJsonLdFormat(id, rdfError) => InvalidJsonLdFormat(id, rdfError)
     case JsonLdRejection.DecodingFailed(error)             => DecodingFailed(error)
-    case JsonLdRejection.BlankId                           => InvalidElasticSearchViewId("")
+    case JsonLdRejection.BlankId                           => BlankElasticSearchViewId
   }
 
   implicit val elasticSearchRejectionEncoder: Encoder.AsObject[ElasticSearchViewRejection] =

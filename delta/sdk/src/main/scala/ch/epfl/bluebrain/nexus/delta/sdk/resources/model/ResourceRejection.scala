@@ -79,6 +79,11 @@ object ResourceRejection {
       extends ResourceFetchRejection(s"Resource identifier '$id' cannot be expanded to an Iri.")
 
   /**
+    * Rejection returned when attempting to create a resource while providing an id that is blank.
+    */
+  final case object BlankResourceId extends ResourceRejection(s"Resource identifier cannot be blank.")
+
+  /**
     * Rejection returned when attempting to create/update a resource with a reserved id.
     */
   final case class ReservedResourceId(id: Iri)
@@ -209,7 +214,7 @@ object ResourceRejection {
   implicit val jsonLdRejectionMapper: Mapper[InvalidJsonLdRejection, ResourceRejection] = {
     case UnexpectedId(id, payloadIri)                      => UnexpectedResourceId(id, payloadIri)
     case JsonLdRejection.InvalidJsonLdFormat(id, rdfError) => InvalidJsonLdFormat(id, rdfError)
-    case BlankId                                           => InvalidResourceId("")
+    case BlankId                                           => BlankResourceId
   }
 
   implicit val resourceRejectionEncoder: Encoder.AsObject[ResourceRejection] =

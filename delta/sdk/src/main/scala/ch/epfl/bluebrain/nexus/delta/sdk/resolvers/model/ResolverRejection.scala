@@ -95,6 +95,11 @@ object ResolverRejection {
       extends ResolverRejection(s"Resolver identifier '$id' cannot be expanded to an Iri.")
 
   /**
+    * Rejection returned when attempting to create a resolver while providing an id that is blank.
+    */
+  final case object BlankResolverId extends ResolverRejection(s"Resolver identifier cannot be blank.")
+
+  /**
     * Rejection returned when attempting to resolve a resource providing an id that cannot be resolved to an Iri.
     *
     * @param id
@@ -222,7 +227,7 @@ object ResolverRejection {
     case UnexpectedId(id, payloadIri)                      => UnexpectedResolverId(id, payloadIri)
     case JsonLdRejection.InvalidJsonLdFormat(id, rdfError) => InvalidJsonLdFormat(id, rdfError)
     case JsonLdRejection.DecodingFailed(error)             => DecodingFailed(error)
-    case BlankId                                           => InvalidResolverId("")
+    case BlankId                                           => BlankResolverId
   }
 
   implicit val resolverRejectionEncoder: Encoder.AsObject[ResolverRejection] =

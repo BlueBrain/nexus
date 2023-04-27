@@ -78,6 +78,11 @@ object SchemaRejection {
       extends SchemaFetchRejection(s"Schema identifier '$id' cannot be expanded to an Iri.")
 
   /**
+    * Rejection returned when attempting to create a schema while providing an id that is blank.
+    */
+  final case object BlankSchemaId extends SchemaRejection(s"Schema identifier cannot be blank.")
+
+  /**
     * Rejection returned when attempting to create a schema but the id already exists.
     *
     * @param id
