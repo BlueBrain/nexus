@@ -67,7 +67,8 @@ class SearchPluginModule(priority: Int) extends ModuleDef {
       SearchConfigUpdater(
         supervisor,
         compositeViews,
-        config
+        config.defaults,
+        config.indexing
       )(baseUri, serviceAccount.subject)
   }
 

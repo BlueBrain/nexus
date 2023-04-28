@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewV
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeViewFields, CompositeViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.search.SearchScopeInitialization._
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchConfig.IndexingConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.search.model.{defaultViewId, SearchConfig}
+import ch.epfl.bluebrain.nexus.delta.plugins.search.model.defaultViewId
 import ch.epfl.bluebrain.nexus.delta.sdk.Defaults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ElemStream
@@ -85,14 +85,15 @@ object SearchConfigUpdater {
   def apply(
       supervisor: Supervisor,
       compositeViews: CompositeViews,
-      config: SearchConfig
+      defaults: Defaults,
+      indexingConfig: IndexingConfig
   )(implicit
       baseUri: BaseUri,
       subject: Subject
   ): Task[SearchConfigUpdater] = {
     val updater = new SearchConfigUpdater(
-      config.defaults,
-      config.indexing,
+      defaults,
+      indexingConfig,
       compositeViews.currentViews,
       update(compositeViews)
     )
