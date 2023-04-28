@@ -53,10 +53,10 @@ final class SearchConfigUpdater(
         }
       }
 
-  private def configHasChanged(
-      v: ActiveViewDef
-  )(implicit eq: Eq[CompositeViewValue] = indexingEq): Boolean =
+  private def configHasChanged(v: ActiveViewDef): Boolean = {
+    implicit val eq: Eq[CompositeViewValue] = indexingEq
     v.value =!= defaultSearchViewValue(v)
+  }
 
   private def viewIsDefault(v: ActiveViewDef): Boolean =
     v.ref.viewId == defaultViewId
