@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeVi
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef.ActiveViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewValue.indexingEq
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeViewFields, CompositeViewValue}
+import ch.epfl.bluebrain.nexus.delta.plugins.search.SearchConfigUpdater.logger
 import ch.epfl.bluebrain.nexus.delta.plugins.search.SearchScopeInitialization._
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchConfig.IndexingConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model.defaultViewId
@@ -42,15 +43,20 @@ final class SearchConfigUpdater(
   /**
     * For the given composite views, updates the active ones if their search config differs from the current one.
     */
-  def apply(): Stream[Task, Unit] =
-    views.evalTap { elem =>
-      elem.traverse {
-        case view: ActiveViewDef if viewIsDefault(view) && configHasChanged(view) =>
-          update(view, defaultSearchCompositeViewFields(defaults, config))
-        case _                                                                    =>
-          Task.unit
-      }
-    }.drain
+  def apply(): Task[Unit] =
+    Task.delay(logger.info("Starting the SearchConfigUpdater.")) >>
+      views
+        .evalTap { elem =>
+          elem.traverse {
+            case view: ActiveViewDef if viewIsDefault(view) && configHasChanged(view) =>
+              update(view, defaultSearchCompositeViewFields(defaults, config))
+            case _                                                                    =>
+              Task.unit
+          }
+        }
+        .compile
+        .drain >>
+      Task.delay(logger.info("Reached the end of composite views. Stopping the SearchConfigUpdater."))
 
   private def configHasChanged(v: ActiveViewDef): Boolean = {
     implicit val eq: Eq[CompositeViewValue] = indexingEq
@@ -97,7 +103,7 @@ object SearchConfigUpdater {
       compositeViews.currentViews,
       update(compositeViews)
     )
-    val stream  = updater().drain
+    val stream  = Stream.emit(1).evalTap(_ => updater()).drain
 
     supervisor
       .run(CompiledProjection.fromStream(metadata, ExecutionStrategy.TransientSingleNode, _ => stream))
