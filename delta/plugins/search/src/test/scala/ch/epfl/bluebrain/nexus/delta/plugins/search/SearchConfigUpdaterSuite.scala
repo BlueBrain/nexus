@@ -79,20 +79,13 @@ class SearchConfigUpdaterSuite
       view.rebuildStrategy
     )
 
-  test("Create views and run SearchConfigUpdater") {
-    for {
-      views <- compositeViews
-      _     <- views.create(defaultViewId, proj1.ref, viewFields)
-      _     <- views.create(defaultViewId, proj2.ref, defaultViewFields)
-      _     <- views.create(id, proj1.ref, viewFields)
-      _     <- SearchConfigUpdater(sv, views, defaults, indexingConfig)
-    } yield ()
-  }
-
   test("A default view whose sources do not match the current config should be updated") {
     for {
       views   <- compositeViews
+      _       <- views.create(defaultViewId, proj1.ref, viewFields)
+      _       <- SearchConfigUpdater(sv, views, defaults, indexingConfig)
       default <- defaultViewValue
+      _       <- views.fetch(defaultViewId, proj1.ref)
       _       <- views
                    .fetch(defaultViewId, proj1.ref)
                    .map(view => toValue(view.value))
@@ -103,6 +96,8 @@ class SearchConfigUpdaterSuite
   test("A non-default active view should not be updated") {
     for {
       views <- compositeViews
+      _     <- views.create(id, proj1.ref, viewFields)
+      _     <- SearchConfigUpdater(sv, views, defaults, indexingConfig)
       view  <- views.fetch(id, proj1.ref)
     } yield assertEquals(view.rev, 1)
   }
@@ -110,6 +105,8 @@ class SearchConfigUpdaterSuite
   test("A default view whose sources match the current config should not be updated") {
     for {
       views <- compositeViews
+      _     <- views.create(defaultViewId, proj2.ref, defaultViewFields)
+      _     <- SearchConfigUpdater(sv, views, defaults, indexingConfig)
       view  <- views.fetch(defaultViewId, proj2.ref)
     } yield assertEquals(view.rev, 1)
   }
