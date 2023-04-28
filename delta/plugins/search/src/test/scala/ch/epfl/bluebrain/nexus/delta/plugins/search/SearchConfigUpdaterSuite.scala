@@ -20,7 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
 import fs2.Stream
 import io.circe.JsonObject
-import monix.bio.Task
+import monix.bio.{Task, UIO}
 
 import java.time.Instant
 import scala.collection.mutable.{Set => MutableSet}
@@ -87,8 +87,8 @@ class SearchConfigUpdaterSuite extends BioSuite with CompositeViewsFixture with 
     def viewDef: CompositeViewDef = x._1
   }
 
-  private val update: (ActiveViewDef, CompositeViewFields) => Task[Unit] =
-    (viewDef, fields) => Task { updatedViews.add((viewDef, fields)) }.void
+  private val update: (ActiveViewDef, CompositeViewFields) => UIO[Unit] =
+    (viewDef, fields) => Task { updatedViews.add((viewDef, fields)) }.void.hideErrors
 
   test("Update the views") {
     new SearchConfigUpdater(defaults, indexingConfig, views, update)().compile.drain

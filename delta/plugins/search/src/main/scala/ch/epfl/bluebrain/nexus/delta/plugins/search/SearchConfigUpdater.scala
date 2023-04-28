@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
-import monix.bio.Task
+import monix.bio.{Task, UIO}
 
 /**
   * Allows to update the search config of default composite views. The provided defaults and indexing config provide the
@@ -36,22 +36,21 @@ final class SearchConfigUpdater(
     defaults: Defaults,
     config: IndexingConfig,
     views: ElemStream[CompositeViewDef],
-    update: (ActiveViewDef, CompositeViewFields) => Task[Unit]
+    update: (ActiveViewDef, CompositeViewFields) => UIO[Unit]
 ) {
 
   /**
     * For the given composite views, updates the active ones if their search config differs from the current one.
     */
-  def apply(): Stream[Task, Elem[CompositeViewDef]] =
-    views
-      .evalTap { elem =>
-        elem.traverse {
-          case view: ActiveViewDef if viewIsDefault(view) && configHasChanged(view) =>
-            update(view, defaultSearchCompositeViewFields(defaults, config))
-          case _                                                                    =>
-            Task.unit
-        }
+  def apply(): Stream[Task, Unit] =
+    views.evalTap { elem =>
+      elem.traverse {
+        case view: ActiveViewDef if viewIsDefault(view) && configHasChanged(view) =>
+          update(view, defaultSearchCompositeViewFields(defaults, config))
+        case _                                                                    =>
+          Task.unit
       }
+    }.drain
 
   private def configHasChanged(v: ActiveViewDef): Boolean = {
     implicit val eq: Eq[CompositeViewValue] = indexingEq
@@ -109,7 +108,7 @@ object SearchConfigUpdater {
   )(implicit
       subject: Subject,
       baseUri: BaseUri
-  ): (ActiveViewDef, CompositeViewFields) => Task[Unit] =
+  ): (ActiveViewDef, CompositeViewFields) => UIO[Unit] =
     (viewDef, fields) =>
       views
         .update(
@@ -119,5 +118,5 @@ object SearchConfigUpdater {
           fields
         )
         .void
-        .onErrorHandle(e => logger.error(s"Could not update view ${viewDef.ref}. Reason: ${e.reason}"))
+        .onErrorHandleWith(e => UIO.delay(logger.error(s"Could not update view ${viewDef.ref}. Reason: ${e.reason}")))
 }
