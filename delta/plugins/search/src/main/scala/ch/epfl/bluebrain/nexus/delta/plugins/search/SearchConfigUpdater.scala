@@ -21,26 +21,33 @@ import monix.bio.Task
 
 /**
   * Allows to update the search config of default composite views. The provided defaults and indexing config provide the
-  * basis of the [[CompositeViewFields]] to which the composite views are compared.
+  * basis of the [[CompositeViewValue]] to which the composite views are compared.
+  *
+  * @param defaults
+  *   contains the name & description for the view to update
+  * @param config
+  *   the indexing config that is the basis of the comparison to decide whether a view needs an update
+  * @param views
+  *   a stream of views to perform the update on
+  * @param update
+  *   a function that defines what update should be done to an active view
   */
-final class SearchConfigUpdater(defaults: Defaults, config: IndexingConfig) {
+final class SearchConfigUpdater(
+    defaults: Defaults,
+    config: IndexingConfig,
+    views: ElemStream[CompositeViewDef],
+    update: (ActiveViewDef, CompositeViewFields) => Task[Unit]
+) {
 
   /**
     * For the given composite views, updates the active ones if their search config differs from the current one.
-    * @param views
-    *   a stream of views to perform the update on
-    * @param update
-    *   a function that defines what update should be done to an active view
     */
-  def apply(
-      views: ElemStream[CompositeViewDef],
-      update: (ActiveViewDef, CompositeViewFields) => Task[Unit]
-  ): Stream[Task, Elem[CompositeViewDef]] =
+  def apply(): Stream[Task, Elem[CompositeViewDef]] =
     views
       .evalTap { elem =>
         elem.traverse {
           case view: ActiveViewDef if viewIsDefault(view) && configHasChanged(view) =>
-            update(view, defaultSearchViewFields)
+            update(view, defaultSearchCompositeViewFields(defaults, config))
           case _                                                                    =>
             Task.unit
         }
@@ -65,9 +72,6 @@ final class SearchConfigUpdater(defaults: Defaults, config: IndexingConfig) {
     )
   }
 
-  private def defaultSearchViewFields: CompositeViewFields =
-    defaultSearchCompositeViewFields(defaults, config)
-
 }
 
 object SearchConfigUpdater {
@@ -87,8 +91,13 @@ object SearchConfigUpdater {
       baseUri: BaseUri,
       subject: Subject
   ): Task[SearchConfigUpdater] = {
-    val updater = new SearchConfigUpdater(config.defaults, config.indexing)
-    val stream  = updater(compositeViews.currentViews, update(compositeViews)).drain
+    val updater = new SearchConfigUpdater(
+      config.defaults,
+      config.indexing,
+      compositeViews.currentViews,
+      update(compositeViews)
+    )
+    val stream  = updater().drain
 
     supervisor
       .run(CompiledProjection.fromStream(metadata, ExecutionStrategy.TransientSingleNode, _ => stream))

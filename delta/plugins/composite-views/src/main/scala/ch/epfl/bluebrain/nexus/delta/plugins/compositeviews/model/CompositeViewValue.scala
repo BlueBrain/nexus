@@ -41,6 +41,7 @@ final case class CompositeViewValue(
 
 object CompositeViewValue {
 
+  /** Defines an equality that asserts two [[CompositeViewValue]]s as equal if they have the same indexing fields. */
   val indexingEq: Eq[CompositeViewValue] =
     Eq.instance((a, b) =>
       a.sources.toSortedSet.toSet == b.sources.toSortedSet.toSet &&
