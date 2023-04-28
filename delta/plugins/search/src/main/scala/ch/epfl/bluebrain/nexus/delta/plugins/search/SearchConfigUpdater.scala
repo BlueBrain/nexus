@@ -37,12 +37,11 @@ final class SearchConfigUpdater(defaults: Defaults, config: IndexingConfig) {
       update: (ActiveViewDef, CompositeViewFields) => Task[Unit]
   ): Stream[Task, Elem[CompositeViewDef]] =
     views
-      .filter(_.id == defaultViewId)
       .evalTap { elem =>
         elem.traverse {
-          case view: ActiveViewDef if configHasChanged(view) =>
+          case view: ActiveViewDef if viewIsDefault(view) && configHasChanged(view) =>
             update(view, defaultSearchViewFields)
-          case _                                             =>
+          case _                                                                    =>
             Task.unit
         }
       }
@@ -51,6 +50,9 @@ final class SearchConfigUpdater(defaults: Defaults, config: IndexingConfig) {
       v: ActiveViewDef
   )(implicit eq: Eq[CompositeViewValue] = indexingEq): Boolean =
     v.value =!= defaultSearchViewValue(v)
+
+  private def viewIsDefault(v: ActiveViewDef): Boolean =
+    v.ref.viewId == defaultViewId
 
   private def defaultSearchViewValue(v: ActiveViewDef): CompositeViewValue = {
     val d = defaultSearchCompositeViewFields(defaults, config)
