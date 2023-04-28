@@ -1,8 +1,9 @@
-package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
+package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.deletion
 
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphDeletionTask.{init, logger}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.IndexingViewDef
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.IndexingViewDef.{ActiveViewDef, DeprecatedViewDef}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.deletion.CompositeViewsDeletionTask.{init, logger}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef.{ActiveViewDef, DeprecatedViewDef}
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.ProjectDeletionTask
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.model.ProjectDeletionReport
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
@@ -13,15 +14,14 @@ import monix.bio.{Task, UIO}
 
 /**
   * Creates a project deletion step that deprecates all views within a project when a project is deleted so that the
-  * coordinator stops the running Blazegraph projections on the different Delta nodes
+  * coordinator stops the running composite view projections on the different Delta nodes
   */
-final class BlazegraphDeletionTask(
-    currentViews: ProjectRef => Stream[Task, IndexingViewDef],
+final class CompositeViewsDeletionTask(
+    currentViews: ProjectRef => Stream[Task, CompositeViewDef],
     deprecate: (ActiveViewDef, Subject) => UIO[Unit]
 ) extends ProjectDeletionTask {
-
   override def apply(project: ProjectRef)(implicit subject: Subject): Task[ProjectDeletionReport.Stage] =
-    UIO.delay(logger.info(s"Starting deprecation of Blazegraph views for '$project'")) >>
+    UIO.delay(logger.info(s"Starting deprecation of composite views for '$project'")) >>
       run(project)
 
   private def run(project: ProjectRef)(implicit subject: Subject) =
@@ -29,21 +29,21 @@ final class BlazegraphDeletionTask(
       .evalScan(init) {
         case (acc, _: DeprecatedViewDef) => Task.pure(acc)
         case (acc, view: ActiveViewDef)  =>
-          deprecate(view, subject).as(acc ++ s"Blazegraph view '${view.ref}' has been deprecated.")
+          deprecate(view, subject).as(acc ++ s"Composite view '${view.ref}' has been deprecated.")
       }
       .compile
       .lastOrError
-
 }
 
-object BlazegraphDeletionTask {
-  private val logger: Logger = Logger[BlazegraphDeletionTask]
+object CompositeViewsDeletionTask {
 
-  private val init = ProjectDeletionReport.Stage.empty("blazegraph")
+  private val logger: Logger = Logger[CompositeViewsDeletionTask]
 
-  def apply(views: BlazegraphViews) =
-    new BlazegraphDeletionTask(
-      project => views.currentIndexingViews(project).evalMapFilter(_.toTask),
+  private val init = ProjectDeletionReport.Stage.empty("compositeviews")
+
+  def apply(views: CompositeViews) =
+    new CompositeViewsDeletionTask(
+      project => views.currentViews(project).evalMapFilter(_.toTask),
       (v: ActiveViewDef, subject: Subject) =>
         views.internalDeprecate(v.ref.viewId, v.ref.project, v.rev)(subject).onErrorHandleWith { r =>
           UIO.delay(logger.error(s"Deprecating '$v' resulted in error: '$r'."))

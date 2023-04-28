@@ -13,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewReje
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{contexts, schema => viewsSchemaId, BlazegraphView, BlazegraphViewCommand, BlazegraphViewEvent, BlazegraphViewRejection, BlazegraphViewState, BlazegraphViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.BlazegraphViewsRoutes
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries.{BlazegraphSlowQueryDeleter, BlazegraphSlowQueryLogger, BlazegraphSlowQueryStore}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
@@ -56,8 +57,32 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
       HttpClient()(cfg.indexingClient, as.classicSystem, sc)
   }
 
+  make[BlazegraphSlowQueryStore].from { (xas: Transactors) =>
+    BlazegraphSlowQueryStore(
+      xas
+    )
+  }
+
+  make[BlazegraphSlowQueryDeleter].fromEffect {
+    (supervisor: Supervisor, store: BlazegraphSlowQueryStore, cfg: BlazegraphViewsConfig) =>
+      BlazegraphSlowQueryDeleter.start(
+        supervisor,
+        store,
+        cfg.slowQueries.logTtl,
+        cfg.slowQueries.deleteExpiredLogsEvery
+      )
+  }
+
+  make[BlazegraphSlowQueryLogger].from { (cfg: BlazegraphViewsConfig, store: BlazegraphSlowQueryStore) =>
+    BlazegraphSlowQueryLogger(store, cfg.slowQueries.slowQueryThreshold)
+  }
+
   make[BlazegraphClient].named("blazegraph-indexing-client").from {
-    (cfg: BlazegraphViewsConfig, client: HttpClient @Id("http-indexing-client"), as: ActorSystem[Nothing]) =>
+    (
+        cfg: BlazegraphViewsConfig,
+        client: HttpClient @Id("http-indexing-client"),
+        as: ActorSystem[Nothing]
+    ) =>
       BlazegraphClient(client, cfg.base, cfg.credentials, cfg.queryTimeout)(as.classicSystem)
   }
 
@@ -67,7 +92,11 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
   }
 
   make[BlazegraphClient].named("blazegraph-query-client").from {
-    (cfg: BlazegraphViewsConfig, client: HttpClient @Id("http-query-client"), as: ActorSystem[Nothing]) =>
+    (
+        cfg: BlazegraphViewsConfig,
+        client: HttpClient @Id("http-query-client"),
+        as: ActorSystem[Nothing]
+    ) =>
       BlazegraphClient(client, cfg.base, cfg.credentials, cfg.queryTimeout)(as.classicSystem)
   }
 
@@ -136,10 +165,19 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         fetchContext: FetchContext[ContextRejection],
         views: BlazegraphViews,
         client: BlazegraphClient @Id("blazegraph-query-client"),
+        slowQueryLogger: BlazegraphSlowQueryLogger,
         cfg: BlazegraphViewsConfig,
         xas: Transactors
     ) =>
-      BlazegraphViewsQuery(aclCheck, fetchContext.mapRejection(ProjectContextRejection), views, client, cfg.prefix, xas)
+      BlazegraphViewsQuery(
+        aclCheck,
+        fetchContext.mapRejection(ProjectContextRejection),
+        views,
+        client,
+        slowQueryLogger,
+        cfg.prefix,
+        xas
+      )
   }
 
   make[BlazegraphViewsRoutes].from {

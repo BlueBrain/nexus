@@ -235,6 +235,11 @@ object CompositeViewRejection {
       extends CompositeViewRejection(s"Composite view identifier '$id' cannot be expanded to an Iri.")
 
   /**
+    * Rejection returned when attempting to create a composite view while providing an id that is blank.
+    */
+  final case object BlankCompositeViewId extends CompositeViewRejection(s"Composite view identifier cannot be blank.")
+
+  /**
     * Signals a rejection caused when interacting with other APIs when fetching a view
     */
   final case class ProjectContextRejection(rejection: ContextRejection)
@@ -301,6 +306,7 @@ object CompositeViewRejection {
     case UnexpectedId(id, payloadIri)                      => UnexpectedCompositeViewId(id, payloadIri)
     case JsonLdRejection.InvalidJsonLdFormat(id, rdfError) => InvalidJsonLdFormat(id, rdfError)
     case JsonLdRejection.DecodingFailed(error)             => DecodingFailed(error)
+    case JsonLdRejection.BlankId                           => BlankCompositeViewId
   }
 
   implicit private[plugins] val compositeViewRejectionEncoder: Encoder.AsObject[CompositeViewRejection] =

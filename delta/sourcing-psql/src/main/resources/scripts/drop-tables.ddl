@@ -11,5 +11,6 @@ DROP TABLE    IF EXISTS public.composite_offsets;
 DROP TABLE    IF EXISTS public.projection_offsets;
 DROP TABLE    IF EXISTS public.failed_elem_logs;
 DROP TABLE    IF EXISTS public.deleted_project_reports;
+DROP TABLE    IF EXISTS public.blazegraph_queries;
 DROP SEQUENCE IF EXISTS public.event_offset;
 DROP SEQUENCE IF EXISTS public.state_offset;

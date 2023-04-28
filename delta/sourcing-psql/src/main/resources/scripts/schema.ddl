@@ -219,3 +219,15 @@ CREATE TABLE IF NOT EXISTS public.deleted_project_reports(
     value      JSONB       NOT NULL,
     PRIMARY KEY(ordering)
 );
+
+CREATE TABLE IF NOT EXISTS public.blazegraph_queries (
+    ordering bigserial,
+    project  text        NOT NULL,
+    view_id  text        NOT NULL,
+    instant  timestamptz NOT NULL,
+    duration integer     NOT NULL,
+    subject  JSONB       NOT NULL,
+    query    text        NOT NULL,
+    failed   boolean     NOT NULL,
+    PRIMARY KEY (ordering)
+);
