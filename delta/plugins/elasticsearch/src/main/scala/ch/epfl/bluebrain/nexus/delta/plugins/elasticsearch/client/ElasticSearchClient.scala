@@ -65,7 +65,7 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
     MediaType.applicationWithFixedCharset("x-ndjson", HttpCharsets.`UTF-8`, "json")
   private val defaultQuery                                          = Map(ignoreUnavailable -> "true", allowNoIndices -> "true")
   private val defaultUpdateByQuery                                  = defaultQuery + (waitForCompletion -> "false")
-  private val defaultDeleteByQuery                                  = defaultQuery + (waitForCompletion -> "false")
+  private val defaultDeleteByQuery                                  = defaultQuery + (waitForCompletion -> "true")
   private val updateByQueryStrategy: RetryStrategy[HttpClientError] =
     RetryStrategy.constant(
       1.second,
@@ -248,7 +248,7 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
     * @param query
     *   the search query
     * @param indices
-    *   the indices to use on search (if empty, searches in all the indices)
+    *   the indices targeted by the update query
     */
   def updateByQuery(query: JsonObject, indices: Set[String]): HttpResult[Unit] = {
     val (indexPath, q) = indexPathAndQuery(indices, QueryBuilder(query))
@@ -276,26 +276,13 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
     *
     * @param query
     *   the search query
-    * @param indices
-    *   the indices to use on search (if empty, searches in all the indices)
+    * @param index
+    *   the index targeted by the delete query
     */
   def deleteByQuery(query: JsonObject, index: IndexLabel): HttpResult[Unit] = {
     val deleteEndpoint = (endpoint / index.value / deleteByQueryPath).withQuery(Uri.Query(defaultDeleteByQuery))
     val req            = Post(deleteEndpoint, query).withHttpCredentials
-    for {
-      json   <- client.toJson(req)
-      taskId <- IO.fromEither(
-                  json.hcursor.get[String]("task").leftMap(_ => HttpClientStatusError(req, BadRequest, json.noSpaces))
-                )
-      taskReq = Get((endpoint / tasksPath / taskId).withQuery(Query(waitForCompletion -> "true"))).withHttpCredentials
-      _      <- client
-                  .toJson(taskReq)
-                  .retryingOnSomeErrors(
-                    updateByQueryStrategy.retryWhen,
-                    updateByQueryStrategy.policy,
-                    updateByQueryStrategy.onError
-                  )
-    } yield ()
+    client.toJson(req).void
   }
 
   /**
