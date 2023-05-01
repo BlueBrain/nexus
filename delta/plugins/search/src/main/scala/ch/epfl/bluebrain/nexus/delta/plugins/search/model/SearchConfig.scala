@@ -116,8 +116,7 @@ object SearchConfig {
     * correct finite duration, there will be no rebuild strategy. If both finite durations are present, then the
     * specified rebuild strategy must be greater or equal to the min rebuild interval.
     */
-  private def loadRebuildStrategy(config: Config): IO[SearchConfigError, Option[RebuildStrategy]] = {
-    import cats.implicits._
+  private def loadRebuildStrategy(config: Config): IO[SearchConfigError, Option[RebuildStrategy]] =
     (
       readFiniteDuration(config, "indexing.rebuild-strategy"),
       readFiniteDuration(config, "indexing.min-interval-rebuild")
@@ -125,7 +124,6 @@ object SearchConfig {
       IO.raiseWhen(rebuild lt minIntervalRebuild)(InvalidRebuildStrategy(rebuild, minIntervalRebuild)) >>
         IO.pure(Interval(rebuild))
     }
-  }
 
   private def readFiniteDuration(config: Config, path: String): Option[FiniteDuration] =
     Try(
