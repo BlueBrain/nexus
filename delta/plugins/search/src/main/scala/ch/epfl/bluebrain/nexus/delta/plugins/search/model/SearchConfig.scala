@@ -118,14 +118,13 @@ object SearchConfig {
     */
   private def loadRebuildStrategy(config: Config): IO[SearchConfigError, Option[RebuildStrategy]] = {
     import cats.implicits._
-    val strategy = for {
-      rebuild            <- readFiniteDuration(config, "indexing.rebuild-strategy")
-      minIntervalRebuild <- readFiniteDuration(config, "indexing.min-interval-rebuild")
-    } yield {
+    (
+      readFiniteDuration(config, "indexing.rebuild-strategy"),
+      readFiniteDuration(config, "indexing.min-interval-rebuild")
+    ).traverseN { case (rebuild, minIntervalRebuild) =>
       IO.raiseWhen(rebuild lt minIntervalRebuild)(InvalidRebuildStrategy(rebuild, minIntervalRebuild)) >>
         IO.pure(Interval(rebuild))
     }
-    strategy.sequence
   }
 
   private def readFiniteDuration(config: Config, path: String): Option[FiniteDuration] =
