@@ -6,30 +6,17 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 /**
   * Defines a dependency to another entity
   */
-sealed trait EntityDependency {
-
-  /**
-    * The project where the entity lives
-    */
-  def project: ProjectRef
-
-  /**
-    * The id of the entity
-    */
-  def id: Iri
-}
-
 object EntityDependency {
 
   /**
     * Defines an entity that is referenced by a project or entity
     */
-  final case class ReferencedBy(project: ProjectRef, id: Iri) extends EntityDependency
+  final case class ReferencedBy(project: ProjectRef, id: Iri)
 
   /**
     * Defines an entity that a project / entity depends on
     */
-  final case class DependsOn(project: ProjectRef, id: Iri) extends EntityDependency
+  final case class DependsOn(project: ProjectRef, id: Iri)
 
   object DependsOn {
     implicit val dependsOnOrder: Order[DependsOn] = Order.by { dependency =>
