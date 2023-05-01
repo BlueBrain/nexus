@@ -22,11 +22,13 @@ The configuration flag `akka.http.server.parsing.max-content-length` can be used
 
 ### Postgres configuration
 
-@link:[The `database` section](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/app.conf#L23){ open=new } of the configuration defines the postgres specific configuration. As Nexus Delta uses three separate pools ('read', 'write', 'streaming'), it is recommended to set the host, port, database name, username, and password via the `app.defaults.database` field, as it will apply to all pools. It is however possible to accommodate more advanced setups by configuring each pool separately by changing the `app.database.{read|write|streaming}` fields. The pool size can also be set using the `app.defaults.database.access.pool-size` setting for all pools, or individually for each pool.
+@link:[The `database` section](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/app.conf#L23){ open=new } of the configuration defines the postgres specific configuration. As Nexus Delta uses three separate pools ('read', 'write', 'streaming'), it is recommended to set the host, port, database name, username, and password via the `app.defaults.database` field, as it will apply to all pools. It is however possible to accommodate more advanced setups by configuring each pool separately by changing its respective `app.database.{read|write|streaming}` fields. 
+
+The pool size can be set using the `app.defaults.database.access.pool-size` setting for all pools, or individually for each pool (`app.database.{read|write|streaming}.access.pool-size`).
 
 @@@ note { .warning }
 
-A default Postgres deployment will limit the number of connections to 100 by default, unless configured otherwise. See the @link:[Postgres Connection and Authentication documentation](https://www.postgresql.org/docs/current/runtime-config-connection.html){ open=new }.
+A default Postgres deployment will limit the number of connections to 100, unless configured otherwise. See the @link:[Postgres Connection and Authentication documentation](https://www.postgresql.org/docs/current/runtime-config-connection.html){ open=new }.
 
 @@@
 
@@ -42,7 +44,7 @@ Auto creation of tables is included as a development convenience and should be a
 
 # RDF parser
 
-The underlying @link:[Apache Jena](https://jena.apache.org/) parser used to validate incoming data is @link:[now configurable using the `json-ld-api` field](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/app.conf#L49) to enable different levels of strictness.
+The underlying @link:[Apache Jena](https://jena.apache.org/) parser used to validate incoming data is @link:[configurable using the `json-ld-api` field](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/app.conf#L49) to enable different levels of strictness.
 
 ## Service account configuration
 
@@ -60,7 +62,7 @@ say the first time, they query the project listing endpoints.
 
 The generated project label will be:
 
-* The current username where only non-diacritic alphabetic characters (`[a-zA-Z]`), numbers, dashes and underscores will be preserved
+* The current username where only non-diacritic alphabetic characters (`[a-zA-Z]`), numbers, dashes and underscores will be preserved.
 * This resulting string is then truncated to 64 characters if needed.
 
 This feature can be turned on via the flag `app.automatic-provisioning.enabled`.
@@ -85,9 +87,11 @@ Since 1.5.0, Nexus Delta supports plugins. Jar files present inside the local di
 
 Each plugin configuration is rooted under `plugins.{plugin_name}`. All plugins have a `plugins.{plugin_name}.priority` configuration flag used to determine the order in which the routes are handled in case of collisions. 
 
+For more information about plugins, please refer to the @ref:[Plugins page](../../../delta/plugins/index.md).
+
 ### Elasticsearch views plugin configuration
 
-The elasticsearch plugin configuration can be found @link:[here](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/plugins/elasticsearch/src/main/resources/elasticsearch.conf){ open=new }. 
+The elasticsearch plugin configuration can be found @link:[here](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/plugins/elasticsearch/src/main/resources/elasticsearch.conf){ open=new }.
 
 The most important flags are:
 * `plugins.elasticsearch.base` which defines the endpoint where the Elasticsearch service is running.
@@ -138,6 +142,7 @@ Delta configuration for Kamon is provided @link:[in the `monitoring` section](ht
 For a more complete description on the different options available, please look at the Kamon website.
 
 ### Instrumentation
+
 Delta provides the Kamon instrumentation for:
 
 * @link:[JDBC](https://kamon.io/docs/v1/instrumentation/jdbc/){ open=new }
