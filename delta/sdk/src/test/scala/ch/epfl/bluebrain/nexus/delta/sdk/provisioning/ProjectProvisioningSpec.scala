@@ -63,6 +63,7 @@ class ProjectProvisioningSpec
 
   private lazy val projects = ProjectsImpl(
     fetchOrg,
+    _ => UIO.unit,
     Set.empty,
     ApiMappings.empty,
     config,

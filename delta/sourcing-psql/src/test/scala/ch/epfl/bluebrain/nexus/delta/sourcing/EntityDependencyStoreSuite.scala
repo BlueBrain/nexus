@@ -3,11 +3,12 @@ package ch.epfl.bluebrain.nexus.delta.sourcing
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestState
-import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestState.PullRequestActive
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityDependency.{DependsOn, ReferencedBy}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityDependency, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore
 import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
@@ -48,11 +49,11 @@ class EntityDependencyStoreSuite extends BioSuite with Doobie.Fixture {
   private val state3 = PullRequestActive(id3, proj, 1, Instant.EPOCH, Anonymous, Instant.EPOCH, Anonymous)
   private val state5 = PullRequestActive(id5, proj2, 1, Instant.EPOCH, Anonymous, Instant.EPOCH, Anonymous)
 
-  private val dependencyId1 = EntityDependency(proj, id1)
-  private val dependencyId2 = EntityDependency(proj, id2)
-  private val dependencyId3 = EntityDependency(proj, id3)
-  private val dependencyId4 = EntityDependency(proj2, id4)
-  private val dependencyId5 = EntityDependency(proj2, id5)
+  private val dependencyId1 = DependsOn(proj, id1)
+  private val dependencyId2 = DependsOn(proj, id2)
+  private val dependencyId3 = DependsOn(proj, id3)
+  private val dependencyId4 = DependsOn(proj2, id4)
+  private val dependencyId5 = DependsOn(proj2, id5)
 
   test("Save the different states") {
     List(state1, state2, state3, state5).traverse(stateStore.unsafeSave(_)).transact(xas.write)
@@ -78,27 +79,41 @@ class EntityDependencyStoreSuite extends BioSuite with Doobie.Fixture {
 
   test("Fetch direct dependencies for id1") {
     EntityDependencyStore
-      .list(proj, id1, xas)
+      .directDependencies(proj, id1, xas)
       .assert(
         Set(dependencyId2, dependencyId3)
       )
   }
 
   test("Fetch direct dependencies for id2") {
-    EntityDependencyStore.list(proj, id2, xas).assert(Set(dependencyId4))
+    EntityDependencyStore.directDependencies(proj, id2, xas).assert(Set(dependencyId4))
   }
 
   test("Fetch direct dependencies for id3") {
-    EntityDependencyStore.list(proj, id3, xas).assert(Set.empty)
+    EntityDependencyStore.directDependencies(proj, id3, xas).assert(Set.empty)
+  }
+
+  test(s"Fetch direct external references for $proj") {
+    EntityDependencyStore
+      .directExternalReferences(proj, xas)
+      .assert(Set.empty)
+  }
+
+  test(s"Fetch direct external references for $proj2") {
+    EntityDependencyStore
+      .directExternalReferences(proj2, xas)
+      .assert(
+        Set(ReferencedBy(proj, id2))
+      )
   }
 
   test("Fetch values for direct dependencies of id1") {
-    EntityDependencyStore.decodeList(proj, id1, xas).assert(List(state2, state3))
+    EntityDependencyStore.decodeDirectDependencies(proj, id1, xas).assert(List(state2, state3))
   }
 
   test("Fetch all dependencies for id1") {
     EntityDependencyStore
-      .recursiveList(proj, id1, xas)
+      .recursiveDependencies(proj, id1, xas)
       .assert(
         Set(dependencyId2, dependencyId3, dependencyId4, dependencyId5)
       )
@@ -106,7 +121,7 @@ class EntityDependencyStoreSuite extends BioSuite with Doobie.Fixture {
 
   test("Fetch values for all dependencies for id1") {
     EntityDependencyStore
-      .decodeRecursiveList(proj, id1, xas)
+      .decodeRecursiveDependencies(proj, id1, xas)
       .assert(
         List(state2, state3, state5)
       )
@@ -130,7 +145,7 @@ class EntityDependencyStoreSuite extends BioSuite with Doobie.Fixture {
 
   test("Fetch again all dependencies for id1 to check that cycles are prevented") {
     EntityDependencyStore
-      .recursiveList(proj, id1, xas)
+      .recursiveDependencies(proj, id1, xas)
       .assert(
         Set(dependencyId2, dependencyId3, dependencyId4, dependencyId5)
       )
@@ -138,7 +153,7 @@ class EntityDependencyStoreSuite extends BioSuite with Doobie.Fixture {
 
   test("Fetch values for all dependencies for id1 to check that cycles are prevented") {
     EntityDependencyStore
-      .decodeRecursiveList(proj, id1, xas)
+      .decodeRecursiveDependencies(proj, id1, xas)
       .assert(
         List(state2, state3, state5)
       )
