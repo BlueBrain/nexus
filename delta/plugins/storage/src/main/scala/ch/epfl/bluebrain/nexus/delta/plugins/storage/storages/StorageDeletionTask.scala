@@ -3,7 +3,8 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageDeletionTask.{init, logger}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
-import ch.epfl.bluebrain.nexus.delta.sdk.ProjectDeletionTask
+import ch.epfl.bluebrain.nexus.delta.sdk.deletion.ProjectDeletionTask
+import ch.epfl.bluebrain.nexus.delta.sdk.deletion.model.ProjectDeletionReport
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import com.typesafe.scalalogging.Logger
@@ -16,7 +17,7 @@ import monix.bio.{Task, UIO}
   */
 final class StorageDeletionTask(currentStorages: ProjectRef => Stream[Task, StorageValue]) extends ProjectDeletionTask {
 
-  override def apply(project: ProjectRef)(implicit subject: Subject): Task[ProjectDeletionTask.Result] =
+  override def apply(project: ProjectRef)(implicit subject: Subject): Task[ProjectDeletionReport.Stage] =
     UIO.delay(logger.info(s"Starting deletion of local files for $project")) >>
       run(project)
 
@@ -56,7 +57,7 @@ object StorageDeletionTask {
 
   private val logger: Logger = Logger[StorageDeletionTask]
 
-  private val init = ProjectDeletionTask.Result.empty("storage")
+  private val init = ProjectDeletionReport.Stage.empty("storage")
 
   def apply(storages: Storages) =
     new StorageDeletionTask(project =>

@@ -59,7 +59,7 @@ class ProjectProvisioningSpec
     )
   )
 
-  private val config = ProjectsConfig(eventLogConfig, pagination, cacheConfig)
+  private val config = ProjectsConfig(eventLogConfig, pagination, cacheConfig, deletionConfig)
 
   private lazy val projects = ProjectsImpl(
     fetchOrg,

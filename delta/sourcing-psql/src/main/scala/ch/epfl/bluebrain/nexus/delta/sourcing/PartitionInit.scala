@@ -94,7 +94,7 @@ object PartitionInit {
   def projectRefHash(projectRef: ProjectRef): String =
     MD5.hash(projectRef.toString)
 
-  private def projectRefPartition(mainTable: String, projectRef: ProjectRef) =
+  def projectRefPartition(mainTable: String, projectRef: ProjectRef) =
     s"${mainTable}_${projectRefHash(projectRef)}"
 
   private def orgHash(projectRef: ProjectRef) =

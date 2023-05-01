@@ -210,3 +210,24 @@ CREATE TABLE IF NOT EXISTS public.failed_elem_logs(
 );
 CREATE INDEX IF NOT EXISTS failed_elem_logs_projection_name_idx ON public.failed_elem_logs(projection_name);
 CREATE INDEX IF NOT EXISTS failed_elem_logs_projection_idx ON public.failed_elem_logs(projection_project, projection_id);
+
+--
+-- Table for project deletion result
+--
+CREATE TABLE IF NOT EXISTS public.deleted_project_reports(
+    ordering   bigserial,
+    value      JSONB       NOT NULL,
+    PRIMARY KEY(ordering)
+);
+
+CREATE TABLE IF NOT EXISTS public.blazegraph_queries (
+    ordering bigserial,
+    project  text        NOT NULL,
+    view_id  text        NOT NULL,
+    instant  timestamptz NOT NULL,
+    duration integer     NOT NULL,
+    subject  JSONB       NOT NULL,
+    query    text        NOT NULL,
+    failed   boolean     NOT NULL,
+    PRIMARY KEY (ordering)
+);

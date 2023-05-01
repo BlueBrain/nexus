@@ -11,6 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.routes.AclsRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.{AclCheck, Acls, AclsImpl}
+import ch.epfl.bluebrain.nexus.delta.sdk.deletion.ProjectDeletionTask
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, MetadataContextValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
@@ -56,6 +57,8 @@ object AclsModule extends ModuleDef {
     ) =>
       new AclsRoutes(identities, acls, aclCheck)(baseUri, s, cr, ordering)
   }
+
+  many[ProjectDeletionTask].add { (acls: Acls) => Acls.projectDeletionTask(acls) }
 
   many[SseEncoder[_]].add { base: BaseUri => AclEvent.sseEncoder(base) }
 

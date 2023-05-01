@@ -22,6 +22,11 @@ object JsonLdRejection {
       extends InvalidJsonLdRejection(s"Id '$id' does not match the id on payload '$payloadId'.")
 
   /**
+    * Rejection returned when the passed id is blaNK
+    */
+  case object BlankId extends InvalidJsonLdRejection(s"Id was blank.")
+
+  /**
     * Rejection when converting the source Json to JsonLD fails
     *
     * @param id
