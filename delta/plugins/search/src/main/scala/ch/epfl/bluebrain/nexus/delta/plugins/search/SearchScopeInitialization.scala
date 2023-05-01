@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewP
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{ProjectContextRejection, ViewAlreadyExists}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSourceFields.ProjectSourceFields
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel.IndexGroup
+import ch.epfl.bluebrain.nexus.delta.plugins.search.SearchScopeInitialization.defaultSearchCompositeViewFields
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchConfig.IndexingConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model.{defaultProjectionId, defaultSourceId, defaultViewId}
 import ch.epfl.bluebrain.nexus.delta.sdk.{Defaults, ScopeInitialization}
@@ -33,8 +34,6 @@ final class SearchScopeInitialization(
   private val logger: Logger                          = Logger[SearchScopeInitialization]
   implicit private val serviceAccountSubject: Subject = serviceAccount.subject
 
-  private val searchGroup = Some(IndexGroup.unsafe("search"))
-
   override def onProjectCreation(
       project: Project,
       subject: Identity.Subject
@@ -43,23 +42,7 @@ final class SearchScopeInitialization(
       .create(
         defaultViewId,
         project.ref,
-        CompositeViewFields(
-          Some(defaults.name),
-          Some(defaults.description),
-          NonEmptySet.of(ProjectSourceFields(id = Some(defaultSourceId))),
-          NonEmptySet.of(
-            ElasticSearchProjectionFields(
-              id = Some(defaultProjectionId),
-              query = config.query,
-              mapping = config.mapping,
-              indexGroup = searchGroup,
-              context = config.context,
-              settings = config.settings,
-              resourceTypes = config.resourceTypes
-            )
-          ),
-          None
-        )
+        defaultSearchCompositeViewFields(defaults, config)
       )
       .void
       .onErrorHandleWith {
@@ -76,4 +59,31 @@ final class SearchScopeInitialization(
       organization: Organization,
       subject: Identity.Subject
   ): IO[ServiceError.ScopeInitializationFailed, Unit] = IO.unit
+}
+
+object SearchScopeInitialization {
+
+  private[search] val searchGroup = Some(IndexGroup.unsafe("search"))
+
+  private[search] def defaultSearchCompositeViewFields(
+      defaults: Defaults,
+      config: IndexingConfig
+  ): CompositeViewFields =
+    CompositeViewFields(
+      Some(defaults.name),
+      Some(defaults.description),
+      NonEmptySet.of(ProjectSourceFields(id = Some(defaultSourceId))),
+      NonEmptySet.of(
+        ElasticSearchProjectionFields(
+          id = Some(defaultProjectionId),
+          query = config.query,
+          mapping = config.mapping,
+          indexGroup = searchGroup,
+          context = config.context,
+          settings = config.settings,
+          resourceTypes = config.resourceTypes
+        )
+      ),
+      config.rebuildStrategy
+    )
 }
