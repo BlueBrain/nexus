@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.cache
+package ch.epfl.bluebrain.nexus.delta.kernel.cache
 
 import pureconfig.ConfigReader
 import pureconfig.generic.semiauto.deriveReader
