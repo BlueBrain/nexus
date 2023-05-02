@@ -10,7 +10,7 @@ There are 3 ways to modify the default configuration:
   environment variables. In order to enable this style of configuration, the JVM property
   `-Dconfig.override_with_env_vars=true` needs to be set. Once set, a configuration flag can be overridden. For example: `CONFIG_FORCE_app_http_interface="127.0.0.1"`.
 
-In terms of JVM pool memory allocation, we recommend setting the following values to the `JAVA_OPTS`environment variable: `-Xms4g -Xmx4g`. The recommended values should be changed accordingly with the usage of Nexus Delta, the number of projects and the resources/schemas size.
+In terms of JVM pool memory allocation, we recommend setting the following values to the `JAVA_OPTS` environment variable: `-Xms4g -Xmx4g`. The recommended values should be changed accordingly with the usage of Nexus Delta, the number of projects and the resources/schemas size.
 
 In order to successfully run Nexus Delta there is a minimum set of configuration flags that need to be specified
 
@@ -32,7 +32,7 @@ A default Postgres deployment will limit the number of connections to 100, unles
 
 @@@
 
-Before running Nexus Delta, the @link:[expected tables](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/sourcing-psql/src/main/resources/scripts/schema.ddl){ open=new } should be created. If you are running the Jira plugin, the @link:[Jira token table](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/plugins/jira/src/main/resources/scripts/postgres/jira_table.ddl){ open=new } should also be created. 
+Before running Nexus Delta, the @link:[expected tables](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/sourcing-psql/src/main/resources/scripts/schema.ddl){ open=new } should be created.
 
 It is possible to let Nexus Delta automatically create them using the following configuration parameters: `app.database.tables-autocreate=true`.
 
@@ -81,6 +81,14 @@ When fetching a resource, Nexus Delta allows to return a redirection to its repr
 
 @link:[The `fusion` section](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/app.conf#L40){ open=new } of the configuration defines the fusion configuration.
 
+## Projections configuration
+
+Projections in Nexus Delta are asynchronous processes that can replay the event log and process this information. For more information on projections, please refer to the @ref:[Architecture page](../../../delta/architecture.md).
+
+@link:[The `projections` section](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/app.conf#L281) of the configuration allows to configure the projections.
+
+In case of failure in a projection, Nexus Delta records the failure information inside the `public.failed_elem_logs` PostgreSQL table, which can be used for analysis, and ultimately resolution of the failures. The configuration allows to set how long the failure information is stored for (`app.projections.failed-elem-ttl`), and how often the projection deleting the expired failures is awoken (`app.projections.delete-expired-every`).
+
 ## Plugins configuration
 
 Since 1.5.0, Nexus Delta supports plugins. Jar files present inside the local directory defined by the `DELTA_PLUGINS` environment variable are loaded as plugins into the Delta service. 
@@ -104,6 +112,8 @@ Please refer to the @link[Elasticsearch configuration](https://www.elastic.co/gu
 The blazegraph plugin configuration can be found @link:[here](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/plugins/blazegraph/src/main/resources/blazegraph.conf){ open=new }. 
 
 The most important flag is `plugins.blazegraph.base` which defines the endpoint where the Blazegraph service is running.
+
+The @link:[`plugins.blazegraph.slow-queries` section](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/plugins/blazegraph/src/main/resources/blazegraph.conf#L23) of the Blazegraph configuration defines what is considered a slow Blazegraph query, which will get logged in the `public.blazegraph_queries` PostgreSQL table. This can be used to understand which Blazegraph queries can be improved.
 
 ### Composite views plugin configuration
 
@@ -145,7 +155,6 @@ For a more complete description on the different options available, please look 
 
 Delta provides the Kamon instrumentation for:
 
-* @link:[JDBC](https://kamon.io/docs/v1/instrumentation/jdbc/){ open=new }
 * @link:[Executors](https://kamon.io/docs/v1/instrumentation/executors/){ open=new }
 * @link:[Scala futures](https://kamon.io/docs/v1/instrumentation/futures/){ open=new }
 * @link:[Logback](https://kamon.io/docs/v1/instrumentation/logback/){ open=new }
