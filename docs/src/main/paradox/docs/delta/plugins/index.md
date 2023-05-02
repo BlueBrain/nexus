@@ -48,10 +48,9 @@ TestPluginDef.scala
 
 ### Delta SDK
 
-The Delta SDK can be included as following dependencies:
+The Delta SDK can be included as following dependency:
 
- - SDK - general Delta SDK 
- - SDK views - SDK with functionality related to views.
+ - SDK - general Delta SDK
 
 
 All the above dependencies should be used in `provided` scope and must not be bundled in the plugin.
