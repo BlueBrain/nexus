@@ -202,6 +202,7 @@ lazy val kernel = project
   .settings(
     javaSpecificationVersion := "1.8",
     libraryDependencies     ++= Seq(
+      caffeine,
       catsRetry,
       circeCore,
       circeParser,
@@ -309,7 +310,6 @@ lazy val sdk = project
       akkaHttp,
       akkaHttpXml exclude ("org.scala-lang.modules", "scala-xml_2.13"),
       scalaXml,
-      caffeine,
       circeLiteral,
       circeGenericExtras,
       distageCore,

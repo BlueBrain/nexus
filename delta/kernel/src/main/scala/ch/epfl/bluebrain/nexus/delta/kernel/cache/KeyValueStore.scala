@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.cache
+package ch.epfl.bluebrain.nexus.delta.kernel.cache
 
 import com.github.benmanes.caffeine.cache.{Cache, Caffeine}
 import monix.bio.{IO, UIO}

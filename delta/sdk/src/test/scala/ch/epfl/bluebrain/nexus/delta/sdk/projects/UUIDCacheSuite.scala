@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.projects
 
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.sdk.cache.CacheConfig
+import ch.epfl.bluebrain.nexus.delta.kernel.cache.CacheConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{OrganizationGen, ProjectGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationState

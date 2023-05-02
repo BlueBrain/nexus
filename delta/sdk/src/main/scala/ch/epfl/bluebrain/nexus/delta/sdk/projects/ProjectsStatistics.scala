@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.projects
 
+import ch.epfl.bluebrain.nexus.delta.kernel.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
-import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectStatistics
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, Tag}
 import doobie.implicits._
