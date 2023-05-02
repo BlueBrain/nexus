@@ -55,6 +55,7 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
   private val refreshParam                                          = "refresh"
   private val ignoreUnavailable                                     = "ignore_unavailable"
   private val allowNoIndices                                        = "allow_no_indices"
+  private val deleteByQueryPath                                     = "_delete_by_query"
   private val updateByQueryPath                                     = "_update_by_query"
   private val countPath                                             = "_count"
   private val searchPath                                            = "_search"
@@ -64,6 +65,7 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
     MediaType.applicationWithFixedCharset("x-ndjson", HttpCharsets.`UTF-8`, "json")
   private val defaultQuery                                          = Map(ignoreUnavailable -> "true", allowNoIndices -> "true")
   private val defaultUpdateByQuery                                  = defaultQuery + (waitForCompletion -> "false")
+  private val defaultDeleteByQuery                                  = defaultQuery + (waitForCompletion -> "true")
   private val updateByQueryStrategy: RetryStrategy[HttpClientError] =
     RetryStrategy.constant(
       1.second,
@@ -246,7 +248,7 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
     * @param query
     *   the search query
     * @param indices
-    *   the indices to use on search (if empty, searches in all the indices)
+    *   the indices targeted by the update query
     */
   def updateByQuery(query: JsonObject, indices: Set[String]): HttpResult[Unit] = {
     val (indexPath, q) = indexPathAndQuery(indices, QueryBuilder(query))
@@ -266,6 +268,21 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
                     updateByQueryStrategy.onError
                   )
     } yield ()
+  }
+
+  /**
+    * Runs an delete by query with the passed ''query'' and ''index''. The query is run as a task and the task is
+    * requested until it finished
+    *
+    * @param query
+    *   the search query
+    * @param index
+    *   the index targeted by the delete query
+    */
+  def deleteByQuery(query: JsonObject, index: IndexLabel): HttpResult[Unit] = {
+    val deleteEndpoint = (endpoint / index.value / deleteByQueryPath).withQuery(Uri.Query(defaultDeleteByQuery))
+    val req            = Post(deleteEndpoint, query).withHttpCredentials
+    client.toJson(req).void
   }
 
   /**
