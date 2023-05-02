@@ -165,6 +165,13 @@ trait KeyValueStore[K, V] {
     get(key).flatMap(IO.fromOption(_, or))
 
   /**
+    * Tests whether the cache contains the given key.
+    * @param key
+    *   the key to be tested
+    */
+  def containsKey(key: K): UIO[Boolean] = get(key).map(_.isDefined)
+
+  /**
     * Finds the first (key, value) pair that satisfies the predicate.
     *
     * @param f

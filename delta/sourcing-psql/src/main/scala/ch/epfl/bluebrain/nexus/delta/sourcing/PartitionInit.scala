@@ -37,7 +37,7 @@ case class Execute(projectRef: ProjectRef) extends PartitionInit {
       createProjectPartition(mainTable, projectRef)).update.run.void
 
   override def updateCache(cache: PartitionsCache): Task[Unit] =
-    cache.update(_ + projectRefHash(projectRef))
+    cache.put(projectRefHash(projectRef), ())
 }
 
 /** Indicates that no partition action should be taken before inserting */
@@ -57,11 +57,12 @@ object PartitionInit {
     * Constructs a PartitionInit based on the given project and provided cache. If the projectRef was already in the
     * cache, Noop is returned; otherwise Execute is returned.
     */
-  def apply(projectRef: ProjectRef, cache: PartitionsCache): Task[PartitionInit] =
-    cache.get.map { c =>
-      if (c.contains(projectRefHash(projectRef))) Noop
-      else Execute(projectRef)
+  def apply(projectRef: ProjectRef, cache: PartitionsCache): Task[PartitionInit] = {
+    cache.containsKey(projectRefHash(projectRef)).map {
+      case true  => Noop
+      case false => Execute(projectRef)
     }
+  }
 
   /**
     * A query creating an org partition of the provided mainTable. The partition is itself partitioned by project.
