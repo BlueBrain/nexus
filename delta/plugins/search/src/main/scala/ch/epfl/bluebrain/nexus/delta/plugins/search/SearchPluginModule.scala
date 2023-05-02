@@ -11,6 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Supervisor
 import distage.ModuleDef
 import io.circe.syntax.EncoderOps
 import izumi.distage.model.definition.Id
@@ -53,6 +54,22 @@ class SearchPluginModule(priority: Int) extends ModuleDef {
 
   many[PriorityRoute].add { (route: SearchRoutes) =>
     PriorityRoute(priority, route.routes, requiresStrictEntity = true)
+  }
+
+  make[SearchConfigUpdater].fromEffect {
+    (
+        supervisor: Supervisor,
+        compositeViews: CompositeViews,
+        config: SearchConfig,
+        baseUri: BaseUri,
+        serviceAccount: ServiceAccount
+    ) =>
+      SearchConfigUpdater(
+        supervisor,
+        compositeViews,
+        config.defaults,
+        config.indexing
+      )(baseUri, serviceAccount.subject)
   }
 
 }

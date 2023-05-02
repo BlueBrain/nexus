@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ValidationReport
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.{InvalidJsonLdRejection, UnexpectedId}
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.{BlankId, InvalidJsonLdRejection, UnexpectedId}
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{ResolverResolutionRejection, ResourceResolutionReport}
@@ -76,6 +76,11 @@ object SchemaRejection {
     */
   final case class InvalidSchemaId(id: String)
       extends SchemaFetchRejection(s"Schema identifier '$id' cannot be expanded to an Iri.")
+
+  /**
+    * Rejection returned when attempting to create a schema while providing an id that is blank.
+    */
+  final case object BlankSchemaId extends SchemaRejection(s"Schema identifier cannot be blank.")
 
   /**
     * Rejection returned when attempting to create a schema but the id already exists.
@@ -223,6 +228,7 @@ object SchemaRejection {
   implicit val schemaJsonLdRejectionMapper: Mapper[InvalidJsonLdRejection, SchemaRejection] = {
     case UnexpectedId(id, payloadIri)                      => UnexpectedSchemaId(id, payloadIri)
     case JsonLdRejection.InvalidJsonLdFormat(id, rdfError) => InvalidJsonLdFormat(id, rdfError)
+    case BlankId                                           => InvalidSchemaId("")
   }
 
   implicit val responseFieldsSchemas: HttpResponseFields[SchemaRejection] =

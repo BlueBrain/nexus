@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection._
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.{BlankId, _}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -52,6 +52,12 @@ sealed abstract class JsonLdSourceProcessor(implicit api: JsonLdApi) {
       case payloadIri: Iri => IO.raiseError(UnexpectedId(iri, payloadIri))
     }
 
+  protected def validateIdNotBlank(source: Json): IO[BlankId.type, Unit] = {
+    IO.raiseWhen(
+      source.hcursor.downField("@id").as[String].exists(_.isBlank)
+    )(BlankId)
+  }
+
   private def defaultCtx(context: ProjectContext): ContextValue =
     ContextObject(JsonObject(keywords.vocab -> context.vocab.asJson, keywords.base -> context.base.asJson))
 
@@ -84,6 +90,7 @@ object JsonLdSourceProcessor {
         source: Json
     )(implicit rcr: RemoteContextResolution): IO[R, (Iri, CompactedJsonLd, ExpandedJsonLd)] = {
       for {
+        _                       <- validateIdNotBlank(source)
         (ctx, originalExpanded) <- expandSource(context, source.addContext(contextIri: _*))
         iri                     <- getOrGenerateId(originalExpanded.rootId.asIri, context)
         expanded                 = originalExpanded.replaceId(iri)
@@ -110,6 +117,7 @@ object JsonLdSourceProcessor {
         rcr: RemoteContextResolution
     ): IO[R, (CompactedJsonLd, ExpandedJsonLd)] = {
       for {
+        _                       <- validateIdNotBlank(source)
         (ctx, originalExpanded) <- expandSource(context, source.addContext(contextIri: _*))
         expanded                <- checkAndSetSameId(iri, originalExpanded)
         compacted               <- expanded.toCompacted(ctx).mapError(err => InvalidJsonLdFormat(Some(iri), err))
