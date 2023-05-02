@@ -43,7 +43,8 @@ CREATE TABLE IF NOT EXISTS public.scoped_events(
     value    JSONB        NOT NULL,
     instant  timestamptz  NOT NULL,
     PRIMARY KEY(org, project, id, rev)
-);
+) PARTITION BY LIST (org);
+
 CREATE INDEX IF NOT EXISTS scoped_events_type_idx ON public.scoped_events(type);
 CREATE INDEX IF NOT EXISTS scoped_events_ordering_idx ON public.scoped_events (ordering);
 
@@ -62,7 +63,7 @@ CREATE TABLE IF NOT EXISTS public.scoped_states(
     deprecated boolean      NOT NULL,
     instant    timestamptz  NOT NULL,
     PRIMARY KEY(org, project, tag, id)
-);
+) PARTITION BY LIST (org);
 CREATE INDEX IF NOT EXISTS scoped_states_type_idx ON public.scoped_states(type);
 CREATE INDEX IF NOT EXISTS scoped_states_ordering_idx ON public.scoped_states (ordering);
 CREATE INDEX IF NOT EXISTS project_uuid_idx ON public.scoped_states((value->>'uuid')) WHERE type = 'project';
@@ -209,3 +210,24 @@ CREATE TABLE IF NOT EXISTS public.failed_elem_logs(
 );
 CREATE INDEX IF NOT EXISTS failed_elem_logs_projection_name_idx ON public.failed_elem_logs(projection_name);
 CREATE INDEX IF NOT EXISTS failed_elem_logs_projection_idx ON public.failed_elem_logs(projection_project, projection_id);
+
+--
+-- Table for project deletion result
+--
+CREATE TABLE IF NOT EXISTS public.deleted_project_reports(
+    ordering   bigserial,
+    value      JSONB       NOT NULL,
+    PRIMARY KEY(ordering)
+);
+
+CREATE TABLE IF NOT EXISTS public.blazegraph_queries (
+    ordering bigserial,
+    project  text        NOT NULL,
+    view_id  text        NOT NULL,
+    instant  timestamptz NOT NULL,
+    duration integer     NOT NULL,
+    subject  JSONB       NOT NULL,
+    query    text        NOT NULL,
+    failed   boolean     NOT NULL,
+    PRIMARY KEY (ordering)
+);

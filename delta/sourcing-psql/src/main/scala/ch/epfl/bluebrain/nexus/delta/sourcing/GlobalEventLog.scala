@@ -14,7 +14,7 @@ import doobie.implicits._
 import doobie.postgres.sqlstate
 import fs2.Stream
 import monix.bio.Cause.{Error, Termination}
-import monix.bio.{IO, Task}
+import monix.bio.{IO, Task, UIO}
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -76,6 +76,12 @@ trait GlobalEventLog[Id, S <: GlobalState, Command, E <: GlobalEvent, Rejection]
     *   rejection of the __command__ in otherwise
     */
   def dryRun(id: Id, command: Command): IO[Rejection, (E, S)]
+
+  /**
+    * Delete both states and events for the given id
+    * @param id
+    */
+  def delete(id: Id): UIO[Unit]
 
   /**
     * Allow to stream all current events within [[Envelope]] s
@@ -183,6 +189,9 @@ object GlobalEventLog {
       stateStore.get(id).flatMap { current =>
         stateMachine.evaluate(current, command, maxDuration)
       }
+
+    override def delete(id: Id): UIO[Unit] =
+      (stateStore.delete(id) >> eventStore.delete(id)).transact(xas.write).hideErrors
 
     override def currentEvents(offset: Offset): EnvelopeStream[E] = eventStore.currentEvents(offset)
 

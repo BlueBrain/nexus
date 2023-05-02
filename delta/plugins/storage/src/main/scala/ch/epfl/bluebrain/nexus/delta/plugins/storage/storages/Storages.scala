@@ -24,9 +24,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceResolvingDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
@@ -34,7 +31,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, EntityType, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Predicate, ScopedEntityDefinition, ScopedEventLog, StateMachine}
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
@@ -239,6 +236,21 @@ final class Storages private (
   }.span("deprecateStorage")
 
   /**
+    * Deprecate a view without applying preliminary checks on the project status
+    *
+    * @param id
+    *   the storage identifier to expand as the id of the storage
+    * @param project
+    *   the project where the storage belongs
+    * @param rev
+    *   the current revision of the storage
+    */
+  private[storages] def internalDeprecate(id: Iri, project: ProjectRef, rev: Int)(implicit
+      subject: Subject
+  ): IO[StorageRejection, Unit] =
+    eval(DeprecateStorage(id, project, rev, subject)).void
+
+  /**
     * Fetch the storage using the ''resourceRef''
     *
     * @param resourceRef
@@ -295,59 +307,12 @@ final class Storages private (
   }.span("fetchDefaultStorage")
 
   /**
-    * Lists storages.
-    *
-    * @param pagination
-    *   the pagination settings
-    * @param params
-    *   filter parameters for the listing
-    * @param ordering
-    *   the response ordering
-    * @return
-    *   a paginated results list
+    * Return the existing storages in a project in a finite stream
     */
-  def list(
-      pagination: FromPagination,
-      params: StorageSearchParams,
-      ordering: Ordering[StorageResource]
-  ): UIO[UnscoredSearchResults[StorageResource]] = {
-    val predicate = params.project.fold[Predicate](Predicate.Root)(ref => Predicate.Project(ref))
-    SearchResults(
-      log.currentStates(predicate, identity(_)).evalMapFilter[Task, StorageResource] { state =>
-        fetchContext.cacheOnReads
-          .onRead(state.project)
-          .redeemWith(
-            _ => UIO.none,
-            pc => {
-              val res = state.toResource(pc.apiMappings, pc.base)
-              params.matches(res).map(Option.when(_)(res))
-            }
-          )
-      },
-      pagination,
-      ordering
-    )
-  }.span("listStorages")
-
-  /**
-    * List storages within a project.
-    *
-    * @param projectRef
-    *   the project the storages belong to
-    * @param pagination
-    *   the pagination settings
-    * @param params
-    *   filter parameters
-    * @param ordering
-    *   the response ordering
-    */
-  def list(
-      projectRef: ProjectRef,
-      pagination: FromPagination,
-      params: StorageSearchParams,
-      ordering: Ordering[StorageResource]
-  ): UIO[UnscoredSearchResults[StorageResource]] =
-    list(pagination, params.copy(project = Some(projectRef)), ordering)
+  def currentStorages(project: ProjectRef): ElemStream[StorageState] =
+    log.currentStates(Predicate.Project(project)).map {
+      _.toElem { s => Some(s.project) }
+    }
 
   private def unsetPreviousDefaultIfRequired(
       project: ProjectRef,
@@ -373,9 +338,11 @@ final class Storages private (
   private def logFailureAndContinue[A](io: IO[StorageRejection, A]): UIO[Unit] =
     io.mapError(err => logger.warn(err.reason)).attempt >> UIO.unit
 
-  private def eval(cmd: StorageCommand, pc: ProjectContext): IO[StorageRejection, StorageResource] =
-    log.evaluate(cmd.project, cmd.id, cmd).map(_._2.toResource(pc.apiMappings, pc.base))
+  private def eval(cmd: StorageCommand) =
+    log.evaluate(cmd.project, cmd.id, cmd)
 
+  private def eval(cmd: StorageCommand, pc: ProjectContext): IO[StorageRejection, StorageResource] =
+    eval(cmd).map(_._2.toResource(pc.apiMappings, pc.base))
 }
 
 object Storages {

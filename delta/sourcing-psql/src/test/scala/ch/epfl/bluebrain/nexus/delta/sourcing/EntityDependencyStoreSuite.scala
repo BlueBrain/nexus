@@ -55,7 +55,7 @@ class EntityDependencyStoreSuite extends BioSuite with Doobie.Fixture {
   private val dependencyId5 = EntityDependency(proj2, id5)
 
   test("Save the different states") {
-    List(state1, state2, state3, state5).traverse(stateStore.save(_)).transact(xas.write)
+    List(state1, state2, state3, state5).traverse(stateStore.unsafeSave(_)).transact(xas.write)
   }
 
   test("Insert the dependencies") {

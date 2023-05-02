@@ -27,6 +27,11 @@ trait GlobalEventStore[Id, E <: GlobalEvent] {
   def save(event: E): ConnectionIO[Unit]
 
   /**
+    * Delete all events for the given id
+    */
+  def delete(id: Id): ConnectionIO[Unit]
+
+  /**
     * Fetches the history for the global event up to the provided revision
     */
   def history(id: Id, to: Option[Int]): Stream[Task, E]
@@ -97,6 +102,9 @@ object GlobalEventStore {
            |  ${event.instant}
            | )
          """.stripMargin.update.run.void
+
+      def delete(id: Id): ConnectionIO[Unit] =
+        sql"""DELETE FROM global_events where type = $tpe and id = $id""".update.run.void
 
       override def history(id: Id, to: Option[Int]): Stream[Task, E] = {
         val select =

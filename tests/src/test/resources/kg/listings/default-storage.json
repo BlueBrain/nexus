@@ -21,7 +21,8 @@
       "_rev": 1,
       "_deprecated": false,
       "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
-      "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
+      "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
+      "name" : "Local storage"
     }
   ]
 }

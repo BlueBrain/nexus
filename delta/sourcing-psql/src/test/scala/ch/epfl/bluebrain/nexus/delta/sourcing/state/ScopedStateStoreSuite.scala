@@ -67,7 +67,7 @@ class ScopedStateStoreSuite extends BioSuite with Doobie.Fixture with Doobie.Ass
 
   test("Save state 1, state 2 and state 3 successfully") {
     for {
-      _ <- List(state1, state2, state3, state4).traverse(store.save).transact(xas.write)
+      _ <- List(state1, state2, state3, state4).traverse(store.unsafeSave).transact(xas.write)
       _ <- assertCount(4)
     } yield ()
   }
@@ -78,7 +78,7 @@ class ScopedStateStoreSuite extends BioSuite with Doobie.Fixture with Doobie.Ass
 
   test("Save state 1 and state 3 with user tag successfully") {
     for {
-      _ <- List(state1, state3).traverse(store.save(_, customTag)).transact(xas.write)
+      _ <- List(state1, state3).traverse(store.unsafeSave(_, customTag)).transact(xas.write)
       _ <- assertCount(6)
     } yield ()
   }
@@ -117,7 +117,7 @@ class ScopedStateStoreSuite extends BioSuite with Doobie.Fixture with Doobie.Ass
 
   test("Update state 1 successfully") {
     for {
-      _ <- store.save(updatedState1).transact(xas.write)
+      _ <- store.unsafeSave(updatedState1).transact(xas.write)
       _ <- assertCount(6)
       _ <- store.get(project1, id1).assert(updatedState1)
     } yield ()

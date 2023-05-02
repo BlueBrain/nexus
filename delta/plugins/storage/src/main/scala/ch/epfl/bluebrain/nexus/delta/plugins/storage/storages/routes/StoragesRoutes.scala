@@ -7,28 +7,22 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageRejection, StorageSearchParams}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions.{read => Read, write => Write}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.UriDirectives.searchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.Json
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.execution.Scheduler
@@ -57,7 +51,6 @@ final class StoragesRoutes(
 )(implicit
     baseUri: BaseUri,
     crypto: Crypto,
-    paginationConfig: PaginationConfig,
     s: Scheduler,
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering,
@@ -68,20 +61,6 @@ final class StoragesRoutes(
 
   import baseUri.prefixSegment
   import schemeDirectives._
-
-  private def storagesSearchParams(implicit projectRef: ProjectRef, caller: Caller): Directive1[StorageSearchParams] = {
-    (searchParams & types).tmap { case (deprecated, rev, createdBy, updatedBy, types) =>
-      StorageSearchParams(
-        Some(projectRef),
-        deprecated,
-        rev,
-        createdBy,
-        updatedBy,
-        types,
-        storage => aclCheck.authorizeFor(storage.project, Read)
-      )
-    }
-  }
 
   def routes: Route =
     (baseUriPrefix(baseUri.prefix) & replaceUri("storages", schemas.storage)) {
@@ -97,20 +76,6 @@ final class StoragesRoutes(
                       Created,
                       storages.create(ref, Secret(source)).tapEval(index(ref, _, mode)).mapValue(_.metadata)
                     )
-                  }
-                }
-              },
-              (pathPrefix("caches") & pathEndOrSingleSlash) {
-                operationName(s"$prefixSegment/storages/{org}/{project}/caches") {
-                  // List storages in cache
-                  (get & extractUri & fromPaginated & storagesSearchParams & sort[Storage]) {
-                    (uri, pagination, params, order) =>
-                      authorizeFor(ref, Read).apply {
-                        implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[StorageResource]] =
-                          searchResultsJsonLdEncoder(Storages.context, pagination, uri)
-
-                        emit(storages.list(pagination, params, order).widen[SearchResults[StorageResource]])
-                      }
                   }
                 }
               },
@@ -230,7 +195,6 @@ object StoragesRoutes {
     *   the [[Route]] for storages
     */
   def apply(
-      config: StoragesConfig,
       identities: Identities,
       aclCheck: AclCheck,
       storages: Storages,
@@ -244,9 +208,7 @@ object StoragesRoutes {
       ordering: JsonKeyOrdering,
       crypto: Crypto,
       fusionConfig: FusionConfig
-  ): Route = {
-    implicit val paginationConfig: PaginationConfig = config.pagination
+  ): Route =
     new StoragesRoutes(identities, aclCheck, storages, storagesStatistics, schemeDirectives, index).routes
-  }
 
 }

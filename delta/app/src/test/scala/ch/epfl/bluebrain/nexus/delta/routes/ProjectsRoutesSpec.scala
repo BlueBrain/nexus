@@ -85,7 +85,7 @@ class ProjectsRoutesSpec extends BaseRouteSpec {
   )
 
   implicit private val projectsConfig: ProjectsConfig =
-    ProjectsConfig(eventLogConfig, pagination, cacheConfig)
+    ProjectsConfig(eventLogConfig, pagination, cacheConfig, deletionConfig)
 
   private val projectStats = ProjectStatistics(10, 10, Instant.EPOCH)
 

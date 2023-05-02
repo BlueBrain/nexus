@@ -44,6 +44,7 @@ class ElasticSearchViewsCheckSuite extends BioSuite with Doobie.Fixture {
       JsonObject.empty,
       JsonObject.empty,
       None,
+      1,
       1
     )
     val id2              = nxv + "view2"
@@ -56,6 +57,7 @@ class ElasticSearchViewsCheckSuite extends BioSuite with Doobie.Fixture {
       JsonObject.empty,
       JsonObject.empty,
       None,
+      1,
       1
     )
 

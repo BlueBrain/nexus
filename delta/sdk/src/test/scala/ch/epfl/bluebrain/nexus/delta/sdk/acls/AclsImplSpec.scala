@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Group, Subject}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, DoobieScalaTestFixture, IOFixedClock, IOValues}
 import monix.bio.UIO
@@ -321,6 +321,14 @@ class AclsImplSpec
       acls.replace(userRW(AclAddress.Root), 5).accepted
       acls.subtract(userW(AclAddress.Root), 6).accepted
       acls.fetch(AclAddress.Root).accepted shouldEqual resourceFor(userR(AclAddress.Root), 7, subject)
+    }
+
+    s"should delete the entry for a project" in {
+      val project      = ProjectRef.unsafe("org", "to_delete")
+      acls.append(userR(project), 0).accepted
+      val deletionTask = Acls.projectDeletionTask(acls)
+      deletionTask(project).accepted
+      acls.fetch(project).rejectedWith[AclNotFound]
     }
 
   }

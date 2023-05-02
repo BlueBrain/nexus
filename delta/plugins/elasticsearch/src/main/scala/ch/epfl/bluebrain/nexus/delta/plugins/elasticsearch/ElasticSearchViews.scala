@@ -23,9 +23,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
@@ -252,6 +249,23 @@ final class ElasticSearchViews private (
   }.span("deprecateElasticSearchView")
 
   /**
+    * Deprecates an existing ElasticSearchView without applying preliminary checks on the project status
+    *
+    * @param id
+    *   the view identifier
+    * @param project
+    *   the view parent project
+    * @param rev
+    *   the current view revision
+    * @param subject
+    *   the subject that initiated the action
+    */
+  private[elasticsearch] def internalDeprecate(id: Iri, project: ProjectRef, rev: Int)(implicit
+      subject: Subject
+  ): IO[ElasticSearchViewRejection, Unit] =
+    eval(DeprecateElasticSearchView(id, project, rev, subject)).void
+
+  /**
     * Retrieves a current ElasticSearchView resource.
     *
     * @param id
@@ -308,40 +322,6 @@ final class ElasticSearchViews private (
       }
 
   /**
-    * Retrieves a list of ElasticSearchViews using specific pagination, filter and ordering configuration.
-    *
-    * @param pagination
-    *   the pagination configuration
-    * @param params
-    *   the filtering configuration
-    * @param ordering
-    *   the ordering configuration
-    */
-  def list(
-      pagination: FromPagination,
-      params: ElasticSearchViewSearchParams,
-      ordering: Ordering[ViewResource]
-  ): UIO[UnscoredSearchResults[ViewResource]] = {
-    val predicate = params.project.fold[Predicate](Predicate.Root)(ref => Predicate.Project(ref))
-    SearchResults(
-      log.currentStates(predicate, identity(_)).evalMapFilter[Task, ViewResource] { state =>
-        fetchContext.cacheOnReads
-          .onRead(state.project)
-          .redeemWith(
-            _ => UIO.none,
-            pc => {
-              val res =
-                state.toResource(pc.apiMappings, pc.base, defaultElasticsearchMapping, defaultElasticsearchSettings)
-              params.matches(res).map(Option.when(_)(res))
-            }
-          )
-      },
-      pagination,
-      ordering
-    ).span("listElasticSearchViews")
-  }
-
-  /**
     * Return the existing indexing views in a project in a finite stream
     */
   def currentIndexingViews(project: ProjectRef): ElemStream[IndexingViewDef] =
@@ -370,14 +350,14 @@ final class ElasticSearchViews private (
       IndexingViewDef(v, defaultElasticsearchMapping, defaultElasticsearchSettings, prefix)
     }
 
+  private def eval(cmd: ElasticSearchViewCommand) =
+    log.evaluate(cmd.project, cmd.id, cmd)
+
   private def eval(
       cmd: ElasticSearchViewCommand,
       pc: ProjectContext
   ): IO[ElasticSearchViewRejection, ViewResource] =
-    log
-      .evaluate(cmd.project, cmd.id, cmd)
-      .map(_._2.toResource(pc.apiMappings, pc.base, defaultElasticsearchMapping, defaultElasticsearchSettings))
-
+    eval(cmd).map(_._2.toResource(pc.apiMappings, pc.base, defaultElasticsearchMapping, defaultElasticsearchSettings))
 }
 
 object ElasticSearchViews {
