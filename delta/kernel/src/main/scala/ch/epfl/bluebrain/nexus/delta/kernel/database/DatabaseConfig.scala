@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.kernel.database
 
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
+import ch.epfl.bluebrain.nexus.delta.kernel.cache.CacheConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.database.DatabaseConfig.DatabaseAccess
 import pureconfig.ConfigReader
 import pureconfig.generic.semiauto.deriveReader
@@ -23,6 +24,8 @@ import scala.annotation.nowarn
   *   The database password
   * @param tablesAutocreate
   *   When true it creates the tables on service boot
+  * @param cache
+  *   The cache configuration for the partitions cache
   */
 final case class DatabaseConfig(
     read: DatabaseAccess,
@@ -31,8 +34,9 @@ final case class DatabaseConfig(
     name: String,
     username: String,
     password: Secret[String],
-    tablesAutocreate: Boolean
-) {}
+    tablesAutocreate: Boolean,
+    cache: CacheConfig
+)
 
 object DatabaseConfig {
 
