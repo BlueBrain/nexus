@@ -26,6 +26,12 @@ object EntityDependencyStore {
     sql"""DELETE FROM entity_dependencies WHERE org = ${ref.organization} AND project = ${ref.project} AND id = $id""".stripMargin.update.run.void
 
   /**
+    * Delete all dependencies for the given project
+    */
+  def deleteAll(ref: ProjectRef): ConnectionIO[Unit] =
+    sql"""DELETE FROM entity_dependencies WHERE org = ${ref.organization} AND project = ${ref.project}""".stripMargin.update.run.void
+
+  /**
     * Save dependencies for the provided id in the given project
     */
   def save(ref: ProjectRef, id: Iri, dependencies: Set[DependsOn]): ConnectionIO[Unit] =

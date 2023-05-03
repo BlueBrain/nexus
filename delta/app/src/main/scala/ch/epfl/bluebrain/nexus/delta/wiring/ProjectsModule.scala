@@ -11,6 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.ProjectsRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.{AclCheck, Acls}
+import ch.epfl.bluebrain.nexus.delta.sdk.deletion.{ProjectDeletionCoordinator, ProjectDeletionTask}
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
@@ -25,6 +26,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, Project, P
 import ch.epfl.bluebrain.nexus.delta.sdk.provisioning.ProjectProvisioning
 import ch.epfl.bluebrain.nexus.delta.sdk.quotas.Quotas
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Supervisor
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.{Task, UIO}
 import monix.execution.Scheduler
@@ -59,7 +61,7 @@ object ProjectsModule extends ModuleDef {
       Task.pure(
         ProjectsImpl(
           organizations.fetchActiveOrganization(_).mapError(WrappedOrganizationRejection),
-          ProjectReferenceFinder(xas),
+          ValidateProjectDeletion(xas, config.projects.deletion.enabled),
           scopeInitializations,
           mappings.merge,
           config.projects,
@@ -84,6 +86,26 @@ object ProjectsModule extends ModuleDef {
 
   make[ProjectContextCache].fromEffect { (fetchContext: FetchContext[ContextRejection]) =>
     ProjectContextCache(fetchContext)
+  }
+
+  make[ProjectDeletionCoordinator].fromEffect {
+    (
+        projects: Projects,
+        deletionTasks: Set[ProjectDeletionTask],
+        config: AppConfig,
+        serviceAccount: ServiceAccount,
+        supervisor: Supervisor,
+        xas: Transactors,
+        clock: Clock[UIO]
+    ) =>
+      ProjectDeletionCoordinator(
+        projects,
+        deletionTasks,
+        config.projects.deletion,
+        serviceAccount,
+        supervisor,
+        xas
+      )(clock)
   }
 
   make[UUIDCache].fromEffect { (config: AppConfig, xas: Transactors) =>

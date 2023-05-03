@@ -86,6 +86,11 @@ object ProjectRejection {
         s"Project '$project' can't be deleted as it is referenced by projects '${references.value.keys.mkString(", ")}'."
       )
 
+  /**
+    * Signals an attempt to update/deprecate/delete a project that is already marked for deletion.
+    */
+  final case object ProjectDeletionIsDisabled extends ProjectRejection(s"Project deletion is disabled.")
+
   object ProjectIsReferenced {
 
     def apply(project: ProjectRef, references: Set[ReferencedBy]): ProjectIsReferenced = {

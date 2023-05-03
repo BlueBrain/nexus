@@ -151,4 +151,8 @@ object Optics extends Optics {
       )
   }
 
+  object supervision {
+    val allProjects = root.projections.each.metadata.project
+  }
+
 }

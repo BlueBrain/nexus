@@ -36,12 +36,14 @@ class EntityDependencyStoreSuite extends BioSuite with Doobie.Fixture {
     xas
   )
 
-  private val id1   = nxv + "id1"
-  private val id2   = nxv + "id2"
-  private val id3   = nxv + "id3"
-  private val id4   = nxv + "id4"
-  private val id5   = nxv + "id5"
-  private val proj  = ProjectRef.unsafe("org", "proj")
+  private val id1          = nxv + "id1"
+  private val id2          = nxv + "id2"
+  private val id3          = nxv + "id3"
+  private val id4          = nxv + "id4"
+  private val id5          = nxv + "id5"
+  private val proj         = ProjectRef.unsafe("org", "proj")
+  private val projEntities = List(id1, id2, id3)
+
   private val proj2 = ProjectRef.unsafe("org", "proj2")
 
   private val state1 = PullRequestActive(id1, proj, 1, Instant.EPOCH, Anonymous, Instant.EPOCH, Anonymous)
@@ -157,6 +159,20 @@ class EntityDependencyStoreSuite extends BioSuite with Doobie.Fixture {
       .assert(
         List(state2, state3, state5)
       )
+  }
+
+  test(s"Delete all dependencies for $proj") {
+    for {
+      _ <- EntityDependencyStore.deleteAll(proj).transact(xas.write)
+      _ <- projEntities.traverse { id =>
+             EntityDependencyStore
+               .directDependencies(proj, id, xas)
+               .assert(
+                 Set.empty,
+                 s"Dependencies for '$id' in '$proj' should have been deleted."
+               )
+           }
+    } yield ()
   }
 
 }

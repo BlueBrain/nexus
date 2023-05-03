@@ -1,24 +1,19 @@
 package ch.epfl.bluebrain.nexus.tests.kg
 
-import akka.http.scaladsl.model.headers.Location
 import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
 import ch.epfl.bluebrain.nexus.testkit.{CirceEq, EitherValuable}
 import ch.epfl.bluebrain.nexus.tests.Identity.projects.{Bojack, PrincessCarolyn}
 import ch.epfl.bluebrain.nexus.tests.Identity.{Anonymous, ServiceAccount}
-import ch.epfl.bluebrain.nexus.tests.Optics.{admin, listing}
+import ch.epfl.bluebrain.nexus.tests.Optics.{admin, listing, supervision}
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Events, Organizations, Projects, Resources}
 import ch.epfl.bluebrain.nexus.tests.{BaseSpec, Identity}
 import io.circe.Json
 import io.circe.optics.JsonPath.root
-import org.scalatest.{AppendedClues, DoNotDiscover}
+import org.scalatest.AppendedClues
 
 import java.io.File
-import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
 import scala.reflect.io.Directory
 
-//TODO Reenable when deletion is reimplemented
-@DoNotDiscover
 final class ProjectsDeletionSpec extends BaseSpec with CirceEq with EitherValuable with AppendedClues {
 
   private val org   = genId()
@@ -33,8 +28,8 @@ final class ProjectsDeletionSpec extends BaseSpec with CirceEq with EitherValuab
   private var blazegraphViewsRef1Uuids    = List.empty[String]
   private var compositeViewsRef1Uuids     = List.empty[String]
 
-  private def graphAnalyticsIndex(project: String) =
-    s"${URLEncoder.encode(project, StandardCharsets.UTF_8).toLowerCase}_graph_analytics"
+  private def graphAnalyticsIndex(org: String, project: String) =
+    s"delta_ga_${org}_$project"
 
   "Setting up" should {
     "succeed in setting up orgs, projects and acls" in {
@@ -95,7 +90,7 @@ final class ProjectsDeletionSpec extends BaseSpec with CirceEq with EitherValuab
 
     "wait for graph analytics index to be created" in eventually {
       elasticsearchDsl.allIndices.map { indices =>
-        indices.exists(_.contains(graphAnalyticsIndex(ref1))) shouldEqual true
+        indices.exists(_.contains(graphAnalyticsIndex(org, proj1))) shouldEqual true
       }
     }
 
@@ -157,7 +152,7 @@ final class ProjectsDeletionSpec extends BaseSpec with CirceEq with EitherValuab
                   {
                     "@context" : "https://bluebrain.github.io/nexus/contexts/error.json",
                     "@type" : "ProjectIsReferenced",
-                    "reason" : "Project $ref2 can't be deleted as it is referenced by projects '$ref1'.",
+                    "reason" : "Project '$ref2' can't be deleted as it is referenced by projects '$ref1'.",
                     "referencedBy" : {
                       "$ref1" : [
                         "http://localhost/resolver",
@@ -174,52 +169,13 @@ final class ProjectsDeletionSpec extends BaseSpec with CirceEq with EitherValuab
 
     "succeed for a non-referenced project" in {
       deltaClient.delete[Json](s"/projects/$ref1?rev=1&prune=true", Bojack) { (deleteJson, deleteResponse) =>
-        deleteResponse.status shouldEqual StatusCodes.SeeOther
+        deleteResponse.status shouldEqual StatusCodes.OK
         admin._markedForDeletion.getOption(deleteJson).value shouldEqual true
         admin._rev.getOption(deleteJson).value shouldEqual 2L
-        val deletionProgress =
-          deleteResponse.header[Location].value.uri.toString().replace(config.deltaUri.toString(), "")
-        runTask {
-          deltaClient.get[Json](deletionProgress, Bojack) { (progressJson, progressResponse) =>
-            progressResponse.status shouldEqual StatusCodes.OK
-            admin.progress.getOption(progressJson).value shouldEqual "Deleting"
-            admin._finished.getOption(progressJson).value shouldEqual false
-          } >> {
-            // Now, we check for deletion completion
-
-            def next(json: Json) =
-              admin._finished.getOption(json).flatMap {
-                case true  => None
-                case false => Some(deletionProgress)
-              }
-
-            def lens(json: Json) = admin.progress.getOption(json)
-
-            val progress = deltaClient
-              .stream(
-                deletionProgress,
-                next,
-                lens,
-                Bojack
-              )
-              .compile
-              .toList
-
-            progress.map { p =>
-              p.lastOption.value.value shouldEqual "ResourcesDeleted"
-            }
-          }
-        }
       }
     }
 
-    "return the project in the deletions endpoint" in {
-      deltaClient.get[Json](s"/projects/deletions", Bojack) { (json, _) =>
-        listing.eachResult._project.string.exist(_ == ref1)(json) shouldEqual true
-      }
-    }
-
-    "return a not found when fetching deleted project" in {
+    "return a not found when fetching deleted project" in eventually {
       deltaClient.get[Json](s"/projects/$ref1", Bojack)(expect(StatusCodes.NotFound))
     }
 
@@ -277,25 +233,27 @@ final class ProjectsDeletionSpec extends BaseSpec with CirceEq with EitherValuab
     }
 
     "have deleted blazegraph namespaces for blazegraph views for the project" in {
-      blazegraphDsl.allNamespaces.map { indices =>
-        blazegraphViewsRef1Uuids.forall { uuid => indices.exists(_.contains(uuid)) } shouldEqual false
+      blazegraphDsl.allNamespaces.map { namespaces =>
+        blazegraphViewsRef1Uuids.forall { uuid => namespaces.exists(_.contains(uuid)) } shouldEqual false
       }
     }
 
     "have deleted elasticsearch indices and blazegraph namespaces for composite views for the project" in {
       for {
         _ <- elasticsearchDsl.allIndices.map { indices =>
-               compositeViewsRef1Uuids.forall { uuid => indices.exists(_.contains(uuid)) } shouldEqual false
+               compositeViewsRef1Uuids.forall { uuid =>
+                 indices.exists(_.contains(uuid))
+               } shouldEqual false
              }
-        _ <- blazegraphDsl.allNamespaces.map { indices =>
-               compositeViewsRef1Uuids.forall { uuid => indices.exists(_.contains(uuid)) } shouldEqual false
+        _ <- blazegraphDsl.allNamespaces.map { namespaces =>
+               compositeViewsRef1Uuids.forall { uuid => namespaces.exists(_.contains(uuid)) } shouldEqual false
              }
       } yield succeed
     }
 
-    "have deleted elasticsearch indices for graph analytics for the project" in eventually {
+    "have deleted elasticsearch indices for graph analytics for the project" in {
       elasticsearchDsl.allIndices.map { indices =>
-        indices.exists(_.contains(graphAnalyticsIndex(ref1))) shouldEqual false
+        indices.exists(_.contains(graphAnalyticsIndex(org, proj1))) shouldEqual false
       }
     }
 
@@ -306,14 +264,22 @@ final class ProjectsDeletionSpec extends BaseSpec with CirceEq with EitherValuab
       proj2Directory.exists shouldEqual true
     }
 
+    "have stopped all the projections related to the project" in {
+      deltaClient.get[Json](s"/supervision/projections", ServiceAccount) { (json, response) =>
+        response.status shouldEqual StatusCodes.OK
+        supervision.allProjects.string.getAll(json) should not contain ref1
+        supervision.allProjects.string.getAll(json) should contain(ref2)
+      }
+    }
+
     "succeed for a previously referenced project" in eventually {
       deltaClient.delete[Json](s"/projects/$ref2?rev=1&prune=true", Bojack) { (deleteJson, deleteResponse) =>
-        deleteResponse.status shouldEqual StatusCodes.SeeOther
+        deleteResponse.status shouldEqual StatusCodes.OK
         admin._markedForDeletion.getOption(deleteJson).value shouldEqual true
       }
     }
 
-    "succeed in creating the project again with postgres" in {
+    "succeed in creating the project again" in {
       adminDsl.createProject(org, proj1, kgDsl.projectJson(name = proj1), Bojack)
     }
   }
