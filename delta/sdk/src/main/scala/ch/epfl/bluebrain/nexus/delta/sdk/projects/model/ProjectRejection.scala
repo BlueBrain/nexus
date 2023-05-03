@@ -87,7 +87,7 @@ object ProjectRejection {
       )
 
   /**
-    * Signals an attempt to update/deprecate/delete a project that is already marked for deletion.
+    * Signals an attempt to delete a project when deletion is disabled.
     */
   final case object ProjectDeletionIsDisabled extends ProjectRejection(s"Project deletion is disabled.")
 

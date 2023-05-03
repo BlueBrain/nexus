@@ -18,6 +18,7 @@ services:
       - '/bin/bash'
       - '-c'
       - |
+        ln -s /opt/docker/plugins/disabled/project-deletion.jar /opt/docker/plugins/project-deletion.jar &&
         /opt/docker/bin/wait-for-it.sh -s -t 0 postgres:5432 -- &&
         /opt/docker/bin/wait-for-it.sh -s -t 0 elasticsearch:9200 -- &&
         /opt/docker/bin/delta-app -Xmx512m
