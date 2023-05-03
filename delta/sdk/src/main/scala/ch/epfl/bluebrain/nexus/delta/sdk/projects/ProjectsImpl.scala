@@ -125,7 +125,7 @@ object ProjectsImpl {
     */
   final def apply(
       fetchAndValidateOrg: FetchOrganization,
-      referenceFinder: ValidateProjectDeletion,
+      validateDeletion: ValidateProjectDeletion,
       scopeInitializations: Set[ScopeInitialization],
       defaultApiMappings: ApiMappings,
       config: ProjectsConfig,
@@ -136,7 +136,7 @@ object ProjectsImpl {
       uuidF: UUIDF
   ): Projects =
     new ProjectsImpl(
-      ScopedEventLog(Projects.definition(fetchAndValidateOrg, referenceFinder), config.eventLog, xas),
+      ScopedEventLog(Projects.definition(fetchAndValidateOrg, validateDeletion), config.eventLog, xas),
       scopeInitializations,
       defaultApiMappings
     )

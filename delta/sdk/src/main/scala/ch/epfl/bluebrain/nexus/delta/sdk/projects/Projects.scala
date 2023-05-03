@@ -178,18 +178,18 @@ object Projects {
 
   private[delta] def evaluate(
       orgs: Organizations,
-      referenceFinder: ValidateProjectDeletion
+      validateDeletion: ValidateProjectDeletion
   )(state: Option[ProjectState], command: ProjectCommand)(implicit
       clock: Clock[UIO],
       uuidF: UUIDF
   ): IO[ProjectRejection, ProjectEvent] = {
     val f: FetchOrganization = label => orgs.fetchActiveOrganization(label).mapError(WrappedOrganizationRejection(_))
-    evaluate(f, referenceFinder)(state, command)
+    evaluate(f, validateDeletion)(state, command)
   }
 
   private[sdk] def evaluate(
       fetchAndValidateOrg: FetchOrganization,
-      referenceFinder: ValidateProjectDeletion
+      validateDeletion: ValidateProjectDeletion
   )(state: Option[ProjectState], command: ProjectCommand)(implicit
       clock: Clock[UIO],
       uuidF: UUIDF
@@ -261,7 +261,7 @@ object Projects {
           IO.raiseError(ProjectIsMarkedForDeletion(c.ref))
         case Some(s)                        =>
           // format: off
-          referenceFinder.apply(c.ref) >>
+          validateDeletion.apply(c.ref) >>
             instant.map(ProjectMarkedForDeletion(s.label, s.uuid,s.organizationLabel, s.organizationUuid,s.rev + 1, _, c.subject))
         // format: on
       }

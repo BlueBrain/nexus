@@ -69,7 +69,7 @@ class ProjectsSpec
     val ref2             = ProjectRef(org2abel, label)
     val ref2IsReferenced = ProjectIsReferenced(ref, Map(ref -> Set(nxv + "ref1")))
 
-    val referenceFinder: ValidateProjectDeletion = {
+    val validateDeletion: ValidateProjectDeletion = {
       case `ref`  => IO.unit
       case `ref2` => IO.raiseError(ref2IsReferenced)
       case _      => IO.terminate(new IllegalArgumentException(s"Only '$ref' and '$ref2' are expected here"))
@@ -79,7 +79,7 @@ class ProjectsSpec
 
     "evaluating an incoming command" should {
 
-      val eval = evaluate(orgs, referenceFinder)(_, _)
+      val eval = evaluate(orgs, validateDeletion)(_, _)
 
       "create a new event" in {
         eval(None, CreateProject(ref, desc, am, base, vocab, subject)).accepted shouldEqual

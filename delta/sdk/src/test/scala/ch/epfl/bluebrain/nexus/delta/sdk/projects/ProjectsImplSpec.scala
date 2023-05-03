@@ -73,14 +73,14 @@ class ProjectsImplSpec
   private val anotherRef: ProjectRef = ProjectRef.unsafe("org2", "proj2")
   private val anotherRefIsReferenced = ProjectIsReferenced(ref, Map(ref -> Set(nxv + "ref1")))
 
-  private val referenceFinder: ValidateProjectDeletion = {
+  private val validateDeletion: ValidateProjectDeletion = {
     case `ref`        => IO.unit
     case `anotherRef` => IO.raiseError(anotherRefIsReferenced)
     case _            => IO.terminate(new IllegalArgumentException(s"Only '$ref' and '$anotherRef' are expected here"))
   }
 
   private lazy val (scopeInitLog, projects) = ScopeInitializationLog().map { scopeInitLog =>
-    scopeInitLog -> ProjectsImpl(fetchOrg, referenceFinder, Set(scopeInitLog), defaultApiMappings, config, xas)
+    scopeInitLog -> ProjectsImpl(fetchOrg, validateDeletion, Set(scopeInitLog), defaultApiMappings, config, xas)
   }.accepted
 
   "The Projects operations bundle" should {
