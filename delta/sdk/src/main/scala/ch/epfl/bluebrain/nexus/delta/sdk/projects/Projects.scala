@@ -261,7 +261,7 @@ object Projects {
           IO.raiseError(ProjectIsMarkedForDeletion(c.ref))
         case Some(s)                        =>
           // format: off
-          validateDeletion.apply(c.ref) >>
+          validateDeletion(c.ref) >>
             instant.map(ProjectMarkedForDeletion(s.label, s.uuid,s.organizationLabel, s.organizationUuid,s.rev + 1, _, c.subject))
         // format: on
       }
