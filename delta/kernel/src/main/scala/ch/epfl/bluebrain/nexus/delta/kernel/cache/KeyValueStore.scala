@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.cache
+package ch.epfl.bluebrain.nexus.delta.kernel.cache
 
 import com.github.benmanes.caffeine.cache.{Cache, Caffeine}
 import monix.bio.{IO, UIO}
@@ -163,6 +163,13 @@ trait KeyValueStore[K, V] {
     */
   def getOr[E](key: K, or: => E): IO[E, V] =
     get(key).flatMap(IO.fromOption(_, or))
+
+  /**
+    * Tests whether the cache contains the given key.
+    * @param key
+    *   the key to be tested
+    */
+  def containsKey(key: K): UIO[Boolean] = get(key).map(_.isDefined)
 
   /**
     * Finds the first (key, value) pair that satisfies the predicate.

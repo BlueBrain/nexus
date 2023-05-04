@@ -18,9 +18,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, Project}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.views.{PipeStep, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EntityDependencyStore
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityDependency.DependsOn
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Group, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityDependency, Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.PipeChain
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{FilterBySchema, FilterByType, FilterDeprecated}
 import ch.epfl.bluebrain.nexus.testkit.{DoobieScalaTestFixture, EitherValuable, IOFixedClock}
@@ -217,8 +218,8 @@ class ElasticSearchViewsSpec
         views.create(aggregateViewId, projectRef, value).accepted
 
         // Dependency to the referenced project should have been saved
-        EntityDependencyStore.list(projectRef, aggregateViewId, xas).accepted shouldEqual Set(
-          EntityDependency(projectRef, viewId)
+        EntityDependencyStore.directDependencies(projectRef, aggregateViewId, xas).accepted shouldEqual Set(
+          DependsOn(projectRef, viewId)
         )
       }
     }

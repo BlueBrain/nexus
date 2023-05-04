@@ -1,26 +1,25 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
-import cats.effect.concurrent.Ref
+import ch.epfl.bluebrain.nexus.delta.kernel.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
 import doobie.implicits.toSqlInterpolator
-import monix.bio.Task
 
 class PartitionInitSuite extends BioSuite {
 
   test("If the projectRef is not cached, we should obtain PartitionInit.Execute") {
     val projectRef = ProjectRef.unsafe("org", "project")
-    val cache      = Ref.unsafe[Task, Set[String]](Set.empty)
     for {
-      init <- PartitionInit(projectRef, cache)
-      _     = assertEquals(init, Execute(projectRef))
+      cache <- KeyValueStore[String, Unit]()
+      init  <- PartitionInit(projectRef, cache)
+      _      = assertEquals(init, Execute(projectRef))
     } yield ()
   }
 
   test("If the projectRef is cached, we should obtain PartitionInit.Noop") {
     val projectRef = ProjectRef.unsafe("org", "project2")
-    val cache      = Ref.unsafe[Task, Set[String]](Set.empty)
     for {
+      cache <- KeyValueStore[String, Unit]()
       init  <- PartitionInit(projectRef, cache)
       _      = assertEquals(init, Execute(projectRef))
       _     <- init.updateCache(cache)
@@ -30,25 +29,26 @@ class PartitionInitSuite extends BioSuite {
   }
 
   test("Noop should not do anything") {
-    val cache = Ref.unsafe[Task, Set[String]](Set.empty)
     for {
-      partitionsBeforeUpdate <- cache.get
+      cache                  <- KeyValueStore[String, Unit]()
+      partitionsBeforeUpdate <- cache.entries
       _                      <- Noop.updateCache(cache)
-      partitionsAfterUpdate  <- cache.get
+      partitionsAfterUpdate  <- cache.entries
       _                       = assertEquals(partitionsBeforeUpdate, partitionsAfterUpdate)
     } yield ()
   }
 
   test("Execute should update the cache") {
-    val projectRef    = ProjectRef.unsafe("org", "project")
-    val cache         = Ref.unsafe[Task, Set[String]](Set.empty)
-    val expectedCache = Set("9628a1046de38de7b6014110a178ea9e")
+    val projectRef  = ProjectRef.unsafe("org", "project")
+    val expectedKey = "9628a1046de38de7b6014110a178ea9e"
     for {
-      partitionsBeforeUpdate <- cache.get
-      _                       = partitionsBeforeUpdate.assertEmpty()
-      _                      <- Execute(projectRef).updateCache(cache)
-      partitionsAfterUpdate  <- cache.get
-      _                       = assertEquals(partitionsAfterUpdate, expectedCache)
+      cache          <- KeyValueStore[String, Unit]()
+      _              <- cache.entries.assert(Map.empty)
+      _              <- Execute(projectRef).updateCache(cache)
+      updatedEntries <- cache.entries.map(_.keys.mkString(", "))
+      _              <- cache
+                          .containsKey(expectedKey)
+                          .assert(true, s"We expected '$expectedKey' in cache, we only got '$updatedEntries'.")
     } yield ()
   }
 

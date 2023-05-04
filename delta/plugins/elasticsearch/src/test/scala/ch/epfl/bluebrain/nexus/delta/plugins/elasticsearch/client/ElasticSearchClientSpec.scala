@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client
 
 import akka.actor.ActorSystem
+import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.Uri.Query
 import akka.testkit.TestKit
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ScalaTestElasticSearchClientSetup
@@ -223,6 +224,36 @@ class ElasticSearchClientSpec(override val docker: ElasticSearchDocker)
           .removeKeys("took") shouldEqual
           jsonContentOf("elasticsearch-results.json", "index" -> index)
       }
+    }
+
+    "delete documents by" in {
+      val index = IndexLabel(genString()).rightValue
+
+      val operations = List(
+        ElasticSearchBulk.Index(index, "1", json"""{ "field1" : 1 }"""),
+        ElasticSearchBulk.Create(index, "2", json"""{ "field1" : 3 }"""),
+        ElasticSearchBulk.Update(index, "1", json"""{ "doc" : {"field2" : "value2"} }""")
+      )
+
+      {
+        for {
+          // Indexing and checking count
+          _        <- esClient.bulk(operations)
+          _        <- esClient.refresh(index)
+          original <- esClient.count(index.value)
+          _         = original shouldEqual 2L
+          // Deleting document matching the given query
+          query     = jobj"""{"query": {"bool": {"must": {"term": {"field1": 3} } } } }"""
+          _        <- esClient.deleteByQuery(query, index)
+          // Checking docs again
+          newCount <- esClient.count(index.value)
+          _         = newCount shouldEqual 1L
+          doc1     <- esClient.getSource[Json](index, "1").attempt
+          _         = doc1.rightValue
+          doc2     <- esClient.getSource[Json](index, "2").attempt
+          _         = doc2.leftValue.errorCode.value shouldEqual StatusCodes.NotFound
+        } yield ()
+      }.accepted
     }
   }
 }

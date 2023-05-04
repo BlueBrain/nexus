@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.ScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.ScopedEventStore
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityDependency.DependsOn
 import ch.epfl.bluebrain.nexus.delta.sourcing.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore
@@ -206,7 +207,7 @@ object ScopedEventLog {
       stateMachine: StateMachine[S, Command, E, Rejection],
       onUniqueViolation: (Id, Command) => Rejection,
       tagger: Tagger[E],
-      extractDependencies: S => Option[Set[EntityDependency]],
+      extractDependencies: S => Option[Set[DependsOn]],
       maxDuration: FiniteDuration,
       xas: Transactors
   ): ScopedEventLog[Id, S, Command, E, Rejection] =

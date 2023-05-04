@@ -32,6 +32,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, Projects}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax.nonEmptySetSyntax
 import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityDependency.DependsOn
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model._
@@ -599,9 +600,10 @@ object CompositeViews {
       ),
       state =>
         Some(
-          state.value.sources.value.foldLeft(Set.empty[EntityDependency]) {
-            case (acc, s: CrossProjectSource) => acc + EntityDependency(s.project, Projects.encodeId(s.project))
-            case (acc, _)                     => acc
+          state.value.sources.value.foldLeft(Set.empty[DependsOn]) {
+            case (acc, _: ProjectSource)       => acc
+            case (acc, s: CrossProjectSource)  => acc + DependsOn(s.project, Projects.encodeId(s.project))
+            case (acc, _: RemoteProjectSource) => acc
           }
         ),
       onUniqueViolation = (id: Iri, c: CompositeViewCommand) =>

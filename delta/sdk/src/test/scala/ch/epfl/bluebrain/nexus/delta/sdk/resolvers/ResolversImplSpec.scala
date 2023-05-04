@@ -22,9 +22,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverValue.{CrossPro
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
 import ch.epfl.bluebrain.nexus.delta.sourcing.EntityDependencyStore
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityDependency.DependsOn
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityDependency, Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, DoobieScalaTestFixture, IOFixedClock, IOValues}
 import monix.bio.{IO, UIO}
 import org.scalatest.matchers.should.Matchers
@@ -123,8 +124,8 @@ class ResolversImplSpec
         }
 
         // Dependency to the referenced project should have been saved
-        EntityDependencyStore.list(projectRef, nxv + "cross-project", xas).accepted shouldEqual Set(
-          EntityDependency(referencedProject, Projects.encodeId(referencedProject))
+        EntityDependencyStore.directDependencies(projectRef, nxv + "cross-project", xas).accepted shouldEqual Set(
+          DependsOn(referencedProject, Projects.encodeId(referencedProject))
         )
       }
 

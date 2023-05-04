@@ -1,9 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.config
 
+import ch.epfl.bluebrain.nexus.delta.kernel.cache.CacheConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.database.DatabaseConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApiConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclsConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.cache.CacheConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.EncryptionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ServiceAccountConfig
