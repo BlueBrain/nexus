@@ -76,7 +76,7 @@ final class CompositeViewsCoordinator(
       case Some(v) =>
         supervisor
           .destroy(
-            v.uuid.toString,
+            v.projection,
             for {
               _ <-
                 Task.delay(

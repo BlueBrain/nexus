@@ -137,11 +137,11 @@ final class ProjectsRoutes(
                     // Deprecate/delete project
                     (delete & pathEndOrSingleSlash) {
                       parameters("rev".as[Int], "prune".?(false)) {
-                        case (rev, true) if config.deletion.enabled =>
+                        case (rev, true)  =>
                           authorizeFor(ref, projectsPermissions.delete).apply {
                             emit(projects.delete(ref, rev).mapValue(_.metadata))
                           }
-                        case (rev, _)                               =>
+                        case (rev, false) =>
                           authorizeFor(ref, projectsPermissions.write).apply {
                             emit(projects.deprecate(ref, rev).mapValue(_.metadata))
                           }

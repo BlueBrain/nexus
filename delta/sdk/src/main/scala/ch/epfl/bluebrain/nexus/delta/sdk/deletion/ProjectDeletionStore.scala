@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.deletion
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.model.ProjectDeletionReport
-import ch.epfl.bluebrain.nexus.delta.sourcing.PartitionInit
+import ch.epfl.bluebrain.nexus.delta.sourcing.{EntityDependencyStore, PartitionInit}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import doobie.util.fragment.Fragment
@@ -20,6 +20,7 @@ final private[deletion] class ProjectDeletionStore(xas: Transactors) {
   def deleteAndSaveReport(report: ProjectDeletionReport): Task[Unit] =
     (
       deleteProject(report.project) >>
+        EntityDependencyStore.deleteAll(report.project) >>
         saveReport(report)
     ).transact(xas.write)
 

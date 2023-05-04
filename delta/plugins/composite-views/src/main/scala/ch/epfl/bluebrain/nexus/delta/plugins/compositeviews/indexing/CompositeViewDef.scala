@@ -49,7 +49,10 @@ object CompositeViewDef {
   /**
     * Active view eligible to be run as a projection by the supervisor
     */
-  final case class ActiveViewDef(ref: ViewRef, uuid: UUID, rev: Int, value: CompositeViewValue) extends CompositeViewDef
+  final case class ActiveViewDef(ref: ViewRef, uuid: UUID, rev: Int, value: CompositeViewValue)
+      extends CompositeViewDef {
+    def projection = s"composite-views-${ref.project}-${ref.viewId}-$rev"
+  }
 
   /**
     * Deprecated view to be cleaned up and removed from the supervisor
@@ -117,7 +120,7 @@ object CompositeViewDef {
   )(implicit cr: RemoteContextResolution): Task[CompiledProjection] = {
     val metadata                              = ProjectionMetadata(
       CompositeViews.entityType.value,
-      s"composite-views-${view.ref.project}-${view.ref.viewId}-${view.rev}",
+      view.projection,
       Some(view.ref.project),
       Some(view.ref.viewId)
     )

@@ -14,10 +14,14 @@ services:
       KAMON_ENABLED: "false"
       LOG_LEVEL: "INFO"
     image: bluebrain/nexus-delta:latest
-    entrypoint: [ "bin/wait-for-it.sh", "-s", "-t", "0", "postgres:5432", "--",
-                  "bin/wait-for-it.sh", "-s", "-t", "0", "elasticsearch:9200", "--",
-                  "./bin/delta-app",
-                  "-Xmx512m" ]
+    entrypoint:
+      - '/bin/bash'
+      - '-c'
+      - |
+        ln -s /opt/docker/plugins/disabled/project-deletion.jar /opt/docker/plugins/project-deletion.jar &&
+        /opt/docker/bin/wait-for-it.sh -s -t 0 postgres:5432 -- &&
+        /opt/docker/bin/wait-for-it.sh -s -t 0 elasticsearch:9200 -- &&
+        /opt/docker/bin/delta-app -Xmx512m
     ports:
       - 8080:8080
     volumes:
