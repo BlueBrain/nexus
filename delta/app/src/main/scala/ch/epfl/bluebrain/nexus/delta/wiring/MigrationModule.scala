@@ -91,8 +91,9 @@ object MigrationModule extends ModuleDef {
 
   // Projects
   many[MigrationLog].add { (cfg: AppConfig, xas: Transactors, clock: Clock[UIO], uuidF: UUIDF) =>
+    val denyCommandEvaluation = IO.terminate(new IllegalStateException("Project command evaluation should not happen"))
     MigrationLog.scoped[ProjectRef, ProjectState, ProjectCommand, ProjectEvent, ProjectRejection](
-      Projects.definition(_ => IO.terminate(new IllegalStateException("Project command evaluation should not happen")))(
+      Projects.definition(_ => denyCommandEvaluation, _ => denyCommandEvaluation)(
         clock,
         uuidF
       ),

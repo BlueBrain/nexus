@@ -31,6 +31,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityDependency.DependsOn
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model._
@@ -515,8 +516,8 @@ object BlazegraphViews {
       { s =>
         s.value match {
           case a: AggregateBlazegraphViewValue =>
-            Some(a.views.map { v => EntityDependency(v.project, v.viewId) }.toSortedSet)
-          case _                               => None
+            Some(a.views.map { v => DependsOn(v.project, v.viewId) }.toSortedSet)
+          case _: IndexingBlazegraphViewValue  => None
         }
       },
       onUniqueViolation = (id: Iri, c: BlazegraphViewCommand) =>

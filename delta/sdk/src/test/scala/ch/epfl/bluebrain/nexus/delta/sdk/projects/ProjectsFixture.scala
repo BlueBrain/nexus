@@ -39,7 +39,7 @@ object ProjectsFixture {
     ResourceFixture.suiteLocal(
       "projects",
       Doobie.resource().map { xas =>
-        (xas, ProjectsImpl(fetchOrgs, scopeInitializations, apiMappings, config, xas))
+        (xas, ProjectsImpl(fetchOrgs, _ => UIO.unit, scopeInitializations, apiMappings, config, xas))
       }
     )
 

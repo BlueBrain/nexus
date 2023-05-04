@@ -34,7 +34,7 @@ object ValidateAggregate {
       xas
     ) >> references.value.toList
       .foldLeftM(references.length) { (acc, ref) =>
-        EntityDependencyStore.recursiveList(ref.project, ref.viewId, xas).map { r =>
+        EntityDependencyStore.recursiveDependencies(ref.project, ref.viewId, xas).map { r =>
           acc + r.size
         }
       }

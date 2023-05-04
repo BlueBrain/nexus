@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.projects
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ProjectSearchParams
@@ -9,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.{OrganizationIsDeprecated, OrganizationNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects.FetchOrganization
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.{IncorrectRev, ProjectAlreadyExists, ProjectIsDeprecated, ProjectNotFound, WrappedOrganizationRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.{IncorrectRev, ProjectAlreadyExists, ProjectIsDeprecated, ProjectIsReferenced, ProjectNotFound, WrappedOrganizationRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, ScopeInitializationLog}
@@ -68,12 +69,19 @@ class ProjectsImplSpec
     case other           => IO.raiseError(WrappedOrganizationRejection(OrganizationNotFound(other)))
   }
 
-  private lazy val (scopeInitLog, projects) = ScopeInitializationLog().map { scopeInitLog =>
-    scopeInitLog -> ProjectsImpl(fetchOrg, Set(scopeInitLog), defaultApiMappings, config, xas)
-  }.accepted
-
   private val ref: ProjectRef        = ProjectRef.unsafe("org", "proj")
   private val anotherRef: ProjectRef = ProjectRef.unsafe("org2", "proj2")
+  private val anotherRefIsReferenced = ProjectIsReferenced(ref, Map(ref -> Set(nxv + "ref1")))
+
+  private val referenceFinder: ProjectReferenceFinder = {
+    case `ref`        => IO.unit
+    case `anotherRef` => IO.raiseError(anotherRefIsReferenced)
+    case _            => IO.terminate(new IllegalArgumentException(s"Only '$ref' and '$anotherRef' are expected here"))
+  }
+
+  private lazy val (scopeInitLog, projects) = ScopeInitializationLog().map { scopeInitLog =>
+    scopeInitLog -> ProjectsImpl(fetchOrg, referenceFinder, Set(scopeInitLog), defaultApiMappings, config, xas)
+  }.accepted
 
   "The Projects operations bundle" should {
     "create a project" in {
@@ -166,6 +174,10 @@ class ProjectsImplSpec
         deprecated = true,
         markedForDeletion = true
       )
+    }
+
+    "not delete a project that has references" in {
+      projects.delete(anotherRef, rev = 1).rejected shouldEqual anotherRefIsReferenced
     }
 
     val resource = resourceFor(

@@ -1,6 +1,7 @@
-package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
+package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.deletion
 
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchDeletionTask.{init, logger}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.deletion.ElasticSearchDeletionTask.{init, logger}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.IndexingViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.IndexingViewDef.{ActiveViewDef, DeprecatedViewDef}
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.ProjectDeletionTask

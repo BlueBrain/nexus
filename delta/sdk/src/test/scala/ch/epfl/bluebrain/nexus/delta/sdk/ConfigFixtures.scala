@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.cache.CacheConfig
+import ch.epfl.bluebrain.nexus.delta.kernel.cache.CacheConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClientConfig, HttpClientWorthRetry}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig

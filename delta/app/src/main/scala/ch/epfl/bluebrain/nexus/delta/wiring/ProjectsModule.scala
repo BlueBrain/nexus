@@ -59,6 +59,7 @@ object ProjectsModule extends ModuleDef {
       Task.pure(
         ProjectsImpl(
           organizations.fetchActiveOrganization(_).mapError(WrappedOrganizationRejection),
+          ProjectReferenceFinder(xas),
           scopeInitializations,
           mappings.merge,
           config.projects,

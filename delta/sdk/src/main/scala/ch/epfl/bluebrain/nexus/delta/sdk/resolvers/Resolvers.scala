@@ -21,9 +21,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.{Diff
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverValue.{CrossProjectValue, InProjectValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityDependency.DependsOn
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityDependency, EntityType, Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{ScopedEntityDefinition, StateMachine}
 import io.circe.Json
 import monix.bio.{IO, UIO}
@@ -415,7 +416,7 @@ object Resolvers {
         case _: InProjectValue    => None
         case c: CrossProjectValue =>
           Some(
-            c.projects.map { ref => EntityDependency(ref, Projects.encodeId(ref)) }.toList.toSet
+            c.projects.map { ref => DependsOn(ref, Projects.encodeId(ref)) }.toList.toSet
           )
       },
       onUniqueViolation = (id: Iri, c: ResolverCommand) =>
