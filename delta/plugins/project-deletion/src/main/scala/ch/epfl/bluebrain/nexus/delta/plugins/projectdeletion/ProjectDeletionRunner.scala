@@ -66,7 +66,8 @@ class ProjectDeletionRunner(projects: Projects, config: ProjectDeletionConfig, p
 }
 
 object ProjectDeletionRunner {
-  private val projectionMetadata: ProjectionMetadata = ProjectionMetadata("system", "project-deletion", None, None)
+  private val projectionMetadata: ProjectionMetadata =
+    ProjectionMetadata("system", "project-automatic-deletion", None, None)
 
   /**
     * Constructs a ProjectDeletionRunner process that is started in the supervisor.

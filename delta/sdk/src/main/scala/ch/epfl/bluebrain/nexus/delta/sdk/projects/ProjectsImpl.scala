@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchParams, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects.{entityType, FetchOrganization}
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.ProjectsImpl.ProjectsLog
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.ProjectsImpl.{logger, ProjectsLog}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectCommand.{CreateProject, DeleteProject, DeprecateProject, UpdateProject}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model._
@@ -17,6 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import monix.bio.{IO, Task, UIO}
 
@@ -66,10 +67,12 @@ final class ProjectsImpl private (
     ).span("updateProject")
 
   override def deprecate(ref: ProjectRef, rev: Int)(implicit caller: Subject): IO[ProjectRejection, ProjectResource] =
-    eval(DeprecateProject(ref, rev, caller)).span("deprecateProject")
+    eval(DeprecateProject(ref, rev, caller)).span("deprecateProject") <*
+      UIO.delay(logger.info(s"Project '$ref' has been deprecated."))
 
   override def delete(ref: ProjectRef, rev: Int)(implicit caller: Subject): IO[ProjectRejection, ProjectResource] =
-    eval(DeleteProject(ref, rev, caller)).span("deleteProject")
+    eval(DeleteProject(ref, rev, caller)).span("deleteProject") <*
+      UIO.delay(logger.info(s"Project '$ref' has been marked as deleted."))
 
   override def fetch(ref: ProjectRef): IO[ProjectNotFound, ProjectResource] =
     log
@@ -115,12 +118,14 @@ object ProjectsImpl {
   type ProjectsLog =
     ScopedEventLog[ProjectRef, ProjectState, ProjectCommand, ProjectEvent, ProjectRejection]
 
+  private val logger: Logger = Logger[ProjectsImpl]
+
   /**
     * Constructs a [[Projects]] instance.
     */
   final def apply(
       fetchAndValidateOrg: FetchOrganization,
-      referenceFinder: ProjectReferenceFinder,
+      validateDeletion: ValidateProjectDeletion,
       scopeInitializations: Set[ScopeInitialization],
       defaultApiMappings: ApiMappings,
       config: ProjectsConfig,
@@ -131,7 +136,7 @@ object ProjectsImpl {
       uuidF: UUIDF
   ): Projects =
     new ProjectsImpl(
-      ScopedEventLog(Projects.definition(fetchAndValidateOrg, referenceFinder), config.eventLog, xas),
+      ScopedEventLog(Projects.definition(fetchAndValidateOrg, validateDeletion), config.eventLog, xas),
       scopeInitializations,
       defaultApiMappings
     )
