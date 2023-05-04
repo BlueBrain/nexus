@@ -55,7 +55,7 @@ Nexus Delta uses a service account to perform automatic tasks under the hood. Ex
 - Granting default ACLs to the user creating a project.
 - Creating default views on project creation.
 
-@link:[This section](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/app.conf#L466){ open=new } of the configuration defines the service account configuration.
+@link:[This section](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/app.conf#L404){ open=new } of the configuration defines the service account configuration.
 
 ## Automatic project provisioning
 
@@ -138,7 +138,7 @@ For monitoring, Nexus Delta relies on @link:[Kamon](https://kamon.io/){ open=new
 
 Kamon can be disabled by passing the environment variable `KAMON_ENABLED` to `false`
 
-Delta configuration for Kamon is provided @link:[here](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/app.conf#L430){ open=new }.
+Delta configuration for Kamon is provided @link:[here](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/app.conf#L368){ open=new }.
 For a more complete description on the different options available, please look at the Kamon website.
 
 ### Instrumentation
