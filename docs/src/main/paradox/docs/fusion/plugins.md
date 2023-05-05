@@ -44,7 +44,7 @@ Nexus Plugins uses @link:[SystemJS](https://github.com/systemjs/systemjs){ open=
 
 You have to transpile and bundle your code using SystemJS as output:
 
-- with @link:[rollup](https://rollupjs.org/guide/en/#outputformat){ open=new }: use `system` as output format
+- with @link:[rollup](https://rollupjs.org/configuration-options/#output-format){ open=new }: use `system` as output format
 - with @link:[webpack](https://webpack.js.org/configuration/output/#outputlibrarytarget){ open=new }: use `system` as `outputTarget`
 
 ### Configuring Nexus Fusion to run your plugins
