@@ -44,19 +44,18 @@ final class SearchConfigUpdater(
     * For the given composite views, updates the active ones if their search config differs from the current one.
     */
   def apply(): Stream[Task, INothing] =
-    Stream.eval(Task.delay(logger.info("Starting the SearchConfigUpdater"))) >>
-      views
-        .evalTap { elem =>
-          elem.traverse {
-            case view: ActiveViewDef if viewIsDefault(view) && configHasChanged(view) =>
-              update(view, defaultSearchCompositeViewFields(defaults, config))
-            case _                                                                    =>
-              Task.unit
-          }
-        } >>
-      Stream
-        .eval(Task.delay(logger.info("Reached the end of composite views. Stopping the SearchConfigUpdater.")))
-        .drain
+    (Stream.eval(Task.delay(logger.info("Starting the SearchConfigUpdater"))) ++
+      views.evalTap { elem =>
+        elem.traverse {
+          case view: ActiveViewDef if viewIsDefault(view) && configHasChanged(view) =>
+            update(view, defaultSearchCompositeViewFields(defaults, config))
+          case _                                                                    =>
+            Task.unit
+        }
+      } ++
+      Stream.eval(
+        Task.delay(logger.info("Reached the end of composite views. Stopping the SearchConfigUpdater."))
+      )).drain
 
   private def configHasChanged(v: ActiveViewDef): Boolean = {
     implicit val eq: Eq[CompositeViewValue] = indexingEq
