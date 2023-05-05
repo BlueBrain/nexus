@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 
+import cats.Eq
 import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.RebuildStrategy
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -37,6 +38,16 @@ final case class CompositeViewFields(
 
 object CompositeViewFields {
 
+  /** Defines an equality that asserts two [[CompositeViewFields]]s as equal if they have the same indexing fields. */
+  // TODO: Review the Order on CompositeViewValue to be able to compare NonEmptySets directly.
+  @SuppressWarnings(Array("UnnecessaryConversion"))
+  val indexingEq: Eq[CompositeViewFields] =
+    Eq.instance((a, b) =>
+      a.sources.toSortedSet.toSet == b.sources.toSortedSet.toSet &&
+        a.projections.toSortedSet.toSet == b.projections.toSortedSet.toSet &&
+        a.rebuildStrategy == b.rebuildStrategy
+    )
+
   /** Construct a [[CompositeViewFields]] without name and description */
   def apply(
       sources: NonEmptySet[CompositeViewSourceFields],
@@ -44,6 +55,16 @@ object CompositeViewFields {
       rebuildStrategy: Option[RebuildStrategy]
   ): CompositeViewFields =
     CompositeViewFields(None, None, sources, projections, rebuildStrategy)
+
+  /** Transform a [[CompositeViewValue]] into [[CompositeViewFields]] */
+  def fromValue(compositeViewValue: CompositeViewValue): CompositeViewFields =
+    CompositeViewFields(
+      compositeViewValue.name,
+      compositeViewValue.description,
+      compositeViewValue.sources.map(_.toField),
+      compositeViewValue.projections.map(_.toFields),
+      compositeViewValue.rebuildStrategy
+    )
 
   @nowarn("cat=unused")
   implicit final def compositeViewFieldsEncoder(implicit base: BaseUri): Encoder.AsObject[CompositeViewFields] = {
