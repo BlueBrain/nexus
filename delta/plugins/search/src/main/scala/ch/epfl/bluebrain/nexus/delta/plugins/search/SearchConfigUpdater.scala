@@ -5,8 +5,8 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef.ActiveViewDef
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewValue.indexingEq
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeViewFields, CompositeViewValue}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewFields.indexingEq
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewFields
 import ch.epfl.bluebrain.nexus.delta.plugins.search.SearchConfigUpdater.logger
 import ch.epfl.bluebrain.nexus.delta.plugins.search.SearchScopeInitialization._
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchConfig.IndexingConfig
@@ -22,7 +22,7 @@ import monix.bio.{Task, UIO}
 
 /**
   * Allows to update the search config of default composite views. The provided defaults and indexing config provide the
-  * basis of the [[CompositeViewValue]] to which the composite views are compared.
+  * basis of the [[CompositeViewFields]] to which the composite views are compared.
   *
   * @param defaults
   *   contains the name & description for the view to update
@@ -49,7 +49,7 @@ final class SearchConfigUpdater(
         viewsList.traverse { elem =>
           elem.traverse {
             case view: ActiveViewDef if viewIsDefault(view) && configHasChanged(view) =>
-              update(view, defaultSearchCompositeViewFields(defaults, config))
+              update(view, defaultSearchViewFields)
             case _                                                                    =>
               Task.unit
           }
@@ -62,24 +62,15 @@ final class SearchConfigUpdater(
   }
 
   private def configHasChanged(v: ActiveViewDef): Boolean = {
-    implicit val eq: Eq[CompositeViewValue] = indexingEq
-    v.value =!= defaultSearchViewValue(v)
+    implicit val eq: Eq[CompositeViewFields] = indexingEq
+    CompositeViewFields.fromValue(v.value) =!= defaultSearchViewFields
   }
 
   private def viewIsDefault(v: ActiveViewDef): Boolean =
     v.ref.viewId == defaultViewId
 
-  private def defaultSearchViewValue(v: ActiveViewDef): CompositeViewValue = {
-    val d = defaultSearchCompositeViewFields(defaults, config)
-    CompositeViewValue(
-      d.name,
-      d.description,
-      d.sources.map(_.toSource(v.uuid, v.ref.viewId)),
-      d.projections.map(_.toProjection(v.uuid, v.ref.viewId)),
-      d.rebuildStrategy
-    )
-  }
-
+  private def defaultSearchViewFields =
+    defaultSearchCompositeViewFields(defaults, config)
 }
 
 object SearchConfigUpdater {

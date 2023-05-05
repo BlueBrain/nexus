@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.search
 
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.{CompositeViews, CompositeViewsFixture}
@@ -58,14 +59,16 @@ class SearchConfigUpdaterSuite
     ProjectContextRejection
   )
 
-  private lazy val compositeViews = CompositeViews(
-    fetchContext,
-    ResolverContextResolution(rcr),
-    alwaysValidate,
-    crypto,
-    config,
-    xas
-  )
+  implicit private val randomUUID: UUIDF = UUIDF.random
+  private lazy val compositeViews        =
+    CompositeViews(
+      fetchContext,
+      ResolverContextResolution(rcr),
+      alwaysValidate,
+      crypto,
+      config,
+      xas
+    )
 
   private val defaultViewFields = defaultSearchCompositeViewFields(defaults, indexingConfig)
   private val defaultViewValue  = CompositeViewValue(defaultViewFields, Map.empty, Map.empty, proj2.base)
@@ -85,7 +88,6 @@ class SearchConfigUpdaterSuite
       _       <- views.create(defaultViewId, proj1.ref, viewFields)
       _       <- SearchConfigUpdater(sv, views, defaults, indexingConfig)
       default <- defaultViewValue
-      _       <- views.fetch(defaultViewId, proj1.ref)
       _       <- views
                    .fetch(defaultViewId, proj1.ref)
                    .map(view => toValue(view.value))
