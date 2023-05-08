@@ -5,7 +5,7 @@ services:
       - blazegraph
       - elasticsearch
       - postgres
-    image: bluebrain/nexus-delta:1.8.0-M6-1
+    image: bluebrain/nexus-delta:1.8.0-M8
     environment:
       DELTA_PLUGINS: "/opt/docker/plugins/"
       DELTA_EXTERNAL_CONF: "/config/delta.conf"
@@ -57,7 +57,7 @@ services:
   web:
     depends_on:
       - delta
-    image: bluebrain/nexus-web:1.8.0-M15
+    image: bluebrain/nexus-web:1.8.0-M16-2
     environment:
       BASE_PATH: "/"
       HOST_NAME: "http://localhost"

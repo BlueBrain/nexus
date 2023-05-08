@@ -8,7 +8,7 @@
 # Running Nexus
 
 If you wish to quickly try out Nexus, we provide a @ref:[public sandbox](#using-the-public-sandbox). 
-For a more in-depth test-drive of Nexus on your machine, we recommend the @ref:[Docker Swarm approach](#recommended-docker-swarm). 
+For a more in-depth test-drive of Nexus on your machine, we recommend the @ref:[Docker Compose approach](#docker-compose). 
 For a production deployment on your in-house or cloud infrastructure, please refer to our @ref:[deployment guide](#on-premise-cloud-deployment).
 
 ## Using the public sandbox
@@ -18,7 +18,7 @@ You can log in with a GitHub account. It's provided for evaluation purposes only
 
 The API root is @link:[https://sandbox.bluebrainnexus.io/v1](https://sandbox.bluebrainnexus.io/v1){ open=new }.
 
-@@@ note
+@@@ note { .warning }
 
 Do not ingest any proprietary or sensitive data. The environment will be wiped regularly, your data and credentials
 can disappear anytime.
@@ -31,136 +31,119 @@ can disappear anytime.
 
 #### Docker
 
-Regardless of your OS, make sure to run a recent version of Docker (community edition).
-This was tested with versions **20.10.2** and above.
-You might need to get installation packages directly
-from the @link:[official Docker website](https://docs.docker.com/){ open=new } if the one provided by your system
-package manager is outdated.
+Regardless of your OS, make sure to run a recent version of the Docker Engine. 
+This was tested with version **20.10.23**.
+The Docker Engine, along the Docker CLI, come with an installation of Docker Desktop. Visit the @link:[official Docker Desktop documentation](https://docs.docker.com/desktop/) for detailed installation steps.
 
 Command
 :
-```
+```shell
 docker --version
 ```
 
 Example
 :
-```
-$ docker version
-Docker version 20.10.15 build 20.10.2-0ubuntu1~18.04.2
+```shell
+$ docker --version
+Docker version 20.10.23, build 7155243
 ```
 
 #### Memory and CPU limits
 
 On macOS and Windows, Docker effectively runs containers inside a VM created by the system hypervisor.
 Nexus requires at least **2 CPUs** and **8 GiB** of memory in total. You can increase the limits
-in Docker settings in the menu *Preferences* > *Advanced*.
+in Docker settings in the menu *Settings* > *Resources*.
 
-For a proper evaluation using Docker Swarm or Minikube/Kubernetes, we recommend allocating at least **16GiB** of RAM to
+For a proper evaluation using Docker or Minikube/Kubernetes, we recommend allocating at least **16GiB** of RAM to
 run the provided templates. Feel free to tweak memory limits in order to fit your hardware constraints. At the cost
 of a slower startup and a decreased overall performance, you should be able to go as low as:
 
 |    Service    | Memory [MiB] |
 |:-------------:|:------------:|
-|   Postgres    |          512 |
+|  PostgreSQL   |          512 |
 | Elasticsearch |          512 |
 |  Blazegraph   |         1024 |
 |     Delta     |         1024 |
 
-### Recommended: Docker Swarm
+### Docker Compose
 
-Docker Swarm is the native orchestrator shipped with Docker. It provides a more robust way to run Nexus.
+#### Set-up
 
-If you've never used Docker Swarm or Docker Stacks before, you first need to create a swarm cluster
-on your local machine:
-
-Command
-:
-```
-docker swarm init
-```
-
-Example
-:
-```
-$ docker swarm init
-Swarm initialized: current node (***) is now a manager.
-
-To add a worker to this swarm, run the following command:
-
-    docker swarm join --token {token} 128.178.97.243:2377
-
-To add a manager to this swarm, run 'docker swarm join-token manager' and follow the instructions.
-```
-
-#### Deployment
-
-* Download the @link:[Docker Compose template](docker-swarm/docker-compose.yaml){ open=new } into a directory of your choice, for instance
+* Download the @link:[Docker Compose template](docker/docker-compose.yaml){ open=new } into a directory of your choice, for instance
 `~/docker/nexus/`.
-* Download the @link:[Delta configuration](docker-swarm/delta.conf){ open=new } to the same directory.
-* Download the @link:[http proxy configuration](docker-swarm/nginx.conf){ open=new } to the same directory.
+* Download the @link:[Delta configuration](docker/delta.conf){ open=new } to the same directory.
+* Download the @link:[http proxy configuration](docker/nginx.conf){ open=new } to the same directory.
 
 #### Starting Nexus
 
-Create a *nexus* deployment with Docker Stacks:
+From within the directory that contains the `docker-compose.yaml` you downloaded, run the containers using Docker Compose:
 
 Command
 :
-```
-docker stack deploy nexus --compose-file=docker-compose.yaml
+```shell
+docker compose --project-name nexus --file=docker-compose.yaml up --detach
 ```
 
 Example
 :
-```
+```shell
 $ cd ~/docker/nexus
-$ docker stack deploy nexus --compose-file=docker-compose.yaml
-Creating network nexus_default
-Creating service nexus_router
-Creating service nexus_delta
-Creating service nexus_elasticsearch
-Creating service nexus_postgres
-Creating service nexus_blazegraph
-Creating service nexus_web
+$ docker compose --project-name nexus --file=docker-compose.yaml up --detach
+...
+⠿ Network nexus_default             Created 0.0s
+⠿ Container nexus-elasticsearch-1   Started 1.2s
+⠿ Container nexus-postgres-1        Started 1.2s
+⠿ Container nexus-blazegraph-1      Started 1.1s
+⠿ Container nexus-delta-1           Started 1.6s
+⠿ Container nexus-web-1             Started 1.8s
+⠿ Container nexus-router-1          Started 2.1s
 ```
 
-Wait one or two minutes and you should be able to access Nexus locally, on the port 80:
+When running the command for the first time, Docker will pull all necessary images from Dockerhub if they are not available locally. Once all containers are running, wait one or two minutes and you should be able to access Nexus locally, on the port 80:
 
 Command
 :
-```
+```shell
 curl http://localhost/v1/version
 ```
 
 Example
 :
-```
+```shell
 $ curl http://localhost/v1/version | jq
 {
   "@context": "https://bluebrain.github.io/nexus/contexts/version.json",
-  "delta": "1.5.0",
+  "delta": "1.8.0-M8",
   "dependencies": {
-    "blazegraph": "2.1.6-RC",
-    "postgres": "15.1",
-    "elasticsearch": "7.16.2"
+    "blazegraph": "2.1.6-SNAPSHOT",
+    "elasticsearch": "7.16.2",
+    "postgres": "15.1"
   },
+  "environment": "dev",
   "plugins": {
-    "archive": "1.8.0",
-    "blazegraph": "1.8.0",
-    "composite-views": "1.8.0",
-    "elasticsearch": "1.8.0",
-    "storage": "1.8.0"
+    "archive": "1.8.0-M8",
+    "blazegraph": "1.8.0-M8",
+    "composite-views": "1.8.0-M8",
+    "elasticsearch": "1.8.0-M8",
+    "storage": "1.8.0-M8"
   }
 }
 ```
+
+#### Using Fusion
+
+Fusion can be accessed by opening `http://localhost` in your web browser. You can start by creating an organization from the `http://localhost/admin` page.
+
+@@@ note { .warning }
+
+This setup runs the Nexus ecosystem without an identity provider, and the anonymous user is given all default permissions; do not publicly expose the endpoints of such a deployment.
+
+@@@
 
 #### Administration
 
 To list running services or access logs, please refer to the official Docker
 @link:[documentation](https://docs.docker.com/engine/reference/commandline/stack/){ open=new }.
-
-Alternatively you can deploy @link:[Swarmpit](https://swarmpit.io/){ open=new } which provides a comprehensive UI
-to manage your Docker Swarm cluster.
 
 #### Stopping Nexus
 
@@ -168,25 +151,27 @@ You can stop and delete the entire deployment with:
 
 Command
 :
-```
-docker stack rm nexus
+```shell
+docker compose --project-name nexus down --volumes
 ```
 
 Example
 :
-```
-$ docker stack rm nexus
-Removing service nexus_blazegraph
-Removing service nexus_postgres
-Removing service nexus_elasticsearch
-Removing service nexus_delta
-Removing service nexus_router
-Removing network nexus_default
+```shell
+$ docker compose --project-name nexus down --volumes
+[+] Running 7/7
+⠿ Container nexus-router-1         Removed  0.2s
+⠿ Container nexus-web-1            Removed  0.3s
+⠿ Container nexus-delta-1          Removed  0.5s
+⠿ Container nexus-postgres-1       Removed  0.3s
+⠿ Container nexus-blazegraph-1     Removed  10.3s
+⠿ Container nexus-elasticsearch-1  Removed  1.0s
+⠿ Network nexus_default            Removed  0.1s
 ```
 
 @@@ note
 
-As no data is persisted outside the containers, **everything will be lost** once you remove the Nexus
+As no data is persisted outside the containers, **everything will be lost** once you shut down the Nexus
 deployment. If you'd like help with creating persistent volumes, feel free to contact us on
 @link:[Github Discussions](https://github.com/BlueBrain/nexus/discussions){ open=new }.
 
@@ -449,7 +434,7 @@ $ curl "http://$NEXUS/elasticsearch"
 $
 ```
 
-#### Deploy BlazeGraph
+#### Deploy Blazegraph
 
 Command
 :
@@ -587,7 +572,7 @@ various usage profiles, but the most important categories would be:
 *   Monitoring & alerting
 
 Each of the Nexus services and "off the shelf" products can be deployed as a single instance or as a cluster (with one
-exception at this point being BlazeGraph which doesn't come with a clustering option). The advantages for deploying
+exception at this point being Blazegraph which doesn't come with a clustering option). The advantages for deploying
 clusters are generally higher availability, capacity and throughput at the cost of higher latency, consistency and
 having to potentially deal with network instability.
 
@@ -599,8 +584,8 @@ the shelf" products also offer docker as a deployment option. We would generally
 orchestration solution like @link:[Kubernetes](https://kubernetes.io/){ open=new }, @link:[OpenShift](https://www.redhat.com/en/technologies/cloud-computing/openshift){ open=new } or
 @link:[Docker Swarm](https://docs.docker.com/engine/swarm/){ open=new } as they offer good management capabilities, discovery, load
 balancing and self-healing. They also accommodate changes in hardware allocations for the deployments, changes that can
-occur due to evolving usage patterns, software updates etc. Currently the biggest Nexus deployment is at EPFL within
-OpenShift.
+occur due to evolving usage patterns, software updates etc. Currently, the largest Nexus deployment is at EPFL and runs on Kubernetes.
+
 
 ### Choice of hardware
 
@@ -610,8 +595,8 @@ of throughput with various hardware configurations. When the usage profiles are 
 should narrow the scope:
 
 1.  Nexus uses a collection of data stores (@link:[PostgreSQL](https://www.postgresql.org/){ open=new },
-    @link:[ElasticSearch](https://www.elastic.co/elasticsearch/){ open=new }, 
-    @link:[BlazeGraph](https://blazegraph.com/){ open=new }) which depend performance wise to the underlying disk 
+    @link:[Elasticsearch](https://www.elastic.co/elasticsearch/){ open=new }, 
+    @link:[Blazegraph](https://blazegraph.com/){ open=new }) which depend performance wise to the underlying disk 
     access, so:
     *   prefer local storage over network storage for lower latency when doing IO,
     *   prefer SSD over HDDs because random access speed is more important than sequential access,
@@ -648,20 +633,20 @@ implications to the total amount of disk used by the primary store.
 
 // TODO formula computing disk space
 
-### ElasticSearch
+### Elasticsearch
 
-Nexus uses @link:[ElasticSearch](https://www.elastic.co/elasticsearch/){ open=new } to host several _system_ indices and _user
+Nexus uses @link:[Elasticsearch](https://www.elastic.co/elasticsearch/){ open=new } to host several _system_ indices and _user
 defined_ ones. It offers sharding and replication out of the box. Deciding whether this system requires backup depends
 on the tolerated time for a restore. Nexus can be instructed to rebuild all indices using the data from the _primary
 store_, but being an incremental indexing process it can take longer than restoring from a backup. Since it can be
 configured to host a number of replicas for each shard it can tolerate a number of node failures.
 
-The ElasticSearch @link:[setup documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/setup.html){ open=new }
+The Elasticsearch @link:[setup documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/setup.html){ open=new }
 contains the necessary information on how to install and configure it, but recommendations on sizing the nodes and
 cluster are scarce because it depends on usage.
 
 A formula for computing the required disk space:
-```
+```text
 total = (resource_size * count * documents + lucene_index) * replication_factor
 ```
 ... where the `lucene_index` while it can vary should be less than twice the size of the original documents.
@@ -675,23 +660,23 @@ An example, assuming:
 *   2 additional shard replicas (replication factor of 3)
 
 ... the total required disk size would be:
-```
+```text
 (10KB * 1.000.000 * 3 + 2 * (10KB * 1.000.000 * 3)) * 3 = 270.000.000KB ~= 260GB
 ```
 The resulting size represents the total disk space of the data nodes in the cluster; a 5 data node cluster with the data
 volume in the example above would have to be configured with 60GB disks per node.
 
-### BlazeGraph
+### Blazegraph
 
-Nexus uses @link:[BlazeGraph](https://blazegraph.com/){ open=new } as an RDF (triple) store to provide a advanced querying
+Nexus uses @link:[Blazegraph](https://blazegraph.com/){ open=new } as an RDF (triple) store to provide a advanced querying
 capabilities on the hosted data. This store is treated as a specialized index on the data so as with Kafka and
-ElasticSearch in case of failures, the system can be fully restored from the primary store. While the technology is
+Elasticsearch in case of failures, the system can be fully restored from the primary store. While the technology is
 advertised to support @link:[High Availability](https://github.com/blazegraph/database/wiki/HAJournalServer){ open=new } and
 @link:[Scaleout](https://github.com/blazegraph/database/wiki/ClusterGuide){ open=new } deployment configurations, we have yet to be able
 to setup a deployment in this fashion.
 
-We currently recommend deploying BlazeGraph using the prepackaged _tar.gz_ distribution available to download from
-@link:[sourceforge](https://sourceforge.net/projects/bigdata/files/bigdata/2.1.4/){ open=new }.
+We currently recommend deploying Blazegraph using the prepackaged _tar.gz_ distribution available to download from
+@link:[GitHub](https://github.com/blazegraph/database/releases/latest){ open=new }.
 
 @@@ note
 
@@ -700,15 +685,15 @@ We're looking at alternative technologies and possible application level (within
 @@@
 
 The @link:[Hardware Configuration](https://github.com/blazegraph/database/wiki/Hardware_Configuration){ open=new } section in the
-documentation gives a couple of hints about the requirements to operate BlazeGraph and there are additional sections
+documentation gives a couple of hints about the requirements to operate Blazegraph and there are additional sections
 for optimizations in terms of @link:[Performance](https://github.com/blazegraph/database/wiki/PerformanceOptimization){ open=new },
 @link:[IO](https://github.com/blazegraph/database/wiki/IOOptimization){ open=new } and
 @link:[Query](https://github.com/blazegraph/database/wiki/QueryOptimization){ open=new }.
 
-BlazeGraph stores data in an append only journal which means updates will use additional disk space.
+Blazegraph stores data in an append only journal which means updates will use additional disk space.
 
 A formula for computing the required disk space:
-```
+```text
 total = (resource_triples + nexus_triples) * count * number_updates * triple_size + lucene_index
 ```
 ... where the `lucene_index` while it can vary should be less than twice the size of the original documents.
@@ -722,7 +707,7 @@ An example, assuming:
 *   200 bytes triple size (using quads mode)
 
 ... the total required disk size would be:
-```
+```text
 (100 + 20) * 1.000.000 * 10 * 200 / 1024 * 3 ~= 700.000.000KB ~= 670GB
 ```
 
