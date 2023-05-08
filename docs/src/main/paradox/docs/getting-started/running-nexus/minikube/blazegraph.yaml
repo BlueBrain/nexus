@@ -42,7 +42,7 @@ spec:
     spec:
       containers:
       - name: blazegraph
-        image: bluebrain/blazegraph-nexus:2.1.5
+        image: bluebrain/blazegraph-nexus:2.1.6-RC
         imagePullPolicy: IfNotPresent
         volumeMounts:
         - name: storage

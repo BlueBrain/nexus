@@ -208,7 +208,7 @@ export MINI="https://bluebrainnexus.io/docs/getting-started/running-nexus/miniku
 
 @@@ note
 
-This page presents the necessary commands to deploy Nexus with Minikube but also examples the show the expected output.
+This page presents the necessary commands to deploy Nexus with Minikube but also examples showing the expected output.
 
 Some of the examples on this page make use of @link:[curl](https://curl.se/){ open=new } and @link:[jq](https://stedolan.github.io/jq/){ open=new }
 for formatting the json output when interacting with the services. Please install these command line tools if you'd like
@@ -228,7 +228,7 @@ the official Kubernetes documentation.
 
 To start Minikube run (notice the _cpu_ and _memory_ flags, the setup requires a minimum of `--cpus=2 --memory=8196`):
 
-```
+```shell
 minikube start --cpus 6 --memory 10240 --vm-driver=$DRIVER
 ```
 
@@ -238,13 +238,13 @@ namely _docker_ on macOS, _hyperv_ or _docker_ on Windows and _docker_ or _kvm2_
 If the installation is successful you can run the following command to open the
 @link:[Kubernetes Dashboard](https://kubernetes.io/docs/tasks/access-application-cluster/web-ui-dashboard/){ open=new }:
 
-```
+```shell
 minikube dashboard
 ```
 
 To stop Minikube run:
 
-```
+```shell
 minikube stop
 ```
 
@@ -253,7 +253,7 @@ minikube stop
 After stopping minikube the vm still exists on the system; starting minikube again will preserve the deployed services.
 To permanently remove minikube vm run:
 
-```
+```shell
 minikube delete
 ```
 
@@ -269,32 +269,30 @@ To make sure the _ingress_ addon is enabled run:
 
 Command
 :
-```
+```shell
 minikube addons enable ingress
 ```
 
 Example
 :
-```
+```shell
 $ minikube addons enable ingress
 ingress was successfully enabled
-$
 ```
 
 To get the external IP of the cluster (to be used later in accessing services) run:
 
 Command:
 :
-```
+```shell
 minikube ip
 ```
 
 Example:
 :
-```
+```shell
 $ minikube ip
 192.168.64.3
-$
 ```
 
 #### Setup a separate namespace
@@ -321,7 +319,6 @@ NAME          STATUS    AGE
 default       Active    1h
 kube-public   Active    1h
 kube-system   Active    1h
-$
 ```
 
 Create the _nexus_ namespace:
@@ -343,7 +340,6 @@ default       Active    1h
 kube-public   Active    1h
 kube-system   Active    1h
 nexus         Active    1m
-$
 ```
 
 Default the `kubectl` to the _nexus_ namespace:
@@ -359,7 +355,6 @@ Example
 ```
 $ kubectl config set-context minikube --namespace=nexus
 Context "minikube" modified.
-$
 ```
 
 @@@ note
@@ -390,7 +385,6 @@ Example
 $ export NEXUS=$(minikube ip)
 $ echo $NEXUS
 192.168.64.3
-$
 ```
 
 #### Deploy PostgreSQL (TODO)
@@ -406,7 +400,7 @@ kubectl apply -f $MINI/elasticsearch.yaml && \
 
 Example
 :
-```
+```shell
 $ kubectl apply -f $MINI/elasticsearch.yaml
 service/elasticsearch created
 service/elasticsearch-discovery created
@@ -480,7 +474,6 @@ $ curl -s $MINI/config.yaml | sed "s/{NEXUS}/$NEXUS/g" | kubectl apply -f -
 configmap/config created
 $ kubectl get configmap/config -o yaml | grep public.ip:
   public.ip: 192.168.64.4
-$
 ```
 
 #### Deploy Delta
@@ -529,7 +522,6 @@ $ curl -s "http://$NEXUS/v1/resources/org/proj" | jq # the 404 error is expected
   "@type": "ProjectNotFound",
   "reason": "Project 'org/proj' not found."
 }
-$
 ```
 
 #### Deploy the web interface
@@ -553,7 +545,6 @@ statefulset.apps/nexus-web created
 ingress.extensions/nexus-web created
 $ kubectl wait pod nexus-web-0 --for condition=ready --timeout=180s
 pod/nexus-web-0 condition met
-$
 ```
 
 You can now access the web interface at `http://$NEXUS`, `$NEXUS` being the public IP of your Minikube

@@ -79,7 +79,7 @@ spec:
     spec:
       containers:
       - name: delta
-        image: bluebrain/nexus-delta:1.5.0
+        image: bluebrain/nexus-delta:1.8.0-M9
         imagePullPolicy: IfNotPresent
         volumeMounts:
         - name: storage
