@@ -9,7 +9,7 @@ This document focuses on the characteristics of the Nexus Delta and its design c
 ## Ecosystem
 
 Nexus Delta is a low latency, scalable and secure service that realizes a range of functions to support data management
-and knowledge graph lifecycles. It uses @link:[Apache Cassandra]{ open=new } as a primary store (source of truth for 
+and knowledge graph lifecycles. It uses @link:[PostgreSQL]{ open=new } as a primary store (source of truth for 
 all the information in the system), @link:[ElasticSearch]{ open=new } for full text search and @link:[BlazeGraph]{ open=new } 
 for graph based data access.
 
@@ -32,11 +32,17 @@ and manage knowledge graphs using the Python programming language.
 
 One of the more important design goals for the system was to be able scale in order to support arbitrary increases in
 usage and data volume. Nexus Delta can be configured to run as single node or in a cluster configuration where the load
-on the system is distributed to all members.
+on the system is distributed to all members:
 
-@link:[Akka Cluster]{ open=new } was chosen for a decentralized, fault-tolerant, peer-to-peer based cluster membership. 
-It uses the @link:[Gossip Protocol]{ open=new } to randomly spread the cluster state. Nodes in the cluster communicate 
-over TCP using @link:[Akka Remoting]{ open=new } for coordination and distribution of load.
+* The state of the cluster is handled by the primary store
+* The nodes don't communicate directly with each other but through changes in the primary store
+* The load is distributed in the cluster in a round-robin way
+
+Adding and removing nodes requires for the moment to:
+
+* Stop the cluster
+* Change the @link:[cluster configuration] by updating the number of nodes and defining the index for each of them
+* Start the cluster
 
 @@@ div { .half .center }
 
@@ -44,8 +50,8 @@ over TCP using @link:[Akka Remoting]{ open=new } for coordination and distributi
 
 @@@
 
-@link:[Apache Cassandra]{ open=new } and @link:[ElasticSearch]{ open=new } were chosen for their horizontal scaling 
-characteristics and for favouring availability over globally strong consistency.
+@link:[PostgreSQL]{ open=new } and @link:[ElasticSearch]{ open=new } were chosen for their reliability, their flexibility 
+and their scalability.
 
 @link:[BlazeGraph]{ open=new } was initially chosen to handle graph access patterns, but it is currently the only part 
 of the system that cannot be scaled horizontally. We're currently looking for open source alternatives that offer 
@@ -54,47 +60,66 @@ clustering out of the box or solutions that would coordinate multiple BlazeGraph
 ## Anatomy
 
 Nexus Delta was built following the Command Query Responsibility Segregation (@link:[CQRS]{ open=new }) pattern where 
-there's a clear separation between the read and write models. Intent to change the application state is represented by 
-commands that are validated for access and consistency before being evaluated. Successful evaluations of commands emit 
-events that are persisted to the global event log.
+there's a clear separation between the read and write models. 
 
-Asynchronous processes (projections) replay the event log and process the information for efficient consumption. The
-information in the recorded events is transformed into documents (in the case of ElasticSearch) and named graphs (in
-the case of BlazeGraph) and persisted in the respective stores. The projections persist their progress such that
-they can be resumed in case of a crash.
+Intent to change an entity is represented by commands that are validated for access and consistency before being evaluated.
 
-Sources of events for projections are both the primary store and other (remote) Nexus Delta deployments through the
-@link:[Server Sent Events]{ open=new } W3C recommendation. This allows for data aggregation when building indices.
+Successful evaluations of commands emit:
 
-Native interfaces are offered as part of the read (query) model for querying ElasticSearch and BlazeGraph.
+* Events that are persisted to the event log
+* Updated states that are persisted the state log.
 
-@@@ div { .center }
+@@@ div { .three-quarters .center }
 
-![Anatomy](assets/architecture-anatomy.png)
+![State machine](assets/architecture-state-machine.png)
 
 @@@
 
-Asynchronous indexing (projections) and the separation between reads and writes have some interesting consequences:
+The event log is an append-only log where no update or deletion can occur.
 
-*   the system is eventually consistent and does not require a healing mechanism for handling synchronization errors
-*   the primary store acts as a bulkhead in case of arbitrary data ingestion spikes
-*   the primary store and the stores used for indices can be independently sized; indexing speed is allowed to vary
-    based on the performance of each store
-*   the system continues to function with partial degradation instead of becoming unavailable if a store suffers
-    downtime
+The state log works differently:
 
-@link:[Apache Cassandra]{ open=new } is used as an eventsourced primary store and represents the source of truth for 
-all the information in the system. Updates are not performed in place, state changes are appended to the event log. 
-The state of the system is derived from the sequence of events in the log.
+* Append new entries when a new entity is created or tagged (when this operation is available) 
+* Update and push back to the end of the log entities that have been updated
 
-The global event log is partitioned such that there's no need to replay the entire log. Subsets can be replayed, like
-for example when reconstructing the current state of a single resource. 
+The changes on the event and the state logs are performed in the same transaction to make sure that the state log remains consistent.
+
+@link:[PostgreSQL]{ open=new } is used as a primary store which represents the source of truth and which is responsible
+for performing the reads and writes of the logs.
+
+Both the event and state log can be queried in different ways that allow among other things to:
+
+* Reconstruct the state of a single resource at a given point in time
+* Fetch the latest states of entities of a given type in a chronological order
 
 @@@ div { .three-quarters .center }
 
 ![Event Log](assets/architecture-event-log.png)
 
 @@@
+
+Asynchronous processes (projections) rely on the range of queries offered by those logs to process data for multiple
+purposes. For instance, they allow to transform push data from the primary store to other data stores like Elasticsearch or
+Blazegraph.
+
+@@@ div { .three-quarters .center }
+
+![State machine](assets/architecture-projections.png)
+
+@@@
+
+The projections can persist their progress such that they can be resumed in case of a crash.
+
+Native interfaces are also offered as part of the read (query) model for querying ElasticSearch and BlazeGraph.
+
+Projections and the separation between reads and writes have some interesting properties:
+
+*   The system is eventually consistent and does not require a healing mechanism for handling synchronization errors
+*   The primary store acts as a bulkhead in case of arbitrary data ingestion spikes
+*   The primary store and the stores used for indices can be independently sized; indexing speed is allowed to vary
+    based on the performance of each store
+*   The system continues to function with partial degradation instead of becoming unavailable if a store suffers
+    downtime
 
 ## Resource Orientation
 
@@ -148,14 +173,11 @@ The authorization flow is as follows:
     of @ref:[ACLs] for the target resource(s)
 
 [Nexus Fusion]: ../fusion/index.md
-[Nexus CLI]: ../utilities/nexus-python-cli.md
 [Nexus Forge]: ../forge.md
-[Apache Cassandra]: https://cassandra.apache.org/_/index.html
+[PostgreSQL]: https://www.postgresql.org/
 [ElasticSearch]: https://www.elastic.co/elasticsearch/
 [BlazeGraph]: https://blazegraph.com/
-[Akka Cluster]: https://doc.akka.io/docs/akka/current/typed/cluster-concepts.html
-[Gossip Protocol]: https://en.wikipedia.org/wiki/Gossip_protocol
-[Akka Remoting]: https://doc.akka.io/docs/akka/current/remoting-artery.html
+[cluster configuration]: https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/app.conf#L290
 [CQRS]: https://martinfowler.com/bliki/CQRS.html
 [Server Sent Events]: https://html.spec.whatwg.org/multipage/server-sent-events.html
 [REST]: https://en.wikipedia.org/wiki/Representational_state_transfer
