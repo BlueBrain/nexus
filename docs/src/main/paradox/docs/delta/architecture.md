@@ -10,8 +10,17 @@ This document focuses on the characteristics of the Nexus Delta and its design c
 
 Nexus Delta is a low latency, scalable and secure service that realizes a range of functions to support data management
 and knowledge graph lifecycles. It uses @link:[PostgreSQL]{ open=new } as a primary store (source of truth for 
-all the information in the system), @link:[ElasticSearch]{ open=new } for full text search and @link:[BlazeGraph]{ open=new } 
+all the information in the system), @link:[Elasticsearch]{ open=new } for full text search and @link:[Blazegraph]{ open=new } 
 for graph based data access.
+
+@@@ note { .tip title="Change of primary store in Nexus 1.8" }
+
+Until 1.8, Cassandra was the preferred primary store for Nexus.
+
+Please visit @ref:[Release Notes for Nexus 1.8](../releases/v1.8-release-notes.md#new-primary-store) to learn more about the reasons behind 
+this change.
+
+@@@
 
 An overview of the Blue Brain Nexus ecosystem is presented in the figure below:
 
@@ -30,7 +39,7 @@ and manage knowledge graphs using the Python programming language.
 
 ## Clustering
 
-One of the more important design goals for the system was to be able scale in order to support arbitrary increases in
+One of the more important design goals for the system was to be able to scale in order to support arbitrary increases in
 usage and data volume. Nexus Delta can be configured to run as single node or in a cluster configuration where the load
 on the system is distributed to all members:
 
@@ -50,12 +59,21 @@ Adding and removing nodes requires for the moment to:
 
 @@@
 
-@link:[PostgreSQL]{ open=new } and @link:[ElasticSearch]{ open=new } were chosen for their reliability, their flexibility 
+@@@ note { .tip title="New clustering deployment" }
+
+Until 1.8, Nexus was relying on akka-cluster to run in a clustered way.
+
+Please visit @ref:[Release Notes for Nexus 1.8](../releases/v1.8-release-notes.md#new-clustering-deployment) to learn more about the reasons behind
+this change.
+
+@@@
+
+@link:[PostgreSQL]{ open=new } and @link:[Elasticsearch]{ open=new } were chosen for their reliability, their flexibility 
 and their scalability.
 
-@link:[BlazeGraph]{ open=new } was initially chosen to handle graph access patterns, but it is currently the only part 
+@link:[Blazegraph]{ open=new } was initially chosen to handle graph access patterns, but it is currently the only part 
 of the system that cannot be scaled horizontally. We're currently looking for open source alternatives that offer 
-clustering out of the box or solutions that would coordinate multiple BlazeGraph nodes. 
+clustering out of the box or solutions that would coordinate multiple Blazegraph nodes. 
 
 ## Anatomy
 
@@ -67,7 +85,7 @@ Intent to change an entity is represented by commands that are validated for acc
 Successful evaluations of commands emit:
 
 * Events that are persisted to the event log
-* Updated states that are persisted the state log.
+* Updated states that are persisted in the state log.
 
 @@@ div { .three-quarters .center }
 
@@ -99,7 +117,7 @@ Both the event and state log can be queried in different ways that allow among o
 @@@
 
 Asynchronous processes (projections) rely on the range of queries offered by those logs to process data for multiple
-purposes. For instance, they allow to transform push data from the primary store to other data stores like Elasticsearch or
+purposes. For instance, they allow to transform and then push data from the primary store to other data stores like Elasticsearch or
 Blazegraph.
 
 @@@ div { .three-quarters .center }
@@ -110,7 +128,7 @@ Blazegraph.
 
 The projections can persist their progress such that they can be resumed in case of a crash.
 
-Native interfaces are also offered as part of the read (query) model for querying ElasticSearch and BlazeGraph.
+Native interfaces are also offered as part of the read (query) model for querying Elasticsearch and Blazegraph.
 
 Projections and the separation between reads and writes have some interesting properties:
 
@@ -175,8 +193,8 @@ The authorization flow is as follows:
 [Nexus Fusion]: ../fusion/index.md
 [Nexus Forge]: ../forge.md
 [PostgreSQL]: https://www.postgresql.org/
-[ElasticSearch]: https://www.elastic.co/elasticsearch/
-[BlazeGraph]: https://blazegraph.com/
+[Elasticsearch]: https://www.elastic.co/elasticsearch/
+[Blazegraph]: https://blazegraph.com/
 [cluster configuration]: https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/app.conf#L290
 [CQRS]: https://martinfowler.com/bliki/CQRS.html
 [Server Sent Events]: https://html.spec.whatwg.org/multipage/server-sent-events.html
