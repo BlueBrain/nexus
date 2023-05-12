@@ -1,8 +1,7 @@
-# Admin
+# Project
 
-The Nexus Fusion admin app allows you to manage your Nexus Delta instance. In particular, you can:
+The Nexus Fusion project page allows you to manage your Nexus Delta instance. In particular, you can:
 
-- list, create, edit and deprecate organizations,
 - list, create, edit and deprecate projects within an organization,
 - check permissions on your projects and organizations,
 - create, view, edit, and deprecate resources within your projects,
@@ -16,30 +15,23 @@ The Nexus Fusion admin app allows you to manage your Nexus Delta instance. In pa
 
 When creating a project, you can use "Advanced Settings" to set Base, Vocab and API mapping for the project.
 
-Base is an IRI used as a @link:[curie](https://www.w3.org/TR/2010/NOTE-curie-20101216/){ open=new } for generating
-'@id' of this child resources of the project.
+Base is an IRI used as a @link:[curie](https://www.w3.org/TR/2010/NOTE-curie-20101216/){ open=new } for generating '@id' of this child resources of the project.
 
-Vocab is an IRI used as a @link:[curie](https://www.w3.org/TR/2010/NOTE-curie-20101216/){ open=new } prefix for all
-unqualified predicates in child resources of the project. JSON object - provides a convenient way to deal with URIs
-when performing operations on a sub-resource. This field is optional.
+Vocab is an IRI used as a @link:[curie](https://www.w3.org/TR/2010/NOTE-curie-20101216/){ open=new } prefix for all unqualified predicates in child resources of the project. JSON object - provides a convenient way to deal with URIs when performing operations on a sub-resource. This field is optional.
 
 More info can be found @ref:[here](../delta/api/projects-api.md#api-mappings) regarding API Mappings.
 
-### Creating a New Organization
-
-@@@ div { .center }
-![](../assets/try-nexus-sandbox-admin-create-org-form.png)
-@@@
-
 ### Creating a New Project
 
-@@@ div { .center }
-![](../assets/try-nexus-sandbox-admin-organization.png)
-@@@
+The current version allow the user to create project in different main parts of the application, organization page, projects page, and also in the global search types pages.
 
 @@@ div { .center }
-![](../assets/try-nexus-sandbox-admin-create-project-form.png)
+
+![Project creation modal](assets/fusion-projects-create-prj.png)
+
 @@@
+
+The project creation modal is configurable in way that can allow the user to select an organization when the user is not on the one of his organizations page.
 
 ## Project View
 
@@ -47,14 +39,14 @@ The project view in your admin app is the center stage to manage a project.
 
 @@@ div { .center }
 
-![Project View](../assets/fusion-admin-project-page.png)
+![Project View](assets/fusion-project-page.png)
 
 @@@
 
 - On the left hand side, you will find the `Default Query`. You can filter and search resources, order them, as well
   as share that query with your peers. You can create as many queries as you like by clicking `+ Add another resource list`.
 - On the right hand side, you find the `Project Tools`. You'll find the SPARQL and Elasticsearch query editors, and
-  check the project permissions. You can also @ref:[create a new resource](admin.md#creating-a-new-resource) and upload files.
+  check the project permissions. You can also @ref:[create a new resource](project.md#creating-a-new-resource) and upload files.
 - "Manage studios for this project", will take you to the studio sub application. There you can create/edit/update
   studios for this project.
 
