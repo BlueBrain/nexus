@@ -82,8 +82,11 @@ class IdentitiesImpl private (
       Caller(user, groups ++ Set(Anonymous, user, Authenticated(activeRealm.label)))
     }
     result.span("exchangeToken")
-  }.tapError { rejection =>
-    UIO.delay(logger.error(s"Extracting and validating the caller failed for the reason: $rejection"))
+  }.tapError {
+    case g: GetGroupsFromOidcError =>
+      UIO.delay(logger.error(s"Extracting and validating the caller failed for the reason: $g"))
+    case rejection                 =>
+      UIO.delay(logger.debug(s"Extracting and validating the caller failed for the reason: $rejection"))
   }
 }
 
