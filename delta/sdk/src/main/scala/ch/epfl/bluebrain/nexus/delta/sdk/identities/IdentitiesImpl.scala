@@ -83,7 +83,7 @@ class IdentitiesImpl private (
     }
     result.span("exchangeToken")
   }.tapError { rejection =>
-    UIO.delay(logger.error(s"Extracting and validating the caller failed for the reason: $rejection"))
+    UIO.delay(logger.debug(s"Extracting and validating the caller failed for the reason: $rejection"))
   }
 }
 
