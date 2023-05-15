@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityDependency.{DependsOn, ReferencedBy}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore
 import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
@@ -58,7 +59,9 @@ class EntityDependencyStoreSuite extends BioSuite with Doobie.Fixture {
   private val dependencyId5 = DependsOn(proj2, id5)
 
   test("Save the different states") {
-    List(state1, state2, state3, state5).traverse(stateStore.unsafeSave(_)).transact(xas.write)
+    val saveLatestStates = List(state1, state2, state3, state5).traverse(stateStore.unsafeSave(_))
+    val saveTaggedStates = List(state2, state3).traverse(stateStore.unsafeSave(_, UserTag.unsafe("my-tag")))
+    (saveLatestStates >> saveTaggedStates).transact(xas.write)
   }
 
   test("Insert the dependencies") {
