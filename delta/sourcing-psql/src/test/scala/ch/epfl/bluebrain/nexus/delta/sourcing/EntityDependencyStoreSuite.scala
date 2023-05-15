@@ -7,8 +7,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestState.PullR
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityDependency.{DependsOn, ReferencedBy}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, User}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore
@@ -47,10 +47,14 @@ class EntityDependencyStoreSuite extends BioSuite with Doobie.Fixture {
 
   private val proj2 = ProjectRef.unsafe("org", "proj2")
 
-  private val state1 = PullRequestActive(id1, proj, 1, Instant.EPOCH, Anonymous, Instant.EPOCH, Anonymous)
-  private val state2 = PullRequestActive(id2, proj, 1, Instant.EPOCH, Anonymous, Instant.EPOCH, Anonymous)
-  private val state3 = PullRequestActive(id3, proj, 1, Instant.EPOCH, Anonymous, Instant.EPOCH, Anonymous)
-  private val state5 = PullRequestActive(id5, proj2, 1, Instant.EPOCH, Anonymous, Instant.EPOCH, Anonymous)
+  private val bob = User("Bob", Label.unsafe("realm"))
+
+  private val state1       = PullRequestActive(id1, proj, 1, Instant.EPOCH, Anonymous, Instant.EPOCH, Anonymous)
+  private val state2Tagged = PullRequestActive(id2, proj, 1, Instant.EPOCH, bob, Instant.EPOCH, bob)
+  private val state2       = PullRequestActive(id2, proj, 2, Instant.EPOCH, Anonymous, Instant.EPOCH, Anonymous)
+  private val state3Tagged = PullRequestActive(id3, proj, 1, Instant.EPOCH, bob, Instant.EPOCH, bob)
+  private val state3       = PullRequestActive(id3, proj, 2, Instant.EPOCH, Anonymous, Instant.EPOCH, Anonymous)
+  private val state5       = PullRequestActive(id5, proj2, 1, Instant.EPOCH, Anonymous, Instant.EPOCH, Anonymous)
 
   private val dependencyId1 = DependsOn(proj, id1)
   private val dependencyId2 = DependsOn(proj, id2)
@@ -58,10 +62,12 @@ class EntityDependencyStoreSuite extends BioSuite with Doobie.Fixture {
   private val dependencyId4 = DependsOn(proj2, id4)
   private val dependencyId5 = DependsOn(proj2, id5)
 
+  private val noTaggedStatesClue = "Tagged states should not be returned when fetching dependencies values."
+
   test("Save the different states") {
     val saveLatestStates = List(state1, state2, state3, state5).traverse(stateStore.unsafeSave(_))
     // Tagged states should not be returned when fetching the dependency values
-    val saveTaggedStates = List(state2, state3).traverse(stateStore.unsafeSave(_, UserTag.unsafe("my-tag")))
+    val saveTaggedStates = List(state2Tagged, state3Tagged).traverse(stateStore.unsafeSave(_, UserTag.unsafe("my-tag")))
     (saveLatestStates >> saveTaggedStates).transact(xas.write)
   }
 
@@ -114,7 +120,7 @@ class EntityDependencyStoreSuite extends BioSuite with Doobie.Fixture {
   }
 
   test("Fetch latest state values for direct dependencies of id1") {
-    EntityDependencyStore.decodeDirectDependencies(proj, id1, xas).assert(List(state2, state3))
+    EntityDependencyStore.decodeDirectDependencies(proj, id1, xas).assert(List(state2, state3), noTaggedStatesClue)
   }
 
   test("Fetch all dependencies for id1") {
@@ -128,9 +134,7 @@ class EntityDependencyStoreSuite extends BioSuite with Doobie.Fixture {
   test("Fetch latest state values for all dependencies for id1") {
     EntityDependencyStore
       .decodeRecursiveDependencies(proj, id1, xas)
-      .assert(
-        List(state2, state3, state5)
-      )
+      .assert(List(state2, state3, state5), noTaggedStatesClue)
   }
 
   test("Introducing a dependency cycle") {
@@ -160,9 +164,7 @@ class EntityDependencyStoreSuite extends BioSuite with Doobie.Fixture {
   test("Fetch latest state values for all dependencies for id1 to check that cycles are prevented") {
     EntityDependencyStore
       .decodeRecursiveDependencies(proj, id1, xas)
-      .assert(
-        List(state2, state3, state5)
-      )
+      .assert(List(state2, state3, state5), noTaggedStatesClue)
   }
 
   test(s"Delete all dependencies for $proj") {
