@@ -60,6 +60,7 @@ class EntityDependencyStoreSuite extends BioSuite with Doobie.Fixture {
 
   test("Save the different states") {
     val saveLatestStates = List(state1, state2, state3, state5).traverse(stateStore.unsafeSave(_))
+    // Tagged states should not be returned when fetching the dependency values
     val saveTaggedStates = List(state2, state3).traverse(stateStore.unsafeSave(_, UserTag.unsafe("my-tag")))
     (saveLatestStates >> saveTaggedStates).transact(xas.write)
   }
@@ -112,7 +113,7 @@ class EntityDependencyStoreSuite extends BioSuite with Doobie.Fixture {
       )
   }
 
-  test("Fetch values for direct dependencies of id1") {
+  test("Fetch latest state values for direct dependencies of id1") {
     EntityDependencyStore.decodeDirectDependencies(proj, id1, xas).assert(List(state2, state3))
   }
 
@@ -124,7 +125,7 @@ class EntityDependencyStoreSuite extends BioSuite with Doobie.Fixture {
       )
   }
 
-  test("Fetch values for all dependencies for id1") {
+  test("Fetch latest state values for all dependencies for id1") {
     EntityDependencyStore
       .decodeRecursiveDependencies(proj, id1, xas)
       .assert(
@@ -156,7 +157,7 @@ class EntityDependencyStoreSuite extends BioSuite with Doobie.Fixture {
       )
   }
 
-  test("Fetch values for all dependencies for id1 to check that cycles are prevented") {
+  test("Fetch latest state values for all dependencies for id1 to check that cycles are prevented") {
     EntityDependencyStore
       .decodeRecursiveDependencies(proj, id1, xas)
       .assert(
