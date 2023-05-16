@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityDependency.{DependsOn, ReferencedBy}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, Tag}
 import doobie._
 import doobie.implicits._
 import doobie.util.Put
@@ -121,7 +121,7 @@ object EntityDependencyStore {
       .hideErrors
 
   /**
-    * Get and decode state values for direct dependencies for the provided id in the given project
+    * Get and decode latest state values for direct dependencies for the provided id in the given project
     */
   def decodeDirectDependencies[Id, A](ref: ProjectRef, id: Id, xas: Transactors)(implicit
       put: Put[Id],
@@ -135,6 +135,7 @@ object EntityDependencyStore {
          | AND d.id = $id
          | AND s.org = d.target_org
          | AND s.project = d.target_project
+         | AND tag = ${Tag.latest}
          | AND s.id = d.target_id""".stripMargin
       .query[Json]
       .to[List]
@@ -145,7 +146,7 @@ object EntityDependencyStore {
       .hideErrors
 
   /**
-    * Get and decode state values for all dependencies for the provided id in the given project
+    * Get and decode latest state values for all dependencies for the provided id in the given project
     */
   def decodeRecursiveDependencies[Id, A](ref: ProjectRef, id: Id, xas: Transactors)(implicit
       put: Put[Id],
@@ -157,6 +158,7 @@ object EntityDependencyStore {
          | FROM recursive_dependencies d, scoped_states s
          | WHERE s.org = d.org
          | AND s.project = d.project
+         | AND tag = ${Tag.latest}
          | AND s.id = d.id
        """.stripMargin
       .query[Json]
