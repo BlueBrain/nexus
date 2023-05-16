@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="x-ua-compatible" content="ie=edge">
+<meta name="description" content="docs">
+<meta name="generator" content="Paradox, paradox-material-theme=0.6.0, mkdocs-material=3.0.3">
+
+<meta name="lang:clipboard.copy" content="Copy to clipboard">
+<meta name="lang:clipboard.copied" content="Copied to clipboard">
+<meta name="lang:search.language" content="">
+<meta name="lang:search.pipeline.stopwords" content="true">
+<meta name="lang:search.pipeline.trimmer" content="true">
+<meta name="lang:search.result.none" content="No matching documents">
+<meta name="lang:search.result.one" content="1 matching document">
+<meta name="lang:search.result.other" content="# matching documents">
+<meta name="lang:search.tokenizer" content="[\s\-]+">
+
+
+<meta name="description" content="docs">
+<link rel="shortcut icon" href="../.././assets/img/favicon-32x32.png">
+<title>v1.7 To v1.8 Migration · Blue Brain Nexus</title>
+<link rel="stylesheet" href="../../assets/stylesheets/application.451f80e5.css">
+<link rel="stylesheet" href="../../assets/stylesheets/application-palette.22915126.css">
+<meta name="theme-color" content="#03a9f4" />
+<link rel="stylesheet" href="../../lib/material__tabs/dist/mdc.tabs.min.css">
+<link rel="stylesheet" href="../../lib/prettify/prettify.css">
+<script src="../../assets/javascripts/modernizr.1aa3b519.js"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,400i,700|Roboto+Mono">
+<style>
+body,input{font-family:"Roboto","Helvetica Neue",Helvetica,Arial,sans-serif}
+code,kbd,pre{font-family:"Roboto Mono","Courier New",Courier,monospace}
+</style>
+<link rel="stylesheet" href="../../assets/fonts/font-awesome.css">
+<link rel="stylesheet" href="../../assets/fonts/material-icons.css">
+<link rel="stylesheet" href="../../assets/stylesheets/paradox-material-theme.css">
+<link rel="stylesheet" href="../.././assets/css/docs.css">
+</head>
+<body
+data-md-color-primary="light-blue"
+data-md-color-accent="cyan"
+>
+<input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+<input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+<label class="md-overlay" data-md-component="overlay" for="__drawer"></label>
+<header class="md-header" data-md-component="header">
+<nav class="md-header-nav md-grid">
+<div class="md-flex">
+<div class="md-flex__cell md-flex__cell--shrink">
+<a href="../../docs/index.html" title="Blue Brain Nexus" class="md-header-nav__button md-logo">
+<img src="../.././assets/img/logo.png" width="24" height="24">
+</a>
+</div>
+<div class="md-flex__cell md-flex__cell--shrink">
+<label class="md-icon md-icon--menu md-header-nav__button" for="__drawer"></label>
+</div>
+<div class="md-flex__cell md-flex__cell--stretch">
+<div class="md-flex__ellipsis md-header-nav__title" data-md-component="title">
+<span class="md-header-nav__topic">
+Blue Brain Nexus
+</span>
+<span class="md-header-nav__topic">
+v1.7 To v1.8 Migration
+</span>
+</div>
+</div>
+<div class="md-flex__cell md-flex__cell--shrink">
+<label class="md-icon md-icon--search md-header-nav__button" for="__search"></label>
+<div class="md-search" data-md-component="search" role="dialog">
+<label class="md-search__overlay" for="__search"></label>
+<div class="md-search__inner" role="search">
+<form class="md-search__form" name="search">
+<input type="text" class="md-search__input" name="query" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="query" data-md-state="active">
+<label class="md-icon md-search__icon" for="__search"></label>
+<button type="reset" class="md-icon md-search__icon" data-md-component="reset" tabindex="-1">&#xE5CD;</button>
+</form>
+<div class="md-search__output">
+<div class="md-search__scrollwrap" data-md-scrollfix>
+<div class="md-search-result" data-md-component="result">
+<div class="md-search-result__meta">
+Type to start searching
+</div>
+<ol class="md-search-result__list"></ol>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+</div>
+<div class="md-flex__cell md-flex__cell--shrink">
+<div class="md-header-nav__source">
+<a href="https://github.com/BlueBrain/nexus"
+title="Go to repository"
+class="md-source"
+data-md-source="github">
+<div class="md-source__icon">
+<i class="fa fa-github"></i>
+</div>
+<div class="md-source__repository">
+BlueBrain/nexus
+</div>
+</a>
+
+</div>
+</div>
+</div>
+</nav>
+</header>
+
+<div class="md-container">
+<main class="md-main">
+<div class="md-main__inner md-grid" data-md-component="container">
+<div class="md-sidebar md-sidebar--primary" data-md-component="navigation">
+<div class="md-sidebar__scrollwrap">
+<div class="md-sidebar__inner">
+<nav class="md-nav md-nav--primary" data-md-level="0" style="visibility: hidden">
+<label class="md-nav__title md-nav__title--site" for="drawer">
+<a href="../../docs/index.html" title="Blue Brain Nexus" class="md-nav__button md-logo">
+<span class="md-nav__button md-logo">
+<img src="../.././assets/img/logo.png" width="24" height="24">
+</a>
+<a href="../../docs/index.html" title="Blue Brain Nexus">
+Blue Brain Nexus
+</a>
+</label>
+<div class="md-nav__source">
+<a href="https://github.com/BlueBrain/nexus"
+title="Go to repository"
+class="md-source"
+data-md-source="github">
+<div class="md-source__icon">
+<i class="fa fa-github"></i>
+</div>
+<div class="md-source__repository">
+BlueBrain/nexus
+</div>
+</a>
+
+</div>
+<ul>
+  <li><a href="../../docs/versions.html" class="page">Versions</a></li>
+  <li><a href="../../docs/getting-started/index.html" class="page">Getting Started</a>
+  <ul>
+    <li><a href="../../docs/getting-started/understanding-knowledge-graphs.html" class="page">Understanding Knowledge Graphs</a></li>
+    <li><a href="../../docs/getting-started/try-nexus.html" class="page">Try Nexus with Neuroscience Datasets</a></li>
+    <li><a href="../../docs/getting-started/try-nexus-movielens.html" class="page">Try Nexus with the MovieLens Dataset</a></li>
+    <li><a href="../../docs/getting-started/running-nexus/index.html" class="page">Running Nexus</a>
+    <ul>
+      <li><a href="../../docs/getting-started/running-nexus/configuration/index.html" class="page">Nexus configuration</a></li>
+      <li><a href="../../docs/getting-started/running-nexus/search-configuration.html" class="page">Search configuration</a></li>
+    </ul></li>
+  </ul></li>
+  <li><a href="../../docs/releases/index.html" class="page">Releases</a>
+  <ul>
+    <li><a href="../../docs/releases/v1.8-release-notes.html" class="page">v1.8 Release Notes</a></li>
+    <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html" class="active page">v1.7 To v1.8 Migration</a></li>
+    <li><a href="../../docs/releases/v1.7-release-notes.html" class="page">v1.7 Release Notes</a></li>
+    <li><a href="../../docs/releases/v1.6-to-v1.7-migration.html" class="page">v1.6 To v1.7 Migration</a></li>
+    <li><a href="../../docs/releases/v1.6-release-notes.html" class="page">v1.6 Release Notes</a></li>
+    <li><a href="../../docs/releases/v1.5-to-v1.6-migration.html" class="page">v1.5 To v1.6 Migration</a></li>
+    <li><a href="../../docs/releases/v1.5-release-notes.html" class="page">v1.5 Release Notes</a></li>
+    <li><a href="../../docs/releases/v1.4-to-v1.5-migration.html" class="page">v1.4 To v1.5 Migration</a></li>
+    <li><a href="../../docs/releases/v1.4-release-notes.html" class="page">v1.4 Release Notes</a></li>
+    <li><a href="../../docs/releases/v1.3-to-v1.4-migration.html" class="page">v1.3 To v1.4 Migration</a></li>
+    <li><a href="../../docs/releases/v1.3-release-notes.html" class="page">v1.3 Release Notes</a></li>
+    <li><a href="../../docs/releases/v1.2-to-v1.3-migration.html" class="page">v1.2 To v1.3 Migration</a></li>
+    <li><a href="../../docs/releases/v1.2-release-notes.html" class="page">v1.2 Release Notes</a></li>
+    <li><a href="../../docs/releases/v1.1-release-notes.html" class="page">v1.1 Release Notes</a></li>
+    <li><a href="../../docs/releases/v1.0-to-v1.1-migration.html" class="page">v1.0 To v1.1 Migration</a></li>
+    <li><a href="../../docs/releases/v1.0-release-notes.html" class="page">v1.0 Release Notes</a></li>
+  </ul></li>
+  <li><a href="../../docs/roadmap.html" class="page">Roadmap</a></li>
+  <li><a href="../../docs/fusion/index.html" class="page">Nexus Fusion</a>
+  <ul>
+    <li><a href="../../docs/fusion/architecture.html" class="page">Architecture</a></li>
+    <li><a href="../../docs/fusion/plugins.html" class="page">Plugins</a></li>
+    <li><a href="../../docs/fusion/studio.html" class="page">Studios</a></li>
+    <li><a href="../../docs/fusion/search.html" class="page">Search</a></li>
+    <li><a href="../../docs/fusion/admin.html" class="page">Admin</a></li>
+    <li><a href="../../docs/fusion/workflow.html" class="page">Workflow (alpha)</a></li>
+    <li><a href="../../docs/fusion/add-your-own-app.html" class="page">Add your own App</a></li>
+  </ul></li>
+  <li><a href="../../docs/forge.html" class="page">Nexus Forge</a></li>
+  <li><a href="../../docs/delta/index.html" class="page">Nexus Delta</a>
+  <ul>
+    <li><a href="../../docs/delta/architecture.html" class="page">Architecture</a></li>
+    <li><a href="../../docs/delta/api/index.html" class="page">API Reference</a>
+    <ul>
+      <li><a href="../../docs/delta/api/content-negotiation.html" class="page">Content Negotiation</a></li>
+      <li><a href="../../docs/delta/api/error-signaling.html" class="page">Error Signaling</a></li>
+      <li><a href="../../docs/delta/api/version.html" class="page">Version</a></li>
+      <li><a href="../../docs/delta/api/authentication.html" class="page">Authentication &amp; Authorization</a></li>
+      <li><a href="../../docs/delta/api/identities.html" class="page">Identities</a></li>
+      <li><a href="../../docs/delta/api/permissions-api.html" class="page">Permissions</a></li>
+      <li><a href="../../docs/delta/api/realms-api.html" class="page">Realms</a></li>
+      <li><a href="../../docs/delta/api/acls-api.html" class="page">Access Control Lists</a></li>
+      <li><a href="../../docs/delta/api/orgs-api.html" class="page">Organizations</a></li>
+      <li><a href="../../docs/delta/api/projects-api.html" class="page">Projects</a></li>
+      <li><a href="../../docs/delta/api/quotas.html" class="page">Quotas</a></li>
+      <li><a href="../../docs/delta/api/schemas-api.html" class="page">Schemas</a></li>
+      <li><a href="../../docs/delta/api/resources-api.html" class="page">Resources</a></li>
+      <li><a href="../../docs/delta/api/resolvers-api.html" class="page">Resolvers</a></li>
+      <li><a href="../../docs/delta/api/views/index.html" class="page">Views</a>
+      <ul>
+        <li><a href="../../docs/delta/api/views/elasticsearch-view-api.html" class="page">ElasticSearchView</a></li>
+        <li><a href="../../docs/delta/api/views/pipes.html" class="page">Elasticsearch Pipes</a></li>
+        <li><a href="../../docs/delta/api/views/aggregated-es-view-api.html" class="page">AggregateElasticSearchView</a></li>
+        <li><a href="../../docs/delta/api/views/sparql-view-api.html" class="page">SparqlView</a></li>
+        <li><a href="../../docs/delta/api/views/aggregated-sparql-view-api.html" class="page">AggregateSparqlView</a></li>
+        <li><a href="../../docs/delta/api/views/composite-view-api.html" class="page">CompositeView</a></li>
+      </ul></li>
+      <li><a href="../../docs/delta/api/storages-api.html" class="page">Storages</a></li>
+      <li><a href="../../docs/delta/api/files-api.html" class="page">Files</a></li>
+      <li><a href="../../docs/delta/api/archives-api.html" class="page">Archives</a></li>
+      <li><a href="../../docs/delta/api/search-api.html" class="page">Global search</a></li>
+      <li><a href="../../docs/delta/api/graph-analytics-api.html" class="page">Graph analytics</a></li>
+      <li><a href="../../docs/delta/api/jira.html" class="page">Jira integration</a></li>
+      <li><a href="../../docs/delta/api/events-api.html" class="page">Global events</a></li>
+      <li><a href="../../docs/delta/api/supervision-api.html" class="page">Supervision</a></li>
+    </ul></li>
+    <li><a href="../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
+    <li><a href="../../docs/delta/benchmarks/index.html" class="page">Benchmarks</a>
+    <ul>
+      <li><a href="../../docs/delta/benchmarks/v1.4.2.html" class="page">Benchmarks v1.4.2</a></li>
+      <li><a href="../../docs/delta/benchmarks/v1.2.1.html" class="page">Benchmarks v1.2.1</a></li>
+    </ul></li>
+  </ul></li>
+  <li><a href="../../docs/utilities/index.html" class="page">Utilities</a></li>
+  <li><a href="../../docs/faq.html" class="page">FAQ</a></li>
+</ul>
+<nav class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="__toc">Table of contents</label>
+<ul>
+  <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html#v1-7-to-v1-8-migration" class="header">v1.7 To v1.8 Migration</a>
+  <ul>
+    <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html#requirements" class="header">Requirements</a></li>
+    <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html#prepare-cassandra" class="header">Prepare Cassandra</a>
+    <ul>
+      <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html#perform-a-backup" class="header">Perform a backup</a></li>
+      <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html#create-a-materialized-view-on-the-messages-table-on-the-original-keyspace" class="header">Create a materialized view on the messages table on the original keyspace</a></li>
+      <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html#check-the-materialized-view" class="header">Check the materialized view</a></li>
+    </ul></li>
+    <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html#prepare-postgresql" class="header">Prepare PostgreSQL</a>
+    <ul>
+      <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html#create-migration-tables" class="header">Create migration tables</a></li>
+      <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html#create-the-postgresql-tables" class="header">Create the PostgreSQL tables</a></li>
+    </ul></li>
+    <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html#elasticsearch-and-blazegraph-indices" class="header">Elasticsearch and Blazegraph indices</a></li>
+    <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html#migration-configuration" class="header">Migration configuration</a>
+    <ul>
+      <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html#pull-the-docker-image-for-delta-1-8" class="header">Pull the docker image for Delta 1.8</a></li>
+      <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html#configure-delta-in-migration-mode" class="header">Configure Delta in migration mode</a>
+      <ul>
+        <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html#configuration-file" class="header">Configuration file</a></li>
+        <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html#environment-variables" class="header">Environment variables</a></li>
+        <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html#jvm-parameters" class="header">JVM parameters</a></li>
+        <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html#java-properties" class="header">Java properties</a></li>
+      </ul></li>
+    </ul></li>
+    <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html#migrating-events-from-cassandra-to-postgresql" class="header">Migrating events from Cassandra to PostgreSQL</a>
+    <ul>
+      <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html#starting-the-data-migration" class="header">Starting the data migration</a></li>
+      <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html#monitor-the-health-of-the-platform" class="header">Monitor the health of the platform</a></li>
+      <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html#check-the-migration-progress-" class="header">Check the migration progress:</a></li>
+      <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html#post-data-migration-checks" class="header">Post data migration checks</a></li>
+      <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html#internal-postgresql-consistency-check" class="header">Internal PostgreSQL consistency check</a></li>
+      <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html#high-revision-entities-check" class="header">High revision entities check</a></li>
+      <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html#automated-migration-checks" class="header">Automated migration checks</a>
+      <ul>
+        <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html#example" class="header">Example</a></li>
+      </ul></li>
+    </ul></li>
+    <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html#indexing" class="header">Indexing</a>
+    <ul>
+      <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html#notes" class="header">Notes</a></li>
+      <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html#post-indexing-checks" class="header">Post indexing checks</a></li>
+    </ul></li>
+    <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html#clean-up" class="header">Clean-up</a></li>
+  </ul></li>
+</ul>
+</nav>
+
+</nav>
+<ul style="display: none">
+<li class="md-nav__item md-version" id="project.version">
+<label class="md-nav__link" for="__version">
+<i class="md-icon" title="Version">label_outline</i> Snapshot
+</label>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="md-sidebar md-sidebar--secondary" data-md-component="toc">
+<div class="md-sidebar__scrollwrap">
+<div class="md-sidebar__inner">
+<nav class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="__toc">Table of contents</label>
+<ul>
+  <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html#v1-7-to-v1-8-migration" class="header">v1.7 To v1.8 Migration</a>
+  <ul>
+    <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html#requirements" class="header">Requirements</a></li>
+    <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html#prepare-cassandra" class="header">Prepare Cassandra</a>
+    <ul>
+      <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html#perform-a-backup" class="header">Perform a backup</a></li>
+      <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html#create-a-materialized-view-on-the-messages-table-on-the-original-keyspace" class="header">Create a materialized view on the messages table on the original keyspace</a></li>
+      <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html#check-the-materialized-view" class="header">Check the materialized view</a></li>
+    </ul></li>
+    <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html#prepare-postgresql" class="header">Prepare PostgreSQL</a>
+    <ul>
+      <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html#create-migration-tables" class="header">Create migration tables</a></li>
+      <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html#create-the-postgresql-tables" class="header">Create the PostgreSQL tables</a></li>
+    </ul></li>
+    <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html#elasticsearch-and-blazegraph-indices" class="header">Elasticsearch and Blazegraph indices</a></li>
+    <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html#migration-configuration" class="header">Migration configuration</a>
+    <ul>
+      <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html#pull-the-docker-image-for-delta-1-8" class="header">Pull the docker image for Delta 1.8</a></li>
+      <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html#configure-delta-in-migration-mode" class="header">Configure Delta in migration mode</a>
+      <ul>
+        <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html#configuration-file" class="header">Configuration file</a></li>
+        <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html#environment-variables" class="header">Environment variables</a></li>
+        <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html#jvm-parameters" class="header">JVM parameters</a></li>
+        <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html#java-properties" class="header">Java properties</a></li>
+      </ul></li>
+    </ul></li>
+    <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html#migrating-events-from-cassandra-to-postgresql" class="header">Migrating events from Cassandra to PostgreSQL</a>
+    <ul>
+      <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html#starting-the-data-migration" class="header">Starting the data migration</a></li>
+      <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html#monitor-the-health-of-the-platform" class="header">Monitor the health of the platform</a></li>
+      <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html#check-the-migration-progress-" class="header">Check the migration progress:</a></li>
+      <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html#post-data-migration-checks" class="header">Post data migration checks</a></li>
+      <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html#internal-postgresql-consistency-check" class="header">Internal PostgreSQL consistency check</a></li>
+      <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html#high-revision-entities-check" class="header">High revision entities check</a></li>
+      <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html#automated-migration-checks" class="header">Automated migration checks</a>
+      <ul>
+        <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html#example" class="header">Example</a></li>
+      </ul></li>
+    </ul></li>
+    <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html#indexing" class="header">Indexing</a>
+    <ul>
+      <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html#notes" class="header">Notes</a></li>
+      <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html#post-indexing-checks" class="header">Post indexing checks</a></li>
+    </ul></li>
+    <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html#clean-up" class="header">Clean-up</a></li>
+  </ul></li>
+</ul>
+</nav>
+
+</div>
+</div>
+</div>
+<div class="md-content">
+<article class="md-content__inner md-typeset">
+<div class="callout note warning admonition" style="visibility: visible; margin-top: 0px">
+<div class="callout-title admonition-title">Snapshot version</div>
+<p>
+You are browsing the docs for the snapshot version of Nexus,
+the latest release is available <a href="https://bluebrainnexus.io/docs/" title="here">here</a>
+</p>
+</div>
+<div class="md-content__searchable">
+<h1><a href="#v1-7-to-v1-8-migration" name="v1-7-to-v1-8-migration" class="anchor"><span class="anchor-link"></span></a>v1.7 To v1.8 Migration</h1>
+<p>The v1.8 release of Delta introduces PostgreSQL as sole option for the Delta primary event store.</p>
+<p>(To have a complete list of improvements, <a href="v1.8-release-notes.html">see here</a>).</p>
+<p>These improvements require to replay all existing events, moving them from Cassandra to PostgreSQL, and to reindex all data to Elasticsearch/Blazegraph.</p>
+<p>The following steps describe how to perform the migration. At the end, Delta v1.8 will be running using PostgreSQL as primary store.</p>
+<p>Depending on the number and the complexity of existing resources and schemas in the system, the migration may take several hours to complete.</p>
+<p>The migration itself can be run in three ways:</p>
+<ul>
+  <li>Switching off your Delta 1.7-base Nexus deployment, and re-starting it with Delta 1.8. Then re-uploading all the data  in the new instance. This only requires setting up the PostgreSQL instance, and upgrading the Delta image.</li>
+  <li>Switching off Delta 1.7, and starting Delta 1.8 by following the steps described in this document.</li>
+  <li>Starting a Delta 1.8 in parallel to Delta 1.7 by following the steps described in this document. When ready, the 1.7  can be switched off and be replaced by Delta 1.8. This step also requires to run a second instance of Blazegraph.</li>
+</ul>
+<p>The choice of migration will depend on your current setup, needs, and uptime requirements that you want to uphold for your users. At Blue Brain, we have opted to run two instances in parallel. This allows for an online migration from Cassandra to PostgreSQL that does not disrupt the users using Delta 1.7. While both instances are running, any actions taken by the users in the 1.7 instance will be migrated and reflected in the Delta 1.8 instance.</p>
+<p>The third option can be summarized as follows:</p>
+<p><img src="assets/img/migration-diagram.png" alt="Migration diagram" /></p>
+<ol>
+  <li>Events from Cassandra are read (in order) by the Delta 1.8 instance</li>
+  <li>These events are pushed to the PostgreSQL instance</li>
+  <li>Only when the data migration is complete and indexing enabled, data is reindexed in Elasticsearch and Blazegraph using new indices</li>
+</ol>
+<h2><a href="#requirements" name="requirements" class="anchor"><span class="anchor-link"></span></a>Requirements</h2>
+<ul>
+  <li>Running an instance of Delta 1.7</li>
+  <li>PostgreSQL
+    <ul>
+      <li>Version: ^15.1</li>
+      <li>Storage: minimum 80% of the storage dedicated to Cassandra in Delta 1.7</li>
+      <li>CPU: minimum 50% of the CPU allocated to Cassandra in Delta 1.7</li>
+      <li>RAM: minimum 50% of the RAM allocated to Cassandra in Delta 1.7</li>
+    </ul>
+  </li>
+</ul><div class="callout note warning"><div class="callout-title">Note</div>
+<p>The values stated above are indicative and should be adapted in function of your actual Delta usage.</p></div>
+<h2><a href="#prepare-cassandra" name="prepare-cassandra" class="anchor"><span class="anchor-link"></span></a>Prepare Cassandra</h2>
+<h3><a href="#perform-a-backup" name="perform-a-backup" class="anchor"><span class="anchor-link"></span></a>Perform a backup</h3>
+<p>Perform a <a href="https://docs.datastax.com/en/archived/cassandra/3.0/cassandra/operations/opsBackupRestore.html" title="backup" target="_blank" rel="noopener noreferrer">backup</a> of the original keyspace <code>delta_1_7</code> and perform a repair of the Cassandra nodes:</p>
+<pre class="prettyprint"><code class="language-cqlsh">nodetool repair
+</code></pre><div class="callout note warning"><div class="callout-title">Note</div>
+<p>We will assume from hereon that the existing Cassandra keyspace is <code>delta_1_7</code>.</p></div>
+<h3><a href="#create-a-materialized-view-on-the-messages-table-on-the-original-keyspace" name="create-a-materialized-view-on-the-messages-table-on-the-original-keyspace" class="anchor"><span class="anchor-link"></span></a>Create a materialized view on the messages table on the original keyspace</h3>
+<p>Check the total space used (in bytes) by the original <code>delta_1_7.messages</code> table:</p>
+<pre class="prettyprint"><code class="language-shell">nodetool tablestats delta_1_7.messages | grep &quot;Space used (total)&quot;
+</code></pre>
+<p>It is safe to assume that the materialized view will take the same amount of space as the original table, and sufficient storage space should be ensured.</p>
+<p>When ready, create a materialized view on the messages table on the keyspace <code>delta_1_7</code>:</p>
+<pre class="prettyprint"><code class="language-sql">CREATE MATERIALIZED VIEW IF NOT EXISTS delta_1_7.ordered_messages AS
+    SELECT ser_manifest, ser_id, event
+    FROM delta_1_7.messages
+    WHERE timebucket is not null
+    AND persistence_id is not null
+    AND partition_nr is not null
+    AND sequence_nr is not null
+    AND timestamp is not null
+    PRIMARY KEY(timebucket, timestamp, persistence_id, partition_nr, sequence_nr)
+    WITH CLUSTERING ORDER BY (timestamp asc);
+</code></pre>
+<p>The materialized view will take some time to build depending on the number of events.</p>
+<h3><a href="#check-the-materialized-view" name="check-the-materialized-view" class="anchor"><span class="anchor-link"></span></a>Check the materialized view</h3>
+<p>These operations may take a while to complete depending on the number of rows in the messages table.</p>
+<ul>
+  <li>On the messages table:</li>
+</ul>
+<pre class="prettyprint"><code class="language-shell">cqlsh -e &#39;select timebucket from delta_1_7.messages&#39; | grep rows
+</code></pre>
+<ul>
+  <li>On the materialized view:</li>
+</ul>
+<pre class="prettyprint"><code class="language-shell">cqlsh -e &#39;select timebucket from delta_1_7.ordered_messages&#39; | grep rows
+</code></pre>
+<p>When the materialized view has the same number of rows as the table then it is ready for migration.</p>
+<h2><a href="#prepare-postgresql" name="prepare-postgresql" class="anchor"><span class="anchor-link"></span></a>Prepare PostgreSQL</h2>
+<h3><a href="#create-migration-tables" name="create-migration-tables" class="anchor"><span class="anchor-link"></span></a>Create migration tables</h3>
+<p>Run the following command in the PostgreSQL instance to create the temporary tables needed for the migration:</p>
+<pre class="prettyprint"><code class="language-sql">CREATE TABLE IF NOT EXISTS public.migration_offset(
+    name         text        NOT NULL,
+    akka_offset  text        NOT NULL,
+    processed    bigint      NOT NULL,
+    discarded    bigint      NOT NULL,
+    failed       bigint      NOT NULL,
+    instant      timestamptz NOT NULL,
+    PRIMARY KEY(name)
+);
+
+CREATE TABLE IF NOT EXISTS public.ignored_events(
+    type            text        NOT NULL,
+    persistence_id  text        NOT NULL,
+    sequence_nr     bigint      NOT NULL,
+    payload         JSONB       NOT NULL,
+    instant         timestamptz NOT NULL,
+    akka_offset     text        NOT NULL
+);
+</code></pre>
+<h3><a href="#create-the-postgresql-tables" name="create-the-postgresql-tables" class="anchor"><span class="anchor-link"></span></a>Create the PostgreSQL tables</h3>
+<p>Run the commands from the <a href="https://github.com/BlueBrain/nexus/blob/master/delta/sourcing-psql/src/main/resources/scripts/schema.ddl" title="Delta 1.8.x schema.ddl file">Delta 1.8.x schema.ddl file</a> to create the tables necessary for Delta operations.</p>
+<h2><a href="#elasticsearch-and-blazegraph-indices" name="elasticsearch-and-blazegraph-indices" class="anchor"><span class="anchor-link"></span></a>Elasticsearch and Blazegraph indices</h2>
+<p>For the migration, there are two ways to make sure that the new Delta 1.8 indices do not overlap the ones from Delta 1.7 (for both Elasticsearch and Blazegraph):</p>
+<ol>
+  <li>Delete all existing indices</li>
+  <li>Configure a different prefix for the new Delta 1.8 indices using the  <a href="https://github.com/BlueBrain/nexus/blob/master/delta/app/src/main/resources/app.conf#L357" title="`app.defaults.indexing.prefix` field"><code>app.defaults.indexing.prefix</code> field</a>,  which sets  the default prefix value for both Elasticsearch and Blazegraph indices.</li>
+</ol><div class="callout note warning"><div class="callout-title">Note</div>
+<p>Elasticsearch defaults to <a href="https://www.elastic.co/guide/en/elasticsearch/reference/8.7/misc-cluster-settings.html#cluster-shard-limit" title="a maximum of 1000 shards per node">a maximum of 1000 shards per node</a> in the cluster. If you intend to keep both old and new indices for the time of the migration, ensure that you can double your amount of shards within this limit. It is also possible to raise this limit by configuring <code>cluster.max_shards_per_node</code>. In both cases, monitor your resource usage, and consider allocating more resources to Elasticsearch for the time of the migration.</p></div><div class="callout note tip"><div class="callout-title">Blazegraph journal size</div>
+<p>Blazegraph stores data using a journaling system, which is append-only. Consider backing up your existing Blazegraph journal (by making a copy of the <code>blazegraph.jnl</code> file), and running with a clean instance of Blazegraph. This can allow a significant reduction in the size of the journal as only the latest state will be saved.</p></div>
+<h2><a href="#migration-configuration" name="migration-configuration" class="anchor"><span class="anchor-link"></span></a>Migration configuration</h2>
+<h3><a href="#pull-the-docker-image-for-delta-1-8" name="pull-the-docker-image-for-delta-1-8" class="anchor"><span class="anchor-link"></span></a>Pull the docker image for Delta 1.8</h3>
+<p>Pull the docker image for Delta 1.8 from <a href="https://hub.docker.com/r/bluebrain/nexus-delta" title="Docker Hub">Docker Hub</a></p>
+<pre class="prettyprint"><code class="language-shell">docker pull bluebrain/nexus-delta:1.8.x
+</code></pre>
+<h3><a href="#configure-delta-in-migration-mode" name="configure-delta-in-migration-mode" class="anchor"><span class="anchor-link"></span></a>Configure Delta in migration mode</h3>
+<p>This section defines the mandatory configuration to run Delta in migration mode.</p>
+<h4><a href="#configuration-file" name="configuration-file" class="anchor"><span class="anchor-link"></span></a>Configuration file</h4>
+<p>A <a href="https://github.com/BlueBrain/nexus/blob/master/delta/migration/scripts/config/migration.conf" title="migration configuration file">migration configuration file</a> needs to be made available at a path accessible by Delta 1.8, which will be references by an <a href="v1.7-to-v1.8-migration.html#environment-variables">environment variable</a>. Important fields are:</p>
+<ul>
+  <li><code>migration.batch.max-elements</code>: maximum number of events to push to PostgreSQL at once</li>
+  <li><code>migration.replay.max-buffer-size</code>: maximum number of events to read from Cassandra at once</li>
+  <li><code>migration.replay.keyspace</code>: name of the existing Cassandra keyspace</li>
+  <li><code>migration.first-time-bucket</code>: the time bucket from which to start the migration</li>
+  <li><code>migration.ignored.blacklisted</code>: a list of projects to ignore during the migration</li>
+</ul>
+<h4><a href="#environment-variables" name="environment-variables" class="anchor"><span class="anchor-link"></span></a>Environment variables</h4>
+<p>The following environment variables need to be set when launching Delta v1.8 in migration mode:</p>
+<ul>
+  <li><code>KAMON_ENABLED</code>: false (not mandatory but recommended)</li>
+  <li><code>MIGRATE_DATA</code>: true</li>
+  <li><code>DISABLE_INDEXING</code>: true</li>
+  <li><code>MIGRATION_CONF</code>: /path/to/migration.conf (cf. <a href="v1.7-to-v1.8-migration.html#configuration-file">configuration file</a>)</li>
+  <li><code>DELTA_PLUGINS</code>: /opt/docker/plugins/</li>
+</ul>
+<h4><a href="#jvm-parameters" name="jvm-parameters" class="anchor"><span class="anchor-link"></span></a>JVM parameters</h4>
+<ul>
+  <li>Adopt the same values as the one for your current deployment</li>
+</ul>
+<h4><a href="#java-properties" name="java-properties" class="anchor"><span class="anchor-link"></span></a>Java properties</h4>
+<table>
+  <thead>
+    <tr>
+      <th>Description </th>
+      <th>Property </th>
+      <th>Example value </th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>PostgreSQL host </td>
+      <td>app.defaults.database.access.host </td>
+      <td> </td>
+    </tr>
+    <tr>
+      <td>PostgreSQL port </td>
+      <td>app.defaults.database.access.port </td>
+      <td> </td>
+    </tr>
+    <tr>
+      <td>PostgreSQL pool size </td>
+      <td>app.defaults.database.access.pool-size </td>
+      <td> </td>
+    </tr>
+    <tr>
+      <td>PostgreSQL username </td>
+      <td>app.defaults.database.username </td>
+      <td> </td>
+    </tr>
+    <tr>
+      <td>PostgreSQL password </td>
+      <td>app.defaults.database.password </td>
+      <td> </td>
+    </tr>
+    <tr>
+      <td>PostgreSQL database name </td>
+      <td>app.defaults.database.name </td>
+      <td> </td>
+    </tr>
+    <tr>
+      <td>Service binding interface </td>
+      <td>app.http.interface </td>
+      <td>0.0.0.0 </td>
+    </tr>
+    <tr>
+      <td>Service Uri Path prefix </td>
+      <td>app.http.base-uri </td>
+      <td>{delta-url}:8080/v1 </td>
+    </tr>
+    <tr>
+      <td>Cassandra username </td>
+      <td>datastax-java-driver.advanced.auth-provider.username </td>
+      <td> </td>
+    </tr>
+    <tr>
+      <td>Cassandra password </td>
+      <td>datastax-java-driver.advanced.auth-provider.password </td>
+      <td> </td>
+    </tr>
+    <tr>
+      <td>Cassandra auth class </td>
+      <td>datastax-java-driver.advanced.auth-provider.class </td>
+      <td>PlainTextAuthProvider </td>
+    </tr>
+    <tr>
+      <td>Cassandra contact point (1) </td>
+      <td>datastax-java-driver.basic.contact-points.0 </td>
+      <td>cassandra-1:9042 </td>
+    </tr>
+    <tr>
+      <td>Cassandra contact point (2) </td>
+      <td>datastax-java-driver.basic.contact-points.1 </td>
+      <td>cassandra-2:9042 </td>
+    </tr>
+    <tr>
+      <td>Cassandra timeout </td>
+      <td>datastax-java-driver.basic.request.timeout </td>
+      <td>10 seconds </td>
+    </tr>
+    <tr>
+      <td>Cassandra pagination </td>
+      <td>datastax-java-driver.basic.page-size </td>
+      <td>500 </td>
+    </tr>
+    <tr>
+      <td>Cassandra compression lib </td>
+      <td>datastax-java-driver.advanced.protocol.compression </td>
+      <td>lz4 </td>
+    </tr>
+    <tr>
+      <td>Cassandra reconnect </td>
+      <td>datastax-java-driver.advanced.reconnect-on-init </td>
+      <td>true </td>
+    </tr>
+    <tr>
+      <td>Secrets encryption password </td>
+      <td>app.encryption.password </td>
+      <td> </td>
+    </tr>
+    <tr>
+      <td>Secrets encryption salt </td>
+      <td>app.encryption.salt </td>
+      <td> </td>
+    </tr>
+    <tr>
+      <td>Remote storage enabling </td>
+      <td>plugins.storage.storages.remote-disk.enabled </td>
+      <td>true/false </td>
+    </tr>
+    <tr>
+      <td>S3 storage enabling </td>
+      <td>plugins.storage.storages.amazon.enabled </td>
+      <td>true/false </td>
+    </tr>
+  </tbody>
+</table>
+<p>For more information on the configuration of Delta, please refer to the <a href="../getting-started/running-nexus/configuration/index.html">Nexus configuration page</a>.</p>
+<h2><a href="#migrating-events-from-cassandra-to-postgresql" name="migrating-events-from-cassandra-to-postgresql" class="anchor"><span class="anchor-link"></span></a>Migrating events from Cassandra to PostgreSQL</h2>
+<h3><a href="#starting-the-data-migration" name="starting-the-data-migration" class="anchor"><span class="anchor-link"></span></a>Starting the data migration</h3>
+<p>Start Delta v1.8 with the configuration described in the <a href="v1.7-to-v1.8-migration.html#migration-configuration">configuration section</a>. As the application starts, the Delta log should contain the following lines:</p>
+<pre class="prettyprint"><code class="nocode">2023-02-08 13:02:26 INFO  c.e.b.n.d.sourcing.stream.Supervisor - Starting Delta supervisor
+2023-02-08 13:02:26 INFO  c.e.b.n.d.sourcing.stream.Supervisor - Delta supervisor is up
+2023-02-08 13:02:27 INFO  c.e.b.n.d.sourcing.stream.Supervisor - Starting &#39;migration/migrate-from-cassandra&#39; with strategy &#39;TransientSingleNode&#39;.
+</code></pre>
+<h3><a href="#monitor-the-health-of-the-platform" name="monitor-the-health-of-the-platform" class="anchor"><span class="anchor-link"></span></a>Monitor the health of the platform</h3>
+<p>Please check the general health of the platform.</p>
+<h3><a href="#check-the-migration-progress-" name="check-the-migration-progress-" class="anchor"><span class="anchor-link"></span></a>Check the migration progress:</h3>
+<p>Run the following query on table <code>migration_progress</code> in your PostgreSQL instance:</p>
+<pre class="prettyprint"><code class="language-sql">SELECT name, akka_offset, processed, discarded, failed, instant FROM public.migration_offset;
+</code></pre>
+<p>This will return a similar response:</p>
+<pre><code>   name    |             akka_offset              | processed | discarded | failed |          instant
+-----------+--------------------------------------+-----------+-----------+--------+----------------------------
+ migration | c64c3630-a3a8-11ed-9b31-b3b1660f61b0 |    267972 |         0 |      0 | 2023-02-03 10:54:39.507+01
+</code></pre>
+<p>The table contains the following information:</p>
+<ul>
+  <li><code>processed</code>: total number of processed events that have been processed</li>
+  <li><code>discarded</code>: total number of events that have been discarded</li>
+  <li><code>failed</code>: number of failures risen during the migration</li>
+  <li><code>instant</code>: timestamp of the last event processed by migration when migration last saved progress</li>
+</ul>
+<p>Once the migration terminates, the sum of the processed, discarded, and failed columns should be equal to the number of events in your Delta 1.7 deployment.</p>
+<p>When looking at the logs, these lines should be also repeated (the timestamp should match the current date/hour):</p>
+<pre><code>2023-02-08 12:56:26 INFO  c.e.b.n.m.replay.ReplayEvents - We got 0 rows
+2023-02-08 12:56:26 INFO  c.e.b.n.m.replay.ReplayEvents - Next offset is 1ced2000-a7a8-11ed-8080-808080808080 (2023-02-08 12:00:00:000)
+2023-02-08 12:56:26 INFO  c.e.b.n.m.replay.ReplayEvents - No results for current bucket, waiting for 3000 milliseconds
+</code></pre>
+<p>Keep looking regularly in the logs to look if the migration is still ongoing without problems. If the migration crashes, a restart should allow it to start back from where it stopped.</p>
+<h3><a href="#post-data-migration-checks" name="post-data-migration-checks" class="anchor"><span class="anchor-link"></span></a>Post data migration checks</h3>
+<h3><a href="#internal-postgresql-consistency-check" name="internal-postgresql-consistency-check" class="anchor"><span class="anchor-link"></span></a>Internal PostgreSQL consistency check</h3>
+<p>Once the migration has reached the current date/time, check that the sum of global and scoped events is equal to the number of processed events. Running the following query, the two columns should be equal:</p>
+<pre class="prettyprint"><code class="language-sql">SELECT
+ (SELECT COUNT(*) FROM scoped_events) +
+ (SELECT COUNT(*) FROM global_events) sum_events,
+ (SELECT processed FROM migration_offset);
+</code></pre>
+<h3><a href="#high-revision-entities-check" name="high-revision-entities-check" class="anchor"><span class="anchor-link"></span></a>High revision entities check</h3>
+<p>Find entities that have a high number of revisions:</p>
+<pre class="prettyprint"><code class="language-sql">SELECT id, max_rev FROM
+  (SELECT 
+    id, MAX(rev) max_rev 
+    FROM scoped_events 
+    GROUP BY id
+  ) AS idToRev 
+ ORDER BY max_rev DESC LIMIT 5;
+</code></pre>
+<p>and check that their revision counts match the number of revisions in Cassandra:</p>
+<pre class="prettyprint"><code class="language-sql">SELECT COUNT(*) FROM delta_1_7.messages WHERE persistence_id = &#39;{persistence_id}&#39; and partition_nr = 0;
+</code></pre>
+<p>where the <code>persistence_id</code> is of the form <code>{entity_type}-{org_name}%2F{project_name}_{id}</code>. Make sure <code>{id}</code> has URL encoded characters.</p>
+<h3><a href="#automated-migration-checks" name="automated-migration-checks" class="anchor"><span class="anchor-link"></span></a>Automated migration checks</h3>
+<p>If you are running Delta 1.8 in parallel to Delta 1.7, it is possible to perform automated checks by making POST requests to the following Delta 1.8 endpoints once the reindexing is completed.</p>
+<p>To run the checks add and complete the following to your <code>migration.conf</code>:</p>
+<pre class="prettyprint"><code class="language-hocon">check {
+  # Previous prefix used for indexing
+  previous-prefix = &quot;{old_indexing_prefix}&quot;
+  # The endpoint of the blazegraph instance used for Delta 1.7
+  blazegraph-base = &quot;http://blazegraph:9999/blazegraph&quot;
+  # The endpoint of the Delta 1.7 instance
+  delta-base = &quot;http://delta:8080/v1&quot;
+  # The endpoint of the Delta 1.7 instance
+  new-delta-base = &quot;http://delta-new:8080/v1&quot;
+  # Save interval for long running checks
+  save-interval = 20 seconds
+  # Max concurrent checks for resources
+  max-concurrent = 2
+}
+</code></pre>
+<p>and start Delta 1.8 with the <code>MIGRATE_CHECK</code> environment variable set to <code>true</code>. You will then be able to call the following migration check HTTP endpoints on your Delta 1.8 instance.</p>
+<ul>
+  <li><code>/migration/project-stats</code>
+    <ul>
+      <li>Count the number of resources in projects across the two instances</li>
+      <li>Results are written in <code>public.migration_project_count</code></li>
+    </ul>
+  </li>
+  <li><code>/migration/elasticsearch</code>
+    <ul>
+      <li>Count the indexed documents in Elasticsearch views across the two instances</li>
+      <li>Results are written in <code>public.migration_elasticsearch_count</code></li>
+    </ul>
+  </li>
+  <li><code>/migration/blazegraph</code>
+    <ul>
+      <li>Count the indexed documents in Blazegraph views across the two instances</li>
+      <li>Results are written in <code>public.migration_blazegraph_count</code></li>
+    </ul>
+  </li>
+  <li><code>/migration/composite</code>
+    <ul>
+      <li>Count the indexed documents in composite views across the two instances</li>
+      <li>Results are written in <code>public.migration_composite_count</code></li>
+    </ul>
+  </li>
+  <li><code>/migration/resources</code>
+    <ul>
+      <li>Results are written in <code>public.migration_resources_diff</code></li>
+    </ul>
+  </li>
+</ul><div class="callout note warning"><div class="callout-title">Note</div>
+<p>Delta 1.8 contains several bug fixes and improvements that result in differences in the Blazegraph counts. As such it is expected to find differences in the <code>migration_blazegraph_count</code> table. Additionally, the <a href="https://github.com/BlueBrain/nexus/blob/master/delta/plugins/blazegraph/src/main/resources/blazegraph.conf#L22" title="default Blazegraph query timeout">default Blazegraph query timeout</a> is 1 minute, so that the count may not be able to complete for large projects.</p></div>
+<p>The calls must be authenticated using the same service account as the one defined in Delta.</p>
+<p>Before running the tests, the following command needs to be run in your PostgreSQL instance:</p>
+<pre class="prettyprint"><code class="language-sql">CREATE TABLE IF NOT EXISTS public.migration_resources_diff_offset(
+    project   text         NOT NULL,
+    ordering  bigint,
+    PRIMARY KEY(project)
+);
+
+CREATE TABLE IF NOT EXISTS public.migration_resources_diff(
+    type      text         NOT NULL,
+    project   text         NOT NULL,
+    id        text         NOT NULL,
+    value_1_7 JSONB,
+    value_1_8 JSONB,
+    error     text,
+    PRIMARY KEY(type, project, id)
+);
+
+CREATE TABLE IF NOT EXISTS public.migration_project_count(
+    project   text         NOT NULL,
+    event_count_1_7 bigint,
+    event_count_1_8 bigint,
+    resource_count_1_7 bigint,
+    resource_count_1_8 bigint,
+    error     text,
+    PRIMARY KEY(project)
+);
+
+CREATE TABLE IF NOT EXISTS public.migration_blazegraph_count(
+    project   text         NOT NULL,
+    id        text         NOT NULL,
+    count_1_7 bigint,
+    count_1_8 bigint,
+    PRIMARY KEY(project, id)
+);
+
+CREATE TABLE IF NOT EXISTS public.migration_elasticsearch_count(
+    project   text         NOT NULL,
+    id        text         NOT NULL,
+    count_1_7 bigint,
+    count_1_8 bigint,
+    PRIMARY KEY(project, id)
+);
+
+CREATE TABLE IF NOT EXISTS public.migration_composite_count(
+    project       text         NOT NULL,
+    id            text         NOT NULL,
+    space_id text         NOT NULL,
+    count_1_7 bigint,
+    count_1_8 bigint,
+    PRIMARY KEY(project, id, space_id)
+);
+</code></pre>
+<h4><a href="#example" name="example" class="anchor"><span class="anchor-link"></span></a>Example</h4>
+<pre class="prettyprint"><code class="language-shell">export TOKEN=&lt;service-account-bearer-token&gt;
+curl --request POST -H &quot;Authorization: Bearer $TOKEN&quot; http://localhost:80/v1/migration/elasticsearch
+</code></pre>
+<p>In the logs, you should observe</p>
+<pre class="prettyprint"><code class="nocode">2023-02-27 09:11:37 INFO  c.e.b.n.d.p.c.m.ElasticSearchViewsCheck - Starting checking elasticsearch views counts
+...
+2023-02-27 09:11:39 INFO  c.e.b.n.d.p.c.m.ElasticSearchViewsCheck - Checking elasticsearch views counts completed in 1 seconds.
+2023-02-27 09:11:39 INFO  c.e.b.n.d.p.c.m.MigrationCheckRoutes - Stopping stream &#39;elasticsearch&#39; after completion.
+</code></pre>
+<p>After which it is possible to inspect the results in the <code>public.migration_elasticsearch_count</code> PostgreSQL table.</p>
+<h2><a href="#indexing" name="indexing" class="anchor"><span class="anchor-link"></span></a>Indexing</h2>
+<p>Once migration is completed and the previous checks have been performed, Delta can be restarted in normal mode.</p>
+<ul>
+  <li>Shut down Delta v1.8 running in migration mode.</li>
+  <li>Remove the <code>MIGRATE_DATA</code>, <code>DISABLE_INDEXING</code> environment variables.
+    <ul>
+      <li>While <code>DISABLE_INDEXING</code> disables <em>all</em> indexing, it is possible to have more granular control over what is being  indexed by using combinations of the following environment  variables: <code>DISABLE_ES_INDEXING</code>, <code>DISABLE_BG_INDEXING</code>, <code>DISABLE_COMPOSITE_INDEXING</code> which disable the indexing  of Elasticsearch views, Blazegraph/Sparql views, and composite views, respectively.</li>
+    </ul>
+  </li>
+  <li>Restart Delta v1.8, which will now run in normal mode.</li>
+  <li>Check the Delta logs after restart. It should contain the following lines:</li>
+</ul>
+<pre class="prettyprint"><code class="nocode">2023-02-08 13:34:13 INFO  c.e.b.n.d.sourcing.stream.Supervisor - Starting &#39;system/elasticsearch-coordinator&#39; with strategy &#39;EveryNode&#39;.
+2023-02-08 13:34:13 INFO  c.e.b.n.d.sourcing.stream.Supervisor - Starting &#39;system/blazegraph-coordinator&#39; with strategy &#39;EveryNode&#39;.
+2023-02-08 13:34:13 INFO  c.e.b.n.d.sourcing.stream.Supervisor - Starting &#39;system/composite-views-coordinator&#39; with strategy &#39;EveryNode&#39;.
+</code></pre>
+<p>And for each view:</p>
+<pre class="prettyprint"><code class="nocode">2023-02-08 13:37:09 INFO  c.e.b.n.d.sourcing.stream.Supervisor - Starting &#39;elasticsearch/elasticsearch-{org}/{project}-{viewId}-{revision}&#39; with strategy &#39;PersistentSingleNode&#39;.
+2023-02-08 13:37:09 INFO  c.e.b.n.d.sourcing.stream.Supervisor - Starting &#39;blazegraph/blazegraph-{org}/{project}-{viewId}-{revision}&#39; with strategy &#39;PersistentSingleNode&#39;.
+2023-02-08 13:34:16 INFO  c.e.b.n.d.sourcing.stream.Supervisor - Starting &#39;compositeviews/composite-views-{org}/{project}-{viewId}-{revision}&#39; with strategy &#39;TransientSingleNode&#39;.
+</code></pre>
+<p>Following these steps, Delta v1.8 will do a complete reindexing of the views that were migrated.</p>
+<h3><a href="#notes" name="notes" class="anchor"><span class="anchor-link"></span></a>Notes</h3>
+<ul>
+  <li>As the entire indexing will take place, some timeouts may occur.</li>
+  <li>Leaving Kamon disabled (environment variable <code>KAMON_ENABLED</code> set to <code>false</code>) during this indexing is recommended.</li>
+  <li>Allocating temporarily more resources to Delta/PostgreSQL/Elasticsearch/Blazegraph may help as this part is greedy in  resources.</li>
+  <li>When indexing is finished, the CPU/memory used by the platform should decrease.</li>
+</ul>
+<h3><a href="#post-indexing-checks" name="post-indexing-checks" class="anchor"><span class="anchor-link"></span></a>Post indexing checks</h3>
+<p>For a given <code>{org}/{project}</code> check that the number of indexed resources is correct in the default views.</p>
+<pre class="prettyprint"><code class="language-sql">WITH vars (myorg, myproj, view_type) AS (
+  VALUES (&#39;{org}&#39;, &#39;{project}&#39;, &#39;{elasticsearch|blazegraph}&#39;)
+)
+SELECT
+  (SELECT COUNT(DISTINCT id) FROM scoped_events, vars WHERE org = myorg AND project = myproj) project_resources,
+  (SELECT processed-discarded FROM projection_offsets, vars WHERE name LIKE view_type || &#39;-&#39; || myorg || &#39;/&#39; || myproj || &#39;-%default%&#39;) indexed_resources;
+</code></pre>
+<h2><a href="#clean-up" name="clean-up" class="anchor"><span class="anchor-link"></span></a>Clean-up</h2>
+<ul>
+  <li>If you kept the old Elasticsearch indices for the time of the migration, delete all old indices:</li>
+</ul>
+<pre class="prettyprint"><code class="language-shell">curl -XDELETE &#39;http://{elasticsearch_host}/{old_indexing_prefix}_*&#39;
+</code></pre>
+<ul>
+  <li>If you kept the old Blazegraph indices for the time Delete Blazegraph namespaces:</li>
+</ul>
+<pre class="prettyprint"><code class="language-shell">for i in `curl -s &#39;http://{blazegraph_host}/blazegraph/namespace?describe-each-named-graph=false&#39; | grep sparqlEndpoint | grep -o --color &quot;rdf:resource=\&quot;[^\&quot;]*&quot; | sed &#39;s/rdf:resource=&quot;//&#39; | sed &#39;s#/sparql$##&#39; | grep -v kb | grep -v LBS | grep {old_indexing_prefix}`
+  do curl -X DELETE &quot;$i&quot;
+done
+</code></pre>
+<ul>
+  <li>If running Delta v1.8 as a separate instance from Delta v1.7, the latter can be turned off.</li>
+  <li>Once Delta v1.8 is up and running and has finished indexing, Cassandra can be turned off.</li>
+  <li>Reverse the temporary resources / configuration changes.
+    <ul>
+      <li>Remove all <code>migration</code> java options</li>
+      <li>Remove all <code>datastax</code> java options</li>
+    </ul>
+  </li>
+</ul>
+</div>
+<div>
+<a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/releases/v1.7-to-v1.8-migration.md" title="Edit this page" class="md-source-file md-edit">
+Edit this page
+</a>
+</div>
+<div class="print-only">
+<span class="md-source-file md-version">
+Snapshot
+</span>
+</div>
+</article>
+</div>
+</div>
+</main>
+<footer class="md-footer">
+<div class="md-footer-nav">
+<nav class="md-footer-nav__inner md-grid">
+<a href="../../docs/releases/v1.8-release-notes.html" title="v1.8 Release Notes" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+<div class="md-flex__cell md-flex__cell--shrink">
+<i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
+</div>
+<div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
+<span class="md-flex__ellipsis">
+<span class="md-footer-nav__direction">
+Previous
+</span>
+v1.8 Release Notes
+</span>
+</div>
+</a>
+<a href="../../docs/releases/v1.7-release-notes.html" title="v1.7 Release Notes" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
+<span class="md-flex__ellipsis">
+<span class="md-footer-nav__direction">
+Next
+</span>
+v1.7 Release Notes
+</span>
+</div>
+<div class="md-flex__cell md-flex__cell--shrink">
+<i class="md-icon md-icon--arrow-forward md-footer-nav__button"></i>
+</div>
+</a>
+</nav>
+</div>
+<div class="md-footer-meta md-typeset">
+<div class="md-footer-meta__inner md-grid">
+<div class="md-footer-copyright">
+<div class="md-footer-copyright__highlight">
+Nexus is Open Source and available under the Apache 2 License.<br/>
+© 2017-2023 <a href="https://epfl.ch/">EPFL</a>
+ <a href="https://bluebrain.epfl.ch/">The Blue Brain Project</a>
+
+</div>
+</div>
+<div class="md-footer-social">
+<a href="https://github.com/BlueBrain" class="md-footer-social__link fa fa-github"></a><a href="https://github.com/BlueBrain/nexus/discussions" class="md-footer-social__link fa fa-github"></a>
+</div>
+
+</div>
+</div>
+</footer>
+
+</div>
+<script src="../../assets/javascripts/application.583bbe55.js"></script>
+<script src="../../assets/javascripts/paradox-material-theme.js"></script>
+<script>app.initialize({version:"0.17",url:{base:"../../."}})</script>
+<script type="text/javascript" src="../../lib/prettify/prettify.js"></script>
+<script type="text/javascript" src="../../lib/prettify/lang-scala.js"></script>
+<script type="text/javascript">
+document.addEventListener("DOMContentLoaded", function(event) {
+window.prettyPrint && prettyPrint();
+});
+</script>
+<script src="../.././public/js/gtm.js"></script>
+</body>
+</html>

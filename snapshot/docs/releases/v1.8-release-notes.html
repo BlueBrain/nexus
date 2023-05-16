@@ -155,6 +155,7 @@ BlueBrain/nexus
   <li><a href="../../docs/releases/index.html" class="page">Releases</a>
   <ul>
     <li><a href="../../docs/releases/v1.8-release-notes.html" class="active page">v1.8 Release Notes</a></li>
+    <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html" class="page">v1.7 To v1.8 Migration</a></li>
     <li><a href="../../docs/releases/v1.7-release-notes.html" class="page">v1.7 Release Notes</a></li>
     <li><a href="../../docs/releases/v1.6-to-v1.7-migration.html" class="page">v1.6 To v1.7 Migration</a></li>
     <li><a href="../../docs/releases/v1.6-release-notes.html" class="page">v1.6 Release Notes</a></li>
@@ -238,6 +239,7 @@ BlueBrain/nexus
     <ul>
       <li><a href="../../docs/releases/v1.8-release-notes.html#new-primary-store" class="header">New primary store</a></li>
       <li><a href="../../docs/releases/v1.8-release-notes.html#new-sourcing-and-streaming-library" class="header">New sourcing and streaming library</a></li>
+      <li><a href="../../docs/releases/v1.8-release-notes.html#new-clustering-deployment" class="header">New clustering deployment</a></li>
       <li><a href="../../docs/releases/v1.8-release-notes.html#name-and-description-for-resolvers-storages-and-views" class="header">Name and description for resolvers, storages and views</a></li>
       <li><a href="../../docs/releases/v1.8-release-notes.html#views" class="header">Views</a>
       <ul>
@@ -283,6 +285,7 @@ BlueBrain/nexus
     <ul>
       <li><a href="../../docs/releases/v1.8-release-notes.html#new-primary-store" class="header">New primary store</a></li>
       <li><a href="../../docs/releases/v1.8-release-notes.html#new-sourcing-and-streaming-library" class="header">New sourcing and streaming library</a></li>
+      <li><a href="../../docs/releases/v1.8-release-notes.html#new-clustering-deployment" class="header">New clustering deployment</a></li>
       <li><a href="../../docs/releases/v1.8-release-notes.html#name-and-description-for-resolvers-storages-and-views" class="header">Name and description for resolvers, storages and views</a></li>
       <li><a href="../../docs/releases/v1.8-release-notes.html#views" class="header">Views</a>
       <ul>
@@ -341,7 +344,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   <li>The tooling that allow to run it in a daily basis can be insufficient, time-consuming to properly set it up,</li>
   <li>The data modeling it imposes did not allow to accommodate the growing variety of present and future usages of Nexus,</li>
   <li>The eventual consistency was another hurdle for the Nexus usages</li>
-  <li>The <a href="https://doc.akka.io/docs/akka/current/typed/index-persistence.html" title="akka-persistence">akka-persistence</a> library we relied on which is part of the akka stack changed <a href="https://www.lightbend.com/blog/why-we-are-changing-the-license-for-akka" title="its license a few months ago">its license a few months ago</a>, so we could not get new updates from it,</li>
+  <li>The <a href="https://doc.akka.io/docs/akka/current/typed/index-persistence.html" title="akka-persistence">akka-persistence</a> library we relied on which is part of the akka stack changed <a href="https://www.lightbend.com/blog/why-we-are-changing-the-license-for-akka" title="its license in September 2022">its license in September 2022</a>, so we could not get new updates from it,</li>
   <li>This library also did not fit anymore our needs in terms of indexing to external systems as performance is degrading over time but also for data deletion.</li>
 </ul>
 <p>So this pushed us to look for alternatives that would better address our needs.</p>
@@ -366,6 +369,9 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   <li>Faster indexing by allowing to fetch directly states before processing them</li>
   <li>Allow to delete undesirable projects in an efficient way</li>
 </ul>
+<h3><a href="#new-clustering-deployment" name="new-clustering-deployment" class="anchor"><span class="anchor-link"></span></a>New clustering deployment</h3>
+<p>If you were running Nexus in a cluster configuration, Nexus 1.8 doesn&rsquo;t rely anymore on Akka Cluster and moved to a new model described in the <a href="../delta/architecture.html#clustering">Architecture page</a>.</p>
+<p>We moved away from akka-cluster for the same reasons as for akka-persistence (the license change and it did not fit anymore Nexus needs).</p>
 <h3><a href="#name-and-description-for-resolvers-storages-and-views" name="name-and-description-for-resolvers-storages-and-views" class="anchor"><span class="anchor-link"></span></a>Name and description for resolvers, storages and views</h3>
 <p>It could be difficult for users to identify these different entities (for example in Fusion). These two additional fields fills this gap by allowing users to add extra information.</p>
 <h3><a href="#views" name="views" class="anchor"><span class="anchor-link"></span></a>Views</h3>
@@ -426,13 +432,13 @@ Releases
 </span>
 </div>
 </a>
-<a href="../../docs/releases/v1.7-release-notes.html" title="v1.7 Release Notes" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../docs/releases/v1.7-to-v1.8-migration.html" title="v1.7 To v1.8 Migration" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-v1.7 Release Notes
+v1.7 To v1.8 Migration
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">

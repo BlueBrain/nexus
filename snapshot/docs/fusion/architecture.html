@@ -155,6 +155,7 @@ BlueBrain/nexus
   <li><a href="../../docs/releases/index.html" class="page">Releases</a>
   <ul>
     <li><a href="../../docs/releases/v1.8-release-notes.html" class="page">v1.8 Release Notes</a></li>
+    <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html" class="page">v1.7 To v1.8 Migration</a></li>
     <li><a href="../../docs/releases/v1.7-release-notes.html" class="page">v1.7 Release Notes</a></li>
     <li><a href="../../docs/releases/v1.6-to-v1.7-migration.html" class="page">v1.6 To v1.7 Migration</a></li>
     <li><a href="../../docs/releases/v1.6-release-notes.html" class="page">v1.6 Release Notes</a></li>
@@ -284,7 +285,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <div class="md-content__searchable">
 <h1><a href="#architecture" name="architecture" class="anchor"><span class="anchor-link"></span></a>Architecture</h1>
 <h2><a href="#technology-overview" name="technology-overview" class="anchor"><span class="anchor-link"></span></a>Technology Overview</h2>
-<p>Nexus Fusion is a server-side rendered single-page webapp powered by <a href="https://reactjs.org/" title="React.js" target="_blank" rel="noopener noreferrer">React.js</a>. It is written in <a href="https://www.typescriptlang.org/" title="Typescript" target="_blank" rel="noopener noreferrer">Typescript</a>, and therefore must be transpiled into native browser JavaScript, during a build step, before being served.</p>
+<p>Nexus Fusion is a server-side rendered single-page webapp powered by <a href="https://react.dev" title="React.js" target="_blank" rel="noopener noreferrer">React.js</a>. It is written in <a href="https://www.typescriptlang.org/" title="Typescript" target="_blank" rel="noopener noreferrer">Typescript</a>, and therefore must be transpiled into native browser JavaScript, during a build step, before being served.</p>
 <p>The build step produces a server artifact to run on a Node.js server, with client-side assets and Javascript.</p>
 <p>We produce a docker image that is able to serve the compiled assets directly, which is available on <a href="https://hub.docker.com/repository/docker/bluebrain/nexus-web" title="Dockerhub" target="_blank" rel="noopener noreferrer">Dockerhub</a>.</p>
 <p>Although the application is served by a Node.js server, the client communicates directly to <a href="../delta/index.html">Nexus Delta</a> using <a href="../utilities/index.html#nexus-js">Nexus.js</a>.</p>
