@@ -195,7 +195,8 @@ Once the request is processed, an asynchronous task gets triggered and deletes t
 During this time, no write operation can be performed at the project level nor at the resources level for the target project.
 When the task is finished, the target project can be recreated if desired.
 
-Deletion only works when the configuration flag `app.projects.deletion.enabled` is set to `true` and the current project is not referenced somewhere else (e.g.: a `CrossProjectResolver`, an `AggregatedView`, etc.).
+Deletion only works when the configuration flag `app.projects.deletion.enabled` is set to `true` and the current project is not referenced 
+somewhere else (e.g.: in a `CrossProjectResolver`, an `AggregatedView`, etc.).
 
 ```
 DELETE /v1/projects/{org_label}/{label}?rev={previous_rev}&prune=true
