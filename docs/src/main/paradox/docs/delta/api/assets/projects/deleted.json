@@ -1,13 +1,75 @@
 {
-  "@context": "https://bluebrain.github.io/nexus/contexts/deletion-status.json",
-  "progress": "Deleting",
-  "_createdAt": "2021-08-31T12:50:48.305Z",
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/projects-metadata.json",
+    "https://bluebrain.github.io/nexus/contexts/metadata.json"
+  ],
+  "@id": "http://localhost:8080/v1/projects/myorg/myproject",
+  "@type": "Project",
+  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/projects.json",
+  "_createdAt": "2021-05-10T15:43:36.567Z",
   "_createdBy": "http://localhost:8080/v1/anonymous",
-  "_finished": false,
-  "_project": "myorg/myproject",
-  "_projectCreatedAt": "2021-08-31T12:49:19.404Z",
-  "_projectCreatedBy": "http://localhost:8080/v1/anonymous",
-  "_self": "http://localhost:8080/v1/projects/myorg/myproject/deletions/5d4e830b-39ad-4c8f-8c28-f63a94fbad63",
-  "_updatedAt": "2021-08-31T12:50:48.305Z",
-  "_uuid": "5d4e830b-39ad-4c8f-8c28-f63a94fbad63"
+  "_deprecated": false,
+  "_markedForDeletion": true,
+  "_effectiveApiMappings": [
+    {
+      "_namespace": "https://bluebrain.github.io/nexus/vocabulary/",
+      "_prefix": "nxv"
+    },
+    {
+      "_namespace": "https://bluebrain.github.io/nexus/vocabulary/defaultElasticSearchIndex",
+      "_prefix": "documents"
+    },
+    {
+      "_namespace": "https://bluebrain.github.io/nexus/vocabulary/defaultInProject",
+      "_prefix": "defaultResolver"
+    },
+    {
+      "_namespace": "https://bluebrain.github.io/nexus/schemas/shacl-20170720.ttl",
+      "_prefix": "schema"
+    },
+    {
+      "_namespace": "https://bluebrain.github.io/nexus/schemas/unconstrained.json",
+      "_prefix": "resource"
+    },
+    {
+      "_namespace": "https://bluebrain.github.io/nexus/schemas/unconstrained.json",
+      "_prefix": "_"
+    },
+    {
+      "_namespace": "https://bluebrain.github.io/nexus/schemas/views.json",
+      "_prefix": "view"
+    },
+    {
+      "_namespace": "https://bluebrain.github.io/nexus/schemas/storages.json",
+      "_prefix": "storage"
+    },
+    {
+      "_namespace": "https://bluebrain.github.io/nexus/schemas/files.json",
+      "_prefix": "file"
+    },
+    {
+      "_namespace": "https://bluebrain.github.io/nexus/schemas/resolvers.json",
+      "_prefix": "resolver"
+    },
+    {
+      "_namespace": "https://bluebrain.github.io/nexus/vocabulary/defaultSparqlIndex",
+      "_prefix": "graph"
+    },
+    {
+      "_namespace": "https://bluebrain.github.io/nexus/schemas/archives.json",
+      "_prefix": "archive"
+    },
+    {
+      "_namespace": "https://bluebrain.github.io/nexus/vocabulary/diskStorageDefault",
+      "_prefix": "defaultStorage"
+    }
+  ],
+  "_label": "myproject",
+  "_organizationLabel": "myorg",
+  "_organizationUuid": "41f169b8-7ae4-4878-a7ff-6309cb54ae2f",
+  "_rev": 3,
+  "_self": "http://localhost:8080/v1/projects/myorg/myproject",
+  "_updatedAt": "2021-05-10T15:47:40.659Z",
+  "_updatedBy": "http://localhost:8080/v1/anonymous",
+  "_uuid": "813cfa79-75fc-48eb-b931-abb21edb082b"
 }
