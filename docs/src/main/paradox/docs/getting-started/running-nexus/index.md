@@ -191,7 +191,7 @@ file.
 
 ### PostgreSQL partitioning 
 
-Nexus Delta takes advantage of PostgreSQL's @link:[Table Partitioning](https://www.postgresql.org/docs/current/ddl-partitioning.html) feature. This allows for improved query performance, as well facilitates loading, deleting, or transferring data.
+Nexus Delta takes advantage of PostgreSQL's @link:[Table Partitioning](https://www.postgresql.org/docs/current/ddl-partitioning.html) feature. This allows for improved query performance, and facilitates loading, deleting, or transferring data.
 
 The `public.scoped_events` and `public.scoped_states` are partitioned by organization, which is itself partitioned by the projects it contains; this follows the natural hierarchy that can be found in Nexus Delta.
 
@@ -212,7 +212,7 @@ where
 * `{MD5_org_hash}` is the MD5 hash of the organization name
 * `{MD5_project_has}` is the MD5 hash of the project reference (i.e. has the form `{org_name}/{project_name}`)
 
-MD5 hashing is used in order to guarantee a constant partition name length (PostgreSQL table names are limited to 63 character by default), as well as to avoid any special characters that might be allowed in project names but not in PostgreSQl table names (such as `-`).
+MD5 hashing is used in order to guarantee a constant partition name length (PostgreSQL table names are limited to 63 character by default), as well as to avoid any special characters that might be allowed in project names but not in PostgreSQL table names (such as `-`).
 
 Example:
 
@@ -225,7 +225,7 @@ You create the organization called `myorg`, inside of which you create the `mypr
 
 #### Advanced subpartitioning
 
-While Nexus Delta provides table partitioning out-of-the-box, it is primarily addressing the case where the data is more or less uniformly spread out across multiple projects. If however there is one or more project that are very large, it is possible to add further subpartitions according to a custom rule. This custom subpartitioning must be decided on a case-by-cases basis using your knowledge of the given project; the idea is to create uniform partitions of your project. Please refer to the @link:[PostgreSQL Table Partitioning documentation](https://www.postgresql.org/docs/current/ddl-partitioning.html).
+While Nexus Delta provides table partitioning out-of-the-box, it is primarily addressing the case where the data is more or less uniformly spread out across multiple projects. If however there is one or more project that are very large, it is possible to add further subpartitions according to a custom rule. This custom subpartitioning must be decided on a case-by-case basis using your knowledge of the given project; the idea is to create uniform partitions of your project. Please refer to the @link:[PostgreSQL Table Partitioning documentation](https://www.postgresql.org/docs/current/ddl-partitioning.html).
 
 ## On premise / cloud deployment
 
