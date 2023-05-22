@@ -305,7 +305,7 @@ advertised to support @link:[High Availability](https://github.com/blazegraph/da
 to setup a deployment in this fashion.
 
 We currently recommend deploying Blazegraph using the prepackaged _tar.gz_ distribution available to download from
-@link:[GitHub](https://github.com/blazegraph/database/releases/latest){ open=new }.
+@link:[GitHub](https://github.com/blazegraph/database/releases/tag/BLAZEGRAPH_2_1_6_RC){ open=new }.
 
 @@@ note
 
