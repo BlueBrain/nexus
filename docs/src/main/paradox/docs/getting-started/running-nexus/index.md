@@ -189,6 +189,44 @@ The provided reverse proxy (the `nginx` image) exposes several endpoints:
 If you'd like to customize the listening port or remove unnecessary endpoints, you can simply modify the `nginx.conf`
 file.
 
+### PostgreSQL partitioning 
+
+Nexus Delta takes advantage of PostgreSQL's @link:[Table Partitioning](https://www.postgresql.org/docs/current/ddl-partitioning.html) feature. This allows for improved query performance, as well facilitates loading, deleting, or transferring data.
+
+The `public.scoped_events` and `public.scoped_states` are partitioned by organization, which is itself partitioned by the projects it contains; this follows the natural hierarchy that can be found in Nexus Delta.
+
+Nexus Delta takes care of handling the creation and deletion of the partitions.
+
+* If the created project is the first one of a given organization, both the organization partition and the project subpartition will be created.
+* If the organization partition already exist, then only the project subpartition will be created upon project creation.
+
+The naming scheme of the (sub)partitions is as follows:
+
+`{table_name}_{MD5_org_hash}` for organization partitions
+
+`{table_name}_{MD5_project_hash}` for project partition
+
+where
+
+* `{table_name}` is either `scoped_events` or `scoped_states`
+* `{MD5_org_hash}` is the MD5 hash of the organization name
+* `{MD5_project_has}` is the MD5 hash of the project reference (i.e. has the form `{org_name}/{project_name}`)
+
+MD5 hashing is used in order to guarantee a constant partition name length (PostgreSQL table names are limited to 63 character by default), as well as to avoid any special characters that might be allowed in project names but not in PostgreSQl table names (such as `-`).
+
+Example:
+
+You create the organization called `myorg`, inside of which you create the `myproject` project. When the project is created, Nexus Delta will have created the following partitions:
+
+* `scoped_events_B665280652D01C4679777AFD9861170C`, the partition of events from the `myorg` organization
+    * `scoped_events_7922DA7049D5E38C83053EE145B27596`, the subpartition of the events from the `myorg/myproject` project
+* `scoped_states_B665280652D01C4679777AFD9861170C`, the partition of states from the `myorg` organization
+    * `scoped_states_7922DA7049D5E38C83053EE145B27596`, the subpartition of the states from the `myorg/myproject` project
+
+#### Advanced subpartitioning
+
+While Nexus Delta provides table partitioning out-of-the-box, it is primarily addressing the case where the data is more or less uniformly spread out across multiple projects. If however there is one or more project that are very large, it is possible to add further subpartitions according to a custom rule. This custom subpartitioning must be decided on a case-by-cases basis using your knowledge of the given project; the idea is to create uniform partitions of your project. Please refer to the @link:[PostgreSQL Table Partitioning documentation](https://www.postgresql.org/docs/current/ddl-partitioning.html).
+
 ## On premise / cloud deployment
 
 There are several things to consider when preparing to deploy Nexus "on premise" because the setup depends a lot on the
