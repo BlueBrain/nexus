@@ -1,52 +1,50 @@
 # Nexus configuration
 
-Nexus Delta service can be highly customized using @link:[configuration file(s)](https://github.com/BlueBrain/nexus/tree/$git.branch$/delta/app/src/main/resources){ open=new }. Many things can be adapted to your deployment needs: port where the service is running, timeouts, the database you decide to support, pagination defaults, etc. 
+Nexus Delta service can be highly customized using @link:[configuration file(s)](https://github.com/BlueBrain/nexus/tree/$git.branch$/delta/app/src/main/resources){ open=new }. Many things can be adapted to your deployment needs: port where the service is running, timeouts, pagination defaults, etc. 
 
 There are 3 ways to modify the default configuration:
 
-- Setting the env variable `DELTA_EXTERNAL_CONF` which defines the path to a HOCON file. The configuration keys that are defined here can be overriden by the other methods.
+- Setting the env variable `DELTA_EXTERNAL_CONF` which defines the path to a HOCON file. The configuration keys that are defined here can be overridden by the other methods.
 - Using JVM properties as arguments when running the service: -D`{property}`. For example: `-Dapp.http.interface="127.0.0.1"`.
 - Using @link:[FORCE_CONFIG_{property}](https://github.com/lightbend/config#user-content-optional-system-or-env-variable-overrides){ open=new }
   environment variables. In order to enable this style of configuration, the JVM property
   `-Dconfig.override_with_env_vars=true` needs to be set. Once set, a configuration flag can be overridden. For example: `CONFIG_FORCE_app_http_interface="127.0.0.1"`.
 
-In terms of JVM pool memory allocation, we recommend setting the following values to the `JAVA_OPTS`environment variable: `-Xms4g -Xmx4g`. The recommended values should be changed accordingly with the usage of Nexus Delta, the nomber of projects and the resources/schemas size.
+In terms of JVM pool memory allocation, we recommend setting the following values to the `JAVA_OPTS` environment variable: `-Xms4g -Xmx4g`. The recommended values should be changed accordingly with the usage of Nexus Delta, the number of projects and the resources/schemas size.
 
 In order to successfully run Nexus Delta there is a minimum set of configuration flags that need to be specified
 
 ## Http configuration
 
-@link:[This section](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/app.conf#L9){ open=new } of the configuration defines the binding address and port where the service will be listening.
+@link:[The `http` section](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/app.conf#L11){ open=new } of the configuration defines the binding address and port where the service will be listening.
 
 The configuration flag `akka.http.server.parsing.max-content-length` can be used to control the maximum payload size allowed for Nexus Delta resources. This value applies to all posted resources except for files.
 
-## Database configuration
+### Postgres configuration
 
-Since 1.5.0 Nexus Delta comes in two database flavours: postgres or cassandra. The configuration flag `app.database.flavour` is used to select the flavour.
+@link:[The `database` section](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/app.conf#L23){ open=new } of the configuration defines the postgres specific configuration. As Nexus Delta uses three separate pools ('read', 'write', 'streaming'), it is recommended to set the host, port, database name, username, and password via the `app.defaults.database` field, as it will apply to all pools. It is however possible to accommodate more advanced setups by configuring each pool separately by changing its respective `app.database.{read|write|streaming}` fields. 
 
-### Cassandra configuration
-
-@link:[This section](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/app.conf#L64){ open=new } of the configuration defines the cassandra specific configuration (username, password, contact points, etc).
-
-Before running Nexus Delta, the keyspace defined on the configuration `app.database.cassandra.keyspace` must be present along with the expected tables. However, one can let Nexus Delta automatically create keyspaces and tables using the following configuration parameters: `app.database.cassandra.keyspace-autocreate=true` and `app.database.cassandra.tables-autocreate=true`.
+The pool size can be set using the `app.defaults.database.access.pool-size` setting for all pools, or individually for each pool (`app.database.{read|write|streaming}.access.pool-size`).
 
 @@@ note { .warning }
 
-Auto creation of the keyspace and tables is included as a development convenience and should never be used in production. Cassandra does not handle concurrent schema migrations well and if every Akka node tries to create the schema at the same time you’ll get column id mismatch errors in Cassandra.
+A default Postgres deployment will limit the number of connections to 100, unless configured otherwise. See the @link:[Postgres Connection and Authentication documentation](https://www.postgresql.org/docs/current/runtime-config-connection.html){ open=new }.
 
 @@@
 
-There are many other configuration parameters to customize the behaviour of the cassandra driver (timeouts, intervals, etc). These can be be found in the @link:[application-cassandra.conf](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/application-cassandra.conf){ open=new } file. One of the most relevant among these settings is: `akka.persistence.cassandra.events-by-tag.first-time-bucket`. Its value must be the date-time of the first event stored in Nexus Delta in the format YYYYMMDDTHH:MM.
+Before running Nexus Delta, the @link:[expected tables](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/sourcing-psql/src/main/resources/scripts/schema.ddl){ open=new } should be created.
 
-### Postgres configuration
+It is possible to let Nexus Delta automatically create them using the following configuration parameters: `app.database.tables-autocreate=true`.
 
-@link:[This section](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/app.conf#L43){ open=new } of the configuration defines the postgres specific configuration (username, password, host, etc).
+@@@ note { .warning }
 
-Before running Nexus Delta, the @link:[expected tables](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/sourcing/src/main/resources/scripts/postgres/postgres-tables.ddl){ open=new } should be created. However, one can let Nexus Delta automatically them using the following configuration parameters: `app.database.postgres.tables-autocreate=true`
+Auto creation of tables is included as a development convenience and should be avoided in production.
+
+@@@
 
 # RDF parser
 
-The underlying @link:[Apache Jena](https://jena.apache.org/) parser used to validate incoming data is @link:[now configurable](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/app.conf#L84) to enable different levels of strictness.
+The underlying @link:[Apache Jena](https://jena.apache.org/) parser used to validate incoming data is @link:[configurable using the `json-ld-api` field](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/app.conf#L49) to enable different levels of strictness.
 
 ## Service account configuration
 
@@ -55,7 +53,7 @@ Nexus Delta uses a service account to perform automatic tasks under the hood. Ex
 - Granting default ACLs to the user creating a project.
 - Creating default views on project creation.
 
-@link:[This section](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/app.conf#L404){ open=new } of the configuration defines the service account configuration.
+@link:[The `service-account` section](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/app.conf#L427){ open=new } of the configuration defines the service account configuration.
 
 ## Automatic project provisioning
 
@@ -64,24 +62,32 @@ say the first time, they query the project listing endpoints.
 
 The generated project label will be:
 
-* The current username where only non-diacritic alphabetic characters (`[a-zA-Z]`), numbers, dashes and underscores will be preserved
+* The current username where only non-diacritic alphabetic characters (`[a-zA-Z]`), numbers, dashes and underscores will be preserved.
 * This resulting string is then truncated to 64 characters if needed.
 
-This feature can be turned on via the flag `app.projects.automatic-provisioning.enabled`.
+This feature can be turned on via the flag `app.automatic-provisioning.enabled`.
 
-@link:[This section](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/app.conf#L223){ open=new } of the configuration defines the project provisioning configuration.
+@link:[The `automatic-provisioning` section](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/app.conf#L197){ open=new } of the configuration defines the project provisioning configuration.
 
 ## Encryption configuration
 
 Nexus Delta uses symmetric encryption to secure sensitive data information (tokens and passwords).
 
-@link:[This section](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/app.conf#L298){ open=new } of the configuration defines the encryption configuration.
+@link:[The `encryption` section](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/app.conf#L276){ open=new } of the configuration defines the encryption configuration.
 
 ## Fusion configuration
 
 When fetching a resource, Nexus Delta allows to return a redirection to its representation in Fusion by providing `text/html` in the `Accept` header.
 
-@link:[This section](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/app.conf#L85){ open=new } of the configuration defines the fusion configuration.
+@link:[The `fusion` section](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/app.conf#L40){ open=new } of the configuration defines the fusion configuration.
+
+## Projections configuration
+
+Projections in Nexus Delta are asynchronous processes that can replay the event log and process this information. For more information on projections, please refer to the @ref:[Architecture page](../../../delta/architecture.md).
+
+@link:[The `projections` section](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/app.conf#L281) of the configuration allows to configure the projections.
+
+In case of failure in a projection, Nexus Delta records the failure information inside the `public.failed_elem_logs` PostgreSQL table, which can be used for analysis, and ultimately resolution of the failures. The configuration allows to set how long the failure information is stored for (`app.projections.failed-elem-ttl`), and how often the projection deleting the expired failures is awoken (`app.projections.delete-expired-every`).
 
 ## Plugins configuration
 
@@ -89,9 +95,11 @@ Since 1.5.0, Nexus Delta supports plugins. Jar files present inside the local di
 
 Each plugin configuration is rooted under `plugins.{plugin_name}`. All plugins have a `plugins.{plugin_name}.priority` configuration flag used to determine the order in which the routes are handled in case of collisions. 
 
+For more information about plugins, please refer to the @ref:[Plugins page](../../../delta/plugins/index.md).
+
 ### Elasticsearch views plugin configuration
 
-The elasticsearch plugin configuration can be found @link:[here](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/plugins/elasticsearch/src/main/resources/elasticsearch.conf){ open=new }. 
+The elasticsearch plugin configuration can be found @link:[here](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/plugins/elasticsearch/src/main/resources/elasticsearch.conf){ open=new }.
 
 The most important flags are:
 * `plugins.elasticsearch.base` which defines the endpoint where the Elasticsearch service is running.
@@ -104,6 +112,8 @@ Please refer to the @link[Elasticsearch configuration](https://www.elastic.co/gu
 The blazegraph plugin configuration can be found @link:[here](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/plugins/blazegraph/src/main/resources/blazegraph.conf){ open=new }. 
 
 The most important flag is `plugins.blazegraph.base` which defines the endpoint where the Blazegraph service is running.
+
+The @link:[`plugins.blazegraph.slow-queries` section](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/plugins/blazegraph/src/main/resources/blazegraph.conf#L23) of the Blazegraph configuration defines what is considered a slow Blazegraph query, which will get logged in the `public.blazegraph_queries` PostgreSQL table. This can be used to understand which Blazegraph queries can be improved.
 
 ### Composite views plugin configuration
 
@@ -136,15 +146,15 @@ and the private key required to interact with Jira (more details including the c
 
 For monitoring, Nexus Delta relies on @link:[Kamon](https://kamon.io/){ open=new }.
 
-Kamon can be disabled by passing the environment variable `KAMON_ENABLED` to `false`
+Kamon can be disabled by passing the environment variable `KAMON_ENABLED` set to `false`.
 
-Delta configuration for Kamon is provided @link:[here](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/app.conf#L368){ open=new }.
+Delta configuration for Kamon is provided @link:[in the `monitoring` section](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/app.conf#L391){ open=new }.
 For a more complete description on the different options available, please look at the Kamon website.
 
 ### Instrumentation
+
 Delta provides the Kamon instrumentation for:
 
-* @link:[JDBC](https://kamon.io/docs/v1/instrumentation/jdbc/){ open=new } (only useful if you run Delta with PostgreSQL)
 * @link:[Executors](https://kamon.io/docs/v1/instrumentation/executors/){ open=new }
 * @link:[Scala futures](https://kamon.io/docs/v1/instrumentation/futures/){ open=new }
 * @link:[Logback](https://kamon.io/docs/v1/instrumentation/logback/){ open=new }
