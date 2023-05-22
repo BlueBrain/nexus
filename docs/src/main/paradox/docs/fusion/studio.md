@@ -138,8 +138,11 @@ data to the project.
 
 ### Studio Creation
 
-To create a new `Studio`, go to the Admin space, and select an organization and a project.
-In the Project View, you will see the `studio tab`. It will bring you to the list of `Studios`.
+There is multiple places where the user can create a new `Studio`:
+
+- Home page
+- Home page > Studios List
+- Home page > Projects List > Select Project > Studios Tab
 
 Click the `Create Studio` button.
 
@@ -175,7 +178,7 @@ the `Label` and the `Description` fields.
 
 #### Removing a Studio
 
-To remove an unwanted `Studio`, deprecate it in the Resource View of your project in the Admin space.
+To remove an unwanted `Studio`, deprecate it in the Resource View of your project in the Project space.
 
 ### Workspace Creation
 

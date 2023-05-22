@@ -25,7 +25,7 @@ The search page has been removed, but every element that was previously availabl
 
 The pages in Nexus Fusion are part of the source code and reside in the `src/pages` folder.
 
-While all the previous feature is still available in the current version of Nexus Fusion, we expect its functionality to evolve and change in the upcoming release.`
+While all the previous feature is still available in the current version of Nexus Fusion, we expect its functionality to evolve and change in the upcoming release.
 
 ## Plugins
 
