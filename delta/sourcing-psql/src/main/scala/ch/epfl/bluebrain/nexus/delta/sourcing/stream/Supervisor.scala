@@ -159,20 +159,23 @@ object Supervisor {
       .evalMap { supervised =>
         val metadata = supervised.metadata
         supervised.control.status.flatMap {
-          case ExecutionStatus.Ignored   => Task.unit
-          case ExecutionStatus.Pending   => Task.unit
-          case ExecutionStatus.Running   => Task.unit
-          case ExecutionStatus.Completed => Task.unit
-          case ExecutionStatus.Stopped   => Task.unit
-          case ExecutionStatus.Failed(_) =>
+          case ExecutionStatus.Ignored           => Task.unit
+          case ExecutionStatus.Pending           => Task.unit
+          case ExecutionStatus.Running           => Task.unit
+          case ExecutionStatus.Completed         => Task.unit
+          case ExecutionStatus.Stopped           => Task.unit
+          case ExecutionStatus.Failed(throwable) =>
             val retryStrategy = RetryStrategy.retryOnNonFatal(
               cfg.retry,
               log,
-              s"running projection ${metadata.name} from module ${metadata.module}"
+              s"running projection '${metadata.name}' from module '${metadata.module}'"
             )
-            semaphore
-              .withPermit { restartProjection(supervised, mapRef) }
-              .retryingOnSomeErrors(retryStrategy.retryWhen, retryStrategy.policy, retryStrategy.onError)
+            val errorMessage  =
+              s"The projection '${metadata.name}' from module '${metadata.module}' failed and will be restarted."
+            UIO.delay(log.error(errorMessage, throwable)) >>
+              semaphore
+                .withPermit { restartProjection(supervised, mapRef) }
+                .retryingOnSomeErrors(retryStrategy.retryWhen, retryStrategy.policy, retryStrategy.onError)
         }
       }
       .interruptWhen(signal)
