@@ -11,7 +11,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Supervisor
 import distage.ModuleDef
+import io.circe.syntax.EncoderOps
 import izumi.distage.model.definition.Id
 import monix.execution.Scheduler
 
@@ -20,8 +22,14 @@ class SearchPluginModule(priority: Int) extends ModuleDef {
   make[SearchConfig].fromEffect { cfg => SearchConfig.load(cfg) }
 
   make[Search].from {
-    (compositeViews: CompositeViews, aclCheck: AclCheck, esClient: ElasticSearchClient, config: CompositeViewsConfig) =>
-      Search(compositeViews, aclCheck, esClient, config.prefix)
+    (
+        compositeViews: CompositeViews,
+        aclCheck: AclCheck,
+        esClient: ElasticSearchClient,
+        compositeConfig: CompositeViewsConfig,
+        searchConfig: SearchConfig
+    ) =>
+      Search(compositeViews, aclCheck, esClient, compositeConfig.prefix, searchConfig.suites)
   }
 
   make[SearchScopeInitialization].from {
@@ -41,11 +49,27 @@ class SearchPluginModule(priority: Int) extends ModuleDef {
         s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
-    ) => new SearchRoutes(identities, aclCheck, search, config)(baseUri, s, cr, ordering)
+    ) => new SearchRoutes(identities, aclCheck, search, config.fields.asJson)(baseUri, s, cr, ordering)
   }
 
   many[PriorityRoute].add { (route: SearchRoutes) =>
     PriorityRoute(priority, route.routes, requiresStrictEntity = true)
+  }
+
+  make[SearchConfigUpdater].fromEffect {
+    (
+        supervisor: Supervisor,
+        compositeViews: CompositeViews,
+        config: SearchConfig,
+        baseUri: BaseUri,
+        serviceAccount: ServiceAccount
+    ) =>
+      SearchConfigUpdater(
+        supervisor,
+        compositeViews,
+        config.defaults,
+        config.indexing
+      )(baseUri, serviceAccount.subject)
   }
 
 }

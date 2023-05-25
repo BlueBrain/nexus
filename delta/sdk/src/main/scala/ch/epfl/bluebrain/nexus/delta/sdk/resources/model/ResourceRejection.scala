@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ValidationReport
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.{InvalidJsonLdRejection, UnexpectedId}
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.{BlankId, InvalidJsonLdRejection, UnexpectedId}
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport
@@ -77,6 +77,11 @@ object ResourceRejection {
     */
   final case class InvalidResourceId(id: String)
       extends ResourceFetchRejection(s"Resource identifier '$id' cannot be expanded to an Iri.")
+
+  /**
+    * Rejection returned when attempting to create a resource while providing an id that is blank.
+    */
+  final case object BlankResourceId extends ResourceRejection(s"Resource identifier cannot be blank.")
 
   /**
     * Rejection returned when attempting to create/update a resource with a reserved id.
@@ -209,6 +214,7 @@ object ResourceRejection {
   implicit val jsonLdRejectionMapper: Mapper[InvalidJsonLdRejection, ResourceRejection] = {
     case UnexpectedId(id, payloadIri)                      => UnexpectedResourceId(id, payloadIri)
     case JsonLdRejection.InvalidJsonLdFormat(id, rdfError) => InvalidJsonLdFormat(id, rdfError)
+    case BlankId                                           => BlankResourceId
   }
 
   implicit val resourceRejectionEncoder: Encoder.AsObject[ResourceRejection] =

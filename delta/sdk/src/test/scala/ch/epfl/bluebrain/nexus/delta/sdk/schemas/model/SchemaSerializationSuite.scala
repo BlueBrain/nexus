@@ -54,6 +54,16 @@ class SchemaSerializationSuite extends SerializationSuite {
       instant,
       subject
     )
+  private val refreshed  =
+    SchemaRefreshed(
+      myId,
+      projectRef,
+      schema.compacted,
+      schema.expanded,
+      2,
+      instant,
+      subject
+    )
   private val tagged     =
     SchemaTagAdded(
       myId,
@@ -85,6 +95,7 @@ class SchemaSerializationSuite extends SerializationSuite {
   private val schemasMapping = List(
     (created, jsonContentOf("/schemas/schema-created.json"), Created),
     (updated, jsonContentOf("/schemas/schema-updated.json"), Updated),
+    (refreshed, jsonContentOf("/schemas/schema-refreshed.json"), Refreshed),
     (tagged, jsonContentOf("/schemas/schema-tagged.json"), Tagged),
     (tagDeleted, jsonContentOf("/schemas/schema-tag-deleted.json"), TagDeleted),
     (deprecated, jsonContentOf("/schemas/schema-deprecated.json"), Deprecated)

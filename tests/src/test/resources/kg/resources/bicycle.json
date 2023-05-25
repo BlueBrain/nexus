@@ -1,0 +1,8 @@
+{
+  "@context": {
+    "bicycles": "https://bicycles.epfl.ch/"
+  },
+  "@id": "{{id}}",
+  "@type": "bicycles:RoadBicycle",
+  "bicycles:gears": {{gears}}
+}

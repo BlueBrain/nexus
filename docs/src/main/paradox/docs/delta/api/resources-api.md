@@ -110,6 +110,43 @@ Response
 :   @@snip [updated.json](assets/resources/updated.json)
 
 
+## Refresh
+
+This operation refreshes the compacted and expanded representations of the resource.
+
+This is equivalent of doing an update with the same source as the last revision of the resource. It is useful when the 
+schema or project contexts have changed, in order for the changes to be reflected in the resource.
+
+```
+PUT /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}/refresh
+```
+
+**Example**
+
+Request
+:   @@snip [refresh.sh](assets/resources/refresh.sh)
+
+Response
+:   @@snip [refreshed.json](assets/resources/updated.json)
+
+
+## Validate
+
+This operation runs validation of a resource against a schema. This would be useful to test whether resources would
+match the shape of a new schema. 
+
+```
+GET /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}/validate
+```
+
+**Example**
+
+Request
+:   @@snip [validate.sh](assets/resources/validate.sh)
+
+Response
+:   @@snip [validated.json](assets/resources/validated.json)
+
 ## Tag
 
 Links a resource revision to a specific name. 
@@ -259,7 +296,11 @@ There are three available endpoints to list resources in different scopes.
 ```
 GET /v1/resources/{org_label}/{project_label}?from={from}
                                              &size={size}
+                                             &locate={locate}
+                                             &id={id}
                                              &deprecated={deprecated}
+                                             &locate={locate}
+                                             &id={id}
                                              &rev={rev}
                                              &type={type}
                                              &createdBy={createdBy}
@@ -276,6 +317,8 @@ This operation returns only resources from projects defined in the organisation 
 ```
 GET /v1/resources/{org_label}?from={from}
                              &size={size}
+                             &locate={locate}
+                             &id={id}
                              &deprecated={deprecated}
                              &rev={rev}
                              &type={type}
@@ -293,6 +336,7 @@ This operation returns only resources from projects where the caller has the `re
 ```
 GET /v1/resources?from={from}
                  &size={size}
+                 &locate={locate}
                  &deprecated={deprecated}
                  &rev={rev}
                  &type={type}
@@ -307,6 +351,7 @@ GET /v1/resources?from={from}
 
 - `{from}`: Number - is the parameter that describes the offset for the current query; defaults to `0`
 - `{size}`: Number - is the parameter that limits the number of results; defaults to `20`
+- `{locate}`: Iri - can be used to find a resource by its `@id` or its address (`_self`)
 - `{deprecated}`: Boolean - can be used to filter the resulting resources based on their deprecation status
 - `{rev}`: Number - can be used to filter the resulting resources based on their revision value
 - `{type}`: Iri - can be used to filter the resulting resources based on their `@type` value. This parameter can appear 

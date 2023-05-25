@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import cats.effect.Clock
-import cats.implicits.catsSyntaxTuple3Semigroupal
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchVi
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewType.{AggregateElasticSearch, ElasticSearch}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.AggregateElasticSearchViewValue
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.IndexingElasticSearchViewValue.nextIndexingRev
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -23,20 +23,17 @@ import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityDependency.DependsOn
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import io.circe.{Json, JsonObject}
 import monix.bio.{IO, Task, UIO}
 
@@ -253,6 +250,23 @@ final class ElasticSearchViews private (
   }.span("deprecateElasticSearchView")
 
   /**
+    * Deprecates an existing ElasticSearchView without applying preliminary checks on the project status
+    *
+    * @param id
+    *   the view identifier
+    * @param project
+    *   the view parent project
+    * @param rev
+    *   the current view revision
+    * @param subject
+    *   the subject that initiated the action
+    */
+  private[elasticsearch] def internalDeprecate(id: Iri, project: ProjectRef, rev: Int)(implicit
+      subject: Subject
+  ): IO[ElasticSearchViewRejection, Unit] =
+    eval(DeprecateElasticSearchView(id, project, rev, subject)).void
+
+  /**
     * Retrieves a current ElasticSearchView resource.
     *
     * @param id
@@ -309,40 +323,6 @@ final class ElasticSearchViews private (
       }
 
   /**
-    * Retrieves a list of ElasticSearchViews using specific pagination, filter and ordering configuration.
-    *
-    * @param pagination
-    *   the pagination configuration
-    * @param params
-    *   the filtering configuration
-    * @param ordering
-    *   the ordering configuration
-    */
-  def list(
-      pagination: FromPagination,
-      params: ElasticSearchViewSearchParams,
-      ordering: Ordering[ViewResource]
-  ): UIO[UnscoredSearchResults[ViewResource]] = {
-    val predicate = params.project.fold[Predicate](Predicate.Root)(ref => Predicate.Project(ref))
-    SearchResults(
-      log.currentStates(predicate, identity(_)).evalMapFilter[Task, ViewResource] { state =>
-        fetchContext.cacheOnReads
-          .onRead(state.project)
-          .redeemWith(
-            _ => UIO.none,
-            pc => {
-              val res =
-                state.toResource(pc.apiMappings, pc.base, defaultElasticsearchMapping, defaultElasticsearchSettings)
-              params.matches(res).map(Option.when(_)(res))
-            }
-          )
-      },
-      pagination,
-      ordering
-    ).span("listElasticSearchViews")
-  }
-
-  /**
     * Return the existing indexing views in a project in a finite stream
     */
   def currentIndexingViews(project: ProjectRef): ElemStream[IndexingViewDef] =
@@ -367,26 +347,18 @@ final class ElasticSearchViews private (
     }
 
   private def toIndexViewDef(envelope: Envelope[ElasticSearchViewState]) =
-    IndexingViewDef(envelope.value, defaultElasticsearchMapping, defaultElasticsearchSettings, prefix).map { viewDef =>
-      SuccessElem(
-        tpe = envelope.tpe,
-        id = envelope.id,
-        project = Some(envelope.value.project),
-        instant = envelope.instant,
-        offset = envelope.offset,
-        value = viewDef,
-        rev = envelope.rev
-      )
+    envelope.toElem { v => Some(v.project) }.traverse { v =>
+      IndexingViewDef(v, defaultElasticsearchMapping, defaultElasticsearchSettings, prefix)
     }
+
+  private def eval(cmd: ElasticSearchViewCommand) =
+    log.evaluate(cmd.project, cmd.id, cmd)
 
   private def eval(
       cmd: ElasticSearchViewCommand,
       pc: ProjectContext
   ): IO[ElasticSearchViewRejection, ViewResource] =
-    log
-      .evaluate(cmd.project, cmd.id, cmd)
-      .map(_._2.toResource(pc.apiMappings, pc.base, defaultElasticsearchMapping, defaultElasticsearchSettings))
-
+    eval(cmd).map(_._2.toResource(pc.apiMappings, pc.base, defaultElasticsearchMapping, defaultElasticsearchSettings))
 }
 
 object ElasticSearchViews {
@@ -581,8 +553,8 @@ object ElasticSearchViews {
       { s =>
         s.value match {
           case a: AggregateElasticSearchViewValue =>
-            Some(a.views.map { v => EntityDependency(v.project, v.viewId) }.toSortedSet)
-          case _                                  => None
+            Some(a.views.map { v => DependsOn(v.project, v.viewId) }.toSortedSet)
+          case _: IndexingElasticSearchViewValue  => None
         }
       },
       onUniqueViolation = (id: Iri, c: ElasticSearchViewCommand) =>

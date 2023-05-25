@@ -79,6 +79,7 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
   private val sink      = CacheSink.states[Json]
 
   private val indexingRev = 1
+  private val rev         = 2
 
   private def state(v: ElasticSearchViewValue) = ElasticSearchViewState(
     id,
@@ -87,7 +88,7 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
     v,
     Json.obj("elastic" -> Json.fromString("value")),
     Tags(tag           -> 3),
-    rev = 1,
+    rev = rev,
     indexingRev = indexingRev,
     deprecated = false,
     createdAt = instant,
@@ -109,7 +110,8 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
           customMapping,
           customSettings,
           indexingCustom.context,
-          indexingRev
+          indexingRev,
+          rev
         )
       )
     )
@@ -128,7 +130,8 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
           defaultMapping,
           defaultSettings,
           indexingDefault.context,
-          indexingRev
+          indexingRev,
+          rev
         )
       )
     )
@@ -162,7 +165,8 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
       defaultMapping,
       defaultSettings,
       indexingDefault.context,
-      1
+      indexingRev,
+      rev
     )
 
     val expectedError = CouldNotFindTypedPipeErr(PipeRef.unsafe("xxx"), "xxx")
@@ -193,7 +197,8 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
       defaultMapping,
       defaultSettings,
       indexingDefault.context,
-      indexingRev
+      indexingRev,
+      rev
     )
 
     val expectedProgress: ProjectionProgress = ProjectionProgress(

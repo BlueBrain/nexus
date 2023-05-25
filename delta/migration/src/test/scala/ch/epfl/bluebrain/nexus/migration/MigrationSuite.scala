@@ -6,14 +6,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.Resolvers
 import ch.epfl.bluebrain.nexus.delta.sourcing.EvaluationError.InvalidState
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
-import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
+import ch.epfl.bluebrain.nexus.testkit.bio.{BioSuite, JsonAssertions}
 import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
 import monix.bio.Task
 
 import java.time.Instant
 import java.util.UUID
 
-class MigrationSuite extends BioSuite with TestHelpers with IOValues {
+class MigrationSuite extends BioSuite with TestHelpers with IOValues with JsonAssertions {
 
   private val projectsToIgnore = Set("dummy", "myorg/test")
   private val uuid             = UUID.randomUUID()
@@ -65,6 +65,19 @@ class MigrationSuite extends BioSuite with TestHelpers with IOValues {
         Task.raiseError(InvalidState(None, event))
     }
     Migration.processEvent(Map(Projects.entityType -> projectMigrationLog))(projectEvent).accepted
+  }
+
+  test("A json that contains the u0000 character should be cleaned") {
+    val originalJson = jsonContentOf("u0000-resource.json")
+    val expected     = jsonContentOf("resource.json")
+    val cleanJson    = Migration.removeFromJson(originalJson, "\u0000")
+    cleanJson equalsIgnoreArrayOrder expected
+  }
+
+  test("A clean json should not be altered") {
+    val originalJson = jsonContentOf("resource.json")
+    val cleanJson    = Migration.removeFromJson(originalJson, "\u0000")
+    cleanJson equalsIgnoreArrayOrder originalJson
   }
 
 }

@@ -32,11 +32,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, Projects}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax.nonEmptySetSyntax
 import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityDependency.DependsOn
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, EntityDependency, EntityType, Envelope, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Predicate, ScopedEntityDefinition, ScopedEventLog, StateMachine}
 import io.circe.Json
 import monix.bio.{IO, Task, UIO}
@@ -245,6 +245,23 @@ final class CompositeViews private (
   }.span("deprecateCompositeView")
 
   /**
+    * Deprecates an existing composite view without applying preliminary checks on the project status
+    *
+    * @param id
+    *   the view identifier
+    * @param project
+    *   the view parent project
+    * @param rev
+    *   the current view revision
+    * @param subject
+    *   the subject that initiated the action
+    */
+  private[compositeviews] def internalDeprecate(id: Iri, project: ProjectRef, rev: Int)(implicit
+      subject: Subject
+  ): IO[CompositeViewRejection, Unit] =
+    eval(DeprecateCompositeView(id, project, rev, subject)).void
+
+  /**
     * Retrieves a current composite view resource.
     *
     * @param id
@@ -403,6 +420,12 @@ final class CompositeViews private (
   }
 
   /**
+    * Return all existing views for the given project in a finite stream
+    */
+  def currentViews(project: ProjectRef): ElemStream[CompositeViewDef] =
+    log.currentStates(Predicate.Project(project)).map(toCompositeViewDef)
+
+  /**
     * Return all existing indexing views in a finite stream
     */
   def currentViews: ElemStream[CompositeViewDef] =
@@ -415,21 +438,18 @@ final class CompositeViews private (
     log.states(Predicate.Root, start).map(toCompositeViewDef)
 
   private def toCompositeViewDef(envelope: Envelope[CompositeViewState]) =
-    SuccessElem(
-      tpe = envelope.tpe,
-      id = envelope.id,
-      project = Some(envelope.value.project),
-      instant = envelope.instant,
-      offset = envelope.offset,
-      value = CompositeViewDef(envelope.value),
-      rev = envelope.rev
-    )
+    envelope.toElem { v => Some(v.project) }.map { v =>
+      CompositeViewDef(v)
+    }
+
+  private def eval(cmd: CompositeViewCommand) =
+    log.evaluate(cmd.project, cmd.id, cmd)
 
   private def eval(
       cmd: CompositeViewCommand,
       pc: ProjectContext
   ): IO[CompositeViewRejection, ViewResource] =
-    log.evaluate(cmd.project, cmd.id, cmd).map(_._2.toResource(pc.apiMappings, pc.base))
+    eval(cmd).map(_._2.toResource(pc.apiMappings, pc.base))
 
 }
 
@@ -580,9 +600,10 @@ object CompositeViews {
       ),
       state =>
         Some(
-          state.value.sources.value.foldLeft(Set.empty[EntityDependency]) {
-            case (acc, s: CrossProjectSource) => acc + EntityDependency(s.project, Projects.encodeId(s.project))
-            case (acc, _)                     => acc
+          state.value.sources.value.foldLeft(Set.empty[DependsOn]) {
+            case (acc, _: ProjectSource)       => acc
+            case (acc, s: CrossProjectSource)  => acc + DependsOn(s.project, Projects.encodeId(s.project))
+            case (acc, _: RemoteProjectSource) => acc
           }
         ),
       onUniqueViolation = (id: Iri, c: CompositeViewCommand) =>

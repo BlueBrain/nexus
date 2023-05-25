@@ -45,7 +45,7 @@ class CompositeViewsSpec extends BaseSpec {
       val projectPayload = jsonContentOf("/kg/views/composite/project.json")
       for {
         _ <- adminDsl.createOrganization(orgId, orgId, Jerry)
-        _ <- Task.parSequence(
+        _ <- Task.sequence(
                List(
                  adminDsl.createProject(orgId, bandsProject, projectPayload, Jerry),
                  adminDsl.createProject(orgId, albumsProject, projectPayload, Jerry),

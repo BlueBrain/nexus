@@ -72,11 +72,11 @@ class EventStreamingSuite extends BioSuite with Doobie.Fixture with Doobie.Asser
 
   test("Save events") {
     (arithmeticStore.save(event1) >>
-      prStore.save(event2) >>
+      prStore.unsafeSave(event2) >>
       arithmeticStore.save(event3) >>
-      prStore.save(event4) >>
-      prStore.save(event5) >>
-      prStore.save(event6)).transact(xas.write)
+      prStore.unsafeSave(event4) >>
+      prStore.unsafeSave(event5) >>
+      prStore.unsafeSave(event6)).transact(xas.write)
   }
 
   test("Get events of all types from the start") {

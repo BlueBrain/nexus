@@ -37,7 +37,8 @@ object IndexingViewDef {
       resourceTag: Option[UserTag],
       pipeChain: Option[PipeChain],
       namespace: String,
-      indexingRev: Int
+      indexingRev: Int,
+      rev: Int
   ) extends IndexingViewDef
 
   /**
@@ -61,7 +62,8 @@ object IndexingViewDef {
           indexing.resourceTag,
           indexing.pipeChain,
           BlazegraphViews.namespace(state.uuid, state.indexingRev, prefix),
-          state.indexingRev
+          state.indexingRev,
+          state.rev
         )
     }
 

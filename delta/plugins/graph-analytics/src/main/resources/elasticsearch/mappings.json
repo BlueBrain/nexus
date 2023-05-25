@@ -6,8 +6,43 @@
     "@type": {
       "type": "keyword"
     },
+    "_project": {
+      "type": "keyword"
+    },
     "_rev": {
       "type": "long"
+    },
+    "_createdAt": {
+      "type": "date"
+    },
+    "_createdBy": {
+      "properties": {
+        "@type": {
+          "type": "keyword"
+        },
+        "realm": {
+          "type": "keyword"
+        },
+        "subject": {
+          "type": "keyword"
+        }
+      }
+    },
+    "_updatedAt": {
+      "type": "date"
+    },
+    "_updatedBy": {
+      "properties": {
+        "@type": {
+          "type": "keyword"
+        },
+        "realm": {
+          "type": "keyword"
+        },
+        "subject": {
+          "type": "keyword"
+        }
+      }
     },
     "properties": {
       "type": "nested",

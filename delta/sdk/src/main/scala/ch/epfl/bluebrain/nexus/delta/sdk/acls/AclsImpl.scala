@@ -90,6 +90,7 @@ final class AclsImpl private (
 
   private def eval(cmd: AclCommand): IO[AclRejection, AclResource] = log.evaluate(cmd.address, cmd).map(_._2.toResource)
 
+  override def internalDelete(project: AclAddress): UIO[Unit] = log.delete(project)
 }
 
 object AclsImpl {

@@ -133,6 +133,43 @@ object ResourceEvent {
   ) extends ResourceEvent
 
   /**
+    * Event representing a resource refresh.
+    *
+    * @param id
+    *   the resource identifier
+    * @param project
+    *   the project where the resource belongs
+    * @param schema
+    *   the schema used to constrain the resource
+    * @param schemaProject
+    *   the project where the schema belongs
+    * @param types
+    *   the collection of known resource types
+    * @param compacted
+    *   the compacted JSON-LD representation of the resource
+    * @param expanded
+    *   the expanded JSON-LD representation of the resource
+    * @param rev
+    *   the resource revision
+    * @param instant
+    *   the instant when this event was created
+    * @param subject
+    *   the subject which created this event
+    */
+  final case class ResourceRefreshed(
+      id: Iri,
+      project: ProjectRef,
+      schema: ResourceRef.Revision,
+      schemaProject: ProjectRef,
+      types: Set[Iri],
+      compacted: CompactedJsonLd,
+      expanded: ExpandedJsonLd,
+      rev: Int,
+      instant: Instant,
+      subject: Subject
+  ) extends ResourceEvent
+
+  /**
     * Event representing a tag addition to a resource.
     *
     * @param id
@@ -239,6 +276,7 @@ object ResourceEvent {
           event match {
             case _: ResourceCreated    => Created
             case _: ResourceUpdated    => Updated
+            case _: ResourceRefreshed  => Refreshed
             case _: ResourceTagAdded   => Tagged
             case _: ResourceTagDeleted => TagDeleted
             case _: ResourceDeprecated => Deprecated

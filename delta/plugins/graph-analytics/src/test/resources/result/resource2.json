@@ -1,0 +1,114 @@
+{
+  "@id": "http://localhost/resource2",
+  "@type": [
+    "https://neuroshapes.org/NeuronMorphology",
+    "https://neuroshapes.org/ReconstructedCell",
+    "https://neuroshapes.org/ReconstructedWholeBrainCell",
+    "http://schema.org/Dataset",
+    "http://www.w3.org/ns/prov#Entity"
+  ],
+  "_project": "myorg/myproject",
+  "_rev": 1,
+  "_createdAt": "1970-01-01T00:00:00Z",
+  "_createdBy": {
+    "@type": "Anonymous"
+  },
+  "_updatedAt": "1970-01-01T00:00:00Z",
+  "_updatedBy": {
+    "@type": "Anonymous"
+  },
+  "properties": [
+    {
+      "path": "http://schema.org/distribution",
+      "isInArray": false,
+      "dataType": "object",
+      "@type": [
+        "http://schema.org/DataDownload"
+      ]
+    },
+    {
+      "path": "https://neuroshapes.org/mType / http://www.w3.org/2000/01/rdf-schema#label",
+      "isInArray": false,
+      "dataType": "string"
+    },
+    {
+      "path": "https://neuroshapes.org/objectOfStudy",
+      "isInArray": false,
+      "dataType": "object",
+      "@type": [
+        "https://neuroshapes.org/ObjectOfStudy"
+      ]
+    },
+    {
+      "path": "https://neuroshapes.org/brainLocation",
+      "isInArray": false,
+      "dataType": "object",
+      "@type": [
+        "https://neuroshapes.org/BrainLocation"
+      ]
+    },
+    {
+      "path": "https://neuroshapes.org/brainLocation / https://neuroshapes.org/brainRegion / http://www.w3.org/2000/01/rdf-schema#label",
+      "isInArray": false,
+      "dataType": "string"
+    },
+    {
+      "path": "https://neuroshapes.org/objectOfStudy / http://www.w3.org/2000/01/rdf-schema#label",
+      "isInArray": false,
+      "dataType": "string"
+    },
+    {
+      "path": "http://schema.org/name",
+      "isInArray": false,
+      "dataType": "string"
+    },
+    {
+      "path": "https://neuroshapes.org/mType",
+      "isInArray": false,
+      "dataType": "object",
+      "@id": "http://localhost/my-mtype"
+    },
+    {
+      "path": "http://schema.org/distribution / http://schema.org/contentUrl",
+      "isInArray": false,
+      "dataType": "object",
+      "@id": "http://localhost/file2"
+    },
+    {
+      "path": "https://neuroshapes.org/mType / http://www.w3.org/2004/02/skos/core#prefLabel",
+      "isInArray": false,
+      "dataType": "string"
+    },
+    {
+      "path": "https://neuroshapes.org/brainLocation / https://neuroshapes.org/brainRegion",
+      "isInArray": false,
+      "dataType": "object",
+      "@id": "http://localhost/my-brain-region"
+    }
+  ],
+  "relationships": [
+  ],
+  "references": [
+    {
+      "path": "https://neuroshapes.org/brainLocation / https://neuroshapes.org/brainRegion",
+      "isInArray": false,
+      "dataType": "object",
+      "@id": "http://localhost/my-brain-region",
+      "found": false
+    },
+    {
+      "path": "http://schema.org/distribution / http://schema.org/contentUrl",
+      "isInArray": false,
+      "dataType": "object",
+      "@id": "http://localhost/file2",
+      "found": false
+    },
+    {
+      "path": "https://neuroshapes.org/mType",
+      "isInArray": false,
+      "dataType": "object",
+      "@id": "http://localhost/my-mtype",
+      "found": false
+    }
+  ]
+}

@@ -48,7 +48,8 @@ object IndexingViewDef {
       mapping: JsonObject,
       settings: JsonObject,
       context: Option[ContextObject],
-      indexingRev: Int
+      indexingRev: Int,
+      rev: Int
   ) extends IndexingViewDef
 
   /**
@@ -77,7 +78,8 @@ object IndexingViewDef {
           indexing.mapping.getOrElse(defaultMapping),
           indexing.settings.getOrElse(defaultSettings),
           indexing.context,
-          state.indexingRev
+          state.indexingRev,
+          state.rev
         )
 
     }

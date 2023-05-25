@@ -19,11 +19,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.ResourceResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.{ResolverContextResolution, Resolvers, ResourceResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{Resource, ResourceEvent}
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.{Resources, ResourcesImpl}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.{Resources, ResourcesImpl, ValidateResource, ValidateResourceImpl}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
@@ -36,9 +38,7 @@ object ResourcesModule extends ModuleDef {
 
   make[Resources].from {
     (
-        aclCheck: AclCheck,
-        resolvers: Resolvers,
-        schemas: Schemas,
+        validator: ValidateResource,
         fetchContext: FetchContext[ContextRejection],
         config: AppConfig,
         resolverContextResolution: ResolverContextResolution,
@@ -48,7 +48,7 @@ object ResourcesModule extends ModuleDef {
         uuidF: UUIDF
     ) =>
       ResourcesImpl(
-        ResourceResolution.schemaResource(aclCheck, resolvers, schemas),
+        validator,
         fetchContext.mapRejection(ProjectContextRejection),
         resolverContextResolution,
         config.resources,
@@ -63,6 +63,10 @@ object ResourcesModule extends ModuleDef {
   make[ResolverContextResolution].from {
     (aclCheck: AclCheck, resolvers: Resolvers, resources: Resources, rcr: RemoteContextResolution @Id("aggregate")) =>
       ResolverContextResolution(aclCheck, resolvers, resources, rcr)
+  }
+
+  make[ResourceResolution[Schema]].from { (aclCheck: AclCheck, resolvers: Resolvers, schemas: Schemas) =>
+    ResourceResolution.schemaResource(aclCheck, resolvers, schemas)
   }
 
   make[ResourcesRoutes].from {
@@ -87,6 +91,10 @@ object ResourcesModule extends ModuleDef {
         fusionConfig
       )
   }
+
+  make[ValidateResource].from((resourceResolution: ResourceResolution[Schema], api: JsonLdApi) =>
+    new ValidateResourceImpl(resourceResolution)(api)
+  )
 
   many[SseEncoder[_]].add { base: BaseUri => ResourceEvent.sseEncoder(base) }
 

@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchPluginModule.injectElasticViewDefaults
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.deletion.{ElasticSearchDeletionTask, EventMetricsDeletionTask}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchCoordinator
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.ProjectContextRejection
@@ -21,6 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.deletion.ProjectDeletionTask
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
@@ -40,7 +42,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projections
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeChain, ReferenceRegistry, Supervisor}
 import izumi.distage.model.definition.{Id, ModuleDef}
-import monix.bio.{IO, Task, UIO}
+import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
 
 /**
@@ -131,18 +133,15 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         client: ElasticSearchClient,
         config: ElasticSearchViewsConfig
     ) =>
-      if (config.disableMetricsProjection)
-        Task.unit.as(new EventMetricsProjection {})
-      else
-        EventMetricsProjection(
-          metricEncoders,
-          supervisor,
-          client,
-          xas,
-          config.batch,
-          config.metricsQuery,
-          config.prefix
-        )
+      EventMetricsProjection(
+        metricEncoders,
+        supervisor,
+        client,
+        xas,
+        config.batch,
+        config.metricsQuery,
+        config.prefix
+      )
   }
 
   make[ElasticSearchViewsQuery].from {
@@ -209,6 +208,12 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
     }
 
   many[ScopeInitialization].ref[ElasticSearchScopeInitialization]
+
+  many[ProjectDeletionTask].add { (views: ElasticSearchViews) => ElasticSearchDeletionTask(views) }
+
+  many[ProjectDeletionTask].add { (client: ElasticSearchClient, config: ElasticSearchViewsConfig) =>
+    new EventMetricsDeletionTask(client, config.prefix)
+  }
 
   many[MetadataContextValue].addEffect(MetadataContextValue.fromFile("contexts/elasticsearch-metadata.json"))
 

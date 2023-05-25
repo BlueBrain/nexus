@@ -149,6 +149,24 @@ sealed trait Elem[+A] extends Product with Serializable {
     case _: DroppedElem    => None
   }
 
+  /**
+    * Returns the value as a [[Task]], raising a error on the failed case
+    */
+  def toTask: Task[Option[A]] = this match {
+    case e: SuccessElem[A] => Task.some(e.value)
+    case f: FailedElem     => Task.raiseError(f.throwable)
+    case _: DroppedElem    => Task.none
+  }
+
+  /**
+    * Returns the underlying error for a [[FailedElem]]
+    */
+  def toThrowable: Option[Throwable] = this match {
+    case _: SuccessElem[A] => None
+    case f: FailedElem     => Some(f.throwable)
+    case _: DroppedElem    => None
+  }
+
   override def toString: String =
     s"${this.getClass.getSimpleName}[${project.fold("")(_.toString)}/$id:$rev]{${offset.value}}"
 }

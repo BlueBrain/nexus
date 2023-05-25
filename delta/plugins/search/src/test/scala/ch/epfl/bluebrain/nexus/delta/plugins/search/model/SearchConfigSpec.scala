@@ -1,12 +1,16 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.search.model
 
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.Interval
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchConfigError.{InvalidJsonError, InvalidSparqlConstructQuery, LoadingFileError}
 import ch.epfl.bluebrain.nexus.delta.sdk.Defaults
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.IOValues
 import com.typesafe.config.ConfigFactory
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+
+import scala.concurrent.duration.DurationInt
 
 class SearchConfigSpec extends AnyWordSpecLike with Matchers with Inspectors with IOValues {
 
@@ -24,8 +28,7 @@ class SearchConfigSpec extends AnyWordSpecLike with Matchers with Inspectors wit
       mappings: String,
       settings: Option[String],
       query: String,
-      context: Option[String],
-      defaults: Defaults
+      context: Option[String]
   ) =
     ConfigFactory.parseString(
       s"""
@@ -38,135 +41,65 @@ class SearchConfigSpec extends AnyWordSpecLike with Matchers with Inspectors wit
         |    query = $query
         |    context = ${context.orNull}
         |    resource-types = $resourceTypes
+        |    rebuild-strategy = 2 minutes
+        |    min-interval-rebuild = 1 minute
         |  }
         |
         |  defaults {
         |    name = ${defaults.name}
         |    description = ${defaults.description}
         |  }
+        |
+        |  suites {
+        |    my-suite   = [ "myorg/myproject", "myorg/myproject2" ]
+        |    my-suite-2 = [ "myorg2/myproject" ]
+        |  }
+        |
         |}
         |""".stripMargin
     )
 
   "Search config" should {
     "load correctly if all is well defined" in {
-      SearchConfig
-        .load(
-          config(
-            validJson,
-            validJson,
-            Some(validJson),
-            validQuery,
-            Some(validJson),
-            defaults
-          )
-        )
-        .accepted
+      val hocon        = config(validJson, validJson, Some(validJson), validQuery, Some(validJson))
+      val searchConfig = SearchConfig.load(hocon).accepted
+
+      val expectedSuites = Map(
+        Label
+          .unsafe("my-suite")      -> Set(ProjectRef.unsafe("myorg", "myproject"), ProjectRef.unsafe("myorg", "myproject2")),
+        Label.unsafe("my-suite-2") -> Set(ProjectRef.unsafe("myorg2", "myproject"))
+      )
+
+      searchConfig.indexing.rebuildStrategy shouldEqual Some(Interval(2.minutes))
+      searchConfig.suites shouldEqual expectedSuites
     }
 
     "fail if the file can't be found" in {
-      forAll(
-        List(
-          config(
-            missingFile,
-            validJson,
-            Some(validJson),
-            validQuery,
-            Some(validJson),
-            defaults
-          ),
-          config(
-            validJson,
-            missingFile,
-            Some(validJson),
-            validQuery,
-            Some(validJson),
-            defaults
-          ),
-          config(
-            validJson,
-            validJson,
-            Some(missingFile),
-            validQuery,
-            Some(validJson),
-            defaults
-          ),
-          config(
-            validJson,
-            validJson,
-            Some(validJson),
-            missingFile,
-            Some(validJson),
-            defaults
-          ),
-          config(
-            validJson,
-            validJson,
-            Some(validJson),
-            validQuery,
-            Some(missingFile),
-            defaults
-          )
-        )
-      ) { c =>
+      val missingFieldFile   = config(missingFile, validJson, Some(validJson), validQuery, Some(validJson))
+      val missingEsMapping   = config(validJson, missingFile, Some(validJson), validQuery, Some(validJson))
+      val missingEsSettings  = config(validJson, validJson, Some(missingFile), validQuery, Some(validJson))
+      val missingSparqlFile  = config(validJson, validJson, Some(validJson), missingFile, Some(validJson))
+      val missingContextFile = config(validJson, validJson, Some(validJson), validQuery, Some(missingFile))
+      val all                = List(missingFieldFile, missingEsMapping, missingEsSettings, missingSparqlFile, missingContextFile)
+      forAll(all) { c =>
         SearchConfig.load(c).rejectedWith[LoadingFileError]
       }
     }
 
     "fail if fields is an invalid json object is passed" in {
-      forAll(
-        List(
-          config(
-            emptyFile,
-            validJson,
-            Some(validJson),
-            validQuery,
-            Some(validJson),
-            defaults
-          ),
-          config(
-            validJson,
-            emptyFile,
-            Some(validJson),
-            validQuery,
-            Some(validJson),
-            defaults
-          ),
-          config(
-            validJson,
-            validJson,
-            Some(emptyFile),
-            validQuery,
-            Some(validJson),
-            defaults
-          ),
-          config(
-            validJson,
-            validJson,
-            Some(validJson),
-            validQuery,
-            Some(emptyFile),
-            defaults
-          )
-        )
-      ) { c =>
+      val invalidFields     = config(emptyFile, validJson, Some(validJson), validQuery, Some(validJson))
+      val invalidEsMapping  = config(validJson, emptyFile, Some(validJson), validQuery, Some(validJson))
+      val invalidEsSettings = config(validJson, validJson, Some(emptyFile), validQuery, Some(validJson))
+      val invalidContext    = config(validJson, validJson, Some(validJson), validQuery, Some(emptyFile))
+      val all               = List(invalidFields, invalidEsMapping, invalidEsSettings, invalidContext)
+      forAll(all) { c =>
         SearchConfig.load(c).rejectedWith[InvalidJsonError]
       }
     }
 
     "fail if the construct query is invalid" in {
-      SearchConfig
-        .load(
-          config(
-            validJson,
-            validJson,
-            Some(validJson),
-            emptyFile,
-            Some(validJson),
-            defaults
-          )
-        )
-        .rejectedWith[InvalidSparqlConstructQuery]
+      val invalidQuery = config(validJson, validJson, Some(validJson), emptyFile, Some(validJson))
+      SearchConfig.load(invalidQuery).rejectedWith[InvalidSparqlConstructQuery]
     }
   }
 

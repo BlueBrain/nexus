@@ -3,24 +3,21 @@ package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics
 import akka.http.scaladsl.model.Uri.Query
 import cats.data.NonEmptySeq
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.{ioContentOf, ioJsonObjectContentOf}
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel, QueryBuilder}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.WrappedElasticSearchClientError
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.config.GraphAnalyticsConfig.TermAggregationsConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.{propertiesAggQuery, relationshipsAggQuery}
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.GraphAnalyticsRejection.{InvalidPropertyType, WrappedElasticSearchRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.PropertiesStatistics.propertiesDecoderFromEsAggregations
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.{AnalyticsGraph, GraphAnalyticsRejection, PropertiesStatistics}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import com.typesafe.scalalogging.Logger
 import io.circe.{Decoder, JsonObject}
-import monix.bio.{IO, Task}
+import monix.bio.IO
 
 trait GraphAnalytics {
 
@@ -40,43 +37,23 @@ object GraphAnalytics {
 
   final def apply(
       client: ElasticSearchClient,
-      fetchContext: FetchContext[GraphAnalyticsRejection]
-  )(implicit aggCfg: TermAggregationsConfig): Task[GraphAnalytics] =
-    for {
-      script <- scriptContent
-      _      <- client.createScript(updateRelationshipsScriptId, script)
-    } yield new GraphAnalytics {
+      fetchContext: FetchContext[GraphAnalyticsRejection],
+      prefix: String,
+      config: TermAggregationsConfig
+  ): GraphAnalytics =
+    new GraphAnalytics {
 
       private val expandIri: ExpandIri[InvalidPropertyType] = new ExpandIri(InvalidPropertyType.apply)
 
-      private val propertiesAggQuery =
-        ioJsonObjectContentOf(
-          "elasticsearch/paths-properties-aggregations.json",
-          "shard_size" -> aggCfg.shardSize,
-          "size"       -> aggCfg.size,
-          "type"       -> "{{type}}"
-        )
-          .logAndDiscardErrors("ElasticSearch 'paths-properties-aggregations.json' template not found")
-          .memoizeOnSuccess
-
-      private val relationshipsAggQuery =
-        ioJsonObjectContentOf(
-          "elasticsearch/paths-relationships-aggregations.json",
-          "shard_size" -> aggCfg.shardSize,
-          "size"       -> aggCfg.size
-        )
-          .logAndDiscardErrors("ElasticSearch 'paths-relationships-aggregations.json' template not found")
-          .memoizeOnSuccess
-
       private def propertiesAggQueryFor(tpe: Iri)                                                     =
-        propertiesAggQuery.map(_.replace("@type" -> "{{type}}", tpe))
+        propertiesAggQuery(config).map(_.replace("@type" -> "{{type}}", tpe))
 
       override def relationships(projectRef: ProjectRef): IO[GraphAnalyticsRejection, AnalyticsGraph] =
         for {
           _     <- fetchContext.onRead(projectRef)
-          query <- relationshipsAggQuery
+          query <- relationshipsAggQuery(config)
           stats <- client
-                     .searchAs[AnalyticsGraph](QueryBuilder(query), idx(projectRef).value, Query.Empty)
+                     .searchAs[AnalyticsGraph](QueryBuilder(query), index(prefix, projectRef).value, Query.Empty)
                      .mapError(err => WrappedElasticSearchRejection(WrappedElasticSearchClientError(err)))
         } yield stats
 
@@ -96,26 +73,11 @@ object GraphAnalytics {
           pc     <- fetchContext.onRead(projectRef)
           tpeIri <- expandIri(tpe, pc)
           query  <- propertiesAggQueryFor(tpeIri)
-          stats  <- search(tpeIri, idx(projectRef), query)
+          stats  <- search(tpeIri, index(prefix, projectRef), query)
         } yield stats
 
       }
     }
-
-  implicit private val classLoader: ClassLoader = getClass.getClassLoader
-  implicit private val logger: Logger           = Logger[GraphAnalytics]
-
-  private val scriptContent =
-    ioContentOf("elasticsearch/update_relationships_script.painless")
-      .logAndDiscardErrors("ElasticSearch script 'update_relationships_script.painless' template not found")
-      .memoizeOnSuccess
-
-  /**
-    * The id for the type statistics elasticsearch view
-    */
-  final val typeStats = nxv + "typeStatisticsIndex"
-
-  final val updateRelationshipsScriptId = "updateRelationships"
 
   private[analytics] def toPaths(key: String): Either[String, NonEmptySeq[Iri]] =
     key.split(" / ").toVector.foldM(Vector.empty[Iri])((acc, k) => Iri.absolute(k).map(acc :+ _)).flatMap {
@@ -123,11 +85,10 @@ object GraphAnalytics {
       case _                     => Left("Empty Path")
     }
 
-  private[analytics] def idx(projectRef: ProjectRef): IndexLabel =
-    IndexLabel.unsafe(s"${UrlUtils.encode(projectRef.toString)}_graph_analytics")
+  private[analytics] def index(prefix: String, ref: ProjectRef): IndexLabel =
+    IndexLabel.unsafe(s"${prefix}_ga_${ref.organization}_${ref.project}")
 
-  private[analytics] def projectionId(projectRef: ProjectRef): String =
-    s"graph_analytics-$projectRef"
+  private[analytics] def projectionName(ref: ProjectRef): String = s"ga-$ref"
 
   private[analytics] def name(iri: Iri): String =
     (iri.fragment orElse iri.lastSegment) getOrElse iri.toString

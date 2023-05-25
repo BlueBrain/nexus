@@ -3,8 +3,9 @@ package ch.epfl.bluebrain.nexus.delta.sourcing
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityDependency, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityDependency.{DependsOn, ReferencedBy}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, Tag}
 import doobie._
 import doobie.implicits._
 import doobie.util.Put
@@ -25,9 +26,15 @@ object EntityDependencyStore {
     sql"""DELETE FROM entity_dependencies WHERE org = ${ref.organization} AND project = ${ref.project} AND id = $id""".stripMargin.update.run.void
 
   /**
+    * Delete all dependencies for the given project
+    */
+  def deleteAll(ref: ProjectRef): ConnectionIO[Unit] =
+    sql"""DELETE FROM entity_dependencies WHERE org = ${ref.organization} AND project = ${ref.project}""".stripMargin.update.run.void
+
+  /**
     * Save dependencies for the provided id in the given project
     */
-  def save(ref: ProjectRef, id: Iri, dependencies: Set[EntityDependency]): ConnectionIO[Unit] =
+  def save(ref: ProjectRef, id: Iri, dependencies: Set[DependsOn]): ConnectionIO[Unit] =
     dependencies.foldLeft(noop) { case (acc, dependency) =>
       acc >>
         sql"""
@@ -53,7 +60,7 @@ object EntityDependencyStore {
   /**
     * Get direct dependencies for the provided id in the given project
     */
-  def list[Id](ref: ProjectRef, id: Id, xas: Transactors)(implicit put: Put[Id]): UIO[Set[EntityDependency]] =
+  def directDependencies[Id](ref: ProjectRef, id: Id, xas: Transactors)(implicit put: Put[Id]): UIO[Set[DependsOn]] =
     sql"""
          | SELECT target_org, target_project, target_id
          | FROM entity_dependencies
@@ -61,9 +68,26 @@ object EntityDependencyStore {
          | AND project = ${ref.project}
          | AND id = $id""".stripMargin
       .query[(Label, Label, Iri)]
-      .map { case (org, proj, id) =>
-        EntityDependency(ProjectRef(org, proj), id)
-      }
+      .map { case (org, proj, id) => DependsOn(ProjectRef(org, proj), id) }
+      .to[Set]
+      .transact(xas.read)
+      .hideErrors
+
+  /**
+    * Get direct references from other projects for the given project
+    */
+  def directExternalReferences(ref: ProjectRef, xas: Transactors): UIO[Set[ReferencedBy]] =
+    sql"""
+         | SELECT org, project, id
+         | FROM entity_dependencies
+         | WHERE NOT (
+         |   org             = ${ref.organization}
+         |   AND project     = ${ref.project}
+         | )
+         | AND   target_org     = ${ref.organization}
+         | AND   target_project = ${ref.project}""".stripMargin
+      .query[(Label, Label, Iri)]
+      .map { case (org, proj, id) => ReferencedBy(ProjectRef(org, proj), id) }
       .to[Set]
       .transact(xas.read)
       .hideErrors
@@ -85,23 +109,21 @@ object EntityDependencyStore {
   /**
     * Get all dependencies for the provided id in the given project
     */
-  def recursiveList[Id](ref: ProjectRef, id: Id, xas: Transactors)(implicit put: Put[Id]): UIO[Set[EntityDependency]] =
+  def recursiveDependencies[Id](ref: ProjectRef, id: Id, xas: Transactors)(implicit put: Put[Id]): UIO[Set[DependsOn]] =
     sql"""
          | ${recursiveDependencies(ref, id)}
          | SELECT org, project, id  from recursive_dependencies
        """.stripMargin
       .query[(Label, Label, Iri)]
-      .map { case (org, proj, id) =>
-        EntityDependency(ProjectRef(org, proj), id)
-      }
+      .map { case (org, proj, id) => DependsOn(ProjectRef(org, proj), id) }
       .to[Set]
       .transact(xas.read)
       .hideErrors
 
   /**
-    * Get and decode state values for direct dependencies for the provided id in the given project
+    * Get and decode latest state values for direct dependencies for the provided id in the given project
     */
-  def decodeList[Id, A](ref: ProjectRef, id: Id, xas: Transactors)(implicit
+  def decodeDirectDependencies[Id, A](ref: ProjectRef, id: Id, xas: Transactors)(implicit
       put: Put[Id],
       decoder: Decoder[A]
   ): UIO[List[A]] =
@@ -113,6 +135,7 @@ object EntityDependencyStore {
          | AND d.id = $id
          | AND s.org = d.target_org
          | AND s.project = d.target_project
+         | AND tag = ${Tag.latest}
          | AND s.id = d.target_id""".stripMargin
       .query[Json]
       .to[List]
@@ -123,9 +146,9 @@ object EntityDependencyStore {
       .hideErrors
 
   /**
-    * Get and decode state values for all dependencies for the provided id in the given project
+    * Get and decode latest state values for all dependencies for the provided id in the given project
     */
-  def decodeRecursiveList[Id, A](ref: ProjectRef, id: Id, xas: Transactors)(implicit
+  def decodeRecursiveDependencies[Id, A](ref: ProjectRef, id: Id, xas: Transactors)(implicit
       put: Put[Id],
       decoder: Decoder[A]
   ): UIO[List[A]] =
@@ -135,6 +158,7 @@ object EntityDependencyStore {
          | FROM recursive_dependencies d, scoped_states s
          | WHERE s.org = d.org
          | AND s.project = d.project
+         | AND tag = ${Tag.latest}
          | AND s.id = d.id
        """.stripMargin
       .query[Json]

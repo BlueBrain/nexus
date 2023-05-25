@@ -1,13 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing
 
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef.{ActiveViewDef, DeprecatedViewDef}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewsCoordinator.logger
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.projections.CompositeProjections
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.CompositeGraphStream
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ElemStream
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
@@ -76,7 +76,7 @@ final class CompositeViewsCoordinator(
       case Some(v) =>
         supervisor
           .destroy(
-            v.uuid.toString,
+            v.projection,
             for {
               _ <-
                 Task.delay(

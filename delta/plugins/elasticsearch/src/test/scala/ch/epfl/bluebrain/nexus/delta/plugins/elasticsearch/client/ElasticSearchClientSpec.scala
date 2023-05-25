@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client
 
 import akka.actor.ActorSystem
+import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.Uri.Query
 import akka.testkit.TestKit
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ScalaTestElasticSearchClientSetup
@@ -16,8 +17,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{SearchResults, Sort, Sort
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchDocker
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, IOValues, TestHelpers}
-import io.circe.JsonObject
-import org.scalatest.DoNotDiscover
+import io.circe.{Json, JsonObject}
+import org.scalatest.{DoNotDiscover, OptionValues}
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -31,6 +32,7 @@ class ElasticSearchClientSpec(override val docker: ElasticSearchDocker)
     with Matchers
     with ScalaTestElasticSearchClientSetup
     with EitherValuable
+    with OptionValues
     with CirceLiteral
     with TestHelpers
     with IOValues
@@ -134,10 +136,24 @@ class ElasticSearchClientSpec(override val docker: ElasticSearchDocker)
       result match {
         case BulkResponse.Success              => fail("errors expected")
         case BulkResponse.MixedOutcomes(items) => {
-          every(items.take(5)) shouldBe Outcome.Success
-          items(5) shouldBe an[Outcome.Error]
+          items.size shouldEqual 4
+          items.get("1").value shouldEqual Outcome.Success
+          items.get("2").value shouldEqual Outcome.Success
+          items.get("3").value shouldEqual Outcome.Success
+          items.get("5").value shouldBe an[Outcome.Error]
         }
       }
+    }
+
+    "get the source of the given document" in {
+      val index = IndexLabel(genString()).rightValue
+      val doc   = json"""{ "field1" : 1 }"""
+
+      val operations = List(ElasticSearchBulk.Index(index, "1", doc))
+      esClient.bulk(operations, Refresh.WaitFor).accepted
+
+      esClient.getSource[Json](index, "1").accepted shouldEqual doc
+      esClient.getSource[Json](index, "2").rejectedWith[HttpClientStatusError]
     }
 
     "perform the multiget query" in {
@@ -208,6 +224,36 @@ class ElasticSearchClientSpec(override val docker: ElasticSearchDocker)
           .removeKeys("took") shouldEqual
           jsonContentOf("elasticsearch-results.json", "index" -> index)
       }
+    }
+
+    "delete documents by" in {
+      val index = IndexLabel(genString()).rightValue
+
+      val operations = List(
+        ElasticSearchBulk.Index(index, "1", json"""{ "field1" : 1 }"""),
+        ElasticSearchBulk.Create(index, "2", json"""{ "field1" : 3 }"""),
+        ElasticSearchBulk.Update(index, "1", json"""{ "doc" : {"field2" : "value2"} }""")
+      )
+
+      {
+        for {
+          // Indexing and checking count
+          _        <- esClient.bulk(operations)
+          _        <- esClient.refresh(index)
+          original <- esClient.count(index.value)
+          _         = original shouldEqual 2L
+          // Deleting document matching the given query
+          query     = jobj"""{"query": {"bool": {"must": {"term": {"field1": 3} } } } }"""
+          _        <- esClient.deleteByQuery(query, index)
+          // Checking docs again
+          newCount <- esClient.count(index.value)
+          _         = newCount shouldEqual 1L
+          doc1     <- esClient.getSource[Json](index, "1").attempt
+          _         = doc1.rightValue
+          doc2     <- esClient.getSource[Json](index, "2").attempt
+          _         = doc2.leftValue.errorCode.value shouldEqual StatusCodes.NotFound
+        } yield ()
+      }.accepted
     }
   }
 }

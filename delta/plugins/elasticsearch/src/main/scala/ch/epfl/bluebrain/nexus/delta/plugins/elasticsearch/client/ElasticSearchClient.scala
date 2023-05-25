@@ -10,13 +10,12 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy.logError
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.BulkResponse.MixedOutcomes.{HasMixedOutcomes, Outcome}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.BulkResponse.Success
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.BulkResponse.MixedOutcomes.Outcome
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{emptyResults, ResourcesSearchParams}
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceMarshalling._
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.HttpResult
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
+import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.{HttpClientStatusError, HttpUnexpectedError}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientError}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription.ResolvedServiceDescription
@@ -27,7 +26,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Name}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import com.typesafe.scalalogging.Logger
 import io.circe.syntax._
-import io.circe.{Decoder, DecodingFailure, Json, JsonObject}
+import io.circe._
 import monix.bio.{IO, UIO}
 import retry.syntax.all._
 
@@ -56,14 +55,17 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
   private val refreshParam                                          = "refresh"
   private val ignoreUnavailable                                     = "ignore_unavailable"
   private val allowNoIndices                                        = "allow_no_indices"
+  private val deleteByQueryPath                                     = "_delete_by_query"
   private val updateByQueryPath                                     = "_update_by_query"
   private val countPath                                             = "_count"
   private val searchPath                                            = "_search"
+  private val source                                                = "_source"
   private val newLine                                               = System.lineSeparator()
   private val `application/x-ndjson`: MediaType.WithFixedCharset    =
     MediaType.applicationWithFixedCharset("x-ndjson", HttpCharsets.`UTF-8`, "json")
   private val defaultQuery                                          = Map(ignoreUnavailable -> "true", allowNoIndices -> "true")
   private val defaultUpdateByQuery                                  = defaultQuery + (waitForCompletion -> "false")
+  private val defaultDeleteByQuery                                  = defaultQuery + (waitForCompletion -> "true")
   private val updateByQueryStrategy: RetryStrategy[HttpClientError] =
     RetryStrategy.constant(
       1.second,
@@ -219,13 +221,10 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
 
       client
         .toJson(req)
-        .map {
-          case HasMixedOutcomes(mixedOutcomes) => mixedOutcomes
-          case _                               => Success
-        }
-        .recover { case HasMixedOutcomes(mixedOutcomes) =>
-          mixedOutcomes
-        }
+        .redeemWith(
+          err => IO.fromEither(BulkResponse(err)).mapError(_ => err),
+          json => IO.fromEither(BulkResponse(json)).mapError { err => HttpUnexpectedError(req, err.getMessage()) }
+        )
     }
   }
 
@@ -249,7 +248,7 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
     * @param query
     *   the search query
     * @param indices
-    *   the indices to use on search (if empty, searches in all the indices)
+    *   the indices targeted by the update query
     */
   def updateByQuery(query: JsonObject, indices: Set[String]): HttpResult[Unit] = {
     val (indexPath, q) = indexPathAndQuery(indices, QueryBuilder(query))
@@ -269,6 +268,34 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
                     updateByQueryStrategy.onError
                   )
     } yield ()
+  }
+
+  /**
+    * Runs an delete by query with the passed ''query'' and ''index''. The query is run as a task and the task is
+    * requested until it finished
+    *
+    * @param query
+    *   the search query
+    * @param index
+    *   the index targeted by the delete query
+    */
+  def deleteByQuery(query: JsonObject, index: IndexLabel): HttpResult[Unit] = {
+    val deleteEndpoint = (endpoint / index.value / deleteByQueryPath).withQuery(Uri.Query(defaultDeleteByQuery))
+    val req            = Post(deleteEndpoint, query).withHttpCredentials
+    client.toJson(req).void
+  }
+
+  /**
+    * Get the source of the Elasticsearch document
+    * @param index
+    *   the index to look in
+    * @param id
+    *   the identifier of the document
+    */
+  def getSource[R: Decoder: ClassTag](index: IndexLabel, id: String): HttpResult[R] = {
+    val sourceEndpoint = endpoint / index.value / source / id
+    val req            = Get(sourceEndpoint).withHttpCredentials
+    client.fromJsonTo[R](req)
   }
 
   /**
@@ -565,41 +592,82 @@ object ElasticSearchClient {
       Decoder.instance(_.get[Long]("count").map(Count(_)))
   }
 
-  sealed trait BulkResponse
-  object BulkResponse {
-    final case object Success                            extends BulkResponse
-    final case class MixedOutcomes(items: List[Outcome]) extends BulkResponse
-    object MixedOutcomes {
-      sealed trait Outcome
-      object Outcome {
-        final case object Success                extends Outcome
-        final case class Error(json: JsonObject) extends Outcome
-      }
+  /**
+    * Elasticsearch response after a bulk request
+    */
+  sealed trait BulkResponse extends Product with Serializable
 
-      object HasMixedOutcomes {
-        private val Operations                      = List("update", "create", "delete", "index")
-        implicit private val bulkItemOutcomeDecoder = Decoder.instance[Outcome] { hcursor =>
+  object BulkResponse {
+
+    /**
+      * No indexing error were returned by elasticsearch
+      */
+    final case object Success extends BulkResponse
+
+    /**
+      * At least one indexing error has been returned by elasticsearch
+      * @param items
+      *   the different outcomes indexed by document id (So we only keep the last outcome if a document id is repeated
+      *   in a query but this is ok in the Delta context)
+      */
+    final case class MixedOutcomes(items: Map[String, Outcome]) extends BulkResponse
+
+    object MixedOutcomes {
+
+      /**
+        * Outcome returned by Elasticsearch for a single document
+        */
+      sealed trait Outcome extends Product with Serializable
+
+      object Outcome {
+
+        /**
+          * The document has been properly indexed
+          */
+        final case object Success extends Outcome
+
+        /**
+          * The document could not be indexed
+          * @param json
+          *   the reason returned by the Elasticsearch API
+          */
+        final case class Error(json: JsonObject) extends Outcome
+
+        private val success: Outcome = Success
+        private val Operations       = List("index", "delete", "update", "create")
+
+        private[client] def from(hcursor: HCursor): Decoder.Result[(String, Outcome)] =
           Operations
             .collectFirstSome(hcursor.downField(_).success)
-            .toRight(DecodingFailure(s"operation type was not one of ${Operations.mkString(", ")}", hcursor.history))
-            .map(itemCursor =>
-              itemCursor.get[JsonObject]("error") match {
-                case Left(_)      => Outcome.Success
-                case Right(value) => Outcome.Error(value)
+            .toRight(DecodingFailure(s"Operation type was not one of ${Operations.mkString(", ")}.", hcursor.history))
+            .flatMap { c =>
+              c.get[String]("_id").map {
+                _ -> c.get[JsonObject]("error").fold(_ => Outcome.success, Outcome.Error)
               }
-            )
-        }
-        def unapply(err: HttpClientError): Option[MixedOutcomes] = {
-          err.jsonBody
-            .flatMap(unapply)
-        }
+            }
+      }
+    }
 
-        def unapply(json: Json): Option[MixedOutcomes] = {
-          Some(json)
-            .filter(json => json.hcursor.get[Boolean]("errors").contains(true))
-            .flatMap(json => json.hcursor.get[List[Outcome]]("items").toOption)
-            .map(MixedOutcomes(_))
-        }
+    private val invalidResponse                                                   = Left(DecodingFailure(s"Bulk result did not provide a json response.", List.empty))
+    private[client] def apply(err: HttpClientError): Decoder.Result[BulkResponse] =
+      err.jsonBody.map(apply).getOrElse(invalidResponse)
+
+    private[client] def apply(json: Json): Decoder.Result[BulkResponse] = {
+      json.hcursor.get[Boolean]("errors").flatMap { hasErrors =>
+        if (hasErrors) {
+          val cursor = json.hcursor.downField("items")
+          cursor.focus
+            .flatMap(_.asArray)
+            .map {
+              _.foldLeftM(Map.empty[String, Outcome]) { case (acc, item) =>
+                Outcome.from(item.hcursor).map { res =>
+                  acc + res
+                }
+              }.map(MixedOutcomes(_))
+            }
+            .getOrElse(Left(DecodingFailure(s"Bulk result does not contain a `items` array property.", cursor.history)))
+        } else
+          Right(Success)
       }
     }
   }

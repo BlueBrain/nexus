@@ -117,7 +117,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with TryValues with StorageFixtur
 
   private lazy val routes      =
     Route.seal(
-      StoragesRoutes(cfg, identities, aclCheck, storages, storageStatistics, schemeDirectives, IndexingAction.noop)
+      StoragesRoutes(identities, aclCheck, storages, storageStatistics, schemeDirectives, IndexingAction.noop)
     )
 
   "Storage routes" should {
@@ -318,28 +318,6 @@ class StoragesRoutesSpec extends BaseRouteSpec with TryValues with StorageFixtur
             response.asJson shouldEqual Storage.encryptSource(remoteFieldsJson, crypto).success.value
           }
         }
-      }
-    }
-
-    "list storages" in {
-      Get("/v1/storages/myorg/myproject/caches") ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual jsonContentOf("storages/storages-list.json")
-      }
-    }
-
-    "list remote disk storages" in {
-      val encodedStorage = UrlUtils.encode(nxvStorage.toString)
-      Get(s"/v1/storages/myorg/myproject/caches?type=$encodedStorage&type=nxv:RemoteDiskStorage") ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual jsonContentOf("storages/storages-list-not-deprecated.json")
-      }
-    }
-
-    "list not deprecated storages" in {
-      Get("/v1/storages/myorg/myproject/caches?deprecated=false") ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual jsonContentOf("storages/storages-list-not-deprecated.json")
       }
     }
 

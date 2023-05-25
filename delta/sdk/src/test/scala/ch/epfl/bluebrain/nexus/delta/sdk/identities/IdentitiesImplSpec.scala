@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.model.{HttpRequest, Uri}
 import cats.data.NonEmptySet
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.cache.CacheConfig
+import ch.epfl.bluebrain.nexus.delta.kernel.cache.CacheConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{RealmGen, WellKnownGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpUnexpectedError
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.TokenRejection.{AccessTokenDoesNotContainAnIssuer, AccessTokenDoesNotContainSubject, GetGroupsFromOidcError, InvalidAccessToken, InvalidAccessTokenFormat, UnknownAccessTokenIssuer}

@@ -85,7 +85,7 @@ class ProjectsRoutesSpec extends BaseRouteSpec {
   )
 
   implicit private val projectsConfig: ProjectsConfig =
-    ProjectsConfig(eventLogConfig, pagination, cacheConfig)
+    ProjectsConfig(eventLogConfig, pagination, cacheConfig, deletionConfig)
 
   private val projectStats = ProjectStatistics(10, 10, Instant.EPOCH)
 
@@ -94,7 +94,7 @@ class ProjectsRoutesSpec extends BaseRouteSpec {
     case _     => UIO.none
   }
 
-  private lazy val projects     = ProjectsImpl(fetchOrg, Set.empty, defaultApiMappings, projectsConfig, xas)
+  private lazy val projects     = ProjectsImpl(fetchOrg, _ => UIO.unit, Set.empty, defaultApiMappings, projectsConfig, xas)
   private lazy val provisioning = ProjectProvisioning(aclCheck.append, projects, provisioningConfig)
   private lazy val routes       = Route.seal(
     ProjectsRoutes(
@@ -513,6 +513,33 @@ class ProjectsRoutesSpec extends BaseRouteSpec {
       Get("/v1/projects/users-org/user1") ~> Accept(`text/html`) ~> routes ~> check {
         response.status shouldEqual StatusCodes.SeeOther
         response.header[Location].value.uri shouldEqual Uri("https://bbp.epfl.ch/nexus/web/admin/users-org/user1")
+      }
+    }
+
+    "fail to delete a project without projects/delete permission" in {
+      Delete("/v1/projects/org1/proj?rev=3&prune=true") ~> routes ~> check {
+        response.status shouldEqual StatusCodes.Forbidden
+        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+      }
+    }
+
+    "delete a project" in {
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(projectsPermissions.delete, resources.read)).accepted
+      Delete("/v1/projects/org1/proj?rev=3&prune=true") ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        val ref = ProjectRef(Label.unsafe("org1"), Label.unsafe("proj"))
+        response.asJson should equalIgnoreArrayOrder(
+          projectMetadata(
+            ref,
+            "proj",
+            projectUuid,
+            "org1",
+            orgUuid,
+            rev = 4,
+            deprecated = true,
+            markedForDeletion = true
+          )
+        )
       }
     }
   }

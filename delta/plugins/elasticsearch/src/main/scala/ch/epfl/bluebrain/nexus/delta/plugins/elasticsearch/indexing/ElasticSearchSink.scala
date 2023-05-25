@@ -3,9 +3,9 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.BulkResponse.{MixedOutcomes, Success}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.{BulkResponse, Refresh}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchBulk, ElasticSearchClient, IndexLabel}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchSink.BulkUpdateException
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.FailedElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
 import fs2.Chunk
 import io.circe.{Json, JsonObject}
@@ -57,15 +57,7 @@ final class ElasticSearchSink private (
     if (bulk.nonEmpty) {
       client
         .bulk(bulk, refresh)
-        .map {
-          case Success                           => elements.map(_.void)
-          case BulkResponse.MixedOutcomes(items) =>
-            elements.zip(Chunk.seq(items)).map {
-              case (element, MixedOutcomes.Outcome.Success)     => element.void
-              case (element, MixedOutcomes.Outcome.Error(json)) =>
-                element.failed(BulkUpdateException(json))
-            }
-        }
+        .map(ElasticSearchSink.markElems(_, elements, documentId))
     } else {
       Task.pure(elements.map(_.void))
     }
@@ -82,6 +74,37 @@ object ElasticSearchSink {
     elem.project match {
       case Some(project) => s"$project/${elem.id}:${elem.rev}"
       case None          => s"${elem.id}/${elem.rev}"
+    }
+
+  /**
+    * Mark and update the elements according to the elasticsearch response
+    * @param response
+    *   the elasticsearch bulk response
+    * @param elements
+    *   the chunk of elements
+    * @param documentId
+    *   how to extract the document id from an element
+    */
+  def markElems[A](response: BulkResponse, elements: Chunk[Elem[A]], documentId: Elem[A] => String): Chunk[Elem[Unit]] =
+    response match {
+      case Success                           => elements.map(_.void)
+      case BulkResponse.MixedOutcomes(items) =>
+        elements.map {
+          case element: FailedElem => element
+          case element             =>
+            items.get(documentId(element)) match {
+              case None                                    =>
+                element.failed(
+                  BulkUpdateException(
+                    JsonObject(
+                      "reason" -> Json.fromString(s"${element.id} was not found in Elasticsearch response")
+                    )
+                  )
+                )
+              case Some(MixedOutcomes.Outcome.Success)     => element.void
+              case Some(MixedOutcomes.Outcome.Error(json)) => element.failed(BulkUpdateException(json))
+            }
+        }
     }
 
   /**

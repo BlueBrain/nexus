@@ -80,6 +80,20 @@ trait Schemas {
   )(implicit caller: Caller): IO[SchemaRejection, SchemaResource]
 
   /**
+    * Refreshes an existing schema. This is equivalent to posting an update with the latest source. Used for when the
+    * project context has changed
+    *
+    * @param id
+    *   the identifier that will be expanded to the Iri of the schema
+    * @param projectRef
+    *   the project reference where the schema belongs
+    */
+  def refresh(
+      id: IdSegment,
+      projectRef: ProjectRef
+  )(implicit caller: Caller): IO[SchemaRejection, SchemaResource]
+
+  /**
     * Adds a tag to an existing schema.
     *
     * @param id
@@ -212,6 +226,10 @@ object Schemas {
       (_: SchemaState).copy(rev = e.rev, source = e.source, compacted = e.compacted, expanded = e.expanded, updatedAt = e.instant, updatedBy = e.subject)
     }
 
+    def refreshed(e: SchemaRefreshed): Option[SchemaState] = state.map {
+      (_: SchemaState).copy(rev = e.rev, compacted = e.compacted, expanded = e.expanded, updatedAt = e.instant, updatedBy = e.subject)
+    }
+
     def tagAdded(e: SchemaTagAdded): Option[SchemaState] = state.map { s =>
       s.copy(rev = e.rev, tags = s.tags + (e.tag, e.targetRev), updatedAt = e.instant, updatedBy = e.subject)
     }
@@ -228,6 +246,7 @@ object Schemas {
     event match {
       case e: SchemaCreated    => created(e)
       case e: SchemaUpdated    => updated(e)
+      case e: SchemaRefreshed  => refreshed(e)
       case e: SchemaTagAdded   => tagAdded(e)
       case e: SchemaTagDeleted => tagDeleted(e)
       case e: SchemaDeprecated => deprecated(e)
@@ -249,7 +268,7 @@ object Schemas {
       for {
         _      <- IO.raiseWhen(id.startsWith(schemas.base))(ReservedSchemaId(id))
         report <- ShaclEngine(graph, reportDetails = true).mapError(SchemaShaclEngineRejection(id, _: String))
-        result <- IO.when(!report.isValid())(IO.raiseError(InvalidSchema(id, report)))
+        result <- IO.raiseWhen(!report.isValid())(InvalidSchema(id, report))
       } yield result
 
     def create(c: CreateSchema) =
@@ -278,6 +297,23 @@ object Schemas {
             _     <- validate(c.id, graph)
             time  <- IOUtils.instant
           } yield SchemaUpdated(c.id, c.project, c.source, c.compacted, c.expanded, s.rev + 1, time, c.subject)
+
+      }
+
+    def refresh(c: RefreshSchema) =
+      state match {
+        case None                      =>
+          IO.raiseError(SchemaNotFound(c.id, c.project))
+        case Some(s) if s.rev != c.rev =>
+          IO.raiseError(IncorrectRev(c.rev, s.rev))
+        case Some(s) if s.deprecated   =>
+          IO.raiseError(SchemaIsDeprecated(c.id))
+        case Some(s)                   =>
+          for {
+            graph <- toGraph(c.id, c.expanded)
+            _     <- validate(c.id, graph)
+            time  <- IOUtils.instant
+          } yield SchemaRefreshed(c.id, c.project, c.compacted, c.expanded, s.rev + 1, time, c.subject)
 
       }
 
@@ -322,6 +358,7 @@ object Schemas {
     cmd match {
       case c: CreateSchema    => create(c)
       case c: UpdateSchema    => update(c)
+      case c: RefreshSchema   => refresh(c)
       case c: TagSchema       => tag(c)
       case c: DeleteSchemaTag => deleteTag(c)
       case c: DeprecateSchema => deprecate(c)

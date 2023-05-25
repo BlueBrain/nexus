@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.projects
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{schema, xsd}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schema, xsd}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{OrganizationGen, ProjectGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.{OrganizationIsDeprecated, OrganizationNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects.{evaluate, FetchOrganization}
@@ -64,14 +64,22 @@ class ProjectsSpec
       case `org2abel` => IO.raiseError(WrappedOrganizationRejection(OrganizationIsDeprecated(org2abel)))
       case label      => IO.raiseError(WrappedOrganizationRejection(OrganizationNotFound(label)))
     }
-    val ref                     = ProjectRef(orgLabel, label)
-    val ref2                    = ProjectRef(org2abel, label)
+
+    val ref              = ProjectRef(orgLabel, label)
+    val ref2             = ProjectRef(org2abel, label)
+    val ref2IsReferenced = ProjectIsReferenced(ref, Map(ref -> Set(nxv + "ref1")))
+
+    val validateDeletion: ValidateProjectDeletion = {
+      case `ref`  => IO.unit
+      case `ref2` => IO.raiseError(ref2IsReferenced)
+      case _      => IO.terminate(new IllegalArgumentException(s"Only '$ref' and '$ref2' are expected here"))
+    }
 
     implicit val uuidF: UUIDF = UUIDF.fixed(uuid)
 
     "evaluating an incoming command" should {
 
-      val eval = evaluate(orgs)(_, _)
+      val eval = evaluate(orgs, validateDeletion)(_, _)
 
       "create a new event" in {
         eval(None, CreateProject(ref, desc, am, base, vocab, subject)).accepted shouldEqual
@@ -136,7 +144,8 @@ class ProjectsSpec
       "reject with ProjectNotFound" in {
         val list = List(
           None -> UpdateProject(ref, desc, am, base, vocab, 1, subject),
-          None -> DeprecateProject(ref, 1, subject)
+          None -> DeprecateProject(ref, 1, subject),
+          None -> DeleteProject(ref, 1, subject)
         )
         forAll(list) { case (state, cmd) =>
           eval(state, cmd).rejectedWith[ProjectNotFound]
@@ -153,6 +162,11 @@ class ProjectsSpec
         val cmd = DeleteProject(ref, 1, subject)
         eval(Some(cur), cmd).accepted shouldEqual
           ProjectMarkedForDeletion(label, uuid, orgLabel, orgUuid, 2, epoch, subject)
+      }
+
+      "reject with ProjectIsReferenced" in {
+        eval(Some(state), DeleteProject(ref2, 1, subject)).rejected shouldEqual
+          ref2IsReferenced
       }
     }
 

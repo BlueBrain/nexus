@@ -338,7 +338,7 @@ class ProjectsSpec extends BaseSpec {
                "Description",
                Bojack
              )
-        _ <- projectIds.parTraverse { case (orgId, projId) =>
+        _ <- projectIds.traverse { case (orgId, projId) =>
                adminDsl.createProject(
                  orgId,
                  projId,

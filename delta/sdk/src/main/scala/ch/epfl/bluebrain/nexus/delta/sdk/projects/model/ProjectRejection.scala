@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.projects.model
 import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -10,7 +11,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.ProjectIsReferenced.ReferencesByProject
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax.httpResponseFieldsSyntax
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityDependency.ReferencedBy
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
@@ -67,16 +70,42 @@ object ProjectRejection {
       extends ProjectRejection(rejection.reason)
 
   /**
-    * Signals and attempt to update/deprecate a project that is already deprecated.
+    * Signals an attempt to update/deprecate a project that is already deprecated.
     */
   final case class ProjectIsDeprecated(projectRef: ProjectRef)
       extends ProjectRejection(s"Project '$projectRef' is deprecated.")
 
   /**
-    * Signals and attempt to update/deprecate/delete a project that is already marked for deletion.
+    * Signals an attempt to update/deprecate/delete a project that is already marked for deletion.
     */
   final case class ProjectIsMarkedForDeletion(projectRef: ProjectRef)
       extends ProjectRejection(s"Project '$projectRef' is marked for deletion.")
+
+  final case class ProjectIsReferenced private (project: ProjectRef, references: ReferencesByProject)
+      extends ProjectRejection(
+        s"Project '$project' can't be deleted as it is referenced by projects '${references.value.keys.mkString(", ")}'."
+      )
+
+  /**
+    * Signals an attempt to delete a project when deletion is disabled.
+    */
+  final case object ProjectDeletionIsDisabled extends ProjectRejection(s"Project deletion is disabled.")
+
+  object ProjectIsReferenced {
+
+    def apply(project: ProjectRef, references: Set[ReferencedBy]): ProjectIsReferenced = {
+      val idsByProject = references.groupMap(_.project)(_.id)
+      new ProjectIsReferenced(project, ReferencesByProject(idsByProject))
+    }
+
+    def apply(project: ProjectRef, references: Map[ProjectRef, Set[Iri]]): ProjectIsReferenced =
+      new ProjectIsReferenced(project, ReferencesByProject(references))
+
+    final private[model] case class ReferencesByProject(value: Map[ProjectRef, Set[Iri]])
+
+    implicit private[model] val referencesEncoder: Encoder.AsObject[ReferencesByProject] =
+      Encoder.encodeMap[ProjectRef, Set[Iri]].contramapObject(_.value)
+  }
 
   /**
     * Signals that a project update cannot be performed due to an incorrect revision provided.
@@ -110,6 +139,7 @@ object ProjectRejection {
       r match {
         case WrappedOrganizationRejection(rejection) => rejection.asJsonObject
         case ProjectInitializationFailed(rejection)  => default.add("details", rejection.reason.asJson)
+        case ProjectIsReferenced(_, references)      => default.add("referencedBy", references.asJson)
         case IncorrectRev(provided, expected)        =>
           default.add("provided", provided.asJson).add("expected", expected.asJson)
         case ProjectAlreadyExists(projectRef)        =>

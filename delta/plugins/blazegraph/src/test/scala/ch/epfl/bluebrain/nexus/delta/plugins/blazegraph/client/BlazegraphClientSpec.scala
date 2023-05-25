@@ -54,7 +54,8 @@ class BlazegraphClientSpec(docker: BlazegraphDocker)
   implicit private val rcr: RemoteContextResolution = RemoteContextResolution.never
 
   private lazy val endpoint = docker.hostConfig.endpoint
-  private lazy val client   = BlazegraphClient(HttpClient(), endpoint, None, 10.seconds)
+  private lazy val client   =
+    BlazegraphClient(HttpClient(), endpoint, None, 10.seconds)
   private lazy val graphId  = endpoint / "graphs" / "myid"
 
   private def nTriples(id: String = genString(), label: String = genString(), value: String = genString()) = {

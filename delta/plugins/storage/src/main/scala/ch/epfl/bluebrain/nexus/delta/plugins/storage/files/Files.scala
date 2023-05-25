@@ -7,6 +7,7 @@ import akka.http.scaladsl.model.{ContentType, HttpEntity, Uri}
 import cats.effect.Clock
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
+import ch.epfl.bluebrain.nexus.delta.kernel.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
@@ -27,7 +28,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{Storages, Storage
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
-import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.FileResponse
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
@@ -469,7 +469,8 @@ final class Files(
                          .states(Predicate.root, offset)
                          .map { envelope =>
                            envelope.value match {
-                             case f if f.storageType == StorageType.RemoteDiskStorage && !f.attributes.digest.computed =>
+                             case f
+                                 if f.storageType == StorageType.RemoteDiskStorage && !f.attributes.digest.computed && !f.deprecated =>
                                SuccessElem(
                                  entityType,
                                  envelope.id,
@@ -479,7 +480,7 @@ final class Files(
                                  f,
                                  envelope.rev
                                )
-                             case _                                                                                    =>
+                             case _ =>
                                DroppedElem(
                                  entityType,
                                  envelope.id,

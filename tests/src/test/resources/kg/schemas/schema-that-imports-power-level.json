@@ -1,0 +1,23 @@
+{
+  "@context": {
+    "other": "https://some.other.prefix.com/"
+  },
+  "@id": "{{id}}",
+  "imports": [
+    "{{import}}"
+  ],
+  "shapes": [
+    {
+      "@type": "sh:NodeShape",
+      "nodeKind": "sh:BlankNodeOrIRI",
+      "targetClass": [
+        "nxv:TestResource"
+      ],
+      "property": [
+        {
+          "@id": "{{import}}/shapes/powerlevel"
+        }
+      ]
+    }
+  ]
+}

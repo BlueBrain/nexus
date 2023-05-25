@@ -5,13 +5,13 @@
   ],
   "@id": "{{id}}",
   "@type": "File",
-  "_bytes": 12,
+  "_bytes": 13,
   "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/files.json",
   "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
   "_deprecated": false,
   "_digest": {
     "_algorithm": "SHA-256",
-    "_value": "e0ac3601005dfa1864f5392aabaf7d898b1b5bab854f1acb4491bcd806b76b0c"
+    "_value": "694b27f021c4861b3373cd5ddbc42695c056d0a4297d2d85e2dae040a84e61df"
   },
   "_filename": "{{filename}}",
   "_incoming": "{{deltaUri}}/files/{{projId}}/{{filename}}/incoming",

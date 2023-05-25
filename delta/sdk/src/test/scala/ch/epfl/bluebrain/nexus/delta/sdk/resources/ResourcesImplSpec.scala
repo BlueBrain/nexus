@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.{FetchResource, ResourceResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport.ResolverReport
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{ResolverResolutionRejection, ResourceResolutionReport}
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{IncorrectRev, InvalidJsonLdFormat, InvalidResource, InvalidSchemaRejection, ProjectContextRejection, ResourceAlreadyExists, ResourceIsDeprecated, ResourceNotFound, RevisionNotFound, SchemaIsDeprecated, TagNotFound, UnexpectedResourceId, UnexpectedResourceSchema}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{BlankResourceId, IncorrectRev, InvalidJsonLdFormat, InvalidResource, InvalidSchemaRejection, ProjectContextRejection, ResourceAlreadyExists, ResourceIsDeprecated, ResourceNotFound, RevisionNotFound, SchemaIsDeprecated, TagNotFound, UnexpectedResourceId, UnexpectedResourceSchema}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
@@ -91,7 +91,7 @@ class ResourcesImplSpec
   )
 
   private lazy val resources: Resources = ResourcesImpl(
-    resourceResolution,
+    new ValidateResourceImpl(resourceResolution),
     fetchContext,
     resolverContextResolution,
     config,
@@ -111,11 +111,12 @@ class ResourcesImplSpec
     val myId9  = nxv + "myid9" // Resource created against the resource schema with id present on the payload and having its context pointing on metadata and myId8 so therefore myId1 and myId2
 
     // format: on
-    val resourceSchema = Latest(schemas.resources)
-    val myId2          = nxv + "myid2" // Resource created against the schema1 with id present on the payload
-    val types          = Set(nxv + "Custom")
-    val source         = jsonContentOf("resources/resource.json", "id" -> myId)
-    val tag            = UserTag.unsafe("tag")
+    val resourceSchema    = Latest(schemas.resources)
+    val myId2             = nxv + "myid2" // Resource created against the schema1 with id present on the payload
+    val types             = Set(nxv + "Custom")
+    val source            = jsonContentOf("resources/resource.json", "id" -> myId)
+    def sourceWithBlankId = source deepMerge json"""{"@id": ""}"""
+    val tag               = UserTag.unsafe("tag")
 
     "creating a resource" should {
       "succeed with the id present on the payload" in {
@@ -225,6 +226,11 @@ class ResourcesImplSpec
         val otherId = nxv + "other"
         resources.create(otherId, projectRef, schemas.resources, source).rejected shouldEqual
           UnexpectedResourceId(id = otherId, payloadId = myId)
+      }
+
+      "reject if the id is blank" in {
+        resources.create(projectRef, schemas.resources, sourceWithBlankId).rejected shouldEqual
+          BlankResourceId
       }
 
       "reject if it already exists" in {
@@ -364,6 +370,69 @@ class ResourcesImplSpec
       }
     }
 
+    "refreshing a resource" should {
+
+      "succeed" in {
+        val expectedData =
+          ResourceGen.resource(myId6, projectRef, source.removeKeys(keywords.id), Revision(schema1.id, 1))
+        resources.refresh(myId6, projectRef, Some(schema1.id)).accepted shouldEqual
+          ResourceGen.resourceFor(
+            expectedData,
+            types = types,
+            subject = subject,
+            rev = 2,
+            am = allApiMappings,
+            base = projBase
+          )
+      }
+
+      "succeed without specifying the schema" in {
+        val expectedData =
+          ResourceGen.resource(myId6, projectRef, source.removeKeys(keywords.id), Revision(schema1.id, 1))
+        resources.refresh("nxv:myid6", projectRef, None).accepted shouldEqual
+          ResourceGen.resourceFor(
+            expectedData,
+            types = types,
+            subject = subject,
+            rev = 3,
+            am = allApiMappings,
+            base = projBase
+          )
+      }
+
+      "reject if it doesn't exists" in {
+        resources
+          .refresh(nxv + "other", projectRef, None)
+          .rejectedWith[ResourceNotFound]
+      }
+
+      "reject if schemas do not match" in {
+        resources
+          .refresh(myId6, projectRef, Some(schemas.resources))
+          .rejectedWith[UnexpectedResourceSchema]
+      }
+
+      "reject if project does not exist" in {
+        val projectRef = ProjectRef(org, Label.unsafe("other"))
+
+        resources.refresh(myId6, projectRef, None).rejectedWith[ProjectContextRejection]
+      }
+
+      "reject if project is deprecated" in {
+        resources.refresh(myId6, projectDeprecated.ref, None).rejectedWith[ProjectContextRejection]
+      }
+
+      "reject if deprecated" in {
+        resources.deprecate(myId6, projectRef, None, 3).accepted
+        resources
+          .refresh(myId6, projectRef, None)
+          .rejectedWith[ResourceIsDeprecated]
+        resources
+          .refresh("nxv:myid6", projectRef, None)
+          .rejectedWith[ResourceIsDeprecated]
+      }
+    }
+
     "tagging a resource" should {
 
       "succeed" in {
@@ -416,6 +485,23 @@ class ResourcesImplSpec
 
       "reject if project is deprecated" in {
         resources.tag(myId, projectDeprecated.ref, None, tag, 2, 1).rejectedWith[ProjectContextRejection]
+      }
+    }
+
+    "validating a resource" should {
+      "succeed when the resource is valid" in {
+        resources.validate(myId, projectRef, Some(schema1.id)).accepted
+      }
+
+      "succeed when the resource is valid against its own schema" in {
+        resources.validate(myId, projectRef, None).accepted
+      }
+
+      "fail when the resource is invalid against the specified schema" in {
+        val otherId     = nxv + "validation-resource"
+        val wrongSource = source deepMerge json"""{"@id": "$otherId", "number": "wrong"}"""
+        resources.create(otherId, projectRef, schemas.resources, wrongSource).accepted
+        resources.validate(otherId, projectRef, Some(schema1.id)).rejectedWith[InvalidResource]
       }
     }
 

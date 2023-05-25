@@ -15,16 +15,16 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceResolutionGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{events, resources}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.{FetchResource, ResourceResolution}
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.FetchResource
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.ProjectContextRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.{Resources, ResourcesConfig, ResourcesImpl}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.{Resources, ResourcesConfig, ResourcesImpl, ValidateResource, ValidateResourceImpl}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
@@ -66,6 +66,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec {
   private val myIdEncoded         = UrlUtils.encode(myId.toString)
   private val myId2Encoded        = UrlUtils.encode(myId2.toString)
   private val payload             = jsonContentOf("resources/resource.json", "id" -> myId)
+  private val payloadWithBlankId  = jsonContentOf("resources/resource.json", "id" -> "")
   private val payloadWithMetadata = jsonContentOf("resources/resource-with-metadata.json", "id" -> myId)
 
   private val aclCheck = AclSimpleCheck().accepted
@@ -75,8 +76,8 @@ class ResourcesRoutesSpec extends BaseRouteSpec {
     case (ref, _) if ref.iri == schema1.id => UIO.some(SchemaGen.resourceFor(schema1))
     case _                                 => UIO.none
   }
-  private val resourceResolution: ResourceResolution[Schema]                  =
-    ResourceResolutionGen.singleInProject(projectRef, fetchSchema)
+  private val validator: ValidateResource                                     =
+    new ValidateResourceImpl(ResourceResolutionGen.singleInProject(projectRef, fetchSchema))
   private val fetchContext                                                    = FetchContextDummy(List(project.value), ProjectContextRejection)
   private val resolverContextResolution: ResolverContextResolution            = new ResolverContextResolution(
     rcr,
@@ -89,7 +90,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec {
       ResourcesRoutes(
         IdentitiesDummy(caller),
         aclCheck,
-        ResourcesImpl(resourceResolution, fetchContext, resolverContextResolution, config, xas),
+        ResourcesImpl(validator, fetchContext, resolverContextResolution, config, xas),
         DeltaSchemeDirectives(fetchContext, ioFromMap(uuid -> projectRef.organization), ioFromMap(uuid -> projectRef)),
         IndexingAction.noop
       )
@@ -161,6 +162,15 @@ class ResourcesRoutesSpec extends BaseRouteSpec {
       }
     }
 
+    "fail if the id is blank" in {
+      Post("/v1/resources/myorg/myproject/_/", payloadWithBlankId.toEntity) ~> routes ~> check {
+        response.status shouldEqual StatusCodes.BadRequest
+        response.asJson shouldEqual jsonContentOf(
+          "/resources/errors/blank-id.json"
+        )
+      }
+    }
+
     "fail to update a resource without resources/write permission" in {
       aclCheck.subtract(AclAddress.Root, Anonymous -> Set(resources.write)).accepted
       Put("/v1/resources/myorg/myproject/_/myid?rev=1", payload.toEntity) ~> routes ~> check {
@@ -204,6 +214,41 @@ class ResourcesRoutesSpec extends BaseRouteSpec {
       }
     }
 
+    "fail to refresh a resource without resources/write permission" in {
+      aclCheck.subtract(AclAddress.Root, Anonymous -> Set(resources.write)).accepted
+      Put("/v1/resources/myorg/myproject/_/myid/refresh", payload.toEntity) ~> routes ~> check {
+        response.status shouldEqual StatusCodes.Forbidden
+        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+      }
+    }
+
+    "refresh a resource" in {
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(resources.write)).accepted
+      val encodedSchema = UrlUtils.encode(schemas.resources.toString)
+      val endpoints     = List(
+        "/v1/resources/myorg/myproject/_/myid/refresh"               -> 5,
+        s"/v1/resources/myorg/myproject/_/$myIdEncoded/refresh"      -> 6,
+        "/v1/resources/myorg/myproject/resource/myid/refresh"        -> 7,
+        s"/v1/resources/myorg/myproject/$encodedSchema/myid/refresh" -> 8
+      )
+      forAll(endpoints) { case (endpoint, rev) =>
+        Put(s"$endpoint", payloadUpdated.toEntity(Printer.noSpaces)) ~> routes ~> check {
+          status shouldEqual StatusCodes.OK
+          response.asJson shouldEqual
+            resourceMetadata(projectRef, myId, schemas.resources, (nxv + "Custom").toString, rev = rev + 1)
+        }
+      }
+    }
+
+    "reject the refresh of a non-existent resource" in {
+      val payload = payloadUpdated.removeKeys(keywords.id)
+      Put("/v1/resources/myorg/myproject/_/myid10/refresh", payload.toEntity) ~> routes ~> check {
+        status shouldEqual StatusCodes.NotFound
+        response.asJson shouldEqual
+          jsonContentOf("/resources/errors/not-found.json", "id" -> (nxv + "myid10"), "proj" -> "myorg/myproject")
+      }
+    }
+
     "fail to deprecate a resource without resources/write permission" in {
       aclCheck.subtract(AclAddress.Root, Anonymous -> Set(resources.write)).accepted
       Delete("/v1/resources/myorg/myproject/_/myid?rev=4") ~> routes ~> check {
@@ -214,10 +259,10 @@ class ResourcesRoutesSpec extends BaseRouteSpec {
 
     "deprecate a resource" in {
       aclCheck.append(AclAddress.Root, Anonymous -> Set(resources.write)).accepted
-      Delete("/v1/resources/myorg/myproject/_/myid?rev=5") ~> routes ~> check {
+      Delete("/v1/resources/myorg/myproject/_/myid?rev=9") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual
-          resourceMetadata(projectRef, myId, schemas.resources, (nxv + "Custom").toString, deprecated = true, rev = 6)
+          resourceMetadata(projectRef, myId, schemas.resources, (nxv + "Custom").toString, deprecated = true, rev = 10)
       }
     }
 
@@ -229,7 +274,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec {
     }
 
     "reject the deprecation of a already deprecated resource" in {
-      Delete("/v1/resources/myorg/myproject/_/myid?rev=6") ~> routes ~> check {
+      Delete("/v1/resources/myorg/myproject/_/myid?rev=10") ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual jsonContentOf("/resources/errors/resource-deprecated.json", "id" -> myId)
       }
@@ -273,7 +318,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec {
       aclCheck.append(AclAddress.Root, Anonymous -> Set(resources.read)).accepted
       Get("/v1/resources/myorg/myproject/_/myid") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
-        val meta = resourceMetadata(projectRef, myId, schemas.resources, "Custom", deprecated = true, rev = 6)
+        val meta = resourceMetadata(projectRef, myId, schemas.resources, "Custom", deprecated = true, rev = 10)
         response.asJson shouldEqual payloadUpdated.dropNullValues.deepMerge(meta).deepMerge(resourceCtx)
       }
     }
@@ -359,7 +404,70 @@ class ResourcesRoutesSpec extends BaseRouteSpec {
       }
     }
 
+    "validate a resource successfully against the unconstrained schema" in {
+      Get(
+        s"/v1/resources/myorg/myproject/${UrlUtils.encode(schemas.resources.toString)}/myid2/validate"
+      ) ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        response.asJson shouldEqual
+          json"""{
+                   "@context" : "https://bluebrain.github.io/nexus/contexts/validation.json",
+                   "@type" : "NoValidation",
+                   "project": "myorg/myproject",
+                   "schema" : "https://bluebrain.github.io/nexus/schemas/unconstrained.json?rev=1"
+                 }"""
+      }
+    }
+
+    "validate a resource successfully against its latest schema" in {
+      Get("/v1/resources/myorg/myproject/_/myid2/validate") ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        response.asJson shouldEqual
+          json"""{
+                   "@context" : [
+                     "https://bluebrain.github.io/nexus/contexts/shacl-20170720.json",
+                     "https://bluebrain.github.io/nexus/contexts/validation.json"
+                   ],
+                   "@type" : "Validated",
+                   "project": "myorg/myproject",
+                   "schema" : "https://bluebrain.github.io/nexus/vocabulary/myschema?rev=1",
+                   "report": {
+                     "@type" : "sh:ValidationReport",
+                     "conforms" : true,
+                     "targetedNodes" : 10
+                   }
+                 }"""
+      }
+    }
+
+    "validate a resource against a schema that does not exist" in {
+      Get("/v1/resources/myorg/myproject/pretendschema/myid2/validate") ~> routes ~> check {
+        status shouldEqual StatusCodes.NotFound
+        response.asJson shouldEqual jsonContentOf("/schemas/errors/invalid-schema-2.json")
+      }
+    }
+
+    "validate a resource that does not exist" in {
+      Get("/v1/resources/myorg/myproject/_/pretendresource/validate") ~> routes ~> check {
+        status shouldEqual StatusCodes.NotFound
+        response.asJson shouldEqual jsonContentOf(
+          "/resources/errors/not-found.json",
+          "id"   -> (nxv + "pretendresource").toString,
+          "proj" -> "myorg/myproject"
+        )
+      }
+    }
+
+    "fail to validate a resource without resources/write permission" in {
+      aclCheck.subtract(AclAddress.Root, Anonymous -> Set(resources.write)).accepted
+      Get("/v1/resources/myorg/myproject/_/myid2/validate") ~> routes ~> check {
+        response.status shouldEqual StatusCodes.Forbidden
+        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+      }
+    }
+
     "fetch the resource tags" in {
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(resources.write)).accepted
       Get("/v1/resources/myorg/myproject/_/myid2/tags?rev=1", payload.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual json"""{"tags": []}""".addContext(contexts.tags)
@@ -385,15 +493,15 @@ class ResourcesRoutesSpec extends BaseRouteSpec {
     }
 
     "tag a deprecated resource" in {
-      val payload = json"""{"tag": "mytag", "rev": 6}"""
-      Post("/v1/resources/myorg/myproject/_/myid/tags?rev=6", payload.toEntity) ~> routes ~> check {
+      val payload = json"""{"tag": "mytag", "rev": 10}"""
+      Post("/v1/resources/myorg/myproject/_/myid/tags?rev=10", payload.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
         response.asJson shouldEqual resourceMetadata(
           projectRef,
           myId,
           schemas.resources,
           (nxv + "Custom").toString,
-          rev = 7,
+          rev = 11,
           deprecated = true
         )
       }

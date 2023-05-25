@@ -32,6 +32,19 @@ object CompiledProjection {
     CompiledProjection(metadata, executionStrategy, offset => _ => _ => stream(offset))
 
   /**
+    * Attempts to compile the projection with just a source and a sink.
+    */
+  def compile(
+      metadata: ProjectionMetadata,
+      executionStrategy: ExecutionStrategy,
+      source: Source,
+      sink: Sink
+  ): Either[ProjectionErr, CompiledProjection] =
+    source.through(sink).map { p =>
+      CompiledProjection(metadata, executionStrategy, offset => _ => _ => p.apply(offset).map(_.void))
+    }
+
+  /**
     * Attempts to compile the projection definition that can be later managed.
     */
   def compile(

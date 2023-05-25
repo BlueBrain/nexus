@@ -2,7 +2,7 @@
 
 ## Technology Overview
 
-Nexus Fusion is a server-side rendered single-page webapp powered by @link:[React.js](https://reactjs.org/){ open=new }.
+Nexus Fusion is a server-side rendered single-page webapp powered by @link:[React.js](https://react.dev){ open=new }.
 It is written in @link:[Typescript](https://www.typescriptlang.org/){ open=new }, and therefore must be transpiled
 into native browser JavaScript, during a build step, before being served.
 

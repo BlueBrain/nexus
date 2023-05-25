@@ -2,8 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.sourcing
 
 import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.ScopedEvent
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityDependency.DependsOn
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityDependency, EntityType}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
 import doobie.{Get, Put}
 
@@ -30,7 +31,7 @@ final case class ScopedEntityDefinition[Id, S <: ScopedState, Command, E <: Scop
     eventSerializer: Serializer[Id, E],
     stateSerializer: Serializer[Id, S],
     tagger: Tagger[E],
-    extractDependencies: S => Option[Set[EntityDependency]],
+    extractDependencies: S => Option[Set[DependsOn]],
     onUniqueViolation: (Id, Command) => Rejection
 )(implicit val get: Get[Id], val put: Put[Id])
 

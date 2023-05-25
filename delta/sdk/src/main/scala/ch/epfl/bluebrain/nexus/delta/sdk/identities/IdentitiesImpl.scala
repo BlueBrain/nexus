@@ -4,8 +4,8 @@ import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import cats.data.NonEmptySet
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.cache.{CacheConfig, KeyValueStore}
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
-import ch.epfl.bluebrain.nexus.delta.sdk.cache.{CacheConfig, KeyValueStore}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesImpl.{extractGroups, logger, GroupsCache}
@@ -83,7 +83,7 @@ class IdentitiesImpl private (
     }
     result.span("exchangeToken")
   }.tapError { rejection =>
-    UIO.delay(logger.error(s"Extracting and validating the caller failed for the reason: $rejection"))
+    UIO.delay(logger.debug(s"Extracting and validating the caller failed for the reason: $rejection"))
   }
 }
 
@@ -132,7 +132,7 @@ object IdentitiesImpl {
       getUserInfo: (Uri, OAuth2BearerToken) => IO[HttpClientError, Json],
       config: CacheConfig
   ): UIO[Identities] =
-    KeyValueStore.localLRU(config).map { groups =>
+    KeyValueStore.local(config).map { groups =>
       new IdentitiesImpl(findActiveRealm, getUserInfo, groups)
     }
 }

@@ -63,6 +63,7 @@ final case class QueryBuilder private[client] (private val query: JsonObject) {
     QueryBuilder(
       query deepMerge queryPayload(
         mustTerms = includeTypes.map(tpe => term(keywords.tpe, tpe.value)) ++
+          params.locate.map { l => or(term(keywords.id, l), term(nxv.self.prefix, l)) } ++
           params.id.map(term(keywords.id, _)) ++
           params.q.map(matchPhrasePrefix(allFields, _)) ++
           params.schema.map(term(nxv.constrainedBy.prefix, _)) ++
@@ -75,6 +76,9 @@ final case class QueryBuilder private[client] (private val query: JsonObject) {
       )
     )
   }
+
+  private def or(terms: JsonObject*) =
+    JsonObject("bool" -> Json.obj("should" -> terms.asJson))
 
   /**
     * Add indices filter to the query body
