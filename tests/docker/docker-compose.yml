@@ -118,9 +118,11 @@ services:
   blazegraph:
     image: bluebrain/blazegraph-nexus:2.1.6-RC
     environment:
-      JAVA_OPTS: "-Djava.awt.headless=true -XX:MaxDirectMemorySize=64m -Xmx256m -XX:+UseG1GC"
+      JAVA_OPTS: "-DjettyXml=/config/jetty.xml -Djava.awt.headless=true -XX:MaxDirectMemorySize=64m -Xmx256m -XX:+UseG1GC"
     ports:
       - 9999:9999
+    volumes:
+      - ./config:/config
     deploy:
       resources:
         limits:
