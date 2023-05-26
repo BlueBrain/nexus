@@ -298,38 +298,6 @@
                                     </New>
                                 </Arg>
                             </Call>
-                            <Call name="addHandler">
-                                <Arg>
-                                    <New id="GzipHandler" class="org.eclipse.jetty.server.handler.gzip.GzipHandler">
-                                        <Set name="minGzipSize">1024</Set>
-                                        <Set name="includedPaths">
-                                            <Array type="java.lang.String">
-                                                <Item>/*</Item>
-                                            </Array>
-                                        </Set>
-                                        <Call name="addIncludedMethods">
-                                            <Arg>
-                                                <Array type="String">
-                                                    <Item>GET</Item>
-                                                    <Item>POST</Item>
-                                                    <Item>PUT</Item>
-                                                </Array>
-                                            </Arg>
-                                        </Call>
-                                        <Call name="addIncludedMimeTypes">
-                                            <Arg>
-                                                <Array type="String">
-                                                    <Item>application/json</Item>
-                                                    <Item>application/xml</Item>
-                                                    <Item>application/rdf+xml</Item>
-                        <Item>text/html</Item>
-                    <Item>text/plain</Item>
-                                                </Array>
-                                            </Arg>
-                                        </Call>
-                                    </New>
-                                </Arg>
-                            </Call>
                         </New>
                     </Item>
                 </Array>
