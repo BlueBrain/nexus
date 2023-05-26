@@ -13,4 +13,4 @@ Furthermore, it is noteworthy that the capability to create new organizations is
 ![Create organization](assets/fusion-new-create-organization.png)
 @@@
 
-When the organization is created successfully, the browser will redirect the user to the projects page where the user can see  the list of all projects and create new ones (see @ref:[Projects](./projects.md)).
+When the organization is created successfully, the browser will redirect the user to the projects page where the user can see the list of all projects and create new ones (see @ref:[Projects](./projects.md)).

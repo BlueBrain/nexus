@@ -1,7 +1,7 @@
 # Plugins
 
 A resource returned by the Nexus Delta API is usually a JSON-LD document. By default, Nexus Fusion displays JSON-LD in a
-code editor. If the user has edit access to the document, they can update the resource in the editor.
+code editor. If the user has edit right to the document, they can update the resource in the editor.
 
 Resources can represent a wide variety of scientific artifacts. It can be a neuron morphology, neuron electrophysiology,
 a set of files to download, a set of images and so on. So a user may want to extend Nexus Fusion to allow them to

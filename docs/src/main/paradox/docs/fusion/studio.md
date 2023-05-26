@@ -314,6 +314,6 @@ Edit the description in either the @ref:[Project](project.md) resource editor, o
 besides the Studio title
 
 The description can be rendered using handlebars and markdown, in the same way described in the
-@ref:[Project Resource Viewer](project.md#resource-descriptions)
+@ref:[Project Resource Viewer](project.md#description)
 
 ![Studio Description Example](assets/studio-description-example.png)

@@ -1,4 +1,4 @@
-# Global Types Search
+# Global Search Types
 
 @@@ note
 
@@ -8,7 +8,7 @@ Search requires Delta configuration. See the Delta Search documentation for deta
 
 ## Search Preset Cards
 
-The search presets card at the home page allow the user to see the count of datasets for each type and select a specific type form the global types of Nexus. the same cards are also available on each global type page.
+The search presets card at the home page allows the user to see the count of datasets for each type and select a specific type from the global types of Nexus. The same cards are also available on each global type page.
 
 ![Search Preset cards in home page](assets/fusion-search-home-presets.png)
 
@@ -27,10 +27,10 @@ In order to sort on a specific field, open the field’s dropdown menu and selec
 
 ![Field Sort](assets/fusion-search-field-sort.png)
 
-Upon selecting a sort direction the sorting criteria will be applied and the results updated immediately.
+Upon selecting a sort direction the sorting criteria will be applied and the results will be updated immediately.
 Click the `Clear` button to remove the sorting criteria for the field. Sort criteria can be applied to several fields.
 
-@@@ notexz
+@@@ note
 
 If a field does not support sorting then the sorting option will not be displayed.
 
@@ -76,7 +76,7 @@ Columns with numerical values have some additional filters. The first is range s
 search to a range of values available in the column. Below the range selector, you can choose to see only "missing values"
 by checking the missing values check box.
 
-In order to understand the data better, you can also the minimum, maximum, average and sum of the values in the column.
+In order to understand the data better, you can also use the minimum, maximum, average and sum of the values in the column.
 At the very bottom, you can see a histogram of the values. Histogram can be viewed in bar or line graph using a radio button.
 
 ![Numerical Filters](assets/fusion-search-numerical-filters.png)

@@ -9,9 +9,9 @@ into native browser JavaScript, during a build step, before being served.
 The build step produces a server artifact to run on a Node.js server, with client-side assets and Javascript.
 
 We produce a docker image that is able to serve the compiled assets directly, which is available on
-@link:[Dockerhub](https://hub.docker.com/repository/docker/bluebrain/nexus-web){ open=new }.ode.js server, the client communicates directly to
+@link:[Dockerhub](https://hub.docker.com/repository/docker/bluebrain/nexus-web){ open=new }.
 
-@ref:[Nexus Delta](../delta/index.md) using @ref:[Nexus.js](../utilities/index.md#nexus-js).
+Although the application is served by a Node.js server, the client communicates directly to @ref:[Nexus Delta](../delta/index.md) using @ref:[Nexus.js](../utilities/index.md#nexus-js).
 
 ## Pages
 
@@ -19,7 +19,7 @@ Nexus Fusion has undergone a significant restructuring to transition from a SubA
 
 Pages serve a specific top level entity or functionality concerns of diverse users and activities, and provide varying access privileges to each. The main features that can be accessed from the home page are: @ref:[Organizations](../fusion/organizations.md), @ref:[Projects](../fusion/projects.md),  @ref:[Studios](../fusion/studios.md) and @ref:[My data](../fusion/my-data.md). 
 
-The page @ref:[Project](../fusion/project.md), is responsible to handle all the parts for managing a single project. 
+The page @ref:[Project](../fusion/project.md), is responsible for handling all aspects of managing a single project.
 
 The search page has been removed, but every element that was previously available on the search page now has a link on the home page. These links redirect users to the appropriate global search type page.
 
@@ -38,13 +38,13 @@ configuration, and the manifest should be hosted somewhere Nexus Fusion can requ
 
 You can customize the Header of Nexus Fusion by setting up the following environment variables:
 
-- `LOGO_IMG`: Url for an image to be used as application logo in the Header, for example, `https://drive.boogle.com/jnsjdnsjs`
+- `LOGO_IMG`: Url for an image to be used as application logo in the Header, for example, `https://www.epfl.ch/logo-img.png`
 - `LOGO_LINK`: Url for the logo, for example, `https://www.epfl.ch`
-- `ORGANIZATION_IMG`: Url for the organization page foreground image, for example, `https://www.epfl.ch/KnzZoznHZeuUm3Y03Fnft0yDSY8tRyUf.png`
-- `PROJECTS_IMG`: Url for the projects page foreground image, for example,`https://www.epfl.ch/GbQ8UodWgLnJ7WVIzj1zGDONt8Kqjk8L.png`
-- `STUDIOS_IMG`: Url for the studios page foreground image, for example, `https://www.epfl.ch/KnzZoznHZeuUm3Y03Fnft0yDSY8tRyUf.png`
-- `LANDING_VIDEO`: Url for the landing page for authentication video, for example, `https://www.epfl.ch/KnzZoznHZeuUm3Y03Fnft0yDSY8tRyUf.mp4`
-- `LANDING_POSTER_IMG`: Url for the landing page for authentication poster image when (replace the video when loading, for example,`https://www.epfl.ch/zcWLWwjhru59cdsnCVMy9lqv7vNo0CWC.png`
+- `ORGANIZATION_IMG`: Url for the organization page foreground image, for example, `https://www.epfl.ch/default-org-img.png`
+- `PROJECTS_IMG`: Url for the projects page foreground image, for example,`https://www.epfl.ch/default-projects-img.png`
+- `STUDIOS_IMG`: Url for the studios page foreground image, for example, `https://www.epfl.ch/default-studios-img.png`
+- `LANDING_VIDEO`: Url for video in the the landing page, for example, `https://www.epfl.ch/landing-page-video.mp4`
+- `LANDING_POSTER_IMG`: Url for the video's poster image in landing page (replace the video when loading, for example,`https://www.epfl.ch/landing-page-poster-img.png`
 - `MAIN_COLOR`: Url for the organization page, for example "#062d68"
 - If you use Nexus Forge, it is possible to include a `Forge templates` button by providing the url as `FORGE_LINK`, for example, `https://some-url.hi`
 
