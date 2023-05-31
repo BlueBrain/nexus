@@ -34,7 +34,12 @@ class CompositeViewsCoordinatorSuite extends BioSuite with CompositeViewsFixture
                       }
       // The destroy action
       destroyed    <- Ref.of[Task, Option[ActiveViewDef]](None)
-      destroy       = (active: ActiveViewDef) => destroyed.set(Some(active))
+      destroy       = (active: ActiveViewDef) =>
+                        destroyed.getAndUpdate {
+                          case Some(current) =>
+                            throw new IllegalArgumentException(s"Destroy has already been called on $current")
+                          case None          => Some(active)
+                        }.void
       _            <- CompositeViewsCoordinator.cleanupCurrent(cache, newView, destroy)
       destroyedOpt <- destroyed.get
     } yield destroyedOpt
