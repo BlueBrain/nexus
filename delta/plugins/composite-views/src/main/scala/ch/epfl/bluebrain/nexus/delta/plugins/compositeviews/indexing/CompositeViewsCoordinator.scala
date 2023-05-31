@@ -94,7 +94,7 @@ object CompositeViewsCoordinator {
     val ref = viewDef.ref
     cache.get(ref).flatMap { cachedOpt =>
       (cachedOpt, viewDef) match {
-        case (Some(cached), activeViewDef: ActiveViewDef) if cached.projection == activeViewDef.projection =>
+        case (Some(cached), active: ActiveViewDef) if cached.projection == active.projection =>
           Task.delay(logger.info(s"Projection '${cached.projection}' is already running and will not be recreated."))
         case (Some(cached), _: ActiveViewDef)                                                              =>
           Task.delay(
