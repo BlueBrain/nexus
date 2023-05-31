@@ -96,17 +96,17 @@ object CompositeViewsCoordinator {
       (cachedOpt, viewDef) match {
         case (Some(cached), active: ActiveViewDef) if cached.projection == active.projection =>
           Task.delay(logger.info(s"Projection '${cached.projection}' is already running and will not be recreated."))
-        case (Some(cached), _: ActiveViewDef)                                                              =>
+        case (Some(cached), _: ActiveViewDef)                                                =>
           Task.delay(
             logger.info(s"View '${ref.project}/${ref.viewId}' has been updated, cleaning up the current one.")
           ) >>
             destroy(cached)
-        case (Some(cached), _: DeprecatedViewDef)                                                          =>
+        case (Some(cached), _: DeprecatedViewDef)                                            =>
           Task.delay(
             logger.info(s"View '${ref.project}/${ref.viewId}' has been deprecated, cleaning up the current one.")
           ) >>
             destroy(cached)
-        case (None, _)                                                                                     =>
+        case (None, _)                                                                       =>
           Task.delay(
             logger.debug(s"View '${ref.project}/${ref.viewId}' is not referenced yet, cleaning is aborted.")
           )
