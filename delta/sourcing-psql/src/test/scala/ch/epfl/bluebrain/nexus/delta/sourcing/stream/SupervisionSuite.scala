@@ -312,13 +312,7 @@ class SupervisionSuite extends BioSuite with SupervisorSetup.Fixture with Doobie
   }
 
   test("Obtain the correct running projections") {
-    val expectedProgress = ProjectionProgress(
-      Offset.at(20L),
-      Instant.EPOCH,
-      20,
-      0,
-      0
-    )
+    val expectedProgress = ProjectionProgress(Offset.at(20L), Instant.EPOCH, 20, 0, 0)
     for {
       flag      <- Ref.of[Task, Boolean](false)
       projection =
@@ -350,6 +344,29 @@ class SupervisionSuite extends BioSuite with SupervisorSetup.Fixture with Doobie
                          )
                        )
                      )
+    } yield ()
+  }
+
+  test("Run and properly destroy a projection with an unstable destroy method") {
+    val projection = ProjectionMetadata("test", "unstable-global-projection", None, None)
+    for {
+      // Starting the projection
+      started          <- Ref.of[Task, Boolean](false)
+      compiled          = CompiledProjection.fromStream(projection, ExecutionStrategy.EveryNode, evalStream(started.set(true)))
+      _                <- sv.run(compiled).eventually(ExecutionStatus.Running)
+      _                <- started.get.eventually(true)
+      // Creating a destroy method which eventually succeeds after a couple of failures
+      count            <- Ref.of[Task, Int](0)
+      destroyCompleted <- Ref.of[Task, Boolean](false)
+      onDestroy         = count
+                            .updateAndGet(_ + 1)
+                            .flatMap { i => Task.raiseWhen(i < 2)(new IllegalStateException(s"'$i' is lower than 2.")) }
+                            .tapEval { _ => destroyCompleted.set(true) }
+      // Destroy the projection with it
+      _                <- sv.destroy(projection.name, onDestroy)
+      // The projection should have stopped
+      _                <- sv.describe(projection.name).eventuallyNone
+      _                <- destroyCompleted.get.assert(true, "The destroy method should have completed")
     } yield ()
   }
 
