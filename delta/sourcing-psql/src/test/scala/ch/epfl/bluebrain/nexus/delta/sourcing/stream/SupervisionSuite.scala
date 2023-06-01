@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ExecutionStrategy.PersistentSingleNode
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.SupervisionSuite.UnstableDestroy
 import ch.epfl.bluebrain.nexus.testkit.bio.{BioSuite, PatienceConfig}
 import ch.epfl.bluebrain.nexus.testkit.postgres.Doobie
 import fs2.Stream
@@ -351,23 +352,40 @@ class SupervisionSuite extends BioSuite with SupervisorSetup.Fixture with Doobie
     val projection = ProjectionMetadata("test", "unstable-global-projection", None, None)
     for {
       // Starting the projection
-      started          <- Ref.of[Task, Boolean](false)
-      compiled          = CompiledProjection.fromStream(projection, ExecutionStrategy.EveryNode, evalStream(started.set(true)))
-      _                <- sv.run(compiled).eventually(ExecutionStatus.Running)
-      _                <- started.get.eventually(true)
-      // Creating a destroy method which eventually succeeds after a couple of failures
-      count            <- Ref.of[Task, Int](0)
-      destroyCompleted <- Ref.of[Task, Boolean](false)
-      onDestroy         = count
-                            .updateAndGet(_ + 1)
-                            .flatMap { i => Task.raiseWhen(i < 2)(new IllegalStateException(s"'$i' is lower than 2.")) }
-                            .tapEval { _ => destroyCompleted.set(true) }
-      // Destroy the projection with it
-      _                <- sv.destroy(projection.name, onDestroy)
+      started         <- Ref.of[Task, Boolean](false)
+      compiled         = CompiledProjection.fromStream(projection, ExecutionStrategy.EveryNode, evalStream(started.set(true)))
+      _               <- sv.run(compiled).eventually(ExecutionStatus.Running)
+      _               <- started.get.eventually(true)
+      // Destroy the projection with
+      unstableDestroy <- UnstableDestroy()
+      _               <- sv.destroy(projection.name, unstableDestroy.attempt)
       // The projection should have stopped
-      _                <- sv.describe(projection.name).eventuallyNone
-      _                <- destroyCompleted.get.assert(true, "The destroy method should have completed")
+      _               <- sv.describe(projection.name).eventuallyNone
+      _               <- unstableDestroy.isCompleted.assert(true, "The destroy method should have completed")
     } yield ()
+  }
+}
+
+object SupervisionSuite {
+
+  /**
+    * Creates a destroy method which eventually succeeds after a couple of failures
+    */
+  final class UnstableDestroy(count: Ref[Task, Int], completed: Ref[Task, Boolean]) {
+    def attempt: Task[Unit] = count
+      .updateAndGet(_ + 1)
+      .flatMap { i => Task.raiseWhen(i < 2)(new IllegalStateException(s"'$i' is lower than 2.")) }
+      .tapEval { _ => completed.set(true) }
+
+    def isCompleted: Task[Boolean] = completed.get
+  }
+
+  object UnstableDestroy {
+    def apply(): Task[UnstableDestroy] =
+      for {
+        count     <- Ref.of[Task, Int](0)
+        completed <- Ref.of[Task, Boolean](false)
+      } yield new UnstableDestroy(count, completed)
   }
 
 }
