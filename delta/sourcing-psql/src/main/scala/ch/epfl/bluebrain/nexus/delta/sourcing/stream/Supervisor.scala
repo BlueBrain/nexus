@@ -360,11 +360,13 @@ object Supervisor {
                               _      <- Task.delay(log.info(s"Destroying '${metadata.module}/${metadata.name}'..."))
                               _      <- stopProjection(s)
                               _      <- Task.when(s.executionStrategy == PersistentSingleNode)(projections.delete(name))
-                              _      <- onDestroy.retryingOnSomeErrors(
-                                          retryStrategy.retryWhen,
-                                          retryStrategy.policy,
-                                          retryStrategy.onError
-                                        )
+                              _      <- onDestroy
+                                          .retryingOnSomeErrors(
+                                            retryStrategy.retryWhen,
+                                            retryStrategy.policy,
+                                            retryStrategy.onError
+                                          )
+                                          .onErrorHandle(_ => ())
                               status <- s.control.status
                                           .restartUntil(e => e == ExecutionStatus.Completed || e == ExecutionStatus.Stopped)
                                           .timeout(3.seconds)

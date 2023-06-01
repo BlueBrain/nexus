@@ -356,12 +356,28 @@ class SupervisionSuite extends BioSuite with SupervisorSetup.Fixture with Doobie
       compiled         = CompiledProjection.fromStream(projection, ExecutionStrategy.EveryNode, evalStream(started.set(true)))
       _               <- sv.run(compiled).eventually(ExecutionStatus.Running)
       _               <- started.get.eventually(true)
-      // Destroy the projection with
+      // Destroy the projection with a destroy method that fails and eventually succeeds
       unstableDestroy <- UnstableDestroy()
       _               <- sv.destroy(projection.name, unstableDestroy.attempt)
       // The projection should have stopped
       _               <- sv.describe(projection.name).eventuallyNone
       _               <- unstableDestroy.isCompleted.assert(true, "The destroy method should have completed")
+    } yield ()
+  }
+
+  test("Run and properly destroy a projection with an failing destroy method") {
+    val projection = ProjectionMetadata("test", "unstable-global-projection", None, None)
+    for {
+      // Starting the projection
+      started <- Ref.of[Task, Boolean](false)
+      compiled = CompiledProjection.fromStream(projection, ExecutionStrategy.EveryNode, evalStream(started.set(true)))
+      _       <- sv.run(compiled).eventually(ExecutionStatus.Running)
+      _       <- started.get.eventually(true)
+      // Destroy the projection with a destroy method that will always fail
+      failing  = Task.raiseError(new IllegalStateException("Fail !"))
+      _       <- sv.destroy(projection.name, failing)
+      // The projection should have stopped
+      _       <- sv.describe(projection.name).eventuallyNone
     } yield ()
   }
 }
