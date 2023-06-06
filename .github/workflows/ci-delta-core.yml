@@ -26,7 +26,8 @@ jobs:
             scalafmtCheck \
             Test/scalafmtCheck \
             scalafmtSbtCheck \
-            scapegoat
+            scapegoat \
+            doc
   review:
     if: github.event_name == 'pull_request'
     runs-on: it
