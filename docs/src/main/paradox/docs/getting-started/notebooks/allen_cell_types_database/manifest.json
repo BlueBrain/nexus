@@ -1,0 +1,55 @@
+{
+  "manifest": [
+    {
+      "type": "manifest_version",
+      "value": "1.1"
+    },
+    {
+      "key": "BASEDIR",
+      "type": "dir",
+      "spec": "."
+    },
+    {
+      "key": "CELLS",
+      "type": "file",
+      "spec": "cells.json",
+      "parent_key": "BASEDIR"
+    },
+    {
+      "key": "EPHYS_DATA",
+      "type": "file",
+      "spec": "specimen_%d/ephys.nwb",
+      "parent_key": "BASEDIR"
+    },
+    {
+      "key": "EPHYS_FEATURES",
+      "type": "file",
+      "spec": "ephys_features.csv",
+      "parent_key": "BASEDIR"
+    },
+    {
+      "key": "MORPHOLOGY_FEATURES",
+      "type": "file",
+      "spec": "morphology_features.csv",
+      "parent_key": "BASEDIR"
+    },
+    {
+      "key": "RECONSTRUCTION",
+      "type": "file",
+      "spec": "specimen_%d/reconstruction.swc",
+      "parent_key": "BASEDIR"
+    },
+    {
+      "key": "MARKER",
+      "type": "file",
+      "spec": "specimen_%d/reconstruction.marker",
+      "parent_key": "BASEDIR"
+    },
+    {
+      "key": "EPHYS_SWEEPS",
+      "type": "file",
+      "spec": "specimen_%d/ephys_sweeps.json",
+      "parent_key": "BASEDIR"
+    }
+  ]
+}

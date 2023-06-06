@@ -88,24 +88,22 @@ We run the latest version of Nexus publicly for education. You can also use the 
 
 The @link:[Sandbox](https://sandbox.bluebrainnexus.io){ open=new } is a deployment of Nexus for educational purposes.
 
-Once on the Sandbox homepage, click on the top right corner on the login button.
+Once on the Sandbox homepage, click on the "Connect" button. It will open a dropdown.
 
 @@@ div { .center }
 ![Sandbox Home](../assets/tutorial-sandbox-login.png)
 @@@
 
-We offer for the moment one identity providers (IdP):
+At the moment we only provide one identity provider (idP) in the sandbox environment - GitHub. Choose this option from
+the dropdown of the "Connect" button.
 
-- Github
-
-You will need an account on either one to be able to continue this tutorial.
-
-Click on the Identity Provider of your choice and allow Nexus to have access. You are now logged in.
+You will need an account on [GitHub](https://github.com/) to be able to continue this tutorial.
 
 Once logged in, you can get your token. The token is your secure, private, code that you will use in the rest of this tutorial to interact with Nexus.
 
-Additionally, the Sandbox environment automatically provisions a project for you so you don't have to. 
-Navigate to the Admin page and you will see the list of organisations in Nexus.
+The Sandbox environment automatically provisions a project for you so you don't have to. 
+Navigate to the [Organizations page](https://sandbox.bluebrainnexus.io/admin/nise) or click on the "Organizations" tab 
+in the homepage, and you will see the list of organisations in Nexus.
 A project is contained in an organisation. The organisation where your project is created depends on your identity provider.
 If you logged in with GitHub for example, your project was created under the `github-users` organisation.
 
@@ -113,7 +111,8 @@ If you logged in with GitHub for example, your project was created under the `gi
 ![Sandbox Home](../assets/tutorial-sandbox-orgs.png)
 @@@
 
-Navigate to the correct organisation then search or scroll down to find your project (i.e. your username). You will need the names of the organisation and project for the next parts of the tutorial.
+Navigate to the correct organisation then search or scroll down to find your project (i.e. your username).
+You will need the names of the organisation and project for the next parts of the tutorial.
 
 ### 1.2. Running your Own Instance of Nexus
 
@@ -131,7 +130,7 @@ In neuroscience, you will have images of brain slices. You will have images of s
 
 The brain is big, and the amount of data collected grows every second.
 
-As a result, it quickly become extremely difficult for groups of scientists to manage, track, share, and work with this data.
+As a result, it quickly becomes extremely difficult for groups of scientists to manage, track, share, and work with this data.
 
 To solve this growing pain, we can add metadata, or context, to the data collected. Specifically for neuroscience, we designed MINDS. MINDS is the Minimal Information about a Neuroscience DataSet.
 
@@ -237,19 +236,28 @@ jupyter notebook one_cell_minds.ipynb
 
 Once you have registered resources through Nexus Forge (in the notebook), you can check that they are effectively present in Nexus. You now have two options to do so.
 
-### 2.7.1 Using Search across all Projects
+### 2.7.1 Viewing resources across all projects
 
-Navigate to the Sandbox landing page, make sure you are logged in and click on Search in the centre panel. Alternatively, if you know how your dataset it called, you can type its name in the search bar in the top header.
-
-@@@ div { .center }
-![Sandbox Home](../assets/tutorial-sandbox-project.png)
-@@@
-
-You will now be presented with all the data that has been indexed across all projects you have the right to read from. In the case of this tutorial, you are likely to have access to your own project only. Please note that each instance of Nexus will have its own Search configuration, the BBP Sandbox has been configured to show NeuronMorphology and Trace datasets for the purpose of this tutorial.
+Navigate to the [Sandbox landing page](https://sandbox.bluebrainnexus.io/). Make sure you are logged in. You should 
+be able to see all the data that was created through the Jupyter notebook under the `My data` section. Here you can see
+all the data that has been indexed across all projects you have the right to read from. In the case of this tutorial, 
+you are likely to have access to your own project only. 
 
 @@@ div { .center }
-![Sandbox Home](../assets/tutorial-sandbox-search.png)
+![Sandbox Home](../assets/tutorial-sandbox-my-data.png)
 @@@
+
+You can also check resources of a particular type by clicking on the corresponding card for that type on the landing page.
+These cards allow you to search by different datasets. For example if you click on the card labeled "MINDS" on the screen shown in the
+screenshot above, you should see the following results
+
+@@@ div { .center }
+![Sandbox Home](../assets/tutorial-sandbox-search-minds.png)
+@@@
+
+Please note that each instance of Nexus will have its own Search
+configuration, the BBP Sandbox has been configured to show NeuronMorphology and Trace datasets for the purpose of this
+tutorial.
 
 Each of the rows of this table represent Knowledge Graph entities that we have decided to expose, including some specific metadata describing them (the columns). You can now click on any row in this table to open the corresponding dataset and look into its details.
 
@@ -261,7 +269,8 @@ You can find more documentation on how to use Search @ref:[here](../fusion/searc
 
 ## 2.7.2 By browsing your personal Project
 
-Navigate to the Sandbox then to the correct organisation and project. In the project page, you will have the list of all resources present in your project (Default Query), including the ones that you just integrated. Depending on how you ran the notebook, you should find at least one NeuronMorphology and one Trace resource.
+Navigate to the Sandbox then to the correct organisation and project. In the project page, you will have the list of
+all resources present in your project (Default Query), including the ones that you just integrated. Depending on how you ran the notebook, you should find at least one NeuronMorphology and one Trace resource.
 
 @@@ div { .center }
 ![Sandbox Home](../assets/tutorial-sandbox-project.png)
@@ -543,7 +552,7 @@ Let's start by accessing your Nexus instance or the @link:[Sandbox](https://sand
 In the Project view, you will have the list of all resources that you've registered within your project. You can filter by type or search for a specific term in the name, label, or description.
 
 @@@ div { .center }
-![Sandbox Home](../assets/tutorial-sandbox-project.png)
+![Sandbox Home](../assets/tutorial-sandbox-my-data.png)
 @@@
 
 Click on a resource to open the Resource view.
@@ -667,7 +676,7 @@ Here's an example of the JSON payload of the neuron morphology resource previous
 Going back to the project view, you will notice a tab named 'Query'. Let's click on it and start experimenting. On clicking on the 'Query tab', you will see a sprql query editor.
 
 @@@ div { .center }
-![Sandbox Home](../assets/tutorial-sandbox-project.png)
+![Sandbox Home](../assets/tutorial-sandbox-my-data.png)
 @@@
 
 We want to list the morphologies that we previously registered in our project. Let's write some SPARQL to retrieve it.
@@ -715,7 +724,7 @@ Here's the result of the above query:
 Go back to your project view in the Admin section of the Sandbox. Click on the 'Studios' tab. It will open in a new window.
 
 @@@ div { .center }
-![Sandbox Home](../assets/tutorial-sandbox-project.png)
+![Sandbox Home](../assets/tutorial-sandbox-my-data.png)
 @@@
 
 You will land on:
