@@ -44,8 +44,7 @@
             "label" : "Rattus norvegicus"
           },
           "_self" : "http://delta:8080/v1/resources/kbgoikgoiqxj0sc/bkqd8cg2k3f5ais/_/https:%2F%2Flocalhost%2Fnm1"
-        },
-        "_type" : "_doc"
+        }
       },
       {
         "_id" : "https://localhost/trace1",
@@ -82,8 +81,7 @@
             "label" : "Rattus norvegicus"
           },
           "_self" : "http://delta:8080/v1/resources/kbgoikgoiqxj0sc/bkqd8cg2k3f5ais/_/https:%2F%2Flocalhost%2Ftrace1"
-        },
-        "_type" : "_doc"
+        }
       }
     ],
     "max_score" : 1.0,

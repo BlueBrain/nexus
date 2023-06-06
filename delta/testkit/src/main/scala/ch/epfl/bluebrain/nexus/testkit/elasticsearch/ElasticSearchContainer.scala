@@ -18,15 +18,16 @@ class ElasticSearchContainer(password: String)
   addEnv("ES_JAVA_OPTS", "-Xmx256m")
   addEnv("discovery.type", "single-node")
   addEnv("xpack.security.enabled", "true")
+  addEnv("ingest.geoip.downloader.enabled", "false")
   addEnv("ELASTIC_PASSWORD", password)
   addExposedPort(9200)
-  setWaitStrategy(Wait.forLogMessage(".*Active license is now \\[BASIC\\]; Security is enabled.*", 1))
+  setWaitStrategy(Wait.forLogMessage(".*(\"message\":\\s?\"started[\\s?|\"].*|] started\n$)", 1))
 
   def version: String = Version
 }
 
 object ElasticSearchContainer {
-  private val Version = "7.16.2"
+  private val Version = "8.7.1"
 
   val ElasticSearchUser                         = "elastic"
   val ElasticSearchPassword                     = "password"

@@ -5,7 +5,7 @@ services:
       - blazegraph
       - elasticsearch
       - postgres
-    image: bluebrain/nexus-delta:1.8.0-M8
+    image: bluebrain/nexus-delta:1.8.0-M10
     environment:
       DELTA_PLUGINS: "/opt/docker/plugins/"
       DELTA_EXTERNAL_CONF: "/config/delta.conf"
@@ -23,7 +23,7 @@ services:
           memory: 1024M
 
   elasticsearch:
-    image: "docker.elastic.co/elasticsearch/elasticsearch:7.16.2"
+    image: "docker.elastic.co/elasticsearch/elasticsearch:8.7.1"
     environment:
       discovery.type: "single-node"
       bootstrap.memory_lock: "true"
@@ -38,7 +38,7 @@ services:
           memory: 512M
 
   postgres:
-    image: library/postgres:15.1
+    image: library/postgres:15.3
     environment:
       POSTGRES_USER: "postgres"
       POSTGRES_PASSWORD: "postgres"
@@ -57,7 +57,7 @@ services:
   web:
     depends_on:
       - delta
-    image: bluebrain/nexus-web:1.8.0-M16-2
+    image: bluebrain/nexus-web:1.8.0
     environment:
       BASE_PATH: "/"
       HOST_NAME: "http://localhost"
