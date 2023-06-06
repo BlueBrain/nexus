@@ -38,6 +38,9 @@ object HttpClientConfig {
 
   private[http] val logger: Logger = Logger[HttpClientConfig]
 
+  val noRetry: HttpClientConfig =
+    HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never, compression = true)
+
   @nowarn("cat=unused")
   implicit private val httpClientWorthRetryConverter: ConfigReader[HttpClientWorthRetry] =
     ConfigReader.fromString[HttpClientWorthRetry](string =>
