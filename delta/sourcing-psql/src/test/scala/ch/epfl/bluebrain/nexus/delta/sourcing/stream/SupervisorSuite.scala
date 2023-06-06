@@ -46,6 +46,53 @@ class SupervisorSuite extends BioSuite with SupervisorSetup.Fixture with Doobie.
 
   private val expectedProgress = ProjectionProgress(Offset.at(20L), Instant.EPOCH, 20, 0, 0)
 
+  private def assertStart(metadata: ProjectionMetadata, strategy: ExecutionStrategy) =
+    for {
+      started <- Ref.of[Task, Boolean](false)
+      compiled = CompiledProjection.fromStream(metadata, strategy, evalStream(started.set(true)))
+      _       <- sv.run(compiled).eventually(Running)
+      _       <- started.get.eventually(true)
+    } yield ()
+
+  private def assertCrash(metadata: ProjectionMetadata, strategy: ExecutionStrategy) = {
+    val expectedException = new IllegalStateException("The stream crashed unexpectedly.")
+    for {
+      started   <- Ref.of[Task, Boolean](false)
+      projection =
+        CompiledProjection.fromStream(
+          metadata,
+          strategy,
+          evalStream(started.set(true)).map(_ >> Stream.raiseError[Task](expectedException))
+        )
+      _         <- sv.run(projection).eventually(Running)
+      _         <- started.get.eventually(true)
+    } yield ()
+  }
+
+  private def assertDestroy(metadata: ProjectionMetadata, onDestroy: Task[Unit]) =
+    for {
+      _ <- sv.destroy(metadata.name, onDestroy).assertSome(Stopped)
+      _ <- sv.describe(metadata.name).eventuallyNone
+      _ <- projections.progress(metadata.name).assertNone
+    } yield ()
+
+  private def assertDescribe(
+      metadata: ProjectionMetadata,
+      executionStrategy: ExecutionStrategy,
+      restarts: Int,
+      status: ExecutionStatus,
+      progress: ProjectionProgress
+  ) =
+    sv.describe(metadata.name)
+      .eventuallySome(
+        SupervisedDescription(metadata, executionStrategy, restarts, status, progress)
+      )
+
+  private def assertWatchRestarts(offset: Offset, processed: Long, discarded: Long) = {
+    val progress = ProjectionProgress(offset, Instant.EPOCH, processed, discarded, 0)
+    assertDescribe(Supervisor.watchRestartMetadata, EveryNode, 0, Running, progress)
+  }
+
   test("Watching restart projection restarts should be running") {
     assertWatchRestarts(Offset.Start, 0, 0)
   }
@@ -233,54 +280,6 @@ class SupervisorSuite extends BioSuite with SupervisorSetup.Fixture with Doobie.
       _         <- assertDestroy(projection, alwaysFail)
     } yield ()
   }
-
-  private def assertStart(metadata: ProjectionMetadata, strategy: ExecutionStrategy) =
-    for {
-      started <- Ref.of[Task, Boolean](false)
-      compiled = CompiledProjection.fromStream(metadata, strategy, evalStream(started.set(true)))
-      _       <- sv.run(compiled).eventually(Running)
-      _       <- started.get.eventually(true)
-    } yield ()
-
-  private def assertCrash(metadata: ProjectionMetadata, strategy: ExecutionStrategy) = {
-    val expectedException = new IllegalStateException("The stream crashed unexpectedly.")
-    for {
-      started   <- Ref.of[Task, Boolean](false)
-      projection =
-        CompiledProjection.fromStream(
-          metadata,
-          strategy,
-          evalStream(started.set(true)).map(_ >> Stream.raiseError[Task](expectedException))
-        )
-      _         <- sv.run(projection).eventually(Running)
-      _         <- started.get.eventually(true)
-    } yield ()
-  }
-
-  private def assertDestroy(metadata: ProjectionMetadata, onDestroy: Task[Unit]) =
-    for {
-      _ <- sv.destroy(metadata.name, onDestroy).assertSome(Stopped)
-      _ <- sv.describe(metadata.name).eventuallyNone
-      _ <- projections.progress(metadata.name).assertNone
-    } yield ()
-
-  private def assertDescribe(
-      metadata: ProjectionMetadata,
-      executionStrategy: ExecutionStrategy,
-      restarts: Int,
-      status: ExecutionStatus,
-      progress: ProjectionProgress
-  ) =
-    sv.describe(metadata.name)
-      .eventuallySome(
-        SupervisedDescription(metadata, executionStrategy, restarts, status, progress)
-      )
-
-  private def assertWatchRestarts(offset: Offset, processed: Long, discarded: Long) = {
-    val progress = ProjectionProgress(offset, Instant.EPOCH, processed, discarded, 0)
-    assertDescribe(Supervisor.watchRestartMetadata, EveryNode, 0, Running, progress)
-  }
-
 }
 
 object SupervisorSuite {
