@@ -545,14 +545,15 @@ You can learn more about SPARQL in the @link:[official documentation](https://ww
 
 As you saw in the example above, we can use SPARQL to query the cells in our Nexus project.
 
-Let's start by accessing your Nexus instance or the @link:[Sandbox](https://sandbox.bluebrainnexus.io){ open=new }. Go to Admin page (from the left hand side menu), and navigate to your organization and project.
+Let's start by accessing your Nexus instance or the @link:[Sandbox](https://sandbox.bluebrainnexus.io){ open=new }. 
+Go to your project by clicking on the "Projects" card and searching for your project.
 
 > In the Sandbox, the organization corresponds to the identity provider used, and the project to your username. For example, if you used GitHub, the organization will be `github-users` and your project will be your GitHub username.
 
 In the Project view, you will have the list of all resources that you've registered within your project. You can filter by type or search for a specific term in the name, label, or description.
 
 @@@ div { .center }
-![Sandbox Home](../assets/tutorial-sandbox-my-data.png)
+![Sandbox Home](../assets/tutorial-sandbox-project.png)
 @@@
 
 Click on a resource to open the Resource view.
@@ -673,10 +674,10 @@ Here's an example of the JSON payload of the neuron morphology resource previous
 
 ### 4.3. Query Neuroscience Data
 
-Going back to the project view, you will notice a tab named 'Query'. Let's click on it and start experimenting. On clicking on the 'Query tab', you will see a sprql query editor.
+Going back to the project view, you will notice a tab named 'Query'. Let's click on it and start experimenting. On clicking on the 'Query tab', you will see a sparql query editor.
 
 @@@ div { .center }
-![Sandbox Home](../assets/tutorial-sandbox-my-data.png)
+![Sandbox Home](../assets/tutorial-sandbox-project-query-tab.png)
 @@@
 
 We want to list the morphologies that we previously registered in our project. Let's write some SPARQL to retrieve it.
@@ -721,10 +722,10 @@ Here's the result of the above query:
 
 ### 4.4. Create a Studio
 
-Go back to your project view in the Admin section of the Sandbox. Click on the 'Studios' tab. It will open in a new window.
+Go back to your project view. Click on the 'Studios' tab. It will open in a new window.
 
 @@@ div { .center }
-![Sandbox Home](../assets/tutorial-sandbox-my-data.png)
+![Sandbox Home](../assets/tutorial-sandbox-project-studios-tab.png)
 @@@
 
 You will land on:
@@ -741,7 +742,7 @@ Start by creating a Workspace. To create a workspace, click the Workspace button
 ![Sandbox Home](../assets/tutorial-sandbox-studio-one-workspace-no-dashboard.png)
 @@@
 
-Next, create a Dashboard. Click the Dashboard button and choose Add from the pop-up menu. In the Dashboard creation dialog, specify the default Sparql Index view and specify the SPARQL query above. The 'Preview' button will list the columns to be returned by the query and support specifying options on the columns such as enabling searching or sorting.
+Next, create a Dashboard. Click the Dashboard button and choose Add from the pop-up menu. In the Dashboard creation dialog, specify the default Sparql Index view and specify the SPARQL query above. The 'Configure Columns' button will list the columns to be returned by the query and support specifying options on the columns such as enabling searching or sorting.
 
 @@@ div { .center }
 ![Sandbox Home](../assets/tutorial-sandbox-studio-one-workspace-one-dashboard.png)
