@@ -799,6 +799,8 @@ cd nexus
 cd docs/src/main/paradox/docs/getting-started/notebooks
 ```
 
+> Note: You will need `gcc` [installed](https://gcc.gnu.org/install/) locally to run the following notebook.
+
 ```bash
 jupyter notebook MOOC_Content_based_Recommender_System_using_Blue_Brain_Nexus.ipynb
 ```

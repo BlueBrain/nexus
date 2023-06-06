@@ -36,10 +36,6 @@ the underlying knowledge graph).
 Please bear in mind that the data stored in the Nexus Sandbox is being purged at regular intervals. We recommend you do
 not store any sensitive data in this environment since it is accessible to many other users.
 
-@@@ div { .center }
-![sandbox-home](../assets/try-nexus-sandbox-home-not-logged-in.png)
-@@@
-
 The first step is to login, by clicking in the upper right corner of the screen. You can login with your Github credentials.
 
 @@@ div { .center }
@@ -47,12 +43,12 @@ The first step is to login, by clicking in the upper right corner of the screen.
 @@@
 
 The Sandbox environment automatically provisions a project for you so you don't have to.
-Navigate to the Admin page and you will see the list of organisations in Nexus.
+From the landing page, click on the "Organizations" card and you will see the list of organisations in Nexus.
 A project is contained in an organisation. The organisation where your project is created depends on your identity provider.
 If you logged in with GitHub for example, your project was created under the `github-users` organisation.
 
 @@@ div { .center }
-![2-sandbox-admin](../assets/try-nexus-sandbox-admin-logged-in.png)
+![2-sandbox-admin](../assets/tutorial-sandbox-orgs.png)
 @@@
 
 Now open the `github-users` organisation and find your own project, which is named after your login.
@@ -66,7 +62,7 @@ You will quickly see that the project has finished indexing (top right corner).
 Which means that the system has created default indices and storage for you.
 
 @@@ div { .center }
-![](../assets/try-nexus-sandbox-admin-project-indexed.png)
+![](../assets/tutorial-sandbox-project.png)
 @@@
 
 We're all set! We now have a project to host our resources and datasets. Let's move on to the second part of this tutorial.
@@ -100,13 +96,13 @@ Login the Sandbox and navigate your previously created project.
 Click on the `studio tab`.
 
 @@@ div { .center }
-![](../assets/try-nexus-sandbox-project-studio-tab.png)
+![](../assets/tutorial-sandbox-project-studios-tab.png)
 @@@
 
-Studios are listed here. Click on `Create Studio`.
+In a new browser tab, you will see a list of all studios you have access to. Click on `Create Studio`.
 
 @@@ div { .center }
-![](../assets/try-nexus-sandbox-project-studios.png)
+![](../assets/try-nexus-studios-create-studio.png)
 @@@
 
 Give a name to your Studio and click `Save`.
@@ -118,7 +114,7 @@ Give a name to your Studio and click `Save`.
 Here's your empty Studio. Click the `+` icon to Add Workspace.
 
 @@@ div { .center }
-![](../assets/try-nexus-sandbox-studio-view.png)
+![](../assets/tutorial-sandbox-studio-one-workspace-no-dashboard.png)
 @@@
 
 Give a name to your Workspace and click `Save`.
@@ -149,7 +145,8 @@ WHERE {
 LIMIT 20
 ```
 
-Choose a name for your Dashboard, copy the query. Click `Save`.
+Choose a name for your Dashboard, copy the query. For the "View" select `https://bluebrain.github.io/nexus/vocabulary/defaultSparqlIndex` from the dropdown.
+Click on `Configure Columns` button to see a preview of all the columns the dashboard will have. Now click `Save`.
 
 @@@ div { .center }
 ![](../assets/try-nexus-sandbox-dashboard-form.png)
