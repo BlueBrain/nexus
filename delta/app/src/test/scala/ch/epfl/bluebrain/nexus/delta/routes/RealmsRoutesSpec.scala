@@ -27,7 +27,7 @@ class RealmsRoutesSpec extends BaseRouteSpec {
 
   val githubLogo: Uri = "https://localhost/ghlogo"
 
-  val config: RealmsConfig = RealmsConfig(eventLogConfig, pagination, httpClientConfig)
+  val config: RealmsConfig = RealmsConfig(eventLogConfig, pagination)
 
   val (githubOpenId, githubWk) = WellKnownGen.create(github.value)
   val (gitlabOpenId, gitlabWk) = WellKnownGen.create(gitlab.value)
