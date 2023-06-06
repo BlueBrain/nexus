@@ -46,7 +46,7 @@ class SupervisorSuite extends BioSuite with SupervisorSetup.Fixture with Doobie.
 
   private val expectedProgress = ProjectionProgress(Offset.at(20L), Instant.EPOCH, 20, 0, 0)
 
-  private def assertStart(metadata: ProjectionMetadata, strategy: ExecutionStrategy) =
+  private def startProjection(metadata: ProjectionMetadata, strategy: ExecutionStrategy) =
     for {
       started <- Ref.of[Task, Boolean](false)
       compiled = CompiledProjection.fromStream(metadata, strategy, evalStream(started.set(true)))
@@ -163,7 +163,7 @@ class SupervisorSuite extends BioSuite with SupervisorSetup.Fixture with Doobie.
 
   test("Run a projection when it is meant to run on every node") {
     for {
-      _ <- assertStart(random, EveryNode)
+      _ <- startProjection(random, EveryNode)
       // The projection should have been running successfully and made progress
       _ <- assertDescribe(random, EveryNode, 0, Completed, expectedProgress)
       // As it runs on every node, it is implicitly transient so no progress has been saved to database
@@ -177,7 +177,7 @@ class SupervisorSuite extends BioSuite with SupervisorSetup.Fixture with Doobie.
 
   test("Run a transient projection when it is meant to run on this node") {
     for {
-      _ <- assertStart(runnableByNode1, TransientSingleNode)
+      _ <- startProjection(runnableByNode1, TransientSingleNode)
       // The projection should have been running successfully and made progress
       _ <- assertDescribe(runnableByNode1, TransientSingleNode, 0, Completed, expectedProgress)
       // As it is transient, no progress has been saved to database
@@ -191,7 +191,7 @@ class SupervisorSuite extends BioSuite with SupervisorSetup.Fixture with Doobie.
 
   test("Run a persistent projection when it is meant to run on this node") {
     for {
-      _ <- assertStart(runnableByNode1, PersistentSingleNode)
+      _ <- startProjection(runnableByNode1, PersistentSingleNode)
       // The projection should have been running successfully and made progress
       _ <- assertDescribe(runnableByNode1, PersistentSingleNode, 0, Completed, expectedProgress)
       // As it is persistent, progress has also been saved to database
@@ -238,7 +238,7 @@ class SupervisorSuite extends BioSuite with SupervisorSetup.Fixture with Doobie.
     val watchRestartProgress = ProjectionProgress(Offset.at(3L), Instant.EPOCH, 3, 2, 0)
     val runnableProgress     = ProjectionProgress(Offset.at(20L), Instant.EPOCH, 20, 0, 0)
     for {
-      _ <- assertStart(runnableByNode1, PersistentSingleNode)
+      _ <- startProjection(runnableByNode1, PersistentSingleNode)
       _ <- sv.getRunningProjections()
              .eventually(
                List(
@@ -264,7 +264,7 @@ class SupervisorSuite extends BioSuite with SupervisorSetup.Fixture with Doobie.
   test("Run and properly destroy a projection with an unstable destroy method") {
     val projection = ProjectionMetadata("test", "unstable-global-projection", None, None)
     for {
-      _               <- assertStart(projection, EveryNode)
+      _               <- startProjection(projection, EveryNode)
       // Destroy the projection with a destroy method that fails and eventually succeeds
       unstableDestroy <- UnstableDestroy()
       _               <- assertDestroy(projection, unstableDestroy.attempt)
@@ -274,10 +274,10 @@ class SupervisorSuite extends BioSuite with SupervisorSetup.Fixture with Doobie.
 
   test("Run and properly destroy a projection with an failing destroy method") {
     val projection = ProjectionMetadata("test", "unstable-global-projection", None, None)
+    val alwaysFail = Task.raiseError(new IllegalStateException("Fail !"))
     for {
-      _         <- assertStart(projection, EveryNode)
-      alwaysFail = Task.raiseError(new IllegalStateException("Fail !"))
-      _         <- assertDestroy(projection, alwaysFail)
+      _ <- startProjection(projection, EveryNode)
+      _ <- assertDestroy(projection, alwaysFail)
     } yield ()
   }
 }
