@@ -21,7 +21,7 @@ sealed trait ExecutionStrategy extends Product with Serializable {
     *   the cluster configuration
     */
   def shouldRun(name: String, cluster: ClusterConfig): Boolean = this match {
-    case _: SingleNode => name.hashCode % cluster.size == cluster.nodeIndex
+    case _: SingleNode => Math.abs(name.hashCode) % cluster.size == cluster.nodeIndex
     case EveryNode     => true
   }
 }
