@@ -22,7 +22,7 @@ object SupervisorSetup {
     val config: ProjectionConfig = ProjectionConfig(
       cluster,
       BatchConfig(3, 50.millis),
-      RetryStrategyConfig.AlwaysGiveUp,
+      RetryStrategyConfig.ConstantStrategyConfig(50.millis, 5),
       10.millis,
       10.millis,
       14.days,
