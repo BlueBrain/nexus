@@ -145,6 +145,13 @@ object Supervisor {
     Resource.make[Task, Supervisor](init)(_.stop())
   }
 
+  private def createRetryStrategy(cfg: ProjectionConfig, metadata: ProjectionMetadata, action: String) =
+    RetryStrategy.retryOnNonFatal(
+      cfg.retry,
+      log,
+      s"$action projection '${metadata.name}' from module '${metadata.module}'"
+    )
+
   private def supervisionTask(
       semaphore: Semaphore[Task],
       mapRef: Ref[Task, Map[String, Supervised]],
@@ -165,11 +172,7 @@ object Supervisor {
           case ExecutionStatus.Completed         => Task.unit
           case ExecutionStatus.Stopped           => Task.unit
           case ExecutionStatus.Failed(throwable) =>
-            val retryStrategy = RetryStrategy.retryOnNonFatal(
-              cfg.retry,
-              log,
-              s"running projection '${metadata.name}' from module '${metadata.module}'"
-            )
+            val retryStrategy = createRetryStrategy(cfg, metadata, "running")
             val errorMessage  =
               s"The projection '${metadata.name}' from module '${metadata.module}' failed and will be restarted."
             UIO.delay(log.error(errorMessage, throwable)) >>
@@ -342,12 +345,13 @@ object Supervisor {
         } yield status
       }
 
-    override def destroy(name: String, clear: Task[Unit]): Task[Option[ExecutionStatus]] = {
+    override def destroy(name: String, onDestroy: Task[Unit]): Task[Option[ExecutionStatus]] = {
       semaphore.withPermit {
         for {
           supervised <- mapRef.get.map(_.get(name))
           status     <- supervised.traverse { s =>
-                          val metadata = s.metadata
+                          val metadata      = s.metadata
+                          val retryStrategy = createRetryStrategy(cfg, metadata, "destroying")
                           if (!s.executionStrategy.shouldRun(name, cfg.cluster))
                             Task.delay(log.info(s"'${metadata.module}/${metadata.name}' is ignored. Skipping...")) >>
                               Task.pure(ExecutionStatus.Ignored)
@@ -356,7 +360,13 @@ object Supervisor {
                               _      <- Task.delay(log.info(s"Destroying '${metadata.module}/${metadata.name}'..."))
                               _      <- stopProjection(s)
                               _      <- Task.when(s.executionStrategy == PersistentSingleNode)(projections.delete(name))
-                              _      <- clear
+                              _      <- onDestroy
+                                          .retryingOnSomeErrors(
+                                            retryStrategy.retryWhen,
+                                            retryStrategy.policy,
+                                            retryStrategy.onError
+                                          )
+                                          .onErrorHandle(_ => ())
                               status <- s.control.status
                                           .restartUntil(e => e == ExecutionStatus.Completed || e == ExecutionStatus.Stopped)
                                           .timeout(3.seconds)
