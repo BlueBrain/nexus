@@ -17,8 +17,7 @@ There are many ways to run Nexus. Our public Sandbox is running @link:[here](htt
 and you can use it to test Nexus on small, non-sensitive data. Our @ref:[tutorial](getting-started/try-nexus.md) can 
 help you to run Nexus step by step.
 
-Meanwhile if you want to run it locally you might need to install @ref:[Docker](getting-started/running-nexus/index.md#docker) 
-or @ref:[Minikube](getting-started/running-nexus/index.md#run-nexus-locally-with-minikube). You can also deploy Nexus 
+Meanwhile if you want to run it locally you can do so using @ref:[Docker](getting-started/running-nexus/index.md#docker). You can also deploy Nexus 
 @ref:[“on premise”](getting-started/running-nexus/index.md#on-premise-cloud-deployment), as a single instance or as a cluster. 
 Blue Brain Nexus has also been deployed and tested on AWS using @link:[Kubernetes](https://kubernetes.io/){ open=new }.
 
