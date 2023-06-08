@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.Uri.Query
 import cats.data.NonEmptySet
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchQuerySuite.Sample
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViewsQuerySuite.Sample
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchBulk
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{AuthorizationFailed, ProjectContextRejection, ViewIsDeprecated}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
@@ -21,7 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{SearchResults, SortList}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{SearchResults, SortList, TimeRange}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
@@ -40,7 +40,7 @@ import munit.{AnyFixture, Location}
 
 import java.time.Instant
 
-class ElasticSearchQuerySuite
+class ElasticSearchViewsQuerySuite
     extends BioSuite
     with Doobie.Fixture
     with ElasticSearchClientSetup.Fixture
@@ -134,24 +134,62 @@ class ElasticSearchQuerySuite
   private val allIndexingViews: List[ViewRef] = allDefaultViews ++ List(view1Proj1, view2Proj1, view1Proj2, view2Proj2)
 
   // Resources are indexed in every view
-  private def createdAt(plus: Long) = Instant.EPOCH.plusSeconds(plus)
-  private val orgType               = nxv + "Organization"
-  private val orgSchema             = ResourceRef.Latest(nxv + "org")
-  private val bbp                   =
-    Sample("bbp", Set(orgType), 2, deprecated = false, orgSchema, createdAt(5L), createdBy = alice.subject)
-  private val epfl                  =
-    Sample("epfl", Set(orgType), 1, deprecated = false, orgSchema, createdAt(10L), updatedBy = alice.subject)
-  private val datasetSchema         = ResourceRef.Latest(nxv + "dataset")
-  private val traceTypes            = Set(nxv + "Dataset", nxv + "Trace")
-  private val trace                 = Sample("trace", traceTypes, 3, deprecated = false, datasetSchema, createdAt(15L))
-  private val cellTypes             = Set(nxv + "Dataset", nxv + "Cell")
-  private val cell                  =
-    Sample("cell", cellTypes, 3, deprecated = true, datasetSchema, createdAt(20L), createdBy = alice.subject)
-  private val orgs                  = List(bbp, epfl)
-  private val deprecated            = List(cell)
-  private val createdByAlice        = List(bbp, cell)
-  private val updatedByAlice        = List(epfl)
-  private val allResources          = List(bbp, epfl, trace, cell)
+  private def epochPlus(plus: Long)   = Instant.EPOCH.plusSeconds(plus)
+  private val orgType                 = nxv + "Organization"
+  private val orgSchema               = ResourceRef.Latest(nxv + "org")
+  private val bbp                     =
+    Sample(
+      "bbp",
+      Set(orgType),
+      2,
+      deprecated = false,
+      orgSchema,
+      createdAt = epochPlus(5L),
+      updatedAt = epochPlus(10L),
+      createdBy = alice.subject
+    )
+  private val epfl                    =
+    Sample(
+      "epfl",
+      Set(orgType),
+      1,
+      deprecated = false,
+      orgSchema,
+      createdAt = epochPlus(10L),
+      updatedAt = epochPlus(10L),
+      updatedBy = alice.subject
+    )
+  private val datasetSchema           = ResourceRef.Latest(nxv + "dataset")
+  private val traceTypes              = Set(nxv + "Dataset", nxv + "Trace")
+  private val trace                   = Sample(
+    "trace",
+    traceTypes,
+    3,
+    deprecated = false,
+    datasetSchema,
+    createdAt = epochPlus(15L),
+    updatedAt = epochPlus(30L)
+  )
+  private val cellTypes               = Set(nxv + "Dataset", nxv + "Cell")
+  private val cell                    =
+    Sample(
+      "cell",
+      cellTypes,
+      3,
+      deprecated = true,
+      datasetSchema,
+      createdAt = epochPlus(20L),
+      updatedAt = epochPlus(40L),
+      createdBy = alice.subject
+    )
+  private val orgs                    = List(bbp, epfl)
+  private val deprecated              = List(cell)
+  private val createdByAlice          = List(bbp, cell)
+  private val createdBetween_8_and_16 = List(epfl, trace)
+  private val createdAfter_11         = List(trace, cell)
+  private val updatedBefore_12        = List(bbp, epfl)
+  private val updatedByAlice          = List(epfl)
+  private val allResources            = List(bbp, epfl, trace, cell)
 
   private val fetchContext = FetchContextDummy[ElasticSearchViewRejection](
     List(project1, project2),
@@ -294,12 +332,16 @@ class ElasticSearchQuerySuite
       .map(Ids.extractAll)
       .assert(expectedIds)
 
-  private val orgByType          = ResourcesSearchParams(types = List(IncludedType(orgType)))
-  private val orgBySchema        = ResourcesSearchParams(schema = Some(orgSchema))
-  private val excludeDatasetType = ResourcesSearchParams(types = List(ExcludedType(nxv + "Dataset")))
-  private val byDeprecated       = ResourcesSearchParams(deprecated = Some(true))
-  private val byCreated          = ResourcesSearchParams(createdBy = Some(alice.subject))
-  private val byUpdated          = ResourcesSearchParams(updatedBy = Some(alice.subject))
+  private val orgByType                 = ResourcesSearchParams(types = List(IncludedType(orgType)))
+  private val orgBySchema               = ResourcesSearchParams(schema = Some(orgSchema))
+  private val excludeDatasetType        = ResourcesSearchParams(types = List(ExcludedType(nxv + "Dataset")))
+  private val byDeprecated              = ResourcesSearchParams(deprecated = Some(true))
+  private val byCreated                 = ResourcesSearchParams(createdBy = Some(alice.subject))
+  private val between_8_and_16          = TimeRange.Between.unsafe(epochPlus(8L), epochPlus(16))
+  private val byCreatedBetween_8_and_16 = ResourcesSearchParams(createdAt = between_8_and_16)
+  private val byCreatedAfter_11         = ResourcesSearchParams(createdAt = TimeRange.After(epochPlus(11L)))
+  private val byUpdated                 = ResourcesSearchParams(updatedBy = Some(alice.subject))
+  private val byUpdated_Before_12       = ResourcesSearchParams(updatedAt = TimeRange.Before(epochPlus(12L)))
 
   private val bbpResource    = bbp.asResourceF(defaultView)
   private val byId           = ResourcesSearchParams(id = Some(bbpResource.id))
@@ -315,7 +357,10 @@ class ElasticSearchQuerySuite
     ("all resources but the ones with 'Dataset' type", excludeDatasetType, bob, orgs),
     ("deprecated resources", byDeprecated, bob, deprecated),
     ("resources created by Alice", byCreated, bob, createdByAlice),
+    ("resources created between 8 and 16", byCreatedBetween_8_and_16, bob, createdBetween_8_and_16),
+    ("resources created after 11", byCreatedAfter_11, bob, createdAfter_11),
     ("resources updated by Alice", byUpdated, bob, updatedByAlice),
+    ("resources updated before 12", byUpdated_Before_12, bob, updatedBefore_12),
     (s"resources with id ${bbpResource.id}", byId, bob, List(bbp)),
     (s"resources by locating id ${bbpResource.id}", byLocatingId, bob, List(bbp)),
     (s"resources by locating self ${bbpResource.self}", byLocatingSelf, bob, List(bbp))
@@ -396,7 +441,7 @@ class ElasticSearchQuerySuite
   }
 }
 
-object ElasticSearchQuerySuite {
+object ElasticSearchViewsQuerySuite {
 
   final private case class Sample(
       suffix: String,
@@ -405,6 +450,7 @@ object ElasticSearchQuerySuite {
       deprecated: Boolean,
       schema: ResourceRef,
       createdAt: Instant,
+      updatedAt: Instant,
       createdBy: Subject = Anonymous,
       updatedBy: Subject = Anonymous
   ) {
@@ -413,7 +459,13 @@ object ElasticSearchQuerySuite {
       val resource = ResourceGen.resource(view.viewId / suffix, view.project, Json.obj())
       ResourceGen
         .resourceFor(resource, types = types, rev = rev, deprecated = deprecated)
-        .copy(createdAt = createdAt, createdBy = createdBy, updatedBy = updatedBy, schema = schema)
+        .copy(
+          createdAt = createdAt,
+          createdBy = createdBy,
+          updatedAt = updatedAt,
+          updatedBy = updatedBy,
+          schema = schema
+        )
     }
 
     def asDocument(

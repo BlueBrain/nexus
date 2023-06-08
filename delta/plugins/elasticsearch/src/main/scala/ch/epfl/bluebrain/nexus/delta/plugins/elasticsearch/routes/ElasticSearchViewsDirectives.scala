@@ -57,10 +57,22 @@ trait ElasticSearchViewsDirectives extends UriDirectives {
       baseUri: BaseUri,
       pc: ProjectContext
   ): Directive1[ResourcesSearchParams] = {
-    (searchParams & typesSchemaAndId & locate & parameter("q".?)).tmap {
-      case (deprecated, rev, createdBy, updatedBy, types, schema, id, locate, q) =>
+    (searchParams & createdAt & updatedAt & typesSchemaAndId & locate & parameter("q".?)).tmap {
+      case (deprecated, rev, createdBy, updatedBy, createdAt, updatedAt, types, schema, id, locate, q) =>
         val qq = q.filter(_.trim.nonEmpty).map(_.toLowerCase)
-        ResourcesSearchParams(locate, id, deprecated, rev, createdBy, updatedBy, types, schema, qq)
+        ResourcesSearchParams(
+          locate,
+          id,
+          deprecated,
+          rev,
+          createdBy,
+          createdAt,
+          updatedBy,
+          updatedAt,
+          types,
+          schema,
+          qq
+        )
     }
   }
 
@@ -70,11 +82,24 @@ trait ElasticSearchViewsDirectives extends UriDirectives {
     implicit val typesUm: FromStringUnmarshaller[Type]      = Type.typeFromStringUnmarshallerNoExpansion
     implicit val baseIriUm: FromStringUnmarshaller[IriBase] =
       DeltaSchemeDirectives.iriBaseFromStringUnmarshallerNoExpansion
-    def searchParameters                                    = (searchParams & types & schema & id & locate & parameter("q".?)).tmap {
-      case (deprecated, rev, createdBy, updatedBy, types, schema, id, locate, q) =>
-        val qq = q.filter(_.trim.nonEmpty).map(_.toLowerCase)
-        ResourcesSearchParams(locate, id, deprecated, rev, createdBy, updatedBy, types, schema, qq)
-    }
+    def searchParameters                                    =
+      (searchParams & createdAt & updatedAt & types & schema & id & locate & parameter("q".?)).tmap {
+        case (deprecated, rev, createdBy, updatedBy, createdAt, updatedAt, types, schema, id, locate, q) =>
+          val qq = q.filter(_.trim.nonEmpty).map(_.toLowerCase)
+          ResourcesSearchParams(
+            locate,
+            id,
+            deprecated,
+            rev,
+            createdBy,
+            createdAt,
+            updatedBy,
+            updatedAt,
+            types,
+            schema,
+            qq
+          )
+      }
 
     (searchParameters & sortList).tflatMap { case (params, sortList) =>
       if (params.q.isDefined && !sortList.isEmpty) reject(simultaneousSortAndQRejection)
