@@ -26,7 +26,7 @@ Contrarily to the rest of the platform resources, archives are not persisted res
 there are no update, tag or deprecation operations available on archive resources.
 
 An archive resource will be automatically erased from the system after certain after certain time. This time is 
-configurable (config property `app.archives.cache-invalidate-after`) and it defaults to 5 hours.
+configurable (config property `plugins.archive.ephemeral.ttl`) and it defaults to 5 hours.
 
 ## Payload
 
@@ -144,8 +144,12 @@ When fetching an archive, the response format can be chosen through HTTP content
 In order to fetch the archive metadata, the client can use any of the @ref:[following MIME types](content-negotiation.md#supported-mime-types).
 However, in order to fetch the archive content, the HTTP `Accept` header  `*/*` or `application/x-tar` should be provided.
 
+When downloading the archive, it is possible to ignore resources that does not exist by appending the query parameter `ignoreNotFound=true`
+to the fetch link.
+
 ```
 GET /v1/archives/{org_label}/{project_label}/{archive_id}
+GET /v1/archives/{org_label}/{project_label}/{archive_id}?ignoreNotFound=true
 ```
 
 **Example**
