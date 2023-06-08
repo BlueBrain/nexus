@@ -160,15 +160,15 @@ trait UriDirectives extends QueryParamsUnmarshalling {
       )
   }
 
-  private def dateRange(paramName: String): Directive1[TimeRange] = parameter(paramName.as[String].?).flatMap {
+  private def timeRange(paramName: String): Directive1[TimeRange] = parameter(paramName.as[String].?).flatMap {
     TimeRange.parse(_) match {
       case Right(range) => provide(range)
       case Left(error)  => reject(validationRejection(error.message))
     }
   }
 
-  val createdAt: Directive1[TimeRange] = dateRange("createdAt")
-  val updatedAt: Directive1[TimeRange] = dateRange("updatedAt")
+  val createdAt: Directive1[TimeRange] = timeRange("createdAt")
+  val updatedAt: Directive1[TimeRange] = timeRange("updatedAt")
 
   /**
     * Consumes the rev/tag query parameter and generates an [[IdSegmentRef]]

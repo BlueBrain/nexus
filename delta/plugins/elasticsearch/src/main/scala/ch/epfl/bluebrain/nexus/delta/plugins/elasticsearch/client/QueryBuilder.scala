@@ -120,7 +120,7 @@ final case class QueryBuilder private[client] (private val query: JsonObject) {
     def range(value: Json) = Some(JsonObject("range" -> Json.obj(k -> value)))
     timeRange match {
       case Anytime             => None
-      case Before(value)       => (range(Json.obj("lt" := value)))
+      case Before(value)       => range(Json.obj("lt" := value))
       case After(value)        => range(Json.obj("gt" := value))
       case Between(start, end) => range(Json.obj("gt" := start, "lt" := end))
     }
