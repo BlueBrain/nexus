@@ -8,16 +8,17 @@ import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.IriEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.{FromPagination, SearchAfterPagination}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, Sort, SortList}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, Sort, SortList, TimeRange}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
 
 final case class QueryBuilder private[client] (private val query: JsonObject) {
 
-  private val trackTotalHits                                                       = "track_total_hits"
-  private val searchAfter                                                          = "search_after"
-  private val source                                                               = "_source"
+  private val trackTotalHits = "track_total_hits"
+  private val searchAfter    = "search_after"
+  private val source         = "_source"
+
   implicit private def subjectEncoder(implicit baseUri: BaseUri): Encoder[Subject] = IriEncoder.jsonEncoder[Subject]
 
   implicit private val sortEncoder: Encoder[Sort] =
@@ -70,7 +71,9 @@ final case class QueryBuilder private[client] (private val query: JsonObject) {
           params.deprecated.map(term(nxv.deprecated.prefix, _)) ++
           params.rev.map(term(nxv.rev.prefix, _)) ++
           params.createdBy.map(term(nxv.createdBy.prefix, _)) ++
-          params.updatedBy.map(term(nxv.updatedBy.prefix, _)),
+          range(nxv.createdAt.prefix, params.createdAt) ++
+          params.updatedBy.map(term(nxv.updatedBy.prefix, _)) ++
+          range(nxv.updatedAt.prefix, params.updatedAt),
         mustNotTerms = excludeTypes.map(tpe => term(keywords.tpe, tpe.value)),
         withScore = params.q.isDefined
       )
@@ -110,6 +113,17 @@ final case class QueryBuilder private[client] (private val query: JsonObject) {
           .addIfNonEmpty("must_not", mustNotTerms)
       )
     )
+  }
+
+  private def range(k: String, timeRange: TimeRange): Option[JsonObject] = {
+    import TimeRange._
+    def range(value: Json) = Some(JsonObject("range" -> Json.obj(k -> value)))
+    timeRange match {
+      case Anytime             => None
+      case Before(value)       => range(Json.obj("lt" := value))
+      case After(value)        => range(Json.obj("gt" := value))
+      case Between(start, end) => range(Json.obj("gt" := start, "lt" := end))
+    }
   }
 
   private def term[A: Encoder](k: String, value: A): JsonObject              =
