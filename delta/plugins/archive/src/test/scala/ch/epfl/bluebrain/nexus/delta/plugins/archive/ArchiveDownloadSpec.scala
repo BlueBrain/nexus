@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.{FileReference, ResourceReference}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.{AuthorizationFailed, FilenameTooLong, ResourceNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveResourceRepresentation.{CompactedJsonLd, Dot, ExpandedJsonLd, NQuads, NTriples, SourceJson}
-import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveValue
+import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.{ArchiveFormat, ArchiveRejection, ArchiveValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.RemoteContextResolutionFixture
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.FileNotFound
@@ -22,6 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.AbsolutePath
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
+import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.FileResponse
@@ -35,6 +36,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef, ResourceRef}
+import ch.epfl.bluebrain.nexus.testkit.archive.ArchiveHelpers
 import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOValues, TestHelpers}
 import io.circe.syntax.EncoderOps
 import monix.bio.{IO, UIO}
@@ -44,8 +46,9 @@ import org.scalatest.{Inspectors, OptionValues}
 
 import java.util.UUID
 import scala.concurrent.ExecutionContext
+import scala.reflect.ClassTag
 
-class ArchiveDownloadSpec
+abstract class ArchiveDownloadSpec
     extends TestKit(ActorSystem())
     with AnyWordSpecLike
     with Inspectors
@@ -54,6 +57,7 @@ class ArchiveDownloadSpec
     with OptionValues
     with TestHelpers
     with StorageFixtures
+    with ArchiveHelpers
     with RemoteContextResolutionFixture
     with Matchers {
 
@@ -74,6 +78,10 @@ class ArchiveDownloadSpec
 
   private val permissions = Set(Permissions.resources.read)
   private val aclCheck    = AclSimpleCheck((subject, AclAddress.Root, permissions)).accepted
+
+  def format: ArchiveFormat[_]
+
+  def sourceToMap(source: AkkaSource): Map[String, String]
 
   "An ArchiveDownload" should {
     val storageRef                                    = ResourceRef.Revision(iri"http://localhost/${genString()}", 5)
@@ -128,15 +136,28 @@ class ArchiveDownloadSpec
       (id: ResourceRef, ref: ProjectRef, _: Caller) => fetchFileContent(id.iri, ref)
     )
 
-    "provide a tar for both resources and files" in {
+    def downloadAndExtract(value: ArchiveValue, ignoreNotFound: Boolean) = {
+      archiveDownload(value, project.ref, format, ignoreNotFound).map(sourceToMap).accepted
+    }
+
+    def failToDownload[R <: ArchiveRejection: ClassTag](value: ArchiveValue, ignoreNotFound: Boolean) = {
+      archiveDownload(value, project.ref, format, ignoreNotFound).rejectedWith[R]
+    }
+
+    def rejectedAccess(value: ArchiveValue) = {
+      archiveDownload
+        .apply(value, project.ref, format, ignoreNotFound = true)(Caller.Anonymous)
+        .rejectedWith[AuthorizationFailed]
+    }
+
+    s"provide a ${format.fileExtension} for both resources and files" in {
       val value    = ArchiveValue.unsafe(
         NonEmptySet.of(
           ResourceReference(Latest(id1), None, None, None),
           FileReference(Latest(id1), None, None)
         )
       )
-      val source   = archiveDownload.apply(value, project.ref, ignoreNotFound = false).accepted
-      val result   = TarUtils.mapOf(source)
+      val result   = downloadAndExtract(value, ignoreNotFound = false)
       val expected = Map(
         s"${project.ref.toString}/compacted/${UrlUtils.encode(file1.id.toString)}.json" -> file1.toCompactedJsonLd.accepted.json.sort.spaces2,
         s"${project.ref.toString}/file/${file1.value.attributes.filename}"              -> file1Content
@@ -144,7 +165,7 @@ class ArchiveDownloadSpec
       result shouldEqual expected
     }
 
-    "provide a tar for both resources and files with different paths and formats" in {
+    s"provide a ${format.fileExtension} for both resources and files with different paths and formats" in {
       val list = List(
         SourceJson      -> file1.value.asJson.sort.spaces2,
         CompactedJsonLd -> file1.toCompactedJsonLd.accepted.json.sort.spaces2,
@@ -162,8 +183,7 @@ class ArchiveDownloadSpec
             FileReference(Latest(id1), None, Some(filePath))
           )
         )
-        val source       = archiveDownload.apply(value, project.ref, ignoreNotFound = false).accepted
-        val result       = TarUtils.mapOf(source)
+        val result       = downloadAndExtract(value, ignoreNotFound = false)
         if (repr == Dot) {
           result(resourcePath.value.toString).contains(s"""digraph "$id1"""") shouldEqual true
         } else if (repr == NTriples || repr == NQuads) {
@@ -178,26 +198,36 @@ class ArchiveDownloadSpec
       }
     }
 
-    "fail to provide a tar if the file name is too long and no path is provided" in {
-      val value = ArchiveValue.unsafe(
-        NonEmptySet.of(
-          FileReference(Latest(id2), None, None)
+    if (format == ArchiveFormat.Tar) {
+      "fail to provide a tar if the file name is too long and no path is provided" in {
+        val value = ArchiveValue.unsafe(
+          NonEmptySet.of(
+            FileReference(Latest(id2), None, None)
+          )
         )
-      )
+        failToDownload[FilenameTooLong](value, ignoreNotFound = false)
+      }
 
-      archiveDownload.apply(value, project.ref, ignoreNotFound = false).rejectedWith[FilenameTooLong]
-    }
-
-    "provide a tar if the file name is too long but a path is provided" in {
-      val filePath = AbsolutePath.apply(s"/${genString()}/file.txt").rightValue
-      val value    = ArchiveValue.unsafe(
-        NonEmptySet.of(
-          FileReference(Latest(id2), None, Some(filePath))
+      "provide a tar if the file name is too long but a path is provided" in {
+        val filePath = AbsolutePath.apply(s"/${genString()}/file.txt").rightValue
+        val value    = ArchiveValue.unsafe(
+          NonEmptySet.of(
+            FileReference(Latest(id2), None, Some(filePath))
+          )
         )
-      )
 
-      val result = archiveDownload.apply(value, project.ref, ignoreNotFound = false).accepted
-      TarUtils.mapOf(result) should contain key filePath.value.toString
+        downloadAndExtract(value, ignoreNotFound = false) should contain key filePath.value.toString
+      }
+    } else {
+      "provide a zip if the file name is long" in {
+        val value     = ArchiveValue.unsafe(
+          NonEmptySet.of(
+            FileReference(Latest(id2), None, None)
+          )
+        )
+        val file2Path = s"${project.ref.toString}/file/${file2.value.attributes.filename}"
+        downloadAndExtract(value, ignoreNotFound = false) should contain key file2Path
+      }
     }
 
     "fail to provide a tar when a resource is not found" in {
@@ -207,17 +237,17 @@ class ArchiveDownloadSpec
           FileReference(Latest(id1), None, None)
         )
       )
-      archiveDownload.apply(value, project.ref, ignoreNotFound = false).rejectedWith[ResourceNotFound]
+      failToDownload[ResourceNotFound](value, ignoreNotFound = false)
     }
 
-    "fail to provide a tar when a file is not found" in {
+    s"fail to provide a ${format.fileExtension} when a file is not found" in {
       val value = ArchiveValue.unsafe(
         NonEmptySet.of(
           ResourceReference(Latest(id1), None, None, None),
           FileReference(Latest(iri"http://localhost/${genString()}"), None, None)
         )
       )
-      archiveDownload.apply(value, project.ref, ignoreNotFound = false).rejectedWith[ResourceNotFound]
+      failToDownload[ResourceNotFound](value, ignoreNotFound = false)
     }
 
     "ignore missing resources" in {
@@ -227,8 +257,7 @@ class ArchiveDownloadSpec
           FileReference(Latest(id1), None, None)
         )
       )
-      val source   = archiveDownload.apply(value, project.ref, ignoreNotFound = true).accepted
-      val result   = TarUtils.mapOf(source)
+      val result   = downloadAndExtract(value, ignoreNotFound = true)
       val expected = Map(
         s"${project.ref.toString}/file/${file1.value.attributes.filename}" -> file1Content
       )
@@ -242,8 +271,7 @@ class ArchiveDownloadSpec
           FileReference(Latest(iri"http://localhost/${genString()}"), None, None)
         )
       )
-      val source   = archiveDownload.apply(value, project.ref, ignoreNotFound = true).accepted
-      val result   = TarUtils.mapOf(source)
+      val result   = downloadAndExtract(value, ignoreNotFound = true)
       val expected = Map(
         s"${project.ref.toString}/compacted/${UrlUtils.encode(file1.id.toString)}.json" -> file1.toCompactedJsonLd.accepted.json.sort.spaces2
       )
@@ -254,18 +282,14 @@ class ArchiveDownloadSpec
       val value = ArchiveValue.unsafe(
         NonEmptySet.of(ResourceReference(Latest(id1), None, None, None))
       )
-      archiveDownload
-        .apply(value, project.ref, ignoreNotFound = true)(Caller.Anonymous)
-        .rejectedWith[AuthorizationFailed]
+      rejectedAccess(value)
     }
 
     "fail to provide a tar when access to a file is not found" in {
       val value = ArchiveValue.unsafe(
         NonEmptySet.of(FileReference(Latest(id1), None, None))
       )
-      archiveDownload
-        .apply(value, project.ref, ignoreNotFound = true)(Caller.Anonymous)
-        .rejectedWith[AuthorizationFailed]
+      rejectedAccess(value)
     }
   }
 }
