@@ -142,7 +142,18 @@ Note that if the payload contains an @id different from the `{archive_id}`, the 
 
 When fetching an archive, the response format can be chosen through HTTP content negotiation.
 In order to fetch the archive metadata, the client can use any of the @ref:[following MIME types](content-negotiation.md#supported-mime-types).
-However, in order to fetch the archive content, the HTTP `Accept` header  `*/*` or `application/x-tar` should be provided.
+However, in order to fetch the archive content, the HTTP `Accept` header should be provided:
+
+* `*/*` or `application/x-tar` will return a tar archive (or tarball)
+* `application/zip` will return a zip archive
+
+@@@ note { .warning }
+
+@link:[The limitations of the tar format](https://en.wikipedia.org/wiki/Tar_(computing)) 
+makes the usage of archives difficult (among other things, the maximum file name is limited to 100 characters), 
+so its support will be removed in a future release.
+
+@@@
 
 When downloading the archive, it is possible to ignore resources that does not exist by appending the query parameter `ignoreNotFound=true`
 to the fetch link.

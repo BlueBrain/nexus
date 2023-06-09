@@ -49,10 +49,10 @@ trait ArchiveDownload {
     * @param caller
     *   the caller to be used for checking for access
     */
-  def apply[F](
+  def apply[M](
       value: ArchiveValue,
       project: ProjectRef,
-      format: ArchiveFormat[F],
+      format: ArchiveFormat[M],
       ignoreNotFound: Boolean
   )(implicit caller: Caller): IO[ArchiveRejection, AkkaSource]
 
@@ -83,13 +83,13 @@ object ArchiveDownload {
       private val printer                 = Printer.spaces2.copy(dropNullValues = true)
       private val sourcePrinter           = Printer.spaces2.copy(dropNullValues = false)
 
-      override def apply[F](
+      override def apply[M](
           value: ArchiveValue,
           project: ProjectRef,
-          format: ArchiveFormat[F],
+          format: ArchiveFormat[M],
           ignoreNotFound: Boolean
       )(implicit caller: Caller): IO[ArchiveRejection, AkkaSource] = {
-        implicit val entryOrdering: Ordering[F] = format.ordering
+        implicit val entryOrdering: Ordering[M] = format.ordering
         val referenceList                       = value.resources.toList
         for {
           _       <- checkResourcePermissions(referenceList, project)
