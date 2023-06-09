@@ -36,6 +36,8 @@ object TimeRange {
     */
   final case object Anytime extends TimeRange
 
+  val default: TimeRange = TimeRange.Anytime
+
   private val wildCard = "*"
 
   private val splitRegex = "\\.\\."
@@ -65,25 +67,17 @@ object TimeRange {
     }
 
   def parse(value: String): Either[ParseError, TimeRange] =
-    parse(Some(value))
-
-  def parse(optValue: Option[String]): Either[ParseError, TimeRange] =
-    optValue match {
-      case None        => Right(Anytime)
-      case Some(value) =>
-        value.split(splitRegex) match {
-          case Array(`wildCard`, `wildCard`) => Right(Anytime)
-          case Array(value, `wildCard`)      => parseInstant(value).map(After)
-          case Array(`wildCard`, value)      => parseInstant(value).map(Before)
-          case Array(startValue, endValue)   =>
-            for {
-              start <- parseInstant(startValue)
-              end   <- parseInstant(endValue)
-              _     <- Either.cond(start.isBefore(end), (), InvalidRange(startValue, endValue))
-            } yield Between(start, end)
-          case _                             =>
-            Left(InvalidFormat(value))
-        }
+    value.split(splitRegex) match {
+      case Array(`wildCard`, `wildCard`) => Right(Anytime)
+      case Array(value, `wildCard`)      => parseInstant(value).map(After)
+      case Array(`wildCard`, value)      => parseInstant(value).map(Before)
+      case Array(startValue, endValue)   =>
+        for {
+          start <- parseInstant(startValue)
+          end   <- parseInstant(endValue)
+          _     <- Either.cond(start.isBefore(end), (), InvalidRange(startValue, endValue))
+        } yield Between(start, end)
+      case _                             =>
+        Left(InvalidFormat(value))
     }
-
 }

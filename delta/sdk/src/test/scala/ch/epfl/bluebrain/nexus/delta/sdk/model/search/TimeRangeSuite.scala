@@ -43,10 +43,6 @@ class TimeRangeSuite extends FunSuite with EitherAssertions {
     parse("*..*").assertRight(Anytime)
   }
 
-  test("Parse None as anytime") {
-    parse(None).assertRight(Anytime)
-  }
-
   test(s"Parse as a before '$december_2020_string'") {
     parse(s"*..$december_2020_string").assertRight(Before(december_2020))
   }

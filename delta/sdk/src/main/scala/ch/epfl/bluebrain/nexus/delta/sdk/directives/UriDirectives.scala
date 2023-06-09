@@ -161,10 +161,12 @@ trait UriDirectives extends QueryParamsUnmarshalling {
   }
 
   private def timeRange(paramName: String): Directive1[TimeRange] = parameter(paramName.as[String].?).flatMap {
-    TimeRange.parse(_) match {
-      case Right(range) => provide(range)
-      case Left(error)  => reject(validationRejection(error.message))
-    }
+    case None        => provide(TimeRange.default)
+    case Some(value) =>
+      TimeRange.parse(value) match {
+        case Right(range) => provide(range)
+        case Left(error)  => reject(validationRejection(error.message))
+      }
   }
 
   val createdAt: Directive1[TimeRange] = timeRange("createdAt")

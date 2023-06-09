@@ -376,7 +376,7 @@ Examples of ranges:
 - `{createdBy}`: Iri - can be used to filter the resulting resources based on their creator
 - `{createdAt}`: Time range - can be used to filter the resulting resources based on their creation date
 - `{updatedBy}`: Iri - can be used to filter the resulting resources based on the person which performed the last update
-- `{updatedAt}`: Iri - can be used to filter the resulting resources based when was performed the last update
+- `{updatedAt}`: Time range - can be used to filter the resulting resources based when was performed the last update
 - `{schema}`: Iri - can be used to filter the resulting resources based on the conformant schema
 - `{search}`: String - can be provided to select only the resources in the collection that have attribute values 
   matching (containing) the provided string
