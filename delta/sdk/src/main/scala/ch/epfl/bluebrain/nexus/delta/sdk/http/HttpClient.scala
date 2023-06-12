@@ -87,6 +87,14 @@ object HttpClient {
     apply(HttpSingleRequest.default)
   }
 
+  /**
+    * Construct an Http client using an underlying akka http client which will not retry on failures
+    */
+  final def noRetry()(implicit as: ActorSystem, scheduler: Scheduler): HttpClient = {
+    implicit val config: HttpClientConfig = HttpClientConfig.noRetry
+    apply()
+  }
+
   private[http] def apply(
       client: HttpSingleRequest
   )(implicit httpConfig: HttpClientConfig, as: ActorSystem, scheduler: Scheduler): HttpClient =

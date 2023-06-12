@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 
-import cats.Eq
 import cats.data.NonEmptySet
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
@@ -40,16 +39,6 @@ final case class CompositeViewValue(
 )
 
 object CompositeViewValue {
-
-  /** Defines an equality that asserts two [[CompositeViewValue]]s as equal if they have the same indexing fields. */
-  // TODO: Review the Order on CompositeViewValue to be able to compare NonEmptySets directly.
-  @SuppressWarnings(Array("UnnecessaryConversion"))
-  val indexingEq: Eq[CompositeViewValue] =
-    Eq.instance((a, b) =>
-      a.sources.toSortedSet.toSet == b.sources.toSortedSet.toSet &&
-        a.projections.toSortedSet.toSet == b.projections.toSortedSet.toSet &&
-        a.rebuildStrategy == b.rebuildStrategy
-    )
 
   /**
     * Create a [[CompositeViewValue]] from [[CompositeViewFields]] and previous Ids/UUIDs.

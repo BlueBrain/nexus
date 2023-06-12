@@ -53,8 +53,8 @@ object RealmsModule extends ModuleDef {
       new RealmsRoutes(identities, realms, aclCheck)(cfg.http.baseUri, cfg.realms.pagination, s, cr, ordering)
   }
 
-  make[HttpClient].named("realm").from { (cfg: AppConfig, as: ActorSystem[Nothing], sc: Scheduler) =>
-    HttpClient()(cfg.realms.client, as.classicSystem, sc)
+  make[HttpClient].named("realm").from { (as: ActorSystem[Nothing], sc: Scheduler) =>
+    HttpClient.noRetry()(as.classicSystem, sc)
   }
 
   many[SseEncoder[_]].add { base: BaseUri => RealmEvent.sseEncoder(base) }

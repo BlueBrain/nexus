@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{JsonLdFormat, QueryParamsU
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.StringSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, PaginationConfig}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, PaginationConfig, TimeRange}
 import ch.epfl.bluebrain.nexus.delta.sdk.{IndexingMode, OrderingFields}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
@@ -159,6 +159,18 @@ trait UriDirectives extends QueryParamsUnmarshalling {
         )
       )
   }
+
+  private def timeRange(paramName: String): Directive1[TimeRange] = parameter(paramName.as[String].?).flatMap {
+    case None        => provide(TimeRange.default)
+    case Some(value) =>
+      TimeRange.parse(value) match {
+        case Right(range) => provide(range)
+        case Left(error)  => reject(validationRejection(error.message))
+      }
+  }
+
+  val createdAt: Directive1[TimeRange] = timeRange("createdAt")
+  val updatedAt: Directive1[TimeRange] = timeRange("updatedAt")
 
   /**
     * Consumes the rev/tag query parameter and generates an [[IdSegmentRef]]

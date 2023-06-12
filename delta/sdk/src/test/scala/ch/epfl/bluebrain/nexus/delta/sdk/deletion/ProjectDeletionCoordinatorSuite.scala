@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.deletion
 
 import cats.syntax.all._
 import cats.effect.concurrent.Ref
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.ProjectDeletionCoordinator.{Active, Noop}
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.model.ProjectDeletionReport
@@ -15,6 +16,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.{Projec
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, PrefixIri, ProjectFields}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{ProjectsConfig, ProjectsFixture}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
+import ch.epfl.bluebrain.nexus.delta.sourcing.EntityDependencyStore
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityDependency.DependsOn
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
@@ -54,6 +58,7 @@ class ProjectDeletionCoordinatorSuite extends BioSuite with IOFixedClock with Co
   private val active          = ProjectRef.unsafe("org", "active")
   private val deprecated      = ProjectRef.unsafe("org", "deprecated")
   private val markedAsDeleted = ProjectRef.unsafe("org", "deleted")
+  private val entityToDelete  = nxv + "entity-to-delete"
 
   private val fields = ProjectFields(
     Some("Project description"),
@@ -102,6 +107,17 @@ class ProjectDeletionCoordinatorSuite extends BioSuite with IOFixedClock with Co
     } yield ()
   }
 
+  test(s"Create dependencies between '$markedAsDeleted' and '$active'") {
+    EntityDependencyStore.save(
+      markedAsDeleted,
+      entityToDelete,
+      Set(
+        DependsOn(active, nxv + "some-entity"),
+        DependsOn(active, nxv + "some-other-entity")
+      )
+    )
+  }
+
   test("Returned a noop instance when project deletion is disabled") {
     initCoordinator(deletionDisabled).map(_._2).assert(ProjectDeletionCoordinator.Noop)
   }
@@ -128,6 +144,8 @@ class ProjectDeletionCoordinatorSuite extends BioSuite with IOFixedClock with Co
       _                 <- projects.fetch(markedAsDeleted).error(ProjectNotFound(markedAsDeleted))
       // Checking that the partitions have been correctly deleted
       _                 <- assertPartitions(2)
+      // Checking that the dependencies have been cleared
+      _                 <- EntityDependencyStore.directDependencies(markedAsDeleted, entityToDelete, xas).assert(Set.empty)
     } yield ()
   }
 

@@ -4,7 +4,7 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef.{ActiveViewDef, DeprecatedViewDef}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewsCoordinator.logger
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewsCoordinator.cleanupCurrent
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.projections.CompositeProjections
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.CompositeGraphStream
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
@@ -52,7 +52,7 @@ final class CompositeViewsCoordinator(
             // Compiling and validating the view
             projection <- CompositeViewDef.compile(active, spaces, compilePipeChain, graphStream, compositeProjections)
             // Stopping the previous version
-            _          <- cleanupCurrent(active.ref)
+            _          <- cleanupCurrent(cache, active, destroy)
             // Init, register and run the new version
             _          <- supervisor.run(
                             projection,
@@ -62,39 +62,22 @@ final class CompositeViewsCoordinator(
                             } yield ()
                           )
           } yield ()
-        case d: DeprecatedViewDef  => cleanupCurrent(d.ref)
+        case d: DeprecatedViewDef  => cleanupCurrent(cache, d, destroy)
       }
     }
   }
 
-  /**
-    * If a previous version of the view is running: * Stop it * Delete the associated namespaces and indices * Delete
-    * existing progress
-    */
-  private def cleanupCurrent(ref: ViewRef): Task[Unit] =
-    cache.get(ref).flatMap {
-      case Some(v) =>
-        supervisor
-          .destroy(
-            v.uuid.toString,
-            for {
-              _ <-
-                Task.delay(
-                  logger.info(
-                    s"View '${ref.project}/${ref.viewId}' has been updated or deprecated, cleaning up the current one."
-                  )
-                )
-              _ <- buildSpaces(v).destroy
-              _ <- compositeProjections.deleteAll(v.ref, v.rev)
-              _ <- cache.remove(v.ref)
-            } yield ()
-          )
-          .void
-      case None    =>
-        Task.delay(
-          logger.debug(s"View '${ref.project}/${ref.viewId}' is not referenced yet, cleaning is aborted.")
-        )
-    }
+  private def destroy(active: ActiveViewDef) =
+    supervisor
+      .destroy(
+        active.projection,
+        for {
+          _ <- buildSpaces(active).destroy
+          _ <- compositeProjections.deleteAll(active.ref, active.rev)
+          _ <- cache.remove(active.ref)
+        } yield ()
+      )
+      .void
 
 }
 
@@ -102,6 +85,34 @@ object CompositeViewsCoordinator {
 
   private val metadata: ProjectionMetadata = ProjectionMetadata("system", "composite-views-coordinator", None, None)
   private val logger: Logger               = Logger[CompositeViewsCoordinator]
+
+  def cleanupCurrent(
+      cache: KeyValueStore[ViewRef, ActiveViewDef],
+      viewDef: CompositeViewDef,
+      destroy: ActiveViewDef => Task[Unit]
+  ): Task[Unit] = {
+    val ref = viewDef.ref
+    cache.get(ref).flatMap { cachedOpt =>
+      (cachedOpt, viewDef) match {
+        case (Some(cached), active: ActiveViewDef) if cached.projection == active.projection =>
+          Task.delay(logger.info(s"Projection '${cached.projection}' is already running and will not be recreated."))
+        case (Some(cached), _: ActiveViewDef)                                                =>
+          Task.delay(
+            logger.info(s"View '${ref.project}/${ref.viewId}' has been updated, cleaning up the current one.")
+          ) >>
+            destroy(cached)
+        case (Some(cached), _: DeprecatedViewDef)                                            =>
+          Task.delay(
+            logger.info(s"View '${ref.project}/${ref.viewId}' has been deprecated, cleaning up the current one.")
+          ) >>
+            destroy(cached)
+        case (None, _)                                                                       =>
+          Task.delay(
+            logger.debug(s"View '${ref.project}/${ref.viewId}' is not referenced yet, cleaning is aborted.")
+          )
+      }
+    }
+  }
 
   def apply(
       compositeViews: CompositeViews,

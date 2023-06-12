@@ -86,7 +86,7 @@ object GraphAnalytics {
     }
 
   private[analytics] def index(prefix: String, ref: ProjectRef): IndexLabel =
-    IndexLabel.unsafe(s"${prefix}_ga_${ref.organization}_${ref.project}}")
+    IndexLabel.unsafe(s"${prefix}_ga_${ref.organization}_${ref.project}")
 
   private[analytics] def projectionName(ref: ProjectRef): String = s"ga-$ref"
 

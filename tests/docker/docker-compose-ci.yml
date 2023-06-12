@@ -13,10 +13,14 @@ services:
       DELTA_EXTERNAL_CONF: "/config/delta-postgres.conf"
       KAMON_ENABLED: "false"
     image: bluebrain/nexus-delta:latest
-    entrypoint: [ "bin/wait-for-it.sh", "-s", "-t", "0", "postgres:5432", "--",
-                  "bin/wait-for-it.sh", "-s", "-t", "0", "elasticsearch:9200", "--",
-                  "./bin/delta-app",
-                  "-Xmx4G" ]
+    entrypoint:
+      - '/bin/bash'
+      - '-c'
+      - |
+        ln -s /opt/docker/plugins/disabled/project-deletion.jar /opt/docker/plugins/project-deletion.jar &&
+        /opt/docker/bin/wait-for-it.sh -s -t 0 postgres:5432 -- &&
+        /opt/docker/bin/wait-for-it.sh -s -t 0 elasticsearch:9200 -- &&
+        /opt/docker/bin/delta-app -Xmx4G
     ports:
       - 8080:8080
     volumes:
@@ -70,11 +74,12 @@ services:
       - 9090:8080
 
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.16.2
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.7.1
     environment:
-      ES_JAVA_OPTS: "-Xmx4G"
       discovery.type: "single-node"
       bootstrap.memory_lock: "true"
+      xpack.security.enabled: "true"
+      ingest.geoip.downloader.enabled: "false"
       ELASTIC_PASSWORD: "password"
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:9200/_cluster/health" ]
@@ -87,12 +92,14 @@ services:
   blazegraph:
     image: bluebrain/blazegraph-nexus:2.1.6-RC
     environment:
-      JAVA_OPTS: "-Djava.awt.headless=true -XX:MaxDirectMemorySize=300m -Xms4g -Xmx4g -XX:+UseG1GC"
+      JAVA_OPTS: "-DjettyXml=/config/jetty.xml -Djava.awt.headless=true -XX:MaxDirectMemorySize=300m -Xms4g -Xmx4g -XX:+UseG1GC"
     ports:
       - 9999:9999
+    volumes:
+      - ./config:/config
 
   postgres:
-    image: library/postgres:15.1
+    image: library/postgres:15.3
     environment:
       POSTGRES_USER: "postgres"
       POSTGRES_PASSWORD: "postgres"

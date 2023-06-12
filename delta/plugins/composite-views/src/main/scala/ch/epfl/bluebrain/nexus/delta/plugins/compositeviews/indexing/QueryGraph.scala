@@ -47,8 +47,8 @@ final class QueryGraph(client: BlazegraphClient, namespace: String, query: Sparq
     for {
       ntriples    <- client.query(Set(namespace), replaceId(query, element.id), SparqlNTriples)
       graphResult <- newGraph(ntriples.value, element.id)
-      _           <- Task.when(graphResult.isEmpty)(
-                       Task.delay(logger.warn(s"Querying blazegraph did not return any triples, '$element' will be dropped."))
+      _           <- Task.when(graphResult.isEmpty && logger.underlying.isDebugEnabled)(
+                       Task.delay(logger.debug(s"Querying blazegraph did not return any triples, '$element' will be dropped."))
                      )
     } yield graphResult.map(g => element.map(_.copy(graph = g))).getOrElse(element.dropped)
 

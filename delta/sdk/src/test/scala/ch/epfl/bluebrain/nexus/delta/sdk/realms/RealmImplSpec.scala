@@ -42,7 +42,7 @@ class RealmImplSpec
   val (githubOpenId, githubWk) = WellKnownGen.create(github.value)
   val (gitlabOpenId, gitlabWk) = WellKnownGen.create(gitlab.value)
 
-  val realmConfig = RealmsConfig(eventLogConfig, pagination, httpClientConfig)
+  val realmConfig = RealmsConfig(eventLogConfig, pagination)
 
   val resolveWellKnown = ioFromMap(
     Map(githubOpenId -> githubWk, gitlabOpenId -> gitlabWk),

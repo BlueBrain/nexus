@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.kernel
 
 import com.typesafe.scalalogging.Logger
-import monix.bio.IO
+import monix.bio.{IO, UIO}
 import pureconfig.ConfigReader
 import pureconfig.error.{CannotConvert, ConfigReaderFailures, ConvertFailure}
 import pureconfig.generic.semiauto._
@@ -36,18 +36,11 @@ object RetryStrategy {
     */
   def logError[E](logger: Logger, action: String): (E, RetryDetails) => IO[E, Unit] = {
     case (err, WillDelayAndRetry(nextDelay, retriesSoFar, _)) =>
-      IO.pure(logger.warn(s"""Error occurred while $action:
-                         |
-                         |$err
-                         |
-                         |Will retry in ${nextDelay.toMillis}ms ... (retries so far: $retriesSoFar)""".stripMargin))
+      val message = s"""Error while $action: retrying in ${nextDelay.toMillis}ms (retries so far: $retriesSoFar)"""
+      UIO.delay(logger.warn(message, err))
     case (err, GivingUp(totalRetries, _))                     =>
-      IO.pure(logger.warn(s"""Error occurred while $action:
-                         |
-                         |$err
-                         |
-                         |Giving up ... (total retries: $totalRetries)""".stripMargin))
-
+      val message = s"""Error while $action, giving up (total retries: $totalRetries)"""
+      UIO.delay(logger.error(message, err))
   }
 
   /**
