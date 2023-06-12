@@ -4,7 +4,8 @@ import akka.http.scaladsl.model.headers.{Accept, Location}
 import akka.http.scaladsl.model.{MediaRanges, MediaTypes, StatusCodes}
 import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers
 import akka.util.ByteString
-import ch.epfl.bluebrain.nexus.testkit.{CirceEq, EitherValuable}
+import ch.epfl.bluebrain.nexus.testkit.CirceEq
+import ch.epfl.bluebrain.nexus.testkit.archive.ArchiveHelpers
 import ch.epfl.bluebrain.nexus.tests.HttpClient._
 import ch.epfl.bluebrain.nexus.tests.Identity.archives.Tweety
 import ch.epfl.bluebrain.nexus.tests.Identity.testRealm
@@ -12,16 +13,10 @@ import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Projects, Resources}
 import ch.epfl.bluebrain.nexus.tests.{BaseSpec, Identity}
 import io.circe.Json
-import io.circe.parser._
-import monix.execution.Scheduler.Implicits.global
-import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
 
-import java.io.ByteArrayInputStream
-import java.nio.file.{Path, Paths}
-import java.security.MessageDigest
-import scala.annotation.tailrec
+import java.nio.file.Paths
 
-class ArchiveSpec extends BaseSpec with CirceEq with EitherValuable {
+class ArchiveSpec extends BaseSpec with ArchiveHelpers with CirceEq {
 
   private val orgId   = genId()
   private val projId  = genId()
@@ -69,25 +64,6 @@ class ArchiveSpec extends BaseSpec with CirceEq with EitherValuable {
 
   private val nexusLogoDigest =
     "edd70eff895cde1e36eaedd22ed8e9c870bb04155d05d275f970f4f255488e993a32a7c914ee195f6893d43b8be4e0b00db0a6d545a8462491eae788f664ea6b"
-
-  private type PathAndContent = (Path, ByteString)
-
-  @tailrec
-  private def readEntries(tar: TarArchiveInputStream, entries: List[PathAndContent] = Nil): List[PathAndContent] = {
-    val entry = tar.getNextTarEntry
-    if (entry == null) entries
-    else {
-      val data = Array.ofDim[Byte](entry.getSize.toInt)
-      tar.read(data)
-      readEntries(tar, (Paths.get(entry.getName) -> ByteString(data)) :: entries)
-    }
-  }
-
-  def digest(byteString: ByteString): String = {
-    val digest = MessageDigest.getInstance("SHA-512")
-    digest.update(byteString.asByteBuffer)
-    digest.digest().map("%02x".format(_)).mkString
-  }
 
   "Setup" should {
 
@@ -218,21 +194,37 @@ class ArchiveSpec extends BaseSpec with CirceEq with EitherValuable {
       }
     }
 
-    "succeed returning binary" in {
+    "succeed returning tar" in {
       val prefix = "https%3A%2F%2Fdev.nexus.test.com%2Fsimplified-resource%2F"
       deltaClient.get[ByteString](s"/archives/$fullId/test-resource:archive", Tweety, acceptAll) {
         (byteString, response) =>
           contentType(response) shouldEqual MediaTypes.`application/x-tar`.toContentType
           response.status shouldEqual StatusCodes.OK
 
-          val bytes  = new ByteArrayInputStream(byteString.toArray)
-          val tar    = new TarArchiveInputStream(bytes)
-          val unpack = readEntries(tar).map { case (path, content) => (path.toString, content) }.toMap
+          val result = fromTar(byteString)
 
-          val actualContent1 =
-            parse(unpack.get(s"$fullId/compacted/${prefix}1%3Frev%3D1.json").value.utf8String).rightValue
-          val actualContent2 = parse(unpack.get(s"$fullId2/compacted/${prefix}2.json").value.utf8String).rightValue
-          val actualDigest3  = digest(unpack.get("/some/other/nexus-logo.png").value)
+          val actualContent1 = result.entryAsJson(s"$fullId/compacted/${prefix}1%3Frev%3D1.json")
+          val actualContent2 = result.entryAsJson(s"$fullId2/compacted/${prefix}2.json")
+          val actualDigest3  = result.entryDigest("/some/other/nexus-logo.png")
+
+          filterMetadataKeys(actualContent1) should equalIgnoreArrayOrder(payloadResponse1)
+          filterMetadataKeys(actualContent2) should equalIgnoreArrayOrder(payloadResponse2)
+          actualDigest3 shouldEqual nexusLogoDigest
+      }
+    }
+
+    "succeed returning zip" in {
+      val prefix = "https%3A%2F%2Fdev.nexus.test.com%2Fsimplified-resource%2F"
+      deltaClient.get[ByteString](s"/archives/$fullId/test-resource:archive", Tweety, acceptZip) {
+        (byteString, response) =>
+          contentType(response) shouldEqual MediaTypes.`application/zip`.toContentType
+          response.status shouldEqual StatusCodes.OK
+
+          val result = fromZip(byteString)
+
+          val actualContent1 = result.entryAsJson(s"$fullId/compacted/${prefix}1%3Frev%3D1.json")
+          val actualContent2 = result.entryAsJson(s"$fullId2/compacted/${prefix}2.json")
+          val actualDigest3  = result.entryDigest("/some/other/nexus-logo.png")
 
           filterMetadataKeys(actualContent1) should equalIgnoreArrayOrder(payloadResponse1)
           filterMetadataKeys(actualContent2) should equalIgnoreArrayOrder(payloadResponse2)
@@ -255,32 +247,32 @@ class ArchiveSpec extends BaseSpec with CirceEq with EitherValuable {
       }
     }
 
-    "succeed using query param ignoreNotFound" in {
+    "succeed getting archive using query param ignoreNotFound" in {
       val payload = jsonContentOf("/kg/archives/archive-not-found.json")
 
+      def assertContent(archive: Map[String, ByteString]) = {
+        val actualContent1 = archive.entryAsJson(
+          s"$fullId/compacted/https%3A%2F%2Fdev.nexus.test.com%2Fsimplified-resource%2F1%3Frev%3D1.json"
+        )
+        filterMetadataKeys(actualContent1) should equalIgnoreArrayOrder(payloadResponse1)
+      }
+
       for {
-        _ <- deltaClient.put[ByteString](s"/archives/$fullId/test-resource:archive-not-found", payload, Tweety) {
-               (_, response) =>
-                 response.status shouldEqual StatusCodes.Created
-             }
-        _ <- deltaClient.get[ByteString](
-               s"/archives/$fullId/test-resource:archive-not-found?ignoreNotFound=true",
-               Tweety,
-               acceptAll
-             ) { (byteString, response) =>
-               contentType(response) shouldEqual MediaTypes.`application/x-tar`.toContentType
-               response.status shouldEqual StatusCodes.OK
-               val bytes          = new ByteArrayInputStream(byteString.toArray)
-               val tar            = new TarArchiveInputStream(bytes)
-               val unpack         = readEntries(tar).map { case (path, content) => (path.toString, content) }.toMap
-               val actualContent1 = parse(
-                 unpack
-                   .get(s"$fullId/compacted/https%3A%2F%2Fdev.nexus.test.com%2Fsimplified-resource%2F1%3Frev%3D1.json")
-                   .value
-                   .utf8String
-               ).rightValue
-               filterMetadataKeys(actualContent1) should equalIgnoreArrayOrder(payloadResponse1)
-             }
+        _           <- deltaClient.put[ByteString](s"/archives/$fullId/test-resource:archive-not-found", payload, Tweety) {
+                         (_, response) =>
+                           response.status shouldEqual StatusCodes.Created
+                       }
+        downloadLink = s"/archives/$fullId/test-resource:archive-not-found?ignoreNotFound=true"
+        _           <- deltaClient.get[ByteString](downloadLink, Tweety, acceptAll) { (byteString, response) =>
+                         contentType(response) shouldEqual MediaTypes.`application/x-tar`.toContentType
+                         response.status shouldEqual StatusCodes.OK
+                         assertContent(fromTar(byteString))
+                       }
+        _           <- deltaClient.get[ByteString](downloadLink, Tweety, acceptZip) { (byteString, response) =>
+                         contentType(response) shouldEqual MediaTypes.`application/zip`.toContentType
+                         response.status shouldEqual StatusCodes.OK
+                         assertContent(fromZip(byteString))
+                       }
       } yield succeed
     }
   }
