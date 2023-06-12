@@ -91,10 +91,15 @@ object GraphAnalyticsStream {
             UpdateByQuery(s.id, s.types)
           }
         case Resources.entityType =>
-          Task.fromEither(ResourceState.serializer.codec.decodeJson(json)).flatMap { s =>
-            JsonLdDocument.fromExpanded(s.expanded, findRelationships(project, xas, relationshipBatch)).map { d =>
-              Index(s.project, s.id, s.rev, s.types, s.createdAt, s.createdBy, s.updatedAt, s.updatedBy, d)
-            }
+          Task.fromEither(ResourceState.serializer.codec.decodeJson(json)).flatMap {
+            case s if s.deprecated =>
+              Task.pure(
+                Index.deprecated(s.project, s.id, s.rev, s.types, s.createdAt, s.createdBy, s.updatedAt, s.updatedBy)
+              )
+            case s                 =>
+              JsonLdDocument.fromExpanded(s.expanded, findRelationships(project, xas, relationshipBatch)).map { d =>
+                Index.active(s.project, s.id, s.rev, s.types, s.createdAt, s.createdBy, s.updatedAt, s.updatedBy, d)
+              }
           }
         case _                    => Task.pure(Noop)
       }

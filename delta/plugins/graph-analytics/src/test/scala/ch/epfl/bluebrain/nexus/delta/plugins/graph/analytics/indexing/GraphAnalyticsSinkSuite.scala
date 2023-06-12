@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing
 
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchClientSetup
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel
+import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.GraphAnalyticsResult.Index
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.JsonLdDocument
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.nxvFile
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -36,7 +37,7 @@ class GraphAnalyticsSinkSuite
 
   private val index = IndexLabel.unsafe("test_analytics")
 
-  private lazy val sink = new GraphAnalyticsSink(client, 2, 100.millis, index)
+  private lazy val sink = new GraphAnalyticsSink(client, 5, 100.millis, index)
 
   private val project = ProjectRef.unsafe("myorg", "myproject")
 
@@ -49,6 +50,11 @@ class GraphAnalyticsSinkSuite
   // All of them should remain unresolved
   private val resource2 = iri"http://localhost/resource2"
   private val expanded2 = loadExpanded("expanded/resource2.json")
+
+  // Deprecated resource
+  private val deprecatedResource      = iri"http://localhost/deprecated"
+  private val deprecatedResourceTypes =
+    Set(iri"http://schema.org/Dataset", iri"https://neuroshapes.org/NeuroMorphology")
 
   // Resource linked by 'resource1', resolved while indexing
   private val resource3 = iri"http://localhost/resource3"
@@ -90,33 +96,39 @@ class GraphAnalyticsSinkSuite
     SuccessElem(Resources.entityType, id, Some(project), Instant.EPOCH, Offset.start, result, 1)
 
   test("Push index results") {
-    def toIndex(id: Iri, io: UIO[ExpandedJsonLd]) = {
+    def indexActive(id: Iri, io: UIO[ExpandedJsonLd]) = {
       for {
         expanded <- io
         types    <- getTypes(expanded)
         doc      <- JsonLdDocument.fromExpanded(expanded, _ => findRelationships)
       } yield {
-        val result =
-          GraphAnalyticsResult.Index(project, id, 1, types, Instant.EPOCH, Anonymous, Instant.EPOCH, Anonymous, doc)
+        val result = Index.active(project, id, 1, types, Instant.EPOCH, Anonymous, Instant.EPOCH, Anonymous, doc)
         success(id, result)
       }
     }
 
+    def indexDeprecated(id: Iri, types: Set[Iri]) =
+      success(id, Index.deprecated(project, id, 1, types, Instant.EPOCH, Anonymous, Instant.EPOCH, Anonymous))
+
     for {
-      r1        <- toIndex(resource1, expanded1)
-      r2        <- toIndex(resource2, expanded2)
-      r3         = success(resource3, GraphAnalyticsResult.Noop)
-      chunk      = Chunk.seq(List(r1, r2, r3))
+      active1            <- indexActive(resource1, expanded1)
+      active2            <- indexActive(resource2, expanded2)
+      discarded           = success(resource3, GraphAnalyticsResult.Noop)
+      deprecated          = indexDeprecated(deprecatedResource, deprecatedResourceTypes)
+      chunk               = Chunk.seq(List(active1, active2, discarded, deprecated))
       // We expect no error
-      _         <- sink(chunk).assert(chunk.map(_.void))
-      // 2 documents should have been indexed correctly:
+      _                  <- sink(chunk).assert(chunk.map(_.void))
+      // 3 documents should have been indexed correctly:
       // - `resource1` with the relationship to `resource3` resolved
       // - `resource2` with no reference resolved
-      _         <- client.count(index.value).eventually(2L)
-      expected1 <- ioJsonContentOf("result/resource1.json")
-      expected2 <- ioJsonContentOf("result/resource2.json")
-      _         <- client.getSource[Json](index, resource1.toString).eventually(expected1)
-      _         <- client.getSource[Json](index, resource2.toString).eventually(expected2)
+      // - `deprecatedResource` with only metadata, resolution is skipped
+      _                  <- client.count(index.value).eventually(3L)
+      expected1          <- ioJsonContentOf("result/resource1.json")
+      expected2          <- ioJsonContentOf("result/resource2.json")
+      expectedDeprecated <- ioJsonContentOf("result/resource_deprecated.json")
+      _                  <- client.getSource[Json](index, resource1.toString).eventually(expected1)
+      _                  <- client.getSource[Json](index, resource2.toString).eventually(expected2)
+      _                  <- client.getSource[Json](index, deprecatedResource.toString).eventually(expectedDeprecated)
     } yield ()
 
   }
@@ -145,7 +157,7 @@ class GraphAnalyticsSinkSuite
       _         <- client.refresh(index)
       expected1 <- ioJsonContentOf("result/resource1_updated.json")
       expected2 <- ioJsonContentOf("result/resource2.json")
-      _         <- client.count(index.value).eventually(2L)
+      _         <- client.count(index.value).eventually(3L)
       _         <- client.getSource[Json](index, resource1.toString).eventually(expected1)
       _         <- client.getSource[Json](index, resource2.toString).eventually(expected2)
     } yield ()

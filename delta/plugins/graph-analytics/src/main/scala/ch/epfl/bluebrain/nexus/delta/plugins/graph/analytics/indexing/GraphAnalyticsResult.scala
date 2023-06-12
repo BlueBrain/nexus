@@ -7,7 +7,7 @@ import io.circe.{Encoder, Json}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import io.circe.syntax.EncoderOps
+import io.circe.syntax.{EncoderOps, KeyOps}
 
 import java.time.Instant
 
@@ -38,38 +38,63 @@ object GraphAnalyticsResult {
     * The value is indexed to Elasticsearch and an update by query action is required so that the type of this resource
     * is propagated to the resources pointing to it.
     *
-    * The other fields are metadata and match the same definition as in [[ResourceState]].
-    *
-    * @see
-    *   [[ResouceState]]
+    * The other fields are resource metadata.
     */
-  final case class Index(
+  final case class Index private (
       project: ProjectRef,
       id: Iri,
       rev: Int,
+      deprecated: Boolean,
       types: Set[Iri],
       createdAt: Instant,
       createdBy: Subject,
       updatedAt: Instant,
       updatedBy: Subject,
-      value: JsonLdDocument
+      value: Option[JsonLdDocument]
   ) extends GraphAnalyticsResult
 
   object Index {
-    implicit val encoder: Encoder[Index] = Encoder.instance { g =>
+
+    def active(
+        project: ProjectRef,
+        id: Iri,
+        rev: Int,
+        types: Set[Iri],
+        createdAt: Instant,
+        createdBy: Subject,
+        updatedAt: Instant,
+        updatedBy: Subject,
+        value: JsonLdDocument
+    ) =
+      new Index(project, id, rev, false, types, createdAt, createdBy, updatedAt, updatedBy, Some(value))
+
+    def deprecated(
+        project: ProjectRef,
+        id: Iri,
+        rev: Int,
+        types: Set[Iri],
+        createdAt: Instant,
+        createdBy: Subject,
+        updatedAt: Instant,
+        updatedBy: Subject
+    ) =
+      new Index(project, id, rev, true, types, createdAt, createdBy, updatedAt, updatedBy, None)
+
+    implicit val encoder: Encoder[Index] = Encoder.instance { i =>
       import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
       Json
         .obj(
-          keywords.id  -> g.id.asJson,
-          "_project"   -> g.project.asJson,
-          "_rev"       -> g.rev.asJson,
-          "_createdAt" -> g.createdAt.asJson,
-          "_createdBy" -> g.createdBy.asJson,
-          "_updatedAt" -> g.updatedAt.asJson,
-          "_updatedBy" -> g.updatedBy.asJson
+          keywords.id   := i.id,
+          "_project"    := i.project,
+          "_rev"        := i.rev,
+          "_deprecated" := i.deprecated,
+          "_createdAt"  := i.createdAt,
+          "_createdBy"  := i.createdBy,
+          "_updatedAt"  := i.updatedAt,
+          "_updatedBy"  := i.updatedBy
         )
-        .addIfNonEmpty(keywords.tpe, g.types)
-        .deepMerge(g.value.asJson)
+        .addIfNonEmpty(keywords.tpe, i.types)
+        .deepMerge(i.value.map(_.asJson).getOrElse(Json.obj()))
     }
   }
 
