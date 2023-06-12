@@ -1,22 +1,25 @@
 # Plugins
-A resource returned by the Nexus Delta API is usually a JSON-LD document. By default, Nexus Fusion displays JSON-LD in a 
-code editor. If the user has edit access to the document, they can update the resource in the editor.
 
-Resources can represent a wide variety of scientific artifacts. It can be a neuron morphology, neuron electrophysiology, 
-a set of files to download, a set of images and so on. So a user may want to extend Nexus Fusion to allow them to 
-visualize or otherwise extend the presentation layer with logic specific to their resource type. Plugins are a way to 
+A resource returned by the Nexus Delta API is usually a JSON-LD document. By default, Nexus Fusion displays JSON-LD in a
+code editor. If the user has edit right to the document, they can update the resource in the editor.
+
+Resources can represent a wide variety of scientific artifacts. It can be a neuron morphology, neuron electrophysiology,
+a set of files to download, a set of images and so on. So a user may want to extend Nexus Fusion to allow them to
+visualize or otherwise extend the presentation layer with logic specific to their resource type. Plugins are a way to
 accomplish this.
 
 ## What are Plugins
-A core component of Studio is the ability for data curators to develop a domain-specific presentation layer for their 
-resources in Nexus Fusion. This allows data consumers to visualize their datasets using graphs, charts, or 3D 
+
+A core component of Studio is the ability for data curators to develop a domain-specific presentation layer for their
+resources in Nexus Fusion. This allows data consumers to visualize their datasets using graphs, charts, or 3D
 visualizations, and to present the relevant metadata to the user.
 
-Plugins are developed using Javascript and are loaded into the Nexus Fusion instance from the 
+Plugins are developed using Javascript and are loaded into the Nexus Fusion instance from the
 @link:[/plugins](https://github.com/BlueBrain/nexus-web/tree/main/plugins){ open=new } folder.
 
 ## Plugin examples
-Below you can find the screenshots from some plugins that can be integrated into Nexus Fusion. They extend the Nexus 
+
+Below you can find the screenshots from some plugins that can be integrated into Nexus Fusion. They extend the Nexus
 Fusion presentation layer.
 
 Neuron Electro physiology viewer
@@ -67,11 +70,11 @@ Plugins should follow this folder naming convention:
 
 ## Plugin Manifest
 
-The plugin manifest should be available at the same remote endpoint as the plugins, this is so that Nexus Fusion can find 
+The plugin manifest should be available at the same remote endpoint as the plugins, this is so that Nexus Fusion can find
 the plugins and apply them dynamically.
 
-The plugin manifest is a JSON object with keys that correspond to the plugin name with a value that corresponds to a 
-descriptive payload of where to find the manifest, as well as some information about it's development. It's similar to 
+The plugin manifest is a JSON object with keys that correspond to the plugin name with a value that corresponds to a
+descriptive payload of where to find the manifest, as well as some information about it's development. It's similar to
 a package.json file.
 
 ```json
@@ -91,7 +94,7 @@ a package.json file.
 
 Plugin Config
 
-The plugin config should be available as an object under the `mapping` key of the plugin manifest. This tells Nexus 
+The plugin config should be available as an object under the `mapping` key of the plugin manifest. This tells Nexus
 Fusion when a plugin should be displayed, by matching a resource to a shape.
 
 ### Matching all resources
@@ -115,7 +118,7 @@ The following will show `nexus-plugin-test` for _every_ resource in Nexus Fusion
 
 ### Matching a resource with a specific type and shape
 
-The following will show `nexus-plugin-test` for any resource of type `File` but only if they have a 
+The following will show `nexus-plugin-test` for any resource of type `File` but only if they have a
 `distribution.encodingFormat` property that's `application/swc`
 
 ```json
@@ -144,9 +147,9 @@ Default plugins are part of Fusion.
 
 ### Advanced View Plugin
 
-The Advanced View Plugin displays JSON-LD in a code editor. If the user has edit access to the document, they can update the 
-resource in the editor. It also has few additional tabs. History, Links and Graph. History tab displays the edit 
-history of the resource. A user can explore the graph view of the resource in Graph tab. They can also view the 
+The Advanced View Plugin displays JSON-LD in a code editor. If the user has edit access to the document, they can update the
+resource in the editor. It also has few additional tabs. History, Links and Graph. History tab displays the edit
+history of the resource. A user can explore the graph view of the resource in Graph tab. They can also view the
 incoming and outgoing links of the resource in Links tab.
 
 ### Jira
