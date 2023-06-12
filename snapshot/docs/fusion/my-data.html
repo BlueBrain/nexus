@@ -20,7 +20,7 @@
 
 <meta name="description" content="docs">
 <link rel="shortcut icon" href="../.././assets/img/favicon-32x32.png">
-<title>Add your own App · Blue Brain Nexus</title>
+<title>User data · Blue Brain Nexus</title>
 <link rel="stylesheet" href="../../assets/stylesheets/application.451f80e5.css">
 <link rel="stylesheet" href="../../assets/stylesheets/application-palette.22915126.css">
 <meta name="theme-color" content="#03a9f4" />
@@ -61,7 +61,7 @@ data-md-color-accent="cyan"
 Blue Brain Nexus
 </span>
 <span class="md-header-nav__topic">
-Add your own App
+User data
 </span>
 </div>
 </div>
@@ -175,12 +175,18 @@ BlueBrain/nexus
   <li><a href="../../docs/fusion/index.html" class="page">Nexus Fusion</a>
   <ul>
     <li><a href="../../docs/fusion/architecture.html" class="page">Architecture</a></li>
+    <li><a href="../../docs/fusion/organizations.html" class="page">Organizations</a></li>
+    <li><a href="../../docs/fusion/projects.html" class="page">Projects</a>
+    <ul>
+      <li><a href="../../docs/fusion/project.html" class="page">Project</a></li>
+    </ul></li>
+    <li><a href="../../docs/fusion/search.html" class="page">Global Search Types</a></li>
+    <li><a href="../../docs/fusion/studios.html" class="page">Studios</a>
+    <ul>
+      <li><a href="../../docs/fusion/studio.html" class="page">Studio</a></li>
+    </ul></li>
+    <li><a href="../../docs/fusion/my-data.html" class="active page">User data</a></li>
     <li><a href="../../docs/fusion/plugins.html" class="page">Plugins</a></li>
-    <li><a href="../../docs/fusion/studio.html" class="page">Studios</a></li>
-    <li><a href="../../docs/fusion/search.html" class="page">Search</a></li>
-    <li><a href="../../docs/fusion/admin.html" class="page">Admin</a></li>
-    <li><a href="../../docs/fusion/workflow.html" class="page">Workflow (alpha)</a></li>
-    <li><a href="../../docs/fusion/add-your-own-app.html" class="active page">Add your own App</a></li>
   </ul></li>
   <li><a href="../../docs/forge.html" class="page">Nexus Forge</a></li>
   <li><a href="../../docs/delta/index.html" class="page">Nexus Delta</a>
@@ -233,13 +239,11 @@ BlueBrain/nexus
 <nav class="md-nav md-nav--secondary">
 <label class="md-nav__title" for="__toc">Table of contents</label>
 <ul>
-  <li><a href="../../docs/fusion/add-your-own-app.html#add-your-own-app" class="header">Add your own App</a>
+  <li><a href="../../docs/fusion/my-data.html#user-data" class="header">User data</a>
   <ul>
-    <li><a href="../../docs/fusion/add-your-own-app.html#subapps" class="header">SubApps</a>
+    <li><a href="../../docs/fusion/my-data.html#data-panel" class="header">Data Panel</a>
     <ul>
-      <li><a href="../../docs/fusion/add-your-own-app.html#development" class="header">Development</a></li>
-      <li><a href="../../docs/fusion/add-your-own-app.html#external-subapps" class="header">External SubApps</a></li>
-      <li><a href="../../docs/fusion/add-your-own-app.html#how-to-disable-subapps" class="header">How to disable SubApps</a></li>
+      <li><a href="../../docs/fusion/my-data.html#data-panel-action-bar" class="header">Data Panel action bar</a></li>
     </ul></li>
   </ul></li>
 </ul>
@@ -262,13 +266,11 @@ BlueBrain/nexus
 <nav class="md-nav md-nav--secondary">
 <label class="md-nav__title" for="__toc">Table of contents</label>
 <ul>
-  <li><a href="../../docs/fusion/add-your-own-app.html#add-your-own-app" class="header">Add your own App</a>
+  <li><a href="../../docs/fusion/my-data.html#user-data" class="header">User data</a>
   <ul>
-    <li><a href="../../docs/fusion/add-your-own-app.html#subapps" class="header">SubApps</a>
+    <li><a href="../../docs/fusion/my-data.html#data-panel" class="header">Data Panel</a>
     <ul>
-      <li><a href="../../docs/fusion/add-your-own-app.html#development" class="header">Development</a></li>
-      <li><a href="../../docs/fusion/add-your-own-app.html#external-subapps" class="header">External SubApps</a></li>
-      <li><a href="../../docs/fusion/add-your-own-app.html#how-to-disable-subapps" class="header">How to disable SubApps</a></li>
+      <li><a href="../../docs/fusion/my-data.html#data-panel-action-bar" class="header">Data Panel action bar</a></li>
     </ul></li>
   </ul></li>
 </ul>
@@ -287,85 +289,20 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 </p>
 </div>
 <div class="md-content__searchable">
-<h1><a href="#add-your-own-app" name="add-your-own-app" class="anchor"><span class="anchor-link"></span></a>Add your own App</h1>
-<h2><a href="#subapps" name="subapps" class="anchor"><span class="anchor-link"></span></a>SubApps</h2>
-<p>You can add your own SubApp by cloning the <a href="https://github.com/BlueBrain/nexus-web" title="Nexus Fusion repo" target="_blank" rel="noopener noreferrer">Nexus Fusion repo</a> and adding your React app to the src.</p>
-<p>You must build your application from source, in order to use your SubApp. Starting from the version 1.4, there is no way to add a SubApp using the provided Dockerhub distribution.</p>
-<h3><a href="#development" name="development" class="anchor"><span class="anchor-link"></span></a>Development</h3>
-<p>SubApps are essentially a configuration hosting a routing list of React components. These React components will have access to the entire app <code>Redux</code> store, the <code>Nexus Client</code>, as well as <code>ConnectedRouter</code> Providers for use in React hooks and consumers.</p>
-<p>Your SubApp should be a function that returns an object equating to this type signature:</p>
-<pre class="prettyprint"><code class="language-typescript">{
-  title: string; // name of the app, used in the Side Menu and on the Home page
-  namespace: string; // subpath, used in the URL
-  routes: RouteProps[]; // a list of routes that will come after the subpath
-  subAppType: string; // &#39;internal&#39; or &#39;external&#39;
-  // optional configuration:
-  icon?: string; // an icon used in the Side Menu
-  requireLogin?: boolean; // specifies whether the subapp is visible for logged-in users only
-  description?: string; // will show up as the subapp&#39;s description on the Home page
-  version?: string; // will show up next to the subapp&#39;s title, for example, &#39;alpha&#39; or &#39;beta&#39;
-  url?: string; // url for external subapps, to be used in the Side Menu
-};
-</code></pre>
-<p>Here&rsquo;s an example that might add a Calendar with events</p>
-<pre class="prettyprint"><code class="language-typescript"><br/>const title = &#39;Calendar&#39;;
-const namespace = &#39;calendar&#39;;
-const icon = require(&#39;../../shared/images/calendar.svg&#39;);
-const subAppType = &#39;internal&#39;;
-const requireLogin = false;
-const description =
-  &#39;Plan your activities&#39;;
-
-routes: [
-      {
-        path: &#39;/&#39;,
-        exact: true,
-        component: CalendarView,
-      },
-      {
-        path: &#39;/:event/:date&#39;,
-        exact: true,
-        component: EventView,
-      },
-
-</code></pre>
-<p>Then you can add your SubApp to the <a href="https://github.com/BlueBrain/nexus-web/blob/main/src/subapps/index.ts" title="`src/subapps/index.ts`" target="_blank" rel="noopener noreferrer"><code>src/subapps/index.ts</code></a> barrell file, which hosts the SubApp set consumed by Nexus Fusion.</p>
-<pre class="prettyprint"><code class="language-typescript">const SubApps: Map&lt;string, SubApp&gt; = new Map();
-
-SubApps.set(&quot;Admin&quot;, Admin);
-SubApps.set(&quot;StudioLegacy&quot;, StudioLegacy);
-SubApps.set(&quot;Calendar&quot;, MyCalendarSubapp);
-
-export default SubApps;
-</code></pre>
-<h3><a href="#external-subapps" name="external-subapps" class="anchor"><span class="anchor-link"></span></a>External SubApps</h3>
-<p>You can list other applications that are not a part of Nexus Fusion in the Side Menu for easy access by providing a path to <code>manifest.json</code> file as ENV variable <code>SUB_APPS_MANIFEST_PATH</code>. Manifest should contain a SubApp&rsquo;s title and an url like the following example:</p>
-<pre class="prettyprint"><code class="language-typescript">{
-  &quot;subapps&quot;: [
-    {
-      &quot;url&quot;: &quot;https://views-of-lake-Geneva.ch&quot;,
-      &quot;title&quot;: &quot;Views&quot;
-    },
-    {
-      &quot;url&quot;: &quot;https://data-viz-project.com&quot;,
-      &quot;title&quot;: &quot;Viz&quot;
-    }
-  ]
-}
-</code></pre>
-<h3><a href="#how-to-disable-subapps" name="how-to-disable-subapps" class="anchor"><span class="anchor-link"></span></a>How to disable SubApps</h3>
-<p>To disable a SubApp you are not planning to use, include its title in the <code>manifest.json</code> file:</p>
-<pre class="prettyprint"><code class="language-typescript">{
-  &quot;disabled&quot;: [
-    {
-      &quot;title&quot;: &quot;StudioLegacy&quot;,
-    }
-  ]
-}
-</code></pre>
+<h1><a href="#user-data" name="user-data" class="anchor"><span class="anchor-link"></span></a>User data</h1>
+<p>The My Data page within the Nexus Fusion platform serves as a central repository for all datasets that have been created or updated by the logged in user. This feature enables users to easily access and manage the data that they are interested in, without the need to navigate through irrelevant data.</p>
+<p><img src="assets/fusion-my-data-page.png" alt="Create organization" /></p>
+<h1><a href="#data-panel" name="data-panel" class="anchor"><span class="anchor-link"></span></a>Data Panel</h1>
+<p>Data Panel is a central location where users can gather and explore data using a variety of external tools. Through this feature, users can select different types of data from various locations within the application, including the My Data page, Global search pages, and Studios page.</p>
+<p>By aggregating all relevant data into a single location, the Data panel streamlines the data exploration and analysis process by providing the ability to select specific file extensions for download allows users to easily export data for use in other applications or platforms.</p>
+<p><img src="assets/fusion-data-panel.png" alt="Data Panel" /></p>
+<h3><a href="#data-panel-action-bar" name="data-panel-action-bar" class="anchor"><span class="anchor-link"></span></a>Data Panel action bar</h3>
+<p>The Data Panel action bar offers users the ability to select specific file type extensions for download, streamlining the process of exporting data for use in other applications or platforms.</p>
+<p>Moreover, the Data Panel action bar provides users with valuable data insights, such as the number of resources selected and the size of the data to be downloaded.</p>
+<p><img src="assets/fusion-data-panel-action-bar.png" alt="Data Panel" /></p>
 </div>
 <div>
-<a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/fusion/add-your-own-app.md" title="Edit this page" class="md-source-file md-edit">
+<a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/fusion/my-data.md" title="Edit this page" class="md-source-file md-edit">
 Edit this page
 </a>
 </div>
@@ -381,7 +318,7 @@ Snapshot
 <footer class="md-footer">
 <div class="md-footer-nav">
 <nav class="md-footer-nav__inner md-grid">
-<a href="../../docs/fusion/workflow.html" title="Workflow (alpha)" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+<a href="../../docs/fusion/studio.html" title="Studio" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
 <div class="md-flex__cell md-flex__cell--shrink">
 <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
 </div>
@@ -390,17 +327,17 @@ Snapshot
 <span class="md-footer-nav__direction">
 Previous
 </span>
-Workflow (alpha)
+Studio
 </span>
 </div>
 </a>
-<a href="../../docs/forge.html" title="Nexus Forge" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../docs/fusion/plugins.html" title="Plugins" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-Nexus Forge
+Plugins
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">

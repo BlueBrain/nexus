@@ -175,12 +175,18 @@ BlueBrain/nexus
   <li><a href="../../../docs/fusion/index.html" class="page">Nexus Fusion</a>
   <ul>
     <li><a href="../../../docs/fusion/architecture.html" class="page">Architecture</a></li>
+    <li><a href="../../../docs/fusion/organizations.html" class="page">Organizations</a></li>
+    <li><a href="../../../docs/fusion/projects.html" class="page">Projects</a>
+    <ul>
+      <li><a href="../../../docs/fusion/project.html" class="page">Project</a></li>
+    </ul></li>
+    <li><a href="../../../docs/fusion/search.html" class="page">Global Search Types</a></li>
+    <li><a href="../../../docs/fusion/studios.html" class="page">Studios</a>
+    <ul>
+      <li><a href="../../../docs/fusion/studio.html" class="page">Studio</a></li>
+    </ul></li>
+    <li><a href="../../../docs/fusion/my-data.html" class="page">User data</a></li>
     <li><a href="../../../docs/fusion/plugins.html" class="page">Plugins</a></li>
-    <li><a href="../../../docs/fusion/studio.html" class="page">Studios</a></li>
-    <li><a href="../../../docs/fusion/search.html" class="page">Search</a></li>
-    <li><a href="../../../docs/fusion/admin.html" class="page">Admin</a></li>
-    <li><a href="../../../docs/fusion/workflow.html" class="page">Workflow (alpha)</a></li>
-    <li><a href="../../../docs/fusion/add-your-own-app.html" class="page">Add your own App</a></li>
   </ul></li>
   <li><a href="../../../docs/forge.html" class="page">Nexus Forge</a></li>
   <li><a href="../../../docs/delta/index.html" class="page">Nexus Delta</a>
@@ -795,14 +801,13 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <pre><code>GET /v1/resources/{org_label}/{project_label}?from={from}
                                              &amp;size={size}
                                              &amp;locate={locate}
-                                             &amp;id={id}
                                              &amp;deprecated={deprecated}
-                                             &amp;locate={locate}
-                                             &amp;id={id}
                                              &amp;rev={rev}
                                              &amp;type={type}
                                              &amp;createdBy={createdBy}
+                                             &amp;createdAt={createdAt}
                                              &amp;updatedBy={updatedBy}
+                                             &amp;updatedAt={updatedAt}
                                              &amp;schema={schema}
                                              &amp;q={search}
                                              &amp;sort={sort}
@@ -812,12 +817,13 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <pre><code>GET /v1/resources/{org_label}?from={from}
                              &amp;size={size}
                              &amp;locate={locate}
-                             &amp;id={id}
                              &amp;deprecated={deprecated}
                              &amp;rev={rev}
                              &amp;type={type}
                              &amp;createdBy={createdBy}
+                             &amp;createdAt={createdAt}
                              &amp;updatedBy={updatedBy}
+                             &amp;updatedAt={updatedAt}
                              &amp;schema={schema}
                              &amp;q={search}
                              &amp;sort={sort}
@@ -836,7 +842,19 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
                  &amp;q={search}
                  &amp;sort={sort}
 </code></pre>
-<h3><a href="#parameter-description" name="parameter-description" class="anchor"><span class="anchor-link"></span></a>Parameter description</h3>
+<h3><a href="#parameter-description" name="parameter-description" class="anchor"><span class="anchor-link"></span></a>Parameter description</h3><div class="callout note tip"><div class="callout-title">How to use time ranges</div>
+<p>A time range parameter allows to filter resources by their creation date or their last update date.</p>
+<p>The provided dates can be:</p>
+<ul>
+  <li>A date following the format <code>YYYY-MM-DDTHH:MM:SSZ</code></li>
+  <li>A wild card <code>*</code> to express no restriction on a limit</li>
+</ul>
+<p>Examples of ranges:</p>
+<ul>
+  <li><code>2023-06-08T14:00:00Z..*</code>: Matchers resources created <em>after</em> the June 8, 2023 at 14.00</li>
+  <li><code>*..2023-06-08T14:00:00Z</code>: Matchers resources created <em>before</em> the June 8, 2023 at 14.00</li>
+  <li><code>2023-04-01T00:00:00Z..2023-06-08T14:00:00Z</code>: Matchers resources created <em>between</em> the April 1st at 00.00 and June 8, 2023 at 14.00</li>
+</ul></div>
 <ul>
   <li><code>{from}</code>: Number - is the parameter that describes the offset for the current query; defaults to <code>0</code></li>
   <li><code>{size}</code>: Number - is the parameter that limits the number of results; defaults to <code>20</code></li>
@@ -845,7 +863,9 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   <li><code>{rev}</code>: Number - can be used to filter the resulting resources based on their revision value</li>
   <li><code>{type}</code>: Iri - can be used to filter the resulting resources based on their <code>@type</code> value. This parameter can appear  multiple times, filtering further the <code>@type</code> value.</li>
   <li><code>{createdBy}</code>: Iri - can be used to filter the resulting resources based on their creator</li>
+  <li><code>{createdAt}</code>: Time range - can be used to filter the resulting resources based on their creation date</li>
   <li><code>{updatedBy}</code>: Iri - can be used to filter the resulting resources based on the person which performed the last update</li>
+  <li><code>{updatedAt}</code>: Time range - can be used to filter the resulting resources based when was performed the last update</li>
   <li><code>{schema}</code>: Iri - can be used to filter the resulting resources based on the conformant schema</li>
   <li><code>{search}</code>: String - can be provided to select only the resources in the collection that have attribute values  matching (containing) the provided string</li>
   <li><code>{sort}</code>: String - can be used to sort resources based on a payloads&rsquo; field. This parameter can appear multiple times  to enable sorting by multiple fields. The default is done by <code>_createdBy</code> and <code>@id</code>.</li>

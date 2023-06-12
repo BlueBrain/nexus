@@ -175,12 +175,18 @@ BlueBrain/nexus
   <li><a href="../../docs/fusion/index.html" class="page">Nexus Fusion</a>
   <ul>
     <li><a href="../../docs/fusion/architecture.html" class="page">Architecture</a></li>
+    <li><a href="../../docs/fusion/organizations.html" class="page">Organizations</a></li>
+    <li><a href="../../docs/fusion/projects.html" class="page">Projects</a>
+    <ul>
+      <li><a href="../../docs/fusion/project.html" class="page">Project</a></li>
+    </ul></li>
+    <li><a href="../../docs/fusion/search.html" class="page">Global Search Types</a></li>
+    <li><a href="../../docs/fusion/studios.html" class="page">Studios</a>
+    <ul>
+      <li><a href="../../docs/fusion/studio.html" class="page">Studio</a></li>
+    </ul></li>
+    <li><a href="../../docs/fusion/my-data.html" class="page">User data</a></li>
     <li><a href="../../docs/fusion/plugins.html" class="page">Plugins</a></li>
-    <li><a href="../../docs/fusion/studio.html" class="page">Studios</a></li>
-    <li><a href="../../docs/fusion/search.html" class="page">Search</a></li>
-    <li><a href="../../docs/fusion/admin.html" class="page">Admin</a></li>
-    <li><a href="../../docs/fusion/workflow.html" class="page">Workflow (alpha)</a></li>
-    <li><a href="../../docs/fusion/add-your-own-app.html" class="page">Add your own App</a></li>
   </ul></li>
   <li><a href="../../docs/forge.html" class="page">Nexus Forge</a></li>
   <li><a href="../../docs/delta/index.html" class="page">Nexus Delta</a>
@@ -247,6 +253,10 @@ BlueBrain/nexus
         <li><a href="../../docs/releases/v1.8-release-notes.html#only-trigger-reindexing-when-indexing-is-impacted" class="header">Only trigger reindexing when indexing is impacted</a></li>
         <li><a href="../../docs/releases/v1.8-release-notes.html#indexing-id-for-custom-elasticsearch-views" class="header">Indexing @id for custom Elasticsearch views</a></li>
       </ul></li>
+      <li><a href="../../docs/releases/v1.8-release-notes.html#projects" class="header">Projects</a>
+      <ul>
+        <li><a href="../../docs/releases/v1.8-release-notes.html#project-deletion" class="header">Project deletion</a></li>
+      </ul></li>
       <li><a href="../../docs/releases/v1.8-release-notes.html#resources-and-schemas" class="header">Resources and schemas</a>
       <ul>
         <li><a href="../../docs/releases/v1.8-release-notes.html#search-by-id-and-" class="header">Search by @id and _self</a></li>
@@ -293,6 +303,10 @@ BlueBrain/nexus
         <li><a href="../../docs/releases/v1.8-release-notes.html#only-trigger-reindexing-when-indexing-is-impacted" class="header">Only trigger reindexing when indexing is impacted</a></li>
         <li><a href="../../docs/releases/v1.8-release-notes.html#indexing-id-for-custom-elasticsearch-views" class="header">Indexing @id for custom Elasticsearch views</a></li>
       </ul></li>
+      <li><a href="../../docs/releases/v1.8-release-notes.html#projects" class="header">Projects</a>
+      <ul>
+        <li><a href="../../docs/releases/v1.8-release-notes.html#project-deletion" class="header">Project deletion</a></li>
+      </ul></li>
       <li><a href="../../docs/releases/v1.8-release-notes.html#resources-and-schemas" class="header">Resources and schemas</a>
       <ul>
         <li><a href="../../docs/releases/v1.8-release-notes.html#search-by-id-and-" class="header">Search by @id and _self</a></li>
@@ -328,7 +342,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   <p>The sourcing and indexing engine have been completely reworked to improve flexibility, scalability and performance.</p>
 </blockquote>
 <p>For the detailed list of updates in this release, see the <a href="https://github.com/BlueBrain/nexus/issues?&q=is%3Aissue+is%3Aclosed+created%3A2022-03-15..2023-02-21+" title="list of addressed issues" target="_blank" rel="noopener noreferrer">list of addressed issues</a> since v1.7. //TODO update date of issues</p>
-<p>If you are currently using Nexus Delta from 1.7.x, please visit the //TODO add migration page for the necessary steps to successfully upgrade.</p>
+<p>If you are currently using Nexus Delta from 1.7.x, please visit the <a href="v1.7-to-v1.8-migration.html">migration instructions</a> for the necessary steps to successfully upgrade.</p>
 <h2><a href="#nexus-delta" name="nexus-delta" class="anchor"><span class="anchor-link"></span></a>Nexus Delta</h2>
 <p>The goal of this release is to improve performance, flexibility, observability and developer productivity. This is an incremental software release that also brings several improvements.</p>
 <p>The API is mostly backwards compatible to v1.7 with two breaking changes due to changes in the sourcing and indexing engine:</p>
@@ -344,8 +358,10 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   <li>The tooling that allow to run it in a daily basis can be insufficient, time-consuming to properly set it up,</li>
   <li>The data modeling it imposes did not allow to accommodate the growing variety of present and future usages of Nexus,</li>
   <li>The eventual consistency was another hurdle for the Nexus usages</li>
-  <li>The <a href="https://doc.akka.io/docs/akka/current/typed/index-persistence.html" title="akka-persistence">akka-persistence</a> library we relied on which is part of the akka stack changed <a href="https://www.lightbend.com/blog/why-we-are-changing-the-license-for-akka" title="its license in September 2022">its license in September 2022</a>, so we could not get new updates from it,</li>
-  <li>This library also did not fit anymore our needs in terms of indexing to external systems as performance is degrading over time but also for data deletion.</li>
+  <li>
+  <p>The <a href="https://doc.akka.io/docs/akka/current/typed/index-persistence.html" title="akka-persistence">akka-persistence</a> library we relied on which is part of the akka stack changed <a href="https://www.lightbend.com/blog/why-we-are-changing-the-license-for-akka" title="its license in September 2022">its license in September 2022</a>, so we could not get new updates from it,</p></li>
+  <li>
+  <p>This library also did not fit anymore our needs in terms of indexing to external systems as performance is degrading over time  but also for data deletion.</p></li>
 </ul>
 <p>So this pushed us to look for alternatives that would better address our needs.</p>
 <p><a href="https://www.postgresql.org/" title="PostgreSQL" target="_blank" rel="noopener noreferrer">PostgreSQL</a> is a database system with a strong reputation for performance, reliability and flexibility. It allows to solve the pain points we were facing with Cassandra:</p>
@@ -378,11 +394,16 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <h4><a href="#better-reporting-of-indexing-errors" name="better-reporting-of-indexing-errors" class="anchor"><span class="anchor-link"></span></a>Better reporting of indexing errors</h4>
 <p>Indexing errors for the different views are now available as Server Sent Events via the API making it easier to identify and fix them by either updating the resource or updating the view.</p>
 <p><a href="../delta/api/views/index.html#fetch-indexing-failures">More information</a></p>
-<p>Errors related to indexing into Elasticsearch have also been improved to give more precise and relevant feedback. </p>
+<p>Errors related to indexing into Elasticsearch have also been improved to give more precise and relevant feedback.</p>
 <h4><a href="#only-trigger-reindexing-when-indexing-is-impacted" name="only-trigger-reindexing-when-indexing-is-impacted" class="anchor"><span class="anchor-link"></span></a>Only trigger reindexing when indexing is impacted</h4>
 <p>Indexing views will now only restart if its new configuration changes the way, data is impacted. For example, updating the name, the description or the permission of the view won&rsquo;t trigger reindexing anymore.</p>
 <h4><a href="#indexing-id-for-custom-elasticsearch-views" name="indexing-id-for-custom-elasticsearch-views" class="anchor"><span class="anchor-link"></span></a>Indexing @id for custom Elasticsearch views</h4>
 <p>When a resource does not include an id in its original payload, the id of the resource (for example in the case, the <code>@id</code> is generated) will be injected in the Elasticsearch payload.</p>
+<h3><a href="#projects" name="projects" class="anchor"><span class="anchor-link"></span></a>Projects</h3>
+<h4><a href="#project-deletion" name="project-deletion" class="anchor"><span class="anchor-link"></span></a>Project deletion</h4>
+<p>Before Nexus 1.8, akka-persistence and Apache Cassandra made it very hard to delete entities in a performant and reliable way.</p>
+<p>PostgreSQL and the new sourcing library are now much more adapted to this special use-case and the feature has been completely refactored.</p>
+<p><a href="../delta/api/projects-api.html#delete">More information</a></p>
 <h3><a href="#resources-and-schemas" name="resources-and-schemas" class="anchor"><span class="anchor-link"></span></a>Resources and schemas</h3>
 <h4><a href="#search-by-id-and-" name="search-by-id-and-" class="anchor"><span class="anchor-link"></span></a>Search by @id and _self</h4>
 <p>A new parameter <code>locate</code> has been introduced in the listing API that enables searching a resource within a project, an org or within all projects by providing its <code>@id</code> or its <code>_self</code></p>
@@ -398,7 +419,83 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <p>A supervision API has been added to get information about the running projections on the current node:</p>
 <p><a href="../delta/api/supervision-api.html">More information</a></p>
 <h2><a href="#nexus-fusion" name="nexus-fusion" class="anchor"><span class="anchor-link"></span></a>Nexus Fusion</h2>
-<p>TODO</p>
+<p>The goal of this release was to improve the user experience and functionality of the product. Specifically, redesigning and enhancing key pages, including Login, Home, , Organization listing, Projects listing, Studios listing, Project, Studio, Data Panel, and About Modal. Additionally, it introduced improvements to plugins and app configuration. These enhancements aim to provide users with better navigation, easier access to resources, improved data management capabilities, and an overall more user-friendly interface.</p>
+<ol>
+  <li>The Home page was redesigned and includes :
+    <ul>
+      <li>An improved top header navigation menu</li>
+      <li>A global search page types navigation cards.</li>
+      <li>A top level entity navigation cards.</li>
+      <li>A “my data” section to facilitate users to find recently created resources.</li>
+    </ul>
+  </li>
+  <li>Rebuilt the Login page and shortcuts to documentation and public studios.</li>
+  <li>Improved Organization listing page:
+    <ul>
+      <li>List all the organisations with count of projects</li>
+      <li>Added a “Create New organization” action button</li>
+    </ul>
+  </li>
+  <li>Improved Projects listing page:
+    <ul>
+      <li>Ability to show the overall projects in Nexus deployment or a specific organization’s projects,</li>
+      <li>Show each project’s creation/update dates and count of datasets,</li>
+      <li>Create New Project action button.</li>
+    </ul>
+  </li>
+  <li>Improved Studios listing page:
+    <ul>
+      <li>Ability to show the overall studios in Nexus deployment or a specific project’s studios,</li>
+      <li>Added “Create New Studio” action button.</li>
+    </ul>
+  </li>
+  <li>Improved Project page:
+    <ul>
+      <li>Enhanced Browse tab (filtering and searching)</li>
+      <li>Enhanced Setting tab</li>
+      <li>Enable the user to create new View, Storage, Resolver,</li>
+      <li>Run ID resolution by Resolvers.</li>
+      <li>Enhanced Query tab</li>
+      <li>Present errors to the user when running a <code>SPARQL</code> Query against a View</li>
+      <li>Danger zone</li>
+      <li>ability to deprecate a project with security checks.</li>
+    </ul>
+  </li>
+  <li>Improved Studio page:
+    <ul>
+      <li>Enhance the Error Display in Studio.</li>
+      <li>Enable sorting and filtering for columns.</li>
+      <li>Show total results count.</li>
+      <li>Allow users to select rows for downloading.</li>
+    </ul>
+  </li>
+  <li>Improved Resource Panel:
+    <ul>
+      <li>Allow the user to select resource data from different places in the application (My data page, Global Search Types Pages, Studio page).</li>
+      <li>Improved ability to download all the data, or some specific data based on file type extension and bundle the data in a .tar file.</li>
+    </ul>
+  </li>
+  <li>Plugins:
+    <ul>
+      <li>Improved image plugin:</li>
+      <li>The user can display the images of a resources as a gallery mode, with the ability to download them.</li>
+      <li>Improved Preview plugin</li>
+      <li>Preview <code>csv</code> files.</li>
+    </ul>
+  </li>
+  <li>Improved About Modal:
+    <ul>
+      <li>Show the Nexus ecosystem versions (delta and fusion).</li>
+      <li>Show the current deployment location.</li>
+      <li>Allow user to copy environment information.</li>
+    </ul>
+  </li>
+  <li>App Configuration:
+    <ul>
+      <li>The Application manager has the ability to select his favourites images for different top-level pages and the video in the Login page.</li>
+    </ul>
+  </li>
+</ol>
 <h2><a href="#nexus-forge" name="nexus-forge" class="anchor"><span class="anchor-link"></span></a>Nexus forge</h2>
 <p>TODO</p>
 </div>

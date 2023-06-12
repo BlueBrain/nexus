@@ -175,12 +175,18 @@ BlueBrain/nexus
   <li><a href="../../../docs/fusion/index.html" class="page">Nexus Fusion</a>
   <ul>
     <li><a href="../../../docs/fusion/architecture.html" class="page">Architecture</a></li>
+    <li><a href="../../../docs/fusion/organizations.html" class="page">Organizations</a></li>
+    <li><a href="../../../docs/fusion/projects.html" class="page">Projects</a>
+    <ul>
+      <li><a href="../../../docs/fusion/project.html" class="page">Project</a></li>
+    </ul></li>
+    <li><a href="../../../docs/fusion/search.html" class="page">Global Search Types</a></li>
+    <li><a href="../../../docs/fusion/studios.html" class="page">Studios</a>
+    <ul>
+      <li><a href="../../../docs/fusion/studio.html" class="page">Studio</a></li>
+    </ul></li>
+    <li><a href="../../../docs/fusion/my-data.html" class="page">User data</a></li>
     <li><a href="../../../docs/fusion/plugins.html" class="page">Plugins</a></li>
-    <li><a href="../../../docs/fusion/studio.html" class="page">Studios</a></li>
-    <li><a href="../../../docs/fusion/search.html" class="page">Search</a></li>
-    <li><a href="../../../docs/fusion/admin.html" class="page">Admin</a></li>
-    <li><a href="../../../docs/fusion/workflow.html" class="page">Workflow (alpha)</a></li>
-    <li><a href="../../../docs/fusion/add-your-own-app.html" class="page">Add your own App</a></li>
   </ul></li>
   <li><a href="../../../docs/forge.html" class="page">Nexus Forge</a></li>
   <li><a href="../../../docs/delta/index.html" class="page">Nexus Delta</a>
@@ -297,7 +303,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <p>Please visit <a href="authentication.html">Authentication &amp; authorization</a> section to learn more about it.</p></div>
 <h2><a href="#lifecycle" name="lifecycle" class="anchor"><span class="anchor-link"></span></a>Lifecycle</h2>
 <p>Contrarily to the rest of the platform resources, archives are not persisted resources, given their nature. Therefore there are no update, tag or deprecation operations available on archive resources.</p>
-<p>An archive resource will be automatically erased from the system after certain after certain time. This time is configurable (config property <code>app.archives.cache-invalidate-after</code>) and it defaults to 5 hours.</p>
+<p>An archive resource will be automatically erased from the system after certain after certain time. This time is configurable (config property <code>plugins.archive.ephemeral.ttl</code>) and it defaults to 5 hours.</p>
 <h2><a href="#payload" name="payload" class="anchor"><span class="anchor-link"></span></a>Payload</h2>
 <pre><code>{
     &quot;resources&quot; : [
@@ -501,8 +507,15 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 </dl>
 <p>Note that if the payload contains an @id different from the <code>{archive_id}</code>, the request will fail.</p>
 <h2><a href="#fetch" name="fetch" class="anchor"><span class="anchor-link"></span></a>Fetch</h2>
-<p>When fetching an archive, the response format can be chosen through HTTP content negotiation. In order to fetch the archive metadata, the client can use any of the <a href="content-negotiation.html#supported-mime-types">following MIME types</a>. However, in order to fetch the archive content, the HTTP <code>Accept</code> header <code>*/*</code> or <code>application/x-tar</code> should be provided.</p>
+<p>When fetching an archive, the response format can be chosen through HTTP content negotiation. In order to fetch the archive metadata, the client can use any of the <a href="content-negotiation.html#supported-mime-types">following MIME types</a>. However, in order to fetch the archive content, the HTTP <code>Accept</code> header should be provided:</p>
+<ul>
+  <li><code>*/*</code> or <code>application/x-tar</code> will return a tar archive (or tarball)</li>
+  <li><code>application/zip</code> will return a zip archive</li>
+</ul><div class="callout note warning"><div class="callout-title">Note</div>
+<p><a href="https://en.wikipedia.org/wiki/Tar_(computing)" title="The limitations of the tar format">The limitations of the tar format</a> makes the usage of archives difficult (among other things, the maximum file name is limited to 100 characters), so its support will be removed in a future release.</p></div>
+<p>When downloading the archive, it is possible to ignore resources that does not exist by appending the query parameter <code>ignoreNotFound=true</code> to the fetch link.</p>
 <pre><code>GET /v1/archives/{org_label}/{project_label}/{archive_id}
+GET /v1/archives/{org_label}/{project_label}/{archive_id}?ignoreNotFound=true
 </code></pre>
 <p><strong>Example</strong></p>
 <dl>

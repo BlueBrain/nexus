@@ -20,7 +20,7 @@
 
 <meta name="description" content="docs">
 <link rel="shortcut icon" href="../.././assets/img/favicon-32x32.png">
-<title>Workflow (alpha) · Blue Brain Nexus</title>
+<title>Organizations · Blue Brain Nexus</title>
 <link rel="stylesheet" href="../../assets/stylesheets/application.451f80e5.css">
 <link rel="stylesheet" href="../../assets/stylesheets/application-palette.22915126.css">
 <meta name="theme-color" content="#03a9f4" />
@@ -61,7 +61,7 @@ data-md-color-accent="cyan"
 Blue Brain Nexus
 </span>
 <span class="md-header-nav__topic">
-Workflow (alpha)
+Organizations
 </span>
 </div>
 </div>
@@ -175,12 +175,18 @@ BlueBrain/nexus
   <li><a href="../../docs/fusion/index.html" class="page">Nexus Fusion</a>
   <ul>
     <li><a href="../../docs/fusion/architecture.html" class="page">Architecture</a></li>
+    <li><a href="../../docs/fusion/organizations.html" class="active page">Organizations</a></li>
+    <li><a href="../../docs/fusion/projects.html" class="page">Projects</a>
+    <ul>
+      <li><a href="../../docs/fusion/project.html" class="page">Project</a></li>
+    </ul></li>
+    <li><a href="../../docs/fusion/search.html" class="page">Global Search Types</a></li>
+    <li><a href="../../docs/fusion/studios.html" class="page">Studios</a>
+    <ul>
+      <li><a href="../../docs/fusion/studio.html" class="page">Studio</a></li>
+    </ul></li>
+    <li><a href="../../docs/fusion/my-data.html" class="page">User data</a></li>
     <li><a href="../../docs/fusion/plugins.html" class="page">Plugins</a></li>
-    <li><a href="../../docs/fusion/studio.html" class="page">Studios</a></li>
-    <li><a href="../../docs/fusion/search.html" class="page">Search</a></li>
-    <li><a href="../../docs/fusion/admin.html" class="page">Admin</a></li>
-    <li><a href="../../docs/fusion/workflow.html" class="active page">Workflow (alpha)</a></li>
-    <li><a href="../../docs/fusion/add-your-own-app.html" class="page">Add your own App</a></li>
   </ul></li>
   <li><a href="../../docs/forge.html" class="page">Nexus Forge</a></li>
   <li><a href="../../docs/delta/index.html" class="page">Nexus Delta</a>
@@ -233,16 +239,9 @@ BlueBrain/nexus
 <nav class="md-nav md-nav--secondary">
 <label class="md-nav__title" for="__toc">Table of contents</label>
 <ul>
-  <li><a href="../../docs/fusion/workflow.html#workflow-alpha-" class="header">Workflow (alpha)</a>
+  <li><a href="../../docs/fusion/organizations.html#organizations" class="header">Organizations</a>
   <ul>
-    <li><a href="../../docs/fusion/workflow.html#project" class="header">Project</a>
-    <ul>
-      <li><a href="../../docs/fusion/workflow.html#canvas" class="header">Canvas</a></li>
-    </ul></li>
-    <li><a href="../../docs/fusion/workflow.html#workflow-steps" class="header">Workflow Steps</a>
-    <ul>
-      <li><a href="../../docs/fusion/workflow.html#tables" class="header">Tables</a></li>
-    </ul></li>
+    <li><a href="../../docs/fusion/organizations.html#creating-a-new-organization" class="header">Creating a New Organization</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -264,16 +263,9 @@ BlueBrain/nexus
 <nav class="md-nav md-nav--secondary">
 <label class="md-nav__title" for="__toc">Table of contents</label>
 <ul>
-  <li><a href="../../docs/fusion/workflow.html#workflow-alpha-" class="header">Workflow (alpha)</a>
+  <li><a href="../../docs/fusion/organizations.html#organizations" class="header">Organizations</a>
   <ul>
-    <li><a href="../../docs/fusion/workflow.html#project" class="header">Project</a>
-    <ul>
-      <li><a href="../../docs/fusion/workflow.html#canvas" class="header">Canvas</a></li>
-    </ul></li>
-    <li><a href="../../docs/fusion/workflow.html#workflow-steps" class="header">Workflow Steps</a>
-    <ul>
-      <li><a href="../../docs/fusion/workflow.html#tables" class="header">Tables</a></li>
-    </ul></li>
+    <li><a href="../../docs/fusion/organizations.html#creating-a-new-organization" class="header">Creating a New Organization</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -291,37 +283,18 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 </p>
 </div>
 <div class="md-content__searchable">
-<h1><a href="#workflow-alpha-" name="workflow-alpha-" class="anchor"><span class="anchor-link"></span></a>Workflow (alpha)</h1>
-<p>Nexus Fusion’s goal is to bring together the information you have available in a structured and standardized format.</p>
-<p>Fusion Workflow allows users to organize their work in clearly defined data-driven steps, and update their team on the progress.</p>
-<p>Workflow makes it possible to visualize activities, data, code, notes, and configured inputs for each step.</p>
-<p>Fusion Workflow (alpha) is available starting from Nexus version 1.5.</p>
-<h2><a href="#project" name="project" class="anchor"><span class="anchor-link"></span></a>Project</h2>
-<p>To create a new project, use <code>Create New Project Button</code> and fill in the form:</p><div class="center">
-<p><img src="../assets/fusion-workflow-project-create.png" alt="Step Card" /></p></div>
-<p>Then you can start adding Workflow Steps and data tables to your project.</p>
-<p>Projects can also be created through the admin interface or through the API.</p>
-<h3><a href="#canvas" name="canvas" class="anchor"><span class="anchor-link"></span></a>Canvas</h3>
-<p>The canvas is the place to organise your workflows. It’s an interactive space that can display components (for the moment only steps and tables). The root canvas (the one at the root of your project) can for now only display step cards and their relationships. Once you drill down in a step, it will have its own canvas. A step canvas can display nested steps and their relationships, but also data tables. Learn more about steps and data tables below.</p>
-<h2><a href="#workflow-steps" name="workflow-steps" class="anchor"><span class="anchor-link"></span></a>Workflow Steps</h2>
-<p>A Workflow Step acts as a bucket (grouping) of provenance activities.</p>
-<p>Steps are represented by draggable cards and can be created manually in the Project View and Workflow Step View (for sub-steps).</p><div class="center">
-<p><img src="../assets/fusion-workflow-step-cards.png" alt="Step Card" /></p></div>
-<p>Each Workflow Step card contains its title, description, a list of sub-steps and step&rsquo;s status: not started, in progress, blocked, and done.</p>
-<p>Steps can be visually linked with previous steps. It can be done easily in the form that pops up when you click &lsquo;+&rsquo; button on a card.</p><div class="center">
-<p><img src="../assets/fusion-workflow-create-step.png" alt="Step Form" /></p></div>
-<p>To modify a Workflow Step, click <code>Step Info</code> button in the Workflow Step View and update fields in the form:</p><div class="center">
-<p><img src="../assets/fusion-workflow-step-update.png" alt="Step Form" /></p></div>
-<p>Notice, that the description supports markdown text.</p>
-<h3><a href="#tables" name="tables" class="anchor"><span class="anchor-link"></span></a>Tables</h3>
-<p>At the bottom right of the canvas, there is a &ldquo;+&rdquo; button. It allows a user to add three types of tables, a data set and a new step. The three types of tables are Data table, Activity Table and Input Table.</p>
-<p>A data table has two key attributes. A query and a view. The view can be either a sparql view or an elastic search view. A user can customise the table by choosing whether to enable search, sort and filtering on tne table. User can also, exclude or include columns from search, sort and filtering. These customisations can be done in the &ldquo;Edit table&rdquo; form, accessible by clicking on the edit table button.</p>
-<p>Activity and Input tables are Data tables, with built in query and view so that user does not have to select them. Activity table has a query that list all activities linked to the step. Input table has a query that lists all inputs in the step.</p><div class="center">
-<p><img src="../assets/fusion-add-table.png" alt="Add a Table" /></p></div><div class="center">
-<p><img src="../assets/fusion-activity-table.png" alt="Edit a Table" /></p></div>
+<h1><a href="#organizations" name="organizations" class="anchor"><span class="anchor-link"></span></a>Organizations</h1>
+<p>The Nexus Fusion platform provides users with the ability to manage a high-level entity that encompasses all projects within their ecosystem. This feature is accessible through the organizations page, which presents users with a comprehensive overview of all the organizations managed within a given Blue Brain Nexus deployment. Users who possess the necessary permissions are also able to create new organizations through this interface.</p>
+<blockquote>
+  <p>Note: Some organizations in Nexus Delta are created to support Nexus Fusion internals, such as the <code>webapps</code> organization. Be careful when deleting those.</p>
+</blockquote>
+<p>Furthermore, it is noteworthy that the capability to create new organizations is not limited solely to the organizations page. Rather, this functionality is available from various locations throughout the application, including the homepage and the global search types pages. </p>
+<h2><a href="#creating-a-new-organization" name="creating-a-new-organization" class="anchor"><span class="anchor-link"></span></a>Creating a New Organization</h2><div class="center">
+<p><img src="assets/fusion-new-create-organization.png" alt="Create organization" /></p></div>
+<p>When the organization is created successfully, the browser will redirect the user to the projects page where the user can see the list of all projects and create new ones (see <a href="projects.html">Projects</a>).</p>
 </div>
 <div>
-<a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/fusion/workflow.md" title="Edit this page" class="md-source-file md-edit">
+<a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/fusion/organizations.md" title="Edit this page" class="md-source-file md-edit">
 Edit this page
 </a>
 </div>
@@ -337,7 +310,7 @@ Snapshot
 <footer class="md-footer">
 <div class="md-footer-nav">
 <nav class="md-footer-nav__inner md-grid">
-<a href="../../docs/fusion/admin.html" title="Admin" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+<a href="../../docs/fusion/architecture.html" title="Architecture" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
 <div class="md-flex__cell md-flex__cell--shrink">
 <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
 </div>
@@ -346,17 +319,17 @@ Snapshot
 <span class="md-footer-nav__direction">
 Previous
 </span>
-Admin
+Architecture
 </span>
 </div>
 </a>
-<a href="../../docs/fusion/add-your-own-app.html" title="Add your own App" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../docs/fusion/projects.html" title="Projects" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-Add your own App
+Projects
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">

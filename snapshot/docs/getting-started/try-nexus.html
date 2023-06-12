@@ -175,12 +175,18 @@ BlueBrain/nexus
   <li><a href="../../docs/fusion/index.html" class="page">Nexus Fusion</a>
   <ul>
     <li><a href="../../docs/fusion/architecture.html" class="page">Architecture</a></li>
+    <li><a href="../../docs/fusion/organizations.html" class="page">Organizations</a></li>
+    <li><a href="../../docs/fusion/projects.html" class="page">Projects</a>
+    <ul>
+      <li><a href="../../docs/fusion/project.html" class="page">Project</a></li>
+    </ul></li>
+    <li><a href="../../docs/fusion/search.html" class="page">Global Search Types</a></li>
+    <li><a href="../../docs/fusion/studios.html" class="page">Studios</a>
+    <ul>
+      <li><a href="../../docs/fusion/studio.html" class="page">Studio</a></li>
+    </ul></li>
+    <li><a href="../../docs/fusion/my-data.html" class="page">User data</a></li>
     <li><a href="../../docs/fusion/plugins.html" class="page">Plugins</a></li>
-    <li><a href="../../docs/fusion/studio.html" class="page">Studios</a></li>
-    <li><a href="../../docs/fusion/search.html" class="page">Search</a></li>
-    <li><a href="../../docs/fusion/admin.html" class="page">Admin</a></li>
-    <li><a href="../../docs/fusion/workflow.html" class="page">Workflow (alpha)</a></li>
-    <li><a href="../../docs/fusion/add-your-own-app.html" class="page">Add your own App</a></li>
   </ul></li>
   <li><a href="../../docs/forge.html" class="page">Nexus Forge</a></li>
   <li><a href="../../docs/delta/index.html" class="page">Nexus Delta</a>
@@ -260,7 +266,7 @@ BlueBrain/nexus
       <li><a href="../../docs/getting-started/try-nexus.html#2-5-mappers" class="header">2.5. Mappers</a></li>
       <li><a href="../../docs/getting-started/try-nexus.html#2-6-running-the-notebook" class="header">2.6. Running the Notebook</a></li>
       <li><a href="../../docs/getting-started/try-nexus.html#2-7-check-resources-in-the-sandbox" class="header">2.7. Check Resources in the Sandbox</a></li>
-      <li><a href="../../docs/getting-started/try-nexus.html#2-7-1-using-search-across-all-projects" class="header">2.7.1 Using Search across all Projects</a></li>
+      <li><a href="../../docs/getting-started/try-nexus.html#2-7-1-viewing-resources-across-all-projects" class="header">2.7.1 Viewing resources across all projects</a></li>
     </ul></li>
     <li><a href="../../docs/getting-started/try-nexus.html#2-7-2-by-browsing-your-personal-project" class="header">2.7.2 By browsing your personal Project</a></li>
     <li><a href="../../docs/getting-started/try-nexus.html#step-3-download-and-register-data-from-multiple-sources" class="header">Step 3: Download and Register Data from Multiple Sources</a>
@@ -337,7 +343,7 @@ BlueBrain/nexus
       <li><a href="../../docs/getting-started/try-nexus.html#2-5-mappers" class="header">2.5. Mappers</a></li>
       <li><a href="../../docs/getting-started/try-nexus.html#2-6-running-the-notebook" class="header">2.6. Running the Notebook</a></li>
       <li><a href="../../docs/getting-started/try-nexus.html#2-7-check-resources-in-the-sandbox" class="header">2.7. Check Resources in the Sandbox</a></li>
-      <li><a href="../../docs/getting-started/try-nexus.html#2-7-1-using-search-across-all-projects" class="header">2.7.1 Using Search across all Projects</a></li>
+      <li><a href="../../docs/getting-started/try-nexus.html#2-7-1-viewing-resources-across-all-projects" class="header">2.7.1 Viewing resources across all projects</a></li>
     </ul></li>
     <li><a href="../../docs/getting-started/try-nexus.html#2-7-2-by-browsing-your-personal-project" class="header">2.7.2 By browsing your personal Project</a></li>
     <li><a href="../../docs/getting-started/try-nexus.html#step-3-download-and-register-data-from-multiple-sources" class="header">Step 3: Download and Register Data from Multiple Sources</a>
@@ -435,16 +441,12 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <p>We run the latest version of Nexus publicly for education. You can also use the instance in your organization (if any), or setup Nexus from scratch.</p>
 <h3><a href="#1-1-using-the-sandbox" name="1-1-using-the-sandbox" class="anchor"><span class="anchor-link"></span></a>1.1. Using the Sandbox</h3>
 <p>The <a href="https://sandbox.bluebrainnexus.io" title="Sandbox" target="_blank" rel="noopener noreferrer">Sandbox</a> is a deployment of Nexus for educational purposes.</p>
-<p>Once on the Sandbox homepage, click on the top right corner on the login button.</p><div class="center">
+<p>Once on the Sandbox homepage, click on the &ldquo;Connect&rdquo; button. It will open a dropdown.</p><div class="center">
 <p><img src="../assets/tutorial-sandbox-login.png" alt="Sandbox Home" /></p></div>
-<p>We offer for the moment one identity providers (IdP):</p>
-<ul>
-  <li>Github</li>
-</ul>
-<p>You will need an account on either one to be able to continue this tutorial.</p>
-<p>Click on the Identity Provider of your choice and allow Nexus to have access. You are now logged in.</p>
+<p>At the moment we only provide one identity provider (idP) in the sandbox environment - GitHub. Choose this option from the dropdown of the &ldquo;Connect&rdquo; button.</p>
+<p>You will need an account on <a href="https://github.com/">GitHub</a> to be able to continue this tutorial.</p>
 <p>Once logged in, you can get your token. The token is your secure, private, code that you will use in the rest of this tutorial to interact with Nexus.</p>
-<p>Additionally, the Sandbox environment automatically provisions a project for you so you don&rsquo;t have to. Navigate to the Admin page and you will see the list of organisations in Nexus. A project is contained in an organisation. The organisation where your project is created depends on your identity provider. If you logged in with GitHub for example, your project was created under the <code>github-users</code> organisation.</p><div class="center">
+<p>The Sandbox environment automatically provisions a project for you so you don&rsquo;t have to. Navigate to the <a href="https://sandbox.bluebrainnexus.io/admin/nise">Organizations page</a> or click on the &ldquo;Organizations&rdquo; tab in the homepage, and you will see the list of organisations in Nexus. A project is contained in an organisation. The organisation where your project is created depends on your identity provider. If you logged in with GitHub for example, your project was created under the <code>github-users</code> organisation.</p><div class="center">
 <p><img src="../assets/tutorial-sandbox-orgs.png" alt="Sandbox Home" /></p></div>
 <p>Navigate to the correct organisation then search or scroll down to find your project (i.e. your username). You will need the names of the organisation and project for the next parts of the tutorial.</p>
 <h3><a href="#1-2-running-your-own-instance-of-nexus" name="1-2-running-your-own-instance-of-nexus" class="anchor"><span class="anchor-link"></span></a>1.2. Running your Own Instance of Nexus</h3>
@@ -455,7 +457,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <p>When we talk about data, we&rsquo;re mostly talking about binary or text files. When we hear metadata, it means &ldquo;data about the data&rdquo;.</p>
 <p>In neuroscience, you will have images of brain slices. You will have images of stained cells. You will find files of 3D-morphologies or electrophysiology recordings of the cell or neuron.</p>
 <p>The brain is big, and the amount of data collected grows every second.</p>
-<p>As a result, it quickly become extremely difficult for groups of scientists to manage, track, share, and work with this data.</p>
+<p>As a result, it quickly becomes extremely difficult for groups of scientists to manage, track, share, and work with this data.</p>
 <p>To solve this growing pain, we can add metadata, or context, to the data collected. Specifically for neuroscience, we designed MINDS. MINDS is the Minimal Information about a Neuroscience DataSet.</p><div class="center">
 <p><img src="../assets/MINDS_diagram.png" alt="MINDS Diagram" /></p></div>
 <p>In the diagram above, you can see that your data (which we will call <a href="https://schema.org/Dataset" title="Dataset" target="_blank" rel="noopener noreferrer">Dataset</a> from now on) has now additional properties:</p>
@@ -517,11 +519,12 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 </code></pre>
 <h3><a href="#2-7-check-resources-in-the-sandbox" name="2-7-check-resources-in-the-sandbox" class="anchor"><span class="anchor-link"></span></a>2.7. Check Resources in the Sandbox</h3>
 <p>Once you have registered resources through Nexus Forge (in the notebook), you can check that they are effectively present in Nexus. You now have two options to do so.</p>
-<h3><a href="#2-7-1-using-search-across-all-projects" name="2-7-1-using-search-across-all-projects" class="anchor"><span class="anchor-link"></span></a>2.7.1 Using Search across all Projects</h3>
-<p>Navigate to the Sandbox landing page, make sure you are logged in and click on Search in the centre panel. Alternatively, if you know how your dataset it called, you can type its name in the search bar in the top header.</p><div class="center">
-<p><img src="../assets/tutorial-sandbox-project.png" alt="Sandbox Home" /></p></div>
-<p>You will now be presented with all the data that has been indexed across all projects you have the right to read from. In the case of this tutorial, you are likely to have access to your own project only. Please note that each instance of Nexus will have its own Search configuration, the BBP Sandbox has been configured to show NeuronMorphology and Trace datasets for the purpose of this tutorial.</p><div class="center">
-<p><img src="../assets/tutorial-sandbox-search.png" alt="Sandbox Home" /></p></div>
+<h3><a href="#2-7-1-viewing-resources-across-all-projects" name="2-7-1-viewing-resources-across-all-projects" class="anchor"><span class="anchor-link"></span></a>2.7.1 Viewing resources across all projects</h3>
+<p>Navigate to the <a href="https://sandbox.bluebrainnexus.io/">Sandbox landing page</a>. Make sure you are logged in. You should be able to see all the data that was created through the Jupyter notebook under the <code>My data</code> section. Here you can see all the data that has been indexed across all projects you have the right to read from. In the case of this tutorial, you are likely to have access to your own project only. </p><div class="center">
+<p><img src="../assets/tutorial-sandbox-my-data.png" alt="Sandbox Home" /></p></div>
+<p>You can also check resources of a particular type by clicking on the corresponding card for that type on the landing page. These cards allow you to search by different datasets. For example if you click on the card labeled &ldquo;MINDS&rdquo; on the screen shown in the screenshot above, you should see the following results</p><div class="center">
+<p><img src="../assets/tutorial-sandbox-search-minds.png" alt="Sandbox Home" /></p></div>
+<p>Please note that each instance of Nexus will have its own Search configuration, the BBP Sandbox has been configured to show NeuronMorphology and Trace datasets for the purpose of this tutorial.</p>
 <p>Each of the rows of this table represent Knowledge Graph entities that we have decided to expose, including some specific metadata describing them (the columns). You can now click on any row in this table to open the corresponding dataset and look into its details.</p><div class="center">
 <p><img src="../assets/tutorial-sandbox-search-resource.png" alt="Sandbox Home" /></p></div>
 <p>You can find more documentation on how to use Search <a href="../fusion/search.html">here</a>.</p>
@@ -745,7 +748,7 @@ WHERE {
 <p>You can learn more about SPARQL in the <a href="https://www.w3.org/TR/sparql11-query/" title="official documentation">official documentation</a>.</p>
 <h3><a href="#4-2-project-and-resource-views" name="4-2-project-and-resource-views" class="anchor"><span class="anchor-link"></span></a>4.2. Project and Resource Views</h3>
 <p>As you saw in the example above, we can use SPARQL to query the cells in our Nexus project.</p>
-<p>Let&rsquo;s start by accessing your Nexus instance or the <a href="https://sandbox.bluebrainnexus.io" title="Sandbox" target="_blank" rel="noopener noreferrer">Sandbox</a>. Go to Admin page (from the left hand side menu), and navigate to your organization and project.</p>
+<p>Let&rsquo;s start by accessing your Nexus instance or the <a href="https://sandbox.bluebrainnexus.io" title="Sandbox" target="_blank" rel="noopener noreferrer">Sandbox</a>. Go to your project by clicking on the &ldquo;Projects&rdquo; card and searching for your project.</p>
 <blockquote>
   <p>In the Sandbox, the organization corresponds to the identity provider used, and the project to your username. For example, if you used GitHub, the organization will be <code>github-users</code> and your project will be your GitHub username.</p>
 </blockquote>
@@ -853,8 +856,8 @@ WHERE {
 }
 </code></pre>
 <h3><a href="#4-3-query-neuroscience-data" name="4-3-query-neuroscience-data" class="anchor"><span class="anchor-link"></span></a>4.3. Query Neuroscience Data</h3>
-<p>Going back to the project view, you will notice a tab named &lsquo;Query&rsquo;. Let&rsquo;s click on it and start experimenting. On clicking on the &lsquo;Query tab&rsquo;, you will see a sprql query editor.</p><div class="center">
-<p><img src="../assets/tutorial-sandbox-project.png" alt="Sandbox Home" /></p></div>
+<p>Going back to the project view, you will notice a tab named &lsquo;Query&rsquo;. Let&rsquo;s click on it and start experimenting. On clicking on the &lsquo;Query tab&rsquo;, you will see a sparql query editor.</p><div class="center">
+<p><img src="../assets/tutorial-sandbox-project-query-tab.png" alt="Sandbox Home" /></p></div>
 <p>We want to list the morphologies that we previously registered in our project. Let&rsquo;s write some SPARQL to retrieve it.</p>
 <pre class="prettyprint"><code class="language-sparql">PREFIX nxv: &lt;https://bluebrain.github.io/nexus/vocabulary/&gt;
 PREFIX nsg: &lt;https://neuroshapes.org/&gt;
@@ -912,14 +915,14 @@ LIMIT 1000
   </tbody>
 </table>
 <h3><a href="#4-4-create-a-studio" name="4-4-create-a-studio" class="anchor"><span class="anchor-link"></span></a>4.4. Create a Studio</h3>
-<p>Go back to your project view in the Admin section of the Sandbox. Click on the &lsquo;Studios&rsquo; tab. It will open in a new window.</p><div class="center">
-<p><img src="../assets/tutorial-sandbox-project.png" alt="Sandbox Home" /></p></div>
+<p>Go back to your project view. Click on the &lsquo;Studios&rsquo; tab. It will open in a new window.</p><div class="center">
+<p><img src="../assets/tutorial-sandbox-project-studios-tab.png" alt="Sandbox Home" /></p></div>
 <p>You will land on:</p><div class="center">
 <p><img src="../assets/tutorial-sandbox-studios-admin.png" alt="Sandbox Home" /></p></div>
 <p>On this page you can create a new studio. A Studio is a dedicated web page in your project that you can organise into pages (workspaces, as horizontal tabs at the top) and sections (dashboards, as vertical tabs on the left side) and list your data in a logical way. The tables are powered by SPARQL queries and the data present in your project.</p>
 <p>Start by creating a Workspace. To create a workspace, click the Workspace button and in the menu that appears click Add Workspace. You will be presented with a dialog requesting the label of the workspace and optionally a description. Enter a label of your choosing and click Save.</p><div class="center">
 <p><img src="../assets/tutorial-sandbox-studio-one-workspace-no-dashboard.png" alt="Sandbox Home" /></p></div>
-<p>Next, create a Dashboard. Click the Dashboard button and choose Add from the pop-up menu. In the Dashboard creation dialog, specify the default Sparql Index view and specify the SPARQL query above. The &lsquo;Preview&rsquo; button will list the columns to be returned by the query and support specifying options on the columns such as enabling searching or sorting.</p><div class="center">
+<p>Next, create a Dashboard. Click the Dashboard button and choose Add from the pop-up menu. In the Dashboard creation dialog, specify the default Sparql Index view and specify the SPARQL query above. The &lsquo;Configure Columns&rsquo; button will list the columns to be returned by the query and support specifying options on the columns such as enabling searching or sorting.</p><div class="center">
 <p><img src="../assets/tutorial-sandbox-studio-one-workspace-one-dashboard.png" alt="Sandbox Home" /></p></div>
 <p>Because we are using the self, clicking on a row of the newly created table will open the resource view.</p>
 <p>It&rsquo;s your turn now to add a dashboard to list your Neuron Electrophysiology data. Create the dashboard and modify the SPARQL query above.</p>
@@ -952,6 +955,9 @@ LIMIT 1000
 </code></pre>
 <pre class="prettyprint"><code class="language-bash">cd docs/src/main/paradox/docs/getting-started/notebooks
 </code></pre>
+<blockquote>
+  <p>Note: You will need <code>gcc</code> <a href="https://gcc.gnu.org/install/">installed</a> locally to run the following notebook.</p>
+</blockquote>
 <pre class="prettyprint"><code class="language-bash">jupyter notebook MOOC_Content_based_Recommender_System_using_Blue_Brain_Nexus.ipynb
 </code></pre>
 <p>Well done! You have now completed the last part of this tutorial. To learn more, scroll down or navigate to our documentation, or start contributing to our Github repositories.</p>

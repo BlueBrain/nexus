@@ -175,12 +175,18 @@ BlueBrain/nexus
   <li><a href="../../docs/fusion/index.html" class="page">Nexus Fusion</a>
   <ul>
     <li><a href="../../docs/fusion/architecture.html" class="page">Architecture</a></li>
+    <li><a href="../../docs/fusion/organizations.html" class="page">Organizations</a></li>
+    <li><a href="../../docs/fusion/projects.html" class="page">Projects</a>
+    <ul>
+      <li><a href="../../docs/fusion/project.html" class="page">Project</a></li>
+    </ul></li>
+    <li><a href="../../docs/fusion/search.html" class="page">Global Search Types</a></li>
+    <li><a href="../../docs/fusion/studios.html" class="page">Studios</a>
+    <ul>
+      <li><a href="../../docs/fusion/studio.html" class="page">Studio</a></li>
+    </ul></li>
+    <li><a href="../../docs/fusion/my-data.html" class="page">User data</a></li>
     <li><a href="../../docs/fusion/plugins.html" class="page">Plugins</a></li>
-    <li><a href="../../docs/fusion/studio.html" class="page">Studios</a></li>
-    <li><a href="../../docs/fusion/search.html" class="page">Search</a></li>
-    <li><a href="../../docs/fusion/admin.html" class="page">Admin</a></li>
-    <li><a href="../../docs/fusion/workflow.html" class="page">Workflow (alpha)</a></li>
-    <li><a href="../../docs/fusion/add-your-own-app.html" class="page">Add your own App</a></li>
   </ul></li>
   <li><a href="../../docs/forge.html" class="page">Nexus Forge</a></li>
   <li><a href="../../docs/delta/index.html" class="page">Nexus Delta</a>
@@ -318,16 +324,15 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <h2><a href="#configuring-your-project-in-nexus-fusion" name="configuring-your-project-in-nexus-fusion" class="anchor"><span class="anchor-link"></span></a>Configuring your Project in Nexus Fusion</h2>
 <p>The <a href="https://sandbox.bluebrainnexus.io/" title="Nexus Sandbox" target="_blank" rel="noopener noreferrer">Nexus Sandbox</a> is a deployment of Nexus Delta and Fusion publicly available to anybody. Please note that you should not store any sensitive data in this environment. Also, we do not offer guaranty as to how long the data will be kept, this is only for learning and testing purposes.</p>
 <p>Nexus Fusion is the web interface that you will use in order to interact with Nexus Delta (the web services that manages the underlying knowledge graph).</p>
-<p>Please bear in mind that the data stored in the Nexus Sandbox is being purged at regular intervals. We recommend you do not store any sensitive data in this environment since it is accessible to many other users.</p><div class="center">
-<p><img src="../assets/try-nexus-sandbox-home-not-logged-in.png" alt="sandbox-home" /></p></div>
+<p>Please bear in mind that the data stored in the Nexus Sandbox is being purged at regular intervals. We recommend you do not store any sensitive data in this environment since it is accessible to many other users.</p>
 <p>The first step is to login, by clicking in the upper right corner of the screen. You can login with your Github credentials.</p><div class="center">
 <p><img src="../assets/try-nexus-sandbox-log-in-github-realm.png" alt="1-sandbox-login" /></p></div>
-<p>The Sandbox environment automatically provisions a project for you so you don&rsquo;t have to. Navigate to the Admin page and you will see the list of organisations in Nexus. A project is contained in an organisation. The organisation where your project is created depends on your identity provider. If you logged in with GitHub for example, your project was created under the <code>github-users</code> organisation.</p><div class="center">
-<p><img src="../assets/try-nexus-sandbox-admin-logged-in.png" alt="2-sandbox-admin" /></p></div>
+<p>The Sandbox environment automatically provisions a project for you so you don&rsquo;t have to. From the landing page, click on the &ldquo;Organizations&rdquo; card and you will see the list of organisations in Nexus. A project is contained in an organisation. The organisation where your project is created depends on your identity provider. If you logged in with GitHub for example, your project was created under the <code>github-users</code> organisation.</p><div class="center">
+<p><img src="../assets/tutorial-sandbox-orgs.png" alt="2-sandbox-admin" /></p></div>
 <p>Now open the <code>github-users</code> organisation and find your own project, which is named after your login. Once the project is created, you&rsquo;ll land on the project view. There is no resources at first. Wait for it. You will quickly see that the project has finished indexing (top right corner).</p><div class="half center">
 <p><img src="../assets/try-nexus-sandbox-project-finished-indexing.png" /></p></div>
 <p>Which means that the system has created default indices and storage for you.</p><div class="center">
-<p><img src="../assets/try-nexus-sandbox-admin-project-indexed.png" /></p></div>
+<p><img src="../assets/tutorial-sandbox-project.png" /></p></div>
 <p>We&rsquo;re all set! We now have a project to host our resources and datasets. Let&rsquo;s move on to the second part of this tutorial.</p>
 <h2><a href="#working-with-data-in-nexus-forge" name="working-with-data-in-nexus-forge" class="anchor"><span class="anchor-link"></span></a>Working with Data in Nexus Forge</h2>
 <p>We’ll load the <a href="http://files.grouplens.org/datasets/movielens/" title="MovieLens" target="_blank" rel="noopener noreferrer">MovieLens</a> dataset into the created project within Nexus Delta using the python framework <a href="https://nexus-forge.readthedocs.io/en/latest/" title="Nexus Forge" target="_blank" rel="noopener noreferrer">Nexus Forge</a>.</p>
@@ -343,13 +348,13 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <h2><a href="#exploring-the-graph-in-nexus-fusion" name="exploring-the-graph-in-nexus-fusion" class="anchor"><span class="anchor-link"></span></a>Exploring the Graph in Nexus Fusion</h2>
 <p>Login the Sandbox and navigate your previously created project.</p>
 <p>Click on the <code>studio tab</code>.</p><div class="center">
-<p><img src="../assets/try-nexus-sandbox-project-studio-tab.png" /></p></div>
-<p>Studios are listed here. Click on <code>Create Studio</code>.</p><div class="center">
-<p><img src="../assets/try-nexus-sandbox-project-studios.png" /></p></div>
+<p><img src="../assets/tutorial-sandbox-project-studios-tab.png" /></p></div>
+<p>In a new browser tab, you will see a list of all studios you have access to. Click on <code>Create Studio</code>.</p><div class="center">
+<p><img src="../assets/try-nexus-studios-create-studio.png" /></p></div>
 <p>Give a name to your Studio and click <code>Save</code>.</p><div class="center">
 <p><img src="../assets/try-nexus-sandbox-studio-form.png" /></p></div>
 <p>Here&rsquo;s your empty Studio. Click the <code>+</code> icon to Add Workspace.</p><div class="center">
-<p><img src="../assets/try-nexus-sandbox-studio-view.png" /></p></div>
+<p><img src="../assets/tutorial-sandbox-studio-one-workspace-no-dashboard.png" /></p></div>
 <p>Give a name to your Workspace and click <code>Save</code>.</p><div class="center">
 <p><img src="../assets/try-nexus-sandbox-workspace-form.png" /></p></div>
 <p>You now have one Workspace configured. Click the <code>+</code> icon to Add Dashboard..</p><div class="center">
@@ -366,7 +371,7 @@ WHERE {
 }
 LIMIT 20
 </code></pre>
-<p>Choose a name for your Dashboard, copy the query. Click <code>Save</code>.</p><div class="center">
+<p>Choose a name for your Dashboard, copy the query. For the &ldquo;View&rdquo; select <code>https://bluebrain.github.io/nexus/vocabulary/defaultSparqlIndex</code> from the dropdown. Click on <code>Configure Columns</code> button to see a preview of all the columns the dashboard will have. Now click <code>Save</code>.</p><div class="center">
 <p><img src="../assets/try-nexus-sandbox-dashboard-form.png" /></p></div>
 <p>And there are the results:</p><div class="center">
 <p><img src="../assets/try-nexus-sandbox-studio-results.png" /></p></div>

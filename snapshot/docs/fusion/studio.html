@@ -20,7 +20,7 @@
 
 <meta name="description" content="docs">
 <link rel="shortcut icon" href="../.././assets/img/favicon-32x32.png">
-<title>Studios · Blue Brain Nexus</title>
+<title>Studio · Blue Brain Nexus</title>
 <link rel="stylesheet" href="../../assets/stylesheets/application.451f80e5.css">
 <link rel="stylesheet" href="../../assets/stylesheets/application-palette.22915126.css">
 <meta name="theme-color" content="#03a9f4" />
@@ -61,7 +61,7 @@ data-md-color-accent="cyan"
 Blue Brain Nexus
 </span>
 <span class="md-header-nav__topic">
-Studios
+Studio
 </span>
 </div>
 </div>
@@ -175,12 +175,18 @@ BlueBrain/nexus
   <li><a href="../../docs/fusion/index.html" class="page">Nexus Fusion</a>
   <ul>
     <li><a href="../../docs/fusion/architecture.html" class="page">Architecture</a></li>
+    <li><a href="../../docs/fusion/organizations.html" class="page">Organizations</a></li>
+    <li><a href="../../docs/fusion/projects.html" class="page">Projects</a>
+    <ul>
+      <li><a href="../../docs/fusion/project.html" class="page">Project</a></li>
+    </ul></li>
+    <li><a href="../../docs/fusion/search.html" class="page">Global Search Types</a></li>
+    <li><a href="../../docs/fusion/studios.html" class="page">Studios</a>
+    <ul>
+      <li><a href="../../docs/fusion/studio.html" class="active page">Studio</a></li>
+    </ul></li>
+    <li><a href="../../docs/fusion/my-data.html" class="page">User data</a></li>
     <li><a href="../../docs/fusion/plugins.html" class="page">Plugins</a></li>
-    <li><a href="../../docs/fusion/studio.html" class="active page">Studios</a></li>
-    <li><a href="../../docs/fusion/search.html" class="page">Search</a></li>
-    <li><a href="../../docs/fusion/admin.html" class="page">Admin</a></li>
-    <li><a href="../../docs/fusion/workflow.html" class="page">Workflow (alpha)</a></li>
-    <li><a href="../../docs/fusion/add-your-own-app.html" class="page">Add your own App</a></li>
   </ul></li>
   <li><a href="../../docs/forge.html" class="page">Nexus Forge</a></li>
   <li><a href="../../docs/delta/index.html" class="page">Nexus Delta</a>
@@ -233,14 +239,11 @@ BlueBrain/nexus
 <nav class="md-nav md-nav--secondary">
 <label class="md-nav__title" for="__toc">Table of contents</label>
 <ul>
-  <li><a href="../../docs/fusion/studio.html#studios" class="header">Studios</a>
+  <li><a href="../../docs/fusion/studio.html#studio" class="header">Studio</a>
   <ul>
-    <li><a href="../../docs/fusion/studio.html#what-is-a-studio" class="header">What is a Studio</a>
-    <ul>
-      <li><a href="../../docs/fusion/studio.html#about-the-studio-context" class="header">About the Studio Context</a></li>
-      <li><a href="../../docs/fusion/studio.html#workspaces" class="header">Workspaces</a></li>
-      <li><a href="../../docs/fusion/studio.html#dashboards" class="header">Dashboards</a></li>
-    </ul></li>
+    <li><a href="../../docs/fusion/studio.html#about-the-studio-context" class="header">About the Studio Context</a></li>
+    <li><a href="../../docs/fusion/studio.html#workspaces" class="header">Workspaces</a></li>
+    <li><a href="../../docs/fusion/studio.html#dashboards" class="header">Dashboards</a></li>
     <li><a href="../../docs/fusion/studio.html#how-to-configure-a-studio" class="header">How to Configure a Studio</a>
     <ul>
       <li><a href="../../docs/fusion/studio.html#studio-creation" class="header">Studio Creation</a>
@@ -290,14 +293,11 @@ BlueBrain/nexus
 <nav class="md-nav md-nav--secondary">
 <label class="md-nav__title" for="__toc">Table of contents</label>
 <ul>
-  <li><a href="../../docs/fusion/studio.html#studios" class="header">Studios</a>
+  <li><a href="../../docs/fusion/studio.html#studio" class="header">Studio</a>
   <ul>
-    <li><a href="../../docs/fusion/studio.html#what-is-a-studio" class="header">What is a Studio</a>
-    <ul>
-      <li><a href="../../docs/fusion/studio.html#about-the-studio-context" class="header">About the Studio Context</a></li>
-      <li><a href="../../docs/fusion/studio.html#workspaces" class="header">Workspaces</a></li>
-      <li><a href="../../docs/fusion/studio.html#dashboards" class="header">Dashboards</a></li>
-    </ul></li>
+    <li><a href="../../docs/fusion/studio.html#about-the-studio-context" class="header">About the Studio Context</a></li>
+    <li><a href="../../docs/fusion/studio.html#workspaces" class="header">Workspaces</a></li>
+    <li><a href="../../docs/fusion/studio.html#dashboards" class="header">Dashboards</a></li>
     <li><a href="../../docs/fusion/studio.html#how-to-configure-a-studio" class="header">How to Configure a Studio</a>
     <ul>
       <li><a href="../../docs/fusion/studio.html#studio-creation" class="header">Studio Creation</a>
@@ -343,9 +343,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 </p>
 </div>
 <div class="md-content__searchable">
-<h1><a href="#studios" name="studios" class="anchor"><span class="anchor-link"></span></a>Studios</h1>
-<p>Studios space allows data curators to display their data using customisable, persistent queries. Using custom plugins developed with JavaScript, data curators can format the presentation of the query results any way they like.</p>
-<h2><a href="#what-is-a-studio" name="what-is-a-studio" class="anchor"><span class="anchor-link"></span></a>What is a Studio</h2>
+<h2><a href="#studio" name="studio" class="anchor"><span class="anchor-link"></span></a>Studio</h2>
 <p>A <code>Studio</code> is a collection of persistent queries organized in a table layout for users to quickly access relevant data in a customizable way. <code>Studio</code> authors can create a studio to match a specific topic, and create organization schemes called <a href="studio.html#workspaces">Workspaces</a> and <a href="studio.html#dashboards">Dashboards</a> to access various aspects of that data.</p><div class="callout note "><div class="callout-title">Note</div>
 <p>Want to <a href="studio.html#how-to-configure-a-studio">configure a studio</a> straightaway?</p></div>
 <p>For example, a <code>Studio</code> might cover all datasets from the Neocortex, with a <code>Workspace</code> called Physiology and a <code>Dashboard</code> called Morphology Pipeline.</p>
@@ -439,25 +437,30 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <p>The <code>Dashboard</code>, once configured, will present the results of your SPARQL query in a table. Each item in the row will be clickable and lead to a details page showing the <code>Resource</code>, in this case, a list of scientists that have contributed data to the project.</p>
 <h2><a href="#how-to-configure-a-studio" name="how-to-configure-a-studio" class="anchor"><span class="anchor-link"></span></a>How to Configure a Studio</h2>
 <h3><a href="#studio-creation" name="studio-creation" class="anchor"><span class="anchor-link"></span></a>Studio Creation</h3>
-<p>To create a new <code>Studio</code>, go to the Admin space, and select an organization and a project. In the Project View, you will see the <code>studio tab</code>. It will bring you to the list of <code>Studios</code>.</p>
+<p>There is multiple places where the user can create a new <code>Studio</code>:</p>
+<ul>
+  <li>Home page</li>
+  <li>Home page &gt; Studios List</li>
+  <li>Home page &gt; Projects List &gt; Select Project &gt; Studios Tab</li>
+</ul>
 <p>Click the <code>Create Studio</code> button.</p><div class="half center">
-<p><img src="../assets/fusion-studio-create-studio-pane.png" alt="Create a studio" /></p></div>
+<p><img src="assets/fusion-studio-create-studio-pane.png" alt="Create a studio" /></p></div>
 <p>Fill in a form providing the following:</p>
 <ul>
   <li><code>Label</code>: the name of your new Studio (required field)</li>
   <li><code>Description</code> for your Studio</li>
 </ul><div class="half center">
-<p><img src="../assets/fusion-studio-create-studio-form.png" alt="Create a studio form" /></p></div>
+<p><img src="assets/fusion-studio-create-studio-form.png" alt="Create a studio form" /></p></div>
 <ul>
   <li>Click <code>Save</code> and you will be navigated to the Studio View.</li>
 </ul><div class="center">
-<p><img src="../assets/fusion-studio-empty-studio.png" alt="Empty Studio Example" /></p></div>
+<p><img src="assets/fusion-studio-empty-studio.png" alt="Empty Studio Example" /></p></div>
 <p>That&rsquo;s it! Your new <code>Studio</code> is empty for now, but don&rsquo;t worry! We will add Workspaces and Dashboards later.</p>
 <p>You can also find your Studios in the Resource List (for example, filter by type <code>Studio</code>, or Search by id) and view it in the Resource View.</p>
 <h4><a href="#updating-a-studio" name="updating-a-studio" class="anchor"><span class="anchor-link"></span></a>Updating a Studio</h4>
 <p>Once created, the label and the description of a <code>Studio</code> can be changed. Just click <code>Edit Studio</code> button and update the <code>Label</code> and the <code>Description</code> fields.</p>
 <h4><a href="#removing-a-studio" name="removing-a-studio" class="anchor"><span class="anchor-link"></span></a>Removing a Studio</h4>
-<p>To remove an unwanted <code>Studio</code>, deprecate it in the Resource View of your project in the Admin space.</p>
+<p>To remove an unwanted <code>Studio</code>, deprecate it in the Resource View of your project in the Project space.</p>
 <h3><a href="#workspace-creation" name="workspace-creation" class="anchor"><span class="anchor-link"></span></a>Workspace Creation</h3>
 <p>Inside any <code>Studio</code>, click the <code>Workspace</code> button followed by <code>Add</code> to add a new workspace.</p>
 <p>Fill in a form providing the following:</p>
@@ -465,9 +468,9 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   <li><code>Label</code>: the name of your new <code>Workspace</code> (required field)</li>
   <li><code>Description</code> for your <code>Workspace</code></li>
 </ul><div class="half center">
-<p><img src="../assets/fusion-studio-create-workspace-form.png" alt="Create a new Workspace form" /></p></div>
+<p><img src="assets/fusion-studio-create-workspace-form.png" alt="Create a new Workspace form" /></p></div>
 <p>Click <code>Save</code> and you will be navigated to the new workspace section of your <code>Studio View</code>, which is given a navigable URI.</p><div class="center">
-<p><img src="../assets/fusion-studio-empty-workspace.png" alt="Empty Workspace Example" /></p></div>
+<p><img src="assets/fusion-studio-empty-workspace.png" alt="Empty Workspace Example" /></p></div>
 <p>Your <code>Workspace</code> is created, but it will need to have at least one <code>Dashboard</code>/<code>View</code> association for anything to show there.</p>
 <p>You can also find your <code>Workspaces</code> as raw <code>JSON</code> configurations in the <code>Resource</code> list (for example, filter by type <code>StudioWorkspace</code>, or search by id) and view it in the <code>Resource View</code>.</p>
 <h4><a href="#updating-a-workspace" name="updating-a-workspace" class="anchor"><span class="anchor-link"></span></a>Updating a Workspace</h4>
@@ -491,9 +494,9 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   <li><code>Query</code>: a valid query must also be specified: a SPARQL query for SPARQL views (a <a href="https://www.w3.org/TR/rdf-sparql-query/" title="SPARQL" target="_blank" rel="noopener noreferrer">SPARQL</a> query that conforms to the <code>dataQuery</code> field in the configuration) or an ElasticSearch query for ElasticSearch views.</li>
 </ul>
 <h4><a href="#sparql-dashboards" name="sparql-dashboards" class="anchor"><span class="anchor-link"></span></a>Sparql Dashboards</h4><div class="half center">
-<p><img src="../assets/fusion-studio-create-dashboard-form.png" alt="Create Dashboard form" /></p></div>
+<p><img src="assets/fusion-studio-create-dashboard-form.png" alt="Create Dashboard form" /></p></div>
 <blockquote>
-  <p>You can click on the <code>View query in Sparql Editor</code> to open the <code>Sparql Editor</code> in a new tab to work on your query  while querying it against a <code>Sparql View</code> in your project, so you can make sure it works and provides the fields you want. Then, you can copy and past that back in the form.</p>
+  <p>You can click on the <code>View query in Sparql Editor</code> to open the <code>Sparql Editor</code> in a new tab to work on your query while querying it against a <code>Sparql View</code> in your project, so you can make sure it works and provides the fields you want. Then, you can copy and past that back in the form.</p>
   <p>To understand more about the SPARQL queries requirements, <a href="studio.html#sparql-query-requirements">check below</a>.</p>
 </blockquote>
 <p>Click <code>Save</code> and the <code>Dashboard</code> and its query results should show up!</p>
@@ -532,8 +535,8 @@ WHERE {
 LIMIT 20
 </code></pre>
 <h2><a href="#studio-description" name="studio-description" class="anchor"><span class="anchor-link"></span></a>Studio Description</h2>
-<p>Every Studio deserves a beautiful description to highlight its data. We&rsquo;ve included a Description Viewer above the tables so that users can write flavored markdown to give their studios a paragraph of context or show off some images. Edit the description in either the <a href="admin.html">Admin</a> resource editor, or using the edit Studio button located besides the Studio title.</p>
-<p>The description can be rendered using handlebars and markdown, in the same way described in the <a href="admin.html#resource-descriptions">Admin Resource Viewer</a></p>
+<p>Every Studio deserves a beautiful description to highlight its data. We&rsquo;ve included a Description Viewer above the tables so that users can write flavored markdown to give their studios a paragraph of context or show off some images. Edit the description in either the <a href="project.html">Project</a> resource editor, or using the edit Studio button located besides the Studio title</p>
+<p>The description can be rendered using handlebars and markdown, in the same way described in the <a href="project.html#description">Project Resource Viewer</a></p>
 <p><img src="assets/studio-description-example.png" alt="Studio Description Example" /></p>
 </div>
 <div>
@@ -553,7 +556,7 @@ Snapshot
 <footer class="md-footer">
 <div class="md-footer-nav">
 <nav class="md-footer-nav__inner md-grid">
-<a href="../../docs/fusion/plugins.html" title="Plugins" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+<a href="../../docs/fusion/studios.html" title="Studios" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
 <div class="md-flex__cell md-flex__cell--shrink">
 <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
 </div>
@@ -562,17 +565,17 @@ Snapshot
 <span class="md-footer-nav__direction">
 Previous
 </span>
-Plugins
+Studios
 </span>
 </div>
 </a>
-<a href="../../docs/fusion/search.html" title="Search" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../docs/fusion/my-data.html" title="User data" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-Search
+User data
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">

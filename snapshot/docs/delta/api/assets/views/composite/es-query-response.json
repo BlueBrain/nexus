@@ -27,8 +27,7 @@
           ],
           "name": "Muse",
           "start": 1994
-        },
-        "_type": "_doc"
+        }
       }
     ],
     "max_score": 0.6931471,

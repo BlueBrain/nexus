@@ -20,7 +20,7 @@
 
 <meta name="description" content="docs">
 <link rel="shortcut icon" href="../.././assets/img/favicon-32x32.png">
-<title>Admin · Blue Brain Nexus</title>
+<title>Project · Blue Brain Nexus</title>
 <link rel="stylesheet" href="../../assets/stylesheets/application.451f80e5.css">
 <link rel="stylesheet" href="../../assets/stylesheets/application-palette.22915126.css">
 <meta name="theme-color" content="#03a9f4" />
@@ -61,7 +61,7 @@ data-md-color-accent="cyan"
 Blue Brain Nexus
 </span>
 <span class="md-header-nav__topic">
-Admin
+Project
 </span>
 </div>
 </div>
@@ -175,12 +175,18 @@ BlueBrain/nexus
   <li><a href="../../docs/fusion/index.html" class="page">Nexus Fusion</a>
   <ul>
     <li><a href="../../docs/fusion/architecture.html" class="page">Architecture</a></li>
+    <li><a href="../../docs/fusion/organizations.html" class="page">Organizations</a></li>
+    <li><a href="../../docs/fusion/projects.html" class="page">Projects</a>
+    <ul>
+      <li><a href="../../docs/fusion/project.html" class="active page">Project</a></li>
+    </ul></li>
+    <li><a href="../../docs/fusion/search.html" class="page">Global Search Types</a></li>
+    <li><a href="../../docs/fusion/studios.html" class="page">Studios</a>
+    <ul>
+      <li><a href="../../docs/fusion/studio.html" class="page">Studio</a></li>
+    </ul></li>
+    <li><a href="../../docs/fusion/my-data.html" class="page">User data</a></li>
     <li><a href="../../docs/fusion/plugins.html" class="page">Plugins</a></li>
-    <li><a href="../../docs/fusion/studio.html" class="page">Studios</a></li>
-    <li><a href="../../docs/fusion/search.html" class="page">Search</a></li>
-    <li><a href="../../docs/fusion/admin.html" class="active page">Admin</a></li>
-    <li><a href="../../docs/fusion/workflow.html" class="page">Workflow (alpha)</a></li>
-    <li><a href="../../docs/fusion/add-your-own-app.html" class="page">Add your own App</a></li>
   </ul></li>
   <li><a href="../../docs/forge.html" class="page">Nexus Forge</a></li>
   <li><a href="../../docs/delta/index.html" class="page">Nexus Delta</a>
@@ -233,27 +239,34 @@ BlueBrain/nexus
 <nav class="md-nav md-nav--secondary">
 <label class="md-nav__title" for="__toc">Table of contents</label>
 <ul>
-  <li><a href="../../docs/fusion/admin.html#admin" class="header">Admin</a>
+  <li><a href="../../docs/fusion/project.html#project" class="header">Project</a>
   <ul>
-    <li><a href="../../docs/fusion/admin.html#organizations-and-projects-indexes" class="header">Organizations and Projects Indexes</a>
+    <li><a href="../../docs/fusion/project.html#creating-a-new-project" class="header">Creating a New Project</a></li>
+    <li><a href="../../docs/fusion/project.html#project-page" class="header">Project Page</a>
     <ul>
-      <li><a href="../../docs/fusion/admin.html#creating-a-new-organization" class="header">Creating a New Organization</a></li>
-      <li><a href="../../docs/fusion/admin.html#creating-a-new-project" class="header">Creating a New Project</a></li>
-    </ul></li>
-    <li><a href="../../docs/fusion/admin.html#project-view" class="header">Project View</a>
-    <ul>
-      <li><a href="../../docs/fusion/admin.html#creating-a-new-resource" class="header">Creating a New Resource</a></li>
-    </ul></li>
-    <li><a href="../../docs/fusion/admin.html#resource-panel" class="header">Resource Panel</a></li>
-    <li><a href="../../docs/fusion/admin.html#resource-descriptions" class="header">Resource Descriptions</a>
-    <ul>
-      <li><a href="../../docs/fusion/admin.html#example-description" class="header">Example Description</a>
+      <li><a href="../../docs/fusion/project.html#browse" class="header">Browse</a>
       <ul>
-        <li><a href="../../docs/fusion/admin.html#resource" class="header">Resource</a></li>
-        <li><a href="../../docs/fusion/admin.html#description" class="header">Description</a></li>
-        <li><a href="../../docs/fusion/admin.html#result" class="header">Result</a></li>
+        <li><a href="../../docs/fusion/project.html#resource-panel" class="header">Resource Panel</a></li>
       </ul></li>
-      <li><a href="../../docs/fusion/admin.html#editing-a-resource-description" class="header">Editing a Resource Description</a></li>
+      <li><a href="../../docs/fusion/project.html#query" class="header">Query</a>
+      <ul>
+        <li><a href="../../docs/fusion/project.html#query-sparql-views" class="header">Query SPARQL Views</a></li>
+        <li><a href="../../docs/fusion/project.html#query-elasticsearch-views" class="header">Query Elasticsearch Views</a></li>
+      </ul></li>
+      <li><a href="../../docs/fusion/project.html#create-and-upload" class="header">Create and Upload</a></li>
+      <li><a href="../../docs/fusion/project.html#statistics" class="header">Statistics</a></li>
+      <li><a href="../../docs/fusion/project.html#settings" class="header">Settings</a>
+      <ul>
+        <li><a href="../../docs/fusion/project.html#general" class="header">General</a></li>
+        <li><a href="../../docs/fusion/project.html#views" class="header">Views</a></li>
+        <li><a href="../../docs/fusion/project.html#storage" class="header">Storage</a></li>
+        <li><a href="../../docs/fusion/project.html#resolvers" class="header">Resolvers</a></li>
+        <li><a href="../../docs/fusion/project.html#permissions-and-acls" class="header">Permissions and ACLs</a></li>
+        <li><a href="../../docs/fusion/project.html#danger-zone" class="header">Danger Zone</a></li>
+      </ul></li>
+      <li><a href="../../docs/fusion/project.html#jira" class="header">JIRA</a></li>
+      <li><a href="../../docs/fusion/project.html#graph-analytics" class="header">Graph Analytics</a></li>
+      <li><a href="../../docs/fusion/project.html#studios" class="header">Studios</a></li>
     </ul></li>
   </ul></li>
 </ul>
@@ -276,27 +289,34 @@ BlueBrain/nexus
 <nav class="md-nav md-nav--secondary">
 <label class="md-nav__title" for="__toc">Table of contents</label>
 <ul>
-  <li><a href="../../docs/fusion/admin.html#admin" class="header">Admin</a>
+  <li><a href="../../docs/fusion/project.html#project" class="header">Project</a>
   <ul>
-    <li><a href="../../docs/fusion/admin.html#organizations-and-projects-indexes" class="header">Organizations and Projects Indexes</a>
+    <li><a href="../../docs/fusion/project.html#creating-a-new-project" class="header">Creating a New Project</a></li>
+    <li><a href="../../docs/fusion/project.html#project-page" class="header">Project Page</a>
     <ul>
-      <li><a href="../../docs/fusion/admin.html#creating-a-new-organization" class="header">Creating a New Organization</a></li>
-      <li><a href="../../docs/fusion/admin.html#creating-a-new-project" class="header">Creating a New Project</a></li>
-    </ul></li>
-    <li><a href="../../docs/fusion/admin.html#project-view" class="header">Project View</a>
-    <ul>
-      <li><a href="../../docs/fusion/admin.html#creating-a-new-resource" class="header">Creating a New Resource</a></li>
-    </ul></li>
-    <li><a href="../../docs/fusion/admin.html#resource-panel" class="header">Resource Panel</a></li>
-    <li><a href="../../docs/fusion/admin.html#resource-descriptions" class="header">Resource Descriptions</a>
-    <ul>
-      <li><a href="../../docs/fusion/admin.html#example-description" class="header">Example Description</a>
+      <li><a href="../../docs/fusion/project.html#browse" class="header">Browse</a>
       <ul>
-        <li><a href="../../docs/fusion/admin.html#resource" class="header">Resource</a></li>
-        <li><a href="../../docs/fusion/admin.html#description" class="header">Description</a></li>
-        <li><a href="../../docs/fusion/admin.html#result" class="header">Result</a></li>
+        <li><a href="../../docs/fusion/project.html#resource-panel" class="header">Resource Panel</a></li>
       </ul></li>
-      <li><a href="../../docs/fusion/admin.html#editing-a-resource-description" class="header">Editing a Resource Description</a></li>
+      <li><a href="../../docs/fusion/project.html#query" class="header">Query</a>
+      <ul>
+        <li><a href="../../docs/fusion/project.html#query-sparql-views" class="header">Query SPARQL Views</a></li>
+        <li><a href="../../docs/fusion/project.html#query-elasticsearch-views" class="header">Query Elasticsearch Views</a></li>
+      </ul></li>
+      <li><a href="../../docs/fusion/project.html#create-and-upload" class="header">Create and Upload</a></li>
+      <li><a href="../../docs/fusion/project.html#statistics" class="header">Statistics</a></li>
+      <li><a href="../../docs/fusion/project.html#settings" class="header">Settings</a>
+      <ul>
+        <li><a href="../../docs/fusion/project.html#general" class="header">General</a></li>
+        <li><a href="../../docs/fusion/project.html#views" class="header">Views</a></li>
+        <li><a href="../../docs/fusion/project.html#storage" class="header">Storage</a></li>
+        <li><a href="../../docs/fusion/project.html#resolvers" class="header">Resolvers</a></li>
+        <li><a href="../../docs/fusion/project.html#permissions-and-acls" class="header">Permissions and ACLs</a></li>
+        <li><a href="../../docs/fusion/project.html#danger-zone" class="header">Danger Zone</a></li>
+      </ul></li>
+      <li><a href="../../docs/fusion/project.html#jira" class="header">JIRA</a></li>
+      <li><a href="../../docs/fusion/project.html#graph-analytics" class="header">Graph Analytics</a></li>
+      <li><a href="../../docs/fusion/project.html#studios" class="header">Studios</a></li>
     </ul></li>
   </ul></li>
 </ul>
@@ -315,51 +335,35 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 </p>
 </div>
 <div class="md-content__searchable">
-<h1><a href="#admin" name="admin" class="anchor"><span class="anchor-link"></span></a>Admin</h1>
-<p>The Nexus Fusion admin app allows you to manage your Nexus Delta instance. In particular, you can:</p>
+<h1><a href="#project" name="project" class="anchor"><span class="anchor-link"></span></a>Project</h1>
+<p>The Nexus Fusion project page allows you to manage your project in a given Blue Brain Nexus deployment. In particular, you can:</p>
 <ul>
-  <li>list, create, edit and deprecate organizations,</li>
-  <li>list, create, edit and deprecate projects within an organization,</li>
-  <li>check permissions on your projects and organizations,</li>
-  <li>create, view, edit, and deprecate resources within your projects,</li>
-  <li>query your Knowledge Graph with SPARQL and Elasticsearch views,</li>
-  <li>create new Studios (or edit or deprecate them, as Studios are resources),</li>
-  <li>check the indexing status of your projects.</li>
+  <li>List, create, edit and deprecate projects within an Organization,</li>
+  <li>Check permissions on your Projects and Organizations,</li>
+  <li>Create, view, edit, and deprecate resources within your projects,</li>
+  <li>Query your Knowledge Graph with SPARQL and Elasticsearch views,</li>
+  <li>Create new Studios (or edit or deprecate them, as Studios are resources),</li>
+  <li>Check the indexing status of your projects.</li>
 </ul>
 <blockquote>
   <p>Note: Some organizations in Nexus Delta are created to support Nexus Fusion internals, such as the <code>webapps</code> organization. Be careful when deleting those.</p>
 </blockquote>
-<h2><a href="#organizations-and-projects-indexes" name="organizations-and-projects-indexes" class="anchor"><span class="anchor-link"></span></a>Organizations and Projects Indexes</h2>
-<p>When creating a project, you can use &ldquo;Advanced Settings&rdquo; to set Base, Vocab and API mapping for the project.</p>
-<p>Base is an IRI used as a <a href="https://www.w3.org/TR/2010/NOTE-curie-20101216/" title="curie" target="_blank" rel="noopener noreferrer">curie</a> for generating &lsquo;@id&rsquo; of this child resources of the project.</p>
-<p>Vocab is an IRI used as a <a href="https://www.w3.org/TR/2010/NOTE-curie-20101216/" title="curie" target="_blank" rel="noopener noreferrer">curie</a> prefix for all unqualified predicates in child resources of the project. JSON object - provides a convenient way to deal with URIs when performing operations on a sub-resource. This field is optional.</p>
-<p>More info can be found <a href="../delta/api/projects-api.html#api-mappings">here</a> regarding API Mappings.</p>
-<h3><a href="#creating-a-new-organization" name="creating-a-new-organization" class="anchor"><span class="anchor-link"></span></a>Creating a New Organization</h3><div class="center">
-<p><img src="../assets/try-nexus-sandbox-admin-create-org-form.png" /></p></div>
-<h3><a href="#creating-a-new-project" name="creating-a-new-project" class="anchor"><span class="anchor-link"></span></a>Creating a New Project</h3><div class="center">
-<p><img src="../assets/try-nexus-sandbox-admin-organization.png" /></p></div><div class="center">
-<p><img src="../assets/try-nexus-sandbox-admin-create-project-form.png" /></p></div>
-<h2><a href="#project-view" name="project-view" class="anchor"><span class="anchor-link"></span></a>Project View</h2>
-<p>The project view in your admin app is the center stage to manage a project.</p><div class="center">
-<p><img src="../assets/fusion-admin-project-page.png" alt="Project View" /></p></div>
-<ul>
-  <li>On the left hand side, you will find the <code>Default Query</code>. You can filter and search resources, order them, as well  as share that query with your peers. You can create as many queries as you like by clicking <code>+ Add another resource list</code>.</li>
-  <li>On the right hand side, you find the <code>Project Tools</code>. You&rsquo;ll find the SPARQL and Elasticsearch query editors, and  check the project permissions. You can also <a href="admin.html#creating-a-new-resource">create a new resource</a> and upload files.</li>
-  <li>&ldquo;Manage studios for this project&rdquo;, will take you to the studio sub application. There you can create/edit/update  studios for this project.</li>
-</ul>
-<p>In the header, the breadcrumbs menu shows the organization and project your are in. You can also check the indexing status of your project.</p>
-<h3><a href="#creating-a-new-resource" name="creating-a-new-resource" class="anchor"><span class="anchor-link"></span></a>Creating a New Resource</h3>
-<p>Navigate to the project where you want to create a resource. Click on the “Create Resource” button in the right sidebar. Build the JSON payload with the help of the interactive editor, then hit “Save”.</p>
-<h2><a href="#resource-panel" name="resource-panel" class="anchor"><span class="anchor-link"></span></a>Resource Panel</h2>
-<p>The resource panel displays data about an individual resource. Standard resource data is displayed at the top of the resource panel. Based on the resource type, you will also see a set of plugins, each displayed in its own expandable section. By default, there will only be an admin plugin. You can read more about the admin plugin <a href="plugins.html#default-plugins">here</a>.</p>
-<h2><a href="#resource-descriptions" name="resource-descriptions" class="anchor"><span class="anchor-link"></span></a>Resource Descriptions</h2>
-<p>To enable users to visualize and describe their data, we have included a description editor and viewer. Resource descriptions are rendered first with a templating system, and then as markdown. This allows users to show off their resources using a combination of HTML and markdown that is useful to render resource properties, iterate through resource lists, or render images stored in Nexus Delta.</p>
-<p>Nexus Fusion saves descriptions as a simple string inside the Resource&rsquo;s <code>description</code> property.</p>
-<p>Markdown is rendered using <a href="https://github.com/showdownjs/showdown">showdown</a>, with templating provided by <a href="https://handlebarsjs.com/guide/">handlebars</a>.</p>
-<p>This feature is also used in the <a href="studio.html#studio-description">Studio Description</a>.</p><div class="callout note "><div class="callout-title">Note</div>
-<p>The Handlebar templating will be resolved <em>before</em> converting markdown.</p></div>
-<h3><a href="#example-description" name="example-description" class="anchor"><span class="anchor-link"></span></a>Example Description</h3>
-<h4><a href="#resource" name="resource" class="anchor"><span class="anchor-link"></span></a>Resource</h4>
+<h1><a href="#creating-a-new-project" name="creating-a-new-project" class="anchor"><span class="anchor-link"></span></a>Creating a New Project</h1>
+<p>When creating a Project, you can configure the Base, Vocab and through the &ldquo;Advanced Settings&rdquo; the API Mappings for the project. You can learn more about these settings in the <a href="https://bluebrainnexus.io//docs/delta/api/projects-api.html#payload">Delta Documentation</a>. The current version allows the user to create a Project in different main parts of the application, Organization page, projects page, and also in the global search types pages.</p><div class="center">
+<p><img src="assets/fusion-projects-create-prj.png" alt="Project creation modal" /></p></div>
+<p>The project creation modal is configurable in way that can allow the user to select an organization when the user is not on the one of his organizations page.</p>
+<h1><a href="#project-page" name="project-page" class="anchor"><span class="anchor-link"></span></a>Project Page</h1>
+<p>The project view is the center stage to manage a project. Each tab is meant to give you functionalities that we will describe below.</p><div class="center">
+<p><img src="assets/fusion-project-page.png" alt="Project Page" /></p></div>
+<h2><a href="#browse" name="browse" class="anchor"><span class="anchor-link"></span></a>Browse</h2>
+<p>The browse tab enables users to list all resources available in the current Project.</p>
+<p><img src="assets/fusion-projects-create-prj.png" alt="Browse Tab" /></p>
+<p>On the left hand side, you will find the <a href="project.html#query">Default Query</a>. You can filter and search resources, order them, as well as share that query with your peers. You can create as many queries as you like by clicking + Add another resource list.</p>
+<h3><a href="#resource-panel" name="resource-panel" class="anchor"><span class="anchor-link"></span></a>Resource Panel</h3>
+<h4><a href="#description" name="description" class="anchor"><span class="anchor-link"></span></a>Description</h4>
+<p>To enable users to visualize and describe their data, we have included a description viewer (this plugin) and editor (Advance View &gt; Description Tab). This plugin will only show if the resource has a description property defined. Resource descriptions are rendered first with a templating system, and then as markdown. This allows users to show off their resources using a combination of HTML and markdown that is useful to render resource properties, iterate through resource lists, or render images stored in Nexus Delta. Nexus Fusion saves descriptions as a simple string inside the Resource&rsquo;s description property. Markdown is rendered using showdown, with templating provided by handlebars. This feature is also used in the @ref:Studio Description.</p><div class="callout note "><div class="callout-title">Note</div>
+<p>The Handlebar templating will be resolved before converting markdown. </p></div>
+<p>Example Resource</p>
 <pre><code>{
   &quot;@id&quot;: &quot;9a4c53f4-ab50-459f-9aed-cd9ad57b9c5d&quot;,
   &quot;@type&quot;: [
@@ -393,7 +397,8 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   }
 }
 </code></pre>
-<h4><a href="#description" name="description" class="anchor"><span class="anchor-link"></span></a>Description</h4>
+<p>Example Description (in the editor)</p>
+<p>Please note that the following syntax {{ json.path }} will present the data found in the resource’s matching json path. This way, JSON data can be injected into your description based on the resource’s JSON payload.</p>
 <pre><code># {{name}} | {{ objectOfStudy.label }}
 
 ## Subject
@@ -405,14 +410,74 @@ Species:  {{ subject.species.label }}
 {{ brainLocation.brainRegion.label }}
 
 </code></pre>
-<h4><a href="#result" name="result" class="anchor"><span class="anchor-link"></span></a>Result</h4>
+<p>Please note that we are linking the image through the _self (not the @id) URI of an image stored in the Nexus instance as a resource of type File.</p>
+<p><strong>Result</strong></p>
 <p><img src="assets/description-editor-result.png" alt="Description Editor Result" /></p>
-<h3><a href="#editing-a-resource-description" name="editing-a-resource-description" class="anchor"><span class="anchor-link"></span></a>Editing a Resource Description</h3>
-<p>Users with write permissions on a Resource will have access to a tab called &ldquo;Description&rdquo;. There, you can use a full WYSIWYG editor to type out and preview a description before saving it.</p>
+<p>Users with write permissions on a Resource will have access to a tab called &ldquo;Description&rdquo; in the Advanced View plugin. There, you can use a full WYSIWYG editor to type out and preview a description before saving it.</p>
 <p><img src="assets/description-editor-example.png" alt="Description Editor" /></p>
+<h4><a href="#advanced-view" name="advanced-view" class="anchor"><span class="anchor-link"></span></a>Advanced View</h4>
+<p>This is a provided plugin that enables users to look into the resources they store in a given Project. This plugin offers multiple capabilities you will find in its tabs:</p>
+<ul>
+  <li>JSON - to view the JSON-LD representation of the resource.</li>
+  <li>Description - to edit the resource description in Markdown.</li>
+  <li>History - to view all the revisions of this resource.</li>
+  <li>Links - to view the incoming and Outgoing relations of this resource to other resources.</li>
+  <li>Graph - to view the resource as a Graph representation.</li>
+</ul>
+<p><img src="assets/Project-browse-resourcePanel-advancedView.png" alt="Advanced View" /></p>
+<h4><a href="#preview" name="preview" class="anchor"><span class="anchor-link"></span></a>Preview</h4>
+<p>This plugin presents data that is stored in the distribution of the resource. Namely the Files that have been attached to this resource. When available, the files are listed and can be Downloaded. Some specific file types can be previewed (e.g. PDF, CSV).</p>
+<p><img src="assets/Project-browse-resourcePanel-Preview.png" alt="Preview" /></p>
+<h4><a href="#image-viewer" name="image-viewer" class="anchor"><span class="anchor-link"></span></a>Image Viewer</h4>
+<p>This plugin presents Image files that are represented under the resource’s image property. The images are previewed and made downloadable for the user.</p>
+<h2><a href="#query" name="query" class="anchor"><span class="anchor-link"></span></a>Query</h2>
+<p>This tab enables a technical user to write queries against views configured in the project. Currently it supports SPARQL and Elasticsearch Views.</p>
+<h3><a href="#query-sparql-views" name="query-sparql-views" class="anchor"><span class="anchor-link"></span></a>Query SPARQL Views</h3>
+<p>Here you can write a SPARQL query, execute it and preview the results.</p>
+<p><img src="assets/Project-Query-sparql.png" alt="Query SPARQL" /></p>
+<h3><a href="#query-elasticsearch-views" name="query-elasticsearch-views" class="anchor"><span class="anchor-link"></span></a>Query Elasticsearch Views</h3>
+<p>Here you can write an Elasticsearch query, execute it and preview the results.</p>
+<p><img src="assets/Project-Query-Elasticsearch.png" alt="Query Elasticsearch" /></p>
+<h2><a href="#create-and-upload" name="create-and-upload" class="anchor"><span class="anchor-link"></span></a>Create and Upload</h2>
+<p>Here you can create new resources. The dropdown menu (Resource Type) at the top will give you access to predefined resources (e.g. Storage, Views), you can also create your from scratch. Finally you can drag and drop Files to be uploaded into Nexus.</p>
+<p><img src="assets/Project-Create-And-Upload.png" alt="Create and Upload" /></p>
+<h2><a href="#statistics" name="statistics" class="anchor"><span class="anchor-link"></span></a>Statistics</h2>
+<p>If you have the privileges, you can view the count of resources as well as the quotas currently defined in your Nexus instance.</p>
+<h2><a href="#settings" name="settings" class="anchor"><span class="anchor-link"></span></a>Settings</h2>
+<p>In this tab you can configure several aspects of your project.</p>
+<h3><a href="#general" name="general" class="anchor"><span class="anchor-link"></span></a>General</h3>
+<p>This section allows users to configure the Base, Vocab and API Mappings of their project.</p>
+<p><img src="assets/Project-Settings-General.png" alt="Create and Upload" /></p>
+<h3><a href="#views" name="views" class="anchor"><span class="anchor-link"></span></a>Views</h3>
+<p>This section allows users to list all the Views currently configured in your project and trigger actions on them. More actions will be added in the future.</p>
+<p><img src="assets/Project-Settings-Views.png" alt="Views" /></p>
+<h3><a href="#storage" name="storage" class="anchor"><span class="anchor-link"></span></a>Storage</h3>
+<p>This section allows users to list all configured Storages in this project.</p>
+<p><img src="assets/Project-Settings-Storages.png" alt="Storage" /></p>
+<h3><a href="#resolvers" name="resolvers" class="anchor"><span class="anchor-link"></span></a>Resolvers</h3>
+<p>This section allows users to list all configured Resolvers <a href="https://bluebrainnexus.io/docs/delta/api/resolvers-api.html">(API reference)</a> in this project. They are also ordered by their priorities as in the ID resolution process.</p>
+<p><img src="assets/Project-Settings-Resolvers.png" alt="Resolvers" /></p>
+<h3><a href="#permissions-and-acls" name="permissions-and-acls" class="anchor"><span class="anchor-link"></span></a>Permissions and ACLs</h3>
+<p>This section allows users to view the Permissions set on various levels of the Nexus instance:</p>
+<ul>
+  <li>/ which is the root of all Organizations and Projects</li>
+  <li>Organizations of the current project</li>
+  <li>Specific Project  Each of these level then list the users and groups onto which Permissions (i.e. ACLS) have been set.</li>
+</ul>
+<p><img src="assets/Project-Settings-ACLs.png" alt="Permissions and ACLs" /></p>
+<h3><a href="#danger-zone" name="danger-zone" class="anchor"><span class="anchor-link"></span></a>Danger Zone</h3>
+<p>In this section, users can do potentially damaging actions such as deprecating a project.</p>
+<p><img src="assets/Project-Settings-DangerZone.png" alt="Danger Zone" /></p>
+<h2><a href="#jira" name="jira" class="anchor"><span class="anchor-link"></span></a>JIRA</h2>
+<p>If you have the JIRA plugin configured in your Nexus instance, you can see all tickets created within this project, across all resources.</p>
+<h2><a href="#graph-analytics" name="graph-analytics" class="anchor"><span class="anchor-link"></span></a>Graph Analytics</h2>
+<p>This tab enables users to view the overall structure of the knowledge graph stored in this project. It only shows types as well as their relations to other resource types. Bear in mind that if a resource has multiple types, each type will show independently in this graph. Furthermore, you can click on a type and view (on the right hand side panel) its property usage statistics as well as its relation statistics, this is useful to check the quality of your data.</p>
+<p><img src="assets/Project-GraphAnalytics.png" alt="Graph Analytics" /></p>
+<h2><a href="#studios" name="studios" class="anchor"><span class="anchor-link"></span></a>Studios</h2>
+<p>This tab will take you to the Studio listing page for this specific project.</p>
 </div>
 <div>
-<a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/fusion/admin.md" title="Edit this page" class="md-source-file md-edit">
+<a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/fusion/project.md" title="Edit this page" class="md-source-file md-edit">
 Edit this page
 </a>
 </div>
@@ -428,7 +493,7 @@ Snapshot
 <footer class="md-footer">
 <div class="md-footer-nav">
 <nav class="md-footer-nav__inner md-grid">
-<a href="../../docs/fusion/search.html" title="Search" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+<a href="../../docs/fusion/projects.html" title="Projects" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
 <div class="md-flex__cell md-flex__cell--shrink">
 <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
 </div>
@@ -437,17 +502,17 @@ Snapshot
 <span class="md-footer-nav__direction">
 Previous
 </span>
-Search
+Projects
 </span>
 </div>
 </a>
-<a href="../../docs/fusion/workflow.html" title="Workflow (alpha)" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../docs/fusion/search.html" title="Global Search Types" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-Workflow (alpha)
+Global Search Types
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">
