@@ -1,11 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.archive.routes
 
-import akka.http.scaladsl.model.MediaTypes
 import akka.http.scaladsl.model.StatusCodes.{Created, SeeOther}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive1, Route}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.Archives
-import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.permissions
+import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.{permissions, ArchiveFormat}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
@@ -15,7 +14,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaDirect
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sdk.utils.HeadersUtils
 import io.circe.Json
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.execution.Scheduler
@@ -55,9 +53,9 @@ class ArchiveRoutes(
               (post & entity(as[Json]) & pathEndOrSingleSlash) { json =>
                 operationName(s"$prefix/archives/{org}/{project}") {
                   authorizeFor(ref, permissions.write).apply {
-                    tarResponse { asTar =>
-                      if (asTar) emitRedirect(SeeOther, archives.create(ref, json).map(_.uris.accessUri))
-                      else emit(Created, archives.create(ref, json).mapValue(_.metadata))
+                    archiveResponse {
+                      case Some(_) => emitRedirect(SeeOther, archives.create(ref, json).map(_.uris.accessUri))
+                      case None    => emit(Created, archives.create(ref, json).mapValue(_.metadata))
                     }
                   }
                 }
@@ -68,20 +66,24 @@ class ArchiveRoutes(
                     // create an archive with an id
                     (put & entity(as[Json]) & pathEndOrSingleSlash) { json =>
                       authorizeFor(ref, permissions.write).apply {
-                        tarResponse { asTar =>
-                          if (asTar) emitRedirect(SeeOther, archives.create(id, ref, json).map(_.uris.accessUri))
-                          else emit(Created, archives.create(id, ref, json).mapValue(_.metadata))
+                        archiveResponse {
+                          case Some(_) => emitRedirect(SeeOther, archives.create(id, ref, json).map(_.uris.accessUri))
+                          case None    => emit(Created, archives.create(id, ref, json).mapValue(_.metadata))
                         }
                       }
                     },
                     // fetch or download an archive
                     (get & pathEndOrSingleSlash) {
                       authorizeFor(ref, permissions.read).apply {
-                        tarResponse { asTar =>
-                          if (asTar) parameter("ignoreNotFound".as[Boolean] ? false) { ignoreNotFound =>
-                            emit(archives.download(id, ref, ignoreNotFound).map(sourceToFileResponse))
-                          }
-                          else emit(archives.fetch(id, ref))
+                        archiveResponse {
+                          case Some(format) =>
+                            parameter("ignoreNotFound".as[Boolean] ? false) { ignoreNotFound =>
+                              val response = archives.download(id, ref, format, ignoreNotFound).map { source =>
+                                sourceToFileResponse(source, format)
+                              }
+                              emit(response)
+                            }
+                          case None         => emit(archives.fetch(id, ref))
                         }
                       }
                     }
@@ -94,11 +96,9 @@ class ArchiveRoutes(
       }
     }
 
-  private def sourceToFileResponse(source: AkkaSource): FileResponse =
-    FileResponse("archive.tar", MediaTypes.`application/x-tar`, 0L, source)
+  private def sourceToFileResponse(source: AkkaSource, format: ArchiveFormat[_]): FileResponse =
+    FileResponse(s"archive.${format.fileExtension}", format.contentType, 0L, source)
 
-  private def tarResponse: Directive1[Boolean] =
-    extractRequest.map { req =>
-      HeadersUtils.matches(req.headers, MediaTypes.`application/x-tar`)
-    }
+  private def archiveResponse: Directive1[Option[ArchiveFormat[_]]] =
+    extractRequest.map(ArchiveFormat(_))
 }

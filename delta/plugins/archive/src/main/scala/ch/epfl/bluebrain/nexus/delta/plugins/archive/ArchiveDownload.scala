@@ -1,7 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.archive
 
-import akka.stream.alpakka.file.TarArchiveMetadata
-import akka.stream.alpakka.file.scaladsl.Archive
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import cats.implicits._
@@ -38,20 +36,23 @@ import java.nio.charset.StandardCharsets
 trait ArchiveDownload {
 
   /**
-    * Generates an akka [[Source]] of bytes representing the tar.
+    * Generates an akka [[Source]] of bytes representing the archive.
     *
     * @param value
     *   the archive value
     * @param project
     *   the archive parent project
+    * @param format
+    *   the requested archive format
     * @param ignoreNotFound
     *   do not fail when resource references are not found
     * @param caller
     *   the caller to be used for checking for access
     */
-  def apply(
+  def apply[M](
       value: ArchiveValue,
       project: ProjectRef,
+      format: ArchiveFormat[M],
       ignoreNotFound: Boolean
   )(implicit caller: Caller): IO[ArchiveRejection, AkkaSource]
 
@@ -82,20 +83,22 @@ object ArchiveDownload {
       private val printer                 = Printer.spaces2.copy(dropNullValues = true)
       private val sourcePrinter           = Printer.spaces2.copy(dropNullValues = false)
 
-      override def apply(
+      override def apply[M](
           value: ArchiveValue,
           project: ProjectRef,
+          format: ArchiveFormat[M],
           ignoreNotFound: Boolean
       )(implicit caller: Caller): IO[ArchiveRejection, AkkaSource] = {
-        val referenceList = value.resources.toList
+        implicit val entryOrdering: Ordering[M] = format.ordering
+        val referenceList                       = value.resources.toList
         for {
           _       <- checkResourcePermissions(referenceList, project)
           entries <- referenceList.traverseFilter {
-                       case ref: ResourceReference => resourceEntry(ref, project, ignoreNotFound)
-                       case ref: FileReference     => fileEntry(ref, project, ignoreNotFound)
+                       case ref: ResourceReference => resourceEntry(ref, project, format, ignoreNotFound)
+                       case ref: FileReference     => fileEntry(ref, project, format, ignoreNotFound)
                      }
-          sorted   = entries.sortBy { case (tarArchive, _) => tarArchive.filePath }
-        } yield Source(sorted).via(Archive.tar())
+          sorted   = entries.sortBy { case (entry, _) => entry }
+        } yield Source(sorted).via(format.writeFlow)
       }
 
       private def checkResourcePermissions(
@@ -111,9 +114,14 @@ object ArchiveDownload {
           )
           .void
 
-      private def fileEntry(ref: FileReference, project: ProjectRef, ignoreNotFound: Boolean)(implicit
+      private def fileEntry[Metadata](
+          ref: FileReference,
+          project: ProjectRef,
+          format: ArchiveFormat[Metadata],
+          ignoreNotFound: Boolean
+      )(implicit
           caller: Caller
-      ): IO[ArchiveRejection, Option[(TarArchiveMetadata, AkkaSource)]] = {
+      ): IO[ArchiveRejection, Option[(Metadata, AkkaSource)]] = {
         val refProject = ref.project.getOrElse(project)
         // the required permissions are checked for each file content fetch
         val tarEntryIO = fetchFileContent(ref.ref, refProject, caller)
@@ -126,8 +134,8 @@ object ArchiveDownload {
           }
           .flatMap { fileResponse =>
             IO.fromEither(
-              pathOf(ref, project, fileResponse.filename).map { path =>
-                val metadata = TarArchiveMetadata.create(path, fileResponse.bytes)
+              pathOf(ref, project, format, fileResponse.filename).map { path =>
+                val metadata = format.metadata(path, fileResponse.bytes)
                 Some((metadata, fileResponse.content))
               }
             )
@@ -136,24 +144,30 @@ object ArchiveDownload {
         else tarEntryIO
       }
 
-      private def pathOf(ref: FileReference, project: ProjectRef, filename: String): Either[FilenameTooLong, String] =
+      private def pathOf(
+          ref: FileReference,
+          project: ProjectRef,
+          format: ArchiveFormat[_],
+          filename: String
+      ): Either[FilenameTooLong, String] =
         ref.path.map { p => Right(p.value.toString) }.getOrElse {
           val p = ref.project.getOrElse(project)
           Either.cond(
-            filename.length < 100,
+            format != ArchiveFormat.Tar || filename.length < 100,
             s"$p/file/$filename",
             FilenameTooLong(ref.ref.original, p, filename)
           )
         }
 
-      private def resourceEntry(
+      private def resourceEntry[Metadata](
           ref: ResourceReference,
           project: ProjectRef,
+          format: ArchiveFormat[Metadata],
           ignoreNotFound: Boolean
-      ): IO[ArchiveRejection, Option[(TarArchiveMetadata, AkkaSource)]] = {
+      ): IO[ArchiveRejection, Option[(Metadata, AkkaSource)]] = {
         val tarEntryIO = resourceRefToByteString(ref, project).map { content =>
           val path     = pathOf(ref, project)
-          val metadata = TarArchiveMetadata.create(path, content.length.toLong)
+          val metadata = format.metadata(path, content.length.toLong)
           Some((metadata, Source.single(content)))
         }
         if (ignoreNotFound) tarEntryIO.onErrorHandle { _: ResourceNotFound => None }
