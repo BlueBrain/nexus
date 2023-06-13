@@ -125,7 +125,7 @@ object ArchiveDownload {
       }
 
       private def asStream[M](list: List[(M, Task[AkkaSource])]) = {
-        fs2.Stream.iterable(list).evalMap[Task, (M, AkkaSource)] { case (metadata, source) =>
+        Stream.iterable(list).evalMap[Task, (M, AkkaSource)] { case (metadata, source) =>
           source.map(metadata -> _)
         }
       }
@@ -153,7 +153,7 @@ object ArchiveDownload {
       ): IO[ArchiveRejection, Option[(Metadata, Task[AkkaSource])]] = {
         val refProject = ref.project.getOrElse(project)
         // the required permissions are checked for each file content fetch
-        val tarEntryIO = fetchFileContent(ref.ref, refProject, caller)
+        val entry = fetchFileContent(ref.ref, refProject, caller)
           .mapError {
             case _: FileRejection.FileNotFound                 => ResourceNotFound(ref.ref, project)
             case _: FileRejection.TagNotFound                  => ResourceNotFound(ref.ref, project)
@@ -170,8 +170,8 @@ object ArchiveDownload {
               }
             )
           }
-        if (ignoreNotFound) tarEntryIO.onErrorRecover { case _: ResourceNotFound => None }
-        else tarEntryIO
+        if (ignoreNotFound) entry.onErrorRecover { case _: ResourceNotFound => None }
+        else entry
       }
 
       private def pathOf(
