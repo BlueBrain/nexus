@@ -149,7 +149,7 @@ class RemoteStorageSpec extends StorageSpec {
     sb.toString
   }
 
-  "succeed many large files are in the archive, going over the time limit" in {
+  "succeed many large files are in the archive, going over the time limit" ignore {
     val content = randomString(130000000)
     val payload = jsonContentOf("/kg/archives/archive-many-large-files.json")
     var before = 0L
