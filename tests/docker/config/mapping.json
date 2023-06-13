@@ -1,11 +1,37 @@
 {
   "dynamic_templates": [
     {
+      "id_labels": {
+        "match_mapping_type": "string",
+        "match": "idLabel",
+        "mapping": {
+          "type": "keyword"
+        }
+      }
+    },
+    {
+      "labels": {
+        "match_pattern": "regex",
+        "match": "^(label|name)$",
+        "mapping": {
+          "type": "text",
+          "analyzer": "nexus",
+          "search_analyzer": "search_nexus",
+          "fields": {
+            "keyword": {
+              "type": "keyword"
+            }
+          }
+        }
+      }
+    },
+    {
       "strings": {
         "match_mapping_type": "string",
         "mapping": {
           "type": "text",
           "analyzer": "nexus",
+          "search_analyzer": "search_nexus",
           "fields": {
             "keyword": {
               "type": "keyword"
@@ -16,19 +42,69 @@
     }
   ],
   "properties": {
-    "@id": {
-      "type": "keyword"
-    },
-    "name": {
-      "type": "text",
-      "analyzer": "nexus"
+    "brainRegion": {
+      "type": "object"
     },
     "description": {
       "type": "text",
-      "analyzer": "nexus"
+      "analyzer": "nexus",
+      "search_analyzer": "search_nexus"
     },
-    "_self": {
-      "type": "keyword"
+    "distribution": {
+      "properties": {
+        "contentSize": {
+          "type": "long"
+        }
+      }
+    },
+    "coordinatesInBrainAtlas": {
+      "properties": {
+        "valueX": { "type": "float" },
+        "valueY": { "type": "float" },
+        "valueZ": { "type": "float" }
+      }
+    },
+    "subject": {
+      "properties": {
+        "weight": {
+          "properties": {
+            "value": { "type": "double" },
+            "minValue": { "type": "double" },
+            "maxValue": { "type": "double" }
+          }
+        },
+        "age": {
+          "properties": {
+            "value": { "type": "double" },
+            "minValue": { "type": "double" },
+            "maxValue": { "type": "double" }
+          }
+        }
+      }
+    },
+    "generation": {
+      "properties": {
+        "startedAt": { "type": "date" },
+        "endedAt": { "type": "date" }
+      }
+    },
+    "createdAt": {
+      "type": "date"
+    },
+    "updatedAt": {
+      "type": "date"
+    },
+    "startedAt": {
+      "type": "date"
+    },
+    "endedAt": {
+      "type": "date"
+    },
+    "series": {
+      "type": "nested",
+      "properties": {
+        "value": { "type": "double" }
+      }
     }
   }
 }
