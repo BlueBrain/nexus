@@ -1,0 +1,19 @@
+{
+  "@context": "https://bbp.neuroshapes.org",
+  "@id": "https://bbp.epfl.ch/neurosciencegraph/data/2f8814d6-a40f-4377-a675-e164816c5d73",
+  "@type": [
+    "Entity",
+    "Protocol",
+    "ExperimentalProtocol"
+  ],
+  "datePublished": {
+    "@type": "xsd:dateTime",
+    "@value": "2015-10-08T00:00:00"
+  },
+  "description": "This paper describes the protocol used to generate sscx experimental data.",
+  "identifier": {
+    "propertyID": "doi",
+    "value": "https://doi.org/10.1016/j.cell.2015.09.029"
+  },
+  "name": "Reconstruction and Simulation of Neocortical Microcircuitry"
+}
