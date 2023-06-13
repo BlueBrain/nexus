@@ -345,7 +345,10 @@ final class Files(
       storage   <- storages.fetch(file.value.storage, project)
       permission = storage.value.storageValue.readPermission
       _         <- aclCheck.authorizeForOr(project, permission)(AuthorizationFailed(project, permission))
-      s         = FetchFile(storage.value).apply(attributes).mapError(FetchRejection(file.id, storage.id, _)).leftWiden[FileRejection]
+      s          = FetchFile(storage.value)
+                     .apply(attributes)
+                     .mapError(FetchRejection(file.id, storage.id, _))
+                     .leftWiden[FileRejection]
       mediaType  = attributes.mediaType.getOrElse(`application/octet-stream`)
     } yield FileResponse(attributes.filename, mediaType, attributes.bytes, s)
   }.span("fetchFileContent")

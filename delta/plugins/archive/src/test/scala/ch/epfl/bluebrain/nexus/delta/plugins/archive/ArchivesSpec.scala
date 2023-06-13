@@ -62,8 +62,10 @@ class ArchivesSpec
 
   private val cfg           = ArchivePluginConfig(1, EphemeralLogConfig(5.seconds, 5.hours))
   private val download      = new ArchiveDownload {
-    override def apply[M](value: ArchiveValue, project: ProjectRef, format: ArchiveFormat[M], ignoreNotFound: Boolean)(implicit
-        caller: Caller, scheduler: Scheduler
+    override def apply[M](value: ArchiveValue, project: ProjectRef, format: ArchiveFormat[M], ignoreNotFound: Boolean)(
+        implicit
+        caller: Caller,
+        scheduler: Scheduler
     ): IO[ArchiveRejection, AkkaSource] =
       IO.pure(Source.empty)
   }

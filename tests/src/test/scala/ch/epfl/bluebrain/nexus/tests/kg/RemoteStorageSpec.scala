@@ -141,7 +141,7 @@ class RemoteStorageSpec extends StorageSpec {
   }
 
   def randomString(length: Int) = {
-    val r = new scala.util.Random
+    val r  = new scala.util.Random
     val sb = new StringBuilder
     for (_ <- 1 to length) {
       sb.append(r.nextPrintableChar())
@@ -152,7 +152,7 @@ class RemoteStorageSpec extends StorageSpec {
   "succeed many large files are in the archive, going over the time limit" ignore {
     val content = randomString(130000000)
     val payload = jsonContentOf("/kg/archives/archive-many-large-files.json")
-    var before = 0L
+    var before  = 0L
     for {
       _ <- putFile("largefile1.txt", content, s"${storageId}2")
       _ <- putFile("largefile2.txt", content, s"${storageId}2")
@@ -169,16 +169,16 @@ class RemoteStorageSpec extends StorageSpec {
       _ <- putFile("largefile13.txt", content, s"${storageId}2")
       _ <- putFile("largefile14.txt", content, s"${storageId}2")
       _ <- putFile("largefile15.txt", content, s"${storageId}2")
-      _ <- deltaClient.put[ByteString](s"/archives/$fullId/nxv:very-large-archive", payload, Coyote) {
-        (_, response) =>
-          before = System.currentTimeMillis()
-          response.status shouldEqual StatusCodes.Created
-      }
-      _ <- deltaClient.get[ByteString](s"/archives/$fullId/nxv:very-large-archive", Coyote, acceptAll) { (_, response) =>
-        println(s"time taken to download archive: ${System.currentTimeMillis() - before}ms")
-        response.status shouldEqual StatusCodes.OK
-        contentType(response) shouldEqual MediaTypes.`application/x-tar`.toContentType
-      }
+      _ <- deltaClient.put[ByteString](s"/archives/$fullId/nxv:very-large-archive", payload, Coyote) { (_, response) =>
+             before = System.currentTimeMillis()
+             response.status shouldEqual StatusCodes.Created
+           }
+      _ <-
+        deltaClient.get[ByteString](s"/archives/$fullId/nxv:very-large-archive", Coyote, acceptAll) { (_, response) =>
+          println(s"time taken to download archive: ${System.currentTimeMillis() - before}ms")
+          response.status shouldEqual StatusCodes.OK
+          contentType(response) shouldEqual MediaTypes.`application/x-tar`.toContentType
+        }
     } yield {
       succeed
     }

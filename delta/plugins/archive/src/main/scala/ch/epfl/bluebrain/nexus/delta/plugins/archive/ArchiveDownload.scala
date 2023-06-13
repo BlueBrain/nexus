@@ -94,24 +94,33 @@ object ArchiveDownload {
       )(implicit caller: Caller, scheduler: Scheduler): IO[ArchiveRejection, AkkaSource] = {
         val references = value.resources.toList
         for {
-          _       <- checkResourcePermissions(references, project)
+          _             <- checkResourcePermissions(references, project)
           contentStream <- resolveReferencesAsStream(references, project, ignoreNotFound, format)
-        } yield  {
+        } yield {
           Source.fromGraph(StreamConverter(contentStream)).via(format.writeFlow)
         }
       }
 
-      private def resolveReferencesAsStream[M](references: List[ArchiveReference], project: ProjectRef, ignoreNotFound: Boolean, format: ArchiveFormat[M])(implicit caller: Caller): IO[ArchiveRejection, Stream[Task, (M, AkkaSource)]] = {
-        references.traverseFilter {
-          case ref: FileReference => fileEntry(ref, project, format, ignoreNotFound)
-          case ref: ResourceReference => resourceEntry(ref, project, format, ignoreNotFound)
-        }.map(sortWith(format))
+      private def resolveReferencesAsStream[M](
+          references: List[ArchiveReference],
+          project: ProjectRef,
+          ignoreNotFound: Boolean,
+          format: ArchiveFormat[M]
+      )(implicit caller: Caller): IO[ArchiveRejection, Stream[Task, (M, AkkaSource)]] = {
+        references
+          .traverseFilter {
+            case ref: FileReference     => fileEntry(ref, project, format, ignoreNotFound)
+            case ref: ResourceReference => resourceEntry(ref, project, format, ignoreNotFound)
+          }
+          .map(sortWith(format))
           .map(asStream)
       }
 
-      private def sortWith[M](format: ArchiveFormat[M])(list: List[(M, Task[AkkaSource])]): List[(M, Task[AkkaSource])] = {
-        list.sortBy {
-          case (entry, _) => entry
+      private def sortWith[M](
+          format: ArchiveFormat[M]
+      )(list: List[(M, Task[AkkaSource])]): List[(M, Task[AkkaSource])] = {
+        list.sortBy { case (entry, _) =>
+          entry
         }(format.ordering)
       }
 
@@ -135,10 +144,10 @@ object ArchiveDownload {
           .void
 
       private def fileEntry[Metadata](
-                                       ref: FileReference,
-                                       project: ProjectRef,
-                                       format: ArchiveFormat[Metadata],
-                                       ignoreNotFound: Boolean
+          ref: FileReference,
+          project: ProjectRef,
+          format: ArchiveFormat[Metadata],
+          ignoreNotFound: Boolean
       )(implicit
           caller: Caller
       ): IO[ArchiveRejection, Option[(Metadata, Task[AkkaSource])]] = {
@@ -155,7 +164,7 @@ object ArchiveDownload {
           .flatMap { case FileResponse(fileMetadata, content) =>
             IO.fromEither(
               pathOf(ref, project, format, fileMetadata.filename).map { path =>
-                val archiveMetadata = format.metadata(path, fileMetadata.bytes)
+                val archiveMetadata               = format.metadata(path, fileMetadata.bytes)
                 val contentTask: Task[AkkaSource] = content.mapError(_ => new RuntimeException())
                 Some((archiveMetadata, contentTask))
               }

@@ -108,7 +108,7 @@ object ResponseToJsonLd extends FileBytesInstances {
         onSuccess(flattened.runToFuture) {
           case Left(complete: Complete[E]) => emit(complete)
           case Left(reject: Reject[E])     => emit(reject)
-          case Right(Left(c)) =>
+          case Right(Left(c))              =>
             implicit val valueEncoder = c.value.encoder
             emit(c.value.value)
 

@@ -64,7 +64,6 @@ abstract class ArchiveDownloadSpec
 
   implicit val ec: ExecutionContext = system.dispatcher
 
-
   implicit private val subject: Subject = Identity.User("user", Label.unsafe("realm"))
   implicit private val caller: Caller   = Caller.unsafe(subject)
   implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
