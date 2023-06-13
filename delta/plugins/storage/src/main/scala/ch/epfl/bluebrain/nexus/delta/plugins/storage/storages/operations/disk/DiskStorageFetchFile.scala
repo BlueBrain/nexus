@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk
 
 import akka.http.scaladsl.model.Uri
-import akka.stream.scaladsl.{FileIO, Source}
+import akka.stream.scaladsl.FileIO
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.FetchFile
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection
@@ -23,6 +23,6 @@ object DiskStorageFetchFile extends FetchFile {
       case Failure(err)  => IO.raiseError(UnexpectedLocationFormat(s"file://$path", err.getMessage))
       case Success(path) =>
         IO.raiseWhen(!path.toFile.exists())(FetchFileRejection.FileNotFound(path.toString))
-          .map(_ => Source.lazySource(() => FileIO.fromPath(path)))
+          .map(_ => FileIO.fromPath(path))
     }
 }
