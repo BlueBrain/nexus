@@ -43,6 +43,7 @@ import monix.bio.{IO, UIO}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{Inspectors, OptionValues}
+import monix.execution.Scheduler.Implicits.global
 
 import java.util.UUID
 import scala.concurrent.ExecutionContext
@@ -62,6 +63,7 @@ abstract class ArchiveDownloadSpec
     with Matchers {
 
   implicit val ec: ExecutionContext = system.dispatcher
+
 
   implicit private val subject: Subject = Identity.User("user", Label.unsafe("realm"))
   implicit private val caller: Caller   = Caller.unsafe(subject)
@@ -146,7 +148,7 @@ abstract class ArchiveDownloadSpec
 
     def rejectedAccess(value: ArchiveValue) = {
       archiveDownload
-        .apply(value, project.ref, format, ignoreNotFound = true)(Caller.Anonymous)
+        .apply(value, project.ref, format, ignoreNotFound = true)(Caller.Anonymous, global)
         .rejectedWith[AuthorizationFailed]
     }
 

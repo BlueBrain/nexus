@@ -1,0 +1,79 @@
+{
+  "resources": [
+    {
+      "@type": "File",
+      "resourceId": "https://dev.nexus.test.com/simplified-resource/largefile1.txt",
+      "path": "/some/other/largefile1.txt"
+    },
+    {
+      "@type": "File",
+      "resourceId": "https://dev.nexus.test.com/simplified-resource/largefile2.txt",
+      "path": "/some/other/largefile2.txt"
+    },
+    {
+      "@type": "File",
+      "resourceId": "https://dev.nexus.test.com/simplified-resource/largefile3.txt",
+      "path": "/some/other/largefile3.txt"
+    },
+    {
+      "@type": "File",
+      "resourceId": "https://dev.nexus.test.com/simplified-resource/largefile4.txt",
+      "path": "/some/other/largefile4.txt"
+    },
+    {
+      "@type": "File",
+      "resourceId": "https://dev.nexus.test.com/simplified-resource/largefile5.txt",
+      "path": "/some/other/largefile5.txt"
+    },
+    {
+      "@type": "File",
+      "resourceId": "https://dev.nexus.test.com/simplified-resource/largefile6.txt",
+      "path": "/some/other/largefile6.txt"
+    },
+    {
+      "@type": "File",
+      "resourceId": "https://dev.nexus.test.com/simplified-resource/largefile7.txt",
+      "path": "/some/other/largefile7.txt"
+    },
+    {
+      "@type": "File",
+      "resourceId": "https://dev.nexus.test.com/simplified-resource/largefile8.txt",
+      "path": "/some/other/largefile8.txt"
+    },
+    {
+      "@type": "File",
+      "resourceId": "https://dev.nexus.test.com/simplified-resource/largefile9.txt",
+      "path": "/some/other/largefile9.txt"
+    },
+    {
+      "@type": "File",
+      "resourceId": "https://dev.nexus.test.com/simplified-resource/largefile10.txt",
+      "path": "/some/other/largefile10.txt"
+    },
+    {
+      "@type": "File",
+      "resourceId": "https://dev.nexus.test.com/simplified-resource/largefile11.txt",
+      "path": "/some/other/largefile11.txt"
+    },
+    {
+      "@type": "File",
+      "resourceId": "https://dev.nexus.test.com/simplified-resource/largefile12.txt",
+      "path": "/some/other/largefile12.txt"
+    },
+    {
+      "@type": "File",
+      "resourceId": "https://dev.nexus.test.com/simplified-resource/largefile13.txt",
+      "path": "/some/other/largefile13.txt"
+    },
+    {
+      "@type": "File",
+      "resourceId": "https://dev.nexus.test.com/simplified-resource/largefile14.txt",
+      "path": "/some/other/largefile14.txt"
+    },
+    {
+      "@type": "File",
+      "resourceId": "https://dev.nexus.test.com/simplified-resource/largefile15.txt",
+      "path": "/some/other/largefile15.txt"
+    }
+  ]
+}

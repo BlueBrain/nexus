@@ -22,10 +22,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources
+import ch.epfl.bluebrain.nexus.delta.sdk.stream.StreamConverter
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import com.typesafe.scalalogging.Logger
+import fs2.Stream
 import io.circe.{Json, Printer}
-import monix.bio.{IO, UIO}
+import monix.bio.{IO, Task, UIO}
+import monix.execution.Scheduler
 
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
@@ -54,13 +57,15 @@ trait ArchiveDownload {
       project: ProjectRef,
       format: ArchiveFormat[M],
       ignoreNotFound: Boolean
-  )(implicit caller: Caller): IO[ArchiveRejection, AkkaSource]
+  )(implicit caller: Caller, scheduler: Scheduler): IO[ArchiveRejection, AkkaSource]
 
 }
 
 object ArchiveDownload {
 
   implicit private val logger: Logger = Logger[ArchiveDownload]
+
+  type ArchiveTask[A] = IO[ArchiveRejection, A]
 
   /**
     * The default [[ArchiveDownload]] implementation.
@@ -88,17 +93,27 @@ object ArchiveDownload {
           project: ProjectRef,
           format: ArchiveFormat[M],
           ignoreNotFound: Boolean
-      )(implicit caller: Caller): IO[ArchiveRejection, AkkaSource] = {
-        implicit val entryOrdering: Ordering[M] = format.ordering
-        val referenceList                       = value.resources.toList
+      )(implicit caller: Caller, scheduler: Scheduler): IO[ArchiveRejection, AkkaSource] = {
+        val references = value.resources.toList
         for {
-          _       <- checkResourcePermissions(referenceList, project)
-          entries <- referenceList.traverseFilter {
-                       case ref: ResourceReference => resourceEntry(ref, project, format, ignoreNotFound)
-                       case ref: FileReference     => fileEntry(ref, project, format, ignoreNotFound)
-                     }
-          sorted   = entries.sortBy { case (entry, _) => entry }
-        } yield Source(sorted).via(format.writeFlow)
+          _       <- checkResourcePermissions(references, project)
+          contentStream <- resolveReferencesAsStream(references, project, ignoreNotFound, format)
+        } yield  {
+          Source.fromGraph(StreamConverter(contentStream)).via(format.writeFlow)
+        }
+      }
+
+      private def resolveReferencesAsStream[M](references: List[ArchiveReference], project: ProjectRef, ignoreNotFound: Boolean, format: ArchiveFormat[M])(implicit caller: Caller): IO[ArchiveRejection, Stream[Task, (M, AkkaSource)]] = {
+        val filesListOfContent: IO[ArchiveRejection, List[(M, Task[AkkaSource])]] = references.traverseFilter {
+          case ref: FileReference => fileEntry(ref, project, format, ignoreNotFound)
+          case ref: ResourceReference => resourceEntry(ref, project, format, ignoreNotFound)
+        }
+
+        filesListOfContent.map { list =>
+          fs2.Stream.iterable(list).evalMap[Task, (M, AkkaSource)] { case (metadata, source) =>
+            source.map(metadata -> _)
+          }
+        }
       }
 
       private def checkResourcePermissions(
@@ -115,13 +130,13 @@ object ArchiveDownload {
           .void
 
       private def fileEntry[Metadata](
-          ref: FileReference,
-          project: ProjectRef,
-          format: ArchiveFormat[Metadata],
-          ignoreNotFound: Boolean
+                                       ref: FileReference,
+                                       project: ProjectRef,
+                                       format: ArchiveFormat[Metadata],
+                                       ignoreNotFound: Boolean
       )(implicit
           caller: Caller
-      ): IO[ArchiveRejection, Option[(Metadata, AkkaSource)]] = {
+      ): IO[ArchiveRejection, Option[(Metadata, Task[AkkaSource])]] = {
         val refProject = ref.project.getOrElse(project)
         // the required permissions are checked for each file content fetch
         val tarEntryIO = fetchFileContent(ref.ref, refProject, caller)
@@ -132,11 +147,12 @@ object ArchiveDownload {
             case FileRejection.AuthorizationFailed(addr, perm) => AuthorizationFailed(addr, perm)
             case other                                         => WrappedFileRejection(other)
           }
-          .flatMap { fileResponse =>
+          .flatMap { case FileResponse(fileMetadata, content) =>
             IO.fromEither(
-              pathOf(ref, project, format, fileResponse.filename).map { path =>
-                val metadata = format.metadata(path, fileResponse.bytes)
-                Some((metadata, fileResponse.content))
+              pathOf(ref, project, format, fileMetadata.filename).map { path =>
+                val archiveMetadata = format.metadata(path, fileMetadata.bytes)
+                val contentTask: Task[AkkaSource] = content.mapError(_ => new RuntimeException())
+                Some((archiveMetadata, contentTask))
               }
             )
           }
@@ -164,14 +180,14 @@ object ArchiveDownload {
           project: ProjectRef,
           format: ArchiveFormat[Metadata],
           ignoreNotFound: Boolean
-      ): IO[ArchiveRejection, Option[(Metadata, AkkaSource)]] = {
-        val tarEntryIO = resourceRefToByteString(ref, project).map { content =>
+      ): IO[ArchiveRejection, Option[(Metadata, Task[AkkaSource])]] = {
+        val archiveEntry = resourceRefToByteString(ref, project).map { content =>
           val path     = pathOf(ref, project)
           val metadata = format.metadata(path, content.length.toLong)
-          Some((metadata, Source.single(content)))
+          Some((metadata, Task.pure(Source.single(content))))
         }
-        if (ignoreNotFound) tarEntryIO.onErrorHandle { _: ResourceNotFound => None }
-        else tarEntryIO
+        if (ignoreNotFound) archiveEntry.onErrorHandle { _: ResourceNotFound => None }
+        else archiveEntry
       }
 
       private def resourceRefToByteString(

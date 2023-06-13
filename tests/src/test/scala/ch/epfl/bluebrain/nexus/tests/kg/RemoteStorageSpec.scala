@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.tests.kg
 
-import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
+import akka.http.scaladsl.model.{ContentTypes, HttpCharsets, MediaTypes, StatusCodes}
+import akka.util.ByteString
 import ch.epfl.bluebrain.nexus.tests.HttpClient._
 import ch.epfl.bluebrain.nexus.tests.Identity
 import ch.epfl.bluebrain.nexus.tests.Identity.storages.Coyote
@@ -10,10 +11,11 @@ import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Supervision
 import io.circe.generic.semiauto.deriveDecoder
 import io.circe.{Decoder, Json}
 import monix.bio.Task
+import org.scalactic.source.Position
 import org.scalatest.Assertion
 
 import scala.annotation.nowarn
-import sys.process._
+import scala.sys.process._
 
 class RemoteStorageSpec extends StorageSpec {
 
@@ -123,6 +125,63 @@ class RemoteStorageSpec extends StorageSpec {
              response.status shouldEqual StatusCodes.OK
            }
     } yield succeed
+  }
+
+  def putFile(name: String, content: String, storageId: String)(implicit position: Position) = {
+    deltaClient.putAttachment[Json](
+      s"/files/$fullId/test-resource:$name?storage=nxv:${storageId}",
+      content,
+      MediaTypes.`text/plain`.toContentType(HttpCharsets.`UTF-8`),
+      name,
+      Coyote
+    ) { (json, response) =>
+      println(json)
+      response.status shouldEqual StatusCodes.Created
+    }
+  }
+
+  def randomString(length: Int) = {
+    val r = new scala.util.Random
+    val sb = new StringBuilder
+    for (_ <- 1 to length) {
+      sb.append(r.nextPrintableChar())
+    }
+    sb.toString
+  }
+
+  "succeed many large files are in the archive, going over the time limit" in {
+    val content = randomString(130000000)
+    val payload = jsonContentOf("/kg/archives/archive-many-large-files.json")
+    var before = 0L
+    for {
+      _ <- putFile("largefile1.txt", content, s"${storageId}2")
+      _ <- putFile("largefile2.txt", content, s"${storageId}2")
+      _ <- putFile("largefile3.txt", content, s"${storageId}2")
+      _ <- putFile("largefile4.txt", content, s"${storageId}2")
+      _ <- putFile("largefile5.txt", content, s"${storageId}2")
+      _ <- putFile("largefile6.txt", content, s"${storageId}2")
+      _ <- putFile("largefile7.txt", content, s"${storageId}2")
+      _ <- putFile("largefile8.txt", content, s"${storageId}2")
+      _ <- putFile("largefile9.txt", content, s"${storageId}2")
+      _ <- putFile("largefile10.txt", content, s"${storageId}2")
+      _ <- putFile("largefile11.txt", content, s"${storageId}2")
+      _ <- putFile("largefile12.txt", content, s"${storageId}2")
+      _ <- putFile("largefile13.txt", content, s"${storageId}2")
+      _ <- putFile("largefile14.txt", content, s"${storageId}2")
+      _ <- putFile("largefile15.txt", content, s"${storageId}2")
+      _ <- deltaClient.put[ByteString](s"/archives/$fullId/nxv:very-large-archive", payload, Coyote) {
+        (_, response) =>
+          before = System.currentTimeMillis()
+          response.status shouldEqual StatusCodes.Created
+      }
+      _ <- deltaClient.get[ByteString](s"/archives/$fullId/nxv:very-large-archive", Coyote, acceptAll) { (_, response) =>
+        println(s"time taken to download archive: ${System.currentTimeMillis() - before}ms")
+        response.status shouldEqual StatusCodes.OK
+        contentType(response) shouldEqual MediaTypes.`application/x-tar`.toContentType
+      }
+    } yield {
+      succeed
+    }
   }
 
   "creating a remote storage" should {

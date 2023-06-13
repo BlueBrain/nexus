@@ -8,6 +8,7 @@ import akka.http.scaladsl.model.headers.HttpEncodings
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
 import akka.stream.StreamTcpException
+import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling._
@@ -142,7 +143,7 @@ object HttpClient {
 
       override def toDataBytes(req: HttpRequest): HttpResult[AkkaSource] =
         apply(req) {
-          case resp if resp.status.isSuccess() => UIO.delay(resp.entity.dataBytes)
+          case resp if resp.status.isSuccess() => UIO.delay(Source.lazySource(() => resp.entity.dataBytes))
         }
 
       override def discardBytes[A](req: HttpRequest, returnValue: => A): HttpResult[A] =
