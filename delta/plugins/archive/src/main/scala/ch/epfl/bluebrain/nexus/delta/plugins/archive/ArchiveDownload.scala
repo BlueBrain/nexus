@@ -65,8 +65,6 @@ object ArchiveDownload {
 
   implicit private val logger: Logger = Logger[ArchiveDownload]
 
-  type ArchiveTask[A] = IO[ArchiveRejection, A]
-
   /**
     * The default [[ArchiveDownload]] implementation.
     *
@@ -104,15 +102,22 @@ object ArchiveDownload {
       }
 
       private def resolveReferencesAsStream[M](references: List[ArchiveReference], project: ProjectRef, ignoreNotFound: Boolean, format: ArchiveFormat[M])(implicit caller: Caller): IO[ArchiveRejection, Stream[Task, (M, AkkaSource)]] = {
-        val filesListOfContent: IO[ArchiveRejection, List[(M, Task[AkkaSource])]] = references.traverseFilter {
+        references.traverseFilter {
           case ref: FileReference => fileEntry(ref, project, format, ignoreNotFound)
           case ref: ResourceReference => resourceEntry(ref, project, format, ignoreNotFound)
-        }
+        }.map(sortWith(format))
+          .map(asStream)
+      }
 
-        filesListOfContent.map { list =>
-          fs2.Stream.iterable(list).evalMap[Task, (M, AkkaSource)] { case (metadata, source) =>
-            source.map(metadata -> _)
-          }
+      private def sortWith[M](format: ArchiveFormat[M])(list: List[(M, Task[AkkaSource])]): List[(M, Task[AkkaSource])] = {
+        list.sortBy {
+          case (entry, _) => entry
+        }(format.ordering)
+      }
+
+      private def asStream[M](list: List[(M, Task[AkkaSource])]) = {
+        fs2.Stream.iterable(list).evalMap[Task, (M, AkkaSource)] { case (metadata, source) =>
+          source.map(metadata -> _)
         }
       }
 
