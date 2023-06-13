@@ -134,7 +134,7 @@ class RemoteStorageSpec extends StorageSpec {
       MediaTypes.`text/plain`.toContentType(HttpCharsets.`UTF-8`),
       name,
       Coyote
-    ) { (json, response) =>
+    ) { (_, response) =>
       response.status shouldEqual StatusCodes.Created
     }
   }
