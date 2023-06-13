@@ -135,7 +135,6 @@ class RemoteStorageSpec extends StorageSpec {
       name,
       Coyote
     ) { (json, response) =>
-      println(json)
       response.status shouldEqual StatusCodes.Created
     }
   }
