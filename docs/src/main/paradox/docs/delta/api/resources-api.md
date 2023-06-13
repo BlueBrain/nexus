@@ -297,14 +297,13 @@ There are three available endpoints to list resources in different scopes.
 GET /v1/resources/{org_label}/{project_label}?from={from}
                                              &size={size}
                                              &locate={locate}
-                                             &id={id}
                                              &deprecated={deprecated}
-                                             &locate={locate}
-                                             &id={id}
                                              &rev={rev}
                                              &type={type}
                                              &createdBy={createdBy}
+                                             &createdAt={createdAt}
                                              &updatedBy={updatedBy}
+                                             &updatedAt={updatedAt}
                                              &schema={schema}
                                              &q={search}
                                              &sort={sort}
@@ -318,12 +317,13 @@ This operation returns only resources from projects defined in the organisation 
 GET /v1/resources/{org_label}?from={from}
                              &size={size}
                              &locate={locate}
-                             &id={id}
                              &deprecated={deprecated}
                              &rev={rev}
                              &type={type}
                              &createdBy={createdBy}
+                             &createdAt={createdAt}
                              &updatedBy={updatedBy}
+                             &updatedAt={updatedAt}
                              &schema={schema}
                              &q={search}
                              &sort={sort}
@@ -349,6 +349,23 @@ GET /v1/resources?from={from}
 
 ### Parameter description
 
+@@@ note { .tip title="How to use time ranges" }
+
+A time range parameter allows to filter resources by their creation date or their last update date.
+
+The provided dates can be:
+
+* A date following the format `YYYY-MM-DDTHH:MM:SSZ`
+* A wild card `*` to express no restriction on a limit
+
+Examples of ranges:
+
+* `2023-06-08T14:00:00Z..*`: Matchers resources created *after* the June 8, 2023 at 14.00
+* `*..2023-06-08T14:00:00Z`: Matchers resources created *before* the June 8, 2023 at 14.00
+* `2023-04-01T00:00:00Z..2023-06-08T14:00:00Z`: Matchers resources created *between* the April 1st at 00.00 and June 8, 2023 at 14.00
+
+@@@
+
 - `{from}`: Number - is the parameter that describes the offset for the current query; defaults to `0`
 - `{size}`: Number - is the parameter that limits the number of results; defaults to `20`
 - `{locate}`: Iri - can be used to find a resource by its `@id` or its address (`_self`)
@@ -357,7 +374,9 @@ GET /v1/resources?from={from}
 - `{type}`: Iri - can be used to filter the resulting resources based on their `@type` value. This parameter can appear 
   multiple times, filtering further the `@type` value.
 - `{createdBy}`: Iri - can be used to filter the resulting resources based on their creator
+- `{createdAt}`: Time range - can be used to filter the resulting resources based on their creation date
 - `{updatedBy}`: Iri - can be used to filter the resulting resources based on the person which performed the last update
+- `{updatedAt}`: Time range - can be used to filter the resulting resources based when was performed the last update
 - `{schema}`: Iri - can be used to filter the resulting resources based on the conformant schema
 - `{search}`: String - can be provided to select only the resources in the collection that have attribute values 
   matching (containing) the provided string

@@ -4,6 +4,7 @@ import akka.http.scaladsl.unmarshalling.{FromStringUnmarshaller, Unmarshaller}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.Type
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.QueryParamsUnmarshalling.{iriFromStringUnmarshaller, iriVocabFromStringUnmarshaller => iriUnmarshaller}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.TimeRange
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
@@ -21,8 +22,12 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
   *   the optional revision of the resource
   * @param createdBy
   *   the optional subject who created the resource
+  * @param createdAt
+  *   the optional time range for resource creation
   * @param updatedBy
   *   the optional subject who last updated the resource
+  * @param updatedAt
+  *   the optional time range for the last update of the resource
   * @param types
   *   the collection of types to consider, where empty implies all resource types are to be included
   * @param schema
@@ -36,7 +41,9 @@ final case class ResourcesSearchParams(
     deprecated: Option[Boolean] = None,
     rev: Option[Int] = None,
     createdBy: Option[Subject] = None,
+    createdAt: TimeRange = TimeRange.Anytime,
     updatedBy: Option[Subject] = None,
+    updatedAt: TimeRange = TimeRange.Anytime,
     types: List[Type] = List.empty,
     schema: Option[ResourceRef] = None,
     q: Option[String] = None

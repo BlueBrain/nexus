@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Sort.OrderType
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Sort, SortList}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Sort, SortList, TimeRange}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
@@ -25,6 +25,8 @@ import io.circe.syntax.EncoderOps
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{Inspectors, OptionValues}
 import io.circe.generic.extras.semiauto.deriveConfiguredCodec
+
+import java.time.Instant
 
 class ElasticSearchViewsDirectivesSpec
     extends RouteHelpers
@@ -47,6 +49,8 @@ class ElasticSearchViewsDirectivesSpec
 
   implicit val configuration: Configuration = Configuration.default.withDiscriminator(keywords.tpe)
   import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
+
+  implicit val timeRangeCodec: Codec[TimeRange] = deriveConfiguredCodec[TimeRange]
 
   implicit val orderTypeCodec: Codec[OrderType] = deriveConfiguredCodec[OrderType]
   implicit val sortCodec: Codec[Sort]           = deriveConfiguredCodec[Sort]
@@ -82,13 +86,20 @@ class ElasticSearchViewsDirectivesSpec
       val bob      = User("bob", Label.unsafe("myrealm"))
       val bobId    = UrlUtils.encode(bob.asIri.toString)
 
+      val createdAt        = TimeRange.Before(Instant.EPOCH)
+      val createdAtEncoded = UrlUtils.encode(s"*..${createdAt.value}")
+      val updatedAt        = TimeRange.Between(Instant.EPOCH, Instant.EPOCH.plusSeconds(5L))
+      val updatedAtEncoded = UrlUtils.encode(s"${updatedAt.start}..${updatedAt.end}")
+
       val query    = List(
         "locate"     -> "self",
         "id"         -> "myId",
         "deprecated" -> "false",
         "rev"        -> "2",
         "createdBy"  -> aliciaId,
+        "createdAt"  -> createdAtEncoded,
         "updatedBy"  -> bobId,
+        "updatedAt"  -> updatedAtEncoded,
         "rev"        -> "2",
         "type"       -> "A",
         "type"       -> "B",
@@ -103,7 +114,9 @@ class ElasticSearchViewsDirectivesSpec
         deprecated = Some(false),
         rev = Some(2),
         createdBy = Some(alicia),
+        createdAt = createdAt,
         updatedBy = Some(bob),
+        updatedAt = updatedAt,
         types = List(
           IncludedType(iri"${vocab}A"),
           IncludedType(iri"${vocab}B"),

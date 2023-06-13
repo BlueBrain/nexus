@@ -1,9 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.archive
 
-import akka.actor.typed.ActorSystem
 import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
 import akka.http.scaladsl.model.MediaRanges.`*/*`
-import akka.http.scaladsl.model.MediaTypes.`application/x-tar`
+import akka.http.scaladsl.model.MediaTypes.{`application/x-tar`, `application/zip`}
 import akka.http.scaladsl.model.headers.{`Content-Type`, Accept, Location, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
@@ -42,8 +41,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EphemeralLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef, ResourceRef}
+import ch.epfl.bluebrain.nexus.testkit.archive.ArchiveHelpers
 import io.circe.Json
-import io.circe.parser.parse
 import io.circe.syntax.EncoderOps
 import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
@@ -52,7 +51,7 @@ import org.scalatest.TryValues
 import java.util.UUID
 import scala.concurrent.duration._
 
-class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with TryValues {
+class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with TryValues with ArchiveHelpers {
 
   implicit private val scheduler: Scheduler = Scheduler.global
 
@@ -60,9 +59,6 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with TryValue
   implicit private val uuidF: StatefulUUIDF = UUIDF.stateful(uuid).accepted
 
   implicit override def rcr: RemoteContextResolution = RemoteContextResolutionFixture.rcr
-
-  import akka.actor.typed.scaladsl.adapter._
-  implicit private val typedSystem: ActorSystem[Nothing] = system.toTyped
 
   private val subject: Subject            = Identity.User("user", Label.unsafe("realm"))
   implicit private val caller: Caller     = Caller.unsafe(subject)
@@ -245,12 +241,12 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with TryValue
       }
     }
 
-    "fetch an archive ignoring not found" in {
+    "fetch a tar archive ignoring not found" in {
       forAll(List(Accept(`application/x-tar`), acceptAll)) { accept =>
         Get(s"/v1/archives/$projectRef/$uuid?ignoreNotFound=true") ~> asSubject ~> accept ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           header[`Content-Type`].value.value() shouldEqual `application/x-tar`.value
-          val result = TarUtils.mapOf(responseEntity.dataBytes)
+          val result = fromTar(responseEntity.dataBytes)
 
           result.keySet shouldEqual Set(
             s"${project.ref}/file/file.txt",
@@ -258,7 +254,7 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with TryValue
           )
 
           val expectedContent = fileContent
-          val actualContent   = result.get(s"${project.ref}/file/file.txt").value
+          val actualContent   = result.entryAsString(s"${project.ref}/file/file.txt")
           actualContent shouldEqual expectedContent
 
           val expectedMetadata = FilesRoutesSpec.fileMetadata(
@@ -270,9 +266,40 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with TryValue
             updatedBy = subject,
             label = Some(encodedFileId.replaceAll("%3A", ":"))
           )
-          val actualMetadata   = result.get(s"${project.ref}/compacted/${UrlUtils.encode(fileId.toString)}.json").value
-          parse(actualMetadata).rightValue shouldEqual expectedMetadata
+          val actualMetadata   = result.entryAsJson(s"${project.ref}/compacted/${UrlUtils.encode(fileId.toString)}.json")
+          actualMetadata shouldEqual expectedMetadata
         }
+      }
+    }
+
+    "fetch a zip archive ignoring not found" in {
+      Get(s"/v1/archives/$projectRef/$uuid?ignoreNotFound=true") ~> asSubject ~> Accept(
+        `application/zip`
+      ) ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        header[`Content-Type`].value.value() shouldEqual `application/zip`.value
+        val result = fromZip(responseEntity.dataBytes)
+
+        result.keySet shouldEqual Set(
+          s"${project.ref}/file/file.txt",
+          s"${project.ref}/compacted/${UrlUtils.encode(fileId.toString)}.json"
+        )
+
+        val expectedContent = fileContent
+        val actualContent   = result.entryAsString(s"${project.ref}/file/file.txt")
+        actualContent shouldEqual expectedContent
+
+        val expectedMetadata = FilesRoutesSpec.fileMetadata(
+          projectRef,
+          fileId,
+          file.value.attributes,
+          storageRef,
+          createdBy = subject,
+          updatedBy = subject,
+          label = Some(encodedFileId.replaceAll("%3A", ":"))
+        )
+        val actualMetadata   = result.entryAsJson(s"${project.ref}/compacted/${UrlUtils.encode(fileId.toString)}.json")
+        actualMetadata shouldEqual expectedMetadata
       }
     }
 

@@ -228,6 +228,10 @@ lazy val testkit = project
     libraryDependencies     ++= Seq(
       akkaActorTyped, // Needed to create Uri
       akkaHttpCore,
+      akkaStream,
+      alpakkaFile excludeAll (
+        ExclusionRule(organization = "com.typesafe.akka", name = "akka-stream_2.13")
+      ),
       catsRetry,
       doobiePostgres,
       monixBio,
