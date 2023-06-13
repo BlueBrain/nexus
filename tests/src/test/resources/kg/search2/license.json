@@ -1,0 +1,13 @@
+{
+  "@context": "https://bbp.neuroshapes.org",
+  "@id": "https://bbp.epfl.ch/neurosciencegraph/data/license",
+  "@type": [
+    "Entity",
+    "Density"
+  ],
+  "license": {
+    "@id": "https://bbp.epfl.ch/neurosciencegraph/data/licenses/97521f71-605d-4f42-8f1b-c37e742a30bf",
+    "@type": "License",
+    "name": "SSCX Portal Data Licence final v1.0"
+  }
+}
