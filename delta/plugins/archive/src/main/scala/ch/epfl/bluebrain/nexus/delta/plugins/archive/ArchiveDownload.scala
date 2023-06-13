@@ -14,10 +14,12 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
+import ch.epfl.bluebrain.nexus.delta.sdk.{AkkaSource, JsonLdValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.FileResponse
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.Response.Complete
+import ch.epfl.bluebrain.nexus.delta.sdk.error.SDKError
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
@@ -64,6 +66,12 @@ trait ArchiveDownload {
 object ArchiveDownload {
 
   implicit private val logger: Logger = Logger[ArchiveDownload]
+
+  case class ArchiveDownloadError(filename: String, response: Complete[JsonLdValue]) extends SDKError {
+    override def getMessage: String = {
+      s"Error streaming file '$filename' for archive: ${response.value.value}"
+    }
+  }
 
   /**
     * The default [[ArchiveDownload]] implementation.
@@ -165,7 +173,9 @@ object ArchiveDownload {
             IO.fromEither(
               pathOf(ref, project, format, fileMetadata.filename).map { path =>
                 val archiveMetadata               = format.metadata(path, fileMetadata.bytes)
-                val contentTask: Task[AkkaSource] = content.mapError(_ => new RuntimeException())
+                val contentTask: Task[AkkaSource] = content
+                  .tapError(response => UIO.delay(logger.error(s"Error streaming file '${fileMetadata.filename}' for archive: ${response.value.value}")))
+                  .mapError(response => ArchiveDownloadError(fileMetadata.filename, response))
                 Some((archiveMetadata, contentTask))
               }
             )
