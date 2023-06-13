@@ -1,0 +1,18 @@
+{
+  "@type": [
+    "http://schema.org/Dataset",
+    "https://neuroshapes.org/NeuroMorphology"
+  ],
+  "@id": "http://localhost/deprecated",
+  "_project": "myorg/myproject",
+  "_rev": 1,
+  "_deprecated": true,
+  "_createdAt": "1970-01-01T00:00:00Z",
+  "_createdBy": {
+    "@type": "Anonymous"
+  },
+  "_updatedAt": "1970-01-01T00:00:00Z",
+  "_updatedBy": {
+    "@type": "Anonymous"
+  }
+}

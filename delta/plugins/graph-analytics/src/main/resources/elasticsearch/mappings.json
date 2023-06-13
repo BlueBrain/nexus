@@ -12,6 +12,9 @@
     "_rev": {
       "type": "long"
     },
+    "_deprecated": {
+      "type": "boolean"
+    },
     "_createdAt": {
       "type": "date"
     },
