@@ -161,7 +161,7 @@ object ArchiveDownload {
       ): IO[ArchiveRejection, Option[(Metadata, Task[AkkaSource])]] = {
         val refProject = ref.project.getOrElse(project)
         // the required permissions are checked for each file content fetch
-        val entry = fetchFileContent(ref.ref, refProject, caller)
+        val entry      = fetchFileContent(ref.ref, refProject, caller)
           .mapError {
             case _: FileRejection.FileNotFound                 => ResourceNotFound(ref.ref, project)
             case _: FileRejection.TagNotFound                  => ResourceNotFound(ref.ref, project)
@@ -174,7 +174,12 @@ object ArchiveDownload {
               pathOf(ref, project, format, fileMetadata.filename).map { path =>
                 val archiveMetadata               = format.metadata(path, fileMetadata.bytes)
                 val contentTask: Task[AkkaSource] = content
-                  .tapError(response => UIO.delay(logger.error(s"Error streaming file '${fileMetadata.filename}' for archive: ${response.value.value}")))
+                  .tapError(response =>
+                    UIO.delay(
+                      logger
+                        .error(s"Error streaming file '${fileMetadata.filename}' for archive: ${response.value.value}")
+                    )
+                  )
                   .mapError(response => ArchiveDownloadError(fileMetadata.filename, response))
                 Some((archiveMetadata, contentTask))
               }
