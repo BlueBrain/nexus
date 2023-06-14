@@ -7,21 +7,36 @@
     "ReconstructedCell",
     "NeuronMorphology"
   ],
-  "annotation": {
-    "@type": [
-      "nsg:MTypeAnnotation",
-      "Annotation"
-    ],
-    "hasBody": {
-      "@id": "http://uri.interlex.org/base/ilx_0383207",
+  "annotation": [
+    {
       "@type": [
-        "MType",
-        "Annotation:Body"
+        "nsg:MTypeAnnotation",
+        "Annotation"
       ],
-      "label": "L2_IPC"
+      "hasBody": {
+        "@id": "http://uri.interlex.org/base/ilx_0383207",
+        "@type": [
+          "MType",
+          "Annotation:Body"
+        ],
+        "label": "L2_IPC"
+      },
+      "name": "M-type Annotation"
     },
-    "name": "M-type Annotation"
-  },
+    {
+      "@type": [
+        "Entity",
+        "Annotation"
+      ],
+      "hasTarget": {
+        "@type": "AnnotationTarget",
+        "hasSource": {
+          "@id": "https://bbp.epfl.ch/neurosciencegraph/data/scholarlyarticles/1",
+          "@type": "ScholarlyArticle"
+        }
+      }
+    }
+  ],
   "brainLocation": {
     "@type": "BrainLocation",
     "brainRegion": {

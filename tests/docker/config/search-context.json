@@ -6,6 +6,9 @@
   "contributors": {
     "@container": "@set"
   },
+  "annotation": {
+    "@container": "@set"
+  },
   "organizations": {
     "@container": "@set"
   },

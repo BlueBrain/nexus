@@ -98,9 +98,9 @@ CONSTRUCT {
   ?id  :source             ?source                .
                            ?source                :title        ?sourceTitle                 ;
                                                   rdf:type      ?sourceType                  ;
-                                                  :identifier   ?source                      ;
-                                                  :propertyID   ?sourceIdentifierPropertyId  ;
-                                                  :value        ?sourceIdentifierValue       .
+                                                  :identifier   ?sourceIdentifier            .
+                                                                ?sourceIdentifier  :propertyID  ?sourceIdentifierPropertyId  ;
+                                                                                   :value        ?sourceIdentifierValue      .
   ?id  :circuitType        ?circuitType           ;
        :circuitBase        ?circuitBaseUrlStr        ;
        :circuitConfigPath  ?circuitConfigPathUrlStr  .
