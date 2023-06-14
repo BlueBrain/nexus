@@ -44,6 +44,11 @@
       "period": "Post-natal",
       "unitCode": "weeks"
     },
+    "weight": {
+      "unitCode": "g",
+      "minValue": 37.1,
+      "maxValue": 40
+    },
     "species": {
       "@id": "ncbitaxon:10116",
       "label": "Rattus norvegicus"
