@@ -1,0 +1,56 @@
+{
+  "@context": "https://bbp.neuroshapes.org",
+  "@id": "https://bbp.epfl.ch/neurosciencegraph/data/densities/87221bd5-bd0b-464d-a863-b32d6f62893b",
+  "@type": [
+    "NeuronDensity",
+    "Entity",
+    "Density"
+  ],
+  "brainLocation": {
+    "brainRegion": {
+      "@id": "uberon:0003881",
+      "label": "CA1 field of hippocampus"
+    }
+  },
+  "name": "Neuron density: CA1",
+  "note": "Validation data",
+  "series": [
+    {
+      "statistic": "mean",
+      "unitCode": "neurons/mm³",
+      "value": 35200.0
+    },
+    {
+      "statistic": "N",
+      "unitCode": "dimensionless",
+      "value": 5
+    },
+    {
+      "statistic": "standard deviation",
+      "unitCode": "neurons/mm³",
+      "value": 1118.033988749895
+    },
+    {
+      "statistic": "standard error of the mean",
+      "unitCode": "neurons/mm³",
+      "value": 500.0
+    }
+  ],
+  "subject": {
+    "@type": "Subject",
+    "age": {
+      "maxValue": 10,
+      "minValue": 9,
+      "period": "Post-natal",
+      "unitCode": "weeks"
+    },
+    "species": {
+      "@id": "ncbitaxon:10116",
+      "label": "Rattus norvegicus"
+    },
+    "strain": {
+      "@id": "http://www.ebi.ac.uk/efo/EFO_0001342",
+      "label": "Wistar"
+    }
+  }
+}
