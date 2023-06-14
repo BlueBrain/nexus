@@ -4,11 +4,11 @@ import akka.http.scaladsl.model.StatusCodes
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.tests.BaseSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.resources.Rick
-import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Organizations, Views}
+import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Organizations, Resources, Views}
 import io.circe.Json
 import io.circe.optics.JsonPath._
 
-class SearchSpec extends BaseSpec {
+class SearchAccessSpec extends BaseSpec {
 
   private val orgId   = genId()
   private val projId1 = genId()
@@ -21,11 +21,17 @@ class SearchSpec extends BaseSpec {
     super.beforeAll()
 
     val setup = for {
+      _ <- aclDsl.cleanAcls(Rick)
       _ <- aclDsl.addPermission("/", Rick, Organizations.Create)
+
       _ <- adminDsl.createOrganization(orgId, orgId, Rick)
       _ <- adminDsl.createProject(orgId, projId1, kgDsl.projectJson(path = "/kg/projects/bbp.json", name = id1), Rick)
       _ <- adminDsl.createProject(orgId, projId2, kgDsl.projectJson(path = "/kg/projects/bbp.json", name = id2), Rick)
-      // post some resources
+
+      _ <- aclDsl.addPermission(s"/$orgId", Rick, Resources.Read)
+      _ <- aclDsl.addPermission(s"/$orgId/$projId1", Rick, Resources.Read)
+      _ <- aclDsl.addPermission(s"/$orgId/$projId2", Rick, Resources.Read)
+
       _ <- postResource("/kg/search/neuroshapes.json")
       _ <- postResource("/kg/search/bbp-neuroshapes.json")
       _ <- postResource("/kg/search/trace.json")
@@ -42,10 +48,8 @@ class SearchSpec extends BaseSpec {
                val sources = getEsSource(body)
                _projects.getAll(sources).toSet shouldEqual Set(id1, id2)
              }
-
       } yield succeed
     }
-
 
     "list resources only from the projects the user has access to" in {
       for {

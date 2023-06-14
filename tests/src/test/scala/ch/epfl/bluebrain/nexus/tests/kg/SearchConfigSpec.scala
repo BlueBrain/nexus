@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.StatusCodes
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.tests.BaseSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.resources.Rick
-import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Organizations
+import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Organizations, Resources}
 import io.circe.Json
 import monix.bio.Task
 import org.scalatest.Assertion
@@ -50,13 +50,14 @@ class SearchConfigSpec extends BaseSpec {
     super.beforeAll()
 
     val searchSetup = for {
-      _ <- aclDsl.addPermission(
-             "/",
-             Rick,
-             Organizations.Create
-           )
+      _ <- aclDsl.cleanAcls(Rick)
+      _ <- aclDsl.addPermission("/", Rick, Organizations.Create)
       _ <- adminDsl.createOrganization(orgId, orgId, Rick)
       _ <- adminDsl.createProject(orgId, projId1, kgDsl.projectJson(path = "/kg/projects/bbp.json", name = id1), Rick)
+
+      _ <- aclDsl.addPermission(s"/$orgId", Rick, Resources.Read)
+      _ <- aclDsl.addPermission(s"/$orgId/$projId1", Rick, Resources.Read)
+
       _ <- postResource("/kg/search/neuroshapes.json")
       _ <- postResource("/kg/search/bbp-neuroshapes.json")
       _ <- allResources.traverseTap(postResource)
@@ -514,7 +515,7 @@ class SearchConfigSpec extends BaseSpec {
     }
 
     "index source" in {
-      val query = queryField(neuronMorphologyId, "source")
+      val query    = queryField(neuronMorphologyId, "source")
       val expected =
         json"""
         {
