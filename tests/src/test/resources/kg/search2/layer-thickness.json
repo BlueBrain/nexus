@@ -42,6 +42,10 @@
       "unitCode": "days",
       "value": 56
     },
+    "weight": {
+      "unitCode": "g",
+      "value": 37.1
+    },
     "species": {
       "@id": "http://purl.obolibrary.org/obo/NCBITaxon_10090",
       "label": "Mus musculus"
