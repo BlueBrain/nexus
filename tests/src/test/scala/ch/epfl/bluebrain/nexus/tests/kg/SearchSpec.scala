@@ -88,7 +88,7 @@ class SearchSpec extends BaseSpec {
         }
             """
 
-      searchOneSource(query) { json =>
+      assertOneSource(query) { json =>
         json should equalIgnoreArrayOrder(expected)
       }
     }
@@ -105,7 +105,7 @@ class SearchSpec extends BaseSpec {
         }
             """
 
-      searchOneSource(query) { json =>
+      assertOneSource(query) { json =>
         json should equalIgnoreArrayOrder(expected)
       }
     }
@@ -124,7 +124,7 @@ class SearchSpec extends BaseSpec {
           }
           """
 
-      searchOneSource(query) { json =>
+      assertOneSource(query) { json =>
         json should equalIgnoreArrayOrder(expected)
       }
     }
@@ -144,7 +144,7 @@ class SearchSpec extends BaseSpec {
           }
           """
 
-      searchOneSource(query) { json =>
+      assertOneSource(query) { json =>
         json should equalIgnoreArrayOrder(expected)
       }.accepted
     }
@@ -162,7 +162,7 @@ class SearchSpec extends BaseSpec {
         }
         """
 
-      searchOneSource(query) { json =>
+      assertOneSource(query) { json =>
         json should equalIgnoreArrayOrder(expected)
       }.accepted
     }
@@ -180,7 +180,7 @@ class SearchSpec extends BaseSpec {
           }
             """
 
-      searchOneSource(query) { json =>
+      assertOneSource(query) { json =>
         json should equalIgnoreArrayOrder(expected)
       }
     }
@@ -202,7 +202,7 @@ class SearchSpec extends BaseSpec {
         }
             """
 
-      searchOneSource(query) { json =>
+      assertOneSource(query) { json =>
         json should equalIgnoreArrayOrder(expected)
       }
     }
@@ -226,7 +226,7 @@ class SearchSpec extends BaseSpec {
         }
             """
 
-      searchOneSource(query) { json =>
+      assertOneSource(query) { json =>
         json should equalIgnoreArrayOrder(expected)
       }
     }
@@ -247,7 +247,7 @@ class SearchSpec extends BaseSpec {
         }
             """
 
-      searchOneSource(query) { json =>
+      assertOneSource(query) { json =>
         json should equalIgnoreArrayOrder(expected)
       }
     }
@@ -273,7 +273,7 @@ class SearchSpec extends BaseSpec {
         }
             """
 
-      searchOneSource(query) { json =>
+      assertOneSource(query) { json =>
         json should equalIgnoreArrayOrder(expected)
       }
     }
@@ -296,7 +296,7 @@ class SearchSpec extends BaseSpec {
         }
             """
 
-      searchOneSource(query) { json =>
+      assertOneSource(query) { json =>
         json should equalIgnoreArrayOrder(expected)
       }
     }
@@ -315,7 +315,7 @@ class SearchSpec extends BaseSpec {
         }
             """
 
-      searchOneSource(query) { json =>
+      assertOneSource(query) { json =>
         json should equalIgnoreArrayOrder(expected)
       }
     }
@@ -333,7 +333,7 @@ class SearchSpec extends BaseSpec {
         }
             """
 
-      searchOneSource(query) { json =>
+      assertOneSource(query) { json =>
         json should equalIgnoreArrayOrder(expected)
       }
     }
@@ -355,7 +355,7 @@ class SearchSpec extends BaseSpec {
         }
             """
 
-      searchOneSource(query) { json =>
+      assertOneSource(query) { json =>
         json should equalIgnoreArrayOrder(expected)
       }
     }
@@ -374,7 +374,7 @@ class SearchSpec extends BaseSpec {
         }
            """
 
-      searchOneSource(query) { json =>
+      assertOneSource(query) { json =>
         json should equalIgnoreArrayOrder(expected)
       }
     }
@@ -392,7 +392,7 @@ class SearchSpec extends BaseSpec {
         }
            """
 
-      searchOneSource(query) { json =>
+      assertOneSource(query) { json =>
         json should equalIgnoreArrayOrder(expected)
       }
     }
@@ -412,7 +412,7 @@ class SearchSpec extends BaseSpec {
         }
            """
 
-      searchOneSource(query) { json =>
+      assertOneSource(query) { json =>
         json should equalIgnoreArrayOrder(expected)
       }
     }
@@ -431,7 +431,7 @@ class SearchSpec extends BaseSpec {
         }
            """
 
-      searchOneSource(query) { json =>
+      assertOneSource(query) { json =>
         json should equalIgnoreArrayOrder(expected)
       }
     }
@@ -450,7 +450,7 @@ class SearchSpec extends BaseSpec {
         }
           """
 
-      searchOneSource(query) { json =>
+      assertOneSource(query) { json =>
         json should equalIgnoreArrayOrder(expected)
       }
     }
@@ -469,7 +469,7 @@ class SearchSpec extends BaseSpec {
         }
          """
 
-      searchOneSource(query) { json =>
+      assertOneSource(query) { json =>
         json should equalIgnoreArrayOrder(expected)
       }
     }
@@ -487,7 +487,7 @@ class SearchSpec extends BaseSpec {
         }
         """
 
-      searchOneSource(query) { json =>
+      assertOneSource(query) { json =>
         json should equalIgnoreArrayOrder(expected)
       }
     }
@@ -507,7 +507,7 @@ class SearchSpec extends BaseSpec {
         }
        """
 
-      searchOneSource(query) { json =>
+      assertOneSource(query) { json =>
         json should equalIgnoreArrayOrder(expected)
       }
     }
@@ -551,7 +551,11 @@ class SearchSpec extends BaseSpec {
     }
   }
 
-  private def searchOneSource(query: Json)(assertion: Json => Assertion): Task[Assertion] =
+  /**
+    * Queries ES using the provided query. Asserts that there is only on result in _source. Runs the provided assertion
+    * on the _source.
+    */
+  private def assertOneSource(query: Json)(assertion: Json => Assertion): Task[Assertion] =
     eventually {
       deltaClient.post[Json]("/search/query", query, Rick) { (body, response) =>
         response.status shouldEqual StatusCodes.OK
