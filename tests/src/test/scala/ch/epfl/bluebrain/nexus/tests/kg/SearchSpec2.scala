@@ -16,14 +16,16 @@ class SearchSpec2 extends BaseSpec {
   private val id1      = s"$orgId/$projId1"
   private val projects = List(id1)
 
-  private val neuronMorphologyId     =
+  private val neuronMorphologyId =
     "https://bbp.epfl.ch/neurosciencegraph/data/neuronmorphologies/da3b1e42-5f7f-4065-8be3-d2132c219bc2"
-  private val neuronDensityId        =
+  private val neuronDensityId    =
     "https://bbp.epfl.ch/neurosciencegraph/data/densities/87221bd5-bd0b-464d-a863-b32d6f62893b"
-  private val traceId                =
+  private val traceId            =
     "https://bbp.epfl.ch/neurosciencegraph/data/traces/8f03a402-f0bb-4114-8a52-e8d3e23949fa"
-  private val layerThicknessId       =
+  private val layerThicknessId   =
     "https://bbp.epfl.ch/neurosciencegraph/data/8d3a4d11-cf77-4ac1-ae14-6f2480d0c992"
+  private val boutonDensityId =
+    "https://bbp.epfl.ch/neurosciencegraph/data/e38cfd23-7028-4fce-82d1-b3beeb1e2fc5"
 
   // the resources that should appear in the search index
   private val mainResources  = List(
@@ -31,7 +33,8 @@ class SearchSpec2 extends BaseSpec {
     "/kg/search2/trace.json",
     "/kg/search2/neuron-morphology.json",
     "/kg/search2/neuron-density.json",
-    "/kg/search2/layer-thickness.json"
+    "/kg/search2/layer-thickness.json",
+    "/kg/search2/bouton-density.json"
   )
   private val otherResources = List(
     "/kg/search2/org.json",
@@ -471,9 +474,26 @@ class SearchSpec2 extends BaseSpec {
       }
     }
 
+    "index bouton density" in {
+      val query    = queryField(boutonDensityId, "boutonDensity")
+      val expected =
+        json"""
+        {
+          "boutonDensity" : {
+            "label" : "0.1212 boutons/μm",
+            "unit" : "boutons/μm",
+            "value" : 0.1212
+          }
+        }
+        """
+
+      searchOneSource(query) { json =>
+        json should equalIgnoreArrayOrder(expected)
+      }
+    }
+
     "index metadata" ignore { assert(false) }
     "index source" ignore { assert(false) }
-    "index bouton density" ignore { assert(false) }
     "index series" ignore { assert(false) }
     "index detailed circuit" ignore { assert(false) }
     "index simulation campaign config" ignore { assert(false) }

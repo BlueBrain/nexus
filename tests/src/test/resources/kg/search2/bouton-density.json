@@ -1,0 +1,68 @@
+{
+  "@context": "https://bbp.neuroshapes.org",
+  "@id": "https://bbp.epfl.ch/neurosciencegraph/data/e38cfd23-7028-4fce-82d1-b3beeb1e2fc5",
+  "@type": [
+    "Entity",
+    "Dataset",
+    "BoutonDensity",
+    "Density"
+  ],
+  "annotation": {
+    "@type": [
+      "Annotation",
+      "MType:Annotation"
+    ],
+    "hasBody": {
+      "@id": "http://uri.interlex.org/base/ilx_0738229",
+      "@type": [
+        "AnnotationBody",
+        "MType"
+      ],
+      "label": "Rt_RC"
+    },
+    "name": "M-type Annotation"
+  },
+  "brainLocation": {
+    "@type": "BrainLocation",
+    "brainRegion": {
+      "@id": "http://api.brain-map.org/api/v2/data/Structure/262",
+      "label": "Reticular nucleus of the thalamus"
+    }
+  },
+  "density": {
+    "statistic": "mean",
+    "unitCode": "boutons/μm",
+    "value": 0.1212
+  },
+  "derivation": {
+    "@type": "Derivation",
+    "entity": {
+      "@id": "https://bbp.epfl.ch/neurosciencegraph/data/neuronmorphologies/51ea264d-7663-49a9-b0a6-40b8a366abb2",
+      "@type": "ReconstructedCell"
+    }
+  },
+  "license": {
+    "@id": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "@type": "License"
+  },
+  "name": "R1818-ReticularNeuron2_shrinkageCorr2.40_no dendrites_bouton_density",
+  "series": [
+    {
+      "statistic": "mean",
+      "unitCode": "boutons/μm",
+      "value": 0.1212
+    }
+  ],
+  "subject": {
+    "@type": "Subject",
+    "age": {
+      "period": "Post-natal",
+      "unitCode": "days",
+      "value": 90
+    },
+    "species": {
+      "@id": "http://purl.obolibrary.org/obo/NCBITaxon_10090",
+      "label": "Mus musculus"
+    }
+  }
+}
