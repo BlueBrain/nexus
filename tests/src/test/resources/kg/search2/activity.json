@@ -7,7 +7,7 @@
   ],
   "endedAtTime": {
     "@type": "xsd:dateTime",
-    "@value": "2015-05-01T00:00:00"
+    "value": "2015-05-01T00:00:00"
   },
   "generated": {
     "@id": "https://bbp.epfl.ch/neurosciencegraph/data/neuronmorphologies/da3b1e42-5f7f-4065-8be3-d2132c219bc2",
@@ -27,7 +27,7 @@
   "reconstructionCompressionCorrected": "yes",
   "startedAtTime": {
     "@type": "xsd:dateTime",
-    "@value": "2015-01-21T00:00:00"
+    "value": "2015-01-21T00:00:00"
   },
   "used": {
     "@id": "https://bbp.epfl.ch/neurosciencegraph/data/5d43d0ad-1edd-434d-9a08-907968ecdbc3",
