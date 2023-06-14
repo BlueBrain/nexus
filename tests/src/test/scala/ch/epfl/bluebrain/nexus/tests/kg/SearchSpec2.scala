@@ -24,7 +24,7 @@ class SearchSpec2 extends BaseSpec {
     "https://bbp.epfl.ch/neurosciencegraph/data/traces/8f03a402-f0bb-4114-8a52-e8d3e23949fa"
   private val layerThicknessId   =
     "https://bbp.epfl.ch/neurosciencegraph/data/8d3a4d11-cf77-4ac1-ae14-6f2480d0c992"
-  private val boutonDensityId =
+  private val boutonDensityId    =
     "https://bbp.epfl.ch/neurosciencegraph/data/e38cfd23-7028-4fce-82d1-b3beeb1e2fc5"
 
   // the resources that should appear in the search index
@@ -493,7 +493,7 @@ class SearchSpec2 extends BaseSpec {
     }
 
     "index series" in {
-      val query = queryField(boutonDensityId, "series")
+      val query    = queryField(boutonDensityId, "series")
       val expected =
         json"""
         {
