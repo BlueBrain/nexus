@@ -179,7 +179,9 @@ lazy val docs = project
       Map(
         "github.base_url"       -> "https://github.com/BlueBrain/nexus/tree/master",
         "project.version.short" -> "v1.7.x",
-        "git.branch"            -> "v1.7.x"
+        "git.branch"            -> "v1.7.x",
+        "current.url"           -> "https://bluebrainnexus.io/docs/",
+        "version.old"           -> "true"
       ),
     paradoxRoots                     := List("docs/index.html"),
     previewPath                      := "docs/index.html",
