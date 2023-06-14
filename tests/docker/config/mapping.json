@@ -64,6 +64,15 @@
         "valueZ": { "type": "float" }
       }
     },
+    "source": {
+      "properties": {
+        "identifier": {
+          "properties": {
+            "value": { "type": "text" }
+          }
+        }
+      }
+    },
     "subject": {
       "properties": {
         "weight": {

@@ -37,6 +37,7 @@ class SearchSpec extends BaseSpec {
     "/kg/search/bouton-density.json"
   )
   private val otherResources = List(
+    "/kg/search/article.json",
     "/kg/search/org.json",
     "/kg/search/license.json",
     "/kg/search/activity.json",
@@ -512,8 +513,40 @@ class SearchSpec extends BaseSpec {
       }
     }
 
+    "index source" in {
+      val query = queryField(neuronMorphologyId, "source")
+      val expected =
+        json"""
+        {
+          "source" : [
+            {
+              "@id" : "https://bbp.epfl.ch/neurosciencegraph/data/scholarlyarticles/1",
+              "@type" : [
+                "http://schema.org/ScholarlyArticle",
+                "http://www.w3.org/ns/prov#Entity"
+              ],
+              "identifier" : [
+                {
+                  "propertyID" : "doi",
+                  "value" : "10.1093/cercor/bht274"
+                },
+                {
+                  "propertyID" : "PMID",
+                  "value" : 24108800
+                }
+              ],
+              "title" : "Cell type-specific effects of adenosine on cortical neurons."
+            }
+          ]
+        }
+      """
+
+      assertOneSource(query) { json =>
+        json should equalIgnoreArrayOrder(expected)
+      }
+    }
+
     "index metadata" ignore { assert(false) }
-    "index source" ignore { assert(false) }
     "index detailed circuit" ignore { assert(false) }
     "index simulation campaign config" ignore { assert(false) }
     "index sType" ignore {
