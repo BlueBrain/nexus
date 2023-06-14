@@ -492,9 +492,28 @@ class SearchSpec2 extends BaseSpec {
       }
     }
 
+    "index series" in {
+      val query = queryField(boutonDensityId, "series")
+      val expected =
+        json"""
+        {
+          "series" : [
+            {
+              "statistic" : "mean",
+              "unit" : "boutons/μm",
+              "value" : 0.1212
+            }
+          ]
+        }
+       """
+
+      searchOneSource(query) { json =>
+        json should equalIgnoreArrayOrder(expected)
+      }
+    }
+
     "index metadata" ignore { assert(false) }
     "index source" ignore { assert(false) }
-    "index series" ignore { assert(false) }
     "index detailed circuit" ignore { assert(false) }
     "index simulation campaign config" ignore { assert(false) }
     "index sType" ignore {
