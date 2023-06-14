@@ -146,6 +146,24 @@ class SearchSpec2 extends BaseSpec {
       }.accepted
     }
 
+    "index coordinatedInBrainAtlas" in {
+      val query = queryField(neuronMorphologyId, "coordinatesInBrainAtlas")
+      val expected =
+        json"""
+        {
+          "coordinatesInBrainAtlas" : {
+            "valueX" : "7124.0",
+            "valueY" : "1040.05",
+            "valueZ" : "5129.275"
+          }
+        }
+        """
+
+      searchOneSource(query) { json =>
+        json should equalIgnoreArrayOrder(expected)
+      }.accepted
+    }
+
     "index species" in {
       val query    = queryField(neuronMorphologyId, "subjectSpecies")
       val expected =
@@ -423,7 +441,6 @@ class SearchSpec2 extends BaseSpec {
     "index series" ignore { assert(false) }
     "index detailed circuit" ignore { assert(false) }
     "index simulation campaign config" ignore { assert(false) }
-    "index coordinatedInBrainAtlas" ignore { assert(false) }
     "index sType" ignore {
       // there are no resources with this field yet
       assert(false)

@@ -31,6 +31,20 @@
     "layer": {
       "@id": "uberon:0005391",
       "label": "layer 2"
+    },
+    "coordinatesInBrainAtlas": {
+      "valueX": {
+        "@type": "xsd:float",
+        "@value": 7123.999999999999
+      },
+      "valueY": {
+        "@type": "xsd:float",
+        "@value": 1040.05
+      },
+      "valueZ": {
+        "@type": "xsd:float",
+        "@value": 5129.275
+      }
     }
   },
   "contribution": [
