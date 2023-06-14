@@ -1,0 +1,27 @@
+{
+  "@context": "https://bbp.neuroshapes.org",
+  "@id": "https://bbp.epfl.ch/neurosciencegraph/data/traces/min-max-age-weight",
+  "@type": [
+    "Dataset",
+    "Entity",
+    "Trace"
+  ],
+  "subject": {
+    "@type": "Subject",
+    "age": {
+      "period": "Post-natal",
+      "unitCode": "days",
+      "minValue": 15,
+      "maxValue": 20.5
+    },
+    "species": {
+      "@id": "NCBITaxon:10116",
+      "label": "Rattus norvegicus"
+    },
+    "weight": {
+      "unitCode": "g",
+      "minValue": 37.1,
+      "maxValue": 40
+    }
+  }
+}
