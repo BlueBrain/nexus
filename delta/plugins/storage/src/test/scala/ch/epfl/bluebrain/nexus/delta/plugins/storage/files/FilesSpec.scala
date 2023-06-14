@@ -20,6 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.FileResponse
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{Caller, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
@@ -526,27 +527,31 @@ class FilesSpec(docker: RemoteStorageDocker)
 
     }
 
+    def consumeContent(response: FileResponse): String = {
+      consume(response.content.accepted)
+    }
+
     "fetching a file content" should {
 
       "succeed" in {
         val response = files.fetchContent(file1, projectRef).accepted
-        consume(response.content) shouldEqual content
-        response.filename shouldEqual "file.txt"
-        response.contentType shouldEqual `text/plain(UTF-8)`
+        consumeContent(response) shouldEqual content
+        response.metadata.filename shouldEqual "file.txt"
+        response.metadata.contentType shouldEqual `text/plain(UTF-8)`
       }
 
       "succeed by tag" in {
         val response = files.fetchContent(IdSegmentRef(file1, tag), projectRef).accepted
-        consume(response.content) shouldEqual content
-        response.filename shouldEqual "file.txt"
-        response.contentType shouldEqual `text/plain(UTF-8)`
+        consumeContent(response) shouldEqual content
+        response.metadata.filename shouldEqual "file.txt"
+        response.metadata.contentType shouldEqual `text/plain(UTF-8)`
       }
 
       "succeed by rev" in {
         val response = files.fetchContent(IdSegmentRef(file1, 1), projectRef).accepted
-        consume(response.content) shouldEqual content
-        response.filename shouldEqual "myfile.txt"
-        response.contentType shouldEqual `text/plain(UTF-8)`
+        consumeContent(response) shouldEqual content
+        response.metadata.filename shouldEqual "myfile.txt"
+        response.metadata.contentType shouldEqual `text/plain(UTF-8)`
       }
 
       "reject if tag does not exist" in {

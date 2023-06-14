@@ -25,6 +25,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{EphemeralDefinition, EphemeralLog}
 import io.circe.Json
 import monix.bio.{IO, UIO}
+import monix.execution.Scheduler
 
 /**
   * Archives module.
@@ -168,7 +169,7 @@ class Archives(
       project: ProjectRef,
       format: ArchiveFormat[_],
       ignoreNotFound: Boolean
-  )(implicit caller: Caller): IO[ArchiveRejection, AkkaSource] =
+  )(implicit caller: Caller, scheduler: Scheduler): IO[ArchiveRejection, AkkaSource] =
     (for {
       resource <- fetch(id, project)
       value     = resource.value
