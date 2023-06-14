@@ -24,8 +24,6 @@ class SearchSpec2 extends BaseSpec {
     "https://bbp.epfl.ch/neurosciencegraph/data/traces/8f03a402-f0bb-4114-8a52-e8d3e23949fa"
   private val layerThicknessId       =
     "https://bbp.epfl.ch/neurosciencegraph/data/8d3a4d11-cf77-4ac1-ae14-6f2480d0c992"
-  private val subjectWithAgeWeightId =
-    "https://bbp.epfl.ch/neurosciencegraph/data/traces/abd07712-a89e-4f6b-bac7-3083436139c9"
 
   // the resources that should appear in the search index
   private val mainResources  = List(
@@ -33,8 +31,7 @@ class SearchSpec2 extends BaseSpec {
     "/kg/search2/trace.json",
     "/kg/search2/neuron-morphology.json",
     "/kg/search2/neuron-density.json",
-    "/kg/search2/layer-thickness.json",
-    "/kg/search2/subject-age-weight.json"
+    "/kg/search2/layer-thickness.json"
   )
   private val otherResources = List(
     "/kg/search2/org.json",
@@ -361,15 +358,15 @@ class SearchSpec2 extends BaseSpec {
     }
 
     "index subject age (exact value)" in {
-      val query    = queryField(subjectWithAgeWeightId, "subjectAge")
+      val query    = queryField(layerThicknessId, "subjectAge")
       val expected =
         json"""
         {
           "subjectAge" : {
-            "label" : "15 days Post-natal",
+            "label" : "56 days Post-natal",
             "period" : "Post-natal",
             "unit" : "days",
-            "value" : 15
+            "value" : 56
           }
         }
            """
@@ -380,7 +377,7 @@ class SearchSpec2 extends BaseSpec {
     }
 
     "index subject weight (exact value)" in {
-      val query    = queryField(subjectWithAgeWeightId, "subjectWeight")
+      val query    = queryField(layerThicknessId, "subjectWeight")
       val expected =
         json"""
         {
