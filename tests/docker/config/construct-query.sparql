@@ -96,11 +96,11 @@ CONSTRUCT {
                                                                                           :propertyID ?protocolPropertyId ;
                                                                                           :value      ?protocolValue      .
   ?id  :source             ?source                .
-                           ?source                :title        ?sourceTitle                 ;
-                                                  rdf:type      ?sourceType                  ;
-                                                  :identifier   ?sourceIdentifier            .
-                                                                ?sourceIdentifier  :propertyID  ?sourceIdentifierPropertyId  ;
-                                                                                   :value        ?sourceIdentifierValue      .
+                           ?source                :title        ?sourceTitle       ;
+                                                  rdf:type      ?sourceType        ;
+                                                  :identifier   ?sourceIdentifier  .
+                                                                ?sourceIdentifier  :propertyID  ?sourceIdentifierPropertyId ;
+                                                                                   :value       ?sourceIdentifierValue      .
   ?id  :circuitType        ?circuitType           ;
        :circuitBase        ?circuitBaseUrlStr        ;
        :circuitConfigPath  ?circuitConfigPathUrlStr  .
