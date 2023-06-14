@@ -24,8 +24,6 @@ class SearchSpec2 extends BaseSpec {
     "https://bbp.epfl.ch/neurosciencegraph/data/traces/8f03a402-f0bb-4114-8a52-e8d3e23949fa"
   private val subjectWithAgeWeightId       =
     "https://bbp.epfl.ch/neurosciencegraph/data/traces/abd07712-a89e-4f6b-bac7-3083436139c9"
-  private val subjectWithMinMaxAgeWeightId =
-    "https://bbp.epfl.ch/neurosciencegraph/data/traces/min-max-age-weight"
 
   // the resources that should appear in the search index
   private val mainResources  = List(
@@ -33,8 +31,7 @@ class SearchSpec2 extends BaseSpec {
     "/kg/search2/trace.json",
     "/kg/search2/neuron-morphology.json",
     "/kg/search2/neuron-density.json",
-    "/kg/search2/subject-age-weight.json",
-    "/kg/search2/subject-min-max-age-weight.json"
+    "/kg/search2/subject-age-weight.json"
   )
   private val otherResources = List(
     "/kg/search2/org.json",
@@ -398,16 +395,16 @@ class SearchSpec2 extends BaseSpec {
     }
 
     "index subject age (min/max case)" in {
-      val query    = queryField(subjectWithMinMaxAgeWeightId, "subjectAge")
+      val query    = queryField(neuronDensityId, "subjectAge")
       val expected =
         json"""
         {
           "subjectAge" : {
-            "label" : "15 to 20.5 days Post-natal",
+            "label" : "9 to 10 weeks Post-natal",
             "period" : "Post-natal",
-            "unit" : "days",
-            "minValue" : 15,
-            "maxValue" : 20.5
+            "unit" : "weeks",
+            "minValue" : 9,
+            "maxValue" : 10
           }
         }
            """
@@ -418,7 +415,7 @@ class SearchSpec2 extends BaseSpec {
     }
 
     "index subject weight (min/max case)" in {
-      val query    = queryField(subjectWithMinMaxAgeWeightId, "subjectWeight")
+      val query    = queryField(neuronDensityId, "subjectWeight")
       val expected =
         json"""
         {
