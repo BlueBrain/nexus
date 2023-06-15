@@ -292,7 +292,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> Snapshot
+<i class="md-icon" title="Version">label_outline</i> v1.8.x
 </label>
 </li>
 </ul>
@@ -359,13 +359,6 @@ BlueBrain/nexus
 </div>
 <div class="md-content">
 <article class="md-content__inner md-typeset">
-<div class="callout note warning admonition" style="visibility: visible; margin-top: 0px">
-<div class="callout-title admonition-title">Snapshot version</div>
-<p>
-You are browsing the docs for the snapshot version of Nexus,
-the latest release is available <a href="https://bluebrainnexus.io/docs/" title="here">here</a>
-</p>
-</div>
 <div class="md-content__searchable">
 <h1><a href="#v1-7-to-v1-8-migration" name="v1-7-to-v1-8-migration" class="anchor"><span class="anchor-link"></span></a>v1.7 To v1.8 Migration</h1>
 <p>The v1.8 release of Delta introduces PostgreSQL as sole option for the Delta primary event store.</p>
@@ -460,12 +453,12 @@ CREATE TABLE IF NOT EXISTS public.ignored_events(
 );
 </code></pre>
 <h3><a href="#create-the-postgresql-tables" name="create-the-postgresql-tables" class="anchor"><span class="anchor-link"></span></a>Create the PostgreSQL tables</h3>
-<p>Run the commands from the <a href="https://github.com/BlueBrain/nexus/blob/master/delta/sourcing-psql/src/main/resources/scripts/schema.ddl" title="Delta 1.8.x schema.ddl file">Delta 1.8.x schema.ddl file</a> to create the tables necessary for Delta operations.</p>
+<p>Run the commands from the <a href="https://github.com/BlueBrain/nexus/blob/v1.8.x/delta/sourcing-psql/src/main/resources/scripts/schema.ddl" title="Delta 1.8.x schema.ddl file">Delta 1.8.x schema.ddl file</a> to create the tables necessary for Delta operations.</p>
 <h2><a href="#elasticsearch-and-blazegraph-indices" name="elasticsearch-and-blazegraph-indices" class="anchor"><span class="anchor-link"></span></a>Elasticsearch and Blazegraph indices</h2>
 <p>For the migration, there are two ways to make sure that the new Delta 1.8 indices do not overlap the ones from Delta 1.7 (for both Elasticsearch and Blazegraph):</p>
 <ol>
   <li>Delete all existing indices</li>
-  <li>Configure a different prefix for the new Delta 1.8 indices using the  <a href="https://github.com/BlueBrain/nexus/blob/master/delta/app/src/main/resources/app.conf#L357" title="`app.defaults.indexing.prefix` field"><code>app.defaults.indexing.prefix</code> field</a>,  which sets  the default prefix value for both Elasticsearch and Blazegraph indices.</li>
+  <li>Configure a different prefix for the new Delta 1.8 indices using the  <a href="https://github.com/BlueBrain/nexus/blob/v1.8.x/delta/app/src/main/resources/app.conf#L357" title="`app.defaults.indexing.prefix` field"><code>app.defaults.indexing.prefix</code> field</a>,  which sets  the default prefix value for both Elasticsearch and Blazegraph indices.</li>
 </ol><div class="callout note warning"><div class="callout-title">Note</div>
 <p>Elasticsearch defaults to <a href="https://www.elastic.co/guide/en/elasticsearch/reference/8.7/misc-cluster-settings.html#cluster-shard-limit" title="a maximum of 1000 shards per node">a maximum of 1000 shards per node</a> in the cluster. If you intend to keep both old and new indices for the time of the migration, ensure that you can double your amount of shards within this limit. It is also possible to raise this limit by configuring <code>cluster.max_shards_per_node</code>. In both cases, monitor your resource usage, and consider allocating more resources to Elasticsearch for the time of the migration.</p></div><div class="callout note tip"><div class="callout-title">Blazegraph journal size</div>
 <p>Blazegraph stores data using a journaling system, which is append-only. Consider backing up your existing Blazegraph journal (by making a copy of the <code>blazegraph.jnl</code> file), and running with a clean instance of Blazegraph. This can allow a significant reduction in the size of the journal as only the latest state will be saved.</p></div>
@@ -477,7 +470,7 @@ CREATE TABLE IF NOT EXISTS public.ignored_events(
 <h3><a href="#configure-delta-in-migration-mode" name="configure-delta-in-migration-mode" class="anchor"><span class="anchor-link"></span></a>Configure Delta in migration mode</h3>
 <p>This section defines the mandatory configuration to run Delta in migration mode.</p>
 <h4><a href="#configuration-file" name="configuration-file" class="anchor"><span class="anchor-link"></span></a>Configuration file</h4>
-<p>A <a href="https://github.com/BlueBrain/nexus/blob/master/delta/migration/scripts/config/migration.conf" title="migration configuration file">migration configuration file</a> needs to be made available at a path accessible by Delta 1.8, which will be references by an <a href="v1.7-to-v1.8-migration.html#environment-variables">environment variable</a>. Important fields are:</p>
+<p>A <a href="https://github.com/BlueBrain/nexus/blob/v1.8.x/delta/migration/scripts/config/migration.conf" title="migration configuration file">migration configuration file</a> needs to be made available at a path accessible by Delta 1.8, which will be references by an <a href="v1.7-to-v1.8-migration.html#environment-variables">environment variable</a>. Important fields are:</p>
 <ul>
   <li><code>migration.batch.max-elements</code>: maximum number of events to push to PostgreSQL at once</li>
   <li><code>migration.replay.max-buffer-size</code>: maximum number of events to read from Cassandra at once</li>
@@ -720,7 +713,7 @@ CREATE TABLE IF NOT EXISTS public.ignored_events(
     </ul>
   </li>
 </ul><div class="callout note warning"><div class="callout-title">Note</div>
-<p>Delta 1.8 contains several bug fixes and improvements that result in differences in the Blazegraph counts. As such it is expected to find differences in the <code>migration_blazegraph_count</code> table. Additionally, the <a href="https://github.com/BlueBrain/nexus/blob/master/delta/plugins/blazegraph/src/main/resources/blazegraph.conf#L22" title="default Blazegraph query timeout">default Blazegraph query timeout</a> is 1 minute, so that the count may not be able to complete for large projects.</p></div>
+<p>Delta 1.8 contains several bug fixes and improvements that result in differences in the Blazegraph counts. As such it is expected to find differences in the <code>migration_blazegraph_count</code> table. Additionally, the <a href="https://github.com/BlueBrain/nexus/blob/v1.8.x/delta/plugins/blazegraph/src/main/resources/blazegraph.conf#L22" title="default Blazegraph query timeout">default Blazegraph query timeout</a> is 1 minute, so that the count may not be able to complete for large projects.</p></div>
 <p>The calls must be authenticated using the same service account as the one defined in Delta.</p>
 <p>Before running the tests, the following command needs to be run in your PostgreSQL instance:</p>
 <pre class="prettyprint"><code class="language-sql">CREATE TABLE IF NOT EXISTS public.migration_resources_diff_offset(
@@ -854,7 +847,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-Snapshot
+v1.8.x
 </span>
 </div>
 </article>

@@ -265,6 +265,8 @@ BlueBrain/nexus
         <li><a href="../../docs/releases/v1.8-release-notes.html#annotated-original-payload" class="header">Annotated original payload</a></li>
       </ul></li>
       <li><a href="../../docs/releases/v1.8-release-notes.html#supervision-api" class="header">Supervision API</a></li>
+      <li><a href="../../docs/releases/v1.8-release-notes.html#archives" class="header">Archives</a></li>
+      <li><a href="../../docs/releases/v1.8-release-notes.html#deprecations" class="header">Deprecations</a></li>
     </ul></li>
     <li><a href="../../docs/releases/v1.8-release-notes.html#nexus-fusion" class="header">Nexus Fusion</a></li>
     <li><a href="../../docs/releases/v1.8-release-notes.html#nexus-forge" class="header">Nexus forge</a></li>
@@ -315,6 +317,8 @@ BlueBrain/nexus
         <li><a href="../../docs/releases/v1.8-release-notes.html#annotated-original-payload" class="header">Annotated original payload</a></li>
       </ul></li>
       <li><a href="../../docs/releases/v1.8-release-notes.html#supervision-api" class="header">Supervision API</a></li>
+      <li><a href="../../docs/releases/v1.8-release-notes.html#archives" class="header">Archives</a></li>
+      <li><a href="../../docs/releases/v1.8-release-notes.html#deprecations" class="header">Deprecations</a></li>
     </ul></li>
     <li><a href="../../docs/releases/v1.8-release-notes.html#nexus-fusion" class="header">Nexus Fusion</a></li>
     <li><a href="../../docs/releases/v1.8-release-notes.html#nexus-forge" class="header">Nexus forge</a></li>
@@ -341,7 +345,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   <p>The support for Cassandra as a primary store is removed and PostgreSQL 15+ is now the only supported primary store.</p>
   <p>The sourcing and indexing engine have been completely reworked to improve flexibility, scalability and performance.</p>
 </blockquote>
-<p>For the detailed list of updates in this release, see the <a href="https://github.com/BlueBrain/nexus/issues?&q=is%3Aissue+is%3Aclosed+created%3A2022-03-15..2023-02-21+" title="list of addressed issues" target="_blank" rel="noopener noreferrer">list of addressed issues</a> since v1.7. //TODO update date of issues</p>
+<p>For the detailed list of updates in this release, see the <a href="https://github.com/BlueBrain/nexus/issues?&q=is%3Aissue+is%3Aclosed+created%3A2022-03-15..2023-06-14+" title="list of addressed issues" target="_blank" rel="noopener noreferrer">list of addressed issues</a> since v1.7.</p>
 <p>If you are currently using Nexus Delta from 1.7.x, please visit the <a href="v1.7-to-v1.8-migration.html">migration instructions</a> for the necessary steps to successfully upgrade.</p>
 <h2><a href="#nexus-delta" name="nexus-delta" class="anchor"><span class="anchor-link"></span></a>Nexus Delta</h2>
 <p>The goal of this release is to improve performance, flexibility, observability and developer productivity. This is an incremental software release that also brings several improvements.</p>
@@ -418,6 +422,11 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <h3><a href="#supervision-api" name="supervision-api" class="anchor"><span class="anchor-link"></span></a>Supervision API</h3>
 <p>A supervision API has been added to get information about the running projections on the current node:</p>
 <p><a href="../delta/api/supervision-api.html">More information</a></p>
+<h3><a href="#archives" name="archives" class="anchor"><span class="anchor-link"></span></a>Archives</h3>
+<p>Archives can now be downloaded in a zip format.</p>
+<p><a href="../delta/api/archives-api.html#fetch">More information</a></p>
+<h3><a href="#deprecations" name="deprecations" class="anchor"><span class="anchor-link"></span></a>Deprecations</h3>
+<p>In the next version, the support of tarballs as a format for archives is going to be removed because its limitations make it difficult to work properly with Nexus as resource and project identifiers tend to be long and the tar format is very restrictive on that. Only the zip format will remain as an option to download archives.</p>
 <h2><a href="#nexus-fusion" name="nexus-fusion" class="anchor"><span class="anchor-link"></span></a>Nexus Fusion</h2>
 <p>The goal of this release was to improve the user experience and functionality of the product. Specifically, redesigning and enhancing key pages, including Login, Home, , Organization listing, Projects listing, Studios listing, Project, Studio, Data Panel, and About Modal. Additionally, it introduced improvements to plugins and app configuration. These enhancements aim to provide users with better navigation, easier access to resources, improved data management capabilities, and an overall more user-friendly interface.</p>
 <ol>

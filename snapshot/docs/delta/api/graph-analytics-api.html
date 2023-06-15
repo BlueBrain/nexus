@@ -296,7 +296,12 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 </div>
 <div class="md-content__searchable">
 <h1><a href="#graph-analytics" name="graph-analytics" class="anchor"><span class="anchor-link"></span></a>Graph analytics</h1>
-<p>Graph analytics are a functionality introduced by the <code>graph-analytics</code> plugin and rooted in the <code>/v1/graph-analytics/{org_label}/{project_label}</code> collection. They provide ways to get insights about the data and their relationships in terms of types (@type field).</p><div class="callout note tip"><div class="callout-title">Authorization notes</div>
+<p>Graph analytics is a feature introduced by the <code>graph-analytics</code> plugin and rooted in the <code>/v1/graph-analytics/{org_label}/{project_label}</code> collection. </p>
+<p>It runs for each project and it parses and breaks down non-deprecated resources to analyse their structure. For each of these resources, it extracts the following information:</p>
+<ul>
+  <li>Its properties: their path and the type of the associated value</li>
+  <li>Its relationships, that is to say the other resources in the same project it points to.</li>
+</ul><div class="callout note tip"><div class="callout-title">Authorization notes</div>
 <p>When reading graph analytics, the caller must have <code>resources/read</code> permissions on the current path of the project or the ancestor paths.</p>
 <p>Please visit <a href="authentication.html">Authentication &amp; authorization</a> section to learn more about it.</p></div><div class="callout note warning"><div class="callout-title">Note</div>
 <p>The described endpoints are experimental and the responses structure might change in the future.</p></div>
@@ -462,7 +467,13 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <pre class="prettyprint"><code class="language-json">{
   &quot;@id&quot;: &quot;http://example.com/Anna&quot;,
   &quot;@type&quot;: &quot;http://schema.org/Person&quot;,
+  &quot;_project&quot;: &quot;myorg/myproject&quot;,
   &quot;_rev&quot;: 4,
+  &quot;_deprecated&quot;: false,
+  &quot;_createdAt&quot;: &quot;2023-06-01T00:00:00Z&quot;,
+  &quot;_createdBy&quot;: { &quot;@type&quot;: &quot;User&quot;, &quot;realm&quot;: &quot;bbp&quot;,  &quot;subject&quot;: &quot;Bob&quot; },
+  &quot;_updatedAt&quot;: &quot;2023-06-12T00:00:00Z&quot;,
+  &quot;_updatedBy&quot;: { &quot;@type&quot;: &quot;User&quot;, &quot;realm&quot;: &quot;bbp&quot;,  &quot;subject&quot;: &quot;Alice&quot; },
   &quot;properties&quot;: [
     {
       &quot;dataType&quot;: &quot;object&quot;,
@@ -504,7 +515,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   &quot;references&quot;: [
     {
       &quot;found&quot;: true,
-      &quot;@id&quot;: &quot;http://example.com/Robert&quot;,
+      &quot;@id&quot;: &quot;http://example.com/Robert&quot;
     }
   ],
   &quot;relationships&quot;: [
