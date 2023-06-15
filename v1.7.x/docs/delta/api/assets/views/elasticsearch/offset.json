@@ -1,0 +1,6 @@
+{
+  "@context": "https://bluebrain.github.io/nexus/contexts/offset.json",
+  "@type": "TimeBasedOffset",
+  "instant": "2021-05-12T12:57:19.375Z",
+  "value": "95d159f6-b321-11eb-a5f9-e5c0b5ea0976"
+}

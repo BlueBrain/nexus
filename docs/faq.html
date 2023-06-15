@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="x-ua-compatible" content="ie=edge">
 <meta name="description" content="docs">
-<meta name="generator" content="Paradox, paradox-material-theme=0.5.1, mkdocs-material=3.0.3">
+<meta name="generator" content="Paradox, paradox-material-theme=0.6.0, mkdocs-material=3.0.3">
 
 <meta name="lang:clipboard.copy" content="Copy to clipboard">
 <meta name="lang:clipboard.copied" content="Copied to clipboard">
@@ -154,6 +154,8 @@ BlueBrain/nexus
   </ul></li>
   <li><a href="../docs/releases/index.html" class="page">Releases</a>
   <ul>
+    <li><a href="../docs/releases/v1.8-release-notes.html" class="page">v1.8 Release Notes</a></li>
+    <li><a href="../docs/releases/v1.7-to-v1.8-migration.html" class="page">v1.7 To v1.8 Migration</a></li>
     <li><a href="../docs/releases/v1.7-release-notes.html" class="page">v1.7 Release Notes</a></li>
     <li><a href="../docs/releases/v1.6-to-v1.7-migration.html" class="page">v1.6 To v1.7 Migration</a></li>
     <li><a href="../docs/releases/v1.6-release-notes.html" class="page">v1.6 Release Notes</a></li>
@@ -173,12 +175,18 @@ BlueBrain/nexus
   <li><a href="../docs/fusion/index.html" class="page">Nexus Fusion</a>
   <ul>
     <li><a href="../docs/fusion/architecture.html" class="page">Architecture</a></li>
+    <li><a href="../docs/fusion/organizations.html" class="page">Organizations</a></li>
+    <li><a href="../docs/fusion/projects.html" class="page">Projects</a>
+    <ul>
+      <li><a href="../docs/fusion/project.html" class="page">Project</a></li>
+    </ul></li>
+    <li><a href="../docs/fusion/search.html" class="page">Global Search Types</a></li>
+    <li><a href="../docs/fusion/studios.html" class="page">Studios</a>
+    <ul>
+      <li><a href="../docs/fusion/studio.html" class="page">Studio</a></li>
+    </ul></li>
+    <li><a href="../docs/fusion/my-data.html" class="page">User data</a></li>
     <li><a href="../docs/fusion/plugins.html" class="page">Plugins</a></li>
-    <li><a href="../docs/fusion/studio.html" class="page">Studios</a></li>
-    <li><a href="../docs/fusion/search.html" class="page">Search</a></li>
-    <li><a href="../docs/fusion/admin.html" class="page">Admin</a></li>
-    <li><a href="../docs/fusion/workflow.html" class="page">Workflow (alpha)</a></li>
-    <li><a href="../docs/fusion/add-your-own-app.html" class="page">Add your own App</a></li>
   </ul></li>
   <li><a href="../docs/forge.html" class="page">Nexus Forge</a></li>
   <li><a href="../docs/delta/index.html" class="page">Nexus Delta</a>
@@ -214,7 +222,9 @@ BlueBrain/nexus
       <li><a href="../docs/delta/api/archives-api.html" class="page">Archives</a></li>
       <li><a href="../docs/delta/api/search-api.html" class="page">Global search</a></li>
       <li><a href="../docs/delta/api/graph-analytics-api.html" class="page">Graph analytics</a></li>
+      <li><a href="../docs/delta/api/jira.html" class="page">Jira integration</a></li>
       <li><a href="../docs/delta/api/events-api.html" class="page">Global events</a></li>
+      <li><a href="../docs/delta/api/supervision-api.html" class="page">Supervision</a></li>
     </ul></li>
     <li><a href="../docs/delta/plugins/index.html" class="page">Plugins</a></li>
     <li><a href="../docs/delta/benchmarks/index.html" class="page">Benchmarks</a>
@@ -265,7 +275,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> v1.7.x
+<i class="md-icon" title="Version">label_outline</i> Snapshot
 </label>
 </li>
 </ul>
@@ -315,16 +325,23 @@ BlueBrain/nexus
 </div>
 <div class="md-content">
 <article class="md-content__inner md-typeset">
+<div class="callout note warning admonition" style="visibility: visible; margin-top: 0px">
+<div class="callout-title admonition-title">Snapshot version</div>
+<p>
+You are browsing the docs for the snapshot version of Nexus,
+the latest release is available <a href="https://bluebrainnexus.io/docs/" title="here">here</a>
+</p>
+</div>
 <div class="md-content__searchable">
 <h1><a href="#faq" name="faq" class="anchor"><span class="anchor-link"></span></a>FAQ</h1>
 <h2><a href="#general-faq" name="general-faq" class="anchor"><span class="anchor-link"></span></a>General FAQ</h2>
 <h3><a href="#what-is-blue-brain-nexus-" name="what-is-blue-brain-nexus-" class="anchor"><span class="anchor-link"></span></a>What is Blue Brain Nexus?</h3>
 <p>Blue Brain Nexus is an ecosystem that allows you to organize and better leverage your data through the use of a Knowledge Graph. You can find out more information on our <a href="https://bluebrainnexus.io/" title="product home page" target="_blank" rel="noopener noreferrer">product home page</a>. </p>
 <h3><a href="#is-blue-brain-nexus-free-to-use-" name="is-blue-brain-nexus-free-to-use-" class="anchor"><span class="anchor-link"></span></a>Is Blue Brain Nexus free to use?</h3>
-<p>Yes, Nexus is a free, Open Source platform released under <a href="https://opensource.org/licenses/Apache-2.0" title="Apache Licence 2.0" target="_blank" rel="noopener noreferrer">Apache Licence 2.0</a></p>
+<p>Yes, Nexus is a free, Open Source platform released under <a href="https://opensource.org/license/apache-2-0/" title="Apache Licence 2.0" target="_blank" rel="noopener noreferrer">Apache Licence 2.0</a></p>
 <h3><a href="#how-do-i-run-blue-brain-nexus-" name="how-do-i-run-blue-brain-nexus-" class="anchor"><span class="anchor-link"></span></a>How do I run Blue Brain Nexus?</h3>
 <p>There are many ways to run Nexus. Our public Sandbox is running <a href="https://sandbox.bluebrainnexus.io" title="here" target="_blank" rel="noopener noreferrer">here</a> and you can use it to test Nexus on small, non-sensitive data. Our <a href="getting-started/try-nexus.html">tutorial</a> can help you to run Nexus step by step.</p>
-<p>Meanwhile if you want to run it locally you might need to install <a href="getting-started/running-nexus/index.html#docker">Docker</a> or <a href="getting-started/running-nexus/index.html#run-nexus-locally-with-minikube">Minikube</a>. You can also deploy Nexus <a href="getting-started/running-nexus/index.html#on-premise-cloud-deployment">“on premise”</a>, as a single instance or as a cluster. Blue Brain Nexus has also been deployed and tested on AWS using <a href="https://kubernetes.io/" title="Kubernetes" target="_blank" rel="noopener noreferrer">Kubernetes</a>.</p>
+<p>Meanwhile if you want to run it locally you can do so using <a href="getting-started/running-nexus/index.html#docker">Docker</a>. You can also deploy Nexus <a href="getting-started/running-nexus/index.html#on-premise-cloud-deployment">“on premise”</a>, as a single instance or as a cluster. Blue Brain Nexus has also been deployed and tested on AWS using <a href="https://kubernetes.io/" title="Kubernetes" target="_blank" rel="noopener noreferrer">Kubernetes</a>.</p>
 <h3><a href="#how-can-i-try-blue-brain-nexus-without-installing-it-" name="how-can-i-try-blue-brain-nexus-without-installing-it-" class="anchor"><span class="anchor-link"></span></a>How can I try Blue Brain Nexus without installing it?</h3>
 <p>The <a href="https://sandbox.bluebrainnexus.io" title="Sandbox" target="_blank" rel="noopener noreferrer">Sandbox</a> provides a public instance that can serve as a testbed. Be aware that the content of the Sandbox is regularly purged.</p>
 <h3><a href="#what-is-the-difference-with-a-relational-database-like-postgresql-" name="what-is-the-difference-with-a-relational-database-like-postgresql-" class="anchor"><span class="anchor-link"></span></a>What is the difference with a relational database like PostgreSQL?</h3>
@@ -392,7 +409,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-v1.7.x
+Snapshot
 </span>
 </div>
 </article>

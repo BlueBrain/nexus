@@ -1,0 +1,1 @@
+curl -XDELETE "http://localhost:8080/v1/acls/org1?rev=4"

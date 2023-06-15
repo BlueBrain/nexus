@@ -1,0 +1,1 @@
+curl "http://localhost:8080/v1/acls/org1?rev=1&self=false"

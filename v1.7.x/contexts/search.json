@@ -1,0 +1,21 @@
+{
+  "@context": {
+    "_total": "https://bluebrain.github.io/nexus/vocabulary/total",
+    "_results": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/results",
+      "@container": "@list"
+    },
+    "paths": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/paths",
+      "@type": "@id",
+      "@container": "@list"
+    },
+    "_maxScore": "https://bluebrain.github.io/nexus/vocabulary/maxScore",
+    "_score": "https://bluebrain.github.io/nexus/vocabulary/score",
+    "_next": "https://bluebrain.github.io/nexus/vocabulary/next",
+    "prefLabel": "http://www.w3.org/2004/02/skos/core#prefLabel",
+    "name": "http://schema.org/name",
+    "label": "http://www.w3.org/2000/01/rdf-schema#label"
+  },
+  "@id": "https://bluebrain.github.io/nexus/contexts/search.json"
+}

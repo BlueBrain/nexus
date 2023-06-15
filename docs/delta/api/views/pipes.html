@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="x-ua-compatible" content="ie=edge">
 <meta name="description" content="docs">
-<meta name="generator" content="Paradox, paradox-material-theme=0.5.1, mkdocs-material=3.0.3">
+<meta name="generator" content="Paradox, paradox-material-theme=0.6.0, mkdocs-material=3.0.3">
 
 <meta name="lang:clipboard.copy" content="Copy to clipboard">
 <meta name="lang:clipboard.copied" content="Copied to clipboard">
@@ -154,6 +154,8 @@ BlueBrain/nexus
   </ul></li>
   <li><a href="../../../../docs/releases/index.html" class="page">Releases</a>
   <ul>
+    <li><a href="../../../../docs/releases/v1.8-release-notes.html" class="page">v1.8 Release Notes</a></li>
+    <li><a href="../../../../docs/releases/v1.7-to-v1.8-migration.html" class="page">v1.7 To v1.8 Migration</a></li>
     <li><a href="../../../../docs/releases/v1.7-release-notes.html" class="page">v1.7 Release Notes</a></li>
     <li><a href="../../../../docs/releases/v1.6-to-v1.7-migration.html" class="page">v1.6 To v1.7 Migration</a></li>
     <li><a href="../../../../docs/releases/v1.6-release-notes.html" class="page">v1.6 Release Notes</a></li>
@@ -173,12 +175,18 @@ BlueBrain/nexus
   <li><a href="../../../../docs/fusion/index.html" class="page">Nexus Fusion</a>
   <ul>
     <li><a href="../../../../docs/fusion/architecture.html" class="page">Architecture</a></li>
+    <li><a href="../../../../docs/fusion/organizations.html" class="page">Organizations</a></li>
+    <li><a href="../../../../docs/fusion/projects.html" class="page">Projects</a>
+    <ul>
+      <li><a href="../../../../docs/fusion/project.html" class="page">Project</a></li>
+    </ul></li>
+    <li><a href="../../../../docs/fusion/search.html" class="page">Global Search Types</a></li>
+    <li><a href="../../../../docs/fusion/studios.html" class="page">Studios</a>
+    <ul>
+      <li><a href="../../../../docs/fusion/studio.html" class="page">Studio</a></li>
+    </ul></li>
+    <li><a href="../../../../docs/fusion/my-data.html" class="page">User data</a></li>
     <li><a href="../../../../docs/fusion/plugins.html" class="page">Plugins</a></li>
-    <li><a href="../../../../docs/fusion/studio.html" class="page">Studios</a></li>
-    <li><a href="../../../../docs/fusion/search.html" class="page">Search</a></li>
-    <li><a href="../../../../docs/fusion/admin.html" class="page">Admin</a></li>
-    <li><a href="../../../../docs/fusion/workflow.html" class="page">Workflow (alpha)</a></li>
-    <li><a href="../../../../docs/fusion/add-your-own-app.html" class="page">Add your own App</a></li>
   </ul></li>
   <li><a href="../../../../docs/forge.html" class="page">Nexus Forge</a></li>
   <li><a href="../../../../docs/delta/index.html" class="page">Nexus Delta</a>
@@ -214,7 +222,9 @@ BlueBrain/nexus
       <li><a href="../../../../docs/delta/api/archives-api.html" class="page">Archives</a></li>
       <li><a href="../../../../docs/delta/api/search-api.html" class="page">Global search</a></li>
       <li><a href="../../../../docs/delta/api/graph-analytics-api.html" class="page">Graph analytics</a></li>
+      <li><a href="../../../../docs/delta/api/jira.html" class="page">Jira integration</a></li>
       <li><a href="../../../../docs/delta/api/events-api.html" class="page">Global events</a></li>
+      <li><a href="../../../../docs/delta/api/supervision-api.html" class="page">Supervision</a></li>
     </ul></li>
     <li><a href="../../../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
     <li><a href="../../../../docs/delta/benchmarks/index.html" class="page">Benchmarks</a>
@@ -251,7 +261,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> v1.7.x
+<i class="md-icon" title="Version">label_outline</i> Snapshot
 </label>
 </li>
 </ul>
@@ -287,6 +297,13 @@ BlueBrain/nexus
 </div>
 <div class="md-content">
 <article class="md-content__inner md-typeset">
+<div class="callout note warning admonition" style="visibility: visible; margin-top: 0px">
+<div class="callout-title admonition-title">Snapshot version</div>
+<p>
+You are browsing the docs for the snapshot version of Nexus,
+the latest release is available <a href="https://bluebrainnexus.io/docs/" title="here">here</a>
+</p>
+</div>
 <div class="md-content__searchable">
 <h1><a href="#elasticsearch-pipes" name="elasticsearch-pipes" class="anchor"><span class="anchor-link"></span></a>Elasticsearch Pipes</h1>
 <p>Pipes are the processing units of a pipeline for an Elasticsearch view.</p>
@@ -390,40 +407,111 @@ BlueBrain/nexus
 <p>The pipe name must be a unique identifier in Delta.</p>
 <p>Please also note that removing pipes or modifying configuration for a pipe will prevent existing views relying on them to index resources as the pipeline will be broken. They will have to be updated with a valid pipeline so that indexing can be restarted. </p></div>
 <p>Besides these core pipes, it is possible to define custom pipes through plugins.</p>
-<p>Please visit <a href="https://github.com/BlueBrain/nexus/blob/v1.7.x/delta/sdk-views/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/views/model/ViewData.scala" title="IndexingData source" target="_blank" rel="noopener noreferrer">IndexingData source</a> for documentation about this class.</p>
+<p>Please visit:</p>
+<ul>
+  <li><a href="https://github.com/BlueBrain/nexus/blob/master/delta/sourcing-psql/src/main/scala/ch/epfl/bluebrain/nexus/delta/sourcing/stream/Elem.scala" title="Elem source" target="_blank" rel="noopener noreferrer">Elem source</a> for documentation about this class.</li>
+  <li><a href="https://github.com/BlueBrain/nexus/blob/master/delta/sourcing-psql/src/main/scala/ch/epfl/bluebrain/nexus/delta/sourcing/state/GraphResource.scala" title="GraphResource source" target="_blank" rel="noopener noreferrer">GraphResource source</a> for documentation about this class.</li>
+</ul>
 <p>Please visit <a href="../../plugins/index.html">Plugins</a> to learn about how to create/package/deploy a plugin.</p>
 <p>Inside this plugin, you can then define additional pipes:</p>
-<pre class="prettyprint"><code class="language-scala">import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.Pipe._
+<pre class="prettyprint"><code class="language-scala">import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.semiauto.deriveJsonLdDecoder
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.semiauto.deriveDefaultJsonLdDecoder
+import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Pipe
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.MyPipes.MyOtherCustomPipe.MyConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, PipeDef, PipeRef}
+import io.circe.syntax.EncoderOps
+import io.circe.{Json, JsonObject}
 import monix.bio.Task
+import shapeless.Typeable
 
 object MyPipes {
-  
-  // A first pipe which does not need any config
-  // The function to implement needs to return a `Task[Option[IndexingData]]`
-  val pipe1: Pipe =
-    withoutConfig(
-      &quot;pipe1&quot;,
-      (data: IndexingData) =&gt; Task.some(???)
-    )
 
-  // Config for pipe2
-  final private case class Pipe2Config(max: Int)
+  // A first pipe which does not need any config
+  // The function to implement needs to return a `Task[Elem[Out]]`
+  final class MyCustomPipe extends Pipe {
+    override type In = GraphResource
+    override type Out = GraphResource
+
+    override def ref: PipeRef = MyCustomPipe.ref
+
+    override def inType: Typeable[GraphResource] = Typeable[GraphResource]
+
+    override def outType: Typeable[GraphResource] = Typeable[GraphResource]
+
+    override def apply(element: SuccessElem[GraphResource]): Task[Elem[GraphResource]] =
+      element.evalMap(Task.delay(???))
+
+  }
+
+  object MyCustomPipe extends PipeDef {
+    override type PipeType = MyCustomPipe
+    override type Config = Unit
+
+    override def configType: Typeable[Config] = Typeable[Unit]
+
+    override def configDecoder: JsonLdDecoder[Config] = JsonLdDecoder[Unit]
+
+    override def ref: PipeRef = PipeRef.unsafe(&quot;myCustomPipe&quot;)
+
+    override def withConfig(config: Unit): MyCustomPipe = new MyCustomPipe
+
+    /**
+      * Returns the pipe ref and its empty config
+      */
+    def apply(): (PipeRef, ExpandedJsonLd) = ref -&gt; ExpandedJsonLd.empty
+  }
 
   // A second pipe relying on a config
-  // The function to implement needs to return a `Task[Option[IndexingData]]`
-  val pipe2: Pipe = {
-    //Needed to successfully decode and validate the config provided in the payload
-    implicit val configDecoder: JsonLdDecoder[Pipe2Config] = deriveJsonLdDecoder[Pipe2Config] 
-    Pipe.withConfig(
-      &quot;pipe2&quot;,
-      (config: Pipe2Config, data: IndexingData) =&gt;
-        if( ??? &gt; config.max)
-          Task.none // The resource is filtered out and won&#39;t be indexed in Elasticsearch
-        else           
-          Task.some(data) // The resource passes the pipeline without modifications
-    )
+  class MyOtherCustomPipe(config: MyConfig) extends Pipe {
+    override type In = GraphResource
+    override type Out = GraphResource
+
+    override def ref: PipeRef = MyOtherCustomPipe.ref
+
+    override def inType: Typeable[GraphResource] = Typeable[GraphResource]
+
+    override def outType: Typeable[GraphResource] = Typeable[GraphResource]
+
+    override def apply(element: SuccessElem[GraphResource]): Task[Elem[GraphResource]] =
+      element.evalMap(Task.delay(???))
+
+  }
+
+  object MyOtherCustomPipe extends PipeDef {
+    override type PipeType = MyOtherCustomPipe
+    override type Config = MyConfig
+
+    override def configType: Typeable[Config] = Typeable[MyConfig]
+
+    override def configDecoder: JsonLdDecoder[Config] = JsonLdDecoder[Config]
+
+    override def ref: PipeRef = PipeRef.unsafe(&quot;myOtherCustomType&quot;)
+
+    override def withConfig(config: MyConfig): MyOtherCustomPipe = new MyOtherCustomPipe(config)
+
+    final case class MyConfig(types: Set[Iri]) {
+      def toJsonLd: ExpandedJsonLd = ExpandedJsonLd(
+        Seq(
+          ExpandedJsonLd.unsafe(
+            nxv + ref.toString,
+            JsonObject(
+              (nxv + &quot;types&quot;).toString -&gt; Json.arr(types.toList.map(iri =&gt; Json.obj(&quot;@id&quot; -&gt; iri.asJson)): _*)
+            )
+          )
+        )
+      )
+    }
+
+    object MyConfig {
+      implicit val myConfigJsonLdDecoder: JsonLdDecoder[MyConfig] = deriveDefaultJsonLdDecoder
+    }
+
+    def apply(types: Set[Iri]): (PipeRef, ExpandedJsonLd) = ref -&gt; MyConfig(types).toJsonLd
   }
 }
 </code></pre>
@@ -431,13 +519,13 @@ object MyPipes {
 <pre class="prettyprint"><code class="language-scala">import izumi.distage.model.definition.ModuleDef
 object MyPluginModule extends ModuleDef {
 
-  many[Pipe].addSetValue(
+  many[PipeDef].addSetValue(
    Set(pipe1, pipe2)
   )
   
 }
 </code></pre>
-<p>The source code for the core pipes is available <a href="https://github.com/BlueBrain/nexus/tree/v1.7.x/delta/sdk-views/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/views/pipe" title="here">here</a> and the associated unit tests <a href="https://github.com/BlueBrain/nexus/tree/v1.7.x/delta/sdk-views/src/test/scala/ch/epfl/bluebrain/nexus/delta/sdk/views/pipe" title="here">here</a>.</p>
+<p>The source code for the core pipes is available <a href="https://github.com/BlueBrain/nexus/tree/master/delta/sourcing-psql/src/main/scala/ch/epfl/bluebrain/nexus/delta/sourcing/stream/pipes" title="here">here</a> and the associated unit tests <a href="https://github.com/BlueBrain/nexus/tree/master/delta/sourcing-psql/src/test/scala/ch/epfl/bluebrain/nexus/delta/sourcing/stream/pipes" title="here">here</a>.</p>
 </div>
 <div>
 <a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/views/pipes.md" title="Edit this page" class="md-source-file md-edit">
@@ -446,7 +534,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-v1.7.x
+Snapshot
 </span>
 </div>
 </article>

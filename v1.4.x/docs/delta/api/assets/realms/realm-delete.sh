@@ -1,1 +1,0 @@
-curl -XDELETE  -H "Content-Type: application/json" "https://nexus.example.com/v1/realms/realm1?rev=2"

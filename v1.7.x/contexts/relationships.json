@@ -1,0 +1,21 @@
+{
+  "@context": {
+    "_source": "https://bluebrain.github.io/nexus/vocabulary/source",
+    "_target": "https://bluebrain.github.io/nexus/vocabulary/target",
+    "_count": "https://bluebrain.github.io/nexus/vocabulary/count",
+    "_path": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/path",
+      "@container": "@list"
+    },
+    "_nodes": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/nodes",
+      "@container": "@list"
+    },
+    "_edges": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/edges",
+      "@container": "@list"
+    },
+    "_name": "https://bluebrain.github.io/nexus/vocabulary/name"
+  },
+  "@id": "https://bluebrain.github.io/nexus/contexts/relationships.json"
+}

@@ -1,0 +1,106 @@
+{
+    type: [
+        Dataset
+        NeuronMorphology
+    ]
+    id: forge.format("identifier", "neuronmorphologies", str(x.specimen__id))
+    apicalDendrite: x.tag__dendrite_type
+    brainLocation:
+    {
+        type: BrainLocation
+        brainRegion:
+        {
+            id: f"http://api.brain-map.org/api/v2/data/Structure/{x.structure__id}"
+            label: x.structure__acronym
+        }
+        coordinatesInBrainAtlas:
+        {
+            valueX: x.csl__x
+            valueY: x.csl__y
+            valueZ: x.csl__z
+        }
+        layer: x.structure__layer
+        hemisphere: x.specimen__hemisphere
+    }
+    contribution:
+    {
+        type: Contribution
+        agent:
+        {
+            type: Organization
+            id: https://www.grid.ac/institutes/grid.417881.3
+            name: Allen Institute for Brain Science
+        }
+    }
+    distribution: forge.attach(f"./allen_cell_types_database/specimen_{x.specimen__id}/reconstruction.swc", content_type="application/swc")
+    identifier: x.specimen__id
+    name: x.specimen__name
+    generation:
+    {
+        type: Generation
+        activity:
+        {
+            type: nsg:NeuronMorphologyReconstruction
+            hadProtocol:
+            {
+                type: Protocol
+                id: http://help.brain-map.org/display/celltypes/Documentation?preview=/8323525/10813530/CellTypes_Morph_Overview.pdf
+                name: Technical White Paper: Cell Morphology and Histology
+                description: Protocol used to generate Allen Cell Types Database.
+            }
+        }
+    }
+    subject:
+    {
+        type: Subject
+        name: x.donor__name
+        species: {
+            label: x.donor__species
+        }
+        identifier: x.donor__id
+        age: 
+        { 
+            period: Post-natal
+            unitCode: x.donor__age.split(" ")[-1]
+            value: x.donor__age.split(" ")[0]
+        }
+        strain: {
+            label: x.line_name
+        }
+        sex: {
+            label: x.donor__sex
+        }
+    }    
+    license:
+    {
+        type: License
+        id: https://alleninstitute.org/legal/terms-use/
+    }
+    objectOfStudy:
+    {
+        type: ObjectOfStudy
+        id: http://bbp.epfl.ch/neurosciencegraph/taxonomies/objectsofstudy/singlecells
+        label: Single Cell
+    }
+    derivation:
+    {
+        type: Derivation
+        entity: {
+            name: x.specimen__name
+            identifier: x.specimen__id
+        }
+    }
+    cell_reporter_status: x.cell_reporter_status
+    csl__normalized_depth: x.csl__normalized_depth
+    donor__disease_state: x.donor__disease_state
+    donor__race: x.donor__race
+    donor__years_of_seizure_history: x.donor__years_of_seizure_history
+    nr__average_contraction: x.nr__average_contraction
+    nr__average_parent_daughter_ratio: x.nr__average_parent_daughter_ratio
+    nr__max_euclidean_distance: x.nr__max_euclidean_distance
+    nr__number_bifurcations: x.nr__number_bifurcations
+    nr__number_stems: x.nr__number_stems
+    nr__reconstruction_type: x.nr__reconstruction_type
+    tag__apical: x.tag__apical
+    
+}

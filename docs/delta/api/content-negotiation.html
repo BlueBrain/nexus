@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="x-ua-compatible" content="ie=edge">
 <meta name="description" content="docs">
-<meta name="generator" content="Paradox, paradox-material-theme=0.5.1, mkdocs-material=3.0.3">
+<meta name="generator" content="Paradox, paradox-material-theme=0.6.0, mkdocs-material=3.0.3">
 
 <meta name="lang:clipboard.copy" content="Copy to clipboard">
 <meta name="lang:clipboard.copied" content="Copied to clipboard">
@@ -154,6 +154,8 @@ BlueBrain/nexus
   </ul></li>
   <li><a href="../../../docs/releases/index.html" class="page">Releases</a>
   <ul>
+    <li><a href="../../../docs/releases/v1.8-release-notes.html" class="page">v1.8 Release Notes</a></li>
+    <li><a href="../../../docs/releases/v1.7-to-v1.8-migration.html" class="page">v1.7 To v1.8 Migration</a></li>
     <li><a href="../../../docs/releases/v1.7-release-notes.html" class="page">v1.7 Release Notes</a></li>
     <li><a href="../../../docs/releases/v1.6-to-v1.7-migration.html" class="page">v1.6 To v1.7 Migration</a></li>
     <li><a href="../../../docs/releases/v1.6-release-notes.html" class="page">v1.6 Release Notes</a></li>
@@ -173,12 +175,18 @@ BlueBrain/nexus
   <li><a href="../../../docs/fusion/index.html" class="page">Nexus Fusion</a>
   <ul>
     <li><a href="../../../docs/fusion/architecture.html" class="page">Architecture</a></li>
+    <li><a href="../../../docs/fusion/organizations.html" class="page">Organizations</a></li>
+    <li><a href="../../../docs/fusion/projects.html" class="page">Projects</a>
+    <ul>
+      <li><a href="../../../docs/fusion/project.html" class="page">Project</a></li>
+    </ul></li>
+    <li><a href="../../../docs/fusion/search.html" class="page">Global Search Types</a></li>
+    <li><a href="../../../docs/fusion/studios.html" class="page">Studios</a>
+    <ul>
+      <li><a href="../../../docs/fusion/studio.html" class="page">Studio</a></li>
+    </ul></li>
+    <li><a href="../../../docs/fusion/my-data.html" class="page">User data</a></li>
     <li><a href="../../../docs/fusion/plugins.html" class="page">Plugins</a></li>
-    <li><a href="../../../docs/fusion/studio.html" class="page">Studios</a></li>
-    <li><a href="../../../docs/fusion/search.html" class="page">Search</a></li>
-    <li><a href="../../../docs/fusion/admin.html" class="page">Admin</a></li>
-    <li><a href="../../../docs/fusion/workflow.html" class="page">Workflow (alpha)</a></li>
-    <li><a href="../../../docs/fusion/add-your-own-app.html" class="page">Add your own App</a></li>
   </ul></li>
   <li><a href="../../../docs/forge.html" class="page">Nexus Forge</a></li>
   <li><a href="../../../docs/delta/index.html" class="page">Nexus Delta</a>
@@ -214,7 +222,9 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/archives-api.html" class="page">Archives</a></li>
       <li><a href="../../../docs/delta/api/search-api.html" class="page">Global search</a></li>
       <li><a href="../../../docs/delta/api/graph-analytics-api.html" class="page">Graph analytics</a></li>
+      <li><a href="../../../docs/delta/api/jira.html" class="page">Jira integration</a></li>
       <li><a href="../../../docs/delta/api/events-api.html" class="page">Global events</a></li>
+      <li><a href="../../../docs/delta/api/supervision-api.html" class="page">Supervision</a></li>
     </ul></li>
     <li><a href="../../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
     <li><a href="../../../docs/delta/benchmarks/index.html" class="page">Benchmarks</a>
@@ -240,7 +250,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> v1.7.x
+<i class="md-icon" title="Version">label_outline</i> Snapshot
 </label>
 </li>
 </ul>
@@ -265,6 +275,13 @@ BlueBrain/nexus
 </div>
 <div class="md-content">
 <article class="md-content__inner md-typeset">
+<div class="callout note warning admonition" style="visibility: visible; margin-top: 0px">
+<div class="callout-title admonition-title">Snapshot version</div>
+<p>
+You are browsing the docs for the snapshot version of Nexus,
+the latest release is available <a href="https://bluebrainnexus.io/docs/" title="here">here</a>
+</p>
+</div>
 <div class="md-content__searchable">
 <h1><a href="#content-negotiation" name="content-negotiation" class="anchor"><span class="anchor-link"></span></a>Content Negotiation</h1>
 <p>When performing a request against Nexus Delta, clients can specify the desired format of the response they would like to receive. This is done through a mechanism called <strong>Content Negotiation</strong>. Nexus Delta uses the HTTP <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Accept" title="Accept" target="_blank" rel="noopener noreferrer">Accept</a> Header in order to provide Content Negotiation capabilities.</p>
@@ -288,7 +305,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-v1.7.x
+Snapshot
 </span>
 </div>
 </article>

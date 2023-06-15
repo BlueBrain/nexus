@@ -1,1 +1,0 @@
-curl -XDELETE "https://nexus.example.com/v1/projects/myorg/myproject?rev=3"

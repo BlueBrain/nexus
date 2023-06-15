@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="x-ua-compatible" content="ie=edge">
 <meta name="description" content="docs">
-<meta name="generator" content="Paradox, paradox-material-theme=0.5.1, mkdocs-material=3.0.3">
+<meta name="generator" content="Paradox, paradox-material-theme=0.6.0, mkdocs-material=3.0.3">
 
 <meta name="lang:clipboard.copy" content="Copy to clipboard">
 <meta name="lang:clipboard.copied" content="Copied to clipboard">
@@ -154,6 +154,8 @@ BlueBrain/nexus
   </ul></li>
   <li><a href="../../../docs/releases/index.html" class="page">Releases</a>
   <ul>
+    <li><a href="../../../docs/releases/v1.8-release-notes.html" class="page">v1.8 Release Notes</a></li>
+    <li><a href="../../../docs/releases/v1.7-to-v1.8-migration.html" class="page">v1.7 To v1.8 Migration</a></li>
     <li><a href="../../../docs/releases/v1.7-release-notes.html" class="page">v1.7 Release Notes</a></li>
     <li><a href="../../../docs/releases/v1.6-to-v1.7-migration.html" class="page">v1.6 To v1.7 Migration</a></li>
     <li><a href="../../../docs/releases/v1.6-release-notes.html" class="page">v1.6 Release Notes</a></li>
@@ -173,12 +175,18 @@ BlueBrain/nexus
   <li><a href="../../../docs/fusion/index.html" class="page">Nexus Fusion</a>
   <ul>
     <li><a href="../../../docs/fusion/architecture.html" class="page">Architecture</a></li>
+    <li><a href="../../../docs/fusion/organizations.html" class="page">Organizations</a></li>
+    <li><a href="../../../docs/fusion/projects.html" class="page">Projects</a>
+    <ul>
+      <li><a href="../../../docs/fusion/project.html" class="page">Project</a></li>
+    </ul></li>
+    <li><a href="../../../docs/fusion/search.html" class="page">Global Search Types</a></li>
+    <li><a href="../../../docs/fusion/studios.html" class="page">Studios</a>
+    <ul>
+      <li><a href="../../../docs/fusion/studio.html" class="page">Studio</a></li>
+    </ul></li>
+    <li><a href="../../../docs/fusion/my-data.html" class="page">User data</a></li>
     <li><a href="../../../docs/fusion/plugins.html" class="page">Plugins</a></li>
-    <li><a href="../../../docs/fusion/studio.html" class="page">Studios</a></li>
-    <li><a href="../../../docs/fusion/search.html" class="page">Search</a></li>
-    <li><a href="../../../docs/fusion/admin.html" class="page">Admin</a></li>
-    <li><a href="../../../docs/fusion/workflow.html" class="page">Workflow (alpha)</a></li>
-    <li><a href="../../../docs/fusion/add-your-own-app.html" class="page">Add your own App</a></li>
   </ul></li>
   <li><a href="../../../docs/forge.html" class="page">Nexus Forge</a></li>
   <li><a href="../../../docs/delta/index.html" class="page">Nexus Delta</a>
@@ -214,7 +222,9 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/archives-api.html" class="page">Archives</a></li>
       <li><a href="../../../docs/delta/api/search-api.html" class="page">Global search</a></li>
       <li><a href="../../../docs/delta/api/graph-analytics-api.html" class="page">Graph analytics</a></li>
+      <li><a href="../../../docs/delta/api/jira.html" class="page">Jira integration</a></li>
       <li><a href="../../../docs/delta/api/events-api.html" class="page">Global events</a></li>
+      <li><a href="../../../docs/delta/api/supervision-api.html" class="page">Supervision</a></li>
     </ul></li>
     <li><a href="../../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
     <li><a href="../../../docs/delta/benchmarks/index.html" class="page">Benchmarks</a>
@@ -239,42 +249,26 @@ BlueBrain/nexus
         <li><a href="../../../docs/getting-started/running-nexus/index.html#docker" class="header">Docker</a></li>
         <li><a href="../../../docs/getting-started/running-nexus/index.html#memory-and-cpu-limits" class="header">Memory and CPU limits</a></li>
       </ul></li>
-      <li><a href="../../../docs/getting-started/running-nexus/index.html#recommended-docker-swarm" class="header">Recommended: Docker Swarm</a>
+      <li><a href="../../../docs/getting-started/running-nexus/index.html#docker-compose" class="header">Docker Compose</a>
       <ul>
-        <li><a href="../../../docs/getting-started/running-nexus/index.html#deployment" class="header">Deployment</a></li>
+        <li><a href="../../../docs/getting-started/running-nexus/index.html#set-up" class="header">Set-up</a></li>
         <li><a href="../../../docs/getting-started/running-nexus/index.html#starting-nexus" class="header">Starting Nexus</a></li>
+        <li><a href="../../../docs/getting-started/running-nexus/index.html#using-fusion" class="header">Using Fusion</a></li>
         <li><a href="../../../docs/getting-started/running-nexus/index.html#administration" class="header">Administration</a></li>
         <li><a href="../../../docs/getting-started/running-nexus/index.html#stopping-nexus" class="header">Stopping Nexus</a></li>
       </ul></li>
       <li><a href="../../../docs/getting-started/running-nexus/index.html#endpoints" class="header">Endpoints</a></li>
-    </ul></li>
-    <li><a href="../../../docs/getting-started/running-nexus/index.html#run-nexus-locally-with-minikube" class="header">Run Nexus locally with Minikube</a>
-    <ul>
-      <li><a href="../../../docs/getting-started/running-nexus/index.html#minikube-set-up" class="header">Minikube set-up</a>
+      <li><a href="../../../docs/getting-started/running-nexus/index.html#postgresql-partitioning" class="header">PostgreSQL partitioning</a>
       <ul>
-        <li><a href="../../../docs/getting-started/running-nexus/index.html#installation" class="header">Installation</a></li>
-        <li><a href="../../../docs/getting-started/running-nexus/index.html#run-minikube" class="header">Run Minikube</a></li>
-        <li><a href="../../../docs/getting-started/running-nexus/index.html#enable-the-ingress-addon" class="header">Enable the ingress addon</a></li>
-        <li><a href="../../../docs/getting-started/running-nexus/index.html#setup-a-separate-namespace" class="header">Setup a separate namespace</a></li>
-      </ul></li>
-      <li><a href="../../../docs/getting-started/running-nexus/index.html#deploy-dependent-services" class="header">Deploy dependent services</a>
-      <ul>
-        <li><a href="../../../docs/getting-started/running-nexus/index.html#deploy-cassandra" class="header">Deploy Cassandra</a></li>
-        <li><a href="../../../docs/getting-started/running-nexus/index.html#deploy-elasticsearch" class="header">Deploy Elasticsearch</a></li>
-        <li><a href="../../../docs/getting-started/running-nexus/index.html#deploy-blazegraph" class="header">Deploy BlazeGraph</a></li>
-      </ul></li>
-      <li><a href="../../../docs/getting-started/running-nexus/index.html#deploy-nexus-services" class="header">Deploy Nexus Services</a>
-      <ul>
-        <li><a href="../../../docs/getting-started/running-nexus/index.html#deploy-delta" class="header">Deploy Delta</a></li>
-        <li><a href="../../../docs/getting-started/running-nexus/index.html#deploy-the-web-interface" class="header">Deploy the web interface</a></li>
+        <li><a href="../../../docs/getting-started/running-nexus/index.html#advanced-subpartitioning" class="header">Advanced subpartitioning</a></li>
       </ul></li>
     </ul></li>
     <li><a href="../../../docs/getting-started/running-nexus/index.html#on-premise-cloud-deployment" class="header">On premise / cloud deployment</a>
     <ul>
       <li><a href="../../../docs/getting-started/running-nexus/index.html#choice-of-hardware" class="header">Choice of hardware</a></li>
-      <li><a href="../../../docs/getting-started/running-nexus/index.html#cassandra" class="header">Cassandra</a></li>
-      <li><a href="../../../docs/getting-started/running-nexus/index.html#elasticsearch" class="header">ElasticSearch</a></li>
-      <li><a href="../../../docs/getting-started/running-nexus/index.html#blazegraph" class="header">BlazeGraph</a></li>
+      <li><a href="../../../docs/getting-started/running-nexus/index.html#postgresql" class="header">PostgreSQL</a></li>
+      <li><a href="../../../docs/getting-started/running-nexus/index.html#elasticsearch" class="header">Elasticsearch</a></li>
+      <li><a href="../../../docs/getting-started/running-nexus/index.html#blazegraph" class="header">Blazegraph</a></li>
     </ul></li>
   </ul></li>
 </ul>
@@ -284,7 +278,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> v1.7.x
+<i class="md-icon" title="Version">label_outline</i> Snapshot
 </label>
 </li>
 </ul>
@@ -307,42 +301,26 @@ BlueBrain/nexus
         <li><a href="../../../docs/getting-started/running-nexus/index.html#docker" class="header">Docker</a></li>
         <li><a href="../../../docs/getting-started/running-nexus/index.html#memory-and-cpu-limits" class="header">Memory and CPU limits</a></li>
       </ul></li>
-      <li><a href="../../../docs/getting-started/running-nexus/index.html#recommended-docker-swarm" class="header">Recommended: Docker Swarm</a>
+      <li><a href="../../../docs/getting-started/running-nexus/index.html#docker-compose" class="header">Docker Compose</a>
       <ul>
-        <li><a href="../../../docs/getting-started/running-nexus/index.html#deployment" class="header">Deployment</a></li>
+        <li><a href="../../../docs/getting-started/running-nexus/index.html#set-up" class="header">Set-up</a></li>
         <li><a href="../../../docs/getting-started/running-nexus/index.html#starting-nexus" class="header">Starting Nexus</a></li>
+        <li><a href="../../../docs/getting-started/running-nexus/index.html#using-fusion" class="header">Using Fusion</a></li>
         <li><a href="../../../docs/getting-started/running-nexus/index.html#administration" class="header">Administration</a></li>
         <li><a href="../../../docs/getting-started/running-nexus/index.html#stopping-nexus" class="header">Stopping Nexus</a></li>
       </ul></li>
       <li><a href="../../../docs/getting-started/running-nexus/index.html#endpoints" class="header">Endpoints</a></li>
-    </ul></li>
-    <li><a href="../../../docs/getting-started/running-nexus/index.html#run-nexus-locally-with-minikube" class="header">Run Nexus locally with Minikube</a>
-    <ul>
-      <li><a href="../../../docs/getting-started/running-nexus/index.html#minikube-set-up" class="header">Minikube set-up</a>
+      <li><a href="../../../docs/getting-started/running-nexus/index.html#postgresql-partitioning" class="header">PostgreSQL partitioning</a>
       <ul>
-        <li><a href="../../../docs/getting-started/running-nexus/index.html#installation" class="header">Installation</a></li>
-        <li><a href="../../../docs/getting-started/running-nexus/index.html#run-minikube" class="header">Run Minikube</a></li>
-        <li><a href="../../../docs/getting-started/running-nexus/index.html#enable-the-ingress-addon" class="header">Enable the ingress addon</a></li>
-        <li><a href="../../../docs/getting-started/running-nexus/index.html#setup-a-separate-namespace" class="header">Setup a separate namespace</a></li>
-      </ul></li>
-      <li><a href="../../../docs/getting-started/running-nexus/index.html#deploy-dependent-services" class="header">Deploy dependent services</a>
-      <ul>
-        <li><a href="../../../docs/getting-started/running-nexus/index.html#deploy-cassandra" class="header">Deploy Cassandra</a></li>
-        <li><a href="../../../docs/getting-started/running-nexus/index.html#deploy-elasticsearch" class="header">Deploy Elasticsearch</a></li>
-        <li><a href="../../../docs/getting-started/running-nexus/index.html#deploy-blazegraph" class="header">Deploy BlazeGraph</a></li>
-      </ul></li>
-      <li><a href="../../../docs/getting-started/running-nexus/index.html#deploy-nexus-services" class="header">Deploy Nexus Services</a>
-      <ul>
-        <li><a href="../../../docs/getting-started/running-nexus/index.html#deploy-delta" class="header">Deploy Delta</a></li>
-        <li><a href="../../../docs/getting-started/running-nexus/index.html#deploy-the-web-interface" class="header">Deploy the web interface</a></li>
+        <li><a href="../../../docs/getting-started/running-nexus/index.html#advanced-subpartitioning" class="header">Advanced subpartitioning</a></li>
       </ul></li>
     </ul></li>
     <li><a href="../../../docs/getting-started/running-nexus/index.html#on-premise-cloud-deployment" class="header">On premise / cloud deployment</a>
     <ul>
       <li><a href="../../../docs/getting-started/running-nexus/index.html#choice-of-hardware" class="header">Choice of hardware</a></li>
-      <li><a href="../../../docs/getting-started/running-nexus/index.html#cassandra" class="header">Cassandra</a></li>
-      <li><a href="../../../docs/getting-started/running-nexus/index.html#elasticsearch" class="header">ElasticSearch</a></li>
-      <li><a href="../../../docs/getting-started/running-nexus/index.html#blazegraph" class="header">BlazeGraph</a></li>
+      <li><a href="../../../docs/getting-started/running-nexus/index.html#postgresql" class="header">PostgreSQL</a></li>
+      <li><a href="../../../docs/getting-started/running-nexus/index.html#elasticsearch" class="header">Elasticsearch</a></li>
+      <li><a href="../../../docs/getting-started/running-nexus/index.html#blazegraph" class="header">Blazegraph</a></li>
     </ul></li>
   </ul></li>
 </ul>
@@ -353,27 +331,34 @@ BlueBrain/nexus
 </div>
 <div class="md-content">
 <article class="md-content__inner md-typeset">
+<div class="callout note warning admonition" style="visibility: visible; margin-top: 0px">
+<div class="callout-title admonition-title">Snapshot version</div>
+<p>
+You are browsing the docs for the snapshot version of Nexus,
+the latest release is available <a href="https://bluebrainnexus.io/docs/" title="here">here</a>
+</p>
+</div>
 <div class="md-content__searchable">
 <h1><a href="#running-nexus" name="running-nexus" class="anchor"><span class="anchor-link"></span></a>Running Nexus</h1>
-<p>If you wish to quickly try out Nexus, we provide a <a href="index.html#using-the-public-sandbox">public sandbox</a>. For a more in-depth test-drive of Nexus on your machine, we recommend the <a href="index.html#recommended-docker-swarm">Docker Swarm approach</a>. For a production deployment on your in-house or cloud infrastructure, please refer to our <a href="index.html#on-premise-cloud-deployment">deployment guide</a>.</p>
+<p>If you wish to quickly try out Nexus, we provide a <a href="index.html#using-the-public-sandbox">public sandbox</a>. For a more in-depth test-drive of Nexus on your machine, we recommend the <a href="index.html#docker-compose">Docker Compose approach</a>. For a production deployment on your in-house or cloud infrastructure, please refer to our <a href="index.html#on-premise-cloud-deployment">deployment guide</a>.</p>
 <h2><a href="#using-the-public-sandbox" name="using-the-public-sandbox" class="anchor"><span class="anchor-link"></span></a>Using the public sandbox</h2>
 <p>A public instance of Nexus is running at <a href="https://sandbox.bluebrainnexus.io" title="https://sandbox.bluebrainnexus.io" target="_blank" rel="noopener noreferrer">https://sandbox.bluebrainnexus.io</a>. You can log in with a GitHub account. It&rsquo;s provided for evaluation purposes only, without any guarantees.</p>
-<p>The API root is <a href="https://sandbox.bluebrainnexus.io/v1" title="https://sandbox.bluebrainnexus.io/v1" target="_blank" rel="noopener noreferrer">https://sandbox.bluebrainnexus.io/v1</a>.</p><div class="callout note "><div class="callout-title">Note</div>
+<p>The API root is <a href="https://sandbox.bluebrainnexus.io/v1" title="https://sandbox.bluebrainnexus.io/v1" target="_blank" rel="noopener noreferrer">https://sandbox.bluebrainnexus.io/v1</a>.</p><div class="callout note warning"><div class="callout-title">Note</div>
 <p>Do not ingest any proprietary or sensitive data. The environment will be wiped regularly, your data and credentials can disappear anytime.</p></div>
 <h2><a href="#run-nexus-locally-with-docker" name="run-nexus-locally-with-docker" class="anchor"><span class="anchor-link"></span></a>Run Nexus locally with Docker</h2>
 <h3><a href="#requirements" name="requirements" class="anchor"><span class="anchor-link"></span></a>Requirements</h3>
 <h4><a href="#docker" name="docker" class="anchor"><span class="anchor-link"></span></a>Docker</h4>
-<p>Regardless of your OS, make sure to run a recent version of Docker (community edition). This was tested with versions <strong>20.10.2</strong> and above. You might need to get installation packages directly from the <a href="https://docs.docker.com/" title="official Docker website" target="_blank" rel="noopener noreferrer">official Docker website</a> if the one provided by your system package manager is outdated.</p>
+<p>Regardless of your OS, make sure to run a recent version of the Docker Engine. This was tested with version <strong>20.10.23</strong>. The Docker Engine, along the Docker CLI, come with an installation of Docker Desktop. Visit the <a href="https://docs.docker.com/desktop/" title="official Docker Desktop documentation">official Docker Desktop documentation</a> for detailed installation steps.</p>
 <p>Command :</p>
-<pre><code>docker --version
+<pre class="prettyprint"><code class="language-shell">docker --version
 </code></pre>
 <p>Example :</p>
-<pre><code>$ docker version
-Docker version 20.10.2, build 20.10.2-0ubuntu1~18.04.2
+<pre class="prettyprint"><code class="language-shell">$ docker --version
+Docker version 20.10.23, build 7155243
 </code></pre>
 <h4><a href="#memory-and-cpu-limits" name="memory-and-cpu-limits" class="anchor"><span class="anchor-link"></span></a>Memory and CPU limits</h4>
-<p>On macOS and Windows, Docker effectively runs containers inside a VM created by the system hypervisor. Nexus requires at least <strong>2 CPUs</strong> and <strong>8 GiB</strong> of memory in total. You can increase the limits in Docker settings in the menu <em>Preferences</em> &gt; <em>Advanced</em>.</p>
-<p>For a proper evaluation using Docker Swarm or Minikube/Kubernetes, we recommend allocating at least <strong>16GiB</strong> of RAM to run the provided templates. Feel free to tweak memory limits in order to fit your hardware constraints. At the cost of a slower startup and a decreased overall performance, you should be able to go as low as:</p>
+<p>On macOS and Windows, Docker effectively runs containers inside a VM created by the system hypervisor. Nexus requires at least <strong>2 CPUs</strong> and <strong>8 GiB</strong> of memory in total. You can increase the limits in Docker settings in the menu <em>Settings</em> &gt; <em>Resources</em>.</p>
+<p>For a proper evaluation using Docker, we recommend allocating at least <strong>16GiB</strong> of RAM to run the provided templates. Feel free to tweak memory limits in order to fit your hardware constraints. At the cost of a slower startup and a decreased overall performance, you should be able to go as low as:</p>
 <table>
   <thead>
     <tr>
@@ -383,7 +368,7 @@ Docker version 20.10.2, build 20.10.2-0ubuntu1~18.04.2
   </thead>
   <tbody>
     <tr>
-      <td align="center">Cassandra </td>
+      <td align="center">PostgreSQL </td>
       <td align="center">512 </td>
     </tr>
     <tr>
@@ -400,84 +385,76 @@ Docker version 20.10.2, build 20.10.2-0ubuntu1~18.04.2
     </tr>
   </tbody>
 </table>
-<h3><a href="#recommended-docker-swarm" name="recommended-docker-swarm" class="anchor"><span class="anchor-link"></span></a>Recommended: Docker Swarm</h3>
-<p>Docker Swarm is the native orchestrator shipped with Docker. It provides a more robust way to run Nexus.</p>
-<p>If you&rsquo;ve never used Docker Swarm or Docker Stacks before, you first need to create a swarm cluster on your local machine:</p>
-<p>Command :</p>
-<pre><code>docker swarm init
-</code></pre>
-<p>Example :</p>
-<pre><code>$ docker swarm init
-Swarm initialized: current node (***) is now a manager.
-
-To add a worker to this swarm, run the following command:
-
-    docker swarm join --token {token} 128.178.97.243:2377
-
-To add a manager to this swarm, run &#39;docker swarm join-token manager&#39; and follow the instructions.
-</code></pre>
-<h4><a href="#deployment" name="deployment" class="anchor"><span class="anchor-link"></span></a>Deployment</h4>
-<p>Download the <a href="docker-swarm/docker-compose.yaml" title="Docker Compose template" target="_blank" rel="noopener noreferrer">Docker Compose template</a> into a directory of your choice, for instance <code>~/docker/nexus/</code>.</p>
-<p>Download the <a href="docker-swarm/nginx.conf" title="http proxy configuration" target="_blank" rel="noopener noreferrer">http proxy configuration</a> to the same directory.</p>
+<h3><a href="#docker-compose" name="docker-compose" class="anchor"><span class="anchor-link"></span></a>Docker Compose</h3>
+<h4><a href="#set-up" name="set-up" class="anchor"><span class="anchor-link"></span></a>Set-up</h4>
+<ul>
+  <li>Download the <a href="docker/docker-compose.yaml" title="Docker Compose template" target="_blank" rel="noopener noreferrer">Docker Compose template</a> into a directory of your choice, for instance <code>~/docker/nexus/</code>.</li>
+  <li>Download the <a href="docker/delta.conf" title="Delta configuration" target="_blank" rel="noopener noreferrer">Delta configuration</a> to the same directory.</li>
+  <li>Download the <a href="docker/nginx.conf" title="http proxy configuration" target="_blank" rel="noopener noreferrer">http proxy configuration</a> to the same directory.</li>
+</ul>
 <h4><a href="#starting-nexus" name="starting-nexus" class="anchor"><span class="anchor-link"></span></a>Starting Nexus</h4>
-<p>Create a <em>nexus</em> deployment with Docker Stacks:</p>
+<p>From within the directory that contains the <code>docker-compose.yaml</code> you downloaded, run the containers using Docker Compose:</p>
 <p>Command :</p>
-<pre><code>docker stack deploy nexus --compose-file=docker-compose.yaml
+<pre class="prettyprint"><code class="language-shell">docker compose --project-name nexus --file=docker-compose.yaml up --detach
 </code></pre>
 <p>Example :</p>
-<pre><code>$ cd ~/docker/nexus
-$ docker stack deploy nexus --compose-file=docker-compose.yaml
-Creating network nexus_default
-Creating service nexus_router
-Creating service nexus_delta
-Creating service nexus_elasticsearch
-Creating service nexus_cassandra
-Creating service nexus_blazegraph
-Creating service nexus_web
+<pre class="prettyprint"><code class="language-shell">$ cd ~/docker/nexus
+$ docker compose --project-name nexus --file=docker-compose.yaml up --detach
+...
+⠿ Network nexus_default             Created 0.0s
+⠿ Container nexus-elasticsearch-1   Started 1.2s
+⠿ Container nexus-postgres-1        Started 1.2s
+⠿ Container nexus-blazegraph-1      Started 1.1s
+⠿ Container nexus-delta-1           Started 1.6s
+⠿ Container nexus-web-1             Started 1.8s
+⠿ Container nexus-router-1          Started 2.1s
 </code></pre>
-<p>Wait one or two minutes and you should be able to access Nexus locally, on the port 80:</p>
+<p>When running the command for the first time, Docker will pull all necessary images from Dockerhub if they are not available locally. Once all containers are running, wait one or two minutes and you should be able to access Nexus locally, on the port 80:</p>
 <p>Command :</p>
-<pre><code>curl http://localhost/v1/version
+<pre class="prettyprint"><code class="language-shell">curl http://localhost/v1/version
 </code></pre>
 <p>Example :</p>
-<pre><code>$ curl http://localhost/v1/version | jq
+<pre class="prettyprint"><code class="language-shell">$ curl http://localhost/v1/version | jq
 {
   &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/version.json&quot;,
-  &quot;delta&quot;: &quot;1.5.0&quot;,
+  &quot;delta&quot;: &quot;1.8.0-M8&quot;,
   &quot;dependencies&quot;: {
-    &quot;blazegraph&quot;: &quot;2.1.5&quot;,
-    &quot;cassandra&quot;: &quot;3.11.10&quot;,
-    &quot;elasticsearch&quot;: &quot;7.16.2&quot;
+    &quot;blazegraph&quot;: &quot;2.1.6-SNAPSHOT&quot;,
+    &quot;elasticsearch&quot;: &quot;7.16.2&quot;,
+    &quot;postgres&quot;: &quot;15.1&quot;
   },
+  &quot;environment&quot;: &quot;dev&quot;,
   &quot;plugins&quot;: {
-    &quot;archive&quot;: &quot;1.5.0&quot;,
-    &quot;blazegraph&quot;: &quot;1.5.0&quot;,
-    &quot;composite-views&quot;: &quot;1.5.0&quot;,
-    &quot;elasticsearch&quot;: &quot;1.5.0&quot;,
-    &quot;storage&quot;: &quot;1.5.0&quot;
+    &quot;archive&quot;: &quot;1.8.0-M8&quot;,
+    &quot;blazegraph&quot;: &quot;1.8.0-M8&quot;,
+    &quot;composite-views&quot;: &quot;1.8.0-M8&quot;,
+    &quot;elasticsearch&quot;: &quot;1.8.0-M8&quot;,
+    &quot;storage&quot;: &quot;1.8.0-M8&quot;
   }
 }
 </code></pre>
+<h4><a href="#using-fusion" name="using-fusion" class="anchor"><span class="anchor-link"></span></a>Using Fusion</h4>
+<p>Fusion can be accessed by opening <code>http://localhost</code> in your web browser. You can start by creating an organization from the <code>http://localhost/admin</code> page.</p><div class="callout note warning"><div class="callout-title">Note</div>
+<p>This setup runs the Nexus ecosystem without an identity provider, and the anonymous user is given all default permissions; do not publicly expose the endpoints of such a deployment.</p></div>
 <h4><a href="#administration" name="administration" class="anchor"><span class="anchor-link"></span></a>Administration</h4>
 <p>To list running services or access logs, please refer to the official Docker <a href="https://docs.docker.com/engine/reference/commandline/stack/" title="documentation" target="_blank" rel="noopener noreferrer">documentation</a>.</p>
-<p>Alternatively you can deploy <a href="https://swarmpit.io/" title="Swarmpit" target="_blank" rel="noopener noreferrer">Swarmpit</a> which provides a comprehensive UI to manage your Docker Swarm cluster.</p>
 <h4><a href="#stopping-nexus" name="stopping-nexus" class="anchor"><span class="anchor-link"></span></a>Stopping Nexus</h4>
 <p>You can stop and delete the entire deployment with:</p>
 <p>Command :</p>
-<pre><code>docker stack rm nexus
+<pre class="prettyprint"><code class="language-shell">docker compose --project-name nexus down --volumes
 </code></pre>
 <p>Example :</p>
-<pre><code>$ docker stack rm nexus
-Removing service nexus_admin
-Removing service nexus_blazegraph
-Removing service nexus_cassandra
-Removing service nexus_elasticsearch
-Removing service nexus_iam
-Removing service nexus_kg
-Removing service nexus_router
-Removing network nexus_default
+<pre class="prettyprint"><code class="language-shell">$ docker compose --project-name nexus down --volumes
+[+] Running 7/7
+⠿ Container nexus-router-1         Removed  0.2s
+⠿ Container nexus-web-1            Removed  0.3s
+⠿ Container nexus-delta-1          Removed  0.5s
+⠿ Container nexus-postgres-1       Removed  0.3s
+⠿ Container nexus-blazegraph-1     Removed  10.3s
+⠿ Container nexus-elasticsearch-1  Removed  1.0s
+⠿ Network nexus_default            Removed  0.1s
 </code></pre><div class="callout note "><div class="callout-title">Note</div>
-<p>As no data is persisted outside the containers, <strong>everything will be lost</strong> once you remove the Nexus deployment. If you&rsquo;d like help with creating persistent volumes, feel free to contact us on <a href="https://github.com/BlueBrain/nexus/discussions" title="Github Discussions" target="_blank" rel="noopener noreferrer">Github Discussions</a>.</p></div>
+<p>As no data is persisted outside the containers, <strong>everything will be lost</strong> once you shut down the Nexus deployment. If you&rsquo;d like help with creating persistent volumes, feel free to contact us on <a href="https://github.com/BlueBrain/nexus/discussions" title="Github Discussions" target="_blank" rel="noopener noreferrer">Github Discussions</a>.</p></div>
 <h3><a href="#endpoints" name="endpoints" class="anchor"><span class="anchor-link"></span></a>Endpoints</h3>
 <p>The provided reverse proxy (the <code>nginx</code> image) exposes several endpoints:</p>
 <ul>
@@ -487,242 +464,40 @@ Removing network nexus_default
   <li><a href="http://localhost/blazegraph">blazegraph</a>: Blazegraph web interface</li>
 </ul>
 <p>If you&rsquo;d like to customize the listening port or remove unnecessary endpoints, you can simply modify the <code>nginx.conf</code> file.</p>
-<h2><a href="#run-nexus-locally-with-minikube" name="run-nexus-locally-with-minikube" class="anchor"><span class="anchor-link"></span></a>Run Nexus locally with Minikube</h2>
-<p><a href="https://github.com/kubernetes/minikube" title="Minikube" target="_blank" rel="noopener noreferrer">Minikube</a> is a tool that makes it easy to run Kubernetes locally. Minikube runs a single-node Kubernetes cluster inside a VM on your machine for users looking to try out Kubernetes or develop with it day-to-day.</p><div class="callout note "><div class="callout-title">Note</div>
-<p>This section makes use of static assets hosted on this website; to remove the clutter please export the base of the documentation to <code>$MINI</code> env var:</p>
-<pre><code>export MINI=&quot;https://bluebrainnexus.io/docs/getting-started/running-nexus/minikube&quot;
-</code></pre></div><div class="callout note "><div class="callout-title">Note</div>
-<p>This page presents the necessary commands to deploy Nexus with Minikube but also examples the show the expected output.</p>
-<p>Some of the examples on this page make use of <a href="https://curl.se/" title="curl" target="_blank" rel="noopener noreferrer">curl</a> and <a href="https://stedolan.github.io/jq/" title="jq" target="_blank" rel="noopener noreferrer">jq</a> for formatting the json output when interacting with the services. Please install these command line tools if you&rsquo;d like to run the commands in the examples. They should be available through your usual package manager (Chocolatey, Homebrew, APT, YUM/DNF, &hellip;)</p></div>
-<h3><a href="#minikube-set-up" name="minikube-set-up" class="anchor"><span class="anchor-link"></span></a>Minikube set-up</h3>
-<h4><a href="#installation" name="installation" class="anchor"><span class="anchor-link"></span></a>Installation</h4>
-<p>Follow the <a href="https://minikube.sigs.k8s.io/docs/start/" title="installation instructions" target="_blank" rel="noopener noreferrer">installation instructions</a> from the official Kubernetes documentation.</p>
-<h4><a href="#run-minikube" name="run-minikube" class="anchor"><span class="anchor-link"></span></a>Run Minikube</h4>
-<p>To start Minikube run (notice the <em>cpu</em> and <em>memory</em> flags, the setup requires a minimum of <code>--cpus=2 --memory=8196</code>):</p>
-<pre><code>minikube start --cpus 6 --memory 10240 --vm-driver=$DRIVER
-</code></pre>
-<p>For better performance we recommended to select the <code>$DRIVER</code> <a href="https://minikube.sigs.k8s.io/docs/drivers/">corresponding to your OS native hypervisor</a>, namely <em>docker</em> on macOS, <em>hyperv</em> or <em>docker</em> on Windows and <em>docker</em> or <em>kvm2</em> on Linux.</p>
-<p>If the installation is successful you can run the following command to open the <a href="https://kubernetes.io/docs/tasks/access-application-cluster/web-ui-dashboard/" title="Kubernetes Dashboard" target="_blank" rel="noopener noreferrer">Kubernetes Dashboard</a>:</p>
-<pre><code>minikube dashboard
-</code></pre>
-<p>To stop Minikube run:</p>
-<pre><code>minikube stop
-</code></pre><div class="callout note "><div class="callout-title">Note</div>
-<p>After stopping minikube the vm still exists on the system; starting minikube again will preserve the deployed services. To permanently remove minikube vm run:</p>
-<pre><code>minikube delete
-</code></pre></div>
-<h4><a href="#enable-the-ingress-addon" name="enable-the-ingress-addon" class="anchor"><span class="anchor-link"></span></a>Enable the ingress addon</h4>
-<p>Minikube comes with a collection of addons like the <a href="https://kubernetes.io/docs/tasks/access-application-cluster/web-ui-dashboard/" title="Kubernetes Dashboard" target="_blank" rel="noopener noreferrer">Kubernetes Dashboard</a> but not all are enabled by default. An important one is the <em>ingress</em> addon which enables routing http traffic from the host into the cluster.</p>
-<p>To make sure the <em>ingress</em> addon is enabled run:</p>
-<p>Command :</p>
-<pre><code>minikube addons enable ingress
-</code></pre>
-<p>Example :</p>
-<pre><code>$ minikube addons enable ingress
-ingress was successfully enabled
-$
-</code></pre>
-<p>To get the external IP of the cluster (to be used later in accessing services) run:</p>
-<p>Command: :</p>
-<pre><code>minikube ip
-</code></pre>
-<p>Example: :</p>
-<pre><code>$ minikube ip
-192.168.64.3
-$
-</code></pre>
-<h4><a href="#setup-a-separate-namespace" name="setup-a-separate-namespace" class="anchor"><span class="anchor-link"></span></a>Setup a separate namespace</h4>
-<p>Kubernetes namespaces are logical groupings of resources which allow segregating various deployments in &ldquo;virtual clusters&rdquo;.</p>
-<p>The default installation of Minikube creates three namespaces: <em>kube-system</em>, <em>kube-public</em> and <em>default</em>. This example uses a separate namespace to group Nexus specific resources.</p>
-<p>Get the list of available namespaces:</p>
-<p>Command :</p>
-<pre><code>kubectl get namespaces
-</code></pre>
-<p>Example :</p>
-<pre><code>$ kubectl get namespaces
-NAME          STATUS    AGE
-default       Active    1h
-kube-public   Active    1h
-kube-system   Active    1h
-$
-</code></pre>
-<p>Create the <em>nexus</em> namespace:</p>
-<p>Command :</p>
-<pre><code>kubectl apply -f $MINI/namespace.yaml
-</code></pre>
-<p>Example :</p>
-<pre><code>$ kubectl apply -f $MINI/namespace.yaml
-namespace/nexus created
-$ kubectl get namespaces
-NAME          STATUS    AGE
-default       Active    1h
-kube-public   Active    1h
-kube-system   Active    1h
-nexus         Active    1m
-$
-</code></pre>
-<p>Default the <code>kubectl</code> to the <em>nexus</em> namespace:</p>
-<p>Command :</p>
-<pre><code>kubectl config set-context minikube --namespace=nexus
-</code></pre>
-<p>Example :</p>
-<pre><code>$ kubectl config set-context minikube --namespace=nexus
-Context &quot;minikube&quot; modified.
-$
-</code></pre><div class="callout note "><div class="callout-title">Note</div>
-<p>Every time Minikube is stopped and started again, the context and its configuration is lost. Remember to run the following commands every time you start minikube:</p>
-<pre><code>kubectl config use-context minikube &amp;&amp; kubectl config set-context minikube --namespace=nexus
-</code></pre></div>
-<h3><a href="#deploy-dependent-services" name="deploy-dependent-services" class="anchor"><span class="anchor-link"></span></a>Deploy dependent services</h3>
-<p>Nexus uses numerous off the shelf services that need to be set up as a prerequisite. Run the following command to save the IP address of the minikube cluster in an environment variable:</p>
-<p>Command :</p>
-<pre><code>export NEXUS=$(minikube ip)
-</code></pre>
-<p>Example :</p>
-<pre><code>$ export NEXUS=$(minikube ip)
-$ echo $NEXUS
-192.168.64.3
-$
-</code></pre>
-<h4><a href="#deploy-cassandra" name="deploy-cassandra" class="anchor"><span class="anchor-link"></span></a>Deploy Cassandra</h4>
-<p>Command :</p>
-<pre><code>kubectl apply -f $MINI/cassandra.yaml &amp;&amp; \
-  kubectl wait pod cassandra-0 --for condition=ready --timeout=180s
-</code></pre>
-<p>Example :</p>
-<pre><code>$ kubectl apply -f $MINI/cassandra.yaml
-service/cassandra created
-statefulset.apps/cassandra created
-$ kubectl exec -it cassandra-0 -- nodetool status
-Datacenter: datacenter1
-=======================
-Status=Up/Down
-|/ State=Normal/Leaving/Joining/Moving
---  Address     Load       Tokens       Owns (effective)  Host ID                               Rack
-UN  172.17.0.4  103.71 KiB  256          100.0%            80c0bdfa-1f5e-41aa-8a7e-f0dea7fe7ef0  rack1
-$
-</code></pre>
-<h4><a href="#deploy-elasticsearch" name="deploy-elasticsearch" class="anchor"><span class="anchor-link"></span></a>Deploy Elasticsearch</h4>
-<p>Command :</p>
-<pre><code>kubectl apply -f $MINI/elasticsearch.yaml &amp;&amp; \
-  kubectl wait pod elasticsearch-0 --for condition=ready --timeout=180s
-</code></pre>
-<p>Example :</p>
-<pre><code>$ kubectl apply -f $MINI/elasticsearch.yaml
-service/elasticsearch created
-service/elasticsearch-discovery created
-statefulset.apps/elasticsearch created
-$ kubectl wait pod elasticsearch-0 --for condition=ready --timeout=60s
-pod/elasticsearch-0 condition met
-$ curl &quot;http://$NEXUS/elasticsearch&quot;
-{
-  &quot;name&quot; : &quot;elasticsearch-0&quot;,
-  &quot;cluster_name&quot; : &quot;es-cluster&quot;,
-  &quot;cluster_uuid&quot; : &quot;qUKv83AiRqC3dRvlzUXepg&quot;,
-  &quot;version&quot; : {
-    &quot;number&quot; : &quot;7.16.2&quot;,
-    &quot;build_flavor&quot; : &quot;default&quot;,
-    &quot;build_type&quot; : &quot;docker&quot;,
-    &quot;build_hash&quot; : &quot;78722783c38caa25a70982b5b042074cde5d3b3a&quot;,
-    &quot;build_date&quot; : &quot;2021-03-18T06:17:15.410153305Z&quot;,
-    &quot;build_snapshot&quot; : false,
-    &quot;lucene_version&quot; : &quot;8.8.0&quot;,
-    &quot;minimum_wire_compatibility_version&quot; : &quot;6.8.0&quot;,
-    &quot;minimum_index_compatibility_version&quot; : &quot;6.0.0-beta1&quot;
-  },
-  &quot;tagline&quot; : &quot;You Know, for Search&quot;
-}
-$
-</code></pre>
-<h4><a href="#deploy-blazegraph" name="deploy-blazegraph" class="anchor"><span class="anchor-link"></span></a>Deploy BlazeGraph</h4>
-<p>Command :</p>
-<pre><code>kubectl apply -f $MINI/blazegraph.yaml &amp;&amp; \
-  kubectl wait pod blazegraph-0 --for condition=ready --timeout=180s
-</code></pre>
-<p>Example :</p>
-<pre><code>$ kubectl apply -f $MINI/blazegraph.yaml
-service/blazegraph created
-statefulset.apps/blazegraph created
-persistentvolumeclaim/storage-blazegraph created
-ingress.extensions/blazegraph created
-$ kubectl wait pod blazegraph-0 --for condition=ready --timeout=180s
-pod/blazegraph-0 condition met
-$ curl -s -H&quot;Accept: application/json&quot; &quot;http://$NEXUS/blazegraph/namespace?describe-each-named-graph=false&quot; | head -4
-  {
-    &quot;head&quot; : {
-      &quot;vars&quot; : [ &quot;subject&quot;, &quot;predicate&quot;, &quot;object&quot;, &quot;context&quot; ]
-    },
-$
-</code></pre>
-<h3><a href="#deploy-nexus-services" name="deploy-nexus-services" class="anchor"><span class="anchor-link"></span></a>Deploy Nexus Services</h3>
-<p>Before configuring the services a configuration map must first be created that keeps track of the &ldquo;public&rdquo; ip address of the minikube cluster. The following command will replace the <code>{NEXUS}</code> token in the <code>config.yaml</code> file with the value stored in the <code>$NEXUS</code> variable set above.</p>
-<p>Command :</p>
-<pre><code>curl -s $MINI/config.yaml | sed &quot;s/{NEXUS}/$NEXUS/g&quot; | kubectl apply -f -
-</code></pre>
-<p>Example :</p>
-<pre><code>$ curl -s $MINI/config.yaml | sed &quot;s/{NEXUS}/$NEXUS/g&quot; | kubectl apply -f -
-configmap/config created
-$ kubectl get configmap/config -o yaml | grep public.ip:
-  public.ip: 192.168.64.4
-$
-</code></pre>
-<h4><a href="#deploy-delta" name="deploy-delta" class="anchor"><span class="anchor-link"></span></a>Deploy Delta</h4>
-<p>Delta is the service providing the Nexus REST API.</p>
-<p>Command :</p>
-<pre><code>kubectl apply -f $MINI/delta.yaml &amp;&amp; \
-  kubectl wait pod delta-0 --for condition=ready --timeout=180s
-</code></pre>
-<p>Example :</p>
-<pre><code>$ kubectl apply -f $MINI/delta.yaml
-service/delta created
-service/delta-hd created
-statefulset.apps/delta created
-persistentvolumeclaim/storage-delta created
-ingress.extensions/delta created
-ingress.extensions/delta-direct created
-$ kubectl wait pod delta-0 --for condition=ready --timeout=180s
-pod/kg-0 condition met
-$ curl -s &quot;http://$NEXUS/v1/version&quot; | jq
-{
-  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/version.json&quot;,
-  &quot;delta&quot;: &quot;1.5.0&quot;,
-  &quot;dependencies&quot;: {
-    &quot;blazegraph&quot;: &quot;2.1.5&quot;,
-    &quot;cassandra&quot;: &quot;3.11.10&quot;,
-    &quot;elasticsearch&quot;: &quot;7.16.2&quot;
-  },
-  &quot;plugins&quot;: {
-    &quot;archive&quot;: &quot;1.5.0&quot;,
-    &quot;blazegraph&quot;: &quot;1.5.0&quot;,
-    &quot;composite-views&quot;: &quot;1.5.0&quot;,
-    &quot;elasticsearch&quot;: &quot;1.5.0&quot;,
-    &quot;storage&quot;: &quot;1.5.0&quot;
-  }
-}
-$ curl -s &quot;http://$NEXUS/v1/resources/org/proj&quot; | jq # the 404 error is expected
-{
-  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/error.json&quot;,
-  &quot;@type&quot;: &quot;ProjectNotFound&quot;,
-  &quot;reason&quot;: &quot;Project &#39;org/proj&#39; not found.&quot;
-}
-$
-</code></pre>
-<h4><a href="#deploy-the-web-interface" name="deploy-the-web-interface" class="anchor"><span class="anchor-link"></span></a>Deploy the web interface</h4>
-<p>The Nexus web application provides an interface to perform basic tasks on organizations and projects and query the system resources through Elasticsearch and SPARQL queries.</p>
-<p>Command :</p>
-<pre><code>kubectl apply -f $MINI/web.yaml &amp;&amp; \
-  kubectl wait pod nexus-web-0 --for condition=ready --timeout=180s
-</code></pre>
-<p>Example :</p>
-<pre><code>$ kubectl apply -f $MINI/web.yaml
-service/nexus-web created
-statefulset.apps/nexus-web created
-ingress.extensions/nexus-web created
-$ kubectl wait pod nexus-web-0 --for condition=ready --timeout=180s
-pod/nexus-web-0 condition met
-$
-</code></pre>
-<p>You can now access the web interface at <code>http://$NEXUS</code>, <code>$NEXUS</code> being the public IP of your Minikube cluster, as seen above.</p>
+<h3><a href="#postgresql-partitioning" name="postgresql-partitioning" class="anchor"><span class="anchor-link"></span></a>PostgreSQL partitioning</h3>
+<p>Nexus Delta takes advantage of PostgreSQL&rsquo;s <a href="https://www.postgresql.org/docs/current/ddl-partitioning.html" title="Table Partitioning">Table Partitioning</a> feature. This allows for improved query performance, and facilitates loading, deleting, or transferring data.</p>
+<p>The <code>public.scoped_events</code> and <code>public.scoped_states</code> are partitioned by organization, which is itself partitioned by the projects it contains; this follows the natural hierarchy that can be found in Nexus Delta.</p>
+<p>Nexus Delta takes care of handling the creation and deletion of the partitions.</p>
+<ul>
+  <li>If the created project is the first one of a given organization, both the organization partition and the project subpartition will be created.</li>
+  <li>If the organization partition already exist, then only the project subpartition will be created upon project creation.</li>
+</ul>
+<p>The naming scheme of the (sub)partitions is as follows:</p>
+<p><code>{table_name}_{MD5_org_hash}</code> for organization partitions</p>
+<p><code>{table_name}_{MD5_project_hash}</code> for project partition</p>
+<p>where</p>
+<ul>
+  <li><code>{table_name}</code> is either <code>scoped_events</code> or <code>scoped_states</code></li>
+  <li><code>{MD5_org_hash}</code> is the MD5 hash of the organization name</li>
+  <li><code>{MD5_project_has}</code> is the MD5 hash of the project reference (i.e. has the form <code>{org_name}/{project_name}</code>)</li>
+</ul>
+<p>MD5 hashing is used in order to guarantee a constant partition name length (PostgreSQL table names are limited to 63 character by default), as well as to avoid any special characters that might be allowed in project names but not in PostgreSQL table names (such as <code>-</code>).</p>
+<p>Example:</p>
+<p>You create the organization called <code>myorg</code>, inside of which you create the <code>myproject</code> project. When the project is created, Nexus Delta will have created the following partitions:</p>
+<ul>
+  <li><code>scoped_events_B665280652D01C4679777AFD9861170C</code>, the partition of events from the <code>myorg</code> organization
+    <ul>
+      <li><code>scoped_events_7922DA7049D5E38C83053EE145B27596</code>, the subpartition of the events from the <code>myorg/myproject</code> project</li>
+    </ul>
+  </li>
+  <li><code>scoped_states_B665280652D01C4679777AFD9861170C</code>, the partition of states from the <code>myorg</code> organization
+    <ul>
+      <li><code>scoped_states_7922DA7049D5E38C83053EE145B27596</code>, the subpartition of the states from the <code>myorg/myproject</code> project</li>
+    </ul>
+  </li>
+</ul>
+<h4><a href="#advanced-subpartitioning" name="advanced-subpartitioning" class="anchor"><span class="anchor-link"></span></a>Advanced subpartitioning</h4>
+<p>While Nexus Delta provides table partitioning out-of-the-box, it is primarily addressing the case where the data is more or less uniformly spread out across multiple projects. If however there is one or more project that are very large, it is possible to add further subpartitions according to a custom rule. This custom subpartitioning must be decided on a case-by-case basis using your knowledge of the given project; the idea is to create uniform partitions of your project. Please refer to the <a href="https://www.postgresql.org/docs/current/ddl-partitioning.html" title="PostgreSQL Table Partitioning documentation">PostgreSQL Table Partitioning documentation</a>.</p>
 <h2><a href="#on-premise-cloud-deployment" name="on-premise-cloud-deployment" class="anchor"><span class="anchor-link"></span></a>On premise / cloud deployment</h2>
 <p>There are several things to consider when preparing to deploy Nexus &ldquo;on premise&rdquo; because the setup depends a lot on the various usage profiles, but the most important categories would be:</p>
 <ul>
@@ -733,13 +508,13 @@ $
   <li>Backup and restore</li>
   <li>Monitoring &amp; alerting</li>
 </ul>
-<p>Each of the Nexus services and &ldquo;off the shelf&rdquo; products can be deployed as a single instance or as a cluster (with one exception at this point being BlazeGraph which doesn&rsquo;t come with a clustering option). The advantages for deploying clusters are generally higher availability, capacity and throughput at the cost of higher latency, consistency and having to potentially deal with network instability.</p>
+<p>Each of the Nexus services and &ldquo;off the shelf&rdquo; products can be deployed as a single instance or as a cluster (with one exception at this point being Blazegraph which doesn&rsquo;t come with a clustering option). The advantages for deploying clusters are generally higher availability, capacity and throughput at the cost of higher latency, consistency and having to potentially deal with network instability.</p>
 <p>The decision to go with single node deployments or clustered deployments can be revisited later on and mixed setups (some services single node while others clustered) are also possible.</p>
-<p>The Nexus distribution is made up of docker images which can be run on any host operating system and each of the &ldquo;off the shelf&rdquo; products also offer docker as a deployment option. We would generally recommend using a container orchestration solution like <a href="https://kubernetes.io/" title="Kubernetes" target="_blank" rel="noopener noreferrer">Kubernetes</a>, <a href="https://www.redhat.com/en/technologies/cloud-computing/openshift" title="OpenShift" target="_blank" rel="noopener noreferrer">OpenShift</a> or <a href="https://docs.docker.com/engine/swarm/" title="Docker Swarm" target="_blank" rel="noopener noreferrer">Docker Swarm</a> as they offer good management capabilities, discovery, load balancing and self-healing. They also accommodate changes in hardware allocations for the deployments, changes that can occur due to evolving usage patterns, software updates etc. Currently the biggest Nexus deployment is at EPFL within OpenShift.</p>
+<p>The Nexus distribution is made up of Docker images which can be run on any host operating system and each of the &ldquo;off the shelf&rdquo; products that also offer Docker as a deployment option. We would generally recommend using a container orchestration solution like <a href="https://kubernetes.io/" title="Kubernetes" target="_blank" rel="noopener noreferrer">Kubernetes</a> as it offers good management capabilities, discovery, load balancing and self-healing. They also accommodate changes in hardware allocations for the deployments, changes that can occur due to evolving usage patterns, software updates etc. Currently, the largest Nexus deployment is at EPFL and runs on Kubernetes.</p>
 <h3><a href="#choice-of-hardware" name="choice-of-hardware" class="anchor"><span class="anchor-link"></span></a>Choice of hardware</h3>
 <p>Depending on the target throughput, usage profiles and data volume the hardware specification can vary greatly; please take a look at the <a href="../../delta/benchmarks/v1.4.2.html">benchmarks section</a> to get an idea of what you should expect in terms of throughput with various hardware configurations. When the usage profiles are unknown a couple of rules of thumb should narrow the scope:</p>
 <ol>
-  <li>Nexus uses a collection of data stores (<a href="https://cassandra.apache.org/_/index.html" title="Cassandra" target="_blank" rel="noopener noreferrer">Cassandra</a>, <a href="https://www.elastic.co/elasticsearch/" title="ElasticSearch" target="_blank" rel="noopener noreferrer">ElasticSearch</a>, <a href="https://blazegraph.com/" title="BlazeGraph" target="_blank" rel="noopener noreferrer">BlazeGraph</a>) which depend performance wise to the underlying disk access, so:
+  <li>Nexus uses a collection of data stores (<a href="https://www.postgresql.org/" title="PostgreSQL" target="_blank" rel="noopener noreferrer">PostgreSQL</a>, <a href="https://www.elastic.co/elasticsearch/" title="Elasticsearch" target="_blank" rel="noopener noreferrer">Elasticsearch</a>, <a href="https://blazegraph.com/" title="Blazegraph" target="_blank" rel="noopener noreferrer">Blazegraph</a>) which depend performance wise to the underlying disk access, so:
     <ul>
       <li>prefer local storage over network storage for lower latency when doing IO,</li>
       <li>prefer SSD over HDDs because random access speed is more important than sequential access,</li>
@@ -749,31 +524,17 @@ $
   <li>All of Nexus services and most of the &ldquo;off the shelf&rdquo; products are built to run on top of the JVM which usually require more memory over computing power. A rough ratio of 2 CPU cores per 8GB of RAM is probably a good one (this of course depends on the CPU specification).</li>
   <li>Due to the design for scalability of Nexus services and &ldquo;off the shelf&rdquo; products the network is a very important characteristic of the deployment as frequent dropped packets or <a href="https://en.wikipedia.org/wiki/Network_partition" title="network partitions" target="_blank" rel="noopener noreferrer">network partitions</a> can seriously affect the availability of the system. Clustered / distributed systems generally use some form of <a href="https://en.wikipedia.org/wiki/Consensus_%28computer_science%29" title="consensus">consensus</a>){ open=new } which is significantly affected by the reliability of the network. If the reliability of the network is a concern within the target deployment then vertical scalability is desirable over horizontal scalability: fewer host nodes with better specifications is better over more commodity hardware host nodes.</li>
 </ol>
-<h3><a href="#cassandra" name="cassandra" class="anchor"><span class="anchor-link"></span></a>Cassandra</h3>
-<p>Nexus uses <a href="https://cassandra.apache.org/_/index.html" title="Cassandra" target="_blank" rel="noopener noreferrer">Cassandra</a> as its <em>primary store</em> as it scales well in terms of reads with the number of nodes in the cluster. It offers data replication out of the box, which allows the system to continue to be available in case of node failures or network partitions.</p>
-<p>Since this is the <em>primary store</em> it is the most important system to be <a href="https://docs.datastax.com/en/archived/cassandra/3.0/cassandra/operations/opsBackupRestore.html" title="backed up" target="_blank" rel="noopener noreferrer">backed up</a>. All of the data that Nexus uses in other stores can be recomputed from the one stored in Cassandra as the other stores are used as mere indexing systems.</p>
-<p>Please have a look at the <a href="https://docs.datastax.com/en/dse-planning/doc/" title="Planning and Testing" target="_blank" rel="noopener noreferrer">Planning and Testing</a> section in the DataStax documentation as it contains recommendations in terms of hardware and capacity.</p>
+<h3><a href="#postgresql" name="postgresql" class="anchor"><span class="anchor-link"></span></a>PostgreSQL</h3>
+<p>Nexus uses <a href="https://www.postgresql.org/" title="PostgreSQL" target="_blank" rel="noopener noreferrer">PostgreSQL</a> as its <em>primary store</em> as for its strong reputation for performance, reliability and flexibility. It can also be run in different contexts from integration to </p>
+<p>Since this is the <em>primary store</em> it is the most important system to be <a href="https://www.postgresql.org/docs/current/backup.html" title="backed up" target="_blank" rel="noopener noreferrer">backed up</a>. All of the data that Nexus uses in other stores can be recomputed from the one stored in PostgreSQL as the other stores are used as mere indexing systems.</p>
+<p>// TODO capacity planning + recommendations</p>
 <p>As described in the <a href="../../delta/architecture.html">architecture section</a> the generally adopted persistence model is an EventSourced model in which the data store is used as an <em>append only</em> store. This has implications to the total amount of disk used by the primary store.</p>
+<p>// TODO formula computing disk space</p>
+<h3><a href="#elasticsearch" name="elasticsearch" class="anchor"><span class="anchor-link"></span></a>Elasticsearch</h3>
+<p>Nexus uses <a href="https://www.elastic.co/elasticsearch/" title="Elasticsearch" target="_blank" rel="noopener noreferrer">Elasticsearch</a> to host several <em>system</em> indices and <em>user defined</em> ones. It offers sharding and replication out of the box. Deciding whether this system requires backup depends on the tolerated time for a restore. Nexus can be instructed to rebuild all indices using the data from the <em>primary store</em>, but being an incremental indexing process it can take longer than restoring from a backup. Since it can be configured to host a number of replicas for each shard it can tolerate a number of node failures.</p>
+<p>The Elasticsearch <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/setup.html" title="setup documentation" target="_blank" rel="noopener noreferrer">setup documentation</a> contains the necessary information on how to install and configure it, but recommendations on sizing the nodes and cluster are scarce because it depends on usage.</p>
 <p>A formula for computing the required disk space:</p>
-<pre><code>total = (resource_size + nexus_metadata_size) * count * number_updates * replication_factor * 2 (compaction requirement)
-</code></pre>
-<p>The <code>nexus_metadata_size</code> varies depending on many things, but it&rsquo;s generally less than or equal to the <code>resource_size</code>.</p>
-<p>An example, assuming:</p>
-<ul>
-  <li>10KB per resource</li>
-  <li>1.000.000 distinct resources</li>
-  <li>10 updates per resource</li>
-  <li>replication factor of 3</li>
-</ul>
-<p>&hellip; the total required disk size would be:</p>
-<pre><code>(10KB + 10KB) * 1.000.000 * 10 * 3 * 2 = 1.000.000.000KB ~= 955GB
-</code></pre>
-<p>The resulting size represents the total disk space of the cluster; a 5 node cluster with the data volume in the example above would have to be configured with 200GB disks per node.</p>
-<h3><a href="#elasticsearch" name="elasticsearch" class="anchor"><span class="anchor-link"></span></a>ElasticSearch</h3>
-<p>Nexus uses <a href="https://www.elastic.co/elasticsearch/" title="ElasticSearch" target="_blank" rel="noopener noreferrer">ElasticSearch</a> to host several <em>system</em> indices and <em>user defined</em> ones. It offers sharding and replication out of the box. Deciding whether this system requires backup depends on the tolerated time for a restore. Nexus can be instructed to rebuild all indices using the data from the <em>primary store</em>, but being an incremental indexing process it can take longer than restoring from a backup. Since it can be configured to host a number of replicas for each shard it can tolerate a number of node failures.</p>
-<p>The ElasticSearch <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/setup.html" title="setup documentation" target="_blank" rel="noopener noreferrer">setup documentation</a> contains the necessary information on how to install and configure it, but recommendations on sizing the nodes and cluster are scarce because it depends on usage.</p>
-<p>A formula for computing the required disk space:</p>
-<pre><code>total = (resource_size * count * documents + lucene_index) * replication_factor
+<pre class="prettyprint"><code class="nocode">total = (resource_size * count * documents + lucene_index) * replication_factor
 </code></pre>
 <p>&hellip; where the <code>lucene_index</code> while it can vary should be less than twice the size of the original documents.</p>
 <p>An example, assuming:</p>
@@ -784,17 +545,17 @@ $
   <li>2 additional shard replicas (replication factor of 3)</li>
 </ul>
 <p>&hellip; the total required disk size would be:</p>
-<pre><code>(10KB * 1.000.000 * 3 + 2 * (10KB * 1.000.000 * 3)) * 3 = 270.000.000KB ~= 260GB
+<pre class="prettyprint"><code class="nocode">(10KB * 1.000.000 * 3 + 2 * (10KB * 1.000.000 * 3)) * 3 = 270.000.000KB ~= 260GB
 </code></pre>
 <p>The resulting size represents the total disk space of the data nodes in the cluster; a 5 data node cluster with the data volume in the example above would have to be configured with 60GB disks per node.</p>
-<h3><a href="#blazegraph" name="blazegraph" class="anchor"><span class="anchor-link"></span></a>BlazeGraph</h3>
-<p>Nexus uses <a href="https://blazegraph.com/" title="BlazeGraph" target="_blank" rel="noopener noreferrer">BlazeGraph</a> as an RDF (triple) store to provide a advanced querying capabilities on the hosted data. This store is treated as a specialized index on the data so as with Kafka and ElasticSearch in case of failures, the system can be fully restored from the primary store. While the technology is advertised to support <a href="https://github.com/blazegraph/database/wiki/HAJournalServer" title="High Availability" target="_blank" rel="noopener noreferrer">High Availability</a> and <a href="https://github.com/blazegraph/database/wiki/ClusterGuide" title="Scaleout" target="_blank" rel="noopener noreferrer">Scaleout</a> deployment configurations, we have yet to be able to setup a deployment in this fashion.</p>
-<p>We currently recommend deploying BlazeGraph using the prepackaged <em>tar.gz</em> distribution available to download from <a href="https://sourceforge.net/projects/bigdata/files/bigdata/2.1.4/" title="sourceforge" target="_blank" rel="noopener noreferrer">sourceforge</a>.</p><div class="callout note "><div class="callout-title">Note</div>
+<h3><a href="#blazegraph" name="blazegraph" class="anchor"><span class="anchor-link"></span></a>Blazegraph</h3>
+<p>Nexus uses <a href="https://blazegraph.com/" title="Blazegraph" target="_blank" rel="noopener noreferrer">Blazegraph</a> as an RDF (triple) store to provide a advanced querying capabilities on the hosted data. This store is treated as a specialized index on the data so as with Kafka and Elasticsearch in case of failures, the system can be fully restored from the primary store. While the technology is advertised to support <a href="https://github.com/blazegraph/database/wiki/HAJournalServer" title="High Availability" target="_blank" rel="noopener noreferrer">High Availability</a> and <a href="https://github.com/blazegraph/database/wiki/ClusterGuide" title="Scaleout" target="_blank" rel="noopener noreferrer">Scaleout</a> deployment configurations, we have yet to be able to setup a deployment in this fashion.</p>
+<p>We currently recommend deploying Blazegraph using the prepackaged <em>tar.gz</em> distribution available to download from <a href="https://github.com/blazegraph/database/releases/tag/BLAZEGRAPH_2_1_6_RC" title="GitHub" target="_blank" rel="noopener noreferrer">GitHub</a>.</p><div class="callout note "><div class="callout-title">Note</div>
 <p>We&rsquo;re looking at alternative technologies and possible application level (within Nexus) sharding and replicas.</p></div>
-<p>The <a href="https://github.com/blazegraph/database/wiki/Hardware_Configuration" title="Hardware Configuration" target="_blank" rel="noopener noreferrer">Hardware Configuration</a> section in the documentation gives a couple of hints about the requirements to operate BlazeGraph and there are additional sections for optimizations in terms of <a href="https://github.com/blazegraph/database/wiki/PerformanceOptimization" title="Performance" target="_blank" rel="noopener noreferrer">Performance</a>, <a href="https://github.com/blazegraph/database/wiki/IOOptimization" title="IO" target="_blank" rel="noopener noreferrer">IO</a> and <a href="https://github.com/blazegraph/database/wiki/QueryOptimization" title="Query" target="_blank" rel="noopener noreferrer">Query</a>.</p>
-<p>BlazeGraph stores data in an append only journal which means updates will use additional disk space.</p>
+<p>The <a href="https://github.com/blazegraph/database/wiki/Hardware_Configuration" title="Hardware Configuration" target="_blank" rel="noopener noreferrer">Hardware Configuration</a> section in the documentation gives a couple of hints about the requirements to operate Blazegraph and there are additional sections for optimizations in terms of <a href="https://github.com/blazegraph/database/wiki/PerformanceOptimization" title="Performance" target="_blank" rel="noopener noreferrer">Performance</a>, <a href="https://github.com/blazegraph/database/wiki/IOOptimization" title="IO" target="_blank" rel="noopener noreferrer">IO</a> and <a href="https://github.com/blazegraph/database/wiki/QueryOptimization" title="Query" target="_blank" rel="noopener noreferrer">Query</a>.</p>
+<p>Blazegraph stores data in an append only journal which means updates will use additional disk space.</p>
 <p>A formula for computing the required disk space:</p>
-<pre><code>total = (resource_triples + nexus_triples) * count * number_updates * triple_size + lucene_index
+<pre class="prettyprint"><code class="nocode">total = (resource_triples + nexus_triples) * count * number_updates * triple_size + lucene_index
 </code></pre>
 <p>&hellip; where the <code>lucene_index</code> while it can vary should be less than twice the size of the original documents.</p>
 <p>An example, assuming:</p>
@@ -806,7 +567,7 @@ $
   <li>200 bytes triple size (using quads mode)</li>
 </ul>
 <p>&hellip; the total required disk size would be:</p>
-<pre><code>(100 + 20) * 1.000.000 * 10 * 200 / 1024 * 3 ~= 700.000.000KB ~= 670GB
+<pre class="prettyprint"><code class="nocode">(100 + 20) * 1.000.000 * 10 * 200 / 1024 * 3 ~= 700.000.000KB ~= 670GB
 </code></pre>
 <p>Compactions can be applied to the journal using the <a href="https://github.com/blazegraph/database/blob/master/bigdata-core/bigdata/src/java/com/bigdata/journal/CompactJournalUtility.java" title="CompactJournalUtility" target="_blank" rel="noopener noreferrer">CompactJournalUtility</a> to reduce the disk usage, but it takes quite a bit a time and requires taking the software offline during the process.</p>
 </div>
@@ -817,7 +578,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-v1.7.x
+Snapshot
 </span>
 </div>
 </article>

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="x-ua-compatible" content="ie=edge">
 <meta name="description" content="docs">
-<meta name="generator" content="Paradox, paradox-material-theme=0.5.1, mkdocs-material=3.0.3">
+<meta name="generator" content="Paradox, paradox-material-theme=0.6.0, mkdocs-material=3.0.3">
 
 <meta name="lang:clipboard.copy" content="Copy to clipboard">
 <meta name="lang:clipboard.copied" content="Copied to clipboard">
@@ -154,6 +154,8 @@ BlueBrain/nexus
   </ul></li>
   <li><a href="../../docs/releases/index.html" class="page">Releases</a>
   <ul>
+    <li><a href="../../docs/releases/v1.8-release-notes.html" class="page">v1.8 Release Notes</a></li>
+    <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html" class="page">v1.7 To v1.8 Migration</a></li>
     <li><a href="../../docs/releases/v1.7-release-notes.html" class="page">v1.7 Release Notes</a></li>
     <li><a href="../../docs/releases/v1.6-to-v1.7-migration.html" class="page">v1.6 To v1.7 Migration</a></li>
     <li><a href="../../docs/releases/v1.6-release-notes.html" class="page">v1.6 Release Notes</a></li>
@@ -173,12 +175,18 @@ BlueBrain/nexus
   <li><a href="../../docs/fusion/index.html" class="page">Nexus Fusion</a>
   <ul>
     <li><a href="../../docs/fusion/architecture.html" class="active page">Architecture</a></li>
+    <li><a href="../../docs/fusion/organizations.html" class="page">Organizations</a></li>
+    <li><a href="../../docs/fusion/projects.html" class="page">Projects</a>
+    <ul>
+      <li><a href="../../docs/fusion/project.html" class="page">Project</a></li>
+    </ul></li>
+    <li><a href="../../docs/fusion/search.html" class="page">Global Search Types</a></li>
+    <li><a href="../../docs/fusion/studios.html" class="page">Studios</a>
+    <ul>
+      <li><a href="../../docs/fusion/studio.html" class="page">Studio</a></li>
+    </ul></li>
+    <li><a href="../../docs/fusion/my-data.html" class="page">User data</a></li>
     <li><a href="../../docs/fusion/plugins.html" class="page">Plugins</a></li>
-    <li><a href="../../docs/fusion/studio.html" class="page">Studios</a></li>
-    <li><a href="../../docs/fusion/search.html" class="page">Search</a></li>
-    <li><a href="../../docs/fusion/admin.html" class="page">Admin</a></li>
-    <li><a href="../../docs/fusion/workflow.html" class="page">Workflow (alpha)</a></li>
-    <li><a href="../../docs/fusion/add-your-own-app.html" class="page">Add your own App</a></li>
   </ul></li>
   <li><a href="../../docs/forge.html" class="page">Nexus Forge</a></li>
   <li><a href="../../docs/delta/index.html" class="page">Nexus Delta</a>
@@ -214,7 +222,9 @@ BlueBrain/nexus
       <li><a href="../../docs/delta/api/archives-api.html" class="page">Archives</a></li>
       <li><a href="../../docs/delta/api/search-api.html" class="page">Global search</a></li>
       <li><a href="../../docs/delta/api/graph-analytics-api.html" class="page">Graph analytics</a></li>
+      <li><a href="../../docs/delta/api/jira.html" class="page">Jira integration</a></li>
       <li><a href="../../docs/delta/api/events-api.html" class="page">Global events</a></li>
+      <li><a href="../../docs/delta/api/supervision-api.html" class="page">Supervision</a></li>
     </ul></li>
     <li><a href="../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
     <li><a href="../../docs/delta/benchmarks/index.html" class="page">Benchmarks</a>
@@ -232,7 +242,7 @@ BlueBrain/nexus
   <li><a href="../../docs/fusion/architecture.html#architecture" class="header">Architecture</a>
   <ul>
     <li><a href="../../docs/fusion/architecture.html#technology-overview" class="header">Technology Overview</a></li>
-    <li><a href="../../docs/fusion/architecture.html#subapps" class="header">SubApps</a></li>
+    <li><a href="../../docs/fusion/architecture.html#pages" class="header">Pages</a></li>
     <li><a href="../../docs/fusion/architecture.html#plugins" class="header">Plugins</a></li>
     <li><a href="../../docs/fusion/architecture.html#customization" class="header">Customization</a></li>
   </ul></li>
@@ -243,7 +253,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> v1.7.x
+<i class="md-icon" title="Version">label_outline</i> Snapshot
 </label>
 </li>
 </ul>
@@ -259,7 +269,7 @@ BlueBrain/nexus
   <li><a href="../../docs/fusion/architecture.html#architecture" class="header">Architecture</a>
   <ul>
     <li><a href="../../docs/fusion/architecture.html#technology-overview" class="header">Technology Overview</a></li>
-    <li><a href="../../docs/fusion/architecture.html#subapps" class="header">SubApps</a></li>
+    <li><a href="../../docs/fusion/architecture.html#pages" class="header">Pages</a></li>
     <li><a href="../../docs/fusion/architecture.html#plugins" class="header">Plugins</a></li>
     <li><a href="../../docs/fusion/architecture.html#customization" class="header">Customization</a></li>
   </ul></li>
@@ -271,25 +281,40 @@ BlueBrain/nexus
 </div>
 <div class="md-content">
 <article class="md-content__inner md-typeset">
+<div class="callout note warning admonition" style="visibility: visible; margin-top: 0px">
+<div class="callout-title admonition-title">Snapshot version</div>
+<p>
+You are browsing the docs for the snapshot version of Nexus,
+the latest release is available <a href="https://bluebrainnexus.io/docs/" title="here">here</a>
+</p>
+</div>
 <div class="md-content__searchable">
 <h1><a href="#architecture" name="architecture" class="anchor"><span class="anchor-link"></span></a>Architecture</h1>
 <h2><a href="#technology-overview" name="technology-overview" class="anchor"><span class="anchor-link"></span></a>Technology Overview</h2>
-<p>Nexus Fusion is a server-side rendered single-page webapp powered by <a href="https://reactjs.org/" title="React.js" target="_blank" rel="noopener noreferrer">React.js</a>. It is written in <a href="https://www.typescriptlang.org/" title="Typescript" target="_blank" rel="noopener noreferrer">Typescript</a>, and therefore must be transpiled into native browser JavaScript, during a build step, before being served.</p>
+<p>Nexus Fusion is a server-side rendered single-page webapp powered by <a href="https://react.dev" title="React.js" target="_blank" rel="noopener noreferrer">React.js</a>. It is written in <a href="https://www.typescriptlang.org/" title="Typescript" target="_blank" rel="noopener noreferrer">Typescript</a>, and therefore must be transpiled into native browser JavaScript, during a build step, before being served.</p>
 <p>The build step produces a server artifact to run on a Node.js server, with client-side assets and Javascript.</p>
 <p>We produce a docker image that is able to serve the compiled assets directly, which is available on <a href="https://hub.docker.com/repository/docker/bluebrain/nexus-web" title="Dockerhub" target="_blank" rel="noopener noreferrer">Dockerhub</a>.</p>
 <p>Although the application is served by a Node.js server, the client communicates directly to <a href="../delta/index.html">Nexus Delta</a> using <a href="../utilities/index.html#nexus-js">Nexus.js</a>.</p>
-<h2><a href="#subapps" name="subapps" class="anchor"><span class="anchor-link"></span></a>SubApps</h2>
-<p>Nexus Fusion is divided into sections called SubApps. SubApps are separate workspaces that attempt to contain the concerns of disparate users and activities, and provide different access rights for each.</p>
-<p>At the moment, we are packaging three SubApps called <a href="admin.html">Admin</a>, <a href="search.html">Search</a>, and <a href="studio.html">Studios</a>. These exist as part of the source code of Nexus Fusion, and live in the <code>src/subapps</code> folder.</p>
-<p>You can learn how to develop your own SubApps to extend Fusion <a href="add-your-own-app.html">here</a>.</p>
-<p>Expect the SubApp feature and its functionality will expand and change in the next releases of Nexus Fusion.</p>
+<h2><a href="#pages" name="pages" class="anchor"><span class="anchor-link"></span></a>Pages</h2>
+<p>Nexus Fusion has undergone a significant restructuring to transition from a SubApp-based architecture to a page-based structure. This change will prepare the application for a full migration to file-system based routing technologie and help seperating the application main features.</p>
+<p>Pages serve a specific top level entity or functionality concerns of diverse users and activities, and provide varying access privileges to each. The main features that can be accessed from the home page are: <a href="organizations.html">Organizations</a>, <a href="projects.html">Projects</a>, <a href="studios.html">Studios</a> and <a href="my-data.html">My data</a>. </p>
+<p>The page <a href="project.html">Project</a>, is responsible for handling all aspects of managing a single project.</p>
+<p>The search page has been removed, but every element that was previously available on the search page now has a link on the home page. These links redirect users to the appropriate global search type page.</p>
+<p>The pages in Nexus Fusion are part of the source code and reside in the <code>src/pages</code> folder.</p>
+<p>While all the previous feature is still available in the current version of Nexus Fusion, we expect its functionality to evolve and change in the upcoming release.</p>
 <h2><a href="#plugins" name="plugins" class="anchor"><span class="anchor-link"></span></a>Plugins</h2>
 <p>Plugins are ways to render resources. You can find more about them <a href="plugins.html">here</a>. It is important to note that the plugin repository is hosted separately from Nexus Fusion. Nexus Fusion will request a Plugin Manifest from this repository at run-time, and fetch plugins to render during run time based on a config. Both the plugins, the configuration, and the manifest should be hosted somewhere Nexus Fusion can request it.</p>
 <h2><a href="#customization" name="customization" class="anchor"><span class="anchor-link"></span></a>Customization</h2>
 <p>You can customize the Header of Nexus Fusion by setting up the following environment variables:</p>
 <ul>
-  <li><code>LOGO_IMG</code>: Url for an image to be used as application logo in the Header, for example, <code>https://drive.boogle.com/jnsjdnsjs</code></li>
+  <li><code>LOGO_IMG</code>: Url for an image to be used as application logo in the Header, for example, <code>https://www.epfl.ch/logo-img.png</code></li>
   <li><code>LOGO_LINK</code>: Url for the logo, for example, <code>https://www.epfl.ch</code></li>
+  <li><code>ORGANIZATION_IMG</code>: Url for the organization page foreground image, for example, <code>https://www.epfl.ch/default-org-img.png</code></li>
+  <li><code>PROJECTS_IMG</code>: Url for the projects page foreground image, for example,<code>https://www.epfl.ch/default-projects-img.png</code></li>
+  <li><code>STUDIOS_IMG</code>: Url for the studios page foreground image, for example, <code>https://www.epfl.ch/default-studios-img.png</code></li>
+  <li><code>LANDING_VIDEO</code>: Url for video in the the landing page, for example, <code>https://www.epfl.ch/landing-page-video.mp4</code></li>
+  <li><code>LANDING_POSTER_IMG</code>: Url for the video&rsquo;s poster image in landing page (replace the video when loading, for example,<code>https://www.epfl.ch/landing-page-poster-img.png</code></li>
+  <li><code>MAIN_COLOR</code>: Url for the organization page, for example &ldquo;#062d68&rdquo;</li>
   <li>If you use Nexus Forge, it is possible to include a <code>Forge templates</code> button by providing the url as <code>FORGE_LINK</code>, for example, <code>https://some-url.hi</code></li>
 </ul>
 <p>The full list of environment variables can be found <a href="https://github.com/BlueBrain/nexus-web/blob/main/README.md#env-variables-list" title="here">here</a>.</p>
@@ -301,7 +326,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-v1.7.x
+Snapshot
 </span>
 </div>
 </article>
@@ -324,13 +349,13 @@ Nexus Fusion
 </span>
 </div>
 </a>
-<a href="../../docs/fusion/plugins.html" title="Plugins" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../docs/fusion/organizations.html" title="Organizations" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-Plugins
+Organizations
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">
