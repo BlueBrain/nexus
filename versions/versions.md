@@ -12,7 +12,7 @@
 ## Previous releases
 
 ### v1.7.x
-- @link:[Documentation](https://bluebrainnexus.io/docs/)
+- @link:[Documentation](https://bluebrainnexus.io/v1.7.x/docs/)
 - @link:[Github](https://github.com/BlueBrain/nexus/tree/v1.7.x){ open=new }
 - @link:[Release notes](https://bluebrainnexus.io/docs/releases/v1.7-release-notes.html)
 
