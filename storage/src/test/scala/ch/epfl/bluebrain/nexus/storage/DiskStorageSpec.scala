@@ -4,7 +4,6 @@ import java.io.File
 import java.nio.charset.StandardCharsets
 import java.nio.charset.StandardCharsets.UTF_8
 import java.nio.file.{Files, Paths}
-
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.ContentTypes._
 import akka.http.scaladsl.model.MediaTypes.`application/x-tar`
@@ -65,13 +64,13 @@ class DiskStorageSpec
   }
 
   trait RelativeDirectoryCreated extends AbsoluteDirectoryCreated {
-    val relativeDir                   = s"some/${genString()}"
-    val relativeFileString            = s"$relativeDir/file.txt"
-    val relativeFilePath              = Uri.Path(relativeFileString)
-    val absoluteFilePath              = basePath.resolve(Paths.get(relativeFilePath.toString()))
+    val relativeDir                                 = s"some/${genString()}"
+    val relativeFileString                          = s"$relativeDir/file.txt"
+    val relativeFilePath                            = Uri.Path(relativeFileString)
+    val absoluteFilePath                            = basePath.resolve(Paths.get(relativeFilePath.toString()))
     Files.createDirectories(absoluteFilePath.getParent)
-    implicit val bucketExistsEvidence = BucketExists
-    val alg                           = "SHA-256"
+    implicit val bucketExistsEvidence: BucketExists = BucketExists
+    val alg                                         = "SHA-256"
   }
 
   "A disk storage bundle" when {
@@ -130,19 +129,19 @@ class DiskStorageSpec
     "creating a file" should {
 
       "fail when destination is out of bucket scope" in new RelativeDirectoryCreated {
-        val content                   = "some content"
-        val source: AkkaSource        = Source.single(ByteString(content))
-        implicit val pathDoesNotExist = PathDoesNotExist
-        val relativePath              = Uri.Path("some/../../path")
+        val content                                     = "some content"
+        val source: AkkaSource                          = Source.single(ByteString(content))
+        implicit val pathDoesNotExist: PathDoesNotExist = PathDoesNotExist
+        val relativePath                                = Uri.Path("some/../../path")
         storage.createFile(name, relativePath, source).unsafeToFuture().failed.futureValue shouldEqual
           PathInvalid(name, relativePath)
       }
 
       "pass" in new RelativeDirectoryCreated {
-        val content                   = "some content"
-        val source: AkkaSource        = Source.single(ByteString(content))
-        val digest                    = Digest("SHA-256", "290f493c44f5d63d06b374d0a5abd292fae38b92cab2fae5efefe1b0e9347f56")
-        implicit val pathDoesNotExist = PathDoesNotExist
+        val content                                     = "some content"
+        val source: AkkaSource                          = Source.single(ByteString(content))
+        val digest                                      = Digest("SHA-256", "290f493c44f5d63d06b374d0a5abd292fae38b92cab2fae5efefe1b0e9347f56")
+        implicit val pathDoesNotExist: PathDoesNotExist = PathDoesNotExist
         storage.createFile(name, relativeFilePath, source).ioValue shouldEqual
           FileAttributes(s"file://${absoluteFilePath.toString}", 12L, digest, `text/plain(UTF-8)`)
       }

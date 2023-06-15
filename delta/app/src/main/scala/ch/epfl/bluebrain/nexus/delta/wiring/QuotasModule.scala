@@ -20,7 +20,7 @@ import monix.execution.Scheduler
   */
 // $COVERAGE-OFF$
 object QuotasModule extends ModuleDef {
-  implicit private val classLoader = getClass.getClassLoader
+  implicit private val classLoader: ClassLoader = getClass.getClassLoader
 
   make[Quotas].from { (projectsStatistics: ProjectsStatistics, cfg: AppConfig) =>
     new QuotasImpl(projectsStatistics)(cfg.quotas, cfg.serviceAccount)

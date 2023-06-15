@@ -18,7 +18,7 @@ import monix.execution.Scheduler
   */
 // $COVERAGE-OFF$
 object SupervisionModule extends ModuleDef {
-  implicit private val classLoader = getClass.getClassLoader
+  implicit private val classLoader: ClassLoader = getClass.getClassLoader
 
   make[SupervisionRoutes].from {
     (

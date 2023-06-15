@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.storage.routes
 
 import java.nio.file.Paths
 import java.util.regex.Pattern.quote
-
 import akka.http.scaladsl.model.ContentTypes._
 import akka.http.scaladsl.model.MediaRanges._
 import akka.http.scaladsl.model.MediaTypes.{`application/octet-stream`, `image/jpeg`}
@@ -63,11 +62,11 @@ class StorageRoutesSpec
   }
 
   trait RandomFile extends Ctx {
-    val filename              = s"${genString()}.json"
-    val content               = Json.obj("key" -> Json.fromString(genString())).noSpaces
-    val source: AkkaSource    = Source.single(ByteString(content))
-    implicit val bucketExists = BucketExists
-    implicit val pathExists   = PathExists
+    val filename                            = s"${genString()}.json"
+    val content                             = Json.obj("key" -> Json.fromString(genString())).noSpaces
+    val source: AkkaSource                  = Source.single(ByteString(content))
+    implicit val bucketExists: BucketExists = BucketExists
+    implicit val pathExists: PathExists     = PathExists
   }
 
   trait RandomFileCreate extends RandomFile {
