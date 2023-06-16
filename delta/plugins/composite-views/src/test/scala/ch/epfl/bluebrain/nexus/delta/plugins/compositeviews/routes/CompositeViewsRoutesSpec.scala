@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.routes
 
+import akka.actor.typed.ActorSystem
 import akka.http.scaladsl.model.MediaTypes.`text/html`
 import akka.http.scaladsl.model.headers.{`Content-Type`, Accept, Location, OAuth2BearerToken}
 import akka.http.scaladsl.model.{HttpEntity, StatusCodes, Uri}
@@ -67,7 +68,7 @@ class CompositeViewsRoutesSpec
     with CompositeViewsFixture
     with Fixtures {
   import akka.actor.typed.scaladsl.adapter._
-  implicit private val typedSystem = system.toTyped
+  implicit private val typedSystem: ActorSystem[Nothing] = system.toTyped
 
   implicit val ordering: JsonKeyOrdering =
     JsonKeyOrdering.default(topKeys =

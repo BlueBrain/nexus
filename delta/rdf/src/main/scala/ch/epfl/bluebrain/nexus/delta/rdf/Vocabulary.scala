@@ -129,8 +129,8 @@ object Vocabulary {
     * Nexus vocabulary
     */
   object nxv {
-    implicit val base     = iri"https://bluebrain.github.io/nexus/vocabulary/"
-    def +(suffix: String) = iri"$base$suffix"
+    implicit val base: Iri = iri"https://bluebrain.github.io/nexus/vocabulary/"
+    def +(suffix: String)  = iri"$base$suffix"
 
     // Metadata vocabulary
     val authorizationEndpoint = Metadata("authorizationEndpoint")

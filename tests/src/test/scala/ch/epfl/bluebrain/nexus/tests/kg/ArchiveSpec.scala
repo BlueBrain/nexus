@@ -148,21 +148,21 @@ class ArchiveSpec extends BaseSpec with ArchiveHelpers with CirceEq {
     }
 
     "fail on wrong path" in {
-      val wrong1    = jsonContentOf(s"/kg/archives/archive-wrong-path1.json")
+      val wrong1 = jsonContentOf(s"/kg/archives/archive-wrong-path1.json")
       val expected1 = jsonContentOf("/kg/archives/archive-path-invalid1.json")
 
-      deltaClient.put[Json](s"/archives/$fullId/archive2", wrong1, Tweety) { (json, response) =>
-        json shouldEqual expected1
-        response.status shouldEqual StatusCodes.BadRequest
-      }
-
-      val wrong2    = jsonContentOf(s"/kg/archives/archive-wrong-path2.json")
-      val expected2 = jsonContentOf("/kg/archives/archive-path-invalid2.json")
-
-      deltaClient.put[Json](s"/archives/$fullId/archive2", wrong2, Tweety) { (json, response) =>
-        json shouldEqual expected2
-        response.status shouldEqual StatusCodes.BadRequest
-      }
+      for {
+        _ <- deltaClient.put[Json](s"/archives/$fullId/archive2", wrong1, Tweety) { (json, response) =>
+          json shouldEqual expected1
+          response.status shouldEqual StatusCodes.BadRequest
+        }
+        wrong2 = jsonContentOf(s"/kg/archives/archive-wrong-path2.json")
+        expected2 = jsonContentOf("/kg/archives/archive-path-invalid2.json")
+        _ <- deltaClient.put[Json](s"/archives/$fullId/archive2", wrong2, Tweety) { (json, response) =>
+          json shouldEqual expected2
+          response.status shouldEqual StatusCodes.BadRequest
+        }
+      } yield succeed
     }
 
     "fail on path collisions" in {

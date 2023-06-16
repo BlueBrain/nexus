@@ -36,9 +36,10 @@ class AttributesCacheSpec
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(20.second, 100.milliseconds)
 
-  implicit val config                                           = DigestConfig("SHA-256", maxInMemory = 10, concurrentComputations = 3, 20, 5.seconds)
+  implicit val config: DigestConfig                             =
+    DigestConfig("SHA-256", maxInMemory = 10, concurrentComputations = 3, 20, 5.seconds)
   implicit val computation: AttributesComputation[Task, String] = mock[AttributesComputation[Task, String]]
-  implicit val timeout                                          = Timeout(1.minute)
+  implicit val timeout: Timeout                                 = Timeout(1.minute)
 
   before {
     Mockito.reset(computation)

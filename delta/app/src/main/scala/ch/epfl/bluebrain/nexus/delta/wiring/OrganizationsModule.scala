@@ -26,7 +26,7 @@ import monix.execution.Scheduler
   */
 // $COVERAGE-OFF$
 object OrganizationsModule extends ModuleDef {
-  implicit private val classLoader = getClass.getClassLoader
+  implicit private val classLoader: ClassLoader = getClass.getClassLoader
 
   make[Organizations].from {
     (

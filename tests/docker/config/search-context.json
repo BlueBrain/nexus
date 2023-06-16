@@ -3,25 +3,64 @@
   "identifier": {
     "@type": "@id"
   },
-  "label": "http://www.w3.org/2000/01/rdf-schema#label",
-  "name": "http://schema.org/name",
-  "createdAt": {
-    "@type": "http://www.w3.org/2001/XMLSchema#dateTime"
-  },
   "contributors": {
+    "@container": "@set"
+  },
+  "annotation": {
     "@container": "@set"
   },
   "organizations": {
     "@container": "@set"
   },
+  "derivation": {
+    "@container": "@set"
+  },
+  "distribution": {
+    "@container": "@set"
+  },
+  "series": {
+    "@container": "@set"
+  },
+  "image": {
+    "@container": "@set"
+  },
+  "source": {
+    "@container": "@set"
+  },
+  "layer": {
+    "@container": "@set"
+  },
+  "protocol": {
+    "@container": "@set"
+  },
   "project": {
     "@type": "@id"
   },
-  "createdBy": {
-    "@type": "@id"
+  "valueX": {
+    "@type": "http://www.w3.org/2001/XMLSchema#float"
+  },
+  "valueY": {
+    "@type": "http://www.w3.org/2001/XMLSchema#float"
+  },
+  "valueZ": {
+    "@type": "http://www.w3.org/2001/XMLSchema#float"
+  },
+  "createdAt": {
+    "@type": "http://www.w3.org/2001/XMLSchema#dateTime"
+  },
+  "updatedAt": {
+    "@type": "http://www.w3.org/2001/XMLSchema#dateTime"
   },
   "_self": {
     "@type": "@id",
-    "@id": "https://bluebrain.github.io/nexus/vocabulary/self"
+    "@id": "https://bluebrain.github.io/nexus/field/self"
+  },
+  "contentUrl": {
+    "@type": "@id",
+    "@id": "https://bluebrain.github.io/nexus/field/contentUrl"
+  },
+  "about": {
+    "@type": "@id",
+    "@id": "https://bluebrain.github.io/nexus/field/about"
   }
 }
