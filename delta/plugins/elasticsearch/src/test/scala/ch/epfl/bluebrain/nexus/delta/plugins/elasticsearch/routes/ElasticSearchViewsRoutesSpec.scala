@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
 
+import akka.actor.typed.ActorSystem
 import akka.http.scaladsl.model.MediaTypes.`text/html`
 import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept, Location, OAuth2BearerToken}
 import akka.http.scaladsl.model.{MediaTypes, StatusCodes, Uri}
@@ -73,7 +74,7 @@ class ElasticSearchViewsRoutesSpec
     with Fixtures {
 
   import akka.actor.typed.scaladsl.adapter._
-  implicit val typedSystem = system.toTyped
+  implicit val typedSystem: ActorSystem[Nothing] = system.toTyped
 
   private val uuid                  = UUID.randomUUID()
   implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)

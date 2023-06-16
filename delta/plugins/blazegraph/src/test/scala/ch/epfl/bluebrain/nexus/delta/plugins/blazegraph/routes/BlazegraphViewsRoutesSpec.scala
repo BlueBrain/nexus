@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes
 
+import akka.actor.typed.ActorSystem
 import akka.http.scaladsl.model.MediaTypes.`text/html`
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.model.{HttpEntity, MediaTypes, StatusCodes, Uri}
@@ -25,6 +26,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
@@ -70,7 +72,7 @@ class BlazegraphViewsRoutesSpec
     with BlazegraphViewRoutesFixtures {
 
   import akka.actor.typed.scaladsl.adapter._
-  implicit private val typedSystem = system.toTyped
+  implicit private val typedSystem: ActorSystem[Nothing] = system.toTyped
 
   private val prefix                    = "prefix"
   private val uuid                      = UUID.randomUUID()
@@ -104,8 +106,8 @@ class BlazegraphViewsRoutesSpec
   implicit val rejectionHandler: RejectionHandler = RdfRejectionHandler.apply
   implicit val exceptionHandler: ExceptionHandler = RdfExceptionHandler.apply
 
-  implicit val paginationConfig        = pagination
-  implicit private val f: FusionConfig = fusionConfig
+  implicit val paginationConfig: PaginationConfig = pagination
+  implicit private val f: FusionConfig            = fusionConfig
 
   private val selectQuery    = SparqlQuery("SELECT * {?s ?p ?o}")
   private val constructQuery = SparqlConstructQuery("CONSTRUCT {?s ?p ?o} WHERE {?s ?p ?o}").rightValue

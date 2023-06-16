@@ -47,8 +47,9 @@ class FilesRoutesSpec extends BaseRouteSpec with CancelAfterFailure with Storage
   implicit val typedSystem: typed.ActorSystem[Nothing] = system.toTyped
   implicit val httpClient: HttpClient                  = HttpClient()(httpClientConfig, system, sc)
 
-  implicit private val caller = Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
-  private val identities      = IdentitiesDummy(caller)
+  implicit private val caller: Caller =
+    Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
+  private val identities              = IdentitiesDummy(caller)
 
   private val asAlice = addCredentials(OAuth2BearerToken("alice"))
 
