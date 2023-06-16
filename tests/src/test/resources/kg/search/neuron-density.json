@@ -1,6 +1,6 @@
 {
   "@context": "https://bbp.neuroshapes.org",
-  "@id": "https://bbp.epfl.ch/neurosciencegraph/data/densities/87221bd5-bd0b-464d-a863-b32d6f62893b",
+  "@id": "https://bbp.epfl.ch/data/neuron-density",
   "@type": [
     "NeuronDensity",
     "Entity",

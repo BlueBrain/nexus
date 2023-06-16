@@ -1,6 +1,6 @@
 {
   "@context": "https://bbp.neuroshapes.org",
-  "@id": "https://bbp.epfl.ch/neurosciencegraph/data/neuronmorphologies/da3b1e42-5f7f-4065-8be3-d2132c219bc2",
+  "@id": "https://bbp.epfl.ch/data/neuron-morphology",
   "@type": [
     "Entity",
     "Dataset",

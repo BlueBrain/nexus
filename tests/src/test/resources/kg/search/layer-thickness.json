@@ -1,6 +1,6 @@
 {
   "@context": "https://bbp.neuroshapes.org",
-  "@id": "https://bbp.epfl.ch/neurosciencegraph/data/8d3a4d11-cf77-4ac1-ae14-6f2480d0c992",
+  "@id": "https://bbp.epfl.ch/data/layer-thickness",
   "@type": [
     "LayerThickness",
     "Entity"

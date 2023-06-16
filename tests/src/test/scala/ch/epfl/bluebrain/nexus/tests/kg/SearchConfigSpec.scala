@@ -16,16 +16,11 @@ class SearchConfigSpec extends BaseSpec {
   private val id1      = s"$orgId/$projId1"
   private val projects = List(id1)
 
-  private val neuronMorphologyId =
-    "https://bbp.epfl.ch/neurosciencegraph/data/neuronmorphologies/da3b1e42-5f7f-4065-8be3-d2132c219bc2"
-  private val neuronDensityId    =
-    "https://bbp.epfl.ch/neurosciencegraph/data/densities/87221bd5-bd0b-464d-a863-b32d6f62893b"
-  private val traceId            =
-    "https://bbp.epfl.ch/neurosciencegraph/data/traces/8f03a402-f0bb-4114-8a52-e8d3e23949fa"
-  private val layerThicknessId   =
-    "https://bbp.epfl.ch/neurosciencegraph/data/8d3a4d11-cf77-4ac1-ae14-6f2480d0c992"
-  private val boutonDensityId    =
-    "https://bbp.epfl.ch/neurosciencegraph/data/e38cfd23-7028-4fce-82d1-b3beeb1e2fc5"
+  private val neuronMorphologyId = "https://bbp.epfl.ch/data/neuron-morphology"
+  private val neuronDensityId    = "https://bbp.epfl.ch/data/neuron-density"
+  private val traceId            = "https://bbp.epfl.ch/data/trace"
+  private val layerThicknessId   = "https://bbp.epfl.ch/data/layer-thickness"
+  private val boutonDensityId    = "https://bbp.epfl.ch/data/bouton-density"
 
   // the resources that should appear in the search index
   private val mainResources  = List(

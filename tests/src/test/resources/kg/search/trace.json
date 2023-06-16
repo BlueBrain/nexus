@@ -1,6 +1,6 @@
 {
   "@context": "https://bbp.neuroshapes.org",
-  "@id": "https://bbp.epfl.ch/neurosciencegraph/data/traces/8f03a402-f0bb-4114-8a52-e8d3e23949fa",
+  "@id": "https://bbp.epfl.ch/data/trace",
   "@type": [
     "Dataset",
     "Trace",
