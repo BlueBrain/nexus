@@ -59,7 +59,7 @@ class ElasticSearchScopeInitializationSpec
   private lazy val views: ElasticSearchViews = ElasticSearchViews(
     fetchContext,
     ResolverContextResolution(rcr),
-    alwaysValidate,
+    ValidateElasticSearchView.always,
     eventLogConfig,
     "prefix",
     xas

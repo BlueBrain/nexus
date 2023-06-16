@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
 import ch.epfl.bluebrain.nexus.testkit.IORef
 import monix.bio.{IO, UIO}
+import monix.execution.Scheduler
 
 /**
   * In-memory implementation of an [[AclCheck]]
@@ -55,5 +56,8 @@ object AclSimpleCheck {
           checker append (address, (subject, permissions))
         }
     }
+
+  def unsafe(input: (Identity, AclAddress, Set[Permission])*)(implicit s: Scheduler) =
+    apply(input: _*).runSyncUnsafe()
 
 }

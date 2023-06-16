@@ -14,7 +14,7 @@ import java.util.UUID
 
 object ElasticSearchViewGen {
 
-  def resourceFor(
+  def stateFor(
       id: Iri,
       project: ProjectRef,
       value: ElasticSearchViewValue,
@@ -25,10 +25,8 @@ object ElasticSearchViewGen {
       deprecated: Boolean = false,
       tags: Tags = Tags.empty,
       createdBy: Subject = Anonymous,
-      updatedBy: Subject = Anonymous,
-      am: ApiMappings = ApiMappings.empty,
-      base: Iri = nxv.base
-  ): ViewResource =
+      updatedBy: Subject = Anonymous
+  ): ElasticSearchViewState =
     ElasticSearchViewState(
       id,
       project,
@@ -44,5 +42,33 @@ object ElasticSearchViewGen {
       Instant.EPOCH,
       updatedBy
     )
-      .toResource(am, ProjectBase.unsafe(base), JsonObject.empty, JsonObject.empty)
+
+  def resourceFor(
+      id: Iri,
+      project: ProjectRef,
+      value: ElasticSearchViewValue,
+      uuid: UUID = UUID.randomUUID(),
+      source: Json = Json.obj(),
+      rev: Int = 1,
+      indexingRev: Int = 1,
+      deprecated: Boolean = false,
+      tags: Tags = Tags.empty,
+      createdBy: Subject = Anonymous,
+      updatedBy: Subject = Anonymous,
+      am: ApiMappings = ApiMappings.empty,
+      base: Iri = nxv.base
+  ): ViewResource =
+    stateFor(
+      id,
+      project,
+      value,
+      uuid,
+      source,
+      rev,
+      indexingRev,
+      deprecated,
+      tags,
+      createdBy,
+      updatedBy
+    ).toResource(am, ProjectBase.unsafe(base), JsonObject.empty, JsonObject.empty)
 }

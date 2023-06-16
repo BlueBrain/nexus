@@ -34,6 +34,8 @@ trait ElasticSearchViewsQuery {
     * Retrieves a list of resources from all the available default elasticsearch views using specific pagination, filter
     * and ordering configuration.
     *
+    * TODO: remove and replace by DefaultViewsQuery
+    *
     * @param pagination
     *   the pagination configuration
     * @param params
@@ -50,6 +52,8 @@ trait ElasticSearchViewsQuery {
   /**
     * Retrieves a list of resources from all the available default elasticsearch views using specific pagination, filter
     * and ordering configuration.
+    *
+    * TODO: remove and replace by DefaultViewsQuery
     *
     * @param schema
     *   the schema where to search
@@ -71,6 +75,8 @@ trait ElasticSearchViewsQuery {
     * Retrieves a list of resources from all the available default elasticsearch views inside the passed ''org'' using
     * specific pagination, filter and ordering configuration.
     *
+    * TODO: remove and replace by DefaultViewsQuery
+    *
     * @param org
     *   the organization
     * @param pagination
@@ -90,6 +96,8 @@ trait ElasticSearchViewsQuery {
   /**
     * Retrieves a list of resources from all the available default elasticsearch views inside the passed ''org'' using
     * specific pagination, filter and ordering configuration.
+    *
+    * TODO: remove and replace by DefaultViewsQuery
     *
     * @param org
     *   the organization
@@ -114,6 +122,8 @@ trait ElasticSearchViewsQuery {
     * Retrieves a list of resources from the default elasticsearch view using specific pagination, filter and ordering
     * configuration.
     *
+    * TODO: remove and replace by DefaultViewsQuery
+    *
     * @param project
     *   the project where to search
     * @param pagination
@@ -133,6 +143,8 @@ trait ElasticSearchViewsQuery {
   /**
     * Retrieves a list of resources from the default elasticsearch view using specific pagination, filter and ordering
     * configuration. It will filter the resources with the passed ''schema''
+    *
+    * TODO: remove and replace by DefaultViewsQuery
     *
     * @param project
     *   the project where to search
