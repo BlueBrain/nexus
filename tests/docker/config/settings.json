@@ -1,14 +1,35 @@
 {
   "analysis": {
     "analyzer": {
-      "nexus": {
+      "search_nexus": {
         "type": "custom",
         "tokenizer": "classic",
         "filter": [
           "trim",
-          "word_delimiter_nexus",
-          "lowercase"
+          "lowercase",
+          "word_delimiter_nexus"
         ]
+      },
+      "nexus": {
+        "type": "custom",
+        "tokenizer": "edge_ngram_nexus",
+        "filter": [
+          "lowercase",
+          "trim"
+        ]
+      }
+    },
+    "tokenizer": {
+      "edge_ngram_nexus": {
+        "type": "edge_ngram",
+        "min_gram": 2,
+        "max_gram": 36,
+        "token_chars": [
+          "letter",
+          "digit",
+          "custom"
+        ],
+        "custom_token_chars": "-"
       }
     },
     "filter": {

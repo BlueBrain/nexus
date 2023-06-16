@@ -1,0 +1,9 @@
+{
+  "@context": "https://bbp.neuroshapes.org",
+  "@id": "https://www.grid.ac/institutes/grid.5333.6",
+  "@type": [
+    "schema:Organization",
+    "prov:Agent"
+  ],
+  "name": "École Polytechnique Fédérale de Lausanne"
+}

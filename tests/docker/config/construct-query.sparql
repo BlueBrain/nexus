@@ -1,99 +1,519 @@
 prefix prov: <http://www.w3.org/ns/prov#>
 prefix nsg: <https://neuroshapes.org/>
+prefix bmo: <https://bbp.epfl.ch/ontologies/core/bmo/>
 prefix skos: <http://www.w3.org/2004/02/skos/core#>
 prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 prefix schema: <http://schema.org/>
 prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 prefix nxv: <https://bluebrain.github.io/nexus/vocabulary/>
-prefix field: <https://bluebrain.github.io/nexus/field/>
-
+prefix : <https://bluebrain.github.io/nexus/field/>
 
 CONSTRUCT {
-  {resource_id}     a                       ?type ;
-                    schema:name             ?name ;
-                    field:description       ?description ;
-                    field:brainRegion       ?brainRegionBN ;
-                    field:project           ?projectBN ;
-                    field:subjectSpecies    ?speciesBN ;
-                    field:contributors      ?personBN ;
-                    field:organizations     ?orgBN ;
-                    field:license           ?licenseBN ;
-                    field:createdBy         ?createdBy ;
-                    nxv:self                ?self .
+  ?id   a                   ?type                  ;
+        :name               ?name                  ;
+        :description        ?description           ;
+        :createdAt          ?createdAt             ;
+        :createdBy          ?createdBy             ;
+        :updatedAt          ?updatedAt             ;
+        :updatedBy          ?updatedBy             ;
+        :deprecated         ?deprecated            ;
+        :self               ?self                  ;
+        :brainRegion        ?brainRegionId         .
+                            ?brainRegionId         :identifier  ?brainRegionId      ;
+                                                   :label       ?brainRegionLabel   ;
+                                                   :idLabel     ?brainRegionIdLabel .
+  ?id  :layer              ?layerId               .
+                           ?layerId               :identifier  ?layerId      ;
+                                                  :label       ?layerLabel   ;
+                                                  :idLabel     ?layerIdLabel .
+  ?id  :coordinatesInBrainAtlas  ?coordinates     .
+                                 ?coordinates     :valueX      ?valueX       ;
+                                                  :valueY      ?valueY       ;
+                                                  :valueZ      ?valueZ       .
+  ?id  :project            ?projectBN             .
+                           ?projectBN             :identifier  ?projectId    ;
+                                                  :label       ?projectLabel .
+  ?id  :subjectSpecies     ?species             .
+                           ?species               :identifier  ?species      ;
+                                                  :label       ?speciesLabel .
+  ?id  :contributors       ?personId              .
+                           ?personId              :identifier  ?personId     ;
+                                                  :label       ?personName   ;
+                                                  :idLabel     ?personIdName ;
+                                                  :affiliation ?affiliation  .
+                                                               ?affiliation  :label ?affiliationName .
+  ?id  :organizations      ?orgId                 .
+                           ?orgId                 :identifier  ?orgId              ;
+                                                  :label       ?organizationName   ;
+                                                  :idLabel     ?organizationIdName .
+  ?id  :license            ?licenseBN             .
+                           ?licenseBN             :identifier  ?licenseId     ;
+                                                  :label       ?licenseLabel  .
+  ?id  :mType              ?mType                 .
+                           ?mType                 :identifier  ?mType        ;
+                                                  :label       ?mTypeLabel   ;
+                                                  :idLabel     ?mTypeIdLabel .
+  ?id  :eType              ?eType                 .
+                           ?eType                 :identifier  ?eType        ;
+                                                  :label       ?eTypeLabel   ;
+                                                  :idLabel     ?eTypeIdLabel .
+  ?id  :sType              ?sType                 .
+                           ?sType                 :identifier  ?sType        ;
+                                                  :label       ?sTypeLabel   ;
+                                                  :idLabel     ?sTypeIdLabel .
+  ?id  :subjectAge         ?age                   .
+                           ?age                   :value       ?subjectAgeValue    ;
+                                                  :minValue    ?subjectAgeMinValue ;
+                                                  :maxValue    ?subjectAgeMaxValue ;
+                                                  :unit        ?subjectAgeUnit     ;
+                                                  :period      ?subjectAgePeriod   ;
+                                                  :label       ?subjectAgeLabel    .
+  ?id  :subjectWeight      ?subjectWeightBN       .
+                           ?subjectWeightBN       :value       ?subjectWeightValue     ;
+                                                  :unit        ?subjectWeightUnit      ;
+                                                  :minValue    ?subjectWeightMinValue  ;
+                                                  :maxValue    ?subjectWeightMaxValue  ;
+                                                  :label       ?subjectWeightLabel     .
+  ?id  :neuronDensity      ?neuronDensityBN       .
+                           ?neuronDensityBN       :value       ?neuronDensityValue   ;
+                                                  :unit        ?neuronDensityUnit    ;
+                                                  :nValue      ?neuronDensityNValue  ;
+                                                  :label       ?neuronDensityLabel   .
+  ?id  :layerThickness     ?thicknessBN           .
+                           ?thicknessBN           :value       ?thicknessValue   ;
+                                                  :unit        ?thicknessUnit    ;
+                                                  :nValue      ?thicknessNValue  ;
+                                                  :label       ?thicknessLabel   .
+  ?id  :boutonDensity      ?boutonDensityBN       .
+                           ?boutonDensityBN       :value       ?boutonDensityValue  ;
+                                                  :unit        ?boutonDensityUnit   ;
+                                                  :label       ?boutonDensityLabel  .
+  ?id  :generation         ?generation            .
+                           ?generation            :protocol     ?protocol                ;
+                                                  :startedAt    ?generationStartedAtTime ;
+                                                  :endedAt      ?generationEndedAtTime   .
+                                                                ?protocol                :label      ?protocolName       ;
+                                                                                          :propertyID ?protocolPropertyId ;
+                                                                                          :value      ?protocolValue      .
+  ?id  :source             ?source                .
+                           ?source                :title        ?sourceTitle       ;
+                                                  rdf:type      ?sourceType        ;
+                                                  :identifier   ?sourceIdentifier  .
+                                                                ?sourceIdentifier  :propertyID  ?sourceIdentifierPropertyId ;
+                                                                                   :value       ?sourceIdentifierValue      .
+  ?id  :circuitType        ?circuitType           ;
+       :circuitBase        ?circuitBaseUrlStr        ;
+       :circuitConfigPath  ?circuitConfigPathUrlStr  .
 
-  ?projectBN        field:identifier        ?projectId ;
-                    rdfs:label              ?projectLabel .
-
-  ?licenseBN        field:identifier        ?licenseId ;
-                    rdfs:label              ?licenseLabel .
-
-  ?brainRegionBN    field:identifier        ?brainRegionId ;
-                    rdfs:label              ?brainRegionLabel .
-
-  ?speciesBN        field:identifier        ?speciesId ;
-                    rdfs:label              ?speciesLabel .
-
-  ?personBN         field:identifier        ?personId ;
-                    rdfs:label              ?personName .
-
-  ?orgBN            field:identifier        ?orgId ;
-                    rdfs:label              ?organizationName .
-
-  ?mTypeBN          field:identifier        ?mTypeId ;
-                    rdfs:label              ?mTypeLabel
+  ?id  :startedAt            ?startedAt               ;
+       :endedAt              ?endedAt                 ;
+       :status               ?status                  ;
+       :circuitName          ?circuitName   ;
+       :circuitBrainRegion   ?circuitBrainRegionBN    .
+                             ?circuitBrainRegionBN    :identifier  ?circuitBrainRegionId    ;
+                                                      :label       ?circuitBrainRegionLabel .
+  ?id  :derivation           ?derivation              .
+                             ?derivation              :identifier      ?entity     ;
+                                                      rdf:type         ?entityType ;
+                                                      :label           ?entityName .
+  ?id  :distribution         ?distribution            .
+                             ?distribution            :label           ?distributionName           ;
+                                                      :encodingFormat  ?distributionEncodingFormat ;
+                                                      :contentUrl      ?distributionContentUrl     ;
+                                                      :contentSize     ?distributionContentSize    .
+  ?id  :image                ?image                   .
+                             ?image                   :identifier      ?image                  ;
+                                                      :about           ?imageAbout             ;
+                                                      :repetition      ?imageRepetition        ;
+                                                      :stimulusType    ?imageStimulusTypeLabel .
+  ?id  :series               ?series                  .
+                             ?series                  :value           ?seriesValue      ;
+                                                      :unit            ?seriesUnit       ;
+                                                      :statistic       ?seriesStatistic  .
 } WHERE {
-  {resource_id} nxv:createdAt               ?createdAt;
-                nxv:createdBy               ?createdBy;
-                nxv:self                    ?self;
-                a                           ?type ;
-                nxv:project                 ?projectId .
-  ?projectId    nxv:organizationLabel       ?orgLabel;
-                nxv:label                   ?projLabel.
-  BIND (CONCAT(STR(?orgLabel),STR("/"),STR(?projLabel)) as ?projectLabel) .
-  BIND(BNODE() AS ?projectBN) .
+  BIND({resource_id} as ?id) .
 
-  OPTIONAL {  {resource_id} schema:description   ?description } .
-  OPTIONAL {  {resource_id} schema:name          ?name } .
-  OPTIONAL {  {resource_id} rdfs:label           ?name } .
-  OPTIONAL {  {resource_id} skos:prefLabel       ?name } .
-  OPTIONAL {
-    {resource_id} schema:license        ?licenseId .
-    BIND(BNODE() AS ?licenseBN) .
-    OPTIONAL { ?licenseId rdfs:label    ?licenseLabel . }
-  } .
+  ?id  a  ?type  .
 
-  OPTIONAL {
-    {resource_id}  nsg:brainLocation / nsg:brainRegion ?brainRegionId .
-    BIND(BNODE() AS ?brainRegionBN) .
-    OPTIONAL { ?brainRegionId rdfs:label ?brainRegionLabel }
-  } .
+  # exclude schema:Dataset and prov:Entity types to avoid noise
+  FILTER (?type != schema:Dataset)
+  FILTER (?type != prov:Entity)
 
-  OPTIONAL {
-    {resource_id}  nsg:subject / nsg:species ?speciesId .
-    BIND(BNODE() AS ?speciesBN) .
-    OPTIONAL { ?speciesId rdfs:label ?speciesLabel }
-  }  .
-
-  OPTIONAL {
-    {resource_id}   nsg:contribution / prov:agent     ?personId .
-    ?personId       a                                 schema:Person .
-    BIND(BNODE() AS ?personBN) .
-    OPTIONAL { ?personId schema:givenName   ?givenName } .
-    OPTIONAL { ?personId schema:familyName  ?familyName } .
-    BIND(IF(BOUND(?givenName) && BOUND(?familyName), CONCAT(STR(?givenName)," ", STR(?familyName)), IF(BOUND(?givenName), ?givenName, ?familyName)) AS ?personName)
-  } .
-
-  OPTIONAL {
-    {resource_id}   nsg:contribution / prov:agent     ?orgId .
-    ?orgId          a                                 schema:Organization .
-    BIND(BNODE() AS ?orgBN) .
-    OPTIONAL { ?orgId schema:name ?organizationName }
-  } .
-
-  OPTIONAL {
-    {resource_id}   nsg:annotation / nsg:hasBody     ?mTypeId .
-    ?mTypeId        a                                nsg:MType .
-    BIND(BNODE() AS ?mTypeBN) .
-    OPTIONAL { ?mTypeId rdfs:label ?mTypeLabel }
+  # for Traces, only consider ones that have the nwb encoding format
+  FILTER NOT EXISTS {
+    ?id   a                                            nsg:Trace       ;
+          schema:distribution / schema:encodingFormat  ?encodingFormat .
+    FILTER (?encodingFormat != "application/nwb")
   }
+
+  ?id  nxv:createdAt   ?createdAt      ;
+       nxv:createdBy   ?createdByNode  ;
+       nxv:updatedAt   ?updatedAt      ;
+       nxv:updatedBy   ?updatedByNode  ;
+       nxv:deprecated  ?deprecated     ;
+       nxv:self        ?self           ;
+       nxv:project     ?projectId      .
+  BIND( STRAFTER(STR(?projectId), "/v1/projects/") as ?projectLabel ) .
+  BIND( BNODE() AS ?projectBN ) .
+
+  # We read the following nodes as text. This is done in order to avoid conflict
+  # when another triple uses the same @id. For instance, createdBy and updatedBy
+  # can conflict with a contributor, if the contributor is also the one creating
+  # or updating the given resource.
+  BIND( STR(?createdByNode) AS ?createdBy ) .
+  BIND( STR(?updatedByNode) AS ?updatedBy ) .
+
+  OPTIONAL { ?id  schema:description   ?description . } .
+  OPTIONAL { ?id  schema:name          ?name        . } .
+  OPTIONAL { ?id  rdfs:label           ?name        . } .
+  OPTIONAL { ?id skos:prefLabel        ?name        . } .
+
+  OPTIONAL {
+    ?id  schema:license  ?licenseId .
+    OPTIONAL {
+      ?licenseId  schema:name  ?licenseLabel .
+    } .
+    BIND( BNODE() AS ?licenseBN ) .
+  } .
+
+  OPTIONAL {
+    ?id  nsg:brainLocation / nsg:brainRegion  ?brainRegionId .
+    OPTIONAL {
+      ?brainRegionId  rdfs:label  ?brainRegionLabel .
+    }
+    BIND(
+      IF(
+        BOUND(?brainRegionLabel),
+        CONCAT(STR(?brainRegionId),"|", STR(?brainRegionLabel)),
+        ?undefined
+      ) AS ?brainRegionIdLabel) .
+  } .
+
+  OPTIONAL {
+    ?id nsg:brainLocation / nsg:coordinatesInBrainAtlas  ?coordinates .
+    ?coordinates  nsg:valueX  ?valueX;
+                  nsg:valueY  ?valueY;
+                  nsg:valueZ  ?valueZ.
+  } .
+
+  OPTIONAL {
+    ?id  nsg:brainLocation / nsg:layer  ?layerId .
+    OPTIONAL {
+      ?layerId  rdfs:label  ?layerLabel .
+    }
+    BIND(
+      IF(
+        BOUND(?layerId),
+        CONCAT(STR(?layerId),"|", STR(?layerLabel)),
+        ?undefined
+      ) AS ?layerIdLabel) .
+  }
+
+  OPTIONAL {
+    ?id  nsg:subject / nsg:species ?species .
+    OPTIONAL {
+      ?species  rdfs:label  ?speciesLabel .
+    } .
+  } .
+
+  OPTIONAL {
+    ?id  schema:distribution  ?distribution .
+    OPTIONAL { ?distribution  schema:name                        ?distributionName . } .
+    OPTIONAL { ?distribution  schema:encodingFormat              ?distributionEncodingFormat . } .
+    OPTIONAL { ?distribution  schema:contentUrl                  ?distributionContentUrl . } .
+    OPTIONAL { ?distribution  schema:contentSize / schema:value  ?distributionContentSize . } .
+  } .
+
+  # A contributor can be a schema:Person or a schema:Organization (zero or more of each).
+  # We separate below both cases
+  OPTIONAL {
+    ?id  nsg:contribution / prov:agent ?contributorId
+
+    # A graph of schema:Person contributors
+    OPTIONAL {
+      ?contributorId a schema:Person .
+      BIND(?contributorId as ?personId) .
+      OPTIONAL { ?personId  schema:givenName    ?givenName   . } .
+      OPTIONAL { ?personId  schema:familyName   ?familyName  . } .
+      OPTIONAL {
+        ?personId  schema:affiliation  ?affiliation .
+        OPTIONAL { ?affiliation schema:name ?affiliationName . } .
+      } .
+      BIND(
+        IF(
+          BOUND(?givenName) && BOUND(?familyName),
+          CONCAT(STR(?givenName)," ", STR(?familyName)),
+          IF(
+            BOUND(?givenName),
+            ?givenName,
+            ?familyName)
+        ) AS ?personName ) .
+      BIND(
+        IF(
+          BOUND(?personName),
+          CONCAT(STR(?personId),"|", STR(?personName)),
+          ?undefined
+      ) AS ?personIdName) .
+    } .
+
+    # A graph of schema:Organization contributors
+    OPTIONAL {
+      ?contributorId a schema:Organization .
+      BIND(?contributorId as ?orgId) .
+      OPTIONAL { ?orgId  schema:name  ?organizationName . } .
+      BIND(
+      IF(
+        BOUND(?organizationName),
+        CONCAT(STR(?orgId),"|", STR(?organizationName)),
+        ?undefined
+      ) AS ?organizationIdName) .
+    } .
+  } .
+
+  OPTIONAL {
+    ?id  nsg:annotation ?mTypeAnnotation .
+                        ?mTypeAnnotation a nsg:MTypeAnnotation .
+    OPTIONAL {
+      ?mTypeAnnotation  nsg:hasBody               ?mType      .
+      ?mTypeAnnotation  nsg:hasBody / rdfs:label  ?mTypeLabel .
+
+    } .
+    BIND(
+      IF(
+        BOUND(?mTypeLabel),
+        CONCAT(STR(?mType),"|", STR(?mTypeLabel)),
+        ?undefined
+      ) AS ?mTypeIdLabel) .
+  } .
+
+  OPTIONAL {
+    ?id  nsg:annotation ?eTypeAnnotation .
+                        ?eTypeAnnotation a nsg:ETypeAnnotation .
+    OPTIONAL {
+      ?eTypeAnnotation  nsg:hasBody               ?eType      .
+      ?eTypeAnnotation  nsg:hasBody / rdfs:label  ?eTypeLabel .
+    } .
+    BIND(
+      IF(
+        BOUND(?eTypeLabel),
+        CONCAT(STR(?eType),"|", STR(?eTypeLabel)),
+        ?undefined
+      ) AS ?eTypeIdLabel) .
+  } .
+
+  OPTIONAL {
+    ?id  nsg:annotation ?sTypeAnnotation .
+                        ?sTypeAnnotation a nsg:STypeAnnotation .
+    OPTIONAL {
+      ?sTypeAnnotation  nsg:hasBody               ?sType      .
+      ?sTypeAnnotation  nsg:hasBody / rdfs:label  ?sTypeLabel .
+    } .
+    BIND(
+      IF(
+        BOUND(?sTypeLabel),
+        CONCAT(STR(?sType),"|", STR(?sTypeLabel)),
+        ?undefined
+      ) AS ?sTypeIdLabel) .
+  } .
+
+  OPTIONAL {
+    ?id          nsg:annotation?               ?annotation .
+    ?annotation  nsg:hasTarget / nsg:hasSource ?source     .
+
+    ?source a ?sourceType .
+    ?source a schema:ScholarlyArticle .
+
+    OPTIONAL { ?source schema:title  ?sourceTitle . } .
+
+    OPTIONAL {
+      ?source            schema:identifier  ?sourceIdentifier           .
+      ?sourceIdentifier  schema:propertyID  ?sourceIdentifierPropertyId ;
+                         schema:value       ?sourceIdentifierValue      .
+    } .
+  } .
+
+  OPTIONAL {
+    ?id  nsg:subject / nsg:age  ?age .
+    OPTIONAL { ?age schema:value     ?subjectAgeValue . }    .
+    OPTIONAL { ?age schema:minValue  ?subjectAgeMinValue . } .
+    OPTIONAL { ?age schema:maxValue  ?subjectAgeMaxValue . } .
+               ?age schema:unitCode  ?subjectAgeUnit         .
+               ?age nsg:period       ?subjectAgePeriod       .
+    BIND(
+      IF(
+        BOUND(?subjectAgeValue),
+        CONCAT(STR(?subjectAgeValue), " ", STR(?subjectAgeUnit), " ", STR(?subjectAgePeriod)),
+        CONCAT(STR(?subjectAgeMinValue), " to ", STR(?subjectAgeMaxValue), " ", STR(?subjectAgeUnit), " ", STR(?subjectAgePeriod))
+      ) as ?subjectAgeLabel ) .
+  } .
+
+  OPTIONAL {
+    ?id  nsg:subject / schema:weight  ?weight .
+    OPTIONAL { ?weight  schema:value     ?subjectWeightValue . }    .
+    OPTIONAL { ?weight  schema:minValue  ?subjectWeightMinValue . } .
+    OPTIONAL { ?weight  schema:maxValue  ?subjectWeightMaxValue . } .
+               ?weight  schema:unitCode  ?subjectWeightUnit         .
+    BIND (
+      IF(
+        BOUND(?subjectWeightValue),
+        CONCAT(STR(?subjectWeightValue), " ", STR(?subjectWeightUnit)),
+        CONCAT(STR(?subjectWeightMinValue), " to ", STR(?subjectWeightMaxValue), " ", STR(?subjectWeightUnit))
+        ) as ?subjectWeightLabel
+      ) .
+    BIND( BNODE() as ?subjectWeightBN ) .
+  } .
+
+  OPTIONAL {
+    ?id  a           nsg:NeuronDensity ;
+         nsg:series  ?meanSeries       .
+                     ?meanSeries  nsg:statistic    ?stat               ;
+                                  schema:value     ?neuronDensityValue ;
+                                  schema:unitCode  ?neuronDensityUnit  .
+    ?id  nsg:series  ?nSeries  .
+                     ?nSeries  nsg:statistic  "N" ;
+                               schema:value   ?neuronDensityNValue .
+    FILTER ( ?stat = "mean" || ?stat = "data point" ) .
+    BIND(
+      CONCAT(
+        STR(?neuronDensityValue), " ",
+        STR(?neuronDensityUnit), " (N = ",
+        STR(?neuronDensityNValue), ")"
+      ) as ?neuronDensityLabel
+    ) .
+    BIND( BNODE() as ?neuronDensityBN ) .
+  } .
+
+  OPTIONAL {
+    ?id  a           nsg:LayerThickness ;
+         nsg:series  ?meanSeries        .
+                     ?meanSeries  nsg:statistic    "mean"          ;
+                                  schema:value     ?thicknessValue ;
+                                  schema:unitCode  ?thicknessUnit  .
+    ?id  nsg:series  ?nSeries  .
+                     ?nSeries  nsg:statistic  "N"              ;
+                               schema:value   ?thicknessNValue .
+    BIND(
+      CONCAT(
+        STR(?thicknessValue), " ",
+        STR(?thicknessUnit), " (N = ",
+        STR(?thicknessNValue), ")"
+      ) as ?thicknessLabel
+    ) .
+    BIND( BNODE() as ?thicknessBN ) .
+  } .
+
+  OPTIONAL {
+    ?id  a             nsg:BoutonDensity   ;
+          nsg:density  ?boutonDensityMean  .
+                       ?boutonDensityMean  nsg:statistic    "mean"              ;
+                                           schema:value     ?boutonDensityValue ;
+                                           schema:unitCode  ?boutonDensityUnit  .
+    BIND(
+      CONCAT(
+        STR(?boutonDensityValue), " ",
+        STR(?boutonDensityUnit)
+      ) as ?boutonDensityLabel
+    ) .
+    BIND( BNODE() as ?boutonDensityBN ) .
+  } .
+
+  OPTIONAL {
+    ?id          nsg:derivation  ?derivation     .
+    ?derivation  a               prov:Derivation .
+    ?derivation  prov:entity     ?entity         .
+    ?entity      a               ?entityType     .
+    OPTIONAL { ?entity  schema:name  ?entityName . } .
+  } .
+
+  OPTIONAL {
+    ?id  schema:image  ?image .
+    OPTIONAL { ?image  schema:about     ?imageAbout . } .
+    OPTIONAL { ?image  nsg:repetition   ?imageRepetition . } .
+    OPTIONAL {
+      ?image             nsg:stimulusType ?imageStimulusType .
+      ?imageStimulusType rdfs:label       ?imageStimulusTypeLabel .
+    } .
+  } .
+
+  OPTIONAL {
+    ?id nsg:generation / prov:activity ?generation .
+    OPTIONAL {
+      ?generation  nsg:hadProtocol  ?protocol .
+      OPTIONAL { ?protocol    schema:name        ?protocolName . } .
+      OPTIONAL {
+        ?protocol    schema:identifier  ?protocolId         .
+        ?protocolId  schema:propertyID  ?protocolPropertyId .
+        ?protocolId  schema:value       ?protocolValue      .
+      } .
+    } .
+    OPTIONAL { ?generation  prov:startedAtTime / schema:value  ?generationStartedAtTime . } .
+    OPTIONAL { ?generation  prov:endedAtTime / schema:value    ?generationEndedAtTime . }   .
+  }
+
+  OPTIONAL {
+    ?id  nsg:series  ?series .
+    OPTIONAL { ?series schema:value    ?seriesValue }     .
+    OPTIONAL { ?series schema:unitCode ?seriesUnit }      .
+    OPTIONAL { ?series nsg:statistic   ?seriesStatistic } .
+  } .
+
+  OPTIONAL {
+    ?id  a  nsg:DetailedCircuit .
+
+    OPTIONAL {
+      GRAPH ?id {
+        ?id  ?circuitTP  ?circuitType .
+        FILTER ( STRENDS(STR(?circuitTP), "/circuitType") ) .
+      } .
+    } .
+
+    OPTIONAL {
+      GRAPH ?id {
+        ?id  ?circuitBP  ?circuitBase  .
+                         ?circuitBase  a           schema:DataDownload  ;
+                                       schema:url  ?circuitBaseUrl      .
+        FILTER ( STRENDS(STR(?circuitBP), "/circuitBase") ) .
+        BIND( STR(?circuitBaseUrl) as ?circuitBaseUrlStr ) .
+      } .
+    } .
+
+    OPTIONAL {
+      GRAPH ?id {
+        ?id  ?circuitCP  ?circuitConfigPath  .
+                         ?circuitConfigPath  a           schema:DataDownload   ;
+                                             schema:url  ?circuitConfigPathUrl .
+        FILTER ( STRENDS(STR(?circuitCP), "/circuitConfigPath") ) .
+        BIND( STR(?circuitConfigPathUrl) as ?circuitConfigPathUrlStr ) .
+      } .
+    } .
+  } .
+
+  OPTIONAL {
+    ?id  a  bmo:SimulationCampaignConfiguration .
+
+    OPTIONAL {
+      ?id  prov:wasGeneratedBy  ?generationId  .
+      ?generationId  a  bmo:SimulationCampaignGeneration .
+
+      OPTIONAL { ?generationId  prov:startedAtTime  ?startedAt . } .
+      OPTIONAL { ?generationId  prov:endedAtTime    ?endedAt   . } .
+      OPTIONAL { ?generationId  nsg:status          ?status    . } .
+
+      OPTIONAL {
+        ?generationId prov:used ?circuitId .
+        ?circuitId a nsg:DetailedCircuit .
+
+        OPTIONAL {
+          ?circuitId  schema:name  ?circuitName .
+        } .
+        OPTIONAL {
+          ?circuitId  nsg:brainLocation / nsg:brainRegion  ?circuitBrainRegionId .
+          OPTIONAL {
+            ?circuitBrainRegionId  rdfs:label  ?circuitBrainRegionLabel .
+          }
+          BIND( BNODE() AS ?circuitBrainRegionBN ) .
+        } .
+      } .
+    } .
+  } .
 }

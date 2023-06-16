@@ -1,0 +1,29 @@
+{
+  "@context": "https://bbp.neuroshapes.org",
+  "@id": "https://bbp.epfl.ch/neurosciencegraph/data/scholarlyarticles/1",
+  "@type": [
+    "Entity",
+    "ScholarlyArticle"
+  ],
+  "datePublished": "2015-3",
+  "identifier": [
+    {
+      "propertyID": "PMID",
+      "value": 24108800
+    },
+    {
+      "propertyID": "doi",
+      "value": "10.1093/cercor/bht274"
+    }
+  ],
+  "isPartOf": {
+    "@type": "Periodical",
+    "issn": "1047-3211",
+    "name": "Cerebral cortex (New York, N.Y. : 1991)",
+    "publisher": "Oxford University Press"
+  },
+  "name": "article_1",
+  "sameAs": "http://cercor.oxfordjournals.org/content/25/3/772.long",
+  "title": "Cell type-specific effects of adenosine on cortical neurons.",
+  "url": "http://cercor.oxfordjournals.org/content/25/3/772.long"
+}
