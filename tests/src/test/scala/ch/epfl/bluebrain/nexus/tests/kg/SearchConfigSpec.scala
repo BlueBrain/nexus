@@ -61,7 +61,7 @@ class SearchConfigSpec extends BaseSpec {
     searchSetup.accepted
   }
 
-  "search indexing" should {
+  "search" should {
 
     "index all data" in {
       eventually {
@@ -73,7 +73,7 @@ class SearchConfigSpec extends BaseSpec {
       }
     }
 
-    "index project" in {
+    "have the correct project property" in {
       val query    = queryField(neuronMorphologyId, "project")
       val expected =
         json"""
@@ -90,7 +90,7 @@ class SearchConfigSpec extends BaseSpec {
       }
     }
 
-    "index license" in {
+    "have the correct license property" in {
       val query    = queryField(neuronMorphologyId, "license")
       val expected =
         json"""
@@ -107,7 +107,7 @@ class SearchConfigSpec extends BaseSpec {
       }
     }
 
-    "index brain region" in {
+    "have the correct brain region property" in {
       val query    = queryField(neuronMorphologyId, "brainRegion")
       val expected =
         json"""
@@ -126,7 +126,7 @@ class SearchConfigSpec extends BaseSpec {
       }
     }
 
-    "index layers" in {
+    "have the correct layer property" in {
       val query    = queryField(neuronMorphologyId, "layer")
       val expected =
         json"""{
@@ -146,7 +146,7 @@ class SearchConfigSpec extends BaseSpec {
       }.accepted
     }
 
-    "index coordinatedInBrainAtlas" in {
+    "have the correct coordinatedInBrainAtlas property" in {
       val query    = queryField(neuronMorphologyId, "coordinatesInBrainAtlas")
       val expected =
         json"""
@@ -164,7 +164,7 @@ class SearchConfigSpec extends BaseSpec {
       }.accepted
     }
 
-    "index species" in {
+    "have the correct species property" in {
       val query    = queryField(neuronMorphologyId, "subjectSpecies")
       val expected =
         json"""
@@ -182,7 +182,7 @@ class SearchConfigSpec extends BaseSpec {
       }
     }
 
-    "index distribution" in {
+    "have the correct distribution property" in {
       val query    = queryField(neuronMorphologyId, "distribution")
       val expected =
         json"""
@@ -203,7 +203,7 @@ class SearchConfigSpec extends BaseSpec {
         json should equalIgnoreArrayOrder(expected)
       }
     }
-    "index contributor" in {
+    "have the correct contributor property" in {
       // The affiliation property of a contributor is not indexed as expected
       // because of the @embed property being set to @last. If another field
       // already embeds the object with the same @id, it will not embed it
@@ -233,7 +233,7 @@ class SearchConfigSpec extends BaseSpec {
       }
     }
 
-    "index organization" in {
+    "have the correct organization property" in {
       val query    = queryField(neuronMorphologyId, "organizations")
       val expected =
         json"""
@@ -254,7 +254,7 @@ class SearchConfigSpec extends BaseSpec {
       }
     }
 
-    "index generation" in {
+    "have the correct generation property" in {
       val query    = queryField(neuronMorphologyId, "generation")
       val expected =
         json"""
@@ -280,7 +280,7 @@ class SearchConfigSpec extends BaseSpec {
       }
     }
 
-    "index derivation" in {
+    "have the correct derivation property" in {
       val query    = queryField(neuronMorphologyId, "derivation")
       val expected =
         json"""
@@ -303,7 +303,7 @@ class SearchConfigSpec extends BaseSpec {
       }
     }
 
-    "index mType" in {
+    "have the correct mType property" in {
       val query    = queryField(traceId, "mType")
       val expected =
         json"""
@@ -321,7 +321,7 @@ class SearchConfigSpec extends BaseSpec {
         json should equalIgnoreArrayOrder(expected)
       }
     }
-    "index eType" in {
+    "have the correct eType property" in {
       val query    = queryField(traceId, "eType")
       val expected =
         json"""
@@ -340,7 +340,7 @@ class SearchConfigSpec extends BaseSpec {
       }
     }
 
-    "index image" in {
+    "have the correct image property" in {
       val query    = queryField(traceId, "image")
       val expected =
         json"""
@@ -362,7 +362,7 @@ class SearchConfigSpec extends BaseSpec {
       }
     }
 
-    "index subject age (exact value)" in {
+    "have the correct subject age (exact value) property" in {
       val query    = queryField(layerThicknessId, "subjectAge")
       val expected =
         json"""
@@ -381,7 +381,7 @@ class SearchConfigSpec extends BaseSpec {
       }
     }
 
-    "index subject weight (exact value)" in {
+    "have the correct subject weight (exact value) property" in {
       val query    = queryField(layerThicknessId, "subjectWeight")
       val expected =
         json"""
@@ -399,7 +399,7 @@ class SearchConfigSpec extends BaseSpec {
       }
     }
 
-    "index subject age (min/max case)" in {
+    "have the correct subject age (min/max case) property" in {
       val query    = queryField(neuronDensityId, "subjectAge")
       val expected =
         json"""
@@ -419,7 +419,7 @@ class SearchConfigSpec extends BaseSpec {
       }
     }
 
-    "index subject weight (min/max case)" in {
+    "have the correct subject weight (min/max case) property" in {
       val query    = queryField(neuronDensityId, "subjectWeight")
       val expected =
         json"""
@@ -438,7 +438,7 @@ class SearchConfigSpec extends BaseSpec {
       }
     }
 
-    "index neuron density" in {
+    "have the correct neuron density property" in {
       val query    = queryField(neuronDensityId, "neuronDensity")
       val expected =
         json"""
@@ -457,7 +457,7 @@ class SearchConfigSpec extends BaseSpec {
       }
     }
 
-    "index layer thickness" in {
+    "have the correct layer thickness property" in {
       val query    = queryField(layerThicknessId, "layerThickness")
       val expected =
         json"""
@@ -476,7 +476,7 @@ class SearchConfigSpec extends BaseSpec {
       }
     }
 
-    "index bouton density" in {
+    "have the correct bouton density property" in {
       val query    = queryField(boutonDensityId, "boutonDensity")
       val expected =
         json"""
@@ -494,7 +494,7 @@ class SearchConfigSpec extends BaseSpec {
       }
     }
 
-    "index series" in {
+    "have the correct series property" in {
       val query    = queryField(boutonDensityId, "series")
       val expected =
         json"""
@@ -514,7 +514,7 @@ class SearchConfigSpec extends BaseSpec {
       }
     }
 
-    "index source" in {
+    "have the correct source property" in {
       val query    = queryField(neuronMorphologyId, "source")
       val expected =
         json"""
@@ -547,10 +547,10 @@ class SearchConfigSpec extends BaseSpec {
       }
     }
 
-    "index metadata" in { pending }
-    "index detailed circuit" in { pending }
-    "index simulation campaign config" in { pending }
-    "index sType" in {
+    "have the correct metadata property" in { pending }
+    "have the correct detailed circuit property" in { pending }
+    "have the correct simulation campaign config property" in { pending }
+    "have the correct sType property" in {
       // there are no resources with this field yet
       pending
     }
