@@ -24,7 +24,7 @@ import monix.execution.Scheduler
   */
 // $COVERAGE-OFF$
 object PermissionsModule extends ModuleDef {
-  implicit private val classLoader = getClass.getClassLoader
+  implicit private val classLoader: ClassLoader = getClass.getClassLoader
 
   make[Permissions].from { (cfg: AppConfig, xas: Transactors, clock: Clock[UIO]) =>
     PermissionsImpl(

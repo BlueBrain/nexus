@@ -28,7 +28,7 @@ import monix.execution.Scheduler
   */
 // $COVERAGE-OFF$
 object IdentitiesModule extends ModuleDef {
-  implicit private val classLoader = getClass.getClassLoader
+  implicit private val classLoader: ClassLoader = getClass.getClassLoader
 
   make[CacheConfig].from((cfg: AppConfig) => cfg.identities)
 
