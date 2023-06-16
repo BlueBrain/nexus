@@ -27,14 +27,14 @@ import org.scalatest.matchers.should.Matchers
 
 class AuthDirectivesSpec extends RouteHelpers with TestHelpers with Matchers with IOValues {
 
-  implicit private val cl = getClass.getClassLoader
+  implicit private val cl: ClassLoader = getClass.getClassLoader
 
   implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
 
   implicit private val rcr: RemoteContextResolution =
     RemoteContextResolution.fixed(contexts.error -> ContextValue.fromFile("contexts/error.json").accepted)
 
-  implicit private val jsonKeys                     =
+  implicit private val jsonKeys: JsonKeyOrdering    =
     JsonKeyOrdering.default(topKeys = List("@context", "@id", "@type", "reason", "details"))
 
   val user: Subject = User("alice", Label.unsafe("wonderland"))

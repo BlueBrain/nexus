@@ -34,7 +34,7 @@ import monix.execution.Scheduler
   * Schemas wiring
   */
 object SchemasModule extends ModuleDef {
-  implicit private val classLoader = getClass.getClassLoader
+  implicit private val classLoader: ClassLoader = getClass.getClassLoader
 
   make[Schemas].from {
     (
