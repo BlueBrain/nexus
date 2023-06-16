@@ -203,7 +203,12 @@ class SearchConfigSpec extends BaseSpec {
         json should equalIgnoreArrayOrder(expected)
       }
     }
-    "index contributor" ignore {
+    "index contributor" in {
+      // The affiliation property of a contributor is not indexed as expected
+      // because of the @embed property being set to @last. If another field
+      // already embeds the object with the same @id, it will not embed it
+      // for the affiliation.
+      pending
       val query    = queryField(neuronMorphologyId, "contributors")
       val expected =
         json"""
@@ -542,12 +547,12 @@ class SearchConfigSpec extends BaseSpec {
       }
     }
 
-    "index metadata" ignore { assert(false) }
-    "index detailed circuit" ignore { assert(false) }
-    "index simulation campaign config" ignore { assert(false) }
-    "index sType" ignore {
+    "index metadata" in { pending }
+    "index detailed circuit" in { pending }
+    "index simulation campaign config" in { pending }
+    "index sType" in {
       // there are no resources with this field yet
-      assert(false)
+      pending
     }
 
   }
