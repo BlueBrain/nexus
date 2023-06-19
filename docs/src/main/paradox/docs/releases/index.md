@@ -24,7 +24,31 @@
 This section of the documentation lists the significant BlueBrain Nexus releases across all services and web
 applications.
 
-The latest stable release is **v1.7.2** released on **16.06.2022**.
+The latest stable release is **v1.8.0** released on **14.06.2023**.
+
+## 1.8.0 (14.06.2023)
+
+### Breaking changes
+
+- The support for Cassandra has been removed and PostgreSQL is now the only supported primary store for Nexus Delta
+
+### Deprecations
+
+In the upcoming version, the support of the tar format to download archives will be removed, only the zip format will remain.
+
+### New features / enhancements
+
+- New sourcing and streaming library
+- New clustering deployment
+- Better reporting of indexing errors for views
+- Name and description for resolvers, storages and views
+- Only trigger reindexing when indexing is impacted
+- Project deletion has been rewritten
+- @ref:[A refresh operation is now available for resources](../delta/api/resources-api.md#refresh)
+- @ref:[A validate operation is now available for resources](../delta/api/resources-api.md#validate)
+- Archives can now be downloaded as a zip
+
+A detailed list of changes included in the release can be found in the @ref:[release notes](v1.8-release-notes.md).
 
 ## 1.7.2 (16.06.2022)
 
