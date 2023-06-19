@@ -135,6 +135,7 @@ services:
       POSTGRES_PASSWORD: "postgres"
 
   storage-service:
+    container_name: "nexus-storage-service"
     image: bluebrain/nexus-storage:latest
     entrypoint: [ "./bin/storage",
                   "-Xmx256m",
@@ -144,7 +145,7 @@ services:
                   "-Dapp.subject.anonymous=false",
                   "-Dapp.subject.realm=internal",
                   "-Dapp.subject.name=service-account-delta",
-                  "-Dapp.storage.root-volume=/data",
+                  "-Dapp.storage.root-volume=/tmp",
                   "-Dapp.storage.protected-directory=protected",
                   "-Dapp.storage.fixer-enabled=false",
                   "-Dapp.delta.public-iri=https://test.nexus.bbp.epfl.ch",
@@ -153,8 +154,6 @@ services:
                   "-Dkamon.modules.jaeger.enabled=false" ]
     ports:
       - 8090:8080
-    volumes:
-      - /tmp/storage:/data
     deploy:
       resources:
         limits:

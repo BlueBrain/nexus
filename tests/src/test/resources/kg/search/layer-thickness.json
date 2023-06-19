@@ -1,0 +1,54 @@
+{
+  "@context": "https://bbp.neuroshapes.org",
+  "@id": "https://bbp.epfl.ch/data/layer-thickness",
+  "@type": [
+    "LayerThickness",
+    "Entity"
+  ],
+  "brainLocation": {
+    "@type": "BrainLocation",
+    "atlasSpatialReferenceSystem": {
+      "@id": "https://bbp.epfl.ch/neurosciencegraph/data/allen_ccfv3_spatial_reference_system",
+      "@type": "AtlasSpatialReferenceSystem",
+      "name": "Allen CCFv3 Spatial Reference System"
+    },
+    "brainRegion": {
+      "@id": "http://api.brain-map.org/api/v2/data/Structure/262",
+      "label": "Reticular nucleus of the thalamus"
+    }
+  },
+  "description": "Thickness of the region corresponding to the Reticular nucleus of the thalamus",
+  "license": {
+    "@id": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "@type": "License"
+  },
+  "name": "Layer Thickness Rt",
+  "series": [
+    {
+      "statistic": "mean",
+      "unitCode": "µm",
+      "value": 250
+    },
+    {
+      "statistic": "N",
+      "unitCode": "dimensionless",
+      "value": 1
+    }
+  ],
+  "subject": {
+    "@type": "Subject",
+    "age": {
+      "period": "Post-natal",
+      "unitCode": "days",
+      "value": 56
+    },
+    "weight": {
+      "unitCode": "g",
+      "value": 37.1
+    },
+    "species": {
+      "@id": "http://purl.obolibrary.org/obo/NCBITaxon_10090",
+      "label": "Mus musculus"
+    }
+  }
+}

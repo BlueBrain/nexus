@@ -1,0 +1,17 @@
+{
+  "@context": "https://bbp.neuroshapes.org",
+  "@id": "https://bbp.epfl.ch/neurosciencegraph/data/d3a0dafe-f8ed-4b4d-bd90-93d64baf63a1",
+  "@type": [
+    "Person",
+    "Agent"
+  ],
+  "familyName": "Doe",
+  "givenName": "John",
+  "affiliation": {
+    "@id": "https://www.grid.ac/institutes/grid.5333.6",
+    "@type": [
+      "Organization",
+      "Agent"
+    ]
+  }
+}
