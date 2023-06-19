@@ -4,17 +4,12 @@ import akka.actor.typed.ActorSystem
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchPluginModule.injectElasticViewDefaults
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.deletion.{ElasticSearchDeletionTask, EventMetricsDeletionTask}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchCoordinator
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.ProjectContextRejection
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue._
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, defaultElasticsearchMapping, defaultElasticsearchSettings, schema => viewsSchemaId, ElasticSearchView, ElasticSearchViewCommand, ElasticSearchViewEvent, ElasticSearchViewRejection, ElasticSearchViewState, ElasticSearchViewValue}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchView, ElasticSearchViewEvent, contexts, defaultElasticsearchMapping, defaultElasticsearchSettings, schema => viewsSchemaId}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.ElasticSearchViewsRoutes
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
@@ -28,7 +23,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
-import ch.epfl.bluebrain.nexus.delta.sdk.migration.{MigrationLog, MigrationState}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
@@ -37,12 +31,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projections
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeChain, ReferenceRegistry, Supervisor}
 import izumi.distage.model.definition.{Id, ModuleDef}
-import monix.bio.{IO, UIO}
+import monix.bio.UIO
 import monix.execution.Scheduler
 
 /**
@@ -101,28 +94,6 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         config.prefix,
         xas
       )(api, clock, uuidF)
-  }
-
-  if (!MigrationState.isEsIndexingDisabled) {
-    make[ElasticSearchCoordinator].fromEffect {
-      (
-          views: ElasticSearchViews,
-          graphStream: GraphResourceStream,
-          registry: ReferenceRegistry,
-          supervisor: Supervisor,
-          client: ElasticSearchClient,
-          config: ElasticSearchViewsConfig,
-          cr: RemoteContextResolution @Id("aggregate")
-      ) =>
-        ElasticSearchCoordinator(
-          views,
-          graphStream,
-          registry,
-          supervisor,
-          client,
-          config.batch
-        )(cr)
-    }
   }
 
   make[EventMetricsProjection].fromEffect {
@@ -285,49 +256,5 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
   }
 
   many[ResourceShift[_, _, _]].ref[ElasticSearchView.Shift]
-
-  if (MigrationState.isRunning) {
-    many[MigrationLog].add { (cfg: ElasticSearchViewsConfig, xas: Transactors, clock: Clock[UIO], uuidF: UUIDF) =>
-      MigrationLog.scoped[
-        Iri,
-        ElasticSearchViewState,
-        ElasticSearchViewCommand,
-        ElasticSearchViewEvent,
-        ElasticSearchViewRejection
-      ](
-        ElasticSearchViews.definition((_, _, _) =>
-          IO.terminate(new IllegalStateException("ElasticSearchView command evaluation should not happen"))
-        )(clock, uuidF),
-        e => e.id,
-        identity,
-        (e, _) => injectElasticViewDefaults(cfg.defaults)(e),
-        cfg.eventLog,
-        xas
-      )
-    }
-  }
-
-}
-
-// TODO: This object contains migration helpers, and should be deleted when the migration module is removed
-object ElasticSearchPluginModule {
-
-  import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.defaultViewId
-
-  private def setViewDefaults(
-      name: Option[String],
-      description: Option[String]
-  ): ElasticSearchViewValue => ElasticSearchViewValue = {
-    case iv: IndexingElasticSearchViewValue  => iv.copy(name = name, description = description)
-    case av: AggregateElasticSearchViewValue => av.copy(name = name, description = description)
-  }
-
-  def injectElasticViewDefaults(defaults: Defaults): ElasticSearchViewEvent => ElasticSearchViewEvent = {
-    case e @ ElasticSearchViewCreated(id, _, _, value, _, _, _, _) if id == defaultViewId =>
-      e.copy(value = setViewDefaults(Some(defaults.name), Some(defaults.description))(value))
-    case e @ ElasticSearchViewUpdated(id, _, _, value, _, _, _, _) if id == defaultViewId =>
-      e.copy(value = setViewDefaults(Some(defaults.name), Some(defaults.description))(value))
-    case event                                                                            => event
-  }
 
 }

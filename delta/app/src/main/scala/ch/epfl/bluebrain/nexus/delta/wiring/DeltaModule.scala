@@ -26,14 +26,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.http.StrictEntity
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
-import ch.epfl.bluebrain.nexus.delta.sdk.migration.{MigrationLog, MigrationState}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.PluginDescription
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.PluginDef
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{OwnerPermissionsScopeInitialization, ProjectsConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{ProjectionConfig, QueryConfig}
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Supervisor
-import ch.epfl.bluebrain.nexus.migration.Migration
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import com.typesafe.config.Config
 import izumi.distage.model.definition.{Id, ModuleDef}
@@ -175,13 +172,6 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
   include(StreamModule)
   include(SupervisionModule)
 
-  if (MigrationState.isRunning) {
-    include(MigrationModule)
-    make[Migration].fromEffect {
-      (logs: Set[MigrationLog], xas: Transactors, supervisor: Supervisor, as: ActorSystem[Nothing]) =>
-        Migration(logs, xas, supervisor, as.classicSystem)
-    }
-  }
 }
 
 object DeltaModule {

@@ -4,17 +4,12 @@ import akka.actor.typed.ActorSystem
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphPluginModule.injectBlazegraphViewDefaults
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.config.BlazegraphViewsConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphCoordinator
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewEvent.{BlazegraphViewCreated, BlazegraphViewUpdated}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.ProjectContextRejection
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue._
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{contexts, schema => viewsSchemaId, BlazegraphView, BlazegraphViewCommand, BlazegraphViewEvent, BlazegraphViewRejection, BlazegraphViewState, BlazegraphViewValue}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphView, BlazegraphViewEvent, contexts, schema => viewsSchemaId}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.BlazegraphViewsRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries.{BlazegraphSlowQueryDeleter, BlazegraphSlowQueryLogger, BlazegraphSlowQueryStore}
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -26,7 +21,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
-import ch.epfl.bluebrain.nexus.delta.sdk.migration.{MigrationLog, MigrationState}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
@@ -35,12 +29,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projections
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{ReferenceRegistry, Supervisor}
 import izumi.distage.model.definition.{Id, ModuleDef}
-import monix.bio.{IO, UIO}
+import monix.bio.UIO
 import monix.execution.Scheduler
 
 /**
@@ -136,28 +129,6 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
           xas
         )(api, clock, uuidF)
     }
-
-  if (!MigrationState.isBgIndexingDisabled) {
-    make[BlazegraphCoordinator].fromEffect {
-      (
-          views: BlazegraphViews,
-          graphStream: GraphResourceStream,
-          registry: ReferenceRegistry,
-          supervisor: Supervisor,
-          client: BlazegraphClient @Id("blazegraph-indexing-client"),
-          config: BlazegraphViewsConfig,
-          baseUri: BaseUri
-      ) =>
-        BlazegraphCoordinator(
-          views,
-          graphStream,
-          registry,
-          supervisor,
-          client,
-          config.batch
-        )(baseUri)
-    }
-  }
 
   make[BlazegraphViewsQuery].fromEffect {
     (
@@ -270,42 +241,4 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
 
   many[ResourceShift[_, _, _]].ref[BlazegraphView.Shift]
 
-  if (MigrationState.isRunning) {
-    many[MigrationLog].add { (cfg: BlazegraphViewsConfig, xas: Transactors, clock: Clock[UIO], uuidF: UUIDF) =>
-      MigrationLog
-        .scoped[Iri, BlazegraphViewState, BlazegraphViewCommand, BlazegraphViewEvent, BlazegraphViewRejection](
-          BlazegraphViews.definition(_ =>
-            IO.terminate(new IllegalStateException("BlazegraphView command evaluation should not happen"))
-          )(clock, uuidF),
-          e => e.id,
-          identity,
-          (e, _) => injectBlazegraphViewDefaults(cfg.defaults)(e),
-          cfg.eventLog,
-          xas
-        )
-    }
-  }
-
-}
-
-// TODO: This object contains migration helpers, and should be deleted when the migration module is removed
-object BlazegraphPluginModule {
-
-  import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.defaultViewId
-
-  private def setViewDefaults(
-      name: Option[String],
-      description: Option[String]
-  ): BlazegraphViewValue => BlazegraphViewValue = {
-    case iv: IndexingBlazegraphViewValue  => iv.copy(name = name, description = description)
-    case av: AggregateBlazegraphViewValue => av.copy(name = name, description = description)
-  }
-
-  def injectBlazegraphViewDefaults(defaults: Defaults): BlazegraphViewEvent => BlazegraphViewEvent = {
-    case b @ BlazegraphViewCreated(id, _, _, value, _, _, _, _) if id == defaultViewId =>
-      b.copy(value = setViewDefaults(Some(defaults.name), Some(defaults.description))(value))
-    case b @ BlazegraphViewUpdated(id, _, _, value, _, _, _, _) if id == defaultViewId =>
-      b.copy(value = setViewDefaults(Some(defaults.name), Some(defaults.description))(value))
-    case event                                                                         => event
-  }
 }
