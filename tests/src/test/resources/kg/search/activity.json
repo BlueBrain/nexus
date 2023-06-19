@@ -1,0 +1,43 @@
+{
+  "@context": "https://bbp.neuroshapes.org",
+  "@id": "https://bbp.epfl.ch/neurosciencegraph/data/6af3b9db-fa85-4190-93c7-156a715c5aa3",
+  "@type": [
+    "Activity",
+    "Reconstruction"
+  ],
+  "endedAtTime": {
+    "@type": "xsd:dateTime",
+    "value": "2015-05-01T00:00:00"
+  },
+  "generated": {
+    "@id": "https://bbp.epfl.ch/neurosciencegraph/data/neuronmorphologies/da3b1e42-5f7f-4065-8be3-d2132c219bc2",
+    "@type": [
+      "ReconstructedCell",
+      "Entity"
+    ]
+  },
+  "hadProtocol": {
+    "@id": "https://bbp.epfl.ch/neurosciencegraph/data/2f8814d6-a40f-4377-a675-e164816c5d73",
+    "@type": [
+      "Entity",
+      "Protocol"
+    ]
+  },
+  "orientationOfReconstruction": "yes",
+  "reconstructionCompressionCorrected": "yes",
+  "startedAtTime": {
+    "@type": "xsd:dateTime",
+    "value": "2015-01-21T00:00:00"
+  },
+  "used": {
+    "@id": "https://bbp.epfl.ch/neurosciencegraph/data/5d43d0ad-1edd-434d-9a08-907968ecdbc3",
+    "@type": [
+      "LabeledCell",
+      "Entity"
+    ]
+  },
+  "wasAssociatedWith": {
+    "@id": "https://bbp.epfl.ch/nexus/v1/realms/bbp/users/yshi",
+    "@type": "Agent"
+  }
+}

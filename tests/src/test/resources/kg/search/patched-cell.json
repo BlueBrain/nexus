@@ -1,0 +1,19 @@
+{
+  "@context": "https://bbp.neuroshapes.org",
+  "@id": "https://bbp.epfl.ch/neurosciencegraph/data/22e90788-b089-4014-83ab-206d0d3af71d",
+  "@type": [
+    "Entity",
+    "PatchedCell"
+  ],
+  "brainLocation": {
+    "brainRegion": {
+      "@id": "http://purl.obolibrary.org/obo/UBERON_0008933",
+      "label": "primary somatosensory cortex"
+    }
+  },
+  "name": "sm080522a1-5_idA",
+  "wasDerivedFrom": {
+    "@id": "https://bbp.epfl.ch/neurosciencegraph/data/c8dd91ce-9593-4ac3-ac98-31f0ba8ad51b",
+    "@type": "Subject"
+  }
+}
