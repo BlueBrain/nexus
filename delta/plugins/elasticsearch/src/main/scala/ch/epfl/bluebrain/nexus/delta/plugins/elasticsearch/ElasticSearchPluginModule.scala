@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.deletion.{ElasticSearchDeletionTask, EventMetricsDeletionTask}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchCoordinator
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, defaultElasticsearchMapping, defaultElasticsearchSettings, schema => viewsSchemaId, ElasticSearchView, ElasticSearchViewEvent}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.ElasticSearchViewsRoutes
@@ -31,6 +32,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projections
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeChain, ReferenceRegistry, Supervisor}
@@ -94,6 +96,26 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         config.prefix,
         xas
       )(api, clock, uuidF)
+  }
+
+  make[ElasticSearchCoordinator].fromEffect {
+    (
+        views: ElasticSearchViews,
+        graphStream: GraphResourceStream,
+        registry: ReferenceRegistry,
+        supervisor: Supervisor,
+        client: ElasticSearchClient,
+        config: ElasticSearchViewsConfig,
+        cr: RemoteContextResolution @Id("aggregate")
+    ) =>
+      ElasticSearchCoordinator(
+        views,
+        graphStream,
+        registry,
+        supervisor,
+        client,
+        config.batch
+      )(cr)
   }
 
   make[EventMetricsProjection].fromEffect {

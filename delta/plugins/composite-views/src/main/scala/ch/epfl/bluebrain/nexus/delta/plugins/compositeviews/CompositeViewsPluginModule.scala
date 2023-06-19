@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.DeltaClient
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.deletion.CompositeViewsDeletionTask
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.{CompositeSpaces, MetadataPredicates}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.{CompositeSpaces, CompositeViewsCoordinator, MetadataPredicates}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.projections.{CompositeIndexingDetails, CompositeProjections}
@@ -37,7 +37,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ProjectionConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Supervisor
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeChain, ReferenceRegistry, Supervisor}
 import distage.ModuleDef
 import izumi.distage.model.definition.Id
 import monix.bio.UIO
@@ -155,6 +155,26 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
 
   make[CompositeGraphStream].from { (local: GraphResourceStream, remote: RemoteGraphStream) =>
     CompositeGraphStream(local, remote)
+  }
+
+  make[CompositeViewsCoordinator].fromEffect {
+    (
+        compositeViews: CompositeViews,
+        supervisor: Supervisor,
+        registry: ReferenceRegistry,
+        graphStream: CompositeGraphStream,
+        buildSpaces: CompositeSpaces.Builder,
+        compositeProjections: CompositeProjections,
+        cr: RemoteContextResolution @Id("aggregate")
+    ) =>
+      CompositeViewsCoordinator(
+        compositeViews,
+        supervisor,
+        PipeChain.compile(_, registry),
+        graphStream,
+        buildSpaces.apply,
+        compositeProjections
+      )(cr)
   }
 
   many[ProjectDeletionTask].add { (views: CompositeViews) => CompositeViewsDeletionTask(views) }
