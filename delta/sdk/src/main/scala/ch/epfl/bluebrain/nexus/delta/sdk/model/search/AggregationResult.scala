@@ -5,7 +5,7 @@ import io.circe.JsonObject
 /**
   * Defines the aggregation result
   * @param total
-  *   the total number of results
+  *   the total number of docs that have been aggregated
   * @param value
   *   the value of the aggregations field in the elasticsearch response
   */
