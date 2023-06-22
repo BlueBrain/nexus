@@ -30,7 +30,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRe
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, FetchContextDummy}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
@@ -127,10 +127,11 @@ class ElasticSearchViewsRoutesSpec
 
   private val allowedPerms = Set(esPermissions.write, esPermissions.read, esPermissions.query, events.read)
 
-  private val fetchContext = FetchContextDummy[ElasticSearchViewRejection](
-    Map(project.value.ref -> project.value.context),
-    ProjectContextRejection
-  )
+  implicit private val fetchContext: FetchContext[ElasticSearchViewRejection] =
+    FetchContextDummy[ElasticSearchViewRejection](
+      Map(project.value.ref -> project.value.context),
+      ProjectContextRejection
+    )
 
   private val resourceToSchemaMapping = ResourceToSchemaMappings(Label.unsafe("views") -> elasticSearchSchema.iri)
 
@@ -154,7 +155,8 @@ class ElasticSearchViewsRoutesSpec
     xas
   ).accepted
 
-  private lazy val viewsQuery = new DummyElasticSearchViewsQuery(views)
+  private lazy val viewsQuery        = new DummyElasticSearchViewsQuery(views)
+  private lazy val defaultViewsQuery = new DummyDefaultViewsQuery
 
   private lazy val projections = Projections(xas, QueryConfig(10, RefreshStrategy.Stop), 1.hour)
 
@@ -165,6 +167,7 @@ class ElasticSearchViewsRoutesSpec
         aclCheck,
         views,
         viewsQuery,
+        defaultViewsQuery,
         projections,
         resourceToSchemaMapping,
         groupDirectives,
