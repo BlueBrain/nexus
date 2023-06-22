@@ -148,7 +148,7 @@ final case class QueryBuilder private[client] (private val query: JsonObject) {
   }
 
   private def termAggregation(name: String, fieldName: String, bucketSize: Int) =
-    name -> Json.obj("terms" -> Json.obj("field" := fieldName, "size" := bucketSize))
+    name -> Json.obj("terms" -> Json.obj("field" := s"$fieldName.keyword", "size" := bucketSize))
 
   def build: JsonObject = query
 }
