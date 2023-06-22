@@ -610,12 +610,12 @@ object ElasticSearchClient {
     )
 
   implicit val aggregationDecoder: Decoder[AggregationResult] =
-    Decoder.decodeJsonObject.emap { obj =>
-      obj.asJson.hcursor
+    Decoder.decodeJsonObject.emap { result =>
+      result.asJson.hcursor
         .downField("aggregations")
         .focus
         .flatMap(_.asObject) match {
-        case Some(obj) => Right(AggregationResult(fetchTotal(obj), obj))
+        case Some(aggs) => Right(AggregationResult(fetchTotal(result), aggs))
         case None      => Left("The response did not contain a valid 'aggregations' field.")
       }
     }
