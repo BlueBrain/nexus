@@ -30,7 +30,7 @@ import io.circe.{Encoder, Json, JsonObject}
   * @param reason
   *   a descriptive message as to why the rejection occurred
   */
-sealed abstract class ElasticSearchViewRejection(val reason: String) extends Product with Serializable
+abstract class ElasticSearchViewRejection(val reason: String) extends Product with Serializable
 
 object ElasticSearchViewRejection {
 

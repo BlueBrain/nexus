@@ -13,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchVi
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, defaultElasticsearchMapping, defaultElasticsearchSettings, schema => viewsSchemaId, ElasticSearchView, ElasticSearchViewCommand, ElasticSearchViewEvent, ElasticSearchViewRejection, ElasticSearchViewState, ElasticSearchViewValue}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.DefaultViewsQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.ElasticSearchViewsRoutes
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
@@ -164,6 +165,16 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
       )(baseUri)
   }
 
+  make[DefaultViewsQuery.Elasticsearch].from {
+    (
+        aclCheck: AclCheck,
+        client: ElasticSearchClient,
+        xas: Transactors,
+        baseUri: BaseUri,
+        config: ElasticSearchViewsConfig
+    ) => DefaultViewsQuery(aclCheck, client, config, config.prefix, xas)(baseUri)
+  }
+
   make[ElasticSearchViewsRoutes].from {
     (
         identities: Identities,
@@ -173,6 +184,8 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         schemeDirectives: DeltaSchemeDirectives,
         indexingAction: IndexingAction @Id("aggregate"),
         viewsQuery: ElasticSearchViewsQuery,
+        defaultViewsQuery: DefaultViewsQuery.Elasticsearch,
+        fetchContext: FetchContext[ContextRejection],
         shift: ElasticSearchView.Shift,
         baseUri: BaseUri,
         cfg: ElasticSearchViewsConfig,
@@ -188,6 +201,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         aclCheck,
         views,
         viewsQuery,
+        defaultViewsQuery,
         projections,
         resourceToSchema,
         schemeDirectives,
@@ -198,7 +212,8 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         s,
         cr,
         ordering,
-        fusionConfig
+        fusionConfig,
+        fetchContext.mapRejection(ProjectContextRejection)
       )
   }
 

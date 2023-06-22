@@ -2,7 +2,11 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query
 
 import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
@@ -12,7 +16,7 @@ import io.circe.{Encoder, JsonObject}
 /**
   * Enumeration of errors raised while querying the Elasticsearch indices
   */
-sealed abstract class ElasticSearchQueryError(val reason: String) extends Product with Serializable
+sealed abstract class ElasticSearchQueryError(override val reason: String) extends ElasticSearchViewRejection(reason)
 
 object ElasticSearchQueryError {
 
@@ -43,6 +47,9 @@ object ElasticSearchQueryError {
     Encoder.AsObject.instance { r =>
       JsonObject(keywords.tpe := ClassUtils.simpleName(r), "reason" := r.reason)
     }
+
+  implicit final val viewRejectionJsonLdEncoder: JsonLdEncoder[ElasticSearchQueryError] =
+    JsonLdEncoder.computeFromCirce(ContextValue(Vocabulary.contexts.error))
 
   implicit val elasticSearchViewRejectionHttpResponseFields: HttpResponseFields[ElasticSearchQueryError] =
     HttpResponseFields {
