@@ -148,21 +148,18 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
   make[ElasticSearchViewsQuery].from {
     (
         aclCheck: AclCheck,
-        fetchContext: FetchContext[ContextRejection],
         views: ElasticSearchViews,
         client: ElasticSearchClient,
         xas: Transactors,
-        baseUri: BaseUri,
         cfg: ElasticSearchViewsConfig
     ) =>
       ElasticSearchViewsQuery(
         aclCheck,
-        fetchContext.mapRejection(ProjectContextRejection),
         views,
         client,
         cfg.prefix,
         xas
-      )(baseUri)
+      )
   }
 
   make[DefaultViewsQuery.Elasticsearch].from {
