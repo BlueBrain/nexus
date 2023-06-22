@@ -286,25 +286,25 @@ final class ElasticSearchViewsRoutes(
             // List all resources
             (pathEndOrSingleSlash & operationName(s"$prefixSegment/resources")) {
               val request = DefaultSearchRequest.RootSearch(params, page, sort)
-              list(IO.pure(request))
+              list(request)
             },
             // List all resources inside an organization
             (label & pathEndOrSingleSlash & operationName(s"$prefixSegment/resources")) { org =>
               val request = DefaultSearchRequest.OrgSearch(org, params, page, sort)
-              list(IO.pure(request))
+              list(request)
             },
             resolveProjectRef.apply { ref =>
               val request = DefaultSearchRequest.ProjectSearch(ref, params, page, sort)
               concat(
                 // List all resources inside a project
                 (pathEndOrSingleSlash & operationName(s"$prefixSegment/resources/{org}/{project}")) {
-                  list(IO.pure(request))
+                  list(request)
                 },
                 idSegment { schema =>
                   // List all resources inside a project filtering by its schema type
                   (pathEndOrSingleSlash & operationName(s"$prefixSegment/resources/{org}/{project}/{schema}")) {
                     underscoreToOption(schema) match {
-                      case None        => list(IO.pure(request))
+                      case None        => list(request)
                       case Some(value) =>
                         val r = DefaultSearchRequest.ProjectSearch(ref, params, page, sort, value)(fetchContext)
                         list(r)
@@ -348,6 +348,9 @@ final class ElasticSearchViewsRoutes(
       }
     }.toSeq: _*)
 
+  private def list(request: DefaultSearchRequest)(implicit caller: Caller): Route =
+    list(IO.pure(request))
+
   private def list(request: IO[ElasticSearchViewRejection, DefaultSearchRequest])(implicit caller: Caller): Route =
     (get & paginated & extractUri) { (page, uri) =>
       implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[JsonObject]] =
@@ -355,6 +358,7 @@ final class ElasticSearchViewsRoutes(
 
       emit(request.flatMap(defaultViewsQuery.list))
     }
+
 
   private val decodingFailedOrViewNotFound: PartialFunction[ElasticSearchViewRejection, Boolean] = {
     case _: DecodingFailed | _: ViewNotFound | _: InvalidJsonLdFormat => true
