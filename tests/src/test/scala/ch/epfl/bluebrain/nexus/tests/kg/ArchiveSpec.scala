@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.headers.{Accept, Location}
 import akka.http.scaladsl.model.{MediaRanges, MediaTypes, StatusCodes}
 import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers
 import akka.util.ByteString
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.testkit.CirceEq
 import ch.epfl.bluebrain.nexus.testkit.archive.ArchiveHelpers
 import ch.epfl.bluebrain.nexus.tests.HttpClient._
@@ -119,6 +120,37 @@ class ArchiveSpec extends BaseSpec with ArchiveHelpers with CirceEq {
       }
     }
 
+    "succeed with file link" in {
+      var fileSelf: String = ""
+      val archiveId        = "test-resource:archive-link"
+      for {
+        _      <- deltaClient.get[Json](s"/files/$fullId/test-resource:logo", Tweety) { (json, response) =>
+                    fileSelf = json.hcursor.downField("_self").as[String].toOption.value
+                    println(fileSelf)
+                    response.status shouldEqual StatusCodes.OK
+                  }
+        payload = jsonContentOf("/kg/archives/archive-with-file-link.json", "link" -> fileSelf)
+        _      <- deltaClient.put[Json](s"/archives/$fullId/$archiveId", payload, Tweety) { (_, response) =>
+                    response.status shouldEqual StatusCodes.Created
+                  }
+        _      <- deltaClient.get[ByteString](s"/archives/$fullId/$archiveId", Tweety, acceptZip) { (byteString, response) =>
+                    response.status shouldEqual StatusCodes.OK
+                    contentType(response) shouldEqual MediaTypes.`application/zip`.toContentType
+                    val result = fromZip(byteString)
+
+                    val resource1Id       = "https://dev.nexus.test.com/simplified-resource/1"
+                    val resource1FileName = s"$resource1Id?rev=1"
+
+                    val actualContent1 = result.entryAsJson(s"$fullId/compacted/${UrlUtils.encode(resource1FileName)}.json")
+                    val actualDigest3  = result.entryDigest("/some/other/nexus-logo.png")
+
+                    filterMetadataKeys(actualContent1) should equalIgnoreArrayOrder(payloadResponse1)
+                    actualDigest3 shouldEqual nexusLogoDigest
+                  }
+
+      } yield succeed
+    }
+
     "succeed and redirect" in {
       val payload = jsonContentOf("/kg/archives/archive.json", "project2" -> fullId2)
 
@@ -148,20 +180,20 @@ class ArchiveSpec extends BaseSpec with ArchiveHelpers with CirceEq {
     }
 
     "fail on wrong path" in {
-      val wrong1 = jsonContentOf(s"/kg/archives/archive-wrong-path1.json")
+      val wrong1    = jsonContentOf(s"/kg/archives/archive-wrong-path1.json")
       val expected1 = jsonContentOf("/kg/archives/archive-path-invalid1.json")
 
       for {
-        _ <- deltaClient.put[Json](s"/archives/$fullId/archive2", wrong1, Tweety) { (json, response) =>
-          json shouldEqual expected1
-          response.status shouldEqual StatusCodes.BadRequest
-        }
-        wrong2 = jsonContentOf(s"/kg/archives/archive-wrong-path2.json")
+        _        <- deltaClient.put[Json](s"/archives/$fullId/archive2", wrong1, Tweety) { (json, response) =>
+                      json shouldEqual expected1
+                      response.status shouldEqual StatusCodes.BadRequest
+                    }
+        wrong2    = jsonContentOf(s"/kg/archives/archive-wrong-path2.json")
         expected2 = jsonContentOf("/kg/archives/archive-path-invalid2.json")
-        _ <- deltaClient.put[Json](s"/archives/$fullId/archive2", wrong2, Tweety) { (json, response) =>
-          json shouldEqual expected2
-          response.status shouldEqual StatusCodes.BadRequest
-        }
+        _        <- deltaClient.put[Json](s"/archives/$fullId/archive2", wrong2, Tweety) { (json, response) =>
+                      json shouldEqual expected2
+                      response.status shouldEqual StatusCodes.BadRequest
+                    }
       } yield succeed
     }
 

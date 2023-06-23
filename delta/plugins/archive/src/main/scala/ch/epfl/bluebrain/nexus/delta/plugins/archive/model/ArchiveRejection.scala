@@ -85,6 +85,11 @@ object ArchiveRejection {
       extends ArchiveRejection(s"Archive '$id' not found in project '$project'.")
 
   /**
+    * A file link from the archive definition was invalid
+    */
+  final case class InvalidFileLink(override val reason: String) extends ArchiveRejection(reason)
+
+  /**
     * Rejection returned when attempting to interact with an Archive while providing an id that cannot be resolved to an
     * Iri.
     *
@@ -205,6 +210,7 @@ object ArchiveRejection {
       case ResourceNotFound(_, _)             => StatusCodes.NotFound
       case AuthorizationFailed(_, _)          => StatusCodes.Forbidden
       case BlankArchiveId                     => StatusCodes.BadRequest
+      case InvalidFileLink(_)                 => StatusCodes.BadRequest
       case WrappedFileRejection(rejection)    => rejection.status
     }
 }

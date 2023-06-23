@@ -47,7 +47,7 @@ object ArchiveValue {
         visitedPaths ++ reference.path,
         duplicates ++ reference.path.filter(visitedPaths.contains),
         invalids ++ reference.path.filterNot(validatePath),
-        longIds ++ Option.unless(validateDefaultFileName(reference))(reference.ref.original)
+        longIds ++ Option.unless(validateDefaultFileName(reference))(Iri.unsafe(""))
       )
     }
 
