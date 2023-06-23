@@ -139,7 +139,8 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with TryValue
       archiveDownload = ArchiveDownload(
                           aclCheck,
                           (id: ResourceRef, ref: ProjectRef) => fetchResource(id.iri, ref),
-                          (id: ResourceRef, ref: ProjectRef, c: Caller) => fetchFileContent(id.iri, ref, c)
+                          (id: ResourceRef, ref: ProjectRef, c: Caller) => fetchFileContent(id.iri, ref, c),
+                          fetchContext.mapRejection(ProjectContextRejection)
                         )
       archives        = Archives(fetchContext.mapRejection(ProjectContextRejection), archiveDownload, archivesConfig, xas)
       identities      = IdentitiesDummy(caller, callerNoFilePerms)
@@ -215,6 +216,16 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with TryValue
     "create an archive with a specific id" in {
       val id        = iri"http://localhost/${genString()}"
       val encodedId = UrlUtils.encode(id.toString).replaceAll("%3A", ":")
+      Put(s"/v1/archives/$projectRef/$encodedId", archive.toEntity) ~> asSubject ~> acceptMeta ~> routes ~> check {
+        status shouldEqual StatusCodes.Created
+        response.asJson shouldEqual archiveMetadata(id, project.ref, label = Some(encodedId))
+      }
+    }
+
+    "create an archive with file link" in {
+      val id        = iri"http://localhost/${genString()}"
+      val encodedId = UrlUtils.encode(id.toString).replaceAll("%3A", ":")
+
       Put(s"/v1/archives/$projectRef/$encodedId", archive.toEntity) ~> asSubject ~> acceptMeta ~> routes ~> check {
         status shouldEqual StatusCodes.Created
         response.asJson shouldEqual archiveMetadata(id, project.ref, label = Some(encodedId))

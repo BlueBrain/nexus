@@ -8,8 +8,8 @@ import akka.testkit.TestKit
 import akka.util.ByteString
 import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
-import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.{FileReference, ResourceReference}
-import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.{AuthorizationFailed, FilenameTooLong, ResourceNotFound}
+import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.{FileLinkReference, FileReference, ResourceReference}
+import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.{AuthorizationFailed, FilenameTooLong, ProjectContextRejection, ResourceNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveResourceRepresentation.{CompactedJsonLd, Dot, ExpandedJsonLd, NQuads, NTriples, SourceJson}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.{ArchiveFormat, ArchiveRejection, ArchiveValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.RemoteContextResolutionFixture
@@ -32,6 +32,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
@@ -134,7 +135,8 @@ abstract class ArchiveDownloadSpec
     val archiveDownload = ArchiveDownload(
       aclCheck,
       (id: ResourceRef, ref: ProjectRef) => fetchResource(id.iri, ref),
-      (id: ResourceRef, ref: ProjectRef, _: Caller) => fetchFileContent(id.iri, ref)
+      (id: ResourceRef, ref: ProjectRef, _: Caller) => fetchFileContent(id.iri, ref),
+      FetchContextDummy.empty.mapRejection(ProjectContextRejection)
     )
 
     def downloadAndExtract(value: ArchiveValue, ignoreNotFound: Boolean) = {
@@ -231,7 +233,7 @@ abstract class ArchiveDownloadSpec
       }
     }
 
-    "fail to provide a tar when a resource is not found" in {
+    s"fail to provide a ${format.fileExtension} when a resource is not found" in {
       val value = ArchiveValue.unsafe(
         NonEmptySet.of(
           ResourceReference(Latest(iri"http://localhost/${genString()}"), None, None, None),
@@ -279,14 +281,14 @@ abstract class ArchiveDownloadSpec
       result shouldEqual expected
     }
 
-    "fail to provide a tar when access to a resource is not found" in {
+    s"fail to provide a ${format.fileExtension} when access to a resource is not found" in {
       val value = ArchiveValue.unsafe(
         NonEmptySet.of(ResourceReference(Latest(id1), None, None, None))
       )
       rejectedAccess(value)
     }
 
-    "fail to provide a tar when access to a file is not found" in {
+    s"fail to provide a ${format.fileExtension} when access to a file is not found" in {
       val value = ArchiveValue.unsafe(
         NonEmptySet.of(FileReference(Latest(id1), None, None))
       )
