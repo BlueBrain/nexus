@@ -6,7 +6,7 @@ import akka.http.scaladsl.server._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.permissions.{read => Read, write => Write}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.{DefaultSearchRequest, DefaultViewsQuery}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.{DefaultSearchRequest, DefaultViewsQuery, ElasticSearchQueryError}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, ElasticSearchViewsQuery}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -77,7 +77,7 @@ final class ElasticSearchViewsRoutes(
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering,
     fusionConfig: FusionConfig,
-    fetchContext: FetchContext[ElasticSearchViewRejection]
+    fetchContext: FetchContext[ElasticSearchQueryError]
 ) extends AuthDirectives(identities, aclCheck)
     with CirceUnmarshalling
     with ElasticSearchViewsDirectives
@@ -394,7 +394,7 @@ final class ElasticSearchViewsRoutes(
   private def list(request: DefaultSearchRequest)(implicit caller: Caller): Route =
     list(IO.pure(request))
 
-  private def list(request: IO[ElasticSearchViewRejection, DefaultSearchRequest])(implicit caller: Caller): Route =
+  private def list(request: IO[ElasticSearchQueryError, DefaultSearchRequest])(implicit caller: Caller): Route =
     (get & paginated & extractUri) { (page, uri) =>
       implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[JsonObject]] =
         searchResultsJsonLdEncoder(ContextValue(contexts.searchMetadata), page, uri)
@@ -405,7 +405,7 @@ final class ElasticSearchViewsRoutes(
   private def aggregate(request: DefaultSearchRequest)(implicit caller: Caller): Route =
     aggregate(IO.pure(request))
 
-  private def aggregate(request: IO[ElasticSearchViewRejection, DefaultSearchRequest])(implicit caller: Caller): Route =
+  private def aggregate(request: IO[ElasticSearchQueryError, DefaultSearchRequest])(implicit caller: Caller): Route =
     get {
       implicit val searchJsonLdEncoder: JsonLdEncoder[AggregationResult] =
         aggregationResultJsonLdEncoder
@@ -441,7 +441,7 @@ object ElasticSearchViewsRoutes {
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering,
       fusionConfig: FusionConfig,
-      fetchContext: FetchContext[ElasticSearchViewRejection]
+      fetchContext: FetchContext[ElasticSearchQueryError]
   ): Route =
     new ElasticSearchViewsRoutes(
       identities,

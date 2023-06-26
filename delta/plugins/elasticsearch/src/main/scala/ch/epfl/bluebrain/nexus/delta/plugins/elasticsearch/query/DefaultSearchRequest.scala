@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query
 
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.InvalidResourceId
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchViewRejection, ResourcesSearchParams}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.ElasticSearchQueryError.InvalidResourceId
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SortList}
@@ -55,7 +55,7 @@ object DefaultSearchRequest {
         pagination: Pagination,
         sort: SortList,
         schema: IdSegment
-    )(fetchContext: FetchContext[ElasticSearchViewRejection]): IO[ElasticSearchViewRejection, ProjectSearch] =
+    )(fetchContext: FetchContext[ElasticSearchQueryError]): IO[ElasticSearchQueryError, ProjectSearch] =
       fetchContext
         .onRead(ref)
         .flatMap { context =>
@@ -76,8 +76,8 @@ object DefaultSearchRequest {
 
   object OrgSearch {
     def apply(label: Label, params: ResourcesSearchParams, pagination: Pagination, sort: SortList, schema: IdSegment)(
-        fetchContext: FetchContext[ElasticSearchViewRejection]
-    ): IO[ElasticSearchViewRejection, OrgSearch] =
+        fetchContext: FetchContext[ElasticSearchQueryError]
+    ): IO[ElasticSearchQueryError, OrgSearch] =
       expandResourceRef(schema, fetchContext).map { resourceRef =>
         OrgSearch(label, params.withSchema(resourceRef), pagination, sort)
       }
@@ -93,8 +93,8 @@ object DefaultSearchRequest {
 
   object RootSearch {
     def apply(params: ResourcesSearchParams, pagination: Pagination, sort: SortList, schema: IdSegment)(
-        fetchContext: FetchContext[ElasticSearchViewRejection]
-    ): IO[ElasticSearchViewRejection, RootSearch] =
+        fetchContext: FetchContext[ElasticSearchQueryError]
+    ): IO[ElasticSearchQueryError, RootSearch] =
       expandResourceRef(schema, fetchContext).map { resourceRef =>
         RootSearch(params.withSchema(resourceRef), pagination, sort)
       }
@@ -102,7 +102,7 @@ object DefaultSearchRequest {
 
   private def expandResourceRef(
       segment: IdSegment,
-      fetchContext: FetchContext[ElasticSearchViewRejection]
+      fetchContext: FetchContext[ElasticSearchQueryError]
   ): IO[InvalidResourceId, ResourceRef] =
     expandResourceRef(segment, fetchContext.defaultApiMappings, ProjectBase(iri""))
 
