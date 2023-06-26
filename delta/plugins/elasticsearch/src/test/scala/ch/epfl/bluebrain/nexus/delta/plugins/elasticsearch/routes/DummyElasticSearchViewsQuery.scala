@@ -17,7 +17,6 @@ private[routes] class DummyElasticSearchViewsQuery(views: ElasticSearchViews) ex
   private def toJsonObject(value: Map[String, String]) =
     JsonObject.fromMap(value.map { case (k, v) => k -> v.asJson })
 
-
   override def query(
       id: IdSegment,
       project: ProjectRef,
