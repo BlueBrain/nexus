@@ -7,24 +7,19 @@ import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.StoragePluginModule.{enrichJsonFileEvent, injectFileStorageInfo, injectStorageDefaults}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.contexts.{files => fileCtxId}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.schemas.{files => filesSchemaId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.contexts.{storages => storageCtxId, storagesMetadata => storageMetaCtxId}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageEvent.{StorageCreated, StorageUpdated}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageAccess
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.routes.StoragesRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.schemas.{storage => storagesSchemaId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageDeletionTask, Storages, StoragesStatistics}
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -37,7 +32,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
-import ch.epfl.bluebrain.nexus.delta.sdk.migration.{MigrationLog, MigrationState}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
@@ -49,10 +43,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Supervisor
 import com.typesafe.config.Config
-import io.circe.syntax.EncoderOps
-import io.circe.{Json, JsonObject}
 import izumi.distage.model.definition.{Id, ModuleDef}
-import monix.bio.{IO, Task, UIO}
+import monix.bio.{Task, UIO}
 import monix.execution.Scheduler
 
 /**
@@ -284,87 +276,4 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
   many[PriorityRoute].add { (fileRoutes: FilesRoutes) =>
     PriorityRoute(priority, fileRoutes.routes, requiresStrictEntity = false)
   }
-
-  if (MigrationState.isRunning) {
-    // Storages
-    many[MigrationLog].add { (cfg: StoragePluginConfig, xas: Transactors, clock: Clock[UIO], crypto: Crypto) =>
-      MigrationLog.scoped[Iri, StorageState, StorageCommand, StorageEvent, StorageRejection](
-        Storages.definition(
-          cfg.storages.storageTypeConfig,
-          (_, _) => IO.terminate(new IllegalStateException("Storage command evaluation should not happen")),
-          UIO.terminate(new IllegalStateException("Storage command evaluation should not happen")),
-          crypto
-        )(clock),
-        e => e.id,
-        identity,
-        (e, _) => injectStorageDefaults(cfg.defaults)(e),
-        cfg.storages.eventLog,
-        xas
-      )
-    }
-
-    // Files
-    many[MigrationLog].add { (cfg: StoragePluginConfig, xas: Transactors, clock: Clock[UIO]) =>
-      MigrationLog.scoped[Iri, FileState, FileCommand, FileEvent, FileRejection](
-        Files.definition(clock),
-        e => e.id,
-        enrichJsonFileEvent,
-        injectFileStorageInfo,
-        cfg.files.eventLog,
-        xas
-      )
-    }
-
-  }
-}
-
-// TODO: This object contains migration helpers, and should be deleted when the migration module is removed
-object StoragePluginModule {
-
-  private def setStorageDefaults(name: Option[String], description: Option[String]): StorageValue => StorageValue = {
-    case disk: DiskStorageValue         => disk.copy(name = name, description = description)
-    case s3: S3StorageValue             => s3.copy(name = name, description = description)
-    case remote: RemoteDiskStorageValue => remote.copy(name = name, description = description)
-  }
-
-  def injectStorageDefaults(defaults: Defaults): StorageEvent => StorageEvent = {
-    case s @ StorageCreated(id, _, value, _, _, _, _) if id == storages.defaultStorageId =>
-      s.copy(value = setStorageDefaults(Some(defaults.name), Some(defaults.description))(value))
-    case s @ StorageUpdated(id, _, value, _, _, _, _) if id == storages.defaultStorageId =>
-      s.copy(value = setStorageDefaults(Some(defaults.name), Some(defaults.description))(value))
-    case event                                                                           => event
-  }
-
-  /**
-    * Enriches a json with the storage and storage type, only if both fields are not present. This is to ensure that the
-    * json can be decoded into a FileEvent later.
-    */
-  def enrichJsonFileEvent: Json => Json = { input =>
-    val migrationFields = JsonObject(
-      "storage"     -> Json.fromString("https://bluebrain.github.io/nexus/vocabulary/migration-storage?rev=1"),
-      "storageType" -> Json.fromString("DiskStorage")
-    )
-
-    input.asObject match {
-      case Some(eventObject) =>
-        if (eventObject.contains("storage") && eventObject.contains("storageType")) input
-        else migrationFields.asJson.deepMerge(input)
-      case None              => input
-    }
-  }
-
-  def injectFileStorageInfo: (FileEvent, Option[FileState]) => FileEvent = (e, s) =>
-    s match {
-      case Some(state) =>
-        e match {
-          case f: FileCreated           => f
-          case f: FileUpdated           => f
-          case f: FileAttributesUpdated => f.copy(storage = state.storage, storageType = state.storageType)
-          case f: FileTagAdded          => f.copy(storage = state.storage, storageType = state.storageType)
-          case f: FileTagDeleted        => f.copy(storage = state.storage, storageType = state.storageType)
-          case f: FileDeprecated        => f.copy(storage = state.storage, storageType = state.storageType)
-        }
-      case None        => e
-    }
-
 }

@@ -12,7 +12,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
-import ch.epfl.bluebrain.nexus.delta.sdk.migration.MigrationState
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, Projects}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
@@ -36,20 +35,19 @@ class GraphAnalyticsPluginModule(priority: Int) extends ModuleDef {
       GraphAnalytics(client, fetchContext.mapRejection(ProjectContextRejection), config.prefix, config.termAggregations)
     }
 
-  if (!MigrationState.isEsIndexingDisabled) {
-    make[GraphAnalyticsStream].from { (qc: QueryConfig, xas: Transactors) =>
-      GraphAnalyticsStream(qc, xas)
-    }
+  make[GraphAnalyticsStream].from { (qc: QueryConfig, xas: Transactors) =>
+    GraphAnalyticsStream(qc, xas)
+  }
 
-    make[GraphAnalyticsCoordinator].fromEffect {
-      (
-          projects: Projects,
-          analyticsStream: GraphAnalyticsStream,
-          supervisor: Supervisor,
-          client: ElasticSearchClient,
-          config: GraphAnalyticsConfig
-      ) => GraphAnalyticsCoordinator(projects, analyticsStream, supervisor, client, config)
-    }
+  make[GraphAnalyticsCoordinator].fromEffect {
+    (
+        projects: Projects,
+        analyticsStream: GraphAnalyticsStream,
+        supervisor: Supervisor,
+        client: ElasticSearchClient,
+        config: GraphAnalyticsConfig
+    ) =>
+      GraphAnalyticsCoordinator(projects, analyticsStream, supervisor, client, config)
   }
 
   make[GraphAnalyticsRoutes].from {

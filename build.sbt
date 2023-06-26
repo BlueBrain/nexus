@@ -329,22 +329,6 @@ lazy val sdk = project
     addCompilerPlugin(betterMonadicFor)
   )
 
-lazy val migration = project
-  .in(file("delta/migration"))
-  .settings(
-    name       := "delta-migration",
-    moduleName := "delta-migration"
-  )
-  .settings(shared, compilation, assertJavaVersion, coverage, release)
-  .dependsOn(sdk, testkit % "test->compile")
-  .settings(
-    libraryDependencies ++= Seq(
-      circeOptics,
-      "com.lightbend.akka" %% "akka-stream-alpakka-cassandra" % "4.0.0",
-      "org.lz4"             % "lz4-java"                      % "1.4.1"
-    )
-  )
-
 lazy val app = project
   .in(file("delta/app"))
   .settings(
@@ -353,7 +337,7 @@ lazy val app = project
   )
   .enablePlugins(UniversalPlugin, JavaAppPackaging, JavaAgent, DockerPlugin, BuildInfoPlugin)
   .settings(shared, compilation, servicePackaging, assertJavaVersion, kamonSettings, coverage, release)
-  .dependsOn(sdk % "compile->compile;test->test", testkit % "test->compile", migration)
+  .dependsOn(sdk % "compile->compile;test->test", testkit % "test->compile")
   .settings(Test / compile := (Test / compile).dependsOn(testPlugin / assembly).value)
   .settings(
     libraryDependencies  ++= Seq(
@@ -867,7 +851,6 @@ lazy val kamonSettings = Seq(
   libraryDependencies ++= Seq(
     kamonAkkaHttp,
     "io.kamon"        %% "kamon-akka"           % kamonVersion,
-    "io.kamon"        %% "kamon-cassandra"      % kamonVersion,
     "io.kamon"        %% "kamon-core"           % kamonVersion,
     "io.kamon"        %% "kamon-executors"      % kamonVersion,
     "io.kamon"        %% "kamon-jaeger"         % kamonVersion,
