@@ -40,8 +40,8 @@ trait ElasticSearchViewsDirectives extends UriDirectives {
   private def id(implicit um: FromStringUnmarshaller[IriBase]): Directive1[Option[Iri]] =
     parameter("id".as[IriBase].?).map(_.map(_.value))
 
-  def aggregated: Directive1[Boolean] =
-    parameter("aggregate".as[Boolean]).filter(_ == true)
+  def aggregated: Directive1[Option[Boolean]] =
+    parameter("aggregate".as[Boolean].?).filter(_.contains(true))
 
   /**
     * Extract the ''sort'' query parameter(s) and provide a [[SortList]]
