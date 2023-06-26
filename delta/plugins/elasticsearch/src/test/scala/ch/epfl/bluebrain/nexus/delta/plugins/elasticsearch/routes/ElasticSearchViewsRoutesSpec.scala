@@ -2,13 +2,14 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
 
 import akka.actor.typed.ActorSystem
 import akka.http.scaladsl.model.MediaTypes.`text/html`
-import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept, Location, OAuth2BearerToken}
+import akka.http.scaladsl.model.headers.{Accept, Location, OAuth2BearerToken, `Last-Event-ID`}
 import akka.http.scaladsl.model.{MediaTypes, StatusCodes, Uri}
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.ProjectContextRejection
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.ElasticSearchQueryError.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.contexts.searchMetadata
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{permissions => esPermissions, schema => elasticSearchSchema, ElasticSearchViewRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchViewRejection, permissions => esPermissions, schema => elasticSearchSchema}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.ElasticSearchQueryError
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.DummyElasticSearchViewsQuery._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, Fixtures, ValidateElasticSearchView}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -127,20 +128,26 @@ class ElasticSearchViewsRoutesSpec
 
   private val allowedPerms = Set(esPermissions.write, esPermissions.read, esPermissions.query, events.read)
 
-  implicit private val fetchContext: FetchContext[ElasticSearchViewRejection] =
-    FetchContextDummy[ElasticSearchViewRejection](
+  implicit private val fetchContextError: FetchContext[ElasticSearchQueryError] =
+    FetchContextDummy[ElasticSearchQueryError](
       Map(project.value.ref -> project.value.context),
       ProjectContextRejection
+    )
+
+  implicit private val fetchContextRejection: FetchContext[ElasticSearchViewRejection] =
+    FetchContextDummy[ElasticSearchViewRejection](
+      Map(project.value.ref -> project.value.context),
+      ElasticSearchViewRejection.ProjectContextRejection
     )
 
   private val resourceToSchemaMapping = ResourceToSchemaMappings(Label.unsafe("views") -> elasticSearchSchema.iri)
 
   private val aclCheck                       = AclSimpleCheck().accepted
   private val groupDirectives                =
-    DeltaSchemeDirectives(fetchContext, ioFromMap(uuid -> projectRef.organization), ioFromMap(uuid -> projectRef))
+    DeltaSchemeDirectives(fetchContextRejection, ioFromMap(uuid -> projectRef.organization), ioFromMap(uuid -> projectRef))
 
   private lazy val views: ElasticSearchViews = ElasticSearchViews(
-    fetchContext,
+    fetchContextRejection,
     ResolverContextResolution(rcr),
     ValidateElasticSearchView(
       PipeChain.validate(_, registry),
