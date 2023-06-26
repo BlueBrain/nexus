@@ -1,0 +1,9 @@
+{
+  "@context": {
+    "@vocab": "https://bluebrain.github.io/nexus/vocabulary/aggregations.json"
+  },
+  "@id": "https://bluebrain.github.io/nexus/contexts/elasticsearch-metadata.json",
+  "aggregations": {
+    "@container": "@list"
+  }
+}

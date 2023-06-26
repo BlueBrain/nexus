@@ -251,12 +251,14 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         indexingMetadataCtx: MetadataContextValue @Id("indexing-metadata")
     ) =>
       for {
+        aggregationsCtx      <- ContextValue.fromFile("contexts/aggregations.json")
         elasticsearchCtx     <- ContextValue.fromFile("contexts/elasticsearch.json")
         elasticsearchMetaCtx <- ContextValue.fromFile("contexts/elasticsearch-metadata.json")
         elasticsearchIdxCtx  <- ContextValue.fromFile("contexts/elasticsearch-indexing.json")
         offsetCtx            <- ContextValue.fromFile("contexts/offset.json")
         statisticsCtx        <- ContextValue.fromFile("contexts/statistics.json")
       } yield RemoteContextResolution.fixed(
+        contexts.aggregations          -> aggregationsCtx,
         contexts.elasticsearch         -> elasticsearchCtx,
         contexts.elasticsearchMetadata -> elasticsearchMetaCtx,
         contexts.elasticsearchIndexing -> elasticsearchIdxCtx,

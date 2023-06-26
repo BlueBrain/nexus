@@ -239,9 +239,18 @@ class ElasticSearchClientSpec(override val docker: ElasticSearchDocker)
       val params      = ResourcesSearchParams()
       val expectedAgg = jsonContentOf("elasticsearch-agg-results.json").asObject.get
 
-      esClient.bulk(operations).accepted
-      val aggregate = esClient.aggregate(params, Set(index.value), Query.Empty, 100).accepted
-      aggregate shouldEqual AggregationResult(3, expectedAgg)
+      val mapping =
+        json"""{ "properties": {
+               "@type": { "type": "keyword" },
+               "_project": { "type": "keyword" } } }""".asObject
+
+      val aggregate = for {
+        _   <- esClient.createIndex(index, mapping, None)
+        _   <- esClient.bulk(operations)
+        agg <- esClient.aggregate(params, Set(index.value), Query.Empty, 100)
+      } yield agg
+
+      aggregate.accepted shouldEqual AggregationResult(3, expectedAgg)
     }
 
     "delete documents by" in {

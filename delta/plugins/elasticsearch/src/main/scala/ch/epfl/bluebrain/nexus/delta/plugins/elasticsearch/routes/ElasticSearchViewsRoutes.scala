@@ -25,8 +25,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.AggregationResult.aggregationResultJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{AggregationResult, PaginationConfig, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sourcing.ProgressStatistics
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
@@ -93,7 +94,7 @@ final class ElasticSearchViewsRoutes(
 
   def routes: Route =
     (baseUriPrefix(baseUri.prefix) & replaceUri("views", schema.iri)) {
-      concat(viewsRoutes, resourcesListings, genericResourcesRoutes)
+      concat(viewsRoutes, resourcesListings, aggregationResourceRoutes, genericResourcesRoutes)
     }
 
   private val viewsRoutes: Route =
@@ -318,6 +319,48 @@ final class ElasticSearchViewsRoutes(
       }
     }
 
+  private val aggregationResourceRoutes: Route =
+    pathPrefix("resources") {
+      extractCaller { implicit caller =>
+        (searchParametersAndSortList(baseUri) & paginated & aggregated) { (params, sort, page, _) =>
+          concat(
+            // Aggregate all resources
+            (pathEndOrSingleSlash & operationName(s"$prefixSegment/resources/aggregate")) {
+              val request = DefaultSearchRequest.RootSearch(params, page, sort)
+              aggregate(request)
+            },
+            // Aggregate all resources inside an organization
+            (label & pathEndOrSingleSlash & operationName(s"$prefixSegment/resources/{org}/aggregate")) { org =>
+              val request = DefaultSearchRequest.OrgSearch(org, params, page, sort)
+              aggregate(request)
+            },
+            resolveProjectRef.apply { ref =>
+              val request = DefaultSearchRequest.ProjectSearch(ref, params, page, sort)
+              concat(
+                // Aggregate all resources inside a project
+                (pathEndOrSingleSlash & operationName(s"$prefixSegment/resources/{org}/{project}/aggregate")) {
+                  aggregate(request)
+                },
+                idSegment { schema =>
+                  // Aggregate all resources inside a project filtering by its schema type
+                  (pathEndOrSingleSlash & operationName(
+                    s"$prefixSegment/resources/{org}/{project}/{schema}/aggregate"
+                  )) {
+                    underscoreToOption(schema) match {
+                      case None        => aggregate(request)
+                      case Some(value) =>
+                        val r = DefaultSearchRequest.ProjectSearch(ref, params, page, sort, value)(fetchContext)
+                        aggregate(r)
+                    }
+                  }
+                }
+              )
+            }
+          )
+        }
+      }
+    }
+
   private val resourcesListings: Route =
     concat(resourcesToSchemas.value.map { case (Label(resourceSegment), resourceSchema) =>
       pathPrefix(resourceSegment) {
@@ -359,6 +402,16 @@ final class ElasticSearchViewsRoutes(
       emit(request.flatMap(defaultViewsQuery.list))
     }
 
+  private def aggregate(request: DefaultSearchRequest)(implicit caller: Caller): Route =
+    aggregate(IO.pure(request))
+
+  private def aggregate(request: IO[ElasticSearchViewRejection, DefaultSearchRequest])(implicit caller: Caller): Route =
+    get {
+      implicit val searchJsonLdEncoder: JsonLdEncoder[AggregationResult] =
+        aggregationResultJsonLdEncoder
+
+      emit(request.flatMap(defaultViewsQuery.aggregate))
+    }
 
   private val decodingFailedOrViewNotFound: PartialFunction[ElasticSearchViewRejection, Boolean] = {
     case _: DecodingFailed | _: ViewNotFound | _: InvalidJsonLdFormat => true

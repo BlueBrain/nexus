@@ -70,8 +70,7 @@ final class ElasticSearchViewsQueryImpl private[elasticsearch] (
     viewStore: ViewsStore[ElasticSearchViewRejection],
     aclCheck: AclCheck,
     client: ElasticSearchClient
-)
-    extends ElasticSearchViewsQuery {
+) extends ElasticSearchViewsQuery {
 
   def query(
       id: IdSegment,

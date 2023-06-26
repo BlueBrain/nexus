@@ -616,7 +616,7 @@ object ElasticSearchClient {
         .focus
         .flatMap(_.asObject) match {
         case Some(aggs) => Right(AggregationResult(fetchTotal(result), aggs))
-        case None      => Left("The response did not contain a valid 'aggregations' field.")
+        case None       => Left("The response did not contain a valid 'aggregations' field.")
       }
     }
 
