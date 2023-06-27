@@ -358,7 +358,7 @@ final class ElasticSearchViewsRoutes(
       pathPrefix(resourceSegment) {
         extractCaller { implicit caller =>
           concat(
-            (searchParametersAndSortList & paginated & pathEndOrSingleSlash) { (params, sort, page) =>
+            (searchParametersAndSortList & paginated) { (params, sort, page) =>
               concat(
                 // List all resources of type resourceSegment
                 (pathEndOrSingleSlash & operationName(s"$prefixSegment/$resourceSegment")) {
