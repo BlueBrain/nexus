@@ -219,10 +219,8 @@ final class ListingsSpec extends BaseSpec with Inspectors with EitherValuable wi
     }
 
     "get an empty list for anonymous" in {
-      deltaClient.get[Json](s"/resources/$org1?type=$projectType", Anonymous) { (json, response) =>
-        response.status shouldEqual StatusCodes.OK
-        listing._total.getOption(json).value shouldEqual 0L
-        listing._results.getOption(json).value.size shouldEqual 0
+      deltaClient.get[Json](s"/resources/$org1?type=$projectType", Anonymous) { (_, response) =>
+        response.status shouldEqual StatusCodes.Forbidden
       }
     }
   }
@@ -268,10 +266,8 @@ final class ListingsSpec extends BaseSpec with Inspectors with EitherValuable wi
     }
 
     "get an empty list for anonymous" in {
-      deltaClient.get[Json](s"/resources?type=$testResourceType", Anonymous) { (json, response) =>
-        response.status shouldEqual StatusCodes.OK
-        listing._total.getOption(json).value shouldEqual 0L
-        listing._results.getOption(json).value.size shouldEqual 0
+      deltaClient.get[Json](s"/resources?type=$testResourceType", Anonymous) { (_, response) =>
+        response.status shouldEqual StatusCodes.Forbidden
       }
     }
 
