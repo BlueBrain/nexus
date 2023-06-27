@@ -8,7 +8,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveResourceRepresentation._
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.AbsolutePath
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
@@ -22,12 +21,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.Response.Complete
 import ch.epfl.bluebrain.nexus.delta.sdk.error.SDKError
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.StreamConverter
 import ch.epfl.bluebrain.nexus.delta.sdk.{AkkaSource, JsonLdValue}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import io.circe.{Json, Printer}
@@ -89,7 +87,7 @@ object ArchiveDownload {
       aclCheck: AclCheck,
       fetchResource: (ResourceRef, ProjectRef) => UIO[Option[JsonLdContent[_, _]]],
       fetchFileContent: (ResourceRef, ProjectRef, Caller) => IO[FileRejection, FileResponse],
-      fetchContext: FetchContext[ArchiveRejection]
+      resolveSelf: ResolveFileSelf
   )(implicit sort: JsonKeyOrdering, baseUri: BaseUri, rcr: RemoteContextResolution): ArchiveDownload =
     new ArchiveDownload {
 
@@ -120,59 +118,12 @@ object ArchiveDownload {
         }
       }
 
-      private def fileReferenceFrom(
-          orgString: String,
-          projectString: String,
-          id: String,
-          path: Option[AbsolutePath]
-      ): IO[ArchiveRejection, FileReference] = {
-        for {
-          projectRef  <- parseProjectRef(orgString, projectString)
-          resourceRef <- parseResourceRef(id, projectRef)
-        } yield {
-          FileReference(resourceRef, Some(projectRef), path)
-        }
-      }
-
-      private def parseResourceRef(id: String, projectRef: ProjectRef) = {
-        for {
-          projectContext <- fetchContext.onRead(projectRef)
-          idIri          <- IO.fromOption(
-                              IdSegment(id).toIri(projectContext.apiMappings, projectContext.base),
-                              ArchiveRejection.InvalidFileLink(s"iri parsing failed for id '$id'")
-                            )
-        } yield ResourceRef(idIri)
-      }
-
-      private def parseProjectRef(orgString: String, projectString: String): IO[InvalidFileLink, ProjectRef] = {
-        val projectRef = for {
-          org     <- Label(orgString)
-          project <- Label(projectString)
-        } yield ProjectRef(org, project)
-
-        IO.fromEither(projectRef)
-          .mapError(e => ArchiveRejection.InvalidFileLink(s"project parsing failed: ${e}"))
-      }
-
       private def toFileReference(ref: FileLinkReference): IO[ArchiveRejection, FileReference] = {
-
-        val baseUrl = baseUri.iriEndpoint.toString + "/files/"
-
         for {
-          _             <- IO.raiseWhen(!ref.self.startsWith(baseUrl))(
-                             ArchiveRejection.InvalidFileLink(s"did not start with base '$baseUrl'")
-                           )
-          path           = ref.self.stripPrefix(baseUrl)
-          fileReference <- path.split('/').toList match {
-                             case org :: project :: id :: Nil => fileReferenceFrom(org, project, id, ref.path)
-                             case _                           =>
-                               IO.raiseError(
-                                 ArchiveRejection.InvalidFileLink(
-                                   s"parsing of path failed, expected org, project then id split by '/', recieved '$path'"
-                                 )
-                               )
-                           }
-        } yield fileReference
+          (projectRef, resourceRef) <- resolveSelf(ref.self)
+        } yield {
+          FileReference(resourceRef, Some(projectRef), ref.path)
+        }
       }
 
       private def resolveReferencesAsStream[M](

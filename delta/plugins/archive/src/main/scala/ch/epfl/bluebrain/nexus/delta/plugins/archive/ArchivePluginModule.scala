@@ -41,14 +41,19 @@ object ArchivePluginModule extends ModuleDef {
         sort: JsonKeyOrdering,
         baseUri: BaseUri,
         rcr: RemoteContextResolution @Id("aggregate"),
-        fetchContext: FetchContext[ContextRejection]
+        resolveSelf: ResolveFileSelf
     ) =>
       ArchiveDownload(
         aclCheck,
         shifts.fetch,
         (id: ResourceRef, project: ProjectRef, caller: Caller) => files.fetchContent(IdSegmentRef(id), project)(caller),
-        fetchContext.mapRejection(ProjectContextRejection)
+        resolveSelf
       )(sort, baseUri, rcr)
+  }
+
+  make[ResolveFileSelf].from {
+    (fetchContext: FetchContext[ContextRejection], baseUri: BaseUri) =>
+      ResolveFileSelf(fetchContext.mapRejection(ProjectContextRejection))(baseUri)
   }
 
   make[Archives].from {

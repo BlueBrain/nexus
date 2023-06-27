@@ -3,12 +3,13 @@ package ch.epfl.bluebrain.nexus.delta.plugins.archive
 import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
 import akka.http.scaladsl.model.MediaRanges.`*/*`
 import akka.http.scaladsl.model.MediaTypes.{`application/x-tar`, `application/zip`}
-import akka.http.scaladsl.model.headers.{`Content-Type`, Accept, Location, OAuth2BearerToken}
+import akka.http.scaladsl.model.headers.{Accept, Location, OAuth2BearerToken, `Content-Type`}
 import akka.http.scaladsl.model.{ContentTypes, StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{StatefulUUIDF, UUIDF, UrlUtils}
+import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.routes.ArchiveRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
@@ -16,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.FileNotFound
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{File, FileAttributes, FileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutesSpec
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{schemas, FileGen}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FileGen, schemas}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -140,7 +141,7 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with TryValue
                           aclCheck,
                           (id: ResourceRef, ref: ProjectRef) => fetchResource(id.iri, ref),
                           (id: ResourceRef, ref: ProjectRef, c: Caller) => fetchFileContent(id.iri, ref, c),
-                          fetchContext.mapRejection(ProjectContextRejection)
+                          (_: String) => IO.raiseError(ArchiveRejection.InvalidFileLink("test should not have file links"))
                         )
       archives        = Archives(fetchContext.mapRejection(ProjectContextRejection), archiveDownload, archivesConfig, xas)
       identities      = IdentitiesDummy(caller, callerNoFilePerms)
