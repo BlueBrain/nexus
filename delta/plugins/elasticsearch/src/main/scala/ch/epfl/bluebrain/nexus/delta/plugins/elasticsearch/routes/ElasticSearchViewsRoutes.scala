@@ -282,40 +282,45 @@ final class ElasticSearchViewsRoutes(
   private val genericResourcesRoutes: Route =
     pathPrefix("resources") {
       extractCaller { implicit caller =>
-        (searchParametersAndSortList(baseUri) & paginated) { (params, sort, page) =>
-          concat(
-            // List all resources
-            (pathEndOrSingleSlash & operationName(s"$prefixSegment/resources")) {
-              val request = DefaultSearchRequest.RootSearch(params, page, sort)
-              list(request)
-            },
-            // List all resources inside an organization
-            (label & pathEndOrSingleSlash & operationName(s"$prefixSegment/resources")) { org =>
-              val request = DefaultSearchRequest.OrgSearch(org, params, page, sort)
-              list(request)
-            },
-            resolveProjectRef.apply { ref =>
-              val request = DefaultSearchRequest.ProjectSearch(ref, params, page, sort)
-              concat(
-                // List all resources inside a project
-                (pathEndOrSingleSlash & operationName(s"$prefixSegment/resources/{org}/{project}")) {
-                  list(request)
-                },
-                idSegment { schema =>
-                  // List all resources inside a project filtering by its schema type
-                  (pathEndOrSingleSlash & operationName(s"$prefixSegment/resources/{org}/{project}/{schema}")) {
-                    underscoreToOption(schema) match {
-                      case None        => list(request)
-                      case Some(value) =>
-                        val r = DefaultSearchRequest.ProjectSearch(ref, params, page, sort, value)(fetchContext)
-                        list(r)
+        concat(
+          (searchParametersAndSortList & paginated) { (params, sort, page) =>
+            concat(
+              // List all resources
+              (pathEndOrSingleSlash & operationName(s"$prefixSegment/resources")) {
+                val request = DefaultSearchRequest.RootSearch(params, page, sort)
+                list(request)
+              },
+              (label & pathEndOrSingleSlash & operationName(s"$prefixSegment/resources")) { org =>
+                val request = DefaultSearchRequest.OrgSearch(org, params, page, sort)
+                list(request)
+              }
+            )
+          },
+          resolveProjectRef.apply { ref =>
+            projectContext(ref) { implicit pc =>
+              (searchParametersInProject & paginated) { (params, sort, page) =>
+                val request = DefaultSearchRequest.ProjectSearch(ref, params, page, sort)
+                concat(
+                  // List all resources inside a project
+                  (pathEndOrSingleSlash & operationName(s"$prefixSegment/resources/{org}/{project}")) {
+                    list(request)
+                  },
+                  idSegment { schema =>
+                    // List all resources inside a project filtering by its schema type
+                    (pathEndOrSingleSlash & operationName(s"$prefixSegment/resources/{org}/{project}/{schema}")) {
+                      underscoreToOption(schema) match {
+                        case None        => list(request)
+                        case Some(value) =>
+                          val r = DefaultSearchRequest.ProjectSearch(ref, params, page, sort, value)(fetchContext)
+                          list(r)
+                      }
                     }
                   }
-                }
-              )
+                )
+              }
             }
-          )
-        }
+          }
+        )
       }
     }
 
@@ -356,12 +361,12 @@ final class ElasticSearchViewsRoutes(
             (searchParametersAndSortList & paginated & pathEndOrSingleSlash) { (params, sort, page) =>
               concat(
                 // List all resources of type resourceSegment
-                operationName(s"$prefixSegment/$resourceSegment") {
+                (pathEndOrSingleSlash & operationName(s"$prefixSegment/$resourceSegment")) {
                   val request = DefaultSearchRequest.RootSearch(params, page, sort, resourceSchema)(fetchContext)
                   list(request)
                 },
                 // List all resources of type resourceSegment inside an organization
-                (label & operationName(s"$prefixSegment/$resourceSegment/{org}")) { org =>
+                (label & pathEndOrSingleSlash & operationName(s"$prefixSegment/$resourceSegment/{org}")) { org =>
                   val request = DefaultSearchRequest.OrgSearch(org, params, page, sort, resourceSchema)(fetchContext)
                   list(request)
                 }
