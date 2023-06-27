@@ -340,19 +340,6 @@ final class ElasticSearchViewsRoutes(
                 // Aggregate all resources inside a project
                 (pathEndOrSingleSlash & operationName(s"$prefixSegment/resources/{org}/{project}/aggregate")) {
                   aggregate(request)
-                },
-                idSegment { schema =>
-                  // Aggregate all resources inside a project filtering by its schema type
-                  (pathEndOrSingleSlash & operationName(
-                    s"$prefixSegment/resources/{org}/{project}/{schema}/aggregate"
-                  )) {
-                    underscoreToOption(schema) match {
-                      case None        => aggregate(request)
-                      case Some(value) =>
-                        val r = DefaultSearchRequest.ProjectSearch(ref, params, page, sort, value)(fetchContext)
-                        aggregate(r)
-                    }
-                  }
                 }
               )
             }
