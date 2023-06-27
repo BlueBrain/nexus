@@ -16,23 +16,32 @@ object ResolveFileSelf {
   def apply(fetchContext: FetchContext[ArchiveRejection])(implicit baseUri: BaseUri): ResolveFileSelf = {
     new ResolveFileSelf {
       override def apply(self: String): IO[ArchiveRejection, (ProjectRef, ResourceRef)] = {
-        val baseUrl = baseUri.iriEndpoint.toString + "/files/"
-
         for {
-          _             <- IO.raiseWhen(!self.startsWith(baseUrl))(
-                             ArchiveRejection.InvalidFileLink(s"did not start with base '$baseUrl'")
-                           )
-          path           = self.stripPrefix(baseUrl)
-          fileReference <- path.split('/').toList match {
-                             case org :: project :: id :: Nil => fileReferenceFrom(org, project, UrlUtils.decode(id))
-                             case _                           =>
-                               IO.raiseError(
-                                 ArchiveRejection.InvalidFileLink(
-                                   s"parsing of path failed, expected org, project then id split by '/', recieved '$path'"
-                                 )
-                               )
-                           }
+          path          <- pathWithoutPrefix(self)
+          (org, project, id) <- splitPath(path)
+          fileReference <- fileReferenceFrom(org, project, id)
         } yield fileReference
+      }
+
+      private def pathWithoutPrefix(self: String): IO[ArchiveRejection, String] = {
+        val baseUrl = baseUri.iriEndpoint.toString + "/files/"
+        if (self.startsWith(baseUrl)) {
+          IO.pure(self.stripPrefix(baseUrl))
+        } else {
+          IO.raiseError(ArchiveRejection.InvalidFileLink(s"did not start with base '$baseUrl'"))
+        }
+      }
+
+      private def splitPath(path: String): IO[ArchiveRejection, (String, String, String)] = {
+        path.split('/').toList match {
+          case org :: project :: id :: Nil => IO.pure((org, project, UrlUtils.decode(id)))
+          case _ =>
+            IO.raiseError(
+              ArchiveRejection.InvalidFileLink(
+                s"parsing of path failed, expected org, project then id split by '/', recieved '$path'"
+              )
+            )
+        }
       }
 
       private def fileReferenceFrom(
