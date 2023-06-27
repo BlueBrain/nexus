@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchVi
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, ElasticSearchViewsQuery}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral._
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
@@ -30,24 +30,4 @@ private[routes] class DummyElasticSearchViewsQuery(views: ElasticSearchViews) ex
       qp.toMap
     ).asJson deepMerge query.asJson
   }
-}
-
-object DummyElasticSearchViewsQuery {
-
-  val listResponse: JsonObject = jobj"""{"http://localhost/projects": "all"}"""
-
-  def listResponse(schema: IdSegment): JsonObject =
-    jobj"""{"http://localhost/projects": "all", "http://localhost/schema": "${schema.asString}"}"""
-
-  def listResponse(org: Label): JsonObject =
-    jobj"""{"http://localhost/projects": "all", "http://localhost/org": "${org}"}"""
-
-  def listResponse(org: Label, schema: IdSegment): JsonObject =
-    jobj"""{"http://localhost/projects": "all", "http://localhost/org": "${org}", "http://localhost/schema": "${schema.asString}"}"""
-
-  def listResponse(projectRef: ProjectRef): JsonObject =
-    jobj"""{"http://localhost/projects": "all", "http://localhost/project": "$projectRef"}"""
-
-  def listResponse(projectRef: ProjectRef, schema: IdSegment): JsonObject =
-    jobj"""{"http://localhost/projects": "all", "http://localhost/project": "$projectRef", "http://localhost/schema": "${schema.asString}"}"""
 }
