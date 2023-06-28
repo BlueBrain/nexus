@@ -218,7 +218,7 @@ final class ListingsSpec extends BaseSpec with Inspectors with EitherValuable wi
       }
     }
 
-    "get an empty list for anonymous" in {
+    "get an error for anonymous" in {
       deltaClient.get[Json](s"/resources/$org1?type=$projectType", Anonymous) { (_, response) =>
         response.status shouldEqual StatusCodes.Forbidden
       }
@@ -265,7 +265,7 @@ final class ListingsSpec extends BaseSpec with Inspectors with EitherValuable wi
       }
     }
 
-    "get an empty list for anonymous" in {
+    "get an error for anonymous" in {
       deltaClient.get[Json](s"/resources?type=$testResourceType", Anonymous) { (_, response) =>
         response.status shouldEqual StatusCodes.Forbidden
       }
