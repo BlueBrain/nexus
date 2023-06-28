@@ -250,7 +250,9 @@ class ElasticSearchClientSpec(override val docker: ElasticSearchDocker)
         agg <- esClient.aggregate(params, Set(index.value), Query.Empty, 100)
       } yield agg
 
-      aggregate.accepted shouldEqual AggregationResult(3, expectedAgg)
+      eventually {
+        aggregate.accepted shouldEqual AggregationResult(3, expectedAgg)
+      }
     }
 
     "delete documents by" in {
