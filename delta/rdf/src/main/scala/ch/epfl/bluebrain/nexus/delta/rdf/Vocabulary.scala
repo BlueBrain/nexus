@@ -215,7 +215,6 @@ object Vocabulary {
 
     val acls                  = contexts + "acls.json"
     val aclsMetadata          = contexts + "acls-metadata.json"
-    val aggregations          = contexts + "aggregations.json"
     val error                 = contexts + "error.json"
     val validation            = contexts + "validation.json"
     val identities            = contexts + "identities.json"

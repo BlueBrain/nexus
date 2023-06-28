@@ -406,7 +406,7 @@ final class ElasticSearchViewsRoutes(
   private def aggregate(request: IO[ElasticSearchQueryError, DefaultSearchRequest])(implicit caller: Caller): Route =
     get {
       implicit val searchJsonLdEncoder: JsonLdEncoder[AggregationResult] =
-        aggregationResultJsonLdEncoder
+        aggregationResultJsonLdEncoder(ContextValue(contexts.aggregations))
 
       emit(request.flatMap(defaultViewsQuery.aggregate))
     }

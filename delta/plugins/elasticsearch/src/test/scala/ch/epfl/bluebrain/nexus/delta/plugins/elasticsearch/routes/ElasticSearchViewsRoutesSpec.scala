@@ -2,15 +2,15 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
 
 import akka.actor.typed.ActorSystem
 import akka.http.scaladsl.model.MediaTypes.`text/html`
-import akka.http.scaladsl.model.headers.{Accept, Location, OAuth2BearerToken, `Last-Event-ID`}
+import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept, Location, OAuth2BearerToken}
 import akka.http.scaladsl.model.{MediaTypes, StatusCodes, Uri}
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.contexts.searchMetadata
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchViewRejection, permissions => esPermissions, schema => elasticSearchSchema}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.contexts.{aggregations, searchMetadata}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{permissions => esPermissions, schema => elasticSearchSchema, ElasticSearchViewRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.ElasticSearchQueryError
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.ElasticSearchQueryError.ProjectContextRejection
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.DummyDefaultViewsQuery.listResponse
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.DummyDefaultViewsQuery.{aggregationResponse, listResponse}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, Fixtures, ValidateElasticSearchView}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
@@ -536,7 +536,6 @@ class ElasticSearchViewsRoutesSpec
         s"/v1/resources/myorg/myproject/$myId2Encoded" -> myId2
       )
       forAll(endpoints) { case (endpoint, _) =>
-        println(s"Calling $endpoint")
         Get(s"$endpoint?from=0&size=5&q=something") ~> routes ~> check {
           response.status shouldEqual StatusCodes.OK
           response.asJson shouldEqual
@@ -601,6 +600,11 @@ class ElasticSearchViewsRoutesSpec
     "aggregate" in {
       Get(s"/v1/resources?aggregate=true") ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
+        response.asJson shouldEqual
+          JsonObject("total" -> 1.asJson)
+            .add("aggregations", aggregationResponse.asJson)
+            .addContext(aggregations)
+            .asJson
       }
     }
 

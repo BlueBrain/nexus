@@ -36,6 +36,7 @@ trait Fixtures {
   implicit val rcr: RemoteContextResolution = RemoteContextResolution.fixedIOResource(
     elasticsearch                  -> ContextValue.fromFile("contexts/elasticsearch.json"),
     elasticsearchMetadata          -> ContextValue.fromFile("contexts/elasticsearch-metadata.json"),
+    contexts.aggregations          -> ContextValue.fromFile("contexts/aggregations.json"),
     contexts.elasticsearchIndexing -> ContextValue.fromFile("/contexts/elasticsearch-indexing.json"),
     contexts.searchMetadata        -> listingsMetadataCtx,
     contexts.indexingMetadata      -> indexingMetadataCtx,

@@ -13,25 +13,23 @@ class DummyDefaultViewsQuery extends DefaultViewsQuery[Result, Aggregation] {
 
   override def list(
       searchRequest: DefaultSearchRequest
-  )(implicit caller: Caller): IO[ElasticSearchQueryError, Result] = {
+  )(implicit caller: Caller): IO[ElasticSearchQueryError, Result] =
     if (searchRequest.pagination == allowedPage)
       IO.pure(SearchResults(1, List(listResponse)))
     else
       IO.raiseError(ElasticSearchQueryError.AuthorizationFailed)
-  }
 
-  // TODO: Correct this dummy method
   override def aggregate(searchRequest: DefaultSearchRequest)(implicit
       caller: Caller
   ): IO[ElasticSearchQueryError, Aggregation] =
-    IO.pure(AggregationResult(10, jobj"""{"field": "something"}"""))
+    IO.pure(AggregationResult(1, aggregationResponse))
 }
 
 object DummyDefaultViewsQuery {
-
   type Result      = SearchResults[JsonObject]
   type Aggregation = AggregationResult
 
-  private val allowedPage      = FromPagination(0, 5)
-  val listResponse: JsonObject = jobj"""{"http://localhost/projects": "all"}"""
+  private val allowedPage             = FromPagination(0, 5)
+  val listResponse: JsonObject        = jobj"""{"http://localhost/projects": "all"}"""
+  val aggregationResponse: JsonObject = jobj"""{"types": "something"}"""
 }
