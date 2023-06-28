@@ -5,7 +5,7 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchBulk, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.Type.{ExcludedType, IncludedType}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.DefaultViewSearchSuite.Sample
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.DefaultViewSearchSuite._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchClientSetup, Fixtures}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.ResourceGen
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchResults, SortList, TimeRange}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
@@ -207,11 +207,31 @@ class DefaultViewSearchSuite
     } yield ()
   }
 
-  test("Aggregate tests") {
-    // TODO create aggregate tests
-    aggregate(all)
-    //.assert(AggregationResult(JsonObject.empty))
+  /** For the given params, executes the aggregation and allows to assert on the result */
+  private def assertAggregation(resourcesSearchParams: ResourcesSearchParams)(assertion: AggregationsValue => Unit) =
+    aggregate(resourcesSearchParams).map { aggregationResult =>
+      extractAggs(aggregationResult).map { aggregationValue =>
+        assertion(aggregationValue)
+      }
+    }
+
+  test("Aggregate projects correctly") {
+    assertAggregation(all) { agg =>
+      assertEquals(agg.projects.buckets.size, 1)
+      assert(agg.projects.buckets.contains(Bucket("http://localhost/v1/projects/org/proj", 4)))
+    }
   }
+
+  test("Aggregate types correctly") {
+    assertAggregation(all) { agg =>
+      assertEquals(agg.types.buckets.size, 4)
+      assert(agg.types.buckets.contains(Bucket((nxv + "Organization").toString, 2)))
+      assert(agg.types.buckets.contains(Bucket((nxv + "Dataset").toString, 2)))
+      assert(agg.types.buckets.contains(Bucket((nxv + "Cell").toString, 1)))
+      assert(agg.types.buckets.contains(Bucket((nxv + "Trace").toString, 1)))
+    }
+  }
+
 }
 
 object DefaultViewSearchSuite {
@@ -248,6 +268,15 @@ object DefaultViewSearchSuite {
     def asDocument(implicit baseUri: BaseUri, rcr: RemoteContextResolution, jsonldApi: JsonLdApi): UIO[Json] =
       asResourceF.toCompactedJsonLd.map(_.json).hideErrors
 
+  }
+
+  case class Bucket(key: String, doc_count: Int)
+  case class Aggregation(buckets: List[Bucket])
+  case class AggregationsValue(projects: Aggregation, types: Aggregation)
+
+  def extractAggs(aggregation: AggregationResult): Option[AggregationsValue] = {
+    import io.circe.generic.auto._
+    aggregation.value.asJson.as[AggregationsValue].toOption
   }
 
 }
