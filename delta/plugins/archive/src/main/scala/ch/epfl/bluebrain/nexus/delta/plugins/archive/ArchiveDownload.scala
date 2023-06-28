@@ -114,15 +114,9 @@ object ArchiveDownload {
         archiveReference match {
           case reference: FullArchiveReference => IO.pure(reference)
           case reference: FileLinkReference    =>
-            toFileReference(reference)
-        }
-      }
-
-      private def toFileReference(ref: FileLinkReference): IO[ArchiveRejection, FileReference] = {
-        for {
-          (projectRef, resourceRef) <- resolveSelf(ref.self)
-        } yield {
-          FileReference(resourceRef, Some(projectRef), ref.path)
+            resolveSelf(reference.self).map {
+              case (projectRef, resourceRef) => FileReference(resourceRef, Some(projectRef), reference.path)
+            }
         }
       }
 
