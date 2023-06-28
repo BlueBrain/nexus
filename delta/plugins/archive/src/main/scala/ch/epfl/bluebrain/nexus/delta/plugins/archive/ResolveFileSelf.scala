@@ -17,9 +17,9 @@ object ResolveFileSelf {
     new ResolveFileSelf {
       override def apply(self: String): IO[ArchiveRejection, (ProjectRef, ResourceRef)] = {
         for {
-          path          <- pathWithoutPrefix(self)
+          path               <- pathWithoutPrefix(self)
           (org, project, id) <- splitPath(path)
-          fileReference <- fileReferenceFrom(org, project, id)
+          fileReference      <- fileReferenceFrom(org, project, id)
         } yield fileReference
       }
 
@@ -35,7 +35,7 @@ object ResolveFileSelf {
       private def splitPath(path: String): IO[ArchiveRejection, (String, String, String)] = {
         path.split('/').toList match {
           case org :: project :: id :: Nil => IO.pure((org, project, UrlUtils.decode(id)))
-          case _ =>
+          case _                           =>
             IO.raiseError(
               ArchiveRejection.InvalidFileLink(
                 s"parsing of path failed, expected org, project then id split by '/', recieved '$path'"

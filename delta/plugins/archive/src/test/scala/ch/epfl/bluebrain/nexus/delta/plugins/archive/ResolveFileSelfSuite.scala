@@ -18,15 +18,15 @@ class ResolveFileSelfSuite extends BioSuite {
 
   implicit private val baseUri: BaseUri = BaseUri(Uri("http://bbp.epfl.ch")).rightValue
 
-  private val compactResourceId = "test-resource"
-  private val resourceIri: Iri = nxv + compactResourceId
+  private val compactResourceId        = "test-resource"
+  private val resourceIri: Iri         = nxv + compactResourceId
   private val resourceRef: ResourceRef = ResourceRef(resourceIri)
-  private val expandedResourceId = resourceIri.toString
-  private val project = "testing-project"
-  private val org = "epfl"
-  private val projectObj = ProjectGen.project(org, project)
-  private val projectRef = projectObj.ref
-  private val resolveSelf = ResolveFileSelf(FetchContextDummy(List(projectObj)).mapRejection(ProjectContextRejection))
+  private val expandedResourceId       = resourceIri.toString
+  private val project                  = "testing-project"
+  private val org                      = "epfl"
+  private val projectObj               = ProjectGen.project(org, project)
+  private val projectRef               = projectObj.ref
+  private val resolveSelf              = ResolveFileSelf(FetchContextDummy(List(projectObj)).mapRejection(ProjectContextRejection))
 
   test("an absolute self should resolve") {
     val self = s"http://bbp.epfl.ch/files/$org/$project/${encode(expandedResourceId)}"
@@ -64,6 +64,10 @@ class ResolveFileSelfSuite extends BioSuite {
   }
 
   private def assertErrorWithReason[A](obtained: IO[ArchiveRejection, A], expected: String)(implicit loc: Location) = {
-    assertError[ArchiveRejection, A](obtained, _.reason.contains(expected), e => s"expected error reason to include '$expected', recieved '${e.reason}'")
+    assertError[ArchiveRejection, A](
+      obtained,
+      _.reason.contains(expected),
+      e => s"expected error reason to include '$expected', recieved '${e.reason}'"
+    )
   }
 }

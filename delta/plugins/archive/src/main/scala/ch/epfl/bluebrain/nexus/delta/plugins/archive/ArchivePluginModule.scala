@@ -51,9 +51,8 @@ object ArchivePluginModule extends ModuleDef {
       )(sort, baseUri, rcr)
   }
 
-  make[ResolveFileSelf].from {
-    (fetchContext: FetchContext[ContextRejection], baseUri: BaseUri) =>
-      ResolveFileSelf(fetchContext.mapRejection(ProjectContextRejection))(baseUri)
+  make[ResolveFileSelf].from { (fetchContext: FetchContext[ContextRejection], baseUri: BaseUri) =>
+    ResolveFileSelf(fetchContext.mapRejection(ProjectContextRejection))(baseUri)
   }
 
   make[Archives].from {

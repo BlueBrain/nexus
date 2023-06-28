@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.RemoteContextResolutionFixt
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.FileNotFound
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{Digest, FileAttributes, FileRejection}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FileGen, schemas}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{schemas, FileGen}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.AbsolutePath
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -102,7 +102,7 @@ abstract class ArchiveDownloadSpec
     val file1Size            = 12L
     val file1                = FileGen.resourceFor(id1, projectRef, storageRef, fileAttributes(file1Name, file1Size))
     val file1Content: String = "file content"
-    val file1Self = s"http://delta:8080/files/${encode(id1.toString)}"
+    val file1Self            = s"http://delta:8080/files/${encode(id1.toString)}"
 
     val id2                  = iri"http://localhost/${genString()}"
     val file2Name            = genString(100)
@@ -121,7 +121,7 @@ abstract class ArchiveDownloadSpec
 
     val resolveSelf: (String) => IO[ArchiveRejection, (ProjectRef, ResourceRef)] = {
       case `file1Self` => IO.pure((projectRef, Latest(id1)))
-      case _ => IO.raiseError(ArchiveRejection.InvalidFileLink("invalid file link"))
+      case _           => IO.raiseError(ArchiveRejection.InvalidFileLink("invalid file link"))
     }
 
     val fetchFileContent: (Iri, ProjectRef) => IO[FileRejection, FileResponse] = {
@@ -168,18 +168,18 @@ abstract class ArchiveDownloadSpec
       val result   = downloadAndExtract(value, ignoreNotFound = false)
       val expected = Map(
         s"${project.ref.toString}/compacted/${encode(file1.id.toString)}.json" -> file1.toCompactedJsonLd.accepted.json.sort.spaces2,
-        s"${project.ref.toString}/file/${file1.value.attributes.filename}"              -> file1Content
+        s"${project.ref.toString}/file/${file1.value.attributes.filename}"     -> file1Content
       )
       result shouldEqual expected
     }
 
     s"provide a ${format.fileExtension} for file links (_self)" in {
-      val value = ArchiveValue.unsafe(
+      val value    = ArchiveValue.unsafe(
         NonEmptySet.of(
-          FileLinkReference(file1Self, None),
+          FileLinkReference(file1Self, None)
         )
       )
-      val result = downloadAndExtract(value, ignoreNotFound = false)
+      val result   = downloadAndExtract(value, ignoreNotFound = false)
       val expected = Map(
         s"${project.ref.toString}/file/${file1.value.attributes.filename}" -> file1Content
       )
@@ -189,7 +189,7 @@ abstract class ArchiveDownloadSpec
     s"fail to provide a ${format.fileExtension} for file links which do not resolve" in {
       val value = ArchiveValue.unsafe(
         NonEmptySet.of(
-          FileLinkReference("http://wrong.file/link", None),
+          FileLinkReference("http://wrong.file/link", None)
         )
       )
       failToDownload[InvalidFileLink](value, ignoreNotFound = false)

@@ -26,10 +26,12 @@ trait BioAssertions { self: Assertions =>
   )(implicit loc: Location, ev: B <:< A): IO[E, Unit] =
     obtained.flatMap(a => UIO(assertEquals(a, returns, clue)))
 
-  def assertError[E, A](obtained: IO[E, A], condition: E => Boolean, clue: E => Any = (_: E) => "assertion failed")(implicit loc: Location): IO[E, Unit] = {
+  def assertError[E, A](obtained: IO[E, A], condition: E => Boolean, clue: E => Any = (_: E) => "assertion failed")(
+      implicit loc: Location
+  ): IO[E, Unit] = {
     obtained.attempt.map {
       case Left(err) => Assertions.assert(condition(err), clue(err))
-      case Right(a) =>
+      case Right(a)  =>
         fail(
           s"Expected a raised error, but returned successful response: $a"
         )
@@ -101,11 +103,11 @@ trait BioAssertions { self: Assertions =>
     def assertError(condition: E => Boolean, clue: => Any = "assertion failed")(implicit loc: Location): UIO[Unit] = {
       io.attempt.map {
         case Left(E(err)) => Assertions.assert(condition(err), clue)
-        case Left(err) =>
+        case Left(err)    =>
           fail(
             s"Wrong raised error type caught, expected: '${E.runtimeClass.getName}', actual: '${err.getClass.getName}'"
           )
-        case Right(a) =>
+        case Right(a)     =>
           fail(
             s"Expected a raised error, but returned successful response: $a"
           )

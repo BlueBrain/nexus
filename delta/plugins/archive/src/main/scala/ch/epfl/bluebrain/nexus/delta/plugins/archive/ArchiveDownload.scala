@@ -114,8 +114,8 @@ object ArchiveDownload {
         archiveReference match {
           case reference: FullArchiveReference => IO.pure(reference)
           case reference: FileLinkReference    =>
-            resolveSelf(reference.self).map {
-              case (projectRef, resourceRef) => FileReference(resourceRef, Some(projectRef), reference.path)
+            resolveSelf(reference.self).map { case (projectRef, resourceRef) =>
+              FileReference(resourceRef, Some(projectRef), reference.path)
             }
         }
       }
