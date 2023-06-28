@@ -307,6 +307,7 @@ GET /v1/resources/{org_label}/{project_label}?from={from}
                                              &schema={schema}
                                              &q={search}
                                              &sort={sort}
+                                             &aggregate={aggregate}
 ```
 
 ### Within an organization
@@ -327,6 +328,7 @@ GET /v1/resources/{org_label}?from={from}
                              &schema={schema}
                              &q={search}
                              &sort={sort}
+                             &aggregate={aggregate}
 ```
 
 ### Within all projects
@@ -345,6 +347,7 @@ GET /v1/resources?from={from}
                  &schema={schema}
                  &q={search}
                  &sort={sort}
+                 &aggregate={aggregate}
 ```
 
 ### Parameter description
@@ -382,6 +385,7 @@ Examples of ranges:
   matching (containing) the provided string
 - `{sort}`: String - can be used to sort resources based on a payloads' field. This parameter can appear multiple times 
   to enable sorting by multiple fields. The default is done by `_createdBy` and `@id`.
+- `{aggregate}`: Boolean - if `true` then the response will only contain aggregations of the `@type` and `_project` fields; defaults to `false`
 
 
 **Example**
