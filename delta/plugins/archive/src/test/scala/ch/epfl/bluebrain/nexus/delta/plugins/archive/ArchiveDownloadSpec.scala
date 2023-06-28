@@ -7,9 +7,9 @@ import akka.stream.scaladsl.Source
 import akka.testkit.TestKit
 import akka.util.ByteString
 import cats.data.NonEmptySet
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
-import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.{FileReference, ResourceReference}
-import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.{AuthorizationFailed, FilenameTooLong, ResourceNotFound}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils.encode
+import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.{FileLinkReference, FileReference, ResourceReference}
+import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.{AuthorizationFailed, FilenameTooLong, InvalidFileLink, ResourceNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveResourceRepresentation.{CompactedJsonLd, Dot, ExpandedJsonLd, NQuads, NTriples, SourceJson}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.{ArchiveFormat, ArchiveRejection, ArchiveValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.RemoteContextResolutionFixture
@@ -102,6 +102,7 @@ abstract class ArchiveDownloadSpec
     val file1Size            = 12L
     val file1                = FileGen.resourceFor(id1, projectRef, storageRef, fileAttributes(file1Name, file1Size))
     val file1Content: String = "file content"
+    val file1Self = s"http://delta:8080/files/${encode(id1.toString)}"
 
     val id2                  = iri"http://localhost/${genString()}"
     val file2Name            = genString(100)
@@ -116,6 +117,11 @@ abstract class ArchiveDownloadSpec
         UIO.some(JsonLdContent(file2, file2.value.asJson, None))
       case _                     =>
         UIO.none
+    }
+
+    val resolveSelf: (String) => IO[ArchiveRejection, (ProjectRef, ResourceRef)] = {
+      case `file1Self` => IO.pure((projectRef, Latest(id1)))
+      case _ => IO.raiseError(ArchiveRejection.InvalidFileLink("invalid file link"))
     }
 
     val fetchFileContent: (Iri, ProjectRef) => IO[FileRejection, FileResponse] = {
@@ -135,7 +141,7 @@ abstract class ArchiveDownloadSpec
       aclCheck,
       (id: ResourceRef, ref: ProjectRef) => fetchResource(id.iri, ref),
       (id: ResourceRef, ref: ProjectRef, _: Caller) => fetchFileContent(id.iri, ref),
-      (_: String) => IO.raiseError(ArchiveRejection.InvalidFileLink("test should not have file links"))
+      (self: String) => resolveSelf(self)
     )
 
     def downloadAndExtract(value: ArchiveValue, ignoreNotFound: Boolean) = {
@@ -161,10 +167,32 @@ abstract class ArchiveDownloadSpec
       )
       val result   = downloadAndExtract(value, ignoreNotFound = false)
       val expected = Map(
-        s"${project.ref.toString}/compacted/${UrlUtils.encode(file1.id.toString)}.json" -> file1.toCompactedJsonLd.accepted.json.sort.spaces2,
+        s"${project.ref.toString}/compacted/${encode(file1.id.toString)}.json" -> file1.toCompactedJsonLd.accepted.json.sort.spaces2,
         s"${project.ref.toString}/file/${file1.value.attributes.filename}"              -> file1Content
       )
       result shouldEqual expected
+    }
+
+    s"provide a ${format.fileExtension} for file links (_self)" in {
+      val value = ArchiveValue.unsafe(
+        NonEmptySet.of(
+          FileLinkReference(file1Self, None),
+        )
+      )
+      val result = downloadAndExtract(value, ignoreNotFound = false)
+      val expected = Map(
+        s"${project.ref.toString}/file/${file1.value.attributes.filename}" -> file1Content
+      )
+      result shouldEqual expected
+    }
+
+    s"fail to provide a ${format.fileExtension} for file links which do not resolve" in {
+      val value = ArchiveValue.unsafe(
+        NonEmptySet.of(
+          FileLinkReference("http://wrong.file/link", None),
+        )
+      )
+      failToDownload[InvalidFileLink](value, ignoreNotFound = false)
     }
 
     s"provide a ${format.fileExtension} for both resources and files with different paths and formats" in {
@@ -275,7 +303,7 @@ abstract class ArchiveDownloadSpec
       )
       val result   = downloadAndExtract(value, ignoreNotFound = true)
       val expected = Map(
-        s"${project.ref.toString}/compacted/${UrlUtils.encode(file1.id.toString)}.json" -> file1.toCompactedJsonLd.accepted.json.sort.spaces2
+        s"${project.ref.toString}/compacted/${encode(file1.id.toString)}.json" -> file1.toCompactedJsonLd.accepted.json.sort.spaces2
       )
       result shouldEqual expected
     }
