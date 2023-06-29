@@ -185,6 +185,14 @@ object BlazegraphViewRejection {
       extends BlazegraphViewRejection(s"Blazegraph view identifier cannot be blank.")
 
   /**
+    * Rejection indicating nexus metadata fields were found in the payload. Users should not be setting these.
+    */
+  final case class UnexpectedMetadataFields(fields: Set[String])
+      extends BlazegraphViewRejection(
+        s"Metadata field(s) found in payload: ${fields.map(field => s"'$field'").mkString(", ")}"
+      )
+
+  /**
     * Rejection returned when a resource id cannot be expanded to [[Iri]].
     *
     * @param id
@@ -221,6 +229,7 @@ object BlazegraphViewRejection {
     case JsonLdRejection.InvalidJsonLdFormat(id, rdfError) => InvalidJsonLdFormat(id, rdfError)
     case JsonLdRejection.DecodingFailed(error)             => DecodingFailed(error)
     case BlankId                                           => BlankBlazegraphViewId
+    case JsonLdRejection.UnexpectedMetadataFields(fields)  => UnexpectedMetadataFields(fields)
   }
 
   implicit private[plugins] val blazegraphViewRejectionEncoder: Encoder.AsObject[BlazegraphViewRejection] =

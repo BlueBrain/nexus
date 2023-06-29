@@ -84,6 +84,14 @@ object StorageRejection {
   final case object BlankStorageId extends StorageRejection(s"Storage identifier cannot be blank.")
 
   /**
+    * Rejection indicating nexus metadata fields were found in the payload. Users should not be setting these.
+    */
+  final case class UnexpectedMetadataFields(fields: Set[String])
+      extends StorageRejection(
+        s"Metadata field(s) found in payload: ${fields.map(field => s"'$field'").mkString(", ")}"
+      )
+
+  /**
     * Rejection returned when attempting to create a storage but the id already exists.
     *
     * @param id
@@ -219,6 +227,7 @@ object StorageRejection {
     case JsonLdRejection.InvalidJsonLdFormat(id, rdfError) => InvalidJsonLdFormat(id, rdfError)
     case JsonLdRejection.DecodingFailed(error)             => DecodingFailed(error)
     case JsonLdRejection.BlankId                           => BlankStorageId
+    case JsonLdRejection.UnexpectedMetadataFields(fields)  => UnexpectedMetadataFields(fields)
   }
 
   implicit private[plugins] val storageRejectionEncoder: Encoder.AsObject[StorageRejection] =

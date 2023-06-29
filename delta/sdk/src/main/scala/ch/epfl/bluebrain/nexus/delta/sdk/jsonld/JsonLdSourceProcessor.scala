@@ -58,6 +58,15 @@ sealed abstract class JsonLdSourceProcessor(implicit api: JsonLdApi) {
     )(BlankId)
   }
 
+  protected def validateNoUnderscoreFields(source: Json): IO[UnexpectedMetadataFields, Unit] = {
+
+    val metadataFields = source.asObject.toList.flatMap(_.keys.filter(_.startsWith("_"))).toSet
+
+    IO.raiseWhen(
+      metadataFields.nonEmpty
+    )(UnexpectedMetadataFields(metadataFields))
+  }
+
   private def defaultCtx(context: ProjectContext): ContextValue =
     ContextObject(JsonObject(keywords.vocab -> context.vocab.asJson, keywords.base -> context.base.asJson))
 
@@ -91,6 +100,7 @@ object JsonLdSourceProcessor {
     )(implicit rcr: RemoteContextResolution): IO[R, (Iri, CompactedJsonLd, ExpandedJsonLd)] = {
       for {
         _                       <- validateIdNotBlank(source)
+        _                       <- validateNoUnderscoreFields(source)
         (ctx, originalExpanded) <- expandSource(context, source.addContext(contextIri: _*))
         iri                     <- getOrGenerateId(originalExpanded.rootId.asIri, context)
         expanded                 = originalExpanded.replaceId(iri)
