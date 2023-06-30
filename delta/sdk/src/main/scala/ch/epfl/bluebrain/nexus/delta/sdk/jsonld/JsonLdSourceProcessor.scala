@@ -132,6 +132,7 @@ object JsonLdSourceProcessor {
     ): IO[R, (CompactedJsonLd, ExpandedJsonLd)] = {
       for {
         _                       <- validateIdNotBlank(source)
+        _                       <- IO.when(forbidMetadataFieldsInPayload)(validateNoUnderscoreFields(source))
         (ctx, originalExpanded) <- expandSource(context, source.addContext(contextIri: _*))
         expanded                <- checkAndSetSameId(iri, originalExpanded)
         compacted               <- expanded.toCompacted(ctx).mapError(err => InvalidJsonLdFormat(Some(iri), err))
