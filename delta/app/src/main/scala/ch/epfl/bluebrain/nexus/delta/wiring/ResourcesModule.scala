@@ -52,6 +52,7 @@ object ResourcesModule extends ModuleDef {
         fetchContext.mapRejection(ProjectContextRejection),
         resolverContextResolution,
         config.resources,
+        config.jsonLdSourceProcessor.forbidMetadataFieldsInPayload,
         xas
       )(
         api,

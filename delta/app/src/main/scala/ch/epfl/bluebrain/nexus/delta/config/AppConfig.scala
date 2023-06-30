@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApiConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclsConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.EncryptionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessorConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ServiceAccountConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.OrganizationsConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.PermissionsConfig
@@ -35,6 +36,7 @@ final case class AppConfig(
     http: HttpConfig,
     database: DatabaseConfig,
     jsonLdApi: JsonLdApiConfig,
+    jsonLdSourceProcessor: JsonLdSourceProcessorConfig,
     identities: CacheConfig,
     permissions: PermissionsConfig,
     realms: RealmsConfig,
