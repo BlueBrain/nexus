@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.archive
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.{FileReference, ResourceReference}
+import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.{FileLinkReference, FileReference, ResourceReference}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveResourceRepresentation._
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model._
@@ -14,7 +14,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.{AkkaSource, JsonLdValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.FileResponse
@@ -25,6 +24,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.StreamConverter
+import ch.epfl.bluebrain.nexus.delta.sdk.{AkkaSource, JsonLdValue}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
@@ -86,7 +86,8 @@ object ArchiveDownload {
   def apply(
       aclCheck: AclCheck,
       fetchResource: (ResourceRef, ProjectRef) => UIO[Option[JsonLdContent[_, _]]],
-      fetchFileContent: (ResourceRef, ProjectRef, Caller) => IO[FileRejection, FileResponse]
+      fetchFileContent: (ResourceRef, ProjectRef, Caller) => IO[FileRejection, FileResponse],
+      resolveSelf: ResolveFileSelf
   )(implicit sort: JsonKeyOrdering, baseUri: BaseUri, rcr: RemoteContextResolution): ArchiveDownload =
     new ArchiveDownload {
 
@@ -100,8 +101,8 @@ object ArchiveDownload {
           format: ArchiveFormat[M],
           ignoreNotFound: Boolean
       )(implicit caller: Caller, scheduler: Scheduler): IO[ArchiveRejection, AkkaSource] = {
-        val references = value.resources.toList
         for {
+          references    <- value.resources.toList.traverse(toFullReference)
           _             <- checkResourcePermissions(references, project)
           contentStream <- resolveReferencesAsStream(references, project, ignoreNotFound, format)
         } yield {
@@ -109,8 +110,18 @@ object ArchiveDownload {
         }
       }
 
+      private def toFullReference(archiveReference: ArchiveReference): IO[ArchiveRejection, FullArchiveReference] = {
+        archiveReference match {
+          case reference: FullArchiveReference => IO.pure(reference)
+          case reference: FileLinkReference    =>
+            resolveSelf(reference.self).map { case (projectRef, resourceRef) =>
+              FileReference(resourceRef, Some(projectRef), reference.path)
+            }
+        }
+      }
+
       private def resolveReferencesAsStream[M](
-          references: List[ArchiveReference],
+          references: List[FullArchiveReference],
           project: ProjectRef,
           ignoreNotFound: Boolean,
           format: ArchiveFormat[M]
@@ -139,13 +150,13 @@ object ArchiveDownload {
       }
 
       private def checkResourcePermissions(
-          refs: List[ArchiveReference],
+          refs: List[FullArchiveReference],
           project: ProjectRef
       )(implicit caller: Caller): IO[AuthorizationFailed, Unit] =
         aclCheck
           .mapFilterOrRaise(
             refs,
-            (a: ArchiveReference) => AclAddress.Project(a.project.getOrElse(project)) -> resources.read,
+            (a: FullArchiveReference) => AclAddress.Project(a.project.getOrElse(project)) -> resources.read,
             identity[ArchiveReference],
             address => IO.raiseError(AuthorizationFailed(address, resources.read))
           )

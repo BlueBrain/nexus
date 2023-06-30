@@ -16,4 +16,9 @@ object ArchiveReferenceType {
     * A file reference.
     */
   final case object File extends ArchiveReferenceType
+
+  /**
+    * An archive file reference, but a link rather than a full reference
+    */
+  final case object FileLink extends ArchiveReferenceType
 }

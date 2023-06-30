@@ -31,10 +31,10 @@ object ArchiveValue {
     */
   final def apply(resources: NonEmptySet[ArchiveReference]): Either[InvalidResourceCollection, ArchiveValue] = {
 
-    def validateDefaultFileName(reference: ArchiveReference) = reference match {
+    def validateDefaultFileName(reference: ArchiveReference): Option[Iri] = reference match {
       case r: ArchiveReference.ResourceReference if r.path.isEmpty =>
-        r.defaultFileName.length < 100
-      case _                                                       => true
+        Option.unless(r.defaultFileName.length < 100)(r.ref.iri)
+      case _                                                       => None
     }
 
     def validatePath(path: AbsolutePath) =
@@ -47,7 +47,7 @@ object ArchiveValue {
         visitedPaths ++ reference.path,
         duplicates ++ reference.path.filter(visitedPaths.contains),
         invalids ++ reference.path.filterNot(validatePath),
-        longIds ++ Option.unless(validateDefaultFileName(reference))(reference.ref.original)
+        longIds ++ validateDefaultFileName(reference)
       )
     }
 
