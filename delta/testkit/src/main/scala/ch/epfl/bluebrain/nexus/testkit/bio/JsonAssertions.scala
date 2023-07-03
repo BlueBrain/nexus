@@ -6,7 +6,7 @@ import munit.{Assertions, Location}
 
 trait JsonAssertions { self: Assertions =>
 
-  implicit private val printer: Printer = Printer.spaces2
+  implicit private val jsonPrinter: Printer = Printer.spaces2
 
   implicit class JsonAssertionsOps(json: Json)(implicit loc: Location) {
 
@@ -30,7 +30,8 @@ trait JsonAssertions { self: Assertions =>
       assertEquals(
         obtainedSorted,
         expectedSorted,
-        s"Both Json are not equal (ignoring array order)\n${printer.print(obtainedSorted)}\ndid not equal\n${printer.print(expectedSorted)}"
+        s"Both Json are not equal (ignoring array order)\n${jsonPrinter
+          .print(obtainedSorted)}\ndid not equal\n${jsonPrinter.print(expectedSorted)}"
       )
     }
   }
