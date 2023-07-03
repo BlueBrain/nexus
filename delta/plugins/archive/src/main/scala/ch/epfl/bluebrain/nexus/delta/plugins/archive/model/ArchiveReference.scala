@@ -24,6 +24,24 @@ sealed trait ArchiveReference extends Product with Serializable {
 
   /**
     * @return
+    *   the target location in the archive
+    */
+  def path: Option[AbsolutePath]
+
+  /**
+    * @return
+    *   the archive reference type
+    */
+  def tpe: ArchiveReferenceType
+}
+
+/**
+  * Enumeration of fully-qualified archive references
+  */
+sealed trait FullArchiveReference extends ArchiveReference {
+
+  /**
+    * @return
     *   the referenced resource id optionally qualified with a tag or a revision
     */
   def ref: ResourceRef
@@ -34,17 +52,6 @@ sealed trait ArchiveReference extends Product with Serializable {
     */
   def project: Option[ProjectRef]
 
-  /**
-    * @return
-    *   the target location in the archive
-    */
-  def path: Option[AbsolutePath]
-
-  /**
-    * @return
-    *   the archive reference type
-    */
-  def tpe: ArchiveReferenceType
 }
 
 object ArchiveReference {
@@ -66,7 +73,7 @@ object ArchiveReference {
       project: Option[ProjectRef],
       path: Option[AbsolutePath],
       representation: Option[ArchiveResourceRepresentation]
-  ) extends ArchiveReference {
+  ) extends FullArchiveReference {
     override val tpe: ArchiveReferenceType = ArchiveReferenceType.Resource
 
     def representationOrDefault: ArchiveResourceRepresentation = representation.getOrElse(CompactedJsonLd)
@@ -95,7 +102,7 @@ object ArchiveReference {
       ref: ResourceRef,
       project: Option[ProjectRef],
       path: Option[AbsolutePath]
-  ) extends ArchiveReference {
+  ) extends FullArchiveReference {
     override val tpe: ArchiveReferenceType = ArchiveReferenceType.File
   }
 
@@ -103,6 +110,28 @@ object ArchiveReference {
     implicit val fileReferenceOrder: Order[FileReference] =
       Order.by { fileReference =>
         (fileReference.ref, fileReference.project, fileReference.path)
+      }
+  }
+
+  /**
+    * An archive file reference, but a link rather than a full reference
+    *
+    * @param self
+    *   the '_self' of the file, which is the url a user would input to access the file in nexus
+    * @param path
+    *   the target location in the archive
+    */
+  final case class FileLinkReference(
+      self: String,
+      path: Option[AbsolutePath]
+  ) extends ArchiveReference {
+    override val tpe: ArchiveReferenceType = ArchiveReferenceType.FileLink
+  }
+
+  object FileLinkReference {
+    implicit val fileLinkReferenceOrder: Order[FileLinkReference] =
+      Order.by { fileReference =>
+        (fileReference.self, fileReference.path)
       }
   }
 
@@ -126,6 +155,11 @@ object ArchiveReference {
       path: Option[AbsolutePath]
   ) extends ReferenceInput
 
+  final private case class FileLinkInput(
+      link: String,
+      path: Option[AbsolutePath]
+  ) extends ReferenceInput
+
   @nowarn("cat=unused")
   implicit final val referenceInputJsonLdDecoder: JsonLdDecoder[ArchiveReference] = {
     def refOf(resourceId: Iri, tag: Option[UserTag], rev: Option[Int]): ResourceRef =
@@ -138,6 +172,7 @@ object ArchiveReference {
     val ctx = Configuration.default.context
       .addAliasIdType("ResourceInput", nxv + "Resource")
       .addAliasIdType("FileInput", nxv + "File")
+      .addAliasIdType("FileLinkInput", nxv + "FileLink")
 
     implicit val cfg: Configuration = Configuration.default.copy(context = ctx)
 
@@ -160,6 +195,8 @@ object ArchiveReference {
       case FileInput(resourceId, project, tag, rev, path)                                         =>
         val ref = refOf(resourceId, tag, rev)
         Right(FileReference(ref, project, path))
+      case FileLinkInput(link, path)                                                              =>
+        Right(FileLinkReference(link, path))
     }
   }
 
@@ -172,6 +209,7 @@ object ArchiveReference {
       .copy(transformConstructorNames = {
         case "ResourceInput" => "Resource"
         case "FileInput"     => "File"
+        case "FileLinkInput" => "FileLink"
         case other           => other
       })
 
@@ -204,10 +242,23 @@ object ArchiveReference {
           rev = revOf(ref),
           path = path
         )
+      case FileLinkReference(self, path)                         =>
+        FileLinkInput(
+          link = self,
+          path = path
+        )
     }
   }
 
   implicit val archiveReferenceOrder: Order[ArchiveReference] = Order.from {
+    case (_: ResourceReference, _: FileReference)       => -1
+    case (r1: ResourceReference, r2: ResourceReference) => ResourceReference.resourceReferenceOrder.compare(r1, r2)
+    case (_: FileReference, _: ResourceReference)       => 1
+    case (f1: FileReference, f2: FileReference)         => FileReference.fileReferenceOrder.compare(f1, f2)
+    case _                                              => 1
+  }
+
+  implicit val fullArchiveReferenceOrder: Order[FullArchiveReference] = Order.from {
     case (_: ResourceReference, _: FileReference)       => -1
     case (r1: ResourceReference, r2: ResourceReference) => ResourceReference.resourceReferenceOrder.compare(r1, r2)
     case (_: FileReference, _: ResourceReference)       => 1

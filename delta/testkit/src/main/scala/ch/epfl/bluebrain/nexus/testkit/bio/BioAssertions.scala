@@ -26,6 +26,18 @@ trait BioAssertions { self: Assertions =>
   )(implicit loc: Location, ev: B <:< A): IO[E, Unit] =
     obtained.flatMap(a => UIO(assertEquals(a, returns, clue)))
 
+  def assertError[E, A](obtained: IO[E, A], condition: E => Boolean, clue: E => Any = (_: E) => "assertion failed")(
+      implicit loc: Location
+  ): IO[E, Unit] = {
+    obtained.attempt.map {
+      case Left(err) => Assertions.assert(condition(err), clue(err))
+      case Right(a)  =>
+        fail(
+          s"Expected a raised error, but returned successful response: $a"
+        )
+    }
+  }
+
   implicit class UioAssertionsOps[A](uio: UIO[A])(implicit loc: Location) {
     def assert(expected: A, clue: Any = "values are not the same"): UIO[Unit] =
       uio.map(assertEquals(_, expected, clue))
@@ -87,6 +99,20 @@ trait BioAssertions { self: Assertions =>
 
     def assert(expected: A, timeout: FiniteDuration): UIO[Unit] =
       io.timeout(timeout).assertSome(expected)
+
+    def assertError(condition: E => Boolean, clue: => Any = "assertion failed")(implicit loc: Location): UIO[Unit] = {
+      io.attempt.map {
+        case Left(E(err)) => Assertions.assert(condition(err), clue)
+        case Left(err)    =>
+          fail(
+            s"Wrong raised error type caught, expected: '${E.runtimeClass.getName}', actual: '${err.getClass.getName}'"
+          )
+        case Right(a)     =>
+          fail(
+            s"Expected a raised error, but returned successful response: $a"
+          )
+      }
+    }
 
     def error(expected: E): UIO[Unit] = io.attempt.map {
       case Left(E(err)) => assertEquals(err, expected)

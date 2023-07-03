@@ -8,7 +8,9 @@ import akka.http.scaladsl.model.{ContentTypes, StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.{StatefulUUIDF, UUIDF, UrlUtils}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils.encode
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.{StatefulUUIDF, UUIDF}
+import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.routes.ArchiveRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
@@ -94,7 +96,8 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with TryValue
   private val storageRef = ResourceRef.Revision(iri"http://localhost/${genString()}", 5)
 
   private val fileId                = iri"http://localhost/${genString()}"
-  private val encodedFileId         = UrlUtils.encode(fileId.toString)
+  private val encodedFileId         = encode(fileId.toString)
+  private val fileSelf              = s"http://delta:8080/files/$encodedFileId"
   private val fileContent           = "file content"
   private val fileAttributes        = FileAttributes(
     uuid,
@@ -109,6 +112,9 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with TryValue
   private val file: ResourceF[File] =
     FileGen.resourceFor(fileId, projectRef, storageRef, fileAttributes, createdBy = subject, updatedBy = subject)
 
+  private val notFoundId   = iri"http://localhost/${genString()}"
+  private val notFoundSelf = s"http://delta:8080/files/${encode(notFoundId.toString)}"
+
   private val generatedId = project.base.iri / uuid.toString
 
   val fetchResource: (Iri, ProjectRef) => UIO[Option[JsonLdContent[_, _]]] = {
@@ -116,6 +122,12 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with TryValue
       UIO.some(JsonLdContent(file, file.value.asJson, None))
     case _                        =>
       UIO.none
+  }
+
+  val resolveSelf: (String) => IO[ArchiveRejection, (ProjectRef, ResourceRef)] = {
+    case `fileSelf`     => IO.pure((projectRef, ResourceRef.Latest(fileId)))
+    case `notFoundSelf` => IO.pure((projectRef, ResourceRef.Latest(notFoundId)))
+    case _              => IO.raiseError(ArchiveRejection.InvalidFileLink("invalid file link"))
   }
 
   val fetchFileContent: (Iri, ProjectRef, Caller) => IO[FileRejection, FileResponse] = (id, p, c) => {
@@ -139,7 +151,9 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with TryValue
       archiveDownload = ArchiveDownload(
                           aclCheck,
                           (id: ResourceRef, ref: ProjectRef) => fetchResource(id.iri, ref),
-                          (id: ResourceRef, ref: ProjectRef, c: Caller) => fetchFileContent(id.iri, ref, c)
+                          (id: ResourceRef, ref: ProjectRef, c: Caller) => fetchFileContent(id.iri, ref, c),
+                          (_: String) =>
+                            IO.raiseError(ArchiveRejection.InvalidFileLink("test should not have file links"))
                         )
       archives        = Archives(fetchContext.mapRejection(ProjectContextRejection), archiveDownload, archivesConfig, xas)
       identities      = IdentitiesDummy(caller, callerNoFilePerms)
@@ -170,7 +184,6 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with TryValue
     )
 
   "The ArchiveRoutes" should {
-    val notFoundId = iri"http://localhost/${genString()}"
 
     val archive =
       json"""{
@@ -190,6 +203,28 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with TryValue
               {
                 "@type": "File",
                 "resourceId": "$notFoundId"
+              }
+            ]
+          }"""
+
+    val archiveWithFileLink =
+      json"""{
+            "resources": [
+              {
+                "@type": "Resource",
+                "resourceId": "$fileId"
+              },
+              {
+                "@type": "FileLink",
+                "link": "$fileSelf"
+              },
+              {
+                "@type": "Resource",
+                "resourceId": "$notFoundId"
+              },
+              {
+                "@type": "FileLink",
+                "link": "$notFoundSelf"
               }
             ]
           }"""
@@ -214,8 +249,21 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with TryValue
 
     "create an archive with a specific id" in {
       val id        = iri"http://localhost/${genString()}"
-      val encodedId = UrlUtils.encode(id.toString).replaceAll("%3A", ":")
+      val encodedId = encode(id.toString).replaceAll("%3A", ":")
       Put(s"/v1/archives/$projectRef/$encodedId", archive.toEntity) ~> asSubject ~> acceptMeta ~> routes ~> check {
+        status shouldEqual StatusCodes.Created
+        response.asJson shouldEqual archiveMetadata(id, project.ref, label = Some(encodedId))
+      }
+    }
+
+    "create an archive with file link" in {
+      val id        = iri"http://localhost/${genString()}"
+      val encodedId = encode(id.toString).replaceAll("%3A", ":")
+
+      Put(
+        s"/v1/archives/$projectRef/$encodedId",
+        archiveWithFileLink.toEntity
+      ) ~> asSubject ~> acceptMeta ~> routes ~> check {
         status shouldEqual StatusCodes.Created
         response.asJson shouldEqual archiveMetadata(id, project.ref, label = Some(encodedId))
       }
@@ -223,7 +271,7 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with TryValue
 
     "create an archive with a specific id and redirect" in {
       val id        = iri"http://localhost/${genString()}"
-      val encodedId = UrlUtils.encode(id.toString).replaceAll("%3A", ":")
+      val encodedId = encode(id.toString).replaceAll("%3A", ":")
       Put(s"/v1/archives/$projectRef/$encodedId", archive.toEntity) ~> asSubject ~> acceptAll ~> routes ~> check {
         status shouldEqual StatusCodes.SeeOther
         header[Location].value.uri.toString() shouldEqual s"${baseUri.endpoint}/archives/$projectRef/$encodedId"
@@ -250,7 +298,7 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with TryValue
 
           result.keySet shouldEqual Set(
             s"${project.ref}/file/file.txt",
-            s"${project.ref}/compacted/${UrlUtils.encode(fileId.toString)}.json"
+            s"${project.ref}/compacted/${encode(fileId.toString)}.json"
           )
 
           val expectedContent = fileContent
@@ -266,7 +314,7 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with TryValue
             updatedBy = subject,
             label = Some(encodedFileId.replaceAll("%3A", ":"))
           )
-          val actualMetadata   = result.entryAsJson(s"${project.ref}/compacted/${UrlUtils.encode(fileId.toString)}.json")
+          val actualMetadata   = result.entryAsJson(s"${project.ref}/compacted/${encode(fileId.toString)}.json")
           actualMetadata shouldEqual expectedMetadata
         }
       }
@@ -282,7 +330,7 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with TryValue
 
         result.keySet shouldEqual Set(
           s"${project.ref}/file/file.txt",
-          s"${project.ref}/compacted/${UrlUtils.encode(fileId.toString)}.json"
+          s"${project.ref}/compacted/${encode(fileId.toString)}.json"
         )
 
         val expectedContent = fileContent
@@ -298,7 +346,7 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with TryValue
           updatedBy = subject,
           label = Some(encodedFileId.replaceAll("%3A", ":"))
         )
-        val actualMetadata   = result.entryAsJson(s"${project.ref}/compacted/${UrlUtils.encode(fileId.toString)}.json")
+        val actualMetadata   = result.entryAsJson(s"${project.ref}/compacted/${encode(fileId.toString)}.json")
         actualMetadata shouldEqual expectedMetadata
       }
     }
