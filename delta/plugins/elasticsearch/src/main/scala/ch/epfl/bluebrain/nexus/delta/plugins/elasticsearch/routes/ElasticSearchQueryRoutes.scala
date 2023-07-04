@@ -122,7 +122,7 @@ class ElasticSearchQueryRoutes(
                     // Aggregate all resources inside a project filtering by its schema type
                     (pathEndOrSingleSlash & operationName(s"$prefixSegment/aggregations/{org}/{project}/{schema}")) {
                       underscoreToOption(schema) match {
-                        case None => list(request)
+                        case None        => list(request)
                         case Some(value) =>
                           val r = DefaultSearchRequest.ProjectSearch(ref, params, page, sort, value)(fetchContext)
                           aggregate(r)
