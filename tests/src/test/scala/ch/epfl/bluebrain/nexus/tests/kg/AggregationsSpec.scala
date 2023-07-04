@@ -61,7 +61,7 @@ final class AggregationsSpec extends BaseSpec with Inspectors with EitherValuabl
 
     "get an error if the user has no access" in {
 
-      deltaClient.get[Json](s"/resources/$ref11?aggregate=true", Alice) { (_, response) =>
+      deltaClient.get[Json](s"/aggregations/$ref11", Alice) { (_, response) =>
         response.status shouldEqual StatusCodes.Forbidden
       }
     }
@@ -72,7 +72,7 @@ final class AggregationsSpec extends BaseSpec with Inspectors with EitherValuabl
         "org"     -> org1,
         "project" -> proj11
       )
-      deltaClient.get[Json](s"/resources/$ref11?aggregate=true", Bob) { (json, response) =>
+      deltaClient.get[Json](s"/aggregations/$ref11", Bob) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
         json should equalIgnoreArrayOrder(expected)
       }
@@ -83,7 +83,7 @@ final class AggregationsSpec extends BaseSpec with Inspectors with EitherValuabl
   "Aggregating resources within an org" should {
 
     "get an error if the user has no access on the org" in {
-      deltaClient.get[Json](s"/resources/$org2?aggregate=true", Alice) { (_, response) =>
+      deltaClient.get[Json](s"/aggregations/$org2", Alice) { (_, response) =>
         response.status shouldEqual StatusCodes.Forbidden
       }
     }
@@ -95,7 +95,7 @@ final class AggregationsSpec extends BaseSpec with Inspectors with EitherValuabl
         "proj11" -> proj11,
         "proj12" -> proj12
       )
-      deltaClient.get[Json](s"/resources/$org1?aggregate=true", Bob) { (json, response) =>
+      deltaClient.get[Json](s"/aggregations/$org1", Bob) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
         json should equalIgnoreArrayOrder(expected)
       }
@@ -106,7 +106,7 @@ final class AggregationsSpec extends BaseSpec with Inspectors with EitherValuabl
   "Aggregating resources within all accessible projects in the system" should {
 
     "get an error for anonymous" in {
-      deltaClient.get[Json](s"/resources?aggregate=true", Anonymous) { (_, response) =>
+      deltaClient.get[Json](s"/aggregations", Anonymous) { (_, response) =>
         response.status shouldEqual StatusCodes.Forbidden
       }
     }
@@ -120,7 +120,7 @@ final class AggregationsSpec extends BaseSpec with Inspectors with EitherValuabl
         "proj12" -> proj12,
         "proj21" -> proj21
       )
-      deltaClient.get[Json](s"/resources?aggregate=true", Bob) { (json, response) =>
+      deltaClient.get[Json](s"/aggregations", Bob) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
         json should equalIgnoreArrayOrder(expected)
       }
