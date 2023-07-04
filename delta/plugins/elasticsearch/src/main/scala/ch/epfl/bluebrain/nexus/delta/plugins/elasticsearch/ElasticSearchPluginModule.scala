@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearc
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, defaultElasticsearchMapping, defaultElasticsearchSettings, schema => viewsSchemaId, ElasticSearchView, ElasticSearchViewEvent}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.{DefaultViewsQuery, ElasticSearchQueryError}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.ElasticSearchViewsRoutes
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.{ElasticSearchQueryRoutes, ElasticSearchViewsRoutes}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
@@ -174,35 +174,57 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         schemeDirectives: DeltaSchemeDirectives,
         indexingAction: IndexingAction @Id("aggregate"),
         viewsQuery: ElasticSearchViewsQuery,
-        defaultViewsQuery: DefaultViewsQuery.Elasticsearch,
-        fetchContext: FetchContext[ContextRejection],
         shift: ElasticSearchView.Shift,
         baseUri: BaseUri,
-        cfg: ElasticSearchViewsConfig,
         s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering,
-        resourcesToSchemaSet: Set[ResourceToSchemaMappings],
         fusionConfig: FusionConfig
     ) =>
-      val resourceToSchema = resourcesToSchemaSet.foldLeft(ResourceToSchemaMappings.empty)(_ + _)
       new ElasticSearchViewsRoutes(
         identities,
         aclCheck,
         views,
         viewsQuery,
-        defaultViewsQuery,
         projections,
-        resourceToSchema,
         schemeDirectives,
         indexingAction(_, _, _)(shift, cr)
       )(
         baseUri,
-        cfg.pagination,
         s,
         cr,
         ordering,
-        fusionConfig,
+        fusionConfig
+      )
+  }
+
+  make[ElasticSearchQueryRoutes].from {
+    (
+        identities: Identities,
+        aclCheck: AclCheck,
+        schemeDirectives: DeltaSchemeDirectives,
+        defaultViewsQuery: DefaultViewsQuery.Elasticsearch,
+        baseUri: BaseUri,
+        s: Scheduler,
+        cr: RemoteContextResolution @Id("aggregate"),
+        ordering: JsonKeyOrdering,
+        resourcesToSchemaSet: Set[ResourceToSchemaMappings],
+        esConfig: ElasticSearchViewsConfig,
+        fetchContext: FetchContext[ContextRejection]
+    ) =>
+      val resourceToSchema = resourcesToSchemaSet.foldLeft(ResourceToSchemaMappings.empty)(_ + _)
+      new ElasticSearchQueryRoutes(
+        identities,
+        aclCheck,
+        resourceToSchema,
+        schemeDirectives,
+        defaultViewsQuery
+      )(
+        baseUri,
+        esConfig.pagination,
+        s,
+        cr,
+        ordering,
         fetchContext.mapRejection(ElasticSearchQueryError.ProjectContextRejection)
       )
   }
@@ -269,6 +291,9 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
   many[ApiMappings].add(ElasticSearchViews.mappings)
 
   many[PriorityRoute].add { (route: ElasticSearchViewsRoutes) =>
+    PriorityRoute(priority, route.routes, requiresStrictEntity = true)
+  }
+  many[PriorityRoute].add { (route: ElasticSearchQueryRoutes) =>
     PriorityRoute(priority, route.routes, requiresStrictEntity = true)
   }
 
