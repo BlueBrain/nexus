@@ -194,6 +194,7 @@ class ElasticSearchQueryRoutesSpec
 
   List(
     ("aggregate at project level", "/v1/aggregations/myorg/myproject"),
+    ("aggregate at project level with schema", "/v1/aggregations/myorg/myproject/schema"),
     ("aggregate at org level", "/v1/aggregations/myorg"),
     ("aggregate at root level", "/v1/aggregations")
   ).foreach { case (testName, path) =>
