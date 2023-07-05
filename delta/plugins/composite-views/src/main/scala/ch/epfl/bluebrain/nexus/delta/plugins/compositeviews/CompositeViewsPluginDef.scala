@@ -10,7 +10,7 @@ import monix.bio.Task
 
 class CompositeViewsPluginDef extends PluginDef {
 
-  override def module: Config => ModuleDef = _ => new CompositeViewsPluginModule(priority)
+  override def module: Config => ModuleDef = new CompositeViewsPluginModule(priority, _)
 
   override val info: PluginDescription = PluginDescription(Name.unsafe("composite-views"), BuildInfo.version)
 

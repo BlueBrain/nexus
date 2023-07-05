@@ -38,20 +38,22 @@ import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ProjectionConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeChain, ReferenceRegistry, Supervisor}
+import com.typesafe.config.Config
 import distage.ModuleDef
 import izumi.distage.model.definition.Id
 import monix.bio.UIO
 import monix.execution.Scheduler
 
-class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
+class CompositeViewsPluginModule(priority: Int, appConfig: Config) extends ModuleDef {
 
   implicit private val classLoader: ClassLoader = getClass.getClassLoader
 
-  make[CompositeViewsConfig].fromEffect { cfg => CompositeViewsConfig.load(cfg) }
+  private val config: CompositeViewsConfig = CompositeViewsConfig.load(appConfig)
+  make[CompositeViewsConfig].from { config }
 
-  make[DeltaClient].from { (cfg: CompositeViewsConfig, as: ActorSystem[Nothing], sc: Scheduler) =>
-    val httpClient = HttpClient()(cfg.remoteSourceClient.http, as.classicSystem, sc)
-    DeltaClient(httpClient, cfg.remoteSourceClient.retryDelay)(as, sc)
+  make[DeltaClient].from { (as: ActorSystem[Nothing], sc: Scheduler) =>
+    val httpClient = HttpClient()(config.remoteSourceClient.http, as.classicSystem, sc)
+    DeltaClient(httpClient, config.remoteSourceClient.retryDelay)(as, sc)
   }
 
   make[ValidateCompositeView].from {
@@ -62,7 +64,6 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         client: ElasticSearchClient,
         deltaClient: DeltaClient,
         crypto: Crypto,
-        config: CompositeViewsConfig,
         baseUri: BaseUri
     ) =>
       ValidateCompositeView(
@@ -84,7 +85,6 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         contextResolution: ResolverContextResolution,
         validate: ValidateCompositeView,
         crypto: Crypto,
-        config: CompositeViewsConfig,
         xas: Transactors,
         api: JsonLdApi,
         uuidF: UUIDF,
@@ -108,7 +108,6 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
     (
         supervisor: Supervisor,
         xas: Transactors,
-        config: CompositeViewsConfig,
         projectionConfig: ProjectionConfig,
         clock: Clock[UIO]
     ) =>
@@ -131,10 +130,11 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
     (
         esClient: ElasticSearchClient,
         blazeClient: BlazegraphClient @Id("blazegraph-indexing-client"),
-        cfg: CompositeViewsConfig,
         baseUri: BaseUri
     ) =>
-      CompositeSpaces.Builder(cfg.prefix, esClient, cfg.elasticsearchBatch, blazeClient, cfg.blazegraphBatch)(baseUri)
+      CompositeSpaces.Builder(config.prefix, esClient, config.elasticsearchBatch, blazeClient, config.blazegraphBatch)(
+        baseUri
+      )
   }
 
   make[MetadataPredicates].fromEffect {
@@ -148,9 +148,8 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         .map(MetadataPredicates)
   }
 
-  make[RemoteGraphStream].from {
-    (deltaClient: DeltaClient, config: CompositeViewsConfig, metadataPredicates: MetadataPredicates) =>
-      new RemoteGraphStream(deltaClient, config.remoteSourceClient, metadataPredicates)
+  make[RemoteGraphStream].from { (deltaClient: DeltaClient, metadataPredicates: MetadataPredicates) =>
+    new RemoteGraphStream(deltaClient, config.remoteSourceClient, metadataPredicates)
   }
 
   make[CompositeGraphStream].from { (local: GraphResourceStream, remote: RemoteGraphStream) =>
@@ -195,14 +194,12 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
     (
         aclCheck: AclCheck,
         views: CompositeViews,
-        client: BlazegraphClient @Id("blazegraph-query-client"),
-        cfg: CompositeViewsConfig
-    ) => BlazegraphQuery(aclCheck, views, client, cfg.prefix)
+        client: BlazegraphClient @Id("blazegraph-query-client")
+    ) => BlazegraphQuery(aclCheck, views, client, config.prefix)
   }
 
-  make[ElasticSearchQuery].from {
-    (aclCheck: AclCheck, views: CompositeViews, client: ElasticSearchClient, cfg: CompositeViewsConfig) =>
-      ElasticSearchQuery(aclCheck, views, client, cfg.prefix)
+  make[ElasticSearchQuery].from { (aclCheck: AclCheck, views: CompositeViews, client: ElasticSearchClient) =>
+    ElasticSearchQuery(aclCheck, views, client, config.prefix)
   }
 
   make[CompositeViewsRoutes].from {

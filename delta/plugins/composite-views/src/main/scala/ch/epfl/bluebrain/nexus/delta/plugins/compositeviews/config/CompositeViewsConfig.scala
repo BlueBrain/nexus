@@ -83,13 +83,11 @@ object CompositeViewsConfig {
   /**
     * Converts a [[Config]] into an [[CompositeViewsConfig]]
     */
-  def load(config: Config): UIO[CompositeViewsConfig] =
-    UIO.delay {
-      ConfigSource
-        .fromConfig(config)
-        .at("plugins.composite-views")
-        .loadOrThrow[CompositeViewsConfig]
-    }
+  def load(config: Config): CompositeViewsConfig =
+    ConfigSource
+      .fromConfig(config)
+      .at("plugins.composite-views")
+      .loadOrThrow[CompositeViewsConfig]
 
   implicit final val compositeViewsConfigReader: ConfigReader[CompositeViewsConfig] =
     deriveReader[CompositeViewsConfig]
