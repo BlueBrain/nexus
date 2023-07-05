@@ -6,8 +6,8 @@
       "rev": 1
     },
     {
-      "@type": "FileLink",
-      "link": "{{link}}",
+      "@type": "FileSelf",
+      "value": "{{value}}",
       "path": "/some/other/nexus-logo.png"
     }
   ]

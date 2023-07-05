@@ -8,8 +8,9 @@ import akka.testkit.TestKit
 import akka.util.ByteString
 import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils.encode
-import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.{FileLinkReference, FileReference, ResourceReference}
-import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.{AuthorizationFailed, FilenameTooLong, InvalidFileLink, ResourceNotFound}
+import ch.epfl.bluebrain.nexus.delta.plugins.archive.FileSelf.ParsingError
+import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.{FileReference, FileSelfReference, ResourceReference}
+import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.{AuthorizationFailed, FilenameTooLong, InvalidFileSelf, ResourceNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveResourceRepresentation.{CompactedJsonLd, Dot, ExpandedJsonLd, NQuads, NTriples, SourceJson}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.{ArchiveFormat, ArchiveRejection, ArchiveValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.RemoteContextResolutionFixture
@@ -102,7 +103,7 @@ abstract class ArchiveDownloadSpec
     val file1Size            = 12L
     val file1                = FileGen.resourceFor(id1, projectRef, storageRef, fileAttributes(file1Name, file1Size))
     val file1Content: String = "file content"
-    val file1Self            = s"http://delta:8080/files/${encode(id1.toString)}"
+    val file1Self            = uri"http://delta:8080/files/${encode(id1.toString)}"
 
     val id2                  = iri"http://localhost/${genString()}"
     val file2Name            = genString(100)
@@ -119,9 +120,10 @@ abstract class ArchiveDownloadSpec
         UIO.none
     }
 
-    val resolveSelf: (String) => IO[ArchiveRejection, (ProjectRef, ResourceRef)] = {
-      case `file1Self` => IO.pure((projectRef, Latest(id1)))
-      case _           => IO.raiseError(ArchiveRejection.InvalidFileLink("invalid file link"))
+    val file1SelfIri: Iri  = file1Self.toIri
+    val fileSelf: FileSelf = {
+      case `file1SelfIri` => IO.pure((projectRef, Latest(id1)))
+      case other          => IO.raiseError(ParsingError.InvalidPath(other))
     }
 
     val fetchFileContent: (Iri, ProjectRef) => IO[FileRejection, FileResponse] = {
@@ -141,7 +143,7 @@ abstract class ArchiveDownloadSpec
       aclCheck,
       (id: ResourceRef, ref: ProjectRef) => fetchResource(id.iri, ref),
       (id: ResourceRef, ref: ProjectRef, _: Caller) => fetchFileContent(id.iri, ref),
-      (self: String) => resolveSelf(self)
+      fileSelf
     )
 
     def downloadAndExtract(value: ArchiveValue, ignoreNotFound: Boolean) = {
@@ -173,10 +175,10 @@ abstract class ArchiveDownloadSpec
       result shouldEqual expected
     }
 
-    s"provide a ${format.fileExtension} for file links (_self)" in {
+    s"provide a ${format.fileExtension} for file selfs" in {
       val value    = ArchiveValue.unsafe(
         NonEmptySet.of(
-          FileLinkReference(file1Self, None)
+          FileSelfReference(file1Self, None)
         )
       )
       val result   = downloadAndExtract(value, ignoreNotFound = false)
@@ -186,13 +188,9 @@ abstract class ArchiveDownloadSpec
       result shouldEqual expected
     }
 
-    s"fail to provide a ${format.fileExtension} for file links which do not resolve" in {
-      val value = ArchiveValue.unsafe(
-        NonEmptySet.of(
-          FileLinkReference("http://wrong.file/link", None)
-        )
-      )
-      failToDownload[InvalidFileLink](value, ignoreNotFound = false)
+    s"fail to provide a ${format.fileExtension} for file selfs which do not resolve" in {
+      val value = ArchiveValue.unsafe(NonEmptySet.of(FileSelfReference("http://wrong.file/self", None)))
+      failToDownload[InvalidFileSelf](value, ignoreNotFound = false)
     }
 
     s"provide a ${format.fileExtension} for both resources and files with different paths and formats" in {

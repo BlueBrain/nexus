@@ -36,6 +36,18 @@ object ProjectRef {
     }
 
   /**
+    * Parse [[ProjectRef]] from raw string values for the org and the project
+    */
+  def parse(org: String, project: String): Either[String, ProjectRef] = {
+    for {
+      org     <- Label(org)
+      project <- Label(project)
+    } yield ProjectRef(org, project)
+  }.leftMap { _ =>
+    s"'$org/$project' is not a ProjectRef"
+  }
+
+  /**
     * Constructs a ProjectRef from strings without validation.
     */
   def unsafe(organization: String, project: String): ProjectRef =

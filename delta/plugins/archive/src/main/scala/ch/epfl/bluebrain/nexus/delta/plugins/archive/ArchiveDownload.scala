@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.archive
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.{FileLinkReference, FileReference, ResourceReference}
+import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.{FileReference, FileSelfReference, ResourceReference}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveResourceRepresentation._
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model._
@@ -87,7 +87,7 @@ object ArchiveDownload {
       aclCheck: AclCheck,
       fetchResource: (ResourceRef, ProjectRef) => UIO[Option[JsonLdContent[_, _]]],
       fetchFileContent: (ResourceRef, ProjectRef, Caller) => IO[FileRejection, FileResponse],
-      resolveSelf: ResolveFileSelf
+      fileSelf: FileSelf
   )(implicit sort: JsonKeyOrdering, baseUri: BaseUri, rcr: RemoteContextResolution): ArchiveDownload =
     new ArchiveDownload {
 
@@ -113,10 +113,13 @@ object ArchiveDownload {
       private def toFullReference(archiveReference: ArchiveReference): IO[ArchiveRejection, FullArchiveReference] = {
         archiveReference match {
           case reference: FullArchiveReference => IO.pure(reference)
-          case reference: FileLinkReference    =>
-            resolveSelf(reference.self).map { case (projectRef, resourceRef) =>
-              FileReference(resourceRef, Some(projectRef), reference.path)
-            }
+          case reference: FileSelfReference    =>
+            fileSelf
+              .parse(reference.value)
+              .map { case (projectRef, resourceRef) =>
+                FileReference(resourceRef, Some(projectRef), reference.path)
+              }
+              .mapError(InvalidFileSelf)
         }
       }
 

@@ -18,6 +18,11 @@
       }
     },
     {
+      "@type" : "FileSelfReference",
+      "path" : "/path/in/archive",
+      "value" : "https://bbp.epfl.ch/nexus/org/proj/file"
+    },
+    {
       "@type": "FileReference",
       "path": "/path/in/archive",
       "project": "myorg/another",

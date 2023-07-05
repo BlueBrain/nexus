@@ -126,10 +126,9 @@ class ArchiveSpec extends BaseSpec with ArchiveHelpers with CirceEq {
       for {
         _      <- deltaClient.get[Json](s"/files/$fullId/test-resource:logo", Tweety) { (json, response) =>
                     fileSelf = json.hcursor.downField("_self").as[String].toOption.value
-                    println("SELF " + fileSelf)
                     response.status shouldEqual StatusCodes.OK
                   }
-        payload = jsonContentOf("/kg/archives/archive-with-file-link.json", "link" -> fileSelf)
+        payload = jsonContentOf("/kg/archives/archive-with-file-self.json", "value" -> fileSelf)
         _      <- deltaClient.put[Json](s"/archives/$fullId/$archiveId", payload, Tweety) { (_, response) =>
                     response.status shouldEqual StatusCodes.Created
                   }

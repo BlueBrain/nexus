@@ -18,7 +18,7 @@ object ArchiveReferenceType {
   final case object File extends ArchiveReferenceType
 
   /**
-    * An archive file reference, but a link rather than a full reference
+    * An archive file reference, but a self of a file rather than a full reference
     */
-  final case object FileLink extends ArchiveReferenceType
+  final case object FileSelf extends ArchiveReferenceType
 }
