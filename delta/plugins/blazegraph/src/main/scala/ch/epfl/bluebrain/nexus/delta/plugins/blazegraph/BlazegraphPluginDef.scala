@@ -10,7 +10,7 @@ import monix.bio.Task
 
 class BlazegraphPluginDef extends PluginDef {
 
-  override def module: Config => ModuleDef = _ => new BlazegraphPluginModule(priority)
+  override def module: Config => ModuleDef = new BlazegraphPluginModule(priority, _)
 
   override val info: PluginDescription = PluginDescription(Name.unsafe("blazegraph"), BuildInfo.version)
 
