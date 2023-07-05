@@ -64,6 +64,16 @@ object DefaultSearchRequest {
         .map { schemaRef =>
           ProjectSearch(ref, params.withSchema(schemaRef), pagination, sort: SortList)
         }
+
+    /** An apply method that uses default values for pagination and sorting */
+    def apply(ref: ProjectRef, params: ResourcesSearchParams): ProjectSearch =
+      ProjectSearch(ref, params, Pagination.OnePage, SortList.empty)
+
+    /** An apply method that uses default values for pagination and sorting */
+    def apply(ref: ProjectRef, params: ResourcesSearchParams, schema: IdSegment)(
+        fetchContext: FetchContext[ElasticSearchQueryError]
+    ): IO[ElasticSearchQueryError, ProjectSearch] =
+      apply(ref, params, Pagination.OnePage, SortList.empty, schema)(fetchContext)
   }
 
   /**
@@ -81,6 +91,10 @@ object DefaultSearchRequest {
       expandResourceRef(schema, fetchContext).map { resourceRef =>
         OrgSearch(label, params.withSchema(resourceRef), pagination, sort)
       }
+
+    /** An apply method that uses default values for pagination and sorting */
+    def apply(label: Label, params: ResourcesSearchParams): OrgSearch =
+      OrgSearch(label, params, Pagination.OnePage, SortList.empty)
   }
 
   /**
@@ -98,6 +112,10 @@ object DefaultSearchRequest {
       expandResourceRef(schema, fetchContext).map { resourceRef =>
         RootSearch(params.withSchema(resourceRef), pagination, sort)
       }
+
+    /** An apply method that uses default values for pagination and sorting */
+    def apply(params: ResourcesSearchParams): RootSearch =
+      RootSearch(params, Pagination.OnePage, SortList.empty)
   }
 
   private def expandResourceRef(

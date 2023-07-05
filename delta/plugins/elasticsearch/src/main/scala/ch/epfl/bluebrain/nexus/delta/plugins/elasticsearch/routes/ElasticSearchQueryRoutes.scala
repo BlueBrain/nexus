@@ -96,24 +96,24 @@ class ElasticSearchQueryRoutes(
     pathPrefix("aggregations") {
       extractCaller { implicit caller =>
         concat(
-          (searchParametersAndSortList & paginated) { (params, sort, page) =>
+          searchParameters(baseUri) { params =>
             concat(
               // Aggregate all resources
               (pathEndOrSingleSlash & operationName(s"$prefixSegment/aggregations")) {
-                val request = DefaultSearchRequest.RootSearch(params, page, sort)
+                val request = DefaultSearchRequest.RootSearch(params)
                 aggregate(request)
               },
               // Aggregate all resources inside an org
               (label & pathEndOrSingleSlash & operationName(s"$prefixSegment/aggregations/{org}")) { org =>
-                val request = DefaultSearchRequest.OrgSearch(org, params, page, sort)
+                val request = DefaultSearchRequest.OrgSearch(org, params)
                 aggregate(request)
               }
             )
           },
           resolveProjectRef.apply { ref =>
             projectContext(ref) { implicit pc =>
-              (searchParametersInProject & paginated) { (params, sort, page) =>
-                val request = DefaultSearchRequest.ProjectSearch(ref, params, page, sort)
+              searchParameters(baseUri, pc) { params =>
+                val request = DefaultSearchRequest.ProjectSearch(ref, params)
                 concat(
                   // Aggregate all resources inside a project
                   (pathEndOrSingleSlash & operationName(s"$prefixSegment/aggregations/{org}/{project}")) {
@@ -125,7 +125,7 @@ class ElasticSearchQueryRoutes(
                       underscoreToOption(schema) match {
                         case None        => aggregate(request)
                         case Some(value) =>
-                          val r = DefaultSearchRequest.ProjectSearch(ref, params, page, sort, value)(fetchContext)
+                          val r = DefaultSearchRequest.ProjectSearch(ref, params, value)(fetchContext)
                           aggregate(r)
                       }
                     }

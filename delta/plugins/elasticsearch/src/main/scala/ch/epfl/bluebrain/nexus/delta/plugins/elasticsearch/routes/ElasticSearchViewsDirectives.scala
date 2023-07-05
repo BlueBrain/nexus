@@ -76,37 +76,40 @@ trait ElasticSearchViewsDirectives extends UriDirectives {
     }
   }
 
-  private[routes] def searchParametersAndSortList(implicit
+  private[routes] def searchParameters(implicit
       baseUri: BaseUri
-  ): Directive[(ResourcesSearchParams, SortList)] = {
+  ): Directive1[ResourcesSearchParams] = {
     implicit val typesUm: FromStringUnmarshaller[Type]      = Type.typeFromStringUnmarshallerNoExpansion
     implicit val baseIriUm: FromStringUnmarshaller[IriBase] =
       DeltaSchemeDirectives.iriBaseFromStringUnmarshallerNoExpansion
-    def searchParameters                                    =
-      (searchParams & createdAt & updatedAt & types & schema & id & locate & parameter("q".?)).tmap {
-        case (deprecated, rev, createdBy, updatedBy, createdAt, updatedAt, types, schema, id, locate, q) =>
-          val qq = q.filter(_.trim.nonEmpty).map(_.toLowerCase)
-          ResourcesSearchParams(
-            locate,
-            id,
-            deprecated,
-            rev,
-            createdBy,
-            createdAt,
-            updatedBy,
-            updatedAt,
-            types,
-            schema,
-            qq
-          )
-      }
 
-    (searchParameters & sortList).tflatMap { case (params, sortList) =>
+    (searchParams & createdAt & updatedAt & types & schema & id & locate & parameter("q".?)).tmap {
+      case (deprecated, rev, createdBy, updatedBy, createdAt, updatedAt, types, schema, id, locate, q) =>
+        val qq = q.filter(_.trim.nonEmpty).map(_.toLowerCase)
+        ResourcesSearchParams(
+          locate,
+          id,
+          deprecated,
+          rev,
+          createdBy,
+          createdAt,
+          updatedBy,
+          updatedAt,
+          types,
+          schema,
+          qq
+        )
+    }
+  }
+
+  private[routes] def searchParametersAndSortList(implicit
+      baseUri: BaseUri
+  ): Directive[(ResourcesSearchParams, SortList)] =
+    (searchParameters(baseUri) & sortList).tflatMap { case (params, sortList) =>
       if (params.q.isDefined && !sortList.isEmpty) reject(simultaneousSortAndQRejection)
       else if (params.q.isEmpty && sortList.isEmpty) tprovide((params, SortList.byCreationDateAndId))
       else tprovide((params, sortList))
     }
-  }
 
   /**
     * Extracts the query parameters for [[ResourcesSearchParams]] and [[SortList]]. Rejects if both the ''q'' and
@@ -116,7 +119,7 @@ trait ElasticSearchViewsDirectives extends UriDirectives {
       baseUri: BaseUri,
       pc: ProjectContext
   ): Directive[(ResourcesSearchParams, SortList)] =
-    (searchParameters & sortList).tflatMap { case (params, sortList) =>
+    (searchParameters(baseUri, pc) & sortList).tflatMap { case (params, sortList) =>
       if (params.q.isDefined && !sortList.isEmpty) reject(simultaneousSortAndQRejection)
       else if (params.q.isEmpty && sortList.isEmpty) tprovide((params, SortList.byCreationDateAndId))
       else tprovide((params, sortList))
