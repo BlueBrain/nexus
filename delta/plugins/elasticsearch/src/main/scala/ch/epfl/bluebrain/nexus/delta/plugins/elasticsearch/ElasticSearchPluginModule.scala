@@ -36,6 +36,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projections
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeChain, ReferenceRegistry, Supervisor}
+import com.typesafe.config.Config
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
 import monix.execution.Scheduler
@@ -43,20 +44,19 @@ import monix.execution.Scheduler
 /**
   * ElasticSearch plugin wiring.
   */
-class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
+class ElasticSearchPluginModule(priority: Int, appConfig: Config) extends ModuleDef {
 
   implicit private val classLoader: ClassLoader = getClass.getClassLoader
 
-  make[ElasticSearchViewsConfig].from { ElasticSearchViewsConfig.load(_) }
+  private val config: ElasticSearchViewsConfig = ElasticSearchViewsConfig.load(appConfig)
+  make[ElasticSearchViewsConfig].from { config }
 
-  make[HttpClient].named("elasticsearch-client").from {
-    (cfg: ElasticSearchViewsConfig, as: ActorSystem[Nothing], sc: Scheduler) =>
-      HttpClient()(cfg.client, as.classicSystem, sc)
+  make[HttpClient].named("elasticsearch-client").from { (as: ActorSystem[Nothing], sc: Scheduler) =>
+    HttpClient()(config.client, as.classicSystem, sc)
   }
 
-  make[ElasticSearchClient].from {
-    (cfg: ElasticSearchViewsConfig, client: HttpClient @Id("elasticsearch-client"), as: ActorSystem[Nothing]) =>
-      new ElasticSearchClient(client, cfg.base, cfg.maxIndexPathLength)(cfg.credentials, as.classicSystem)
+  make[ElasticSearchClient].from { (client: HttpClient @Id("elasticsearch-client"), as: ActorSystem[Nothing]) =>
+    new ElasticSearchClient(client, config.base, config.maxIndexPathLength)(config.credentials, as.classicSystem)
   }
 
   make[ValidateElasticSearchView].from {
@@ -64,7 +64,6 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         registry: ReferenceRegistry,
         permissions: Permissions,
         client: ElasticSearchClient,
-        config: ElasticSearchViewsConfig,
         xas: Transactors
     ) =>
       ValidateElasticSearchView(
@@ -82,7 +81,6 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         fetchContext: FetchContext[ContextRejection],
         contextResolution: ResolverContextResolution,
         validateElasticSearchView: ValidateElasticSearchView,
-        config: ElasticSearchViewsConfig,
         xas: Transactors,
         api: JsonLdApi,
         clock: Clock[UIO],
@@ -105,7 +103,6 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         registry: ReferenceRegistry,
         supervisor: Supervisor,
         client: ElasticSearchClient,
-        config: ElasticSearchViewsConfig,
         cr: RemoteContextResolution @Id("aggregate")
     ) =>
       ElasticSearchCoordinator(
@@ -123,8 +120,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         metricEncoders: Set[ScopedEventMetricEncoder[_]],
         xas: Transactors,
         supervisor: Supervisor,
-        client: ElasticSearchClient,
-        config: ElasticSearchViewsConfig
+        client: ElasticSearchClient
     ) =>
       EventMetricsProjection(
         metricEncoders,
@@ -196,7 +192,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
   }
 
   make[ElasticSearchScopeInitialization]
-    .from { (views: ElasticSearchViews, serviceAccount: ServiceAccount, config: ElasticSearchViewsConfig) =>
+    .from { (views: ElasticSearchViews, serviceAccount: ServiceAccount) =>
       new ElasticSearchScopeInitialization(views, serviceAccount, config.defaults)
     }
 
@@ -204,7 +200,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
 
   many[ProjectDeletionTask].add { (views: ElasticSearchViews) => ElasticSearchDeletionTask(views) }
 
-  many[ProjectDeletionTask].add { (client: ElasticSearchClient, config: ElasticSearchViewsConfig) =>
+  many[ProjectDeletionTask].add { (client: ElasticSearchClient) =>
     new EventMetricsDeletionTask(client, config.prefix)
   }
 
@@ -264,8 +260,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
     (
         views: ElasticSearchViews,
         registry: ReferenceRegistry,
-        client: ElasticSearchClient,
-        config: ElasticSearchViewsConfig
+        client: ElasticSearchClient
     ) =>
       ElasticSearchIndexingAction(views, registry, client, config.syncIndexingTimeout, config.syncIndexingRefresh)
   }

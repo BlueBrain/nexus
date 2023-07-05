@@ -10,7 +10,7 @@ import monix.bio.Task
 
 class ElasticSearchPluginDef extends PluginDef {
 
-  override def module: Config => ModuleDef = _ => new ElasticSearchPluginModule(priority)
+  override def module: Config => ModuleDef = new ElasticSearchPluginModule(priority, _)
 
   override val info: PluginDescription = PluginDescription(Name.unsafe("elasticsearch"), BuildInfo.version)
 
