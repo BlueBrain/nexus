@@ -4,6 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion.model.ProjectDeleti
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.PluginDescription
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.{Plugin, PluginDef}
+import com.typesafe.config.Config
 import izumi.distage.model.Locator
 import izumi.distage.model.definition.ModuleDef
 import monix.bio.{Task, UIO}
@@ -14,16 +15,17 @@ class ProjectDeletionPluginDef extends PluginDef {
   /**
     * Distage module definition for this plugin.
     */
-  override def module: ModuleDef = new ModuleDef {
-    make[ProjectDeletionConfig].fromEffect {
-      UIO.delay {
-        ConfigSource
-          .fromConfig(pluginConfigObject)
-          .loadOrThrow[ProjectDeletionConfig]
+  override def module: Config => ModuleDef = _ =>
+    new ModuleDef {
+      make[ProjectDeletionConfig].fromEffect {
+        UIO.delay {
+          ConfigSource
+            .fromConfig(pluginConfigObject)
+            .loadOrThrow[ProjectDeletionConfig]
+        }
       }
+      include(new ProjectDeletionModule(priority))
     }
-    include(new ProjectDeletionModule(priority))
-  }
 
   /**
     * Plugin description

@@ -4,13 +4,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.PriorityRoute
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.PluginDescription
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Name}
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.{Plugin, PluginDef}
+import com.typesafe.config.Config
 import izumi.distage.model.Locator
 import izumi.distage.model.definition.ModuleDef
 import monix.bio.Task
 
 case class TestPluginDef() extends PluginDef {
 
-  override def module: ModuleDef =
+  override def module: Config => ModuleDef = _ =>
     new ModuleDef {
       make[TestPlugin]
       make[TestPluginRoutes].from { (baseUri: BaseUri) =>

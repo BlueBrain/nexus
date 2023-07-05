@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugin
 import cats.effect.Resource
 import ch.epfl.bluebrain.nexus.delta.sdk.error.PluginError.PluginInitializationError
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.{Plugin, PluginDef}
+import com.typesafe.config.Config
 import com.typesafe.scalalogging.Logger
 import distage.{Injector, Roots}
 import izumi.distage.model.Locator
@@ -16,14 +17,15 @@ object WiringInitializer {
 
   /**
     * Combines the [[ModuleDef]] of the passed ''serviceModule'' with the ones provided by the plugins. Afterwards
-    * initializes the [[Plugin]] s and the [[Locator]].
+    * initializes the [[Plugin]] s and the [[Locator]]. The provided [[Config]] is used by the plugin modules.
     */
   def apply(
       serviceModule: ModuleDef,
-      pluginsDef: List[PluginDef]
+      pluginsDef: List[PluginDef],
+      config: Config
   ): Resource[Task, (List[Plugin], Locator)] = {
     val pluginsInfoModule = new ModuleDef { make[List[PluginDef]].from(pluginsDef) }
-    val appModules        = (serviceModule :: pluginsInfoModule :: pluginsDef.map(_.module)).merge
+    val appModules        = (serviceModule :: pluginsInfoModule :: pluginsDef.map(_.module(config))).merge
 
     // workaround for: java.lang.NoClassDefFoundError: zio/blocking/package$Blocking$Service
     implicit val defaultModule: DefaultModule[Task] = DefaultModule.empty

@@ -12,9 +12,9 @@ import java.io.File
 trait PluginDef {
 
   /**
-    * Distage module definition for this plugin.
+    * Given a config, returns a distage module definition for this plugin.
     */
-  def module: ModuleDef
+  def module: Config => ModuleDef
 
   /**
     * Plugin description
