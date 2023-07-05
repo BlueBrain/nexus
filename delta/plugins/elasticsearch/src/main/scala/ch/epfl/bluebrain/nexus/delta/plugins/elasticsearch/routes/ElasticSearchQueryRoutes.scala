@@ -103,7 +103,8 @@ class ElasticSearchQueryRoutes(
                 val request = DefaultSearchRequest.RootSearch(params, page, sort)
                 aggregate(request)
               },
-              (label & pathEndOrSingleSlash & operationName(s"$prefixSegment/aggregations")) { org =>
+              // Aggregate all resources inside an org
+              (label & pathEndOrSingleSlash & operationName(s"$prefixSegment/aggregations/{org}")) { org =>
                 val request = DefaultSearchRequest.OrgSearch(org, params, page, sort)
                 aggregate(request)
               }
