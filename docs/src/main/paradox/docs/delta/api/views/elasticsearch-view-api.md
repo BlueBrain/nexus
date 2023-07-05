@@ -42,10 +42,12 @@ Transformations allow to modify:
 
 ### Reconciliation and indexing
 
-When a resource makes it to the end of the pipeline, we produce a json document by merging 
+When a resource makes it to the end of the pipeline, we produce a json document by merging:
+
 * the original payload,
 * the data and metadata graphs that have been translated to the compacted JSON-LD format with a default context and the one provided by the view
-* The resulting json is then stripped of any `@context` fields and pushed to Elasticsearch.
+
+The resulting json is then stripped of any `@context` fields and pushed to Elasticsearch.
 
 [![ElasticSearchView pipeline](../assets/views/elasticsearch/elasticsearch_pipeline.png "ElasticSearchView pipeline")](../assets/views/elasticsearch/elasticsearch_pipeline.png)
 
