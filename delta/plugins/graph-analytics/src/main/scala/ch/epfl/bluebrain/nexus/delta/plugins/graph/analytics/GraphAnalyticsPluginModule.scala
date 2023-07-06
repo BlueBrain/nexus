@@ -18,20 +18,22 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projections
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Supervisor
+import com.typesafe.config.Config
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.execution.Scheduler
 
 /**
   * Graph analytics plugin wiring.
   */
-class GraphAnalyticsPluginModule(priority: Int) extends ModuleDef {
+class GraphAnalyticsPluginModule(priority: Int, appConfig: Config) extends ModuleDef {
 
   implicit private val classLoader: ClassLoader = getClass.getClassLoader
 
-  make[GraphAnalyticsConfig].from { GraphAnalyticsConfig.load _ }
+  private val config: GraphAnalyticsConfig = GraphAnalyticsConfig.load(appConfig)
+  make[GraphAnalyticsConfig].from { config }
 
   make[GraphAnalytics]
-    .from { (client: ElasticSearchClient, fetchContext: FetchContext[ContextRejection], config: GraphAnalyticsConfig) =>
+    .from { (client: ElasticSearchClient, fetchContext: FetchContext[ContextRejection]) =>
       GraphAnalytics(client, fetchContext.mapRejection(ProjectContextRejection), config.prefix, config.termAggregations)
     }
 
@@ -39,15 +41,16 @@ class GraphAnalyticsPluginModule(priority: Int) extends ModuleDef {
     GraphAnalyticsStream(qc, xas)
   }
 
-  make[GraphAnalyticsCoordinator].fromEffect {
-    (
-        projects: Projects,
-        analyticsStream: GraphAnalyticsStream,
-        supervisor: Supervisor,
-        client: ElasticSearchClient,
-        config: GraphAnalyticsConfig
-    ) =>
-      GraphAnalyticsCoordinator(projects, analyticsStream, supervisor, client, config)
+  if (config.indexingDisabled) {
+    make[GraphAnalyticsCoordinator].fromEffect {
+      (
+          projects: Projects,
+          analyticsStream: GraphAnalyticsStream,
+          supervisor: Supervisor,
+          client: ElasticSearchClient
+      ) =>
+        GraphAnalyticsCoordinator(projects, analyticsStream, supervisor, client, config)
+    }
   }
 
   make[GraphAnalyticsRoutes].from {

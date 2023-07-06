@@ -22,8 +22,11 @@ import scala.annotation.nowarn
 final case class GraphAnalyticsConfig(
     batch: BatchConfig,
     prefix: String,
-    termAggregations: TermAggregationsConfig
-)
+    termAggregations: TermAggregationsConfig,
+    disableIndexing: Boolean
+) {
+  def indexingDisabled: Boolean = !disableIndexing
+}
 
 object GraphAnalyticsConfig {
 

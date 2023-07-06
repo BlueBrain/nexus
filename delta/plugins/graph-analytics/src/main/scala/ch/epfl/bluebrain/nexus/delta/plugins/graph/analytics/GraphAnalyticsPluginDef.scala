@@ -10,7 +10,7 @@ import monix.bio.Task
 
 class GraphAnalyticsPluginDef extends PluginDef {
 
-  override def module: Config => ModuleDef = _ => new GraphAnalyticsPluginModule(priority)
+  override def module: Config => ModuleDef = new GraphAnalyticsPluginModule(priority, _)
 
   override val info: PluginDescription = PluginDescription(Name.unsafe("graph-analytics"), BuildInfo.version)
 
