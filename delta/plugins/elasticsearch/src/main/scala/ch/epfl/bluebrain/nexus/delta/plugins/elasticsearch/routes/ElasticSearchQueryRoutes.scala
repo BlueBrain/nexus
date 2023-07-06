@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.DefaultSearchRequest.{OrgSearch, ProjectSearch, RootSearch}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.{DefaultSearchRequest, DefaultViewsQuery, ElasticSearchQueryError}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
@@ -44,7 +45,7 @@ class ElasticSearchQueryRoutes(
 
   def routes: Route =
     (baseUriPrefix(baseUri.prefix) & replaceUri("views", schema.iri)) {
-      concat(genericResourcesRoutes, resourcesListings, aggregationsRoute)
+      concat(genericResourcesRoutes, resourcesListings)
     }
 
   private val genericResourcesRoutes: Route =
@@ -53,80 +54,46 @@ class ElasticSearchQueryRoutes(
         concat(
           (searchParametersAndSortList & paginated) { (params, sort, page) =>
             concat(
-              // List all resources
+              // List/aggregate all resources
               (pathEndOrSingleSlash & operationName(s"$prefixSegment/resources")) {
-                val request = DefaultSearchRequest.RootSearch(params, page, sort)
-                list(request)
+                concat(
+                  aggregated { _ => aggregate(RootSearch(params)) },
+                  list(RootSearch(params, page, sort))
+                )
               },
               (label & pathEndOrSingleSlash & operationName(s"$prefixSegment/resources")) { org =>
-                val request = DefaultSearchRequest.OrgSearch(org, params, page, sort)
-                list(request)
+                concat(
+                  aggregated { _ => aggregate(OrgSearch(org, params)) },
+                  list(OrgSearch(org, params, page, sort))
+                )
               }
             )
           },
           resolveProjectRef.apply { ref =>
             projectContext(ref) { implicit pc =>
               (searchParametersInProject & paginated) { (params, sort, page) =>
-                val request = DefaultSearchRequest.ProjectSearch(ref, params, page, sort)
                 concat(
-                  // List all resources inside a project
+                  // List/aggregate all resources inside a project
                   (pathEndOrSingleSlash & operationName(s"$prefixSegment/resources/{org}/{project}")) {
-                    list(request)
+                    concat(
+                      aggregated { _ => aggregate(ProjectSearch(ref, params)) },
+                      list(ProjectSearch(ref, params, page, sort))
+                    )
                   },
                   idSegment { schema =>
-                    // List all resources inside a project filtering by its schema type
+                    // List/aggregate all resources inside a project filtering by its schema type
                     (pathEndOrSingleSlash & operationName(s"$prefixSegment/resources/{org}/{project}/{schema}")) {
                       underscoreToOption(schema) match {
-                        case None        => list(request)
+                        case None        =>
+                          concat(
+                            aggregated { _ => aggregate(ProjectSearch(ref, params)) },
+                            list(ProjectSearch(ref, params, page, sort))
+                          )
                         case Some(value) =>
-                          val r = DefaultSearchRequest.ProjectSearch(ref, params, page, sort, value)(fetchContext)
-                          list(r)
-                      }
-                    }
-                  }
-                )
-              }
-            }
-          }
-        )
-      }
-    }
-
-  private val aggregationsRoute: Route =
-    pathPrefix("aggregations") {
-      extractCaller { implicit caller =>
-        concat(
-          searchParameters(baseUri) { params =>
-            concat(
-              // Aggregate all resources
-              (pathEndOrSingleSlash & operationName(s"$prefixSegment/aggregations")) {
-                val request = DefaultSearchRequest.RootSearch(params)
-                aggregate(request)
-              },
-              // Aggregate all resources inside an org
-              (label & pathEndOrSingleSlash & operationName(s"$prefixSegment/aggregations/{org}")) { org =>
-                val request = DefaultSearchRequest.OrgSearch(org, params)
-                aggregate(request)
-              }
-            )
-          },
-          resolveProjectRef.apply { ref =>
-            projectContext(ref) { implicit pc =>
-              searchParameters(baseUri, pc) { params =>
-                val request = DefaultSearchRequest.ProjectSearch(ref, params)
-                concat(
-                  // Aggregate all resources inside a project
-                  (pathEndOrSingleSlash & operationName(s"$prefixSegment/aggregations/{org}/{project}")) {
-                    aggregate(request)
-                  },
-                  idSegment { schema =>
-                    // Aggregate all resources inside a project filtering by its schema type
-                    (pathEndOrSingleSlash & operationName(s"$prefixSegment/aggregations/{org}/{project}/{schema}")) {
-                      underscoreToOption(schema) match {
-                        case None        => aggregate(request)
-                        case Some(value) =>
-                          val r = DefaultSearchRequest.ProjectSearch(ref, params, value)(fetchContext)
-                          aggregate(r)
+                          concat(
+                            aggregated { _ => aggregate(ProjectSearch(ref, params, value)(fetchContext)) },
+                            list(ProjectSearch(ref, params, page, sort, value)(fetchContext))
+                          )
                       }
                     }
                   }
