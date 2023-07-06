@@ -23,7 +23,7 @@ object GraphAnalyticsCoordinator {
   final private case object Noop extends GraphAnalyticsCoordinator {
     def log: Task[Unit] =
       Task.delay {
-        logger.info("Elasticsearch indexing has been disabled via config")
+        logger.info("Graph Analytics indexing has been disabled via config")
       }
   }
 
