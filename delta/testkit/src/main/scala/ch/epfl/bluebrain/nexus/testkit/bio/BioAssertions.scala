@@ -1,10 +1,11 @@
 package ch.epfl.bluebrain.nexus.testkit.bio
 
+import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
+import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig.MaximumCumulativeDelayConfig
 import monix.bio.Cause.{Error, Termination}
 import monix.bio.{IO, UIO}
 import munit.{Assertions, Location}
-import retry._
-import retry.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
 
 import java.io.{ByteArrayOutputStream, PrintStream}
 import scala.concurrent.duration.FiniteDuration
@@ -76,15 +77,13 @@ trait BioAssertions { self: Assertions =>
     )
 
     def eventually(expected: A, retryWhen: Throwable => Boolean)(implicit patience: PatienceConfig): UIO[Unit] = {
+      val strategy = RetryStrategy[Throwable](
+        MaximumCumulativeDelayConfig(patience.timeout, patience.interval),
+        retryWhen,
+        onError = (_, _) => UIO.unit
+      )
       assert(expected, patience.timeout).absorb
-        .retryingOnSomeErrors(
-          isWorthRetrying = retryWhen,
-          policy = RetryPolicies.limitRetriesByCumulativeDelay(
-            patience.timeout,
-            RetryPolicies.constantDelay(patience.interval)
-          ),
-          onError = (_, _) => UIO.unit
-        )
+        .retry(strategy)
         .hideErrors
     }
 
