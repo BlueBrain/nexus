@@ -136,7 +136,6 @@ object ElasticSearchCoordinator {
       registry: ReferenceRegistry,
       supervisor: Supervisor,
       client: ElasticSearchClient,
-      batchConfig: BatchConfig,
       config: ElasticSearchViewsConfig
   )(implicit cr: RemoteContextResolution): Task[ElasticSearchCoordinator] = {
     if (config.indexingEnabled) {
@@ -146,7 +145,7 @@ object ElasticSearchCoordinator {
         PipeChain.compile(_, registry),
         supervisor,
         (v: ActiveViewDef) =>
-          ElasticSearchSink.states(client, batchConfig.maxElements, batchConfig.maxInterval, v.index, Refresh.False),
+          ElasticSearchSink.states(client, config.batch.maxElements, config.batch.maxInterval, v.index, Refresh.False),
         (v: ActiveViewDef) =>
           client
             .createIndex(v.index, Some(v.mapping), Some(v.settings))

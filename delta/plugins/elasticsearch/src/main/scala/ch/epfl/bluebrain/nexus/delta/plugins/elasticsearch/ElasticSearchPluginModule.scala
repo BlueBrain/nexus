@@ -114,7 +114,6 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         registry,
         supervisor,
         client,
-        config.batch,
         config
       )(cr)
   }
