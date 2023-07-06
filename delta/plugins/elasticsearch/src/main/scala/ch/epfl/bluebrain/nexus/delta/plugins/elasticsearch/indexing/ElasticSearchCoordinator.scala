@@ -45,7 +45,7 @@ object ElasticSearchCoordinator {
     * @param supervisor
     *   the general supervisor
     */
-  final private class ActiveCoordinator(
+  final private class Active(
       fetchViews: Offset => ElemStream[IndexingViewDef],
       graphStream: GraphResourceStream,
       compilePipeChain: PipeChain => Either[ProjectionErr, Operation],
@@ -172,7 +172,7 @@ object ElasticSearchCoordinator {
   )(implicit cr: RemoteContextResolution): Task[ElasticSearchCoordinator] =
     for {
       cache      <- KeyValueStore[ViewRef, ActiveViewDef]()
-      coordinator = new ActiveCoordinator(
+      coordinator = new Active(
                       fetchViews,
                       graphStream,
                       compilePipeChain,

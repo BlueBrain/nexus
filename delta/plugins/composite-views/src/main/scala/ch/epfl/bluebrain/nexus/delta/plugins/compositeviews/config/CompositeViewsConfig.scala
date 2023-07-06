@@ -35,6 +35,8 @@ import scala.concurrent.duration.FiniteDuration
   *   the batch configuration for indexing into the elasticsearch projections
   * @param restartCheckInterval
   *   the interval at which a view will look for requested restarts
+  * @param disableIndexing
+  *   if true, disables composite view indexing
   */
 final case class CompositeViewsConfig(
     sources: SourcesConfig,
@@ -46,8 +48,11 @@ final case class CompositeViewsConfig(
     minIntervalRebuild: FiniteDuration,
     blazegraphBatch: BatchConfig,
     elasticsearchBatch: BatchConfig,
-    restartCheckInterval: FiniteDuration
-)
+    restartCheckInterval: FiniteDuration,
+    disableIndexing: Boolean
+) {
+  def indexingEnabled: Boolean = !disableIndexing
+}
 
 object CompositeViewsConfig {
 

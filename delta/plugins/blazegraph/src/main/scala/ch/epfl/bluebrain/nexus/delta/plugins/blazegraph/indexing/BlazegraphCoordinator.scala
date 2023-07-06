@@ -25,7 +25,7 @@ object BlazegraphCoordinator {
   final private case object Noop extends BlazegraphCoordinator {
     def log: Task[Unit] =
       Task.delay {
-        logger.info("Elasticsearch indexing has been disabled via config")
+        logger.info("Blazegraph indexing has been disabled via config")
       }
   }
 
@@ -42,7 +42,7 @@ object BlazegraphCoordinator {
     * @param supervisor
     *   the general supervisor
     */
-  final private class ActiveBlazegraphCoordinator(
+  final private class Active(
       fetchViews: Offset => ElemStream[IndexingViewDef],
       graphStream: GraphResourceStream,
       compilePipeChain: PipeChain => Either[ProjectionErr, Operation],
@@ -165,7 +165,7 @@ object BlazegraphCoordinator {
   ): Task[BlazegraphCoordinator] =
     for {
       cache      <- KeyValueStore[ViewRef, ActiveViewDef]()
-      coordinator = new ActiveBlazegraphCoordinator(
+      coordinator = new Active(
                       fetchViews,
                       graphStream,
                       compilePipeChain,

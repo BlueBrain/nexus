@@ -165,6 +165,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         graphStream: CompositeGraphStream,
         buildSpaces: CompositeSpaces.Builder,
         compositeProjections: CompositeProjections,
+        config: CompositeViewsConfig,
         cr: RemoteContextResolution @Id("aggregate")
     ) =>
       CompositeViewsCoordinator(
@@ -173,7 +174,8 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         PipeChain.compile(_, registry),
         graphStream,
         buildSpaces.apply,
-        compositeProjections
+        compositeProjections,
+        config
       )(cr)
   }
 
