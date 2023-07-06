@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.archive.model
 import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.instances._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectBase}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer

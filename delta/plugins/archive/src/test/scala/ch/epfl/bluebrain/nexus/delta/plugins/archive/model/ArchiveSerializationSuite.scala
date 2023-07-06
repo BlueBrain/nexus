@@ -1,11 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.archive.model
 
 import cats.data.NonEmptySet
-import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.{FileReference, ResourceReference}
+import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.{FileReference, FileSelfReference, ResourceReference}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.AbsolutePath
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.SerializationSuite
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
 
@@ -30,6 +30,8 @@ class ArchiveSerializationSuite extends SerializationSuite {
       Some(ArchiveResourceRepresentation.CompactedJsonLd)
     )
 
+  private val fileSelfReference = FileSelfReference(uri"https://bbp.epfl.ch/nexus/org/proj/file", absolutePath)
+
   private val fileId        = nxv + "file"
   private val fileReference =
     FileReference(
@@ -41,7 +43,7 @@ class ArchiveSerializationSuite extends SerializationSuite {
   private val state = ArchiveState(
     id,
     project,
-    NonEmptySet.of(resourceReference, fileReference),
+    NonEmptySet.of(resourceReference, fileSelfReference, fileReference),
     instant,
     subject
   )
