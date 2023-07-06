@@ -294,7 +294,9 @@ object RdfRejectionHandler {
       case r @ MalformedRequestContentRejection(_, EntityStreamSizeException(limit, _)) =>
         jsonObj(r, s"The request payload exceed the maximum configured limit '$limit'.")
       case r @ MalformedRequestContentRejection(_, f: DecodingFailure)                  =>
-        val details = Option.when(f.getMessage() != "JSON decoding to CNil should never happen")(f.getMessage())
+        val details = Option.when(f.getMessage() != "DecodingFailure at : JSON decoding to CNil should never happen")(
+          f.getMessage()
+        )
         jsonObj(r, "The request content was malformed.", details)
       case r @ MalformedRequestContentRejection(msg, _)                                 =>
         jsonObj(r, "The request content was malformed.", Some(msg))
