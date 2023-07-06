@@ -62,8 +62,11 @@ final case class ElasticSearchViewsConfig(
     syncIndexingRefresh: Refresh,
     maxIndexPathLength: Int,
     defaults: Defaults,
-    metricsQuery: QueryConfig
-)
+    metricsQuery: QueryConfig,
+    disableIndexing: Boolean
+) {
+  def indexingEnabled: Boolean = !disableIndexing
+}
 
 object ElasticSearchViewsConfig {
 
