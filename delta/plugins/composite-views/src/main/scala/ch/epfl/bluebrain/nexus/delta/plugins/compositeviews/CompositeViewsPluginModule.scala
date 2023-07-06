@@ -156,24 +156,26 @@ class CompositeViewsPluginModule(priority: Int, appConfig: Config) extends Modul
     CompositeGraphStream(local, remote)
   }
 
-  make[CompositeViewsCoordinator].fromEffect {
-    (
-        compositeViews: CompositeViews,
-        supervisor: Supervisor,
-        registry: ReferenceRegistry,
-        graphStream: CompositeGraphStream,
-        buildSpaces: CompositeSpaces.Builder,
-        compositeProjections: CompositeProjections,
-        cr: RemoteContextResolution @Id("aggregate")
-    ) =>
-      CompositeViewsCoordinator(
-        compositeViews,
-        supervisor,
-        PipeChain.compile(_, registry),
-        graphStream,
-        buildSpaces.apply,
-        compositeProjections
-      )(cr)
+  if (config.indexingEnabled) {
+    make[CompositeViewsCoordinator].fromEffect {
+      (
+          compositeViews: CompositeViews,
+          supervisor: Supervisor,
+          registry: ReferenceRegistry,
+          graphStream: CompositeGraphStream,
+          buildSpaces: CompositeSpaces.Builder,
+          compositeProjections: CompositeProjections,
+          cr: RemoteContextResolution @Id("aggregate")
+      ) =>
+        CompositeViewsCoordinator(
+          compositeViews,
+          supervisor,
+          PipeChain.compile(_, registry),
+          graphStream,
+          buildSpaces.apply,
+          compositeProjections
+        )(cr)
+    }
   }
 
   many[ProjectDeletionTask].add { (views: CompositeViews) => CompositeViewsDeletionTask(views) }
