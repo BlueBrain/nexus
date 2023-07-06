@@ -96,23 +96,25 @@ class ElasticSearchPluginModule(priority: Int, appConfig: Config) extends Module
       )(api, clock, uuidF)
   }
 
-  make[ElasticSearchCoordinator].fromEffect {
-    (
-        views: ElasticSearchViews,
-        graphStream: GraphResourceStream,
-        registry: ReferenceRegistry,
-        supervisor: Supervisor,
-        client: ElasticSearchClient,
-        cr: RemoteContextResolution @Id("aggregate")
-    ) =>
-      ElasticSearchCoordinator(
-        views,
-        graphStream,
-        registry,
-        supervisor,
-        client,
-        config.batch
-      )(cr)
+  if (config.indexingEnabled) {
+    make[ElasticSearchCoordinator].fromEffect {
+      (
+          views: ElasticSearchViews,
+          graphStream: GraphResourceStream,
+          registry: ReferenceRegistry,
+          supervisor: Supervisor,
+          client: ElasticSearchClient,
+          cr: RemoteContextResolution @Id("aggregate")
+      ) =>
+        ElasticSearchCoordinator(
+          views,
+          graphStream,
+          registry,
+          supervisor,
+          client,
+          config.batch
+        )(cr)
+    }
   }
 
   make[EventMetricsProjection].fromEffect {
