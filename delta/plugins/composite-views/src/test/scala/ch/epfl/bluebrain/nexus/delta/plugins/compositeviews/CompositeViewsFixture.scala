@@ -176,7 +176,8 @@ trait CompositeViewsFixture extends ConfigFixtures with EitherValuable {
     1.minute,
     batchConfig,
     batchConfig,
-    3.seconds
+    3.seconds,
+    false
   )
 }
 
