@@ -43,6 +43,10 @@ import scala.concurrent.duration._
   *   the maximum idle duration in between events on the indexing stream after which the stream will be stopped
   * @param syncIndexingTimeout
   *   the maximum duration for synchronous indexing to complete
+  * @param defaults
+  *   default values for the default Blazegraph views
+  * @param disableIndexing
+  *   if true, disables Blazegraph indexing
   */
 final case class BlazegraphViewsConfig(
     base: Uri,
@@ -58,8 +62,11 @@ final case class BlazegraphViewsConfig(
     maxViewRefs: Int,
     idleTimeout: Duration,
     syncIndexingTimeout: FiniteDuration,
-    defaults: Defaults
-)
+    defaults: Defaults,
+    disableIndexing: Boolean
+) {
+  def indexingEnabled: Boolean = !disableIndexing
+}
 
 object BlazegraphViewsConfig {
 

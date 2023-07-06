@@ -127,23 +127,25 @@ class BlazegraphPluginModule(priority: Int, appConfig: Config) extends ModuleDef
         )(api, clock, uuidF)
     }
 
-  make[BlazegraphCoordinator].fromEffect {
-    (
-        views: BlazegraphViews,
-        graphStream: GraphResourceStream,
-        registry: ReferenceRegistry,
-        supervisor: Supervisor,
-        client: BlazegraphClient @Id("blazegraph-indexing-client"),
-        baseUri: BaseUri
-    ) =>
-      BlazegraphCoordinator(
-        views,
-        graphStream,
-        registry,
-        supervisor,
-        client,
-        config.batch
-      )(baseUri)
+  if (config.indexingEnabled) {
+    make[BlazegraphCoordinator].fromEffect {
+      (
+          views: BlazegraphViews,
+          graphStream: GraphResourceStream,
+          registry: ReferenceRegistry,
+          supervisor: Supervisor,
+          client: BlazegraphClient @Id("blazegraph-indexing-client"),
+          baseUri: BaseUri
+      ) =>
+        BlazegraphCoordinator(
+          views,
+          graphStream,
+          registry,
+          supervisor,
+          client,
+          config.batch
+        )(baseUri)
+    }
   }
 
   make[BlazegraphViewsQuery].fromEffect {

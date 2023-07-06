@@ -44,7 +44,7 @@ import scala.concurrent.duration._
   * @param maxIndexPathLength
   *   the maximum length of the URL path for elasticsearch queries
   * @param defaults
-  *   default values for the view
+  *   default values for the default Elasticsearch views
   * @param metricsQuery
   *   query configuration for the metrics projection
   * @param disableIndexing
