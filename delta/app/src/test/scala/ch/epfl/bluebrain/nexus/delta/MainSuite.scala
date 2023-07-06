@@ -39,7 +39,7 @@ class MainSuite extends BioSuite with MainSuite.Fixture {
   test("yield a correct plan") {
     val (cfg, config, cl, pDefs) = Main.loadPluginsAndConfig(pluginLoaderConfig).runSyncUnsafe()
     val pluginsInfoModule        = new ModuleDef { make[List[PluginDef]].from(pDefs) }
-    val modules: Module          = (DeltaModule(cfg, config, cl) :: pluginsInfoModule :: pDefs.map(_.module)).merge
+    val modules: Module          = (DeltaModule(cfg, config, cl) :: pluginsInfoModule :: pDefs.map(_.module(config))).merge
 
     PlanVerifier()
       .verify[Task](
