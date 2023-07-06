@@ -29,12 +29,6 @@ sealed trait ArchiveReference extends Product with Serializable {
     *   the target location in the archive
     */
   def path: Option[AbsolutePath]
-
-  /**
-    * @return
-    *   the archive reference type
-    */
-  def tpe: ArchiveReferenceType
 }
 
 /**
@@ -76,7 +70,6 @@ object ArchiveReference {
       path: Option[AbsolutePath],
       representation: Option[ArchiveResourceRepresentation]
   ) extends FullArchiveReference {
-    override val tpe: ArchiveReferenceType = ArchiveReferenceType.Resource
 
     def representationOrDefault: ArchiveResourceRepresentation = representation.getOrElse(CompactedJsonLd)
 
@@ -104,9 +97,7 @@ object ArchiveReference {
       ref: ResourceRef,
       project: Option[ProjectRef],
       path: Option[AbsolutePath]
-  ) extends FullArchiveReference {
-    override val tpe: ArchiveReferenceType = ArchiveReferenceType.File
-  }
+  ) extends FullArchiveReference
 
   object FileReference {
     implicit val fileReferenceOrder: Order[FileReference] =
@@ -123,9 +114,7 @@ object ArchiveReference {
     * @param path
     *   the target location in the archive
     */
-  final case class FileSelfReference(value: Uri, path: Option[AbsolutePath]) extends ArchiveReference {
-    override val tpe: ArchiveReferenceType = ArchiveReferenceType.FileSelf
-  }
+  final case class FileSelfReference(value: Uri, path: Option[AbsolutePath]) extends ArchiveReference
 
   object FileSelfReference {
     implicit val fileSelfReferenceOrder: Order[FileSelfReference] =
