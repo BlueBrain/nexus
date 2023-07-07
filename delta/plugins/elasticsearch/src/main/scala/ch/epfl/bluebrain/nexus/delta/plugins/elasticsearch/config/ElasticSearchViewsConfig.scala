@@ -47,6 +47,8 @@ import scala.concurrent.duration._
   *   default values for the view
   * @param metricsQuery
   *   query configuration for the metrics projection
+  * @param listingBucketSize
+  *   the maximum number of terms returned by a term aggregation for listing aggregations
   */
 final case class ElasticSearchViewsConfig(
     base: Uri,
@@ -62,7 +64,8 @@ final case class ElasticSearchViewsConfig(
     syncIndexingRefresh: Refresh,
     maxIndexPathLength: Int,
     defaults: Defaults,
-    metricsQuery: QueryConfig
+    metricsQuery: QueryConfig,
+    listingBucketSize: Int
 )
 
 object ElasticSearchViewsConfig {

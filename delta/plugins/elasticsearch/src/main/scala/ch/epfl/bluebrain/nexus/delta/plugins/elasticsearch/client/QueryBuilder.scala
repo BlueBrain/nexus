@@ -135,7 +135,22 @@ final case class QueryBuilder private[client] (private val query: JsonObject) {
   private def matchPhrasePrefix[A: Encoder](k: String, value: A): JsonObject =
     JsonObject("match_phrase_prefix" -> Json.obj(k -> Json.obj("query" -> value.asJson)))
 
-  def build: JsonObject                                                      = query
+  def aggregation(bucketSize: Int): QueryBuilder = {
+    val aggregations =
+      JsonObject(
+        "aggs" := Json.obj(
+          termAggregation("projects", "_project", bucketSize),
+          termAggregation("types", "@type", bucketSize)
+        ),
+        "size" := 0
+      )
+    QueryBuilder(query deepMerge aggregations)
+  }
+
+  private def termAggregation(name: String, fieldName: String, bucketSize: Int) =
+    name -> Json.obj("terms" -> Json.obj("field" := fieldName, "size" := bucketSize))
+
+  def build: JsonObject = query
 }
 
 object QueryBuilder {

@@ -1,0 +1,34 @@
+{
+  "types": {
+    "doc_count_error_upper_bound": 0,
+    "sum_other_doc_count": 0,
+    "buckets": [
+      {
+        "key": "Person",
+        "doc_count": 2
+      },
+      {
+        "key": "Dog",
+        "doc_count": 1
+      }
+    ]
+  },
+  "projects": {
+    "doc_count_error_upper_bound": 0,
+    "sum_other_doc_count": 0,
+    "buckets": [
+      {
+        "key": "proj1",
+        "doc_count": 1
+      },
+      {
+        "key": "proj2",
+        "doc_count": 1
+      },
+      {
+        "key": "proj3",
+        "doc_count": 1
+      }
+    ]
+  }
+}
