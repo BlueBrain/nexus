@@ -41,10 +41,10 @@ trait ElasticSearchViewsDirectives extends UriDirectives {
     parameter("id".as[IriBase].?).map(_.map(_.value))
 
   /**
-    * Matches only if the ''aggregate'' parameter is set to ''true''
+    * Matches only if the ''aggregations'' parameter is set to ''true''
     */
   def aggregated: Directive1[Option[Boolean]] =
-    parameter("aggregate".as[Boolean].?).filter(_.contains(true))
+    parameter("aggregations".as[Boolean].?).filter(_.contains(true))
 
   /**
     * Extract the ''sort'' query parameter(s) and provide a [[SortList]]

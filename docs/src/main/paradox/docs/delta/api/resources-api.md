@@ -307,7 +307,7 @@ GET /v1/resources/{org_label}/{project_label}?from={from}
                                              &schema={schema}
                                              &q={search}
                                              &sort={sort}
-                                             &aggregate={aggregate}
+                                             &aggregations={aggregations}
 ```
 
 ### Within an organization
@@ -328,7 +328,7 @@ GET /v1/resources/{org_label}?from={from}
                              &schema={schema}
                              &q={search}
                              &sort={sort}
-                             &aggregate={aggregate}
+                             &aggregations={aggregations}
 ```
 
 ### Within all projects
@@ -347,7 +347,7 @@ GET /v1/resources?from={from}
                  &schema={schema}
                  &q={search}
                  &sort={sort}
-                 &aggregate={aggregate}
+                 &aggregations={aggregations}
 ```
 
 ### Parameter description
@@ -385,7 +385,7 @@ Examples of ranges:
   matching (containing) the provided string
 - `{sort}`: String - can be used to sort resources based on a payloads' field. This parameter can appear multiple times 
   to enable sorting by multiple fields. The default is done by `_createdBy` and `@id`.
-- `{aggregate}`: Boolean - if `true` then the response will only contain aggregations of the `@type` and `_project` fields; defaults to `false`. See @ref:[Aggregation](#aggregation)
+- `{aggregations}`: Boolean - if `true` then the response will only contain aggregations of the `@type` and `_project` fields; defaults to `false`. See @ref:[Aggregations](#aggregations)
 
 
 **Example**
@@ -396,28 +396,25 @@ Request
 Response
 :   @@snip [listed.json](assets/resources/listed.json)
 
-### Aggregation
+Aggregation request
+:   @@snip [aggregate.sh](assets/resources/aggregate.sh)
+
+Aggregation response
+:   @@snip [aggregated.json](assets/resources/aggregated.json)
+
+### Aggregations
 
 @@@ warning
-Aggregation is experimental and its functionality and API is subject to change.
+Aggregations are experimental and the API is subject to change.
 @@@
 
-Adding the `aggregate=true` query parameter to a list query allows to aggregate the underlying resources by predefined terms. Currently, the following aggregations will be
+Adding the `aggregations=true` query parameter to a list query allows to aggregate the underlying resources by predefined terms. Currently, the following aggregations will be
 returned:
 
 * `projects`: a bucket aggregation of the resources by the project they belong to
 * `types`: a bucket aggregation of the `@types` featured in the resources
 
 Aggregation works on the same scopes as listing (all projects, organization, and project), and only aggregates the resources for which the caller has `resource/read` permission.
-
-**Example**
-
-Request
-:   @@snip [aggregate.sh](assets/resources/aggregate.sh)
-
-Response
-:   @@snip [aggregated.json](assets/resources/aggregated.json)
-
 
 ## List filtering by schema
 
@@ -432,7 +429,7 @@ GET /v1/resources/{org_label}/{project_label}/{schemaId}?from={from}
                                                         &rev={rev}&type={type}
                                                         &createdBy={createdBy}
                                                         &updatedBy={updatedBy}
-                                                        &aggregate={true}
+                                                        &aggregations={aggregations}
 ```
 
 
@@ -447,7 +444,7 @@ GET /v1/resources/{org_label}/{project_label}/{schemaId}?from={from}
   multiple times, filtering further the `@type` value.
 - `{createdBy}`: Iri - can be used to filter the resulting resources based on their creator
 - `{updatedBy}`: Iri - can be used to filter the resulting resources based on the person which performed the last update
-- `{aggregate}`: Boolean - if `true` then the response will only contain aggregations of the `@type` and `_project` fields; defaults to `false`. See @ref:[Aggregation](#aggregation)
+- `{aggregations}`: Boolean - if `true` then the response will only contain aggregations of the `@type` and `_project` fields; defaults to `false`. See @ref:[Aggregations](#aggregations)
 
 **Example**
 

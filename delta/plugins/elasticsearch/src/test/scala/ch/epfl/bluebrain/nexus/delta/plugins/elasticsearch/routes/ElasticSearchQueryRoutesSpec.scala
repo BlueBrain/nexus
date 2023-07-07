@@ -193,10 +193,10 @@ class ElasticSearchQueryRoutesSpec
   }
 
   List(
-    ("aggregate at project level", "/v1/resources/myorg/myproject?aggregate=true"),
-    ("aggregate at project level with schema", "/v1/resources/myorg/myproject/schema?aggregate=true"),
-    ("aggregate at org level", "/v1/resources/myorg?aggregate=true"),
-    ("aggregate at root level", "/v1/resources?aggregate=true")
+    ("aggregate at project level", "/v1/resources/myorg/myproject?aggregations=true"),
+    ("aggregate at project level with schema", "/v1/resources/myorg/myproject/schema?aggregations=true"),
+    ("aggregate at org level", "/v1/resources/myorg?aggregations=true"),
+    ("aggregate at root level", "/v1/resources?aggregations=true")
   ).foreach { case (testName, path) =>
     testName in {
       Get(path) ~> routes ~> check {
