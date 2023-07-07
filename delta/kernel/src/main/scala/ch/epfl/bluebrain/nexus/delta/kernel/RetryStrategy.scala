@@ -7,7 +7,8 @@ import pureconfig.error.{CannotConvert, ConfigReaderFailures, ConvertFailure}
 import pureconfig.generic.semiauto._
 import retry.RetryDetails.{GivingUp, WillDelayAndRetry}
 import retry.RetryPolicies._
-import retry.{RetryDetails, RetryPolicy}
+import retry.{RetryDetails, RetryPolicies, RetryPolicy}
+import retry.syntax.all._
 
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
@@ -30,6 +31,16 @@ final case class RetryStrategy[E](
 }
 
 object RetryStrategy {
+
+  /**
+    * Apply the provided strategy on the given io
+    */
+  def use[E, A](io: IO[E, A], retryStrategy: RetryStrategy[E]): IO[E, A] =
+    io.retryingOnSomeErrors(
+      retryStrategy.retryWhen,
+      retryStrategy.policy,
+      retryStrategy.onError
+    )
 
   /**
     * Log errors when retrying
@@ -147,10 +158,28 @@ object RetryStrategyConfig {
       capDelay[IO[E, *]](maxDelay, fullJitter(initialDelay)) join limitRetries(maxRetries)
   }
 
+  /**
+    * Retry with a constant delay until the total delay reaches the limit
+    * @param threshold
+    *   the maximum cumulative delay
+    * @param delay
+    *   the delay between each try
+    */
+  final case class MaximumCumulativeDelayConfig(threshold: FiniteDuration, delay: FiniteDuration)
+      extends RetryStrategyConfig {
+    override def toPolicy[E]: RetryPolicy[IO[E, *]] =
+      RetryPolicies.limitRetriesByCumulativeDelay(
+        threshold,
+        RetryPolicies.constantDelay(delay)
+      )
+  }
+
   implicit val retryStrategyConfigReader: ConfigReader[RetryStrategyConfig] = {
-    val onceRetryStrategy: ConfigReader[OnceStrategyConfig]               = deriveReader[OnceStrategyConfig]
-    val constantRetryStrategy: ConfigReader[ConstantStrategyConfig]       = deriveReader[ConstantStrategyConfig]
-    val exponentialRetryStrategy: ConfigReader[ExponentialStrategyConfig] = deriveReader[ExponentialStrategyConfig]
+    val onceRetryStrategy: ConfigReader[OnceStrategyConfig]                        = deriveReader[OnceStrategyConfig]
+    val constantRetryStrategy: ConfigReader[ConstantStrategyConfig]                = deriveReader[ConstantStrategyConfig]
+    val exponentialRetryStrategy: ConfigReader[ExponentialStrategyConfig]          = deriveReader[ExponentialStrategyConfig]
+    val maximumCumulativeDelayStrategy: ConfigReader[MaximumCumulativeDelayConfig] =
+      deriveReader[MaximumCumulativeDelayConfig]
 
     ConfigReader.fromCursor { cursor =>
       for {
@@ -158,11 +187,12 @@ object RetryStrategyConfig {
         rc       <- obj.atKey("retry")
         retry    <- ConfigReader[String].from(rc)
         strategy <- retry match {
-                      case "never"       => Right(AlwaysGiveUp)
-                      case "once"        => onceRetryStrategy.from(obj)
-                      case "constant"    => constantRetryStrategy.from(obj)
-                      case "exponential" => exponentialRetryStrategy.from(obj)
-                      case other         =>
+                      case "never"         => Right(AlwaysGiveUp)
+                      case "once"          => onceRetryStrategy.from(obj)
+                      case "constant"      => constantRetryStrategy.from(obj)
+                      case "exponential"   => exponentialRetryStrategy.from(obj)
+                      case "maximum-delay" => maximumCumulativeDelayStrategy.from(obj)
+                      case other           =>
                         Left(
                           ConfigReaderFailures(
                             ConvertFailure(

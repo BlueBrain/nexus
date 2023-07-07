@@ -66,7 +66,7 @@ class ElasticSearchViewsDirectivesSpec
           complete(list)
         },
         (pathPrefix("search") & projectRef & pathEndOrSingleSlash) { _ =>
-          searchParameters.apply { params => complete(params.asJson) }
+          searchParameters(baseUri, pc).apply { params => complete(params.asJson) }
         }
       )
     }

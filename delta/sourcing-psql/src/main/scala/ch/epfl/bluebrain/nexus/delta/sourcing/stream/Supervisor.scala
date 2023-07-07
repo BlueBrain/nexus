@@ -4,18 +4,18 @@ import cats.effect.Resource
 import cats.effect.concurrent.{Ref, Semaphore}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
+import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ProjectionConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ExecutionStatus.Ignored
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projections
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.model.ProjectionRestart
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ExecutionStatus.Ignored
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ExecutionStrategy.{EveryNode, PersistentSingleNode, TransientSingleNode}
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import fs2.concurrent.SignallingRef
 import monix.bio.{Fiber, Task, UIO}
-import retry.syntax.all._
 
 import scala.concurrent.duration._
 
@@ -178,7 +178,7 @@ object Supervisor {
             UIO.delay(log.error(errorMessage, throwable)) >>
               semaphore
                 .withPermit { restartProjection(supervised, mapRef) }
-                .retryingOnSomeErrors(retryStrategy.retryWhen, retryStrategy.policy, retryStrategy.onError)
+                .retry(retryStrategy)
         }
       }
       .interruptWhen(signal)
@@ -361,11 +361,7 @@ object Supervisor {
                               _      <- stopProjection(s)
                               _      <- Task.when(s.executionStrategy == PersistentSingleNode)(projections.delete(name))
                               _      <- onDestroy
-                                          .retryingOnSomeErrors(
-                                            retryStrategy.retryWhen,
-                                            retryStrategy.policy,
-                                            retryStrategy.onError
-                                          )
+                                          .retry(retryStrategy)
                                           .onErrorHandle(_ => ())
                               status <- s.control.status
                                           .restartUntil(e => e == ExecutionStatus.Completed || e == ExecutionStatus.Stopped)

@@ -21,14 +21,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescr
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription.ResolvedServiceDescription
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.{ScoredResultEntry, UnscoredResultEntry}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.{ScoredSearchResults, UnscoredSearchResults}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, ResultEntry, SearchResults, SortList}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{AggregationResult, Pagination, ResultEntry, SearchResults, SortList}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Name}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import com.typesafe.scalalogging.Logger
-import io.circe.syntax._
 import io.circe._
+import io.circe.syntax._
 import monix.bio.{IO, UIO}
-import retry.syntax.all._
 
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
@@ -260,13 +259,7 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
                   json.hcursor.get[String]("task").leftMap(_ => HttpClientStatusError(req, BadRequest, json.noSpaces))
                 )
       taskReq = Get((endpoint / tasksPath / taskId).withQuery(Query(waitForCompletion -> "true"))).withHttpCredentials
-      _      <- client
-                  .toJson(taskReq)
-                  .retryingOnSomeErrors(
-                    updateByQueryStrategy.retryWhen,
-                    updateByQueryStrategy.policy,
-                    updateByQueryStrategy.onError
-                  )
+      _      <- client.toJson(taskReq).retry(updateByQueryStrategy)
     } yield ()
   }
 
@@ -491,6 +484,29 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
   }
 
   /**
+    * Perform an aggregation for the ''query'' inside the given indices
+    *
+    * @param params
+    *   the filter parameters
+    * @param indices
+    *   the indices to use (if empty, searches in all the indices)
+    * @param qp
+    *   the query parameters
+    * @param bucketSize
+    *   the maximum number of terms returned by a term aggregation
+    * @see
+    *   https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-terms-aggregation.html#search-aggregations-bucket-terms-aggregation-size
+    */
+  def aggregate(params: ResourcesSearchParams, indices: Set[String], qp: Query, bucketSize: Int)(implicit
+      base: BaseUri
+  ): HttpResult[AggregationResult] = {
+    val query          = QueryBuilder(params).aggregation(bucketSize)
+    val (indexPath, q) = indexPathAndQuery(indices, query)
+    val searchEndpoint = (endpoint / indexPath / searchPath).withQuery(Uri.Query(defaultQuery ++ qp.toMap))
+    client.fromJsonTo[AggregationResult](Post(searchEndpoint, q.build).withHttpCredentials)
+  }
+
+  /**
     * Refresh the given index
     */
   def refresh(index: IndexLabel): HttpResult[Boolean] =
@@ -585,6 +601,17 @@ object ElasticSearchClient {
         case None           => decodeUnscoredResults
       }
     )
+
+  implicit val aggregationDecoder: Decoder[AggregationResult] =
+    Decoder.decodeJsonObject.emap { result =>
+      result.asJson.hcursor
+        .downField("aggregations")
+        .focus
+        .flatMap(_.asObject) match {
+        case Some(aggs) => Right(AggregationResult(fetchTotal(result), aggs))
+        case None       => Left("The response did not contain a valid 'aggregations' field.")
+      }
+    }
 
   final private[client] case class Count(value: Long)
   private[client] object Count {

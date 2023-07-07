@@ -16,8 +16,8 @@ trait DoobieScalaTestFixture
 
   implicit private val classLoader: ClassLoader = getClass.getClassLoader
 
-  var xas: Transactors                        = _
-  private var translactorTeardown: Task[Unit] = _
+  var xas: Transactors                       = _
+  private var transactorTeardown: Task[Unit] = _
 
   override def beforeAll(): Unit = {
     implicit val s: Scheduler   = Scheduler.global
@@ -28,12 +28,12 @@ trait DoobieScalaTestFixture
       .runSyncUnsafe()
     (transactors.execDDL("/scripts/drop-tables.ddl") >> transactors.execDDL("/scripts/schema.ddl")).runSyncUnsafe()
     xas = transactors
-    translactorTeardown = teardown
+    transactorTeardown = teardown
   }
 
   override def afterAll(): Unit = {
     implicit val s: Scheduler = Scheduler.global
-    translactorTeardown.runSyncUnsafe()
+    transactorTeardown.runSyncUnsafe()
     super.afterAll()
   }
 

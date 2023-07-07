@@ -27,6 +27,8 @@ trait ValidateElasticSearchView {
 
 object ValidateElasticSearchView {
 
+  val always: ValidateElasticSearchView = (_: UUID, _: Int, _: ElasticSearchViewValue) => IO.unit
+
   def apply(
       validatePipeChain: PipeChain => Either[ProjectionErr, Unit],
       permissions: Permissions,

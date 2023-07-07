@@ -8,8 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViewsQue
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchBulk
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{AuthorizationFailed, ProjectContextRejection, ViewIsDeprecated}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.Type.{ExcludedType, IncludedType}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultViewId, permissions, ElasticSearchViewRejection, ResourcesSearchParams}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultViewId, permissions, ElasticSearchViewRejection}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
@@ -20,8 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{SearchResults, SortList, TimeRange}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
@@ -55,7 +53,6 @@ class ElasticSearchViewsQuerySuite
   implicit private val uuidF: UUIDF     = UUIDF.random
 
   private val prefix = "prefix"
-  private val page   = FromPagination(0, 100)
 
   private lazy val client = esClient()
   private lazy val xas    = doobie()
@@ -134,10 +131,10 @@ class ElasticSearchViewsQuerySuite
   private val allIndexingViews: List[ViewRef] = allDefaultViews ++ List(view1Proj1, view2Proj1, view1Proj2, view2Proj2)
 
   // Resources are indexed in every view
-  private def epochPlus(plus: Long)   = Instant.EPOCH.plusSeconds(plus)
-  private val orgType                 = nxv + "Organization"
-  private val orgSchema               = ResourceRef.Latest(nxv + "org")
-  private val bbp                     =
+  private def epochPlus(plus: Long) = Instant.EPOCH.plusSeconds(plus)
+  private val orgType               = nxv + "Organization"
+  private val orgSchema             = ResourceRef.Latest(nxv + "org")
+  private val bbp                   =
     Sample(
       "bbp",
       Set(orgType),
@@ -148,7 +145,7 @@ class ElasticSearchViewsQuerySuite
       updatedAt = epochPlus(10L),
       createdBy = alice.subject
     )
-  private val epfl                    =
+  private val epfl                  =
     Sample(
       "epfl",
       Set(orgType),
@@ -159,9 +156,9 @@ class ElasticSearchViewsQuerySuite
       updatedAt = epochPlus(10L),
       updatedBy = alice.subject
     )
-  private val datasetSchema           = ResourceRef.Latest(nxv + "dataset")
-  private val traceTypes              = Set(nxv + "Dataset", nxv + "Trace")
-  private val trace                   = Sample(
+  private val datasetSchema         = ResourceRef.Latest(nxv + "dataset")
+  private val traceTypes            = Set(nxv + "Dataset", nxv + "Trace")
+  private val trace                 = Sample(
     "trace",
     traceTypes,
     3,
@@ -170,8 +167,8 @@ class ElasticSearchViewsQuerySuite
     createdAt = epochPlus(15L),
     updatedAt = epochPlus(30L)
   )
-  private val cellTypes               = Set(nxv + "Dataset", nxv + "Cell")
-  private val cell                    =
+  private val cellTypes             = Set(nxv + "Dataset", nxv + "Cell")
+  private val cell                  =
     Sample(
       "cell",
       cellTypes,
@@ -182,14 +179,8 @@ class ElasticSearchViewsQuerySuite
       updatedAt = epochPlus(40L),
       createdBy = alice.subject
     )
-  private val orgs                    = List(bbp, epfl)
-  private val deprecated              = List(cell)
-  private val createdByAlice          = List(bbp, cell)
-  private val createdBetween_8_and_16 = List(epfl, trace)
-  private val createdAfter_11         = List(trace, cell)
-  private val updatedBefore_12        = List(bbp, epfl)
-  private val updatedByAlice          = List(epfl)
-  private val allResources            = List(bbp, epfl, trace, cell)
+
+  private val allResources = List(bbp, epfl, trace, cell)
 
   private val fetchContext = FetchContextDummy[ElasticSearchViewRejection](
     List(project1, project2),
@@ -214,7 +205,6 @@ class ElasticSearchViewsQuerySuite
 
   private lazy val viewsQuery = ElasticSearchViewsQuery(
     aclCheck,
-    fetchContext,
     views,
     client,
     prefix,
@@ -251,7 +241,7 @@ class ElasticSearchViewsQuerySuite
 
   // Match all resources and sort them by created date and date
   private val matchAllSorted                               = jobj"""{ "size": 100, "sort": [{ "_createdAt": "asc" }, { "@id": "asc" }] }"""
-  private val sort                                         = SortList.byCreationDateAndId
+//  private val sort                                         = SortList.byCreationDateAndId
   implicit private val defaultSort: Ordering[DataResource] = Ordering.by { r => r.createdAt -> r.id }
 
   /**
@@ -302,87 +292,6 @@ class ElasticSearchViewsQuerySuite
     (createIndexingViews >> populateIndexingViews >> createAggregateViews >> createCycle).void
       .assert(())
       .runSyncUnsafe()
-  }
-
-  private val defaultViewProj1 = List(defaultView)
-  private val defaultViewProj2 = List(defaultView2)
-
-  private def assertAllProjects(params: ResourcesSearchParams, caller: Caller, expectedIds: Seq[Iri]) =
-    viewsQuery
-      .list(page, params, sort)(caller)
-      .map(Ids.extractAll)
-      .assert(expectedIds)
-
-  private val all = ResourcesSearchParams()
-  // Action / params / caller / accessible views / matching resources
-  List(
-    ("all resources for a user with full access", all, bob, allDefaultViews, allResources),
-    ("all resources for a user with limited access on project 1", all, alice, defaultViewProj1, allResources),
-    ("all resources for a user with limited access on project 2", all, charlie, defaultViewProj2, allResources),
-    ("all resources for a user with no access", all, anon, List.empty, List.empty)
-  ).foreach { case (testName, params, caller, accessibleViews, resources) =>
-    test(s"List in all projects: $testName") {
-      assertAllProjects(params, caller, generateIds(accessibleViews, resources))
-    }
-  }
-
-  private def assetResultsProject1(params: ResourcesSearchParams, caller: Caller, expectedIds: Seq[Iri]) =
-    viewsQuery
-      .list(project1.ref, page, params, sort)(caller)
-      .map(Ids.extractAll)
-      .assert(expectedIds)
-
-  private val orgByType                 = ResourcesSearchParams(types = List(IncludedType(orgType)))
-  private val orgBySchema               = ResourcesSearchParams(schema = Some(orgSchema))
-  private val excludeDatasetType        = ResourcesSearchParams(types = List(ExcludedType(nxv + "Dataset")))
-  private val byDeprecated              = ResourcesSearchParams(deprecated = Some(true))
-  private val byCreated                 = ResourcesSearchParams(createdBy = Some(alice.subject))
-  private val between_8_and_16          = TimeRange.Between.unsafe(epochPlus(8L), epochPlus(16))
-  private val byCreatedBetween_8_and_16 = ResourcesSearchParams(createdAt = between_8_and_16)
-  private val byCreatedAfter_11         = ResourcesSearchParams(createdAt = TimeRange.After(epochPlus(11L)))
-  private val byUpdated                 = ResourcesSearchParams(updatedBy = Some(alice.subject))
-  private val byUpdated_Before_12       = ResourcesSearchParams(updatedAt = TimeRange.Before(epochPlus(12L)))
-
-  private val bbpResource    = bbp.asResourceF(defaultView)
-  private val byId           = ResourcesSearchParams(id = Some(bbpResource.id))
-  private val byLocatingId   = ResourcesSearchParams(locate = Some(bbpResource.id))
-  private val byLocatingSelf = ResourcesSearchParams(locate = Some(bbpResource.self))
-
-  // Action / params / caller / matching resources
-  List(
-    ("all resources for a user with full access", all, bob, allResources),
-    ("all resources for a user with access on project 1", all, alice, allResources),
-    ("org resources by type", orgByType, bob, orgs),
-    ("org resources by schema", orgBySchema, bob, orgs),
-    ("all resources but the ones with 'Dataset' type", excludeDatasetType, bob, orgs),
-    ("deprecated resources", byDeprecated, bob, deprecated),
-    ("resources created by Alice", byCreated, bob, createdByAlice),
-    ("resources created between 8 and 16", byCreatedBetween_8_and_16, bob, createdBetween_8_and_16),
-    ("resources created after 11", byCreatedAfter_11, bob, createdAfter_11),
-    ("resources updated by Alice", byUpdated, bob, updatedByAlice),
-    ("resources updated before 12", byUpdated_Before_12, bob, updatedBefore_12),
-    (s"resources with id ${bbpResource.id}", byId, bob, List(bbp)),
-    (s"resources by locating id ${bbpResource.id}", byLocatingId, bob, List(bbp)),
-    (s"resources by locating self ${bbpResource.self}", byLocatingSelf, bob, List(bbp))
-  ).foreach { case (testName, params, caller, resources) =>
-    test(s"List in project1: $testName") {
-      assetResultsProject1(params, caller, generateIds(defaultViewProj1, resources))
-    }
-  }
-
-  test("Apply pagination") {
-    implicit val caller: Caller = alice
-    val twoPerPage              = FromPagination(0, 2)
-    val params                  = ResourcesSearchParams()
-
-    for {
-      results <- viewsQuery.list(project1.ref, twoPerPage, params, sort)
-      _        = assertEquals(results.total, 4L)
-      _        = assertEquals(results.sources.size, 2)
-      // Token from Elasticsearch to fetch the next page
-      epflId   = epfl.asResourceF(defaultView).id
-      _        = assertEquals(results.token, Some(s"""[10000,"$epflId"]"""))
-    } yield ()
   }
 
   test("Query for all documents in a view") {

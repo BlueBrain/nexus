@@ -17,7 +17,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.{Decoder, Json}
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
-import retry.syntax.all._
 
 import java.net.UnknownHostException
 import scala.concurrent.TimeoutException
@@ -110,8 +109,6 @@ object HttpClient {
         decoder.map(_.decodeMessage(response))
       }
 
-      private val retryStrategy = httpConfig.strategy
-
       @SuppressWarnings(Array("IsInstanceOf"))
       private def toHttpError(req: HttpRequest): Throwable => HttpClientError = {
         case e: TimeoutException                                                    => HttpTimeoutError(req, e.getMessage)
@@ -128,7 +125,7 @@ object HttpClient {
           resp        <- decodeResponse(req, encodedResp)
           a           <- handleResponse.applyOrElse(resp, resp => consumeEntity[A](req, resp))
         } yield a
-      }.retryingOnSomeErrors(httpConfig.isWorthRetrying, retryStrategy.policy, retryStrategy.onError)
+      }.retry(httpConfig.strategy)
 
       override def fromEntityTo[A](
           req: HttpRequest

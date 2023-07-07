@@ -1,22 +1,17 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.contexts
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.contexts.{elasticsearch, elasticsearchMetadata}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, ElasticSearchViewValue}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ReferenceRegistry
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes._
-import monix.bio.IO
-
-import java.util.UUID
 
 trait Fixtures {
   implicit private val cl: ClassLoader = getClass.getClassLoader
-
-  def alwaysValidate: ValidateElasticSearchView = (_: UUID, _: Int, _: ElasticSearchViewValue) => IO.unit
 
   private val listingsMetadataCtx =
     List(
@@ -41,6 +36,7 @@ trait Fixtures {
   implicit val rcr: RemoteContextResolution = RemoteContextResolution.fixedIOResource(
     elasticsearch                  -> ContextValue.fromFile("contexts/elasticsearch.json"),
     elasticsearchMetadata          -> ContextValue.fromFile("contexts/elasticsearch-metadata.json"),
+    contexts.aggregations          -> ContextValue.fromFile("contexts/aggregations.json"),
     contexts.elasticsearchIndexing -> ContextValue.fromFile("/contexts/elasticsearch-indexing.json"),
     contexts.searchMetadata        -> listingsMetadataCtx,
     contexts.indexingMetadata      -> indexingMetadataCtx,

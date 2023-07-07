@@ -95,7 +95,7 @@ class ElasticSearchViewSTMSpec
         updatedBy
       )
 
-    val eval = evaluate(alwaysValidate)(_, _)
+    val eval = evaluate(ValidateElasticSearchView.always)(_, _)
 
     "evaluating the CreateElasticSearchView command" should {
       "emit an ElasticSearchViewCreated for an IndexingElasticSearchViewValue" in {

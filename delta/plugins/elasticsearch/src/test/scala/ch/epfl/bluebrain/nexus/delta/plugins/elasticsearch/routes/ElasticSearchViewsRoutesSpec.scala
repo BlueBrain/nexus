@@ -6,14 +6,10 @@ import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept, Location, OAut
 import akka.http.scaladsl.model.{MediaTypes, StatusCodes, Uri}
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.ProjectContextRejection
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.contexts.searchMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{permissions => esPermissions, schema => elasticSearchSchema, ElasticSearchViewRejection}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.DummyElasticSearchViewsQuery._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, Fixtures, ValidateElasticSearchView}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts.search
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -28,10 +24,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, FetchContextDummy}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, IndexingAction}
@@ -45,8 +40,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{FailedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeChain, ProjectionMetadata}
 import ch.epfl.bluebrain.nexus.testkit._
-import io.circe.syntax._
-import io.circe.{Json, JsonObject}
+import io.circe.Json
 import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
@@ -85,7 +79,6 @@ class ElasticSearchViewsRoutesSpec
     )
 
   implicit private val baseUri: BaseUri                   = BaseUri("http://localhost", Label.unsafe("v1"))
-  implicit private val paginationConfig: PaginationConfig = PaginationConfig(5, 10, 5)
   implicit private val s: Scheduler                       = Scheduler.global
   implicit private val rejectionHandler: RejectionHandler = RdfRejectionHandler.apply
   implicit private val exceptionHandler: ExceptionHandler = RdfExceptionHandler.apply
@@ -127,19 +120,22 @@ class ElasticSearchViewsRoutesSpec
 
   private val allowedPerms = Set(esPermissions.write, esPermissions.read, esPermissions.query, events.read)
 
-  private val fetchContext = FetchContextDummy[ElasticSearchViewRejection](
-    Map(project.value.ref -> project.value.context),
-    ProjectContextRejection
-  )
+  implicit private val fetchContextRejection: FetchContext[ElasticSearchViewRejection] =
+    FetchContextDummy[ElasticSearchViewRejection](
+      Map(project.value.ref -> project.value.context),
+      ElasticSearchViewRejection.ProjectContextRejection
+    )
 
-  private val resourceToSchemaMapping = ResourceToSchemaMappings(Label.unsafe("views") -> elasticSearchSchema.iri)
-
-  private val aclCheck                       = AclSimpleCheck().accepted
-  private val groupDirectives                =
-    DeltaSchemeDirectives(fetchContext, ioFromMap(uuid -> projectRef.organization), ioFromMap(uuid -> projectRef))
+  private val aclCheck        = AclSimpleCheck().accepted
+  private val groupDirectives =
+    DeltaSchemeDirectives(
+      fetchContextRejection,
+      ioFromMap(uuid -> projectRef.organization),
+      ioFromMap(uuid -> projectRef)
+    )
 
   private lazy val views: ElasticSearchViews = ElasticSearchViews(
-    fetchContext,
+    fetchContextRejection,
     ResolverContextResolution(rcr),
     ValidateElasticSearchView(
       PipeChain.validate(_, registry),
@@ -166,7 +162,6 @@ class ElasticSearchViewsRoutesSpec
         views,
         viewsQuery,
         projections,
-        resourceToSchemaMapping,
         groupDirectives,
         IndexingAction.noop
       )
@@ -495,91 +490,6 @@ class ElasticSearchViewsRoutesSpec
         response.status shouldEqual StatusCodes.OK
         response.asJson shouldEqual
           json"""{"id" : "myid2", "project" : "myorg/myproject", "q1" : "v1"}""".deepMerge(query)
-      }
-    }
-
-    "fail to do listings from view without resources/read permission" in {
-      aclCheck.subtract(AclAddress.Root, Anonymous -> Set(esPermissions.read)).accepted
-
-      val endpoints = List(
-        "/v1/views/myorg/myproject",
-        "/v1/resources/myorg/myproject/view"
-      )
-      forAll(endpoints) { endpoint =>
-        Get(endpoint) ~> routes ~> check {
-          response.status shouldEqual StatusCodes.Forbidden
-          response.asJson shouldEqual jsonContentOf("/routes/errors/authorization-failed.json")
-        }
-      }
-    }
-
-    "list on project scope" in {
-      aclCheck.append(AclAddress.Root, Anonymous -> Set(esPermissions.read)).accepted
-
-      val endpoints: Seq[(String, IdSegment)] = List(
-        "/v1/views/myorg/myproject"                    -> elasticSearchSchema,
-        "/v1/resources/myorg/myproject/schema"         -> "schema",
-        s"/v1/resources/myorg/myproject/$myId2Encoded" -> myId2
-      )
-      forAll(endpoints) { case (endpoint, schema) =>
-        Get(s"$endpoint?from=0&size=5&q=something") ~> routes ~> check {
-          response.status shouldEqual StatusCodes.OK
-          response.asJson shouldEqual
-            JsonObject("_total" -> 1.asJson)
-              .add("_results", Json.arr(listResponse(projectRef, schema).asJson))
-              .addContext(contexts.metadata)
-              .addContext(search)
-              .addContext(searchMetadata)
-              .asJson
-        }
-      }
-    }
-
-    "list on org scope" in {
-      Get(s"/v1/views/myorg?from=0&size=5&q=something") ~> routes ~> check {
-        response.status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual
-          JsonObject("_total" -> 1.asJson)
-            .add("_results", Json.arr(listResponse(Label.unsafe("myorg"), elasticSearchSchema).asJson))
-            .addContext(contexts.metadata)
-            .addContext(search)
-            .addContext(searchMetadata)
-            .asJson
-      }
-
-      Get(s"/v1/resources/myorg?from=0&size=5&q=something") ~> routes ~> check {
-        response.status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual
-          JsonObject("_total" -> 1.asJson)
-            .add("_results", Json.arr(listResponse(Label.unsafe("myorg")).asJson))
-            .addContext(contexts.metadata)
-            .addContext(search)
-            .addContext(searchMetadata)
-            .asJson
-      }
-    }
-
-    "list" in {
-      Get(s"/v1/views?from=0&size=5&q=something") ~> routes ~> check {
-        response.status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual
-          JsonObject("_total" -> 1.asJson)
-            .add("_results", Json.arr(listResponse(elasticSearchSchema).asJson))
-            .addContext(contexts.metadata)
-            .addContext(search)
-            .addContext(searchMetadata)
-            .asJson
-      }
-
-      Get(s"/v1/resources?from=0&size=5&q=something") ~> routes ~> check {
-        response.status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual
-          JsonObject("_total" -> 1.asJson)
-            .add("_results", Json.arr(listResponse.asJson))
-            .addContext(contexts.metadata)
-            .addContext(search)
-            .addContext(searchMetadata)
-            .asJson
       }
     }
 
