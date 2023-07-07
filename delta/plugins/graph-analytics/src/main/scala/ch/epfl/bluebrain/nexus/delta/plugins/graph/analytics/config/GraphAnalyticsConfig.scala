@@ -18,17 +18,15 @@ import scala.annotation.nowarn
   *   prefix for indices
   * @param termAggregations
   *   the term aggregations query configuration
-  * @param disableIndexing
+  * @param indexingEnabled
   *   if true, disables graph analytics indexing
   */
 final case class GraphAnalyticsConfig(
     batch: BatchConfig,
     prefix: String,
     termAggregations: TermAggregationsConfig,
-    disableIndexing: Boolean
-) {
-  def indexingEnabled: Boolean = !disableIndexing
-}
+    indexingEnabled: Boolean
+)
 
 object GraphAnalyticsConfig {
 

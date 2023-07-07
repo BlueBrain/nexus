@@ -47,8 +47,8 @@ import scala.concurrent.duration._
   *   default values for the default Elasticsearch views
   * @param metricsQuery
   *   query configuration for the metrics projection
-  * @param disableIndexing
-  *   if true, disables Elasticsearch indexing
+  * @param indexingEnabled
+  *   if false, disables Elasticsearch indexing
   */
 final case class ElasticSearchViewsConfig(
     base: Uri,
@@ -65,10 +65,8 @@ final case class ElasticSearchViewsConfig(
     maxIndexPathLength: Int,
     defaults: Defaults,
     metricsQuery: QueryConfig,
-    disableIndexing: Boolean
-) {
-  def indexingEnabled: Boolean = !disableIndexing
-}
+    indexingEnabled: Boolean
+)
 
 object ElasticSearchViewsConfig {
 
