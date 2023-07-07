@@ -2,13 +2,8 @@
 
 Pipes are the processing units of a pipeline for an Elasticsearch view.
 
-They are applied sequentially as defined by the user in the view payload and allow to transform and/or filter a resource 
-before indexing it to Elasticsearch.
-
-Note that when a resource is filtered out by a pipe, it won't be indexed so the execution of the next pipes is 
-short-circuited to avoid useless computation.
-
-It is therefore encouraged to apply the filtering pipes at the beginning of the pipeline.
+See @ref:[here](./elasticsearch-view-api.md#processing-pipeline) to get more details on how pipes are applied and how the 
+indexing process to Elasticsearch works. 
 
 ## Core pipes
 
@@ -82,7 +77,7 @@ These pipes are provided by default by Delta.
 
 ### Data construct query
 
-* The resource will be transformed according to the provided SPARQL construct query
+* The data graph of the resource will be transformed according to the provided SPARQL construct query
 * The resource metadata is not modified by this pipe
 
 ```json
@@ -96,7 +91,7 @@ These pipes are provided by default by Delta.
 
 ### Select predicates
 
-* Only the defined predicates will be kept in the resource
+* Only the defined predicates in the data graph of the resource will be kept in the resource
 * The resource metadata is not modified by this type
 
 ```json
@@ -113,7 +108,7 @@ These pipes are provided by default by Delta.
 
 ### Default label predicates
 
-* Only default labels defined as `skos:prefLabel`, `rdf:tpe`, `rdfs:label`, `schema:name` will be kept in the resource
+* Only default labels defined as `skos:prefLabel`, `rdf:tpe`, `rdfs:label`, `schema:name` will be kept in the data graph of the resource
 * No configuration is needed
 
 ```json
