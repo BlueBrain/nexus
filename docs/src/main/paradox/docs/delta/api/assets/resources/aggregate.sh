@@ -1,1 +1,1 @@
-curl "http://localhost:8080/v1/aggregations/myorg"
+curl "http://localhost:8080/v1/resources/myorg?aggregations=true"

@@ -396,10 +396,10 @@ Request
 Response
 :   @@snip [listed.json](assets/resources/listed.json)
 
-Aggregation request
+Aggregations request
 :   @@snip [aggregate.sh](assets/resources/aggregate.sh)
 
-Aggregation response
+Aggregations response
 :   @@snip [aggregated.json](assets/resources/aggregated.json)
 
 ### Aggregations
