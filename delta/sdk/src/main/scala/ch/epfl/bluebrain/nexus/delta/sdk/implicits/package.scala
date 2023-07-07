@@ -1,10 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
-import ch.epfl.bluebrain.nexus.delta.kernel.syntax.{ClassTagSyntax, InstantSyntax, KamonSyntax, TaskSyntax}
+import ch.epfl.bluebrain.nexus.delta.kernel.syntax.{ClassTagSyntax, IOSyntax, InstantSyntax, KamonSyntax}
 import ch.epfl.bluebrain.nexus.delta.rdf.instances.{SecretInstances, TripleInstances, UriInstances}
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.{IriSyntax, IterableSyntax, JsonLdEncoderSyntax, JsonSyntax, PathSyntax, UriSyntax}
 import ch.epfl.bluebrain.nexus.delta.sdk.instances.{CredentialsInstances, IdentityInstances, IriInstances, ProjectRefInstances}
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax.{HttpRequestSyntax, HttpResponseFieldsSyntax, IOSyntax, IriEncodingSyntax}
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax.{HttpRequestSyntax, HttpResponseFieldsSyntax, IORejectSyntax, IriEncodingSyntax}
 
 /**
   * Aggregate instances and syntax from rdf plus the current sdk instances and syntax to avoid importing multiple
@@ -26,9 +26,9 @@ package object implicits
     with PathSyntax
     with IterableSyntax
     with KamonSyntax
-    with IOSyntax
+    with IORejectSyntax
     with HttpRequestSyntax
     with HttpResponseFieldsSyntax
-    with TaskSyntax
+    with IOSyntax
     with ClassTagSyntax
     with InstantSyntax
