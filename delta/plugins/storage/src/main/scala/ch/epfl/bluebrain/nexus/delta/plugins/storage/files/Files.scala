@@ -49,7 +49,6 @@ import com.typesafe.scalalogging.Logger
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
 import fs2.Stream
-import retry.syntax.all._
 
 import java.util.UUID
 
@@ -501,11 +500,7 @@ final class Files(
                                storage <- fetchStorage(f)
                                _       <- updateAttributes(f, storage)
                              } yield ()
-                           }.retryingOnSomeErrors(
-                             retryStrategy.retryWhen,
-                             retryStrategy.policy,
-                             retryStrategy.onError
-                           )
+                           }.retry(retryStrategy)
                          }
     } yield stream
   }

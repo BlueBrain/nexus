@@ -1,18 +1,20 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.archive.model
 
+import akka.http.scaladsl.model.Uri
 import cats.Order
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveResourceRepresentation.{CompactedJsonLd, SourceJson}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.AbsolutePath
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.rdf.instances._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.configuration.semiauto._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{Configuration, JsonLdDecoder}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import io.circe.Encoder
 
 import scala.annotation.nowarn
@@ -21,6 +23,18 @@ import scala.annotation.nowarn
   * Enumeration of archive references.
   */
 sealed trait ArchiveReference extends Product with Serializable {
+
+  /**
+    * @return
+    *   the target location in the archive
+    */
+  def path: Option[AbsolutePath]
+}
+
+/**
+  * Enumeration of fully-qualified archive references
+  */
+sealed trait FullArchiveReference extends ArchiveReference {
 
   /**
     * @return
@@ -34,17 +48,6 @@ sealed trait ArchiveReference extends Product with Serializable {
     */
   def project: Option[ProjectRef]
 
-  /**
-    * @return
-    *   the target location in the archive
-    */
-  def path: Option[AbsolutePath]
-
-  /**
-    * @return
-    *   the archive reference type
-    */
-  def tpe: ArchiveReferenceType
 }
 
 object ArchiveReference {
@@ -66,8 +69,7 @@ object ArchiveReference {
       project: Option[ProjectRef],
       path: Option[AbsolutePath],
       representation: Option[ArchiveResourceRepresentation]
-  ) extends ArchiveReference {
-    override val tpe: ArchiveReferenceType = ArchiveReferenceType.Resource
+  ) extends FullArchiveReference {
 
     def representationOrDefault: ArchiveResourceRepresentation = representation.getOrElse(CompactedJsonLd)
 
@@ -95,14 +97,29 @@ object ArchiveReference {
       ref: ResourceRef,
       project: Option[ProjectRef],
       path: Option[AbsolutePath]
-  ) extends ArchiveReference {
-    override val tpe: ArchiveReferenceType = ArchiveReferenceType.File
-  }
+  ) extends FullArchiveReference
 
   object FileReference {
     implicit val fileReferenceOrder: Order[FileReference] =
       Order.by { fileReference =>
         (fileReference.ref, fileReference.project, fileReference.path)
+      }
+  }
+
+  /**
+    * An archive file self reference, but with a raw uri rather than a full reference
+    *
+    * @param value
+    *   the '_self' of the file, which is the url a user would input to access the file in nexus
+    * @param path
+    *   the target location in the archive
+    */
+  final case class FileSelfReference(value: Uri, path: Option[AbsolutePath]) extends ArchiveReference
+
+  object FileSelfReference {
+    implicit val fileSelfReferenceOrder: Order[FileSelfReference] =
+      Order.by { fileReference =>
+        (fileReference.value.toString(), fileReference.path)
       }
   }
 
@@ -126,6 +143,11 @@ object ArchiveReference {
       path: Option[AbsolutePath]
   ) extends ReferenceInput
 
+  final private case class FileSelfInput(
+      value: Uri,
+      path: Option[AbsolutePath]
+  ) extends ReferenceInput
+
   @nowarn("cat=unused")
   implicit final val referenceInputJsonLdDecoder: JsonLdDecoder[ArchiveReference] = {
     def refOf(resourceId: Iri, tag: Option[UserTag], rev: Option[Int]): ResourceRef =
@@ -138,6 +160,7 @@ object ArchiveReference {
     val ctx = Configuration.default.context
       .addAliasIdType("ResourceInput", nxv + "Resource")
       .addAliasIdType("FileInput", nxv + "File")
+      .addAliasIdType("FileSelfInput", nxv + "FileSelf")
 
     implicit val cfg: Configuration = Configuration.default.copy(context = ctx)
 
@@ -160,6 +183,8 @@ object ArchiveReference {
       case FileInput(resourceId, project, tag, rev, path)                                         =>
         val ref = refOf(resourceId, tag, rev)
         Right(FileReference(ref, project, path))
+      case FileSelfInput(value, path)                                                             =>
+        Right(FileSelfReference(value, path))
     }
   }
 
@@ -172,6 +197,7 @@ object ArchiveReference {
       .copy(transformConstructorNames = {
         case "ResourceInput" => "Resource"
         case "FileInput"     => "File"
+        case "FileSelfInput" => "FileSelf"
         case other           => other
       })
 
@@ -204,14 +230,23 @@ object ArchiveReference {
           rev = revOf(ref),
           path = path
         )
+      case FileSelfReference(self, path)                         =>
+        FileSelfInput(value = self, path = path)
     }
   }
 
-  implicit val archiveReferenceOrder: Order[ArchiveReference] = Order.from {
+  implicit val fullArchiveReferenceOrder: Order[FullArchiveReference] = Order.from {
     case (_: ResourceReference, _: FileReference)       => -1
     case (r1: ResourceReference, r2: ResourceReference) => ResourceReference.resourceReferenceOrder.compare(r1, r2)
     case (_: FileReference, _: ResourceReference)       => 1
     case (f1: FileReference, f2: FileReference)         => FileReference.fileReferenceOrder.compare(f1, f2)
+  }
+
+  implicit val archiveReferenceOrder: Order[ArchiveReference] = Order.from {
+    case (f1: FullArchiveReference, f2: FullArchiveReference) => fullArchiveReferenceOrder.compare(f1, f2)
+    case (fs1: FileSelfReference, fs2: FileSelfReference)     => FileSelfReference.fileSelfReferenceOrder.compare(fs1, fs2)
+    case (_: FileSelfReference, _: FullArchiveReference)      => -1
+    case (_: FullArchiveReference, _: FileSelfReference)      => 1
   }
 
 }

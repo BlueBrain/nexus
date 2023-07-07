@@ -7,9 +7,10 @@ import akka.stream.scaladsl.Source
 import akka.testkit.TestKit
 import akka.util.ByteString
 import cats.data.NonEmptySet
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
-import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.{FileReference, ResourceReference}
-import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.{AuthorizationFailed, FilenameTooLong, ResourceNotFound}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils.encode
+import ch.epfl.bluebrain.nexus.delta.plugins.archive.FileSelf.ParsingError
+import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.{FileReference, FileSelfReference, ResourceReference}
+import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.{AuthorizationFailed, FilenameTooLong, InvalidFileSelf, ResourceNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveResourceRepresentation.{CompactedJsonLd, Dot, ExpandedJsonLd, NQuads, NTriples, SourceJson}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.{ArchiveFormat, ArchiveRejection, ArchiveValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.RemoteContextResolutionFixture
@@ -40,10 +41,10 @@ import ch.epfl.bluebrain.nexus.testkit.archive.ArchiveHelpers
 import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOValues, TestHelpers}
 import io.circe.syntax.EncoderOps
 import monix.bio.{IO, UIO}
+import monix.execution.Scheduler.Implicits.global
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{Inspectors, OptionValues}
-import monix.execution.Scheduler.Implicits.global
 
 import java.util.UUID
 import scala.concurrent.ExecutionContext
@@ -102,6 +103,7 @@ abstract class ArchiveDownloadSpec
     val file1Size            = 12L
     val file1                = FileGen.resourceFor(id1, projectRef, storageRef, fileAttributes(file1Name, file1Size))
     val file1Content: String = "file content"
+    val file1Self            = uri"http://delta:8080/files/${encode(id1.toString)}"
 
     val id2                  = iri"http://localhost/${genString()}"
     val file2Name            = genString(100)
@@ -116,6 +118,12 @@ abstract class ArchiveDownloadSpec
         UIO.some(JsonLdContent(file2, file2.value.asJson, None))
       case _                     =>
         UIO.none
+    }
+
+    val file1SelfIri: Iri  = file1Self.toIri
+    val fileSelf: FileSelf = {
+      case `file1SelfIri` => IO.pure((projectRef, Latest(id1)))
+      case other          => IO.raiseError(ParsingError.InvalidPath(other))
     }
 
     val fetchFileContent: (Iri, ProjectRef) => IO[FileRejection, FileResponse] = {
@@ -134,7 +142,8 @@ abstract class ArchiveDownloadSpec
     val archiveDownload = ArchiveDownload(
       aclCheck,
       (id: ResourceRef, ref: ProjectRef) => fetchResource(id.iri, ref),
-      (id: ResourceRef, ref: ProjectRef, _: Caller) => fetchFileContent(id.iri, ref)
+      (id: ResourceRef, ref: ProjectRef, _: Caller) => fetchFileContent(id.iri, ref),
+      fileSelf
     )
 
     def downloadAndExtract(value: ArchiveValue, ignoreNotFound: Boolean) = {
@@ -160,10 +169,28 @@ abstract class ArchiveDownloadSpec
       )
       val result   = downloadAndExtract(value, ignoreNotFound = false)
       val expected = Map(
-        s"${project.ref.toString}/compacted/${UrlUtils.encode(file1.id.toString)}.json" -> file1.toCompactedJsonLd.accepted.json.sort.spaces2,
-        s"${project.ref.toString}/file/${file1.value.attributes.filename}"              -> file1Content
+        s"${project.ref.toString}/compacted/${encode(file1.id.toString)}.json" -> file1.toCompactedJsonLd.accepted.json.sort.spaces2,
+        s"${project.ref.toString}/file/${file1.value.attributes.filename}"     -> file1Content
       )
       result shouldEqual expected
+    }
+
+    s"provide a ${format.fileExtension} for file selfs" in {
+      val value    = ArchiveValue.unsafe(
+        NonEmptySet.of(
+          FileSelfReference(file1Self, None)
+        )
+      )
+      val result   = downloadAndExtract(value, ignoreNotFound = false)
+      val expected = Map(
+        s"${project.ref.toString}/file/${file1.value.attributes.filename}" -> file1Content
+      )
+      result shouldEqual expected
+    }
+
+    s"fail to provide a ${format.fileExtension} for file selfs which do not resolve" in {
+      val value = ArchiveValue.unsafe(NonEmptySet.of(FileSelfReference("http://wrong.file/self", None)))
+      failToDownload[InvalidFileSelf](value, ignoreNotFound = false)
     }
 
     s"provide a ${format.fileExtension} for both resources and files with different paths and formats" in {
@@ -231,7 +258,7 @@ abstract class ArchiveDownloadSpec
       }
     }
 
-    "fail to provide a tar when a resource is not found" in {
+    s"fail to provide a ${format.fileExtension} when a resource is not found" in {
       val value = ArchiveValue.unsafe(
         NonEmptySet.of(
           ResourceReference(Latest(iri"http://localhost/${genString()}"), None, None, None),
@@ -274,19 +301,19 @@ abstract class ArchiveDownloadSpec
       )
       val result   = downloadAndExtract(value, ignoreNotFound = true)
       val expected = Map(
-        s"${project.ref.toString}/compacted/${UrlUtils.encode(file1.id.toString)}.json" -> file1.toCompactedJsonLd.accepted.json.sort.spaces2
+        s"${project.ref.toString}/compacted/${encode(file1.id.toString)}.json" -> file1.toCompactedJsonLd.accepted.json.sort.spaces2
       )
       result shouldEqual expected
     }
 
-    "fail to provide a tar when access to a resource is not found" in {
+    s"fail to provide a ${format.fileExtension} when access to a resource is not found" in {
       val value = ArchiveValue.unsafe(
         NonEmptySet.of(ResourceReference(Latest(id1), None, None, None))
       )
       rejectedAccess(value)
     }
 
-    "fail to provide a tar when access to a file is not found" in {
+    s"fail to provide a ${format.fileExtension} when access to a file is not found" in {
       val value = ArchiveValue.unsafe(
         NonEmptySet.of(FileReference(Latest(id1), None, None))
       )

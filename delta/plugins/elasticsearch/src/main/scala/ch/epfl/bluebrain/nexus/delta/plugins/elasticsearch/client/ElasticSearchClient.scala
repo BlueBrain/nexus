@@ -25,10 +25,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{AggregationResult, Pagina
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Name}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import com.typesafe.scalalogging.Logger
-import io.circe.syntax._
 import io.circe._
+import io.circe.syntax._
 import monix.bio.{IO, UIO}
-import retry.syntax.all._
 
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
@@ -260,13 +259,7 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
                   json.hcursor.get[String]("task").leftMap(_ => HttpClientStatusError(req, BadRequest, json.noSpaces))
                 )
       taskReq = Get((endpoint / tasksPath / taskId).withQuery(Query(waitForCompletion -> "true"))).withHttpCredentials
-      _      <- client
-                  .toJson(taskReq)
-                  .retryingOnSomeErrors(
-                    updateByQueryStrategy.retryWhen,
-                    updateByQueryStrategy.policy,
-                    updateByQueryStrategy.onError
-                  )
+      _      <- client.toJson(taskReq).retry(updateByQueryStrategy)
     } yield ()
   }
 

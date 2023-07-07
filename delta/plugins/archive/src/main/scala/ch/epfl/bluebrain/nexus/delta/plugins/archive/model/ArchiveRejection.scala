@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.archive.model
 import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
+import ch.epfl.bluebrain.nexus.delta.plugins.archive.FileSelf
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.AbsolutePath
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -83,6 +84,11 @@ object ArchiveRejection {
     */
   final case class ArchiveNotFound(id: Iri, project: ProjectRef)
       extends ArchiveRejection(s"Archive '$id' not found in project '$project'.")
+
+  /**
+    * A file self from the archive definition was invalid
+    */
+  final case class InvalidFileSelf(underlying: FileSelf.ParsingError) extends ArchiveRejection(underlying.message)
 
   /**
     * Rejection returned when attempting to interact with an Archive while providing an id that cannot be resolved to an
@@ -205,6 +211,7 @@ object ArchiveRejection {
       case ResourceNotFound(_, _)             => StatusCodes.NotFound
       case AuthorizationFailed(_, _)          => StatusCodes.Forbidden
       case BlankArchiveId                     => StatusCodes.BadRequest
+      case InvalidFileSelf(_)                 => StatusCodes.BadRequest
       case WrappedFileRejection(rejection)    => rejection.status
     }
 }

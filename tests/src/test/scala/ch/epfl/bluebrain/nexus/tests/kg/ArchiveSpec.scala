@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.headers.{Accept, Location}
 import akka.http.scaladsl.model.{MediaRanges, MediaTypes, StatusCodes}
 import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers
 import akka.util.ByteString
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.testkit.CirceEq
 import ch.epfl.bluebrain.nexus.testkit.archive.ArchiveHelpers
 import ch.epfl.bluebrain.nexus.tests.HttpClient._
@@ -117,6 +118,36 @@ class ArchiveSpec extends BaseSpec with ArchiveHelpers with CirceEq {
       deltaClient.put[Json](s"/archives/$fullId/test-resource:archive", payload, Tweety) { (_, response) =>
         response.status shouldEqual StatusCodes.Created
       }
+    }
+
+    "succeed with file link" in {
+      var fileSelf: String = ""
+      val archiveId        = "test-resource:archive-link"
+      for {
+        _      <- deltaClient.get[Json](s"/files/$fullId/test-resource:logo", Tweety) { (json, response) =>
+                    fileSelf = json.hcursor.downField("_self").as[String].toOption.value
+                    response.status shouldEqual StatusCodes.OK
+                  }
+        payload = jsonContentOf("/kg/archives/archive-with-file-self.json", "value" -> fileSelf)
+        _      <- deltaClient.put[Json](s"/archives/$fullId/$archiveId", payload, Tweety) { (_, response) =>
+                    response.status shouldEqual StatusCodes.Created
+                  }
+        _      <- deltaClient.get[ByteString](s"/archives/$fullId/$archiveId", Tweety, acceptZip) { (byteString, response) =>
+                    response.status shouldEqual StatusCodes.OK
+                    contentType(response) shouldEqual MediaTypes.`application/zip`.toContentType
+                    val result = fromZip(byteString)
+
+                    val resource1Id       = "https://dev.nexus.test.com/simplified-resource/1"
+                    val resource1FileName = s"$resource1Id?rev=1"
+
+                    val actualContent1 = result.entryAsJson(s"$fullId/compacted/${UrlUtils.encode(resource1FileName)}.json")
+                    val actualDigest3  = result.entryDigest("/some/other/nexus-logo.png")
+
+                    filterMetadataKeys(actualContent1) should equalIgnoreArrayOrder(payloadResponse1)
+                    actualDigest3 shouldEqual nexusLogoDigest
+                  }
+
+      } yield succeed
     }
 
     "succeed and redirect" in {

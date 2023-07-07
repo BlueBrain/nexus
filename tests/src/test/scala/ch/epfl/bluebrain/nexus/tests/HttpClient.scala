@@ -314,7 +314,7 @@ object HttpClient {
 
   val acceptAll: Seq[Accept] = Seq(Accept(MediaRanges.`*/*`))
 
-  val acceptZip: Seq[Accept] = Seq(Accept(MediaTypes.`application/zip`))
+  val acceptZip: Seq[Accept] = Seq(Accept(MediaTypes.`application/zip`, MediaTypes.`application/json`))
 
   val jsonHeaders: Seq[HttpHeader] = Accept(MediaTypes.`application/json`) :: Nil
 

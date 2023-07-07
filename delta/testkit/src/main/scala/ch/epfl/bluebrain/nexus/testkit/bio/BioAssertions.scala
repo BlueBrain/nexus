@@ -1,10 +1,11 @@
 package ch.epfl.bluebrain.nexus.testkit.bio
 
+import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
+import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig.MaximumCumulativeDelayConfig
 import monix.bio.Cause.{Error, Termination}
 import monix.bio.{IO, UIO}
 import munit.{Assertions, Location}
-import retry._
-import retry.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
 
 import java.io.{ByteArrayOutputStream, PrintStream}
 import scala.concurrent.duration.FiniteDuration
@@ -25,6 +26,18 @@ trait BioAssertions { self: Assertions =>
       clue: => Any = "values are not the same"
   )(implicit loc: Location, ev: B <:< A): IO[E, Unit] =
     obtained.flatMap(a => UIO(assertEquals(a, returns, clue)))
+
+  def assertError[E, A](obtained: IO[E, A], condition: E => Boolean, clue: E => Any = (_: E) => "assertion failed")(
+      implicit loc: Location
+  ): IO[E, Unit] = {
+    obtained.attempt.map {
+      case Left(err) => Assertions.assert(condition(err), clue(err))
+      case Right(a)  =>
+        fail(
+          s"Expected a raised error, but returned successful response: $a"
+        )
+    }
+  }
 
   implicit class UioAssertionsOps[A](uio: UIO[A])(implicit loc: Location) {
     def assert(expected: A, clue: Any = "values are not the same"): UIO[Unit] =
@@ -64,15 +77,13 @@ trait BioAssertions { self: Assertions =>
     )
 
     def eventually(expected: A, retryWhen: Throwable => Boolean)(implicit patience: PatienceConfig): UIO[Unit] = {
+      val strategy = RetryStrategy[Throwable](
+        MaximumCumulativeDelayConfig(patience.timeout, patience.interval),
+        retryWhen,
+        onError = (_, _) => UIO.unit
+      )
       assert(expected, patience.timeout).absorb
-        .retryingOnSomeErrors(
-          isWorthRetrying = retryWhen,
-          policy = RetryPolicies.limitRetriesByCumulativeDelay(
-            patience.timeout,
-            RetryPolicies.constantDelay(patience.interval)
-          ),
-          onError = (_, _) => UIO.unit
-        )
+        .retry(strategy)
         .hideErrors
     }
 
@@ -87,6 +98,20 @@ trait BioAssertions { self: Assertions =>
 
     def assert(expected: A, timeout: FiniteDuration): UIO[Unit] =
       io.timeout(timeout).assertSome(expected)
+
+    def assertError(condition: E => Boolean, clue: => Any = "assertion failed")(implicit loc: Location): UIO[Unit] = {
+      io.attempt.map {
+        case Left(E(err)) => Assertions.assert(condition(err), clue)
+        case Left(err)    =>
+          fail(
+            s"Wrong raised error type caught, expected: '${E.runtimeClass.getName}', actual: '${err.getClass.getName}'"
+          )
+        case Right(a)     =>
+          fail(
+            s"Expected a raised error, but returned successful response: $a"
+          )
+      }
+    }
 
     def error(expected: E): UIO[Unit] = io.attempt.map {
       case Left(E(err)) => assertEquals(err, expected)

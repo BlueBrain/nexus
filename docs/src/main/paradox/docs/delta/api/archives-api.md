@@ -51,6 +51,11 @@ configurable (config property `plugins.archive.ephemeral.ttl`) and it defaults t
             "rev": "{rev}",
             "tag": "{tag}"
         },
+        {
+            "@type": "FileSelf",
+            "value": "{file_self}",
+            "path": "{path}",
+        },
         {...}       
     ]
 }
@@ -59,6 +64,8 @@ configurable (config property `plugins.archive.ephemeral.ttl`) and it defaults t
 where...
 
 - `{resource_id}`: Iri - the @id value of the resource to be added to the archive.
+- `{file_self}`: Uri - the `_self` value of the file to be added to the archive. This is the same as the http 
+  location of the file in the Delta API.
 - `{project}`: String - the project (in the format 'myorg/myproject') where the specified resource belongs. This field 
   is optional. It defaults to the current project.
 - `{path}`: Path - the relative path on the archive where this resource is going to stored

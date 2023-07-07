@@ -5,6 +5,7 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.model.ProjectDeletionReport
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.ProjectsConfig.DeletionConfig
@@ -17,7 +18,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import monix.bio.{Task, UIO}
-import retry.syntax.all._
 
 /**
   * Stream to delete project from the system after those are marked as deleted
@@ -57,7 +57,7 @@ object ProjectDeletionCoordinator {
               logger,
               s"attempting to delete project ${project.project}"
             )
-            delete(project).retryingOnSomeErrors(retryStrategy.retryWhen, retryStrategy.policy, retryStrategy.onError)
+            delete(project).retry(retryStrategy)
           case _                                    => Task.unit
         }
       }
