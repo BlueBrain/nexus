@@ -325,6 +325,11 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
             &quot;rev&quot;: &quot;{rev}&quot;,
             &quot;tag&quot;: &quot;{tag}&quot;
         },
+        {
+            &quot;@type&quot;: &quot;FileSelf&quot;,
+            &quot;value&quot;: &quot;{file_self}&quot;,
+            &quot;path&quot;: &quot;{path}&quot;,
+        },
         {...}       
     ]
 }
@@ -332,6 +337,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <p>where&hellip;</p>
 <ul>
   <li><code>{resource_id}</code>: Iri - the @id value of the resource to be added to the archive.</li>
+  <li><code>{file_self}</code>: Uri - the <code>_self</code> value of the file to be added to the archive. This is the same as the http  location of the file in the Delta API.</li>
   <li><code>{project}</code>: String - the project (in the format &lsquo;myorg/myproject&rsquo;) where the specified resource belongs. This field  is optional. It defaults to the current project.</li>
   <li><code>{path}</code>: Path - the relative path on the archive where this resource is going to stored
     <ul>

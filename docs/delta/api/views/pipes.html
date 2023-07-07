@@ -300,9 +300,7 @@ BlueBrain/nexus
 <div class="md-content__searchable">
 <h1><a href="#elasticsearch-pipes" name="elasticsearch-pipes" class="anchor"><span class="anchor-link"></span></a>Elasticsearch Pipes</h1>
 <p>Pipes are the processing units of a pipeline for an Elasticsearch view.</p>
-<p>They are applied sequentially as defined by the user in the view payload and allow to transform and/or filter a resource before indexing it to Elasticsearch.</p>
-<p>Note that when a resource is filtered out by a pipe, it won&rsquo;t be indexed so the execution of the next pipes is short-circuited to avoid useless computation.</p>
-<p>It is therefore encouraged to apply the filtering pipes at the beginning of the pipeline.</p>
+<p>See <a href="elasticsearch-view-api.html#processing-pipeline">here</a> to get more details on how pipes are applied and how the indexing process to Elasticsearch works. </p>
 <h2><a href="#core-pipes" name="core-pipes" class="anchor"><span class="anchor-link"></span></a>Core pipes</h2>
 <p>These pipes are provided by default by Delta.</p>
 <h3><a href="#filter-deprecated" name="filter-deprecated" class="anchor"><span class="anchor-link"></span></a>Filter deprecated</h3>
@@ -362,7 +360,7 @@ BlueBrain/nexus
 </code></pre>
 <h3><a href="#data-construct-query" name="data-construct-query" class="anchor"><span class="anchor-link"></span></a>Data construct query</h3>
 <ul>
-  <li>The resource will be transformed according to the provided SPARQL construct query</li>
+  <li>The data graph of the resource will be transformed according to the provided SPARQL construct query</li>
   <li>The resource metadata is not modified by this pipe</li>
 </ul>
 <pre class="prettyprint"><code class="language-json">{
@@ -374,7 +372,7 @@ BlueBrain/nexus
 </code></pre>
 <h3><a href="#select-predicates" name="select-predicates" class="anchor"><span class="anchor-link"></span></a>Select predicates</h3>
 <ul>
-  <li>Only the defined predicates will be kept in the resource</li>
+  <li>Only the defined predicates in the data graph of the resource will be kept in the resource</li>
   <li>The resource metadata is not modified by this type</li>
 </ul>
 <pre class="prettyprint"><code class="language-json">{
@@ -389,7 +387,7 @@ BlueBrain/nexus
 </code></pre>
 <h3><a href="#default-label-predicates" name="default-label-predicates" class="anchor"><span class="anchor-link"></span></a>Default label predicates</h3>
 <ul>
-  <li>Only default labels defined as <code>skos:prefLabel</code>, <code>rdf:tpe</code>, <code>rdfs:label</code>, <code>schema:name</code> will be kept in the resource</li>
+  <li>Only default labels defined as <code>skos:prefLabel</code>, <code>rdf:tpe</code>, <code>rdfs:label</code>, <code>schema:name</code> will be kept in the data graph of the resource</li>
   <li>No configuration is needed</li>
 </ul>
 <pre class="prettyprint"><code class="language-json">{

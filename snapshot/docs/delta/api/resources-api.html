@@ -259,6 +259,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/resources-api.html#within-an-organization" class="header">Within an organization</a></li>
       <li><a href="../../../docs/delta/api/resources-api.html#within-all-projects" class="header">Within all projects</a></li>
       <li><a href="../../../docs/delta/api/resources-api.html#parameter-description" class="header">Parameter description</a></li>
+      <li><a href="../../../docs/delta/api/resources-api.html#aggregations" class="header">Aggregations</a></li>
     </ul></li>
     <li><a href="../../../docs/delta/api/resources-api.html#list-filtering-by-schema" class="header">List filtering by schema</a>
     <ul>
@@ -309,6 +310,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/resources-api.html#within-an-organization" class="header">Within an organization</a></li>
       <li><a href="../../../docs/delta/api/resources-api.html#within-all-projects" class="header">Within all projects</a></li>
       <li><a href="../../../docs/delta/api/resources-api.html#parameter-description" class="header">Parameter description</a></li>
+      <li><a href="../../../docs/delta/api/resources-api.html#aggregations" class="header">Aggregations</a></li>
     </ul></li>
     <li><a href="../../../docs/delta/api/resources-api.html#list-filtering-by-schema" class="header">List filtering by schema</a>
     <ul>
@@ -811,6 +813,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
                                              &amp;schema={schema}
                                              &amp;q={search}
                                              &amp;sort={sort}
+                                             &amp;aggregations={aggregations}
 </code></pre>
 <h3><a href="#within-an-organization" name="within-an-organization" class="anchor"><span class="anchor-link"></span></a>Within an organization</h3>
 <p>This operation returns only resources from projects defined in the organisation <code>{org_label}</code> and where the caller has the <code>resources/read</code> permission.</p>
@@ -827,6 +830,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
                              &amp;schema={schema}
                              &amp;q={search}
                              &amp;sort={sort}
+                             &amp;aggregations={aggregations}
 </code></pre>
 <h3><a href="#within-all-projects" name="within-all-projects" class="anchor"><span class="anchor-link"></span></a>Within all projects</h3>
 <p>This operation returns only resources from projects where the caller has the <code>resources/read</code> permission.</p>
@@ -841,6 +845,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
                  &amp;schema={schema}
                  &amp;q={search}
                  &amp;sort={sort}
+                 &amp;aggregations={aggregations}
 </code></pre>
 <h3><a href="#parameter-description" name="parameter-description" class="anchor"><span class="anchor-link"></span></a>Parameter description</h3><div class="callout note tip"><div class="callout-title">How to use time ranges</div>
 <p>A time range parameter allows to filter resources by their creation date or their last update date.</p>
@@ -869,6 +874,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   <li><code>{schema}</code>: Iri - can be used to filter the resulting resources based on the conformant schema</li>
   <li><code>{search}</code>: String - can be provided to select only the resources in the collection that have attribute values  matching (containing) the provided string</li>
   <li><code>{sort}</code>: String - can be used to sort resources based on a payloads&rsquo; field. This parameter can appear multiple times  to enable sorting by multiple fields. The default is done by <code>_createdBy</code> and <code>@id</code>.</li>
+  <li><code>{aggregations}</code>: Boolean - if <code>true</code> then the response will only contain aggregations of the <code>@type</code> and <code>_project</code> fields; defaults to <code>false</code>. See <a href="resources-api.html#aggregations">Aggregations</a></li>
 </ul>
 <p><strong>Example</strong></p>
 <dl>
@@ -904,7 +910,82 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   ],
   &quot;_next&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj?after=%5B1559045718752,%22https://nexus.example.com/v1/resources/myorg/myproj/fd8a2b32-170e-44e8-808f-44a8cbbc49b029%22%5D&quot;
 }</code></pre></dd>
+  <dt>Aggregations request</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/resources/aggregate.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl &quot;http://localhost:8080/v1/resources/myorg?aggregations=true&quot;</code></pre></dd>
+  <dt>Aggregations response</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/resources/aggregated.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
+  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/aggregations.json&quot;,
+  &quot;aggregations&quot;: {
+    &quot;projects&quot;: {
+      &quot;buckets&quot;: [
+        {
+          &quot;doc_count&quot;: 5,
+          &quot;key&quot;: &quot;http://delta:8080/v1/projects/myorg/myproject&quot;
+        },
+        {
+          &quot;doc_count&quot;: 5,
+          &quot;key&quot;: &quot;http://delta:8080/v1/projects/myorg/myproject2&quot;
+        }
+      ],
+      &quot;doc_count_error_upper_bound&quot;: 0,
+      &quot;sum_other_doc_count&quot;: 0
+    },
+    &quot;types&quot;: {
+      &quot;buckets&quot;: [
+        {
+          &quot;doc_count&quot;: 6,
+          &quot;key&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/View&quot;
+        },
+        {
+          &quot;doc_count&quot;: 2,
+          &quot;key&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/CompositeView&quot;
+        },
+        {
+          &quot;doc_count&quot;: 2,
+          &quot;key&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/DiskStorage&quot;
+        },
+        {
+          &quot;doc_count&quot;: 2,
+          &quot;key&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/ElasticSearchView&quot;
+        },
+        {
+          &quot;doc_count&quot;: 2,
+          &quot;key&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/InProject&quot;
+        },
+        {
+          &quot;doc_count&quot;: 2,
+          &quot;key&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/Project&quot;
+        },
+        {
+          &quot;doc_count&quot;: 2,
+          &quot;key&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/Resolver&quot;
+        },
+        {
+          &quot;doc_count&quot;: 2,
+          &quot;key&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/SparqlView&quot;
+        },
+        {
+          &quot;doc_count&quot;: 2,
+          &quot;key&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/Storage&quot;
+        }
+      ],
+      &quot;doc_count_error_upper_bound&quot;: 0,
+      &quot;sum_other_doc_count&quot;: 0
+    }
+  },
+  &quot;total&quot;: 12
+}</code></pre></dd>
 </dl>
+<h3><a href="#aggregations" name="aggregations" class="anchor"><span class="anchor-link"></span></a>Aggregations</h3><div class="callout warning "><div class="callout-title">Warning</div>
+<p>Aggregations are experimental and the API is subject to change.</p></div>
+<p>Adding the <code>aggregations=true</code> query parameter to a list query allows to aggregate the underlying resources by predefined terms. Currently, the following aggregations will be returned:</p>
+<ul>
+  <li><code>projects</code>: a bucket aggregation of the resources by the project they belong to</li>
+  <li><code>types</code>: a bucket aggregation of the <code>@types</code> featured in the resources</li>
+</ul>
+<p>Aggregation works on the same scopes as listing (all projects, organization, and project), and only aggregates the resources for which the caller has <code>resource/read</code> permission.</p>
 <h2><a href="#list-filtering-by-schema" name="list-filtering-by-schema" class="anchor"><span class="anchor-link"></span></a>List filtering by schema</h2>
 <p>This operation is only available at the project scope.</p>
 <h3><a href="#within-a-project" name="within-a-project" class="anchor"><span class="anchor-link"></span></a>Within a project</h3>
@@ -914,6 +995,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
                                                         &amp;rev={rev}&amp;type={type}
                                                         &amp;createdBy={createdBy}
                                                         &amp;updatedBy={updatedBy}
+                                                        &amp;aggregations={aggregations}
 </code></pre>
 <h3><a href="#parameter-description" name="parameter-description" class="anchor"><span class="anchor-link"></span></a>Parameter description</h3>
 <ul>
@@ -924,6 +1006,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   <li><code>{type}</code>: Iri - can be used to filter the resulting resources based on their <code>@type</code> value. This parameter can appear  multiple times, filtering further the <code>@type</code> value.</li>
   <li><code>{createdBy}</code>: Iri - can be used to filter the resulting resources based on their creator</li>
   <li><code>{updatedBy}</code>: Iri - can be used to filter the resulting resources based on the person which performed the last update</li>
+  <li><code>{aggregations}</code>: Boolean - if <code>true</code> then the response will only contain aggregations of the <code>@type</code> and <code>_project</code> fields; defaults to <code>false</code>. See <a href="resources-api.html#aggregations">Aggregations</a></li>
 </ul>
 <p><strong>Example</strong></p>
 <dl>

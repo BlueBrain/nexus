@@ -241,6 +241,12 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../docs/releases/index.html#releases" class="header">Releases</a>
   <ul>
+    <li><a href="../../docs/releases/index.html#1-8-0-14-06-2023-" class="header">1.8.0 (14.06.2023)</a>
+    <ul>
+      <li><a href="../../docs/releases/index.html#breaking-changes" class="header">Breaking changes</a></li>
+      <li><a href="../../docs/releases/index.html#deprecations" class="header">Deprecations</a></li>
+      <li><a href="../../docs/releases/index.html#new-features-enhancements" class="header">New features / enhancements</a></li>
+    </ul></li>
     <li><a href="../../docs/releases/index.html#1-7-2-16-06-2022-" class="header">1.7.2 (16.06.2022)</a>
     <ul>
       <li><a href="../../docs/releases/index.html#whats-changed" class="header">What&rsquo;s Changed</a></li>
@@ -296,6 +302,12 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../docs/releases/index.html#releases" class="header">Releases</a>
   <ul>
+    <li><a href="../../docs/releases/index.html#1-8-0-14-06-2023-" class="header">1.8.0 (14.06.2023)</a>
+    <ul>
+      <li><a href="../../docs/releases/index.html#breaking-changes" class="header">Breaking changes</a></li>
+      <li><a href="../../docs/releases/index.html#deprecations" class="header">Deprecations</a></li>
+      <li><a href="../../docs/releases/index.html#new-features-enhancements" class="header">New features / enhancements</a></li>
+    </ul></li>
     <li><a href="../../docs/releases/index.html#1-7-2-16-06-2022-" class="header">1.7.2 (16.06.2022)</a>
     <ul>
       <li><a href="../../docs/releases/index.html#whats-changed" class="header">What&rsquo;s Changed</a></li>
@@ -347,7 +359,27 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <div class="md-content__searchable">
 <h1><a href="#releases" name="releases" class="anchor"><span class="anchor-link"></span></a>Releases</h1>
 <p>This section of the documentation lists the significant BlueBrain Nexus releases across all services and web applications.</p>
-<p>The latest stable release is <strong>v1.7.2</strong> released on <strong>16.06.2022</strong>.</p>
+<p>The latest stable release is <strong>v1.8.0</strong> released on <strong>14.06.2023</strong>.</p>
+<h2><a href="#1-8-0-14-06-2023-" name="1-8-0-14-06-2023-" class="anchor"><span class="anchor-link"></span></a>1.8.0 (14.06.2023)</h2>
+<h3><a href="#breaking-changes" name="breaking-changes" class="anchor"><span class="anchor-link"></span></a>Breaking changes</h3>
+<ul>
+  <li>The support for Cassandra has been removed and PostgreSQL is now the only supported primary store for Nexus Delta</li>
+</ul>
+<h3><a href="#deprecations" name="deprecations" class="anchor"><span class="anchor-link"></span></a>Deprecations</h3>
+<p>In the upcoming version, the support of the tar format to download archives will be removed, only the zip format will remain.</p>
+<h3><a href="#new-features-enhancements" name="new-features-enhancements" class="anchor"><span class="anchor-link"></span></a>New features / enhancements</h3>
+<ul>
+  <li>New sourcing and streaming library</li>
+  <li>New clustering deployment</li>
+  <li>Better reporting of indexing errors for views</li>
+  <li>Name and description for resolvers, storages and views</li>
+  <li>Only trigger reindexing when indexing is impacted</li>
+  <li>Project deletion has been rewritten</li>
+  <li><a href="../delta/api/resources-api.html#refresh">A refresh operation is now available for resources</a></li>
+  <li><a href="../delta/api/resources-api.html#validate">A validate operation is now available for resources</a></li>
+  <li>Archives can now be downloaded as a zip</li>
+</ul>
+<p>A detailed list of changes included in the release can be found in the <a href="v1.8-release-notes.html">release notes</a>.</p>
 <h2><a href="#1-7-2-16-06-2022-" name="1-7-2-16-06-2022-" class="anchor"><span class="anchor-link"></span></a>1.7.2 (16.06.2022)</h2>
 <p>This is a patch release that addresses a series of Nexus Fusion issues:</p>
 <h3><a href="#whats-changed" name="whats-changed" class="anchor"><span class="anchor-link"></span></a>What&rsquo;s Changed</h3>
