@@ -18,7 +18,7 @@ addSbtPlugin("com.lightbend.paradox" % "sbt-paradox"                % "0.10.3")
 addSbtPlugin("io.github.jonas"       % "sbt-paradox-material-theme" % "0.6.0")
 
 addSbtPlugin("com.github.sbt" % "sbt-dynver"          % "5.0.1")
-addSbtPlugin("com.codecommit" % "sbt-github-packages" % "0.5.2")
+addSbtPlugin("com.codecommit" % "sbt-github-packages" % "0.5.3")
 addSbtPlugin("com.github.sbt" % "sbt-ci-release"      % "1.5.12")
 
 addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.4.2")
