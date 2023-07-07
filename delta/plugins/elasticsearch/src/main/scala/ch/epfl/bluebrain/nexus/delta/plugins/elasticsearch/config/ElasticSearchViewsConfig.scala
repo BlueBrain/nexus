@@ -42,13 +42,15 @@ import scala.concurrent.duration._
   * @param syncIndexingRefresh
   *   the value for `refresh` Elasticsearch parameter for synchronous indexing
   * @param maxIndexPathLength
-  *   the maximum length of the URL path for elasticsearch queries
+  *   the maximum length of the URL path for Elasticsearch queries
   * @param defaults
-  *   default values for the view
+  *   default values for the default Elasticsearch views
   * @param metricsQuery
   *   query configuration for the metrics projection
   * @param listingBucketSize
   *   the maximum number of terms returned by a term aggregation for listing aggregations
+  * @param indexingEnabled
+  *   if false, disables Elasticsearch indexing
   */
 final case class ElasticSearchViewsConfig(
     base: Uri,
@@ -65,7 +67,8 @@ final case class ElasticSearchViewsConfig(
     maxIndexPathLength: Int,
     defaults: Defaults,
     metricsQuery: QueryConfig,
-    listingBucketSize: Int
+    listingBucketSize: Int,
+    indexingEnabled: Boolean
 )
 
 object ElasticSearchViewsConfig {

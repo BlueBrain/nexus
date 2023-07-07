@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.GraphAnalytics.{index, projectionName}
-import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.GraphAnalyticsCoordinator.{analyticsMetadata, logger, ProjectDef}
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.config.GraphAnalyticsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.{graphAnalyticsMappings, scriptContent, updateRelationshipsScriptId, GraphAnalyticsSink, GraphAnalyticsStream}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -16,79 +15,89 @@ import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import monix.bio.Task
 
-/**
-  * Coordinates the lifecycle of Graph analytics as projections
-  * @param fetchProjects
-  *   stream of projects
-  * @param analyticsStream
-  *   the stream of analytics
-  * @param supervisor
-  *   the general supervisor
-  * @param sink
-  *   the sink to push the results
-  * @param createIndex
-  *   how to create an index
-  * @param deleteIndex
-  *   how to delete an index
-  */
-final class GraphAnalyticsCoordinator private (
-    fetchProjects: Offset => ElemStream[ProjectDef],
-    analyticsStream: GraphAnalyticsStream,
-    supervisor: Supervisor,
-    sink: ProjectRef => Sink,
-    createIndex: ProjectRef => Task[Unit],
-    deleteIndex: ProjectRef => Task[Unit]
-) {
-
-  def run(offset: Offset): Stream[Task, Elem[Unit]] =
-    fetchProjects(offset).evalMap {
-      _.traverse {
-        case p if p.markedForDeletion => destroy(p.ref)
-        case p                        => start(p.ref)
-      }
-    }
-
-  private def compile(project: ProjectRef): Task[CompiledProjection] =
-    Task.fromEither(
-      CompiledProjection.compile(
-        analyticsMetadata(project),
-        ExecutionStrategy.PersistentSingleNode,
-        Source(analyticsStream(project, _)),
-        sink(project)
-      )
-    )
-
-  // Start the analysis projection for the given project
-  private def start(project: ProjectRef): Task[Unit] =
-    for {
-      compiled <- compile(project)
-      status   <- supervisor.describe(compiled.metadata.name)
-      _        <- status match {
-                    case Some(value) if value.status == ExecutionStatus.Running =>
-                      Task.delay(logger.info(s"Graph analysis of '$project' is already running."))
-                    case _                                                      =>
-                      Task.delay(logger.info(s"Starting graph analysis of '$project'...")) >>
-                        supervisor.run(
-                          compiled,
-                          createIndex(project)
-                        )
-                  }
-    } yield ()
-
-  // Destroy the analysis for the given project and deletes the related Elasticsearch index
-  private def destroy(project: ProjectRef): Task[Unit] = {
-    Task.delay(logger.info(s"Project '$project' has been marked as deleted, stopping the graph analysis...")) >>
-      supervisor
-        .destroy(
-          projectionName(project),
-          deleteIndex(project)
-        )
-        .void
-  }
-
-}
+sealed trait GraphAnalyticsCoordinator
 
 object GraphAnalyticsCoordinator {
+
+  /** If indexing is disabled we can only log */
+  final private case object Noop extends GraphAnalyticsCoordinator {
+    def log: Task[Unit] =
+      Task.delay {
+        logger.info("Graph Analytics indexing has been disabled via config")
+      }
+  }
+
+  /**
+    * Coordinates the lifecycle of Graph analytics as projections
+    * @param fetchProjects
+    *   stream of projects
+    * @param analyticsStream
+    *   the stream of analytics
+    * @param supervisor
+    *   the general supervisor
+    * @param sink
+    *   the sink to push the results
+    * @param createIndex
+    *   how to create an index
+    * @param deleteIndex
+    *   how to delete an index
+    */
+  final private class Active(
+      fetchProjects: Offset => ElemStream[ProjectDef],
+      analyticsStream: GraphAnalyticsStream,
+      supervisor: Supervisor,
+      sink: ProjectRef => Sink,
+      createIndex: ProjectRef => Task[Unit],
+      deleteIndex: ProjectRef => Task[Unit]
+  ) extends GraphAnalyticsCoordinator {
+
+    def run(offset: Offset): Stream[Task, Elem[Unit]] =
+      fetchProjects(offset).evalMap {
+        _.traverse {
+          case p if p.markedForDeletion => destroy(p.ref)
+          case p                        => start(p.ref)
+        }
+      }
+
+    private def compile(project: ProjectRef): Task[CompiledProjection] =
+      Task.fromEither(
+        CompiledProjection.compile(
+          analyticsMetadata(project),
+          ExecutionStrategy.PersistentSingleNode,
+          Source(analyticsStream(project, _)),
+          sink(project)
+        )
+      )
+
+    // Start the analysis projection for the given project
+    private def start(project: ProjectRef): Task[Unit] =
+      for {
+        compiled <- compile(project)
+        status   <- supervisor.describe(compiled.metadata.name)
+        _        <- status match {
+                      case Some(value) if value.status == ExecutionStatus.Running =>
+                        Task.delay(logger.info(s"Graph analysis of '$project' is already running."))
+                      case _                                                      =>
+                        Task.delay(logger.info(s"Starting graph analysis of '$project'...")) >>
+                          supervisor.run(
+                            compiled,
+                            createIndex(project)
+                          )
+                    }
+      } yield ()
+
+    // Destroy the analysis for the given project and deletes the related Elasticsearch index
+    private def destroy(project: ProjectRef): Task[Unit] = {
+      Task.delay(logger.info(s"Project '$project' has been marked as deleted, stopping the graph analysis...")) >>
+        supervisor
+          .destroy(
+            projectionName(project),
+            deleteIndex(project)
+          )
+          .void
+    }
+
+  }
 
   final val id                                        = nxv + "graph-analytics"
   private val logger: Logger                          = Logger[GraphAnalyticsCoordinator]
@@ -122,31 +131,34 @@ object GraphAnalyticsCoordinator {
       supervisor: Supervisor,
       client: ElasticSearchClient,
       config: GraphAnalyticsConfig
-  ): Task[GraphAnalyticsCoordinator] = {
-    val coordinator = apply(
-      projects.states(_).map(_.map { p => ProjectDef(p.project, p.markedForDeletion) }),
-      analyticsStream,
-      supervisor,
-      ref =>
-        new GraphAnalyticsSink(
-          client,
-          config.batch.maxElements,
-          config.batch.maxInterval,
-          index(config.prefix, ref)
-        ),
-      ref =>
-        graphAnalyticsMappings.flatMap { mappings =>
-          client.createIndex(index(config.prefix, ref), Some(mappings), None)
-        }.void,
-      ref => client.deleteIndex(index(config.prefix, ref)).void
-    )
+  ): Task[GraphAnalyticsCoordinator] =
+    if (config.indexingEnabled) {
+      val coordinator = apply(
+        projects.states(_).map(_.map { p => ProjectDef(p.project, p.markedForDeletion) }),
+        analyticsStream,
+        supervisor,
+        ref =>
+          new GraphAnalyticsSink(
+            client,
+            config.batch.maxElements,
+            config.batch.maxInterval,
+            index(config.prefix, ref)
+          ),
+        ref =>
+          graphAnalyticsMappings.flatMap { mappings =>
+            client.createIndex(index(config.prefix, ref), Some(mappings), None)
+          }.void,
+        ref => client.deleteIndex(index(config.prefix, ref)).void
+      )
 
-    for {
-      script <- scriptContent
-      _      <- client.createScript(updateRelationshipsScriptId, script)
-      c      <- coordinator
-    } yield c
-  }
+      for {
+        script <- scriptContent
+        _      <- client.createScript(updateRelationshipsScriptId, script)
+        c      <- coordinator
+      } yield c
+    } else {
+      Noop.log.as(Noop)
+    }
 
   private[analytics] def apply(
       fetchProjects: Offset => ElemStream[ProjectDef],
@@ -157,7 +169,7 @@ object GraphAnalyticsCoordinator {
       deleteIndex: ProjectRef => Task[Unit]
   ): Task[GraphAnalyticsCoordinator] = {
     val coordinator =
-      new GraphAnalyticsCoordinator(fetchProjects, analyticsStream, supervisor, sink, createIndex, deleteIndex)
+      new Active(fetchProjects, analyticsStream, supervisor, sink, createIndex, deleteIndex)
     supervisor
       .run(
         CompiledProjection.fromStream(
