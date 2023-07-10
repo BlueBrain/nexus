@@ -8,6 +8,7 @@
 - @ref:[v1.6 Release Notes](v1.6-release-notes.md)
 - @ref:[v1.5 To v1.6 Migration](v1.5-to-v1.6-migration.md)
 - @ref:[v1.5 Release Notes](v1.5-release-notes.md)
+- @ref:[v1.4 To v1.5 Migration](v1.4-to-v1.5-migration.md)
 - @ref:[Older releases](older-releases.md)
 
 @@@
