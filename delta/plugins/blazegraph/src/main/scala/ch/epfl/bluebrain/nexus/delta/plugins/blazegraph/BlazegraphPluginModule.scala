@@ -148,7 +148,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         registry,
         supervisor,
         client,
-        config.batch
+        config
       )(baseUri)
   }
 
