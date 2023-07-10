@@ -1,5 +1,6 @@
 @@@ index
 
+- @ref:[v1.9 Release Notes](v1.9-release-notes.md)
 - @ref:[v1.8 Release Notes](v1.8-release-notes.md)
 - @ref:[v1.7 To v1.8 Migration](v1.7-to-v1.8-migration.md)
 - @ref:[v1.7 Release Notes](v1.7-release-notes.md)
@@ -16,6 +17,13 @@ This section of the documentation lists the significant BlueBrain Nexus releases
 applications.
 
 The latest stable release is **v1.8.0** released on **14.06.2023**.
+
+## 1.9.0
+
+### New features / enhancements
+
+- @ref:[Aggregations of resources by `@type` and `project`](../delta/api/resources-api.md#aggregations)
+- @ref:[Resources can be added to an archive using `_self`](../delta/api/archives-api.md#payload)
 
 ## 1.8.0 (14.06.2023)
 
