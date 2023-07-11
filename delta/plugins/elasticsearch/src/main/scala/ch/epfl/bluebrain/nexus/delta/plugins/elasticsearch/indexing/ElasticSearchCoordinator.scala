@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing
 
 import akka.http.scaladsl.model.StatusCodes
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
@@ -16,7 +17,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ElemStream
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
-import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import monix.bio.Task
 
@@ -27,9 +27,8 @@ object ElasticSearchCoordinator {
   /** If indexing is disabled we can only log */
   final private case object Noop extends ElasticSearchCoordinator {
     def log: Task[Unit] =
-      Task.delay {
-        logger.info("Elasticsearch indexing has been disabled via config")
-      }
+      logger.info("Elasticsearch indexing has been disabled via config")
+
   }
 
   /**
@@ -66,9 +65,7 @@ object ElasticSearchCoordinator {
                 case (Some(cached), active: ActiveViewDef) if cached.index == active.index =>
                   for {
                     _ <- cache.put(active.ref, active)
-                    _ <- Task.delay(
-                           logger.info(s"Index ${active.index} already exists and will not be recreated.")
-                         )
+                    _ <- logger.info(s"Index ${active.index} already exists and will not be recreated.")
                   } yield ()
                 case (cached, active: ActiveViewDef)                                       =>
                   compile(active)
@@ -105,10 +102,8 @@ object ElasticSearchCoordinator {
               v.projection,
               for {
                 _ <-
-                  Task.delay(
-                    logger.info(
-                      s"View '${ref.project}/${ref.viewId}' has been updated or deprecated, cleaning up the current one."
-                    )
+                  logger.info(
+                    s"View '${ref.project}/${ref.viewId}' has been updated or deprecated, cleaning up the current one."
                   )
                 _ <- deleteIndex(v)
                 _ <- cache.remove(v.ref)
@@ -116,9 +111,7 @@ object ElasticSearchCoordinator {
             )
             .void
         case None    =>
-          Task.delay(
-            logger.debug(s"View '${ref.project}/${ref.viewId}' is not referenced yet, cleaning is aborted.")
-          )
+          logger.debug(s"View '${ref.project}/${ref.viewId}' is not referenced yet, cleaning is aborted.")
       }
 
     private def compile(active: ActiveViewDef): Task[CompiledProjection] =
@@ -126,8 +119,8 @@ object ElasticSearchCoordinator {
 
   }
 
-  val metadata: ProjectionMetadata = ProjectionMetadata("system", "elasticsearch-coordinator", None, None)
-  val logger: Logger               = Logger[ElasticSearchCoordinator]
+  val metadata: ProjectionMetadata             = ProjectionMetadata("system", "elasticsearch-coordinator", None, None)
+  val logger: Logger[ElasticSearchCoordinator] = Logger[ElasticSearchCoordinator]
 
   def apply(
       views: ElasticSearchViews,
@@ -149,9 +142,7 @@ object ElasticSearchCoordinator {
           client
             .createIndex(v.index, Some(v.mapping), Some(v.settings))
             .tapError { e =>
-              Task.delay(
-                logger.error(s"Index for view '${v.ref.project}/${v.ref.viewId}' could not be created.", e)
-              )
+              logger.error(e)(s"Index for view '${v.ref.project}/${v.ref.viewId}' could not be created.")
             }
             .void,
         (v: ActiveViewDef) => client.deleteIndex(v.index).void
