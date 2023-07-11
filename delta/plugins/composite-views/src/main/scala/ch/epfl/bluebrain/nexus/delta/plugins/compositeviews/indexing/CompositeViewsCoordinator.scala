@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing
 
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.KeyValueStore
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef.{ActiveViewDef, DeprecatedViewDef}
@@ -12,7 +13,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ElemStream
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
-import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import monix.bio.Task
 
@@ -23,9 +23,7 @@ object CompositeViewsCoordinator {
   /** If indexing is disabled we can only log */
   final private case object Noop extends CompositeViewsCoordinator {
     def log: Task[Unit] =
-      Task.delay {
-        logger.info("Composite Views indexing has been disabled via config")
-      }
+      logger.info("Composite Views indexing has been disabled via config")
   }
 
   /**
@@ -107,21 +105,15 @@ object CompositeViewsCoordinator {
     cache.get(ref).flatMap { cachedOpt =>
       (cachedOpt, viewDef) match {
         case (Some(cached), active: ActiveViewDef) if cached.projection == active.projection =>
-          Task.delay(logger.info(s"Projection '${cached.projection}' is already running and will not be recreated."))
+          logger.info(s"Projection '${cached.projection}' is already running and will not be recreated.")
         case (Some(cached), _: ActiveViewDef)                                                =>
-          Task.delay(
-            logger.info(s"View '${ref.project}/${ref.viewId}' has been updated, cleaning up the current one.")
-          ) >>
+          logger.info(s"View '${ref.project}/${ref.viewId}' has been updated, cleaning up the current one.") >>
             destroy(cached)
         case (Some(cached), _: DeprecatedViewDef)                                            =>
-          Task.delay(
-            logger.info(s"View '${ref.project}/${ref.viewId}' has been deprecated, cleaning up the current one.")
-          ) >>
+          logger.info(s"View '${ref.project}/${ref.viewId}' has been deprecated, cleaning up the current one.") >>
             destroy(cached)
         case (None, _)                                                                       =>
-          Task.delay(
-            logger.debug(s"View '${ref.project}/${ref.viewId}' is not referenced yet, cleaning is aborted.")
-          )
+          logger.debug(s"View '${ref.project}/${ref.viewId}' is not referenced yet, cleaning is aborted.")
       }
     }
   }
