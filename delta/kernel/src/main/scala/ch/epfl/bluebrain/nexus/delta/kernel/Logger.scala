@@ -6,6 +6,10 @@ import org.typelevel.log4cats.slf4j.Slf4jLogger
 
 import scala.reflect.ClassTag
 
+/**
+  * Wrapper class that is used to be able to create log statements as UIOs. It is needed because "any type class from
+  * Sync and above will only work with IO[Throwable, A]" (see https://bio.monix.io/docs/cats-effect#sync-and-above)
+  */
 class Logger[A](implicit classTag: ClassTag[A]) extends Log4CatsLogger[UIO] {
 
   private val scalaLogger                  = com.typesafe.scalalogging.Logger[A]
@@ -45,5 +49,4 @@ class Logger[A](implicit classTag: ClassTag[A]) extends Log4CatsLogger[UIO] {
 
 object Logger {
   def apply[A: ClassTag]: Logger[A] = new Logger[A]()
-
 }
