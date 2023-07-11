@@ -93,8 +93,8 @@ object CompositeViewsCoordinator {
 
   }
 
-  private val metadata: ProjectionMetadata = ProjectionMetadata("system", "composite-views-coordinator", None, None)
-  private val logger: Logger               = Logger[CompositeViewsCoordinator]
+  private val metadata: ProjectionMetadata              = ProjectionMetadata("system", "composite-views-coordinator", None, None)
+  private val logger: Logger[CompositeViewsCoordinator] = Logger[CompositeViewsCoordinator]
 
   def cleanupCurrent(
       cache: KeyValueStore[ViewRef, ActiveViewDef],
