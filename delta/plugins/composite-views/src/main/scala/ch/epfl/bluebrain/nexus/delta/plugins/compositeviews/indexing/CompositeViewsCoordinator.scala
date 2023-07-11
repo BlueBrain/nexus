@@ -29,32 +29,32 @@ object CompositeViewsCoordinator {
   }
 
   /**
-   * Coordinates the lifecycle of composite views as projections
-   * @param fetchViews
-   *   to fetch the composite views
-   * @param cache
-   *   a cache of the current running views
-   * @param supervisor
-   *   the general supervisor
-   * @param compilePipeChain
-   *   how to compile pipe chains
-   * @param graphStream
-   *   to provide the data feeding the indexing
-   * @param buildSpaces
-   *   to create the necessary namespaces / indices and the pipes/sinks to interact with them
-   * @param compositeProjections
-   *   to fetch/save progress as well as handling restarts
-   */
+    * Coordinates the lifecycle of composite views as projections
+    * @param fetchViews
+    *   to fetch the composite views
+    * @param cache
+    *   a cache of the current running views
+    * @param supervisor
+    *   the general supervisor
+    * @param compilePipeChain
+    *   how to compile pipe chains
+    * @param graphStream
+    *   to provide the data feeding the indexing
+    * @param buildSpaces
+    *   to create the necessary namespaces / indices and the pipes/sinks to interact with them
+    * @param compositeProjections
+    *   to fetch/save progress as well as handling restarts
+    */
   final private class Active(
-                              fetchViews: Offset => ElemStream[CompositeViewDef],
-                              cache: KeyValueStore[ViewRef, ActiveViewDef],
-                              supervisor: Supervisor,
-                              compilePipeChain: PipeChain.Compile,
-                              graphStream: CompositeGraphStream,
-                              buildSpaces: ActiveViewDef => CompositeSpaces,
-                              compositeProjections: CompositeProjections
-                            )(implicit cr: RemoteContextResolution)
-    extends CompositeViewsCoordinator {
+      fetchViews: Offset => ElemStream[CompositeViewDef],
+      cache: KeyValueStore[ViewRef, ActiveViewDef],
+      supervisor: Supervisor,
+      compilePipeChain: PipeChain.Compile,
+      graphStream: CompositeGraphStream,
+      buildSpaces: ActiveViewDef => CompositeSpaces,
+      compositeProjections: CompositeProjections
+  )(implicit cr: RemoteContextResolution)
+      extends CompositeViewsCoordinator {
 
     def run(offset: Offset): Stream[Task, Elem[Unit]] = {
       fetchViews(offset).evalMap {
@@ -69,12 +69,12 @@ object CompositeViewsCoordinator {
               _          <- cleanupCurrent(cache, active, destroy)
               // Init, register and run the new version
               _          <- supervisor.run(
-                projection,
-                for {
-                  _ <- spaces.init
-                  _ <- cache.put(active.ref, active)
-                } yield ()
-              )
+                              projection,
+                              for {
+                                _ <- spaces.init
+                                _ <- cache.put(active.ref, active)
+                              } yield ()
+                            )
             } yield ()
           case d: DeprecatedViewDef  => cleanupCurrent(cache, d, destroy)
         }
@@ -99,10 +99,10 @@ object CompositeViewsCoordinator {
   private val logger: Logger               = Logger[CompositeViewsCoordinator]
 
   def cleanupCurrent(
-                      cache: KeyValueStore[ViewRef, ActiveViewDef],
-                      viewDef: CompositeViewDef,
-                      destroy: ActiveViewDef => Task[Unit]
-                    ): Task[Unit] = {
+      cache: KeyValueStore[ViewRef, ActiveViewDef],
+      viewDef: CompositeViewDef,
+      destroy: ActiveViewDef => Task[Unit]
+  ): Task[Unit] = {
     val ref = viewDef.ref
     cache.get(ref).flatMap { cachedOpt =>
       (cachedOpt, viewDef) match {
@@ -127,33 +127,33 @@ object CompositeViewsCoordinator {
   }
 
   def apply(
-             compositeViews: CompositeViews,
-             supervisor: Supervisor,
-             compilePipeChain: PipeChain.Compile,
-             graphStream: CompositeGraphStream,
-             buildSpaces: ActiveViewDef => CompositeSpaces,
-             compositeProjections: CompositeProjections,
-             config: CompositeViewsConfig
-           )(implicit cr: RemoteContextResolution): Task[CompositeViewsCoordinator] = {
+      compositeViews: CompositeViews,
+      supervisor: Supervisor,
+      compilePipeChain: PipeChain.Compile,
+      graphStream: CompositeGraphStream,
+      buildSpaces: ActiveViewDef => CompositeSpaces,
+      compositeProjections: CompositeProjections,
+      config: CompositeViewsConfig
+  )(implicit cr: RemoteContextResolution): Task[CompositeViewsCoordinator] = {
     if (config.indexingEnabled) {
       for {
         cache      <- KeyValueStore[ViewRef, ActiveViewDef]()
         coordinator = new Active(
-          compositeViews.views,
-          cache,
-          supervisor,
-          compilePipeChain: PipeChain.Compile,
-          graphStream: CompositeGraphStream,
-          buildSpaces: ActiveViewDef => CompositeSpaces,
-          compositeProjections: CompositeProjections
-        )
+                        compositeViews.views,
+                        cache,
+                        supervisor,
+                        compilePipeChain: PipeChain.Compile,
+                        graphStream: CompositeGraphStream,
+                        buildSpaces: ActiveViewDef => CompositeSpaces,
+                        compositeProjections: CompositeProjections
+                      )
         _          <- supervisor.run(
-          CompiledProjection.fromStream(
-            metadata,
-            ExecutionStrategy.EveryNode,
-            coordinator.run
-          )
-        )
+                        CompiledProjection.fromStream(
+                          metadata,
+                          ExecutionStrategy.EveryNode,
+                          coordinator.run
+                        )
+                      )
       } yield coordinator
     } else {
       Noop.log.as(Noop)
