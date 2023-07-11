@@ -1,19 +1,19 @@
 package ch.epfl.bluebrain.nexus.delta.kernel
 
 import monix.bio.{Task, UIO}
-import org.typelevel.log4cats.{Logger => Log4CatsLogger}
 import org.typelevel.log4cats.slf4j.Slf4jLogger
+import org.typelevel.log4cats.{Logger => Log4CatsLogger, LoggerName}
 
-import scala.reflect.ClassTag
+import scala.reflect.{classTag, ClassTag}
 
 /**
   * Wrapper class that is used to be able to create log statements as UIOs. It is needed because "any type class from
   * Sync and above will only work with IO[Throwable, A]" (see https://bio.monix.io/docs/cats-effect#sync-and-above)
   */
-class Logger[A](implicit classTag: ClassTag[A]) extends Log4CatsLogger[UIO] {
+class Logger[A: ClassTag] extends Log4CatsLogger[UIO] {
 
-  private val scalaLogger                  = com.typesafe.scalalogging.Logger[A]
-  private val logger: Log4CatsLogger[Task] = Slf4jLogger.getLoggerFromSlf4j[Task](scalaLogger.underlying)
+  implicit private val loggerName: LoggerName = LoggerName(classTag[A].runtimeClass.getName.stripSuffix("$"))
+  private val logger: Log4CatsLogger[Task]    = Slf4jLogger.getLogger[Task]
 
   override def error(t: Throwable)(message: => String): UIO[Unit] =
     logger.error(t)(message).hideErrors
@@ -48,5 +48,5 @@ class Logger[A](implicit classTag: ClassTag[A]) extends Log4CatsLogger[UIO] {
 }
 
 object Logger {
-  def apply[A: ClassTag]: Logger[A] = new Logger[A]()
+  def apply[A: ClassTag]: Logger[A] = new Logger()
 }
