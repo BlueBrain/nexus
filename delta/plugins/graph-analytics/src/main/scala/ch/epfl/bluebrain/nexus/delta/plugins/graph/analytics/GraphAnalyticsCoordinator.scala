@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics
 
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.GraphAnalytics.{index, projectionName}
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.config.GraphAnalyticsConfig
@@ -11,7 +12,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
-import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import monix.bio.Task
 
@@ -22,9 +22,7 @@ object GraphAnalyticsCoordinator {
   /** If indexing is disabled we can only log */
   final private case object Noop extends GraphAnalyticsCoordinator {
     def log: Task[Unit] =
-      Task.delay {
-        logger.info("Graph Analytics indexing has been disabled via config")
-      }
+      logger.info("Graph Analytics indexing has been disabled via config")
   }
 
   /**
@@ -76,9 +74,9 @@ object GraphAnalyticsCoordinator {
         status   <- supervisor.describe(compiled.metadata.name)
         _        <- status match {
                       case Some(value) if value.status == ExecutionStatus.Running =>
-                        Task.delay(logger.info(s"Graph analysis of '$project' is already running."))
+                        logger.info(s"Graph analysis of '$project' is already running.")
                       case _                                                      =>
-                        Task.delay(logger.info(s"Starting graph analysis of '$project'...")) >>
+                        logger.info(s"Starting graph analysis of '$project'...") >>
                           supervisor.run(
                             compiled,
                             createIndex(project)
@@ -88,7 +86,7 @@ object GraphAnalyticsCoordinator {
 
     // Destroy the analysis for the given project and deletes the related Elasticsearch index
     private def destroy(project: ProjectRef): Task[Unit] = {
-      Task.delay(logger.info(s"Project '$project' has been marked as deleted, stopping the graph analysis...")) >>
+      logger.info(s"Project '$project' has been marked as deleted, stopping the graph analysis...") >>
         supervisor
           .destroy(
             projectionName(project),
@@ -99,9 +97,9 @@ object GraphAnalyticsCoordinator {
 
   }
 
-  final val id                                        = nxv + "graph-analytics"
-  private val logger: Logger                          = Logger[GraphAnalyticsCoordinator]
-  private[analytics] val metadata: ProjectionMetadata = ProjectionMetadata("system", "ga-coordinator", None, None)
+  final val id                                          = nxv + "graph-analytics"
+  private val logger: Logger[GraphAnalyticsCoordinator] = Logger[GraphAnalyticsCoordinator]
+  private[analytics] val metadata: ProjectionMetadata   = ProjectionMetadata("system", "ga-coordinator", None, None)
 
   private def analyticsMetadata(project: ProjectRef) = ProjectionMetadata(
     "ga",
