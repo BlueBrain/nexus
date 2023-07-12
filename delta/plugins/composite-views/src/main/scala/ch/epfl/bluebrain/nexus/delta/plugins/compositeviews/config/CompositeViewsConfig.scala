@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config
 
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.config.BlazegraphViewsConfig.Credentials
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig.{BlazegraphInstanceConfig, RemoteSourceClientConfig, SourcesConfig}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig.{BlazegraphAccess, RemoteSourceClientConfig, SourcesConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
@@ -20,7 +20,7 @@ import scala.concurrent.duration.{Duration, FiniteDuration}
   *
   * @param sources
   *   the configuration of the composite views sources
-  * @param blazegraph
+  * @param blazegraphAccess
   *   the configuration of the Blazegraph instance used for composite views
   * @param prefix
   *   prefix for indices and namespaces
@@ -45,7 +45,7 @@ import scala.concurrent.duration.{Duration, FiniteDuration}
   */
 final case class CompositeViewsConfig(
     sources: SourcesConfig,
-    blazegraph: BlazegraphInstanceConfig,
+    blazegraphAccess: BlazegraphAccess,
     prefix: String,
     maxProjections: Int,
     eventLog: EventLogConfig,
@@ -81,7 +81,7 @@ object CompositeViewsConfig {
     * @param queryTimeout
     *   the Blazegraph query timeout
     */
-  final case class BlazegraphInstanceConfig(
+  final case class BlazegraphAccess(
       base: Uri,
       credentials: Option[Credentials],
       queryTimeout: Duration

@@ -62,9 +62,9 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
     ) =>
       BlazegraphClient(
         client,
-        cfg.blazegraph.base,
-        cfg.blazegraph.credentials,
-        cfg.blazegraph.queryTimeout
+        cfg.blazegraphAccess.base,
+        cfg.blazegraphAccess.credentials,
+        cfg.blazegraphAccess.queryTimeout
       )(as.classicSystem)
   }
 
@@ -76,9 +76,9 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
     ) =>
       BlazegraphClient(
         client,
-        cfg.blazegraph.base,
-        cfg.blazegraph.credentials,
-        cfg.blazegraph.queryTimeout
+        cfg.blazegraphAccess.base,
+        cfg.blazegraphAccess.credentials,
+        cfg.blazegraphAccess.queryTimeout
       )(as.classicSystem)
   }
 
