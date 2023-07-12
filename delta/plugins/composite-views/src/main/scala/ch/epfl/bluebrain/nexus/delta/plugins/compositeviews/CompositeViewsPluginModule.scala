@@ -54,6 +54,34 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
     DeltaClient(httpClient, cfg.remoteSourceClient.retryDelay)(as, sc)
   }
 
+  make[BlazegraphClient].named("blazegraph-composite-indexing-client").from {
+    (
+        cfg: CompositeViewsConfig,
+        client: HttpClient @Id("http-indexing-client"),
+        as: ActorSystem[Nothing]
+    ) =>
+      BlazegraphClient(
+        client,
+        cfg.blazegraph.base,
+        cfg.blazegraph.credentials,
+        cfg.blazegraph.queryTimeout
+      )(as.classicSystem)
+  }
+
+  make[BlazegraphClient].named("blazegraph-composite-query-client").from {
+    (
+        cfg: CompositeViewsConfig,
+        client: HttpClient @Id("http-query-client"),
+        as: ActorSystem[Nothing]
+    ) =>
+      BlazegraphClient(
+        client,
+        cfg.blazegraph.base,
+        cfg.blazegraph.credentials,
+        cfg.blazegraph.queryTimeout
+      )(as.classicSystem)
+  }
+
   make[ValidateCompositeView].from {
     (
         aclCheck: AclCheck,
@@ -130,7 +158,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
   make[CompositeSpaces.Builder].from {
     (
         esClient: ElasticSearchClient,
-        blazeClient: BlazegraphClient @Id("blazegraph-indexing-client"),
+        blazeClient: BlazegraphClient @Id("blazegraph-composite-indexing-client"),
         cfg: CompositeViewsConfig,
         baseUri: BaseUri
     ) =>
@@ -197,7 +225,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
     (
         aclCheck: AclCheck,
         views: CompositeViews,
-        client: BlazegraphClient @Id("blazegraph-query-client"),
+        client: BlazegraphClient @Id("blazegraph-composite-query-client"),
         cfg: CompositeViewsConfig
     ) => BlazegraphQuery(aclCheck, views, client, cfg.prefix)
   }

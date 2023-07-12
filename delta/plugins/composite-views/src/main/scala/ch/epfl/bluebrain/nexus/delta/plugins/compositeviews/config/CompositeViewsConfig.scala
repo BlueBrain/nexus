@@ -1,7 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config
 
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig.{RemoteSourceClientConfig, SourcesConfig}
+import akka.http.scaladsl.model.Uri
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.config.BlazegraphViewsConfig.Credentials
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig.{BlazegraphInstanceConfig, RemoteSourceClientConfig, SourcesConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{BatchConfig, EventLogConfig}
 import com.typesafe.config.Config
@@ -10,13 +13,15 @@ import pureconfig.generic.auto._
 import pureconfig.generic.semiauto.deriveReader
 import pureconfig.{ConfigReader, ConfigSource}
 
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration.{Duration, FiniteDuration}
 
 /**
   * The composite view configuration.
   *
   * @param sources
   *   the configuration of the composite views sources
+  * @param blazegraph
+  *   the configuration of the Blazegraph instance used for composite views
   * @param prefix
   *   prefix for indices and namespaces
   * @param maxProjections
@@ -40,6 +45,7 @@ import scala.concurrent.duration.FiniteDuration
   */
 final case class CompositeViewsConfig(
     sources: SourcesConfig,
+    blazegraph: BlazegraphInstanceConfig,
     prefix: String,
     maxProjections: Int,
     eventLog: EventLogConfig,
@@ -62,6 +68,23 @@ object CompositeViewsConfig {
     */
   final case class SourcesConfig(
       maxSources: Int
+  )
+
+  /**
+    * The configuration of the blazegraph instance used for composite views. By default it uses values from the
+    * blazegraph plugin.
+    *
+    * @param base
+    *   the base uri to the Blazegraph HTTP endpoint
+    * @param credentials
+    *   the Blazegraph HTTP endpoint credentials
+    * @param queryTimeout
+    *   the Blazegraph query timeout
+    */
+  final case class BlazegraphInstanceConfig(
+      base: Uri,
+      credentials: Option[Credentials],
+      queryTimeout: Duration
   )
 
   /**
