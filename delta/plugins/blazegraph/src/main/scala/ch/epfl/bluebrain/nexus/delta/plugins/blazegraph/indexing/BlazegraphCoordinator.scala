@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing
 
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.KeyValueStore
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.config.BlazegraphViewsConfig
@@ -13,7 +14,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ElemStream
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
-import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import monix.bio.Task
 
@@ -24,9 +24,7 @@ object BlazegraphCoordinator {
   /** If indexing is disabled we can only log */
   final private case object Noop extends BlazegraphCoordinator {
     def log: Task[Unit] =
-      Task.delay {
-        logger.info("Blazegraph indexing has been disabled via config")
-      }
+      logger.info("Blazegraph indexing has been disabled via config")
   }
 
   /**
@@ -62,9 +60,7 @@ object BlazegraphCoordinator {
                 case (Some(cached), active: ActiveViewDef) if cached.projection == active.projection =>
                   for {
                     _ <- cache.put(active.ref, active)
-                    _ <- Task.delay {
-                           logger.info(s"Index ${active.projection} already exists and will not be recreated.")
-                         }
+                    _ <- logger.info(s"Index ${active.projection} already exists and will not be recreated.")
                   } yield ()
                 case (cached, active: ActiveViewDef)                                                 =>
                   compile(active)
@@ -99,10 +95,8 @@ object BlazegraphCoordinator {
               v.projection,
               for {
                 _ <-
-                  Task.delay(
-                    logger.info(
-                      s"View '${ref.project}/${ref.viewId}' has been updated or deprecated, cleaning up the current one."
-                    )
+                  logger.info(
+                    s"View '${ref.project}/${ref.viewId}' has been updated or deprecated, cleaning up the current one."
                   )
                 _ <- deleteNamespace(v)
                 _ <- cache.remove(v.ref)
@@ -110,9 +104,7 @@ object BlazegraphCoordinator {
             )
             .void
         case None    =>
-          Task.delay(
-            logger.debug(s"View '${ref.project}/${ref.viewId}' is not referenced yet, cleaning is aborted.")
-          )
+          logger.debug(s"View '${ref.project}/${ref.viewId}' is not referenced yet, cleaning is aborted.")
       }
 
     private def compile(active: ActiveViewDef): Task[CompiledProjection] =
@@ -120,8 +112,8 @@ object BlazegraphCoordinator {
 
   }
 
-  val metadata: ProjectionMetadata = ProjectionMetadata("system", "blazegraph-coordinator", None, None)
-  private val logger: Logger       = Logger[BlazegraphCoordinator]
+  val metadata: ProjectionMetadata                  = ProjectionMetadata("system", "blazegraph-coordinator", None, None)
+  private val logger: Logger[BlazegraphCoordinator] = Logger[BlazegraphCoordinator]
 
   def apply(
       views: BlazegraphViews,
@@ -143,9 +135,7 @@ object BlazegraphCoordinator {
           client
             .createNamespace(v.namespace)
             .tapError { e =>
-              Task.delay(
-                logger.error(s"Namespace for view '${v.ref.project}/${v.ref.viewId}' could not be created.", e)
-              )
+              logger.error(e)(s"Namespace for view '${v.ref.project}/${v.ref.viewId}' could not be created.")
             }
             .void,
         (v: ActiveViewDef) => client.deleteNamespace(v.namespace).void
