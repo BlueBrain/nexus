@@ -567,10 +567,20 @@ class SearchConfigSpec extends BaseSpec {
       val expected =
         json"""{
                 "config" : {
+                  "@id" : "https://bbp.epfl.ch/neurosciencegraph/data/simulation-campaign-configuration",
                   "identifier" : "https://bbp.epfl.ch/neurosciencegraph/data/simulation-campaign-configuration",
                   "label" : "SBO Simulation campaign test"
                 }
                }"""
+
+      assertOneSource(query) { json =>
+        json should equalIgnoreArrayOrder(expected)
+      }
+    }
+
+    "have the correct status for a simulation campaign" in {
+      val query = queryField(simulationCampaignId, "status")
+      val expected = json"""{ "status" : "Running" }"""
 
       assertOneSource(query) { json =>
         json should equalIgnoreArrayOrder(expected)
@@ -616,8 +626,9 @@ class SearchConfigSpec extends BaseSpec {
       val expected =
         json"""{
            "campaign" : {
-           "identifier" : "https://bbp.epfl.ch/data/simulation-campaign",
-           "label" : "Simulation campaign"
+             "@id" : "https://bbp.epfl.ch/data/simulation-campaign",
+             "identifier" : "https://bbp.epfl.ch/data/simulation-campaign",
+             "label" : "Simulation campaign"
            }
         }"""
 
