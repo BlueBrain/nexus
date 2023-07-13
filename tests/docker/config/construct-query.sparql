@@ -173,7 +173,7 @@ CONSTRUCT {
   ## Simulation campaigns
   ?id  :config               ?campaignConfigId        .
                              ?campaignConfigId        :identifier      ?campaignConfigId   ;
-                                                      :label           ?campaignConfigName .
+                                                      :name           ?campaignConfigName .
 
   ## Simulation campaigns / simulations
   ?id  :attrs                ?attrs                   .
@@ -185,7 +185,7 @@ CONSTRUCT {
   ## Simulations
   ?id  :campaign             ?campaignId              .
                              ?campaignId              :identifier      ?campaignId   ;
-                                                      :label           ?campaignName .
+                                                      :name           ?campaignName .
 } WHERE {
   BIND({resource_id} as ?id) .
 

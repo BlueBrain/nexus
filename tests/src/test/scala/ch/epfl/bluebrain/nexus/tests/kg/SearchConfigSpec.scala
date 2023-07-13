@@ -569,7 +569,7 @@ class SearchConfigSpec extends BaseSpec {
                 "config" : {
                   "@id" : "https://bbp.epfl.ch/neurosciencegraph/data/simulation-campaign-configuration",
                   "identifier" : "https://bbp.epfl.ch/neurosciencegraph/data/simulation-campaign-configuration",
-                  "label" : "SBO Simulation campaign test"
+                  "name" : "SBO Simulation campaign test"
                 }
                }"""
 
@@ -628,7 +628,7 @@ class SearchConfigSpec extends BaseSpec {
            "campaign" : {
              "@id" : "https://bbp.epfl.ch/data/simulation-campaign",
              "identifier" : "https://bbp.epfl.ch/data/simulation-campaign",
-             "label" : "Simulation campaign"
+             "name" : "Simulation campaign"
            }
         }"""
 
