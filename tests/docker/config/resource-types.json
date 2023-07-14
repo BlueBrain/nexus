@@ -48,6 +48,7 @@
   "https://neuroshapes.org/Simulation",
   "https://neuroshapes.org/SimulationCampaign",
   "https://bbp.epfl.ch/ontologies/core/bmo/SimulationCampaignConfiguration",
+  "https://bbp.epfl.ch/ontologies/core/bmo/SimulationCampaignExecution",
   "https://neuroshapes.org/SimWriterConfiguration",
   "https://neuroshapes.org/SingleCellSimulationTrace",
   "https://neuroshapes.org/SoftwareAgent",
