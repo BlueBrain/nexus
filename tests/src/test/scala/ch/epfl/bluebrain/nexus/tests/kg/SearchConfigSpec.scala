@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Organizations, Resour
 import io.circe.Json
 import monix.bio.Task
 import org.scalatest.Assertion
+import concurrent.duration._
 
 class SearchConfigSpec extends BaseSpec {
 
@@ -22,7 +23,7 @@ class SearchConfigSpec extends BaseSpec {
   private val layerThicknessId     = "https://bbp.epfl.ch/data/layer-thickness"
   private val boutonDensityId      = "https://bbp.epfl.ch/data/bouton-density"
   private val simulationCampaignId = "https://bbp.epfl.ch/data/simulation-campaign"
-  private val simulationId = "https://bbp.epfl.ch/data/simulation"
+  private val simulationId         = "https://bbp.epfl.ch/data/simulation"
 
   // the resources that should appear in the search index
   private val mainResources  = List(
@@ -71,6 +72,7 @@ class SearchConfigSpec extends BaseSpec {
   "search" should {
 
     "index all data" in {
+      implicit val indexingConfig: PatienceConfig = PatienceConfig(30.seconds, 300.millis)
       eventually {
         deltaClient.post[Json]("/search/query", json"""{"size": 100}""", Rick) { (body, response) =>
           response.status shouldEqual StatusCodes.OK
@@ -579,7 +581,7 @@ class SearchConfigSpec extends BaseSpec {
     }
 
     "have the correct status for a simulation campaign" in {
-      val query = queryField(simulationCampaignId, "status")
+      val query    = queryField(simulationCampaignId, "status")
       val expected = json"""{ "status" : "Running" }"""
 
       assertOneSource(query) { json =>
@@ -606,7 +608,7 @@ class SearchConfigSpec extends BaseSpec {
     }
 
     "have the correct coords for a simulation campaign" in {
-      val query = queryField(simulationCampaignId, "coords")
+      val query    = queryField(simulationCampaignId, "coords")
       val expected =
         json"""{
              "coords" : {
@@ -622,7 +624,7 @@ class SearchConfigSpec extends BaseSpec {
     }
 
     "have the correct campaign for a simulation" in {
-      val query = queryField(simulationId, "campaign")
+      val query    = queryField(simulationId, "campaign")
       val expected =
         json"""{
            "campaign" : {
@@ -638,7 +640,7 @@ class SearchConfigSpec extends BaseSpec {
     }
 
     "have the correct status for a simulation" in {
-      val query = queryField(simulationId, "status")
+      val query    = queryField(simulationId, "status")
       val expected = json"""{ "status" : "Done" }"""
 
       assertOneSource(query) { json =>
@@ -647,7 +649,7 @@ class SearchConfigSpec extends BaseSpec {
     }
 
     "have the correct startedAt for a simulation" in {
-      val query = queryField(simulationId, "startedAt")
+      val query    = queryField(simulationId, "startedAt")
       val expected = json"""{ "startedAt" : "2023-07-05T11:00:00.000000" }"""
 
       assertOneSource(query) { json =>
@@ -656,7 +658,7 @@ class SearchConfigSpec extends BaseSpec {
     }
 
     "have the correct endedAt for a simulation" in {
-      val query = queryField(simulationId, "endedAt")
+      val query    = queryField(simulationId, "endedAt")
       val expected = json"""{ "endedAt" : "2023-07-12T15:00:00.000000" }"""
 
       assertOneSource(query) { json =>
@@ -665,7 +667,7 @@ class SearchConfigSpec extends BaseSpec {
     }
 
     "have the correct coords for a simulation" in {
-      val query = queryField(simulationId, "coords")
+      val query    = queryField(simulationId, "coords")
       val expected =
         json"""{
              "coords" : {
