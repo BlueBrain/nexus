@@ -279,8 +279,8 @@ class SearchConfigSpec extends BaseSpec {
                 "value" : "https://doi.org/10.1016/j.cell.2015.09.029"
               }
             ],
-            "startedAt" : "2015-01-21T00:00:00",
-            "endedAt" : "2015-05-01T00:00:00"
+            "startedAt" : "2015-01-21T00:00:00.000Z",
+            "endedAt" : "2015-05-01T00:00:00.000Z"
           }
         }
             """
@@ -651,7 +651,7 @@ class SearchConfigSpec extends BaseSpec {
 
     "have the correct startedAt for a simulation" in {
       val query    = queryField(simulationId, "startedAt")
-      val expected = json"""{ "startedAt" : "2023-07-05T11:00:00.000000" }"""
+      val expected = json"""{ "startedAt" : "2023-07-05T11:00:00.000Z" }"""
 
       assertOneSource(query) { json =>
         json should equalIgnoreArrayOrder(expected)
@@ -660,7 +660,7 @@ class SearchConfigSpec extends BaseSpec {
 
     "have the correct endedAt for a simulation" in {
       val query    = queryField(simulationId, "endedAt")
-      val expected = json"""{ "endedAt" : "2023-07-12T15:00:00.000000" }"""
+      val expected = json"""{ "endedAt" : "2023-07-12T15:00:00.000Z" }"""
 
       assertOneSource(query) { json =>
         json should equalIgnoreArrayOrder(expected)
