@@ -12,6 +12,8 @@ import concurrent.duration._
 
 class SearchConfigSpec extends BaseSpec {
 
+  implicit override def patienceConfig: PatienceConfig = PatienceConfig(config.patience * 2, 300.millis)
+
   private val orgId    = genId()
   private val projId1  = genId()
   private val id1      = s"$orgId/$projId1"
@@ -72,7 +74,6 @@ class SearchConfigSpec extends BaseSpec {
   "search" should {
 
     "index all data" in {
-      implicit val indexingConfig: PatienceConfig = PatienceConfig(30.seconds, 300.millis)
       eventually {
         deltaClient.post[Json]("/search/query", json"""{"size": 100}""", Rick) { (body, response) =>
           response.status shouldEqual StatusCodes.OK
