@@ -106,14 +106,6 @@ object ArchiveRejection {
   final case object BlankArchiveId extends ArchiveRejection(s"Archive identifier cannot be blank.")
 
   /**
-    * Rejection indicating nexus metadata fields were found in the payload. Users should not be setting these.
-    */
-  final case class UnexpectedMetadataFields(fields: Set[String])
-      extends ArchiveRejection(
-        s"Metadata field(s) found in payload: ${fields.map(field => s"'$field'").mkString(", ")}"
-      )
-
-  /**
     * Signals a rejection caused when interacting with other APIs when fetching a resource
     */
   final case class ProjectContextRejection(rejection: ContextRejection)
@@ -186,7 +178,6 @@ object ArchiveRejection {
     case JsonLdRejection.InvalidJsonLdFormat(id, rdfError) => InvalidJsonLdFormat(id, rdfError)
     case JsonLdRejection.DecodingFailed(error)             => DecodingFailed(error)
     case JsonLdRejection.BlankId                           => BlankArchiveId
-    case JsonLdRejection.UnexpectedMetadataFields(fields)  => UnexpectedMetadataFields(fields)
   }
 
   implicit final val archiveRejectionEncoder: Encoder.AsObject[ArchiveRejection] =
@@ -221,7 +212,6 @@ object ArchiveRejection {
       case AuthorizationFailed(_, _)          => StatusCodes.Forbidden
       case BlankArchiveId                     => StatusCodes.BadRequest
       case InvalidFileSelf(_)                 => StatusCodes.BadRequest
-      case UnexpectedMetadataFields(_)        => StatusCodes.BadRequest
       case WrappedFileRejection(rejection)    => rejection.status
     }
 }

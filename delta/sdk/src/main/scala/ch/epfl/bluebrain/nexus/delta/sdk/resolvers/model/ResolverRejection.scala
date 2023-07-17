@@ -100,14 +100,6 @@ object ResolverRejection {
   final case object BlankResolverId extends ResolverRejection(s"Resolver identifier cannot be blank.")
 
   /**
-    * Rejection indicating nexus metadata fields were found in the payload. Users should not be setting these.
-    */
-  final case class UnexpectedMetadataFields(fields: Set[String])
-      extends ResolverRejection(
-        s"Metadata field(s) found in payload: ${fields.map(field => s"'$field'").mkString(", ")}"
-      )
-
-  /**
     * Rejection returned when attempting to resolve a resource providing an id that cannot be resolved to an Iri.
     *
     * @param id
@@ -236,7 +228,6 @@ object ResolverRejection {
     case JsonLdRejection.InvalidJsonLdFormat(id, rdfError) => InvalidJsonLdFormat(id, rdfError)
     case JsonLdRejection.DecodingFailed(error)             => DecodingFailed(error)
     case BlankId                                           => BlankResolverId
-    case JsonLdRejection.UnexpectedMetadataFields(fields)  => UnexpectedMetadataFields(fields)
   }
 
   implicit val resolverRejectionEncoder: Encoder.AsObject[ResolverRejection] =

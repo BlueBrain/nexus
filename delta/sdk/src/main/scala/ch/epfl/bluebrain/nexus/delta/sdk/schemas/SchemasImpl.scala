@@ -162,14 +162,12 @@ object SchemasImpl {
       schemaImports: SchemaImports,
       contextResolution: ResolverContextResolution,
       config: SchemasConfig,
-      forbidMetadataFieldsInPayload: Boolean,
       xas: Transactors
   )(implicit api: JsonLdApi, clock: Clock[UIO], uuidF: UUIDF): Schemas = {
     val parser =
       new JsonLdSourceResolvingParser[SchemaRejection](
         List(contexts.shacl, contexts.schemasMetadata),
         contextResolution,
-        forbidMetadataFieldsInPayload,
         uuidF
       )
     new SchemasImpl(

@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resources
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -16,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.{FetchResource, ResourceResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport.ResolverReport
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{ResolverResolutionRejection, ResourceResolutionReport}
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{BlankResourceId, IncorrectRev, InvalidJsonLdFormat, InvalidResource, InvalidSchemaRejection, ProjectContextRejection, ResourceAlreadyExists, ResourceIsDeprecated, ResourceNotFound, RevisionNotFound, SchemaIsDeprecated, TagNotFound, UnexpectedMetadataFields, UnexpectedResourceId, UnexpectedResourceSchema}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{BlankResourceId, IncorrectRev, InvalidJsonLdFormat, InvalidResource, InvalidSchemaRejection, ProjectContextRejection, ResourceAlreadyExists, ResourceIsDeprecated, ResourceNotFound, RevisionNotFound, SchemaIsDeprecated, TagNotFound, UnexpectedResourceId, UnexpectedResourceSchema}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
@@ -24,7 +23,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revisio
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, DoobieScalaTestFixture, IOFixedClock, IOValues}
-import io.circe.Json
 import monix.bio.UIO
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
@@ -97,7 +95,6 @@ class ResourcesImplSpec
     fetchContext,
     resolverContextResolution,
     config,
-    true,
     xas
   )
 
@@ -112,7 +109,6 @@ class ResourcesImplSpec
     val myId7 = nxv + "myid7" // Resource created against the resource schema with id passed explicitly and with payload without @context
     val myId8  = nxv + "myid8" // Resource created against the resource schema with id present on the payload and having its context pointing on metadata and myId1 and myId2
     val myId9  = nxv + "myid9" // Resource created against the resource schema with id present on the payload and having its context pointing on metadata and myId8 so therefore myId1 and myId2
-    val myId10  = nxv + "myid10" // Resource with nexus metadata
 
     // format: on
     val resourceSchema          = Latest(schemas.resources)
@@ -120,8 +116,6 @@ class ResourcesImplSpec
     val types                   = Set(nxv + "Custom")
     val source                  = jsonContentOf("resources/resource.json", "id" -> myId)
     def sourceWithBlankId       = source deepMerge json"""{"@id": ""}"""
-    def sourceWithMetadataField =
-      source deepMerge json"""{"@id": "$myId10", "_self": "http://delta/v1/resources/org/proj/_/id"}"""
     val tag                     = UserTag.unsafe("tag")
 
     "creating a resource" should {
@@ -237,26 +231,6 @@ class ResourcesImplSpec
       "reject if the id is blank" in {
         resources.create(projectRef, schemas.resources, sourceWithBlankId).rejected shouldEqual
           BlankResourceId
-      }
-
-      "reject if metadata fields are present" in {
-        resources.create(projectRef, schemas.resources, sourceWithMetadataField).rejected shouldEqual
-          UnexpectedMetadataFields(Set("_self"))
-      }
-
-      "don't reject if metadata fields are present and the flag is off" in {
-        val resourcesWithMetadatafieldsAllowed: Resources = ResourcesImpl(
-          new ValidateResourceImpl(resourceResolution),
-          fetchContext,
-          resolverContextResolution,
-          config,
-          false,
-          xas
-        )
-
-        resourcesWithMetadatafieldsAllowed
-          .create(projectRef, schemas.resources, sourceWithMetadataField)
-          .accepted shouldEqual expectedResourceFor(myId10, sourceWithMetadataField)
       }
 
       "reject if it already exists" in {
@@ -697,19 +671,6 @@ class ResourcesImplSpec
       "reject if the tag doesn't exist" in {
         resources.deleteTag(myId, projectRef, Some(schemas.resources), tag, 3).rejectedWith[TagNotFound]
       }
-
-    }
-
-    def expectedResourceFor(id: Iri, source: Json) = {
-      val schemaRev    = Revision(resourceSchema.iri, 1)
-      val expectedData = ResourceGen.resource(id, projectRef, source, schemaRev)(resolverContextResolution(projectRef))
-      ResourceGen.resourceFor(
-        expectedData,
-        types = types,
-        subject = subject,
-        am = allApiMappings,
-        base = projBase
-      )
     }
   }
 }

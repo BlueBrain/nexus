@@ -58,15 +58,6 @@ sealed abstract class JsonLdSourceProcessor(implicit api: JsonLdApi) {
     )(BlankId)
   }
 
-  protected def validateNoUnderscoreFields(source: Json): IO[UnexpectedMetadataFields, Unit] = {
-
-    val metadataFields = source.asObject.toList.flatMap(_.keys.filter(_.startsWith("_"))).toSet
-
-    IO.raiseWhen(
-      metadataFields.nonEmpty
-    )(UnexpectedMetadataFields(metadataFields))
-  }
-
   private def defaultCtx(context: ProjectContext): ContextValue =
     ContextObject(JsonObject(keywords.vocab -> context.vocab.asJson, keywords.base -> context.base.asJson))
 
@@ -79,7 +70,6 @@ object JsonLdSourceProcessor {
     */
   final class JsonLdSourceParser[R](
       contextIri: Seq[Iri],
-      forbidMetadataFieldsInPayload: Boolean,
       override val uuidF: UUIDF
   )(implicit
       api: JsonLdApi,
@@ -104,7 +94,6 @@ object JsonLdSourceProcessor {
     )(implicit rcr: RemoteContextResolution): IO[R, (Iri, CompactedJsonLd, ExpandedJsonLd)] = {
       for {
         _                       <- validateIdNotBlank(source)
-        _                       <- IO.when(forbidMetadataFieldsInPayload)(validateNoUnderscoreFields(source))
         (ctx, originalExpanded) <- expandSource(context, source.addContext(contextIri: _*))
         iri                     <- getOrGenerateId(originalExpanded.rootId.asIri, context)
         expanded                 = originalExpanded.replaceId(iri)
@@ -132,7 +121,6 @@ object JsonLdSourceProcessor {
     ): IO[R, (CompactedJsonLd, ExpandedJsonLd)] = {
       for {
         _                       <- validateIdNotBlank(source)
-        _                       <- IO.when(forbidMetadataFieldsInPayload)(validateNoUnderscoreFields(source))
         (ctx, originalExpanded) <- expandSource(context, source.addContext(contextIri: _*))
         expanded                <- checkAndSetSameId(iri, originalExpanded)
         compacted               <- expanded.toCompacted(ctx).mapError(err => InvalidJsonLdFormat(Some(iri), err))
@@ -147,12 +135,11 @@ object JsonLdSourceProcessor {
   final class JsonLdSourceResolvingParser[R](
       contextIri: Seq[Iri],
       contextResolution: ResolverContextResolution,
-      forbidMetadataFieldsInPayload: Boolean,
       override val uuidF: UUIDF
   )(implicit api: JsonLdApi, rejectionMapper: Mapper[InvalidJsonLdRejection, R])
       extends JsonLdSourceProcessor {
 
-    private val underlying = new JsonLdSourceParser[R](contextIri, forbidMetadataFieldsInPayload, uuidF)
+    private val underlying = new JsonLdSourceParser[R](contextIri, uuidF)
 
     /**
       * Converts the passed ''source'' to JsonLD compacted and expanded. The @id value is extracted from the payload.
@@ -201,12 +188,12 @@ object JsonLdSourceProcessor {
   }
 
   object JsonLdSourceResolvingParser {
-    def apply[R](contextResolution: ResolverContextResolution, forbidMetadataFieldsInPayload: Boolean, uuidF: UUIDF)(
+    def apply[R](contextResolution: ResolverContextResolution, uuidF: UUIDF)(
         implicit
         api: JsonLdApi,
         rejectionMapper: Mapper[InvalidJsonLdRejection, R]
     ): JsonLdSourceResolvingParser[R] =
-      new JsonLdSourceResolvingParser(Seq.empty, contextResolution, forbidMetadataFieldsInPayload, uuidF)
+      new JsonLdSourceResolvingParser(Seq.empty, contextResolution, uuidF)
   }
 
   /**

@@ -224,13 +224,12 @@ object ResourcesImpl {
       fetchContext: FetchContext[ProjectContextRejection],
       contextResolution: ResolverContextResolution,
       config: ResourcesConfig,
-      forbidMetadataFieldsInPayload: Boolean,
       xas: Transactors
   )(implicit api: JsonLdApi, clock: Clock[UIO], uuidF: UUIDF = UUIDF.random): Resources =
     new ResourcesImpl(
       ScopedEventLog(Resources.definition(validator), config.eventLog, xas),
       fetchContext,
-      JsonLdSourceResolvingParser[ResourceRejection](contextResolution, forbidMetadataFieldsInPayload, uuidF),
+      JsonLdSourceResolvingParser[ResourceRejection](contextResolution, uuidF),
       validator
     )
 

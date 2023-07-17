@@ -90,7 +90,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec {
       ResourcesRoutes(
         IdentitiesDummy(caller),
         aclCheck,
-        ResourcesImpl(validator, fetchContext, resolverContextResolution, config, true, xas),
+        ResourcesImpl(validator, fetchContext, resolverContextResolution, config, xas),
         DeltaSchemeDirectives(fetchContext, ioFromMap(uuid -> projectRef.organization), ioFromMap(uuid -> projectRef)),
         IndexingAction.noop
       )

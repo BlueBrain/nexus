@@ -52,7 +52,6 @@ object SchemasModule extends ModuleDef {
         schemaImports,
         resolverContextResolution,
         config.schemas,
-        config.jsonLdSourceProcessor.forbidMetadataFieldsInPayload,
         xas
       )(api, clock, uuidF)
   }

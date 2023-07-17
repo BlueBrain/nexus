@@ -240,14 +240,6 @@ object CompositeViewRejection {
   final case object BlankCompositeViewId extends CompositeViewRejection(s"Composite view identifier cannot be blank.")
 
   /**
-    * Rejection indicating nexus metadata fields were found in the payload. Users should not be setting these.
-    */
-  final case class UnexpectedMetadataFields(fields: Set[String])
-      extends CompositeViewRejection(
-        s"Metadata field(s) found in payload: ${fields.map(field => s"'$field'").mkString(", ")}"
-      )
-
-  /**
     * Signals a rejection caused when interacting with other APIs when fetching a view
     */
   final case class ProjectContextRejection(rejection: ContextRejection)
@@ -315,7 +307,6 @@ object CompositeViewRejection {
     case JsonLdRejection.InvalidJsonLdFormat(id, rdfError) => InvalidJsonLdFormat(id, rdfError)
     case JsonLdRejection.DecodingFailed(error)             => DecodingFailed(error)
     case JsonLdRejection.BlankId                           => BlankCompositeViewId
-    case JsonLdRejection.UnexpectedMetadataFields(fields)  => UnexpectedMetadataFields(fields)
   }
 
   implicit private[plugins] val compositeViewRejectionEncoder: Encoder.AsObject[CompositeViewRejection] =

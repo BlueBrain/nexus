@@ -81,7 +81,7 @@ class SchemasRoutesSpec extends BaseRouteSpec {
       SchemasRoutes(
         identities,
         aclCheck,
-        SchemasImpl(fetchContext, schemaImports, resolverContextResolution, config, true, xas),
+        SchemasImpl(fetchContext, schemaImports, resolverContextResolution, config, xas),
         groupDirectives,
         IndexingAction.noop
       )

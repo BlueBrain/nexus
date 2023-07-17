@@ -185,14 +185,6 @@ object ElasticSearchViewRejection {
       extends ElasticSearchViewRejection(s"Elastic search view identifier cannot be blank.")
 
   /**
-    * Rejection indicating nexus metadata fields were found in the payload. Users should not be setting these.
-    */
-  final case class UnexpectedMetadataFields(fields: Set[String])
-      extends ElasticSearchViewRejection(
-        s"Metadata field(s) found in payload: ${fields.map(field => s"'$field'").mkString(", ")}"
-      )
-
-  /**
     * Rejection when attempting to decode an expanded JsonLD as an ElasticSearchViewValue.
     *
     * @param error
@@ -247,7 +239,6 @@ object ElasticSearchViewRejection {
     case JsonLdRejection.InvalidJsonLdFormat(id, rdfError) => InvalidJsonLdFormat(id, rdfError)
     case JsonLdRejection.DecodingFailed(error)             => DecodingFailed(error)
     case JsonLdRejection.BlankId                           => BlankElasticSearchViewId
-    case JsonLdRejection.UnexpectedMetadataFields(fields)  => UnexpectedMetadataFields(fields)
   }
 
   implicit val elasticSearchRejectionEncoder: Encoder.AsObject[ElasticSearchViewRejection] =

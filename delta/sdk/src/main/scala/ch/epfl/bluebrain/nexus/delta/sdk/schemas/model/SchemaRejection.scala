@@ -83,12 +83,6 @@ object SchemaRejection {
   final case object BlankSchemaId extends SchemaRejection(s"Schema identifier cannot be blank.")
 
   /**
-    * Rejection indicating nexus metadata fields were found in the payload. Users should not be setting these.
-    */
-  final case class UnexpectedMetadataFields(fields: Set[String])
-      extends SchemaRejection(s"Metadata field(s) found in payload: ${fields.map(field => s"'$field'").mkString(", ")}")
-
-  /**
     * Rejection returned when attempting to create a schema but the id already exists.
     *
     * @param id
@@ -235,7 +229,6 @@ object SchemaRejection {
     case UnexpectedId(id, payloadIri)                      => UnexpectedSchemaId(id, payloadIri)
     case JsonLdRejection.InvalidJsonLdFormat(id, rdfError) => InvalidJsonLdFormat(id, rdfError)
     case BlankId                                           => BlankSchemaId
-    case JsonLdRejection.UnexpectedMetadataFields(fields)  => UnexpectedMetadataFields(fields)
   }
 
   implicit val responseFieldsSchemas: HttpResponseFields[SchemaRejection] =

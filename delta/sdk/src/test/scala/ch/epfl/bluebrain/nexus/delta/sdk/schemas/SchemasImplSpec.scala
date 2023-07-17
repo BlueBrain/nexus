@@ -85,7 +85,7 @@ class SchemasImplSpec
   private val config       = SchemasConfig(eventLogConfig)
 
   private lazy val schemas: Schemas =
-    SchemasImpl(fetchContext, schemaImports, resolverContextResolution, config, true, xas)
+    SchemasImpl(fetchContext, schemaImports, resolverContextResolution, config, xas)
 
   private def schemaSourceWithId(id: Iri) = {
     source deepMerge json"""{"@id": "$id"}"""

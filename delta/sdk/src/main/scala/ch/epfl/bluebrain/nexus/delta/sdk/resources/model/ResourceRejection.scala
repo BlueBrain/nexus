@@ -84,14 +84,6 @@ object ResourceRejection {
   final case object BlankResourceId extends ResourceRejection(s"Resource identifier cannot be blank.")
 
   /**
-    * Rejection indicating nexus metadata fields were found in the payload. Users should not be setting these.
-    */
-  final case class UnexpectedMetadataFields(fields: Set[String])
-      extends ResourceRejection(
-        s"Metadata field(s) found in payload: ${fields.map(field => s"'$field'").mkString(", ")}"
-      )
-
-  /**
     * Rejection returned when attempting to create/update a resource with a reserved id.
     */
   final case class ReservedResourceId(id: Iri)
@@ -223,7 +215,6 @@ object ResourceRejection {
     case UnexpectedId(id, payloadIri)                      => UnexpectedResourceId(id, payloadIri)
     case JsonLdRejection.InvalidJsonLdFormat(id, rdfError) => InvalidJsonLdFormat(id, rdfError)
     case BlankId                                           => BlankResourceId
-    case JsonLdRejection.UnexpectedMetadataFields(fields)  => UnexpectedMetadataFields(fields)
   }
 
   implicit val resourceRejectionEncoder: Encoder.AsObject[ResourceRejection] =

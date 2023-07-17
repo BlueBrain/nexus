@@ -27,17 +27,6 @@ object JsonLdRejection {
   case object BlankId extends InvalidJsonLdRejection(s"Id was blank.")
 
   /**
-    * Rejection indicating nexus metadata fields were found in the payload. Users should not be setting these.
-    *
-    * @param fields
-    *   the metadata fields found in the payload
-    */
-  final case class UnexpectedMetadataFields(fields: Set[String])
-      extends InvalidJsonLdRejection(
-        s"Metadata field(s) found in payload: ${fields.map(field => s"'$field'").mkString(", ")}"
-      )
-
-  /**
     * Rejection when converting the source Json to JsonLD fails
     *
     * @param id
