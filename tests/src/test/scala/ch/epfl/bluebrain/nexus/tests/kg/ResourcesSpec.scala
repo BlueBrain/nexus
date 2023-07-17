@@ -260,7 +260,7 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
     "fail if the payload contains nexus metadata fields (underscore fields)" in {
       val payload = jsonContentOf(
         "/kg/resources/simple-resource.json",
-        "priority" -> "3",
+        "priority"   -> "3",
         "resourceId" -> "1"
       ).deepMerge(json"""{"_self":  "http://delta/resources/path"}""")
 

@@ -188,8 +188,7 @@ object JsonLdSourceProcessor {
   }
 
   object JsonLdSourceResolvingParser {
-    def apply[R](contextResolution: ResolverContextResolution, uuidF: UUIDF)(
-        implicit
+    def apply[R](contextResolution: ResolverContextResolution, uuidF: UUIDF)(implicit
         api: JsonLdApi,
         rejectionMapper: Mapper[InvalidJsonLdRejection, R]
     ): JsonLdSourceResolvingParser[R] =

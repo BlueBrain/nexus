@@ -15,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.{FetchResource, ResourceResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport.ResolverReport
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{ResolverResolutionRejection, ResourceResolutionReport}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.NexusSource.DecodingOption
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{BlankResourceId, IncorrectRev, InvalidJsonLdFormat, InvalidResource, InvalidSchemaRejection, ProjectContextRejection, ResourceAlreadyExists, ResourceIsDeprecated, ResourceNotFound, RevisionNotFound, SchemaIsDeprecated, TagNotFound, UnexpectedResourceId, UnexpectedResourceSchema}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -83,7 +84,7 @@ class ResourcesImplSpec
     Set(projectDeprecated.ref),
     ProjectContextRejection
   )
-  private val config       = ResourcesConfig(eventLogConfig)
+  private val config       = ResourcesConfig(eventLogConfig, DecodingOption.Strict)
 
   private val resolverContextResolution: ResolverContextResolution = new ResolverContextResolution(
     res,
@@ -111,12 +112,12 @@ class ResourcesImplSpec
     val myId9  = nxv + "myid9" // Resource created against the resource schema with id present on the payload and having its context pointing on metadata and myId8 so therefore myId1 and myId2
 
     // format: on
-    val resourceSchema          = Latest(schemas.resources)
-    val myId2                   = nxv + "myid2" // Resource created against the schema1 with id present on the payload
-    val types                   = Set(nxv + "Custom")
-    val source                  = jsonContentOf("resources/resource.json", "id" -> myId)
-    def sourceWithBlankId       = source deepMerge json"""{"@id": ""}"""
-    val tag                     = UserTag.unsafe("tag")
+    val resourceSchema    = Latest(schemas.resources)
+    val myId2             = nxv + "myid2" // Resource created against the schema1 with id present on the payload
+    val types             = Set(nxv + "Custom")
+    val source            = jsonContentOf("resources/resource.json", "id" -> myId)
+    def sourceWithBlankId = source deepMerge json"""{"@id": ""}"""
+    val tag               = UserTag.unsafe("tag")
 
     "creating a resource" should {
       "succeed with the id present on the payload" in {

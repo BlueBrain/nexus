@@ -22,6 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources.{read => Read, write => Write}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.NexusSource.DecodingOption
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.{NexusSource, Resources}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{InvalidJsonLdFormat, InvalidSchemaRejection, ResourceNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{Resource, ResourceRejection}
@@ -55,7 +56,8 @@ final class ResourcesRoutes(
     s: Scheduler,
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering,
-    fusionConfig: FusionConfig
+    fusionConfig: FusionConfig,
+    decodingOption: DecodingOption
 ) extends AuthDirectives(identities, aclCheck)
     with CirceUnmarshalling
     with RdfMarshalling {
@@ -75,15 +77,16 @@ final class ResourcesRoutes(
           resolveProjectRef.apply { ref =>
             concat(
               // Create a resource without schema nor id segment
-              (post & pathEndOrSingleSlash & noParameter("rev") & entity(as[NexusSource]) & indexingMode) { (source, mode) =>
-                operationName(s"$prefixSegment/resources/{org}/{project}") {
-                  authorizeFor(ref, Write).apply {
-                    emit(
-                      Created,
-                      resources.create(ref, resourceSchema, source.value).tapEval(index(ref, _, mode)).map(_.void)
-                    )
+              (post & pathEndOrSingleSlash & noParameter("rev") & entity(as[NexusSource]) & indexingMode) {
+                (source, mode) =>
+                  operationName(s"$prefixSegment/resources/{org}/{project}") {
+                    authorizeFor(ref, Write).apply {
+                      emit(
+                        Created,
+                        resources.create(ref, resourceSchema, source.value).tapEval(index(ref, _, mode)).map(_.void)
+                      )
+                    }
                   }
-                }
               },
               (idSegment & indexingMode) { (schema, mode) =>
                 val schemaOpt = underscoreToOption(schema)
@@ -284,7 +287,8 @@ object ResourcesRoutes {
       s: Scheduler,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering,
-      fusionConfig: FusionConfig
+      fusionConfig: FusionConfig,
+      decodingOption: DecodingOption
   ): Route = new ResourcesRoutes(identities, aclCheck, resources, projectsDirectives, index).routes
 
   implicit private val api: JsonLdApi = JsonLdJavaApi.lenient

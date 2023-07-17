@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resources
 
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.NexusSource.DecodingOption
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import pureconfig.ConfigReader
 import pureconfig.generic.semiauto.deriveReader
@@ -10,7 +11,7 @@ import pureconfig.generic.semiauto.deriveReader
   * @param eventLog
   *   configuration of the event log
   */
-final case class ResourcesConfig(eventLog: EventLogConfig)
+final case class ResourcesConfig(eventLog: EventLogConfig, decodingOption: DecodingOption)
 
 object ResourcesConfig {
   implicit final val resourcesConfigReader: ConfigReader[ResourcesConfig] =

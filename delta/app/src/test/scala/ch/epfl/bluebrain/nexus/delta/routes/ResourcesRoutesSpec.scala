@@ -22,6 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.FetchResource
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.NexusSource.DecodingOption
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.{Resources, ResourcesConfig, ResourcesImpl, ValidateResource, ValidateResourceImpl}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
@@ -59,15 +60,17 @@ class ResourcesRoutesSpec extends BaseRouteSpec {
   private val schema1      = SchemaGen.schema(nxv + "myschema", project.value.ref, schemaSource.removeKeys(keywords.id))
   private val schema2      = SchemaGen.schema(schema.Person, project.value.ref, schemaSource.removeKeys(keywords.id))
 
-  private val myId                = nxv + "myid"  // Resource created against no schema with id present on the payload
-  private val myId2               = nxv + "myid2" // Resource created against schema1 with id present on the payload
-  private val myId3               = nxv + "myid3" // Resource created against no schema with id passed and present on the payload
-  private val myId4               = nxv + "myid4" // Resource created against schema1 with id passed and present on the payload
-  private val myIdEncoded         = UrlUtils.encode(myId.toString)
-  private val myId2Encoded        = UrlUtils.encode(myId2.toString)
-  private val payload             = jsonContentOf("resources/resource.json", "id" -> myId)
-  private val payloadWithBlankId  = jsonContentOf("resources/resource.json", "id" -> "")
-  private val payloadWithMetadata = jsonContentOf("resources/resource-with-metadata.json", "id" -> myId)
+  private val myId                        = nxv + "myid"  // Resource created against no schema with id present on the payload
+  private val myId2                       = nxv + "myid2" // Resource created against schema1 with id present on the payload
+  private val myId3                       = nxv + "myid3" // Resource created against no schema with id passed and present on the payload
+  private val myId4                       = nxv + "myid4" // Resource created against schema1 with id passed and present on the payload
+  private val myIdEncoded                 = UrlUtils.encode(myId.toString)
+  private val myId2Encoded                = UrlUtils.encode(myId2.toString)
+  private val payload                     = jsonContentOf("resources/resource.json", "id" -> myId)
+  private val payloadWithBlankId          = jsonContentOf("resources/resource.json", "id" -> "")
+  private val payloadWithUnderscoreFields =
+    jsonContentOf("resources/resource-with-underscore-fields.json", "id" -> myId)
+  private val payloadWithMetadata         = jsonContentOf("resources/resource-with-metadata.json", "id" -> myId)
 
   private val aclCheck = AclSimpleCheck().accepted
 
@@ -83,18 +86,26 @@ class ResourcesRoutesSpec extends BaseRouteSpec {
     rcr,
     (_, _, _) => IO.raiseError(ResourceResolutionReport())
   )
-  private val config                                                          = ResourcesConfig(eventLogConfig)
 
-  private lazy val routes =
+  private def routesWithDecodingOption(implicit decodingOption: DecodingOption) = {
     Route.seal(
       ResourcesRoutes(
         IdentitiesDummy(caller),
         aclCheck,
-        ResourcesImpl(validator, fetchContext, resolverContextResolution, config, xas),
+        ResourcesImpl(
+          validator,
+          fetchContext,
+          resolverContextResolution,
+          ResourcesConfig(eventLogConfig, decodingOption),
+          xas
+        ),
         DeltaSchemeDirectives(fetchContext, ioFromMap(uuid -> projectRef.organization), ioFromMap(uuid -> projectRef)),
         IndexingAction.noop
       )
     )
+  }
+
+  private lazy val routes = routesWithDecodingOption(DecodingOption.Strict)
 
   private val payloadUpdated = payload deepMerge json"""{"name": "Alice", "address": null}"""
 
@@ -167,6 +178,26 @@ class ResourcesRoutesSpec extends BaseRouteSpec {
         response.status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual jsonContentOf(
           "/resources/errors/blank-id.json"
+        )
+      }
+    }
+
+    "fail if underscore fields are present" in {
+      Post("/v1/resources/myorg/myproject/_/", payloadWithUnderscoreFields.toEntity) ~> routes ~> check {
+        response.status shouldEqual StatusCodes.BadRequest
+        response.asJson shouldEqual jsonContentOf(
+          "/resources/errors/underscore-fields.json"
+        )
+      }
+    }
+
+    "succeed if underscore fields are present but the decoding is set to lenient" in {
+      val lenientDecodingRoutes = routesWithDecodingOption(DecodingOption.Lenient)
+
+      Post("/v1/resources/myorg/myproject/_/", payloadWithUnderscoreFields.toEntity) ~> lenientDecodingRoutes ~> check {
+        response.status shouldEqual StatusCodes.BadRequest
+        response.asJson shouldEqual jsonContentOf(
+          "/resources/errors/underscore-fields.json"
         )
       }
     }
