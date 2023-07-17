@@ -382,8 +382,8 @@ CONSTRUCT {
         ?protocolId  schema:value       ?protocolValue      .
       } .
     } .
-    OPTIONAL { ?generation  prov:startedAtTime / schema:value  ?generationStartedAtTime . } .
-    OPTIONAL { ?generation  prov:endedAtTime / schema:value    ?generationEndedAtTime . }   .
+    OPTIONAL { ?generation  prov:startedAtTime  ?generationStartedAtTime . } .
+    OPTIONAL { ?generation  prov:endedAtTime    ?generationEndedAtTime   . } .
   }
 
   # Image

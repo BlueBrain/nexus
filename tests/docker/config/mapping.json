@@ -116,6 +116,21 @@
       "properties": {
         "value": { "type": "double" }
       }
+    },
+    "neuronDensity": {
+      "properties": {
+        "value": { "type": "double" }
+      }
+    },
+    "layerThickness": {
+      "properties": {
+        "value": { "type": "double" }
+      }
+    },
+    "boutonDensity": {
+      "properties": {
+        "value": { "type": "double" }
+      }
     }
   }
 }
