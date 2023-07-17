@@ -1,0 +1,9 @@
+{
+  "@context": [
+    "https://bbp.neuroshapes.org"
+  ],
+  "@type": "SimulationCampaignConfiguration",
+  "@id": "https://bbp.epfl.ch/neurosciencegraph/data/simulation-campaign-configuration",
+  "description": "SBO Simulation campaign test",
+  "name": "SBO Simulation campaign test"
+}

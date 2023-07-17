@@ -51,6 +51,12 @@
   "updatedAt": {
     "@type": "http://www.w3.org/2001/XMLSchema#dateTime"
   },
+  "startedAt": {
+    "@type": "http://www.w3.org/2001/XMLSchema#dateTime"
+  },
+  "endedAt": {
+    "@type": "http://www.w3.org/2001/XMLSchema#dateTime"
+  },
   "_self": {
     "@type": "@id",
     "@id": "https://bluebrain.github.io/nexus/field/self"

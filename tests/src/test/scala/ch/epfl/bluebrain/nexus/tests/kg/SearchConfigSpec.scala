@@ -8,19 +8,24 @@ import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Organizations, Resour
 import io.circe.Json
 import monix.bio.Task
 import org.scalatest.Assertion
+import concurrent.duration._
 
 class SearchConfigSpec extends BaseSpec {
+
+  implicit override def patienceConfig: PatienceConfig = PatienceConfig(config.patience * 2, 300.millis)
 
   private val orgId    = genId()
   private val projId1  = genId()
   private val id1      = s"$orgId/$projId1"
   private val projects = List(id1)
 
-  private val neuronMorphologyId = "https://bbp.epfl.ch/data/neuron-morphology"
-  private val neuronDensityId    = "https://bbp.epfl.ch/data/neuron-density"
-  private val traceId            = "https://bbp.epfl.ch/data/trace"
-  private val layerThicknessId   = "https://bbp.epfl.ch/data/layer-thickness"
-  private val boutonDensityId    = "https://bbp.epfl.ch/data/bouton-density"
+  private val neuronMorphologyId   = "https://bbp.epfl.ch/data/neuron-morphology"
+  private val neuronDensityId      = "https://bbp.epfl.ch/data/neuron-density"
+  private val traceId              = "https://bbp.epfl.ch/data/trace"
+  private val layerThicknessId     = "https://bbp.epfl.ch/data/layer-thickness"
+  private val boutonDensityId      = "https://bbp.epfl.ch/data/bouton-density"
+  private val simulationCampaignId = "https://bbp.epfl.ch/data/simulation-campaign"
+  private val simulationId         = "https://bbp.epfl.ch/data/simulation"
 
   // the resources that should appear in the search index
   private val mainResources  = List(
@@ -29,7 +34,12 @@ class SearchConfigSpec extends BaseSpec {
     "/kg/search/neuron-morphology.json",
     "/kg/search/neuron-density.json",
     "/kg/search/layer-thickness.json",
-    "/kg/search/bouton-density.json"
+    "/kg/search/bouton-density.json",
+    "/kg/search/data/simulations/simulation-campaign-configuration.json",
+    "/kg/search/data/simulations/simulation-campaign-execution.json",
+    "/kg/search/data/simulations/simulation-campaign.json",
+    "/kg/search/data/simulations/simulation.json",
+    "/kg/search/data/simulations/analysis-report-simulation.json"
   )
   private val otherResources = List(
     "/kg/search/article.json",
@@ -269,8 +279,8 @@ class SearchConfigSpec extends BaseSpec {
                 "value" : "https://doi.org/10.1016/j.cell.2015.09.029"
               }
             ],
-            "startedAt" : "2015-01-21T00:00:00",
-            "endedAt" : "2015-05-01T00:00:00"
+            "startedAt" : "2015-01-21T00:00:00.000Z",
+            "endedAt" : "2015-05-01T00:00:00.000Z"
           }
         }
             """
@@ -553,6 +563,124 @@ class SearchConfigSpec extends BaseSpec {
     "have the correct sType property" in {
       // there are no resources with this field yet
       pending
+    }
+
+    "have the correct configuration for a simulation campaign" in {
+      val query    = queryField(simulationCampaignId, "config")
+      val expected =
+        json"""{
+                "config" : {
+                  "@id" : "https://bbp.epfl.ch/neurosciencegraph/data/simulation-campaign-configuration",
+                  "identifier" : "https://bbp.epfl.ch/neurosciencegraph/data/simulation-campaign-configuration",
+                  "name" : "SBO Simulation campaign test"
+                }
+               }"""
+
+      assertOneSource(query) { json =>
+        json should equalIgnoreArrayOrder(expected)
+      }
+    }
+
+    "have the correct status for a simulation campaign" in {
+      val query    = queryField(simulationCampaignId, "status")
+      val expected = json"""{ "status" : "Running" }"""
+
+      assertOneSource(query) { json =>
+        json should equalIgnoreArrayOrder(expected)
+      }
+    }
+
+    "have the correct attributes for a simulation campaign" in {
+      val query    = queryField(simulationCampaignId, "attrs")
+      val expected =
+        json"""{
+             "attrs" : {
+               "blue_config_template" : "simulation.tmpl",
+               "circuit_config" : "/path/to/circuit_config.json",
+               "duration" : 1000,
+               "path_prefix" : "/home/simulations",
+               "user_target" : "target.json"
+             }
+         }"""
+
+      assertOneSource(query) { json =>
+        json should equalIgnoreArrayOrder(expected)
+      }
+    }
+
+    "have the correct coords for a simulation campaign" in {
+      val query    = queryField(simulationCampaignId, "coords")
+      val expected =
+        json"""{
+             "coords" : {
+               "depol_stdev_mean_ratio" : [ 0.2, 0.3, 0.4 ],
+               "sample" : [ "small", "medium", "big" ],
+               "seed" : 273986
+             }
+         }"""
+
+      assertOneSource(query) { json =>
+        json should equalIgnoreArrayOrder(expected)
+      }
+    }
+
+    "have the correct campaign for a simulation" in {
+      val query    = queryField(simulationId, "campaign")
+      val expected =
+        json"""{
+           "campaign" : {
+             "@id" : "https://bbp.epfl.ch/data/simulation-campaign",
+             "identifier" : "https://bbp.epfl.ch/data/simulation-campaign",
+             "name" : "Simulation campaign"
+           }
+        }"""
+
+      assertOneSource(query) { json =>
+        json should equalIgnoreArrayOrder(expected)
+      }
+    }
+
+    "have the correct status for a simulation" in {
+      val query    = queryField(simulationId, "status")
+      val expected = json"""{ "status" : "Done" }"""
+
+      assertOneSource(query) { json =>
+        json should equalIgnoreArrayOrder(expected)
+      }
+    }
+
+    "have the correct startedAt for a simulation" in {
+      val query    = queryField(simulationId, "startedAt")
+      val expected = json"""{ "startedAt" : "2023-07-05T11:00:00.000Z" }"""
+
+      assertOneSource(query) { json =>
+        json should equalIgnoreArrayOrder(expected)
+      }
+    }
+
+    "have the correct endedAt for a simulation" in {
+      val query    = queryField(simulationId, "endedAt")
+      val expected = json"""{ "endedAt" : "2023-07-12T15:00:00.000Z" }"""
+
+      assertOneSource(query) { json =>
+        json should equalIgnoreArrayOrder(expected)
+      }
+    }
+
+    "have the correct coords for a simulation" in {
+      val query    = queryField(simulationId, "coords")
+      val expected =
+        json"""{
+             "coords" : {
+               "depol_stdev_mean_ratio" : 0.4,
+               "sample" : "medium",
+               "seed" : 273986
+             }
+           }"""
+
+      assertOneSource(query) { json =>
+        json should equalIgnoreArrayOrder(expected)
+      }
     }
 
   }

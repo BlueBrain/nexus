@@ -43,6 +43,7 @@ val jsonldjavaVersion       = "0.13.4"
 val kamonVersion            = "2.6.3"
 val kanelaAgentVersion      = "1.0.17"
 val kindProjectorVersion    = "0.13.2"
+val log4catsVersion         = "1.7.0"
 val logbackVersion          = "1.4.8"
 val magnoliaVersion         = "1.1.3"
 val mockitoVersion          = "1.17.14"
@@ -108,6 +109,7 @@ lazy val kamonAkkaHttp      = "io.kamon"                     %% "kamon-akka-http
 lazy val kamonCore          = "io.kamon"                     %% "kamon-core"               % kamonVersion
 lazy val kanelaAgent        = "io.kamon"                      % "kanela-agent"             % kanelaAgentVersion
 lazy val kindProjector      = "org.typelevel"                %% "kind-projector"           % kindProjectorVersion cross CrossVersion.full
+lazy val log4cats           = "org.typelevel"                %% "log4cats-slf4j"           % log4catsVersion
 lazy val logback            = "ch.qos.logback"                % "logback-classic"          % logbackVersion
 lazy val magnolia           = "com.softwaremill.magnolia1_2" %% "magnolia"                 % magnoliaVersion
 lazy val mockito            = "org.mockito"                  %% "mockito-scala"            % mockitoVersion
@@ -210,6 +212,7 @@ lazy val kernel = project
       handleBars,
       monixBio,
       kamonCore,
+      log4cats,
       pureconfig,
       scalaLogging,
       scalaTest % Test
