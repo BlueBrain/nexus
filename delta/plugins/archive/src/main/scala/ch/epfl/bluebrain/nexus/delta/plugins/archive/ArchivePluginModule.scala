@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.archive
 
 import cats.effect.Clock
-import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.contexts
@@ -19,6 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef, MetadataC
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
+import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import com.typesafe.config.Config
 import izumi.distage.model.definition.{Id, ModuleDef}

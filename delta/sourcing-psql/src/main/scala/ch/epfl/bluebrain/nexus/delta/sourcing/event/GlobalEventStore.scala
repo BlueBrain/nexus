@@ -1,8 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.event
 
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
-import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
+import ch.epfl.bluebrain.nexus.delta.sourcing.{Serializer, Transactors}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.GlobalEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.IriInstances

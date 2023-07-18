@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.wiring
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
-import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
@@ -17,6 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, MetadataContextValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.{Organizations, OrganizationsImpl}
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
+import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
 import monix.execution.Scheduler

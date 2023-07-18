@@ -1,7 +1,7 @@
-package ch.epfl.bluebrain.nexus.testkit
+package ch.epfl.bluebrain.nexus.delta.sourcing.postgres
 
-import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
-import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresDocker
+import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
+import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
 import monix.bio.Task
 import monix.execution.Scheduler
 import org.scalatest.BeforeAndAfterAll

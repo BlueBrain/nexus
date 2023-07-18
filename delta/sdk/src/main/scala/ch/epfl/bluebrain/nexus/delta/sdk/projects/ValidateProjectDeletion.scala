@@ -1,9 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.projects
 
-import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.{ProjectDeletionIsDisabled, ProjectIsReferenced}
-import ch.epfl.bluebrain.nexus.delta.sourcing.EntityDependencyStore
+import ch.epfl.bluebrain.nexus.delta.sourcing.{EntityDependencyStore, Transactors}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityDependency.ReferencedBy
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import monix.bio.{IO, UIO}

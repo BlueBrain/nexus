@@ -216,7 +216,7 @@ lazy val kernel = project
       pureconfig,
       scalaLogging,
       scalaTest % Test
-    ) ++ doobie,
+    ),
     addCompilerPlugin(kindProjector),
     coverageFailOnMinimum    := false
   )
@@ -242,7 +242,7 @@ lazy val testkit = project
       munit,
       scalaTest,
       testContainers
-    ),
+    ) ++ doobie,
     addCompilerPlugin(kindProjector)
   )
 

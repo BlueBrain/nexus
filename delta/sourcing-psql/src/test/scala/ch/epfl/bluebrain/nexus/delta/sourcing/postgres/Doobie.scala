@@ -1,10 +1,11 @@
-package ch.epfl.bluebrain.nexus.testkit.postgres
+package ch.epfl.bluebrain.nexus.delta.sourcing.postgres
 
 import cats.effect.Resource
 import cats.implicits.toTraverseOps
-import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
+import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.testkit.bio.ResourceFixture.TaskFixture
 import ch.epfl.bluebrain.nexus.testkit.bio.{BioSuite, ResourceFixture}
+import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresContainer
 import doobie.postgres.sqlstate
 import monix.bio.{IO, Task, UIO}
 import munit.Location

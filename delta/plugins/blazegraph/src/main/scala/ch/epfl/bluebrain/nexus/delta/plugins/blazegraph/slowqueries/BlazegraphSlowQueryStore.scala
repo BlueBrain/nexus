@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries
 
-import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries.model.BlazegraphSlowQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import doobie.implicits._
 import doobie.postgres.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._

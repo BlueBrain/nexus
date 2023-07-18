@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Identity, Proje
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
 import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
-import ch.epfl.bluebrain.nexus.testkit.postgres.Doobie
+import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import doobie.implicits._
 import io.circe.Codec
 import io.circe.generic.extras.Configuration

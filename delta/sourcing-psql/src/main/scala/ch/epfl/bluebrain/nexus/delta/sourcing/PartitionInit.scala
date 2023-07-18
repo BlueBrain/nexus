@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors.PartitionsCache
+import Transactors.PartitionsCache
 import ch.epfl.bluebrain.nexus.delta.sourcing.PartitionInit.{createOrgPartition, createProjectPartition, projectRefHash}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import doobie.Fragment

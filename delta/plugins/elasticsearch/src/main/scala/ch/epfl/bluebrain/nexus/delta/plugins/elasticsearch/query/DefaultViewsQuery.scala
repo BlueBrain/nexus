@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query
 
 import akka.http.scaladsl.model.Uri
-import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.permissions
@@ -12,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{AggregationResult, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.View.IndexingView
-import ch.epfl.bluebrain.nexus.delta.sourcing.Predicate
+import ch.epfl.bluebrain.nexus.delta.sourcing.{Predicate, Transactors}
 import io.circe.JsonObject
 import monix.bio.{IO, UIO}
 

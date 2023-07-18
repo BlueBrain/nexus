@@ -1,15 +1,15 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.projects
 
 import cats.effect.Clock
-import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.ScopeInitialization
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects.FetchOrganization
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
+import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.bio.ResourceFixture
-import ch.epfl.bluebrain.nexus.testkit.postgres.Doobie
+import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import monix.bio.UIO
 
 import java.util.UUID

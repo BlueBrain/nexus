@@ -1,6 +1,7 @@
-package ch.epfl.bluebrain.nexus.testkit.postgres
+package ch.epfl.bluebrain.nexus.delta.sourcing.postgres
 
-import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresDocker._
+import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.PostgresDocker._
+import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresContainer
 import org.scalatest.{BeforeAndAfterAll, Suite}
 
 import scala.concurrent.duration._

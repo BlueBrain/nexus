@@ -18,7 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.utils.Fixtures
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.SupervisorSetup
 import ch.epfl.bluebrain.nexus.testkit.bio.{BioSuite, PatienceConfig}
-import ch.epfl.bluebrain.nexus.testkit.postgres.Doobie
+import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import io.circe.JsonObject
 import munit.AnyFixture
 

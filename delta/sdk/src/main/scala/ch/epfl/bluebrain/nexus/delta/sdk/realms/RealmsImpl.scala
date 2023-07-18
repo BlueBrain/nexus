@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk.realms
 import akka.http.scaladsl.model.Uri
 import cats.data.NonEmptySet
 import cats.effect.Clock
-import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.sdk.RealmResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model._

@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.{BatchConfig, ProjectionCon
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projections
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.testkit.bio.{BioSuite, ResourceFixture}
-import ch.epfl.bluebrain.nexus.testkit.postgres.Doobie
+import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import monix.bio.{Task, UIO}
 
 import scala.concurrent.duration._

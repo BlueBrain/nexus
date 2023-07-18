@@ -1,11 +1,12 @@
-package ch.epfl.bluebrain.nexus.delta.kernel.database
+package ch.epfl.bluebrain.nexus.delta.sourcing
 
 import cats.effect.{Blocker, Resource}
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.{CacheConfig, KeyValueStore}
-import ch.epfl.bluebrain.nexus.delta.kernel.database.DatabaseConfig.DatabaseAccess
-import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors.PartitionsCache
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseConfig.DatabaseAccess
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
+import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors.PartitionsCache
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseConfig
 import com.zaxxer.hikari.HikariDataSource
 import doobie.Fragment
 import doobie.hikari.HikariTransactor
@@ -14,7 +15,7 @@ import doobie.util.ExecutionContexts
 import doobie.util.transactor.Transactor
 import monix.bio.Task
 
-import concurrent.duration._
+import scala.concurrent.duration._
 
 /**
   * Allow to define different transactors (and connection pools) for the different query purposes
