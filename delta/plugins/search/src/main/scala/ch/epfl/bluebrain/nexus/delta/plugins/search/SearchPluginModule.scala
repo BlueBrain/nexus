@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.search
 
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeProjectionLifeCycle
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
@@ -11,7 +12,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Supervisor
 import distage.ModuleDef
 import io.circe.syntax.EncoderOps
 import izumi.distage.model.definition.Id
@@ -56,20 +56,13 @@ class SearchPluginModule(priority: Int) extends ModuleDef {
     PriorityRoute(priority, route.routes, requiresStrictEntity = true)
   }
 
-  make[SearchConfigUpdater].fromEffect {
+  many[CompositeProjectionLifeCycle.Hook].add {
     (
-        supervisor: Supervisor,
         compositeViews: CompositeViews,
         config: SearchConfig,
         baseUri: BaseUri,
         serviceAccount: ServiceAccount
-    ) =>
-      SearchConfigUpdater(
-        supervisor,
-        compositeViews,
-        config.defaults,
-        config.indexing
-      )(baseUri, serviceAccount.subject)
+    ) => SearchConfigHook(compositeViews, config.defaults, config.indexing)(baseUri, serviceAccount.subject)
   }
 
 }
