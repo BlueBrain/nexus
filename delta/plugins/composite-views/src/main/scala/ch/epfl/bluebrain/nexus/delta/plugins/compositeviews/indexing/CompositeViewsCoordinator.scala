@@ -31,7 +31,7 @@ object CompositeViewsCoordinator {
     * @param supervisor
     *   the general supervisor
     * @param lifecycle
-    *   how to pouet
+    *   defines how to init, run and destroy the projection related to the view
     */
   final private class Active(
       fetchViews: Offset => ElemStream[CompositeViewDef],

@@ -35,7 +35,7 @@ class CompositeProjectionLifeCycleSuite extends BioSuite with CompositeViewsFixt
         }
       }
     }
-  private def assertView(view: ActiveViewDef, hooks: Set[String])(implicit loc: Location)           =
+  private def assertViewHooks(view: ActiveViewDef, hooks: Set[String])(implicit loc: Location)      =
     for {
       triggeredHooks <- Ref.of[Task, Set[String]](Set.empty)
       indexing       <- Ref.of[Task, Option[ViewRef]](None)
@@ -63,16 +63,16 @@ class CompositeProjectionLifeCycleSuite extends BioSuite with CompositeViewsFixt
 
   test("Fall back to indexing when no hook is matched by the view") {
     val view = ActiveViewDef(ViewRef(project.ref, noHookView), UUID.randomUUID(), 1, viewValue)
-    assertView(view, Set.empty)
+    assertViewHooks(view, Set.empty)
   }
 
   test("Trigger the first hook when it is matched by the view and skip indexing") {
     val view = ActiveViewDef(ViewRef(project.ref, firstHookView), UUID.randomUUID(), 1, viewValue)
-    assertView(view, Set(firstHookName))
+    assertViewHooks(view, Set(firstHookName))
   }
 
   test("Trigger all matching hooks and skip indexing") {
     val view = ActiveViewDef(ViewRef(project.ref, allHooksView), UUID.randomUUID(), 1, viewValue)
-    assertView(view, Set(firstHookName, secondHookName))
+    assertViewHooks(view, Set(firstHookName, secondHookName))
   }
 }
