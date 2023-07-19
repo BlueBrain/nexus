@@ -260,6 +260,7 @@ lazy val sourcingPsql = project
       circeCore,
       circeGenericExtras,
       circeParser,
+      classgraph,
       distageCore,
       fs2,
       fs2io,
