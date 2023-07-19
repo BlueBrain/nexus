@@ -1,3 +1,6 @@
+-------------------------------
+-- Table for the Jira plugin --
+-------------------------------
 CREATE TABLE IF NOT EXISTS public.jira_tokens (
     realm text,
     subject text,

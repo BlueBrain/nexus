@@ -1,3 +1,6 @@
+----------------------------------
+-- Initial tables for Delta 1.8 --
+----------------------------------
 CREATE SEQUENCE IF NOT EXISTS public.event_offset;
 CREATE SEQUENCE IF NOT EXISTS public.state_offset;
 

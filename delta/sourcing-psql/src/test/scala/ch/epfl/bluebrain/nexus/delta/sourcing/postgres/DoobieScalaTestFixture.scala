@@ -16,24 +16,25 @@ trait DoobieScalaTestFixture
 
   implicit private val classLoader: ClassLoader = getClass.getClassLoader
 
-  var xas: Transactors                       = _
-  private var transactorTeardown: Task[Unit] = _
+  var xas: Transactors                = _
+  private var xasTeardown: Task[Unit] = _
 
   override def beforeAll(): Unit = {
-    implicit val s: Scheduler   = Scheduler.global
+    implicit val s: Scheduler = Scheduler.global
     super.beforeAll()
-    val (transactors, teardown) = Transactors
-      .test(container.getHost, container.getMappedPort(5432), "postgres", "postgres")
-      .allocated
+    val xasResource           = Transactors.test(container.getHost, container.getMappedPort(5432), "postgres", "postgres")
+    val (x, t)                = xasResource.allocated
+      .tapEval { case (x, _) =>
+        Transactors.dropAndCreateDDLs.flatMap(x.execDDLs)
+      }
       .runSyncUnsafe()
-    (transactors.execDDL("/scripts/drop-tables.ddl") >> transactors.execDDL("/scripts/schema.ddl")).runSyncUnsafe()
-    xas = transactors
-    transactorTeardown = teardown
+    xas = x
+    xasTeardown = t
   }
 
   override def afterAll(): Unit = {
     implicit val s: Scheduler = Scheduler.global
-    transactorTeardown.runSyncUnsafe()
+    xasTeardown.runSyncUnsafe()
     super.afterAll()
   }
 
