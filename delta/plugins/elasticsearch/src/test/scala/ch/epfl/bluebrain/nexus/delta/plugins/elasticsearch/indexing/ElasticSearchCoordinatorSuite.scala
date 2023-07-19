@@ -12,6 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionErr.CouldNotFindPipeErr
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.SupervisorSetup.unapply
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import ch.epfl.bluebrain.nexus.testkit.bio.{BioSuite, PatienceConfig}
@@ -34,10 +35,10 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
   private val indexingRev = 1
   private val rev         = 2
 
-  private lazy val (sv, projections) = supervisor()
-  private val project                = ProjectRef.unsafe("org", "proj")
-  private val id1                    = nxv + "view1"
-  private val view1                  = ActiveViewDef(
+  private lazy val (sv, projections, projectionErrors) = unapply(supervisor())
+  private val project                                  = ProjectRef.unsafe("org", "proj")
+  private val id1                                      = nxv + "view1"
+  private val view1                                    = ActiveViewDef(
     ViewRef(project, id1),
     projection = id1.toString,
     None,
@@ -234,7 +235,7 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
 
   test("There is one error for the coordinator projection before the signal") {
     for {
-      entries <- projections.failedElemEntries(ElasticSearchCoordinator.metadata.name, Offset.start).compile.toList
+      entries <- projectionErrors.failedElemEntries(ElasticSearchCoordinator.metadata.name, Offset.start).compile.toList
       r        = entries.assertOneElem
       _        = assertEquals(r.failedElemData.id, id3)
     } yield ()
@@ -242,7 +243,7 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
 
   test("There is one error for view 1") {
     for {
-      entries <- projections.failedElemEntries(view1.projection, Offset.start).compile.toList
+      entries <- projectionErrors.failedElemEntries(view1.projection, Offset.start).compile.toList
       r        = entries.assertOneElem
       _        = assertEquals(r.failedElemData.id, nxv + "failed")
       _        = assertEquals(r.failedElemData.entityType, PullRequest.entityType)
@@ -252,14 +253,14 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
 
   test("There is one error for view 2") {
     for {
-      entries <- projections.failedElemEntries(view2.projection, Offset.start).compile.toList
+      entries <- projectionErrors.failedElemEntries(view2.projection, Offset.start).compile.toList
       _        = entries.assertOneElem
     } yield ()
   }
 
   test("There are no errors for view 3") {
     for {
-      entries <- projections.failedElemEntries(view3.projection, Offset.start).compile.toList
+      entries <- projectionErrors.failedElemEntries(view3.projection, Offset.start).compile.toList
       _        = entries.assertEmpty()
     } yield ()
   }
@@ -306,7 +307,8 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
 
   test("Coordinator projection should have one error after failed elem offset 4") {
     for {
-      entries <- projections.failedElemEntries(ElasticSearchCoordinator.metadata.name, Offset.At(3L)).compile.toList
+      entries <-
+        projectionErrors.failedElemEntries(ElasticSearchCoordinator.metadata.name, Offset.At(3L)).compile.toList
       r        = entries.assertOneElem
       _        = assertEquals(r.failedElemData.id, nxv + "failed_coord")
     } yield ()
@@ -314,7 +316,7 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
 
   test("View 2_2 projection should have one error after failed elem offset 4") {
     for {
-      entries <- projections.failedElemEntries(updatedView2.projection, Offset.At(4L)).compile.toList
+      entries <- projectionErrors.failedElemEntries(updatedView2.projection, Offset.At(4L)).compile.toList
       r        = entries.assertOneElem
       _        = assertEquals(r.failedElemData.id, nxv + "failed")
     } yield ()

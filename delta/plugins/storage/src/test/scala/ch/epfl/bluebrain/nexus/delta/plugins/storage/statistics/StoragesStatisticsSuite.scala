@@ -10,6 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesStatistics
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageStatEntry
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.SupervisorSetup
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.SupervisorSetup.unapply
 import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
 import ch.epfl.bluebrain.nexus.testkit.bio.{BioSuite, PatienceConfig}
 import monix.bio.IO
@@ -28,8 +29,8 @@ class StoragesStatisticsSuite
 
   implicit private val patience: PatienceConfig = PatienceConfig(2.seconds, 10.milliseconds)
 
-  private lazy val client  = esClient()
-  private lazy val (sv, _) = supervisor()
+  private lazy val client     = esClient()
+  private lazy val (sv, _, _) = unapply(supervisor())
 
   private lazy val sink   = ElasticSearchSink.events(client, 2, 50.millis, index, Refresh.False)
   private val indexPrefix = "delta"

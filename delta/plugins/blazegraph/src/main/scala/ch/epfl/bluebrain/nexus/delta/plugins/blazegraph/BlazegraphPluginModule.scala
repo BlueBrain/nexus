@@ -32,7 +32,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projections
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionErrors, Projections}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{ReferenceRegistry, Supervisor}
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
@@ -179,6 +179,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         aclCheck: AclCheck,
         views: BlazegraphViews,
         projections: Projections,
+        projectionErrors: ProjectionErrors,
         viewsQuery: BlazegraphViewsQuery,
         schemeDirectives: DeltaSchemeDirectives,
         indexingAction: IndexingAction @Id("aggregate"),
@@ -196,6 +197,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         identities,
         aclCheck,
         projections,
+        projectionErrors,
         schemeDirectives,
         indexingAction(_, _, _)(shift, cr)
       )(
