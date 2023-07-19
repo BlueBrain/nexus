@@ -15,7 +15,7 @@
       "@type": "sh:NodeShape",
       "nodeKind": "sh:BlankNodeOrIRI",
       "targetClass": [
-        "nxv:TestResource"
+        "{{targetClass}}"
       ],
       "property": [
         {
