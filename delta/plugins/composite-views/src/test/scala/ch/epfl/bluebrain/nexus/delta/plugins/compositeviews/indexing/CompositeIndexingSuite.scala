@@ -25,7 +25,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearch
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, rdf, rdfs, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
@@ -539,7 +539,8 @@ class CompositeIndexingSuite
 
 object CompositeIndexingSuite extends IOFixedClock {
 
-  implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
+  implicit private val baseUri: BaseUri             = BaseUri("http://localhost", Label.unsafe("v1"))
+  implicit private val rcr: RemoteContextResolution = RemoteContextResolution.never
 
   private val queryConfig: QueryConfig = QueryConfig(10, RefreshStrategy.Delay(10.millis))
   val batchConfig: BatchConfig         = BatchConfig(2, 50.millis)
@@ -552,7 +553,7 @@ object CompositeIndexingSuite extends IOFixedClock {
         val compositeRestartStore = new CompositeRestartStore(xas)
         val projections           =
           CompositeProjections(compositeRestartStore, xas, queryConfig, batchConfig, 3.seconds)
-        val spacesBuilder         = CompositeSpaces.Builder("delta", esClient, batchConfig, bgClient, batchConfig)(baseUri)
+        val spacesBuilder         = CompositeSpaces.Builder("delta", esClient, batchConfig, bgClient, batchConfig)(baseUri, rcr)
         (esClient, bgClient, projections, spacesBuilder)
     }
   }

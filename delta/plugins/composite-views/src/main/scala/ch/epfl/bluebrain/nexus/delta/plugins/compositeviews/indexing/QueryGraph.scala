@@ -8,12 +8,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Graph, NTriples}
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Pipe
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, PipeRef}
 import com.typesafe.scalalogging.Logger
 import monix.bio.Task
-import shapeless.Typeable
 
 import java.util.regex.Pattern.quote
 
@@ -26,13 +23,7 @@ import java.util.regex.Pattern.quote
   * @param query
   *   the query to perform on each resource
   */
-final class QueryGraph(client: BlazegraphClient, namespace: String, query: SparqlConstructQuery) extends Pipe {
-
-  override type In  = GraphResource
-  override type Out = GraphResource
-  override def ref: PipeRef                     = QueryGraph.ref
-  override def inType: Typeable[GraphResource]  = Typeable[GraphResource]
-  override def outType: Typeable[GraphResource] = Typeable[GraphResource]
+final case class QueryGraph(client: BlazegraphClient, namespace: String, query: SparqlConstructQuery) {
 
   private def newGraph(ntriples: NTriples, id: Iri): Task[Option[Graph]] =
     if (ntriples.isEmpty) {
@@ -43,7 +34,7 @@ final class QueryGraph(client: BlazegraphClient, namespace: String, query: Sparq
         Some(g.replaceRootNode(id))
       }
 
-  override def apply(element: SuccessElem[GraphResource]): Task[Elem[GraphResource]] =
+  def apply(element: Elem[GraphResource]): Task[Elem[GraphResource]] =
     for {
       ntriples    <- client.query(Set(namespace), replaceId(query, element.id), SparqlNTriples)
       graphResult <- newGraph(ntriples.value, element.id)

@@ -9,14 +9,10 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.GraphResourceToNTriples
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.{Interval, RebuildStrategy}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeViewProjection, CompositeViewSource, CompositeViewState, CompositeViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.projections.CompositeProjections
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.{CompositeBranch, CompositeGraphStream, CompositeProgress}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.GraphResourceToDocument
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemPipe, ElemStream, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
@@ -131,14 +127,14 @@ object CompositeViewDef {
       compilePipeChain: PipeChain.Compile,
       graphStream: CompositeGraphStream,
       compositeProjections: CompositeProjections
-  )(implicit cr: RemoteContextResolution): Task[CompiledProjection] = {
+  ): Task[CompiledProjection] = {
     val metadata                              = view.metadata
     val fetchProgress: UIO[CompositeProgress] = compositeProjections.progress(view.ref, view.rev)
 
     def compileSource =
       CompositeViewDef.compileSource(view.ref.project, compilePipeChain, graphStream, spaces.commonSink)(_)
 
-    def compileTarget = CompositeViewDef.compileTarget(compilePipeChain, spaces.queryPipe, spaces.targetSink)(_)
+    def compileTarget = CompositeViewDef.compileTarget(compilePipeChain, spaces.targetSink)(_)
 
     def compileAll(progressRef: Ref[Task, CompositeProgress]) = {
       def rebuild: ElemPipe[Unit, Unit] = CompositeViewDef.rebuild(
@@ -480,65 +476,26 @@ object CompositeViewDef {
 
   /**
     * Compiles a composite projection into an operation
+    *
     * @param target
     *   the composite view projection
     * @param compilePipeChain
     *   how to compile the pipe chain of the composite view projection
-    * @param queryPipe
-    *   how to instantiate the query pipe at the beginning of the projection
     * @param targetSink
     *   how to instantiate the target sink
-    * @param cr
-    *   the remote context resolution for ES projections
     */
   def compileTarget(
       compilePipeChain: PipeChain.Compile,
-      queryPipe: SparqlConstructQuery => Operation,
       targetSink: CompositeViewProjection => Sink
-  )(target: CompositeViewProjection)(implicit cr: RemoteContextResolution): Task[(Iri, Operation)] = Task.fromEither {
-    val query = queryPipe(target.query)
-    val sink  = targetSink(target)
-    target match {
-      case e: ElasticSearchProjection => compileElasticsearch(e, compilePipeChain, query, sink)
-      case s: SparqlProjection        => compileSparql(s, compilePipeChain, query, sink)
-    }
-  }
-
-  // Compiling an Elasticsearch projection of a composite view
-  private def compileElasticsearch(
-      elasticsearch: ElasticSearchProjection,
-      compilePipeChain: PipeChain.Compile,
-      query: Operation,
-      sink: Sink
-  )(implicit cr: RemoteContextResolution) = {
-
-    // Getting from the common space, transforming to json and push to the sink
-    val tail =
-      NonEmptyChain(query, new GraphResourceToDocument(elasticsearch.context, elasticsearch.includeContext), sink)
+  )(target: CompositeViewProjection): Task[(Iri, Operation)] = Task.fromEither {
+    val sink = targetSink(target)
+    val tail = NonEmptyChain(sink: Operation)
 
     for {
-      pipes  <- elasticsearch.pipeChain.traverse(compilePipeChain)
+      pipes  <- target.pipeChain.traverse(compilePipeChain)
       chain   = pipes.fold(tail)(NonEmptyChain.one(_) ++ tail)
       result <- Operation.merge(chain)
-    } yield elasticsearch.id -> result
-  }
-
-  // Compiling a Sparql projection of a composite view
-  private def compileSparql(
-      sparql: SparqlProjection,
-      compilePipeChain: PipeChain.Compile,
-      query: Operation,
-      sink: Sink
-  ) = {
-
-    // Getting from the common space, transforming to n-triples and push to the sink
-    val tail = NonEmptyChain(query, GraphResourceToNTriples, sink)
-
-    for {
-      pipes  <- sparql.pipeChain.traverse(compilePipeChain)
-      chain   = pipes.fold(tail)(NonEmptyChain.one(_) ++ tail)
-      result <- Operation.merge(chain)
-    } yield sparql.id -> result
+    } yield target.id -> result
   }
 
 }
