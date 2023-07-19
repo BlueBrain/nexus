@@ -51,7 +51,21 @@ object CompositeViewDef {
     */
   final case class ActiveViewDef(ref: ViewRef, uuid: UUID, rev: Int, value: CompositeViewValue)
       extends CompositeViewDef {
-    def projection = s"composite-views-${ref.project}-${ref.viewId}-$rev"
+
+    /**
+      * The projection name for this view
+      */
+    val projection = s"composite-views-${ref.project}-${ref.viewId}-$rev"
+
+    /**
+      * The projection metadata for this view
+      */
+    val metadata: ProjectionMetadata = ProjectionMetadata(
+      CompositeViews.entityType.value,
+      projection,
+      Some(ref.project),
+      Some(ref.viewId)
+    )
   }
 
   /**
@@ -118,12 +132,7 @@ object CompositeViewDef {
       graphStream: CompositeGraphStream,
       compositeProjections: CompositeProjections
   )(implicit cr: RemoteContextResolution): Task[CompiledProjection] = {
-    val metadata                              = ProjectionMetadata(
-      CompositeViews.entityType.value,
-      view.projection,
-      Some(view.ref.project),
-      Some(view.ref.viewId)
-    )
+    val metadata                              = view.metadata
     val fetchProgress: UIO[CompositeProgress] = compositeProjections.progress(view.ref, view.rev)
 
     def compileSource =

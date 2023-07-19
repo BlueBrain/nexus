@@ -24,6 +24,19 @@ final case class CompiledProjection private (
 
 object CompiledProjection {
 
+  /**
+    * Creates a projection from a provided task
+    */
+  def fromTask(
+      metadata: ProjectionMetadata,
+      executionStrategy: ExecutionStrategy,
+      task: Task[Unit]
+  ): CompiledProjection =
+    fromStream(metadata, executionStrategy, _ => Stream.eval(task).drain)
+
+  /**
+    * Creates a projection from a provided stream
+    */
   def fromStream(
       metadata: ProjectionMetadata,
       executionStrategy: ExecutionStrategy,

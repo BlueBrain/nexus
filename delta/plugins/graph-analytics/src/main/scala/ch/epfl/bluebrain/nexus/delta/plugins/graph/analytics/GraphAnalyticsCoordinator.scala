@@ -97,9 +97,9 @@ object GraphAnalyticsCoordinator {
 
   }
 
-  final val id                                          = nxv + "graph-analytics"
-  private val logger: Logger[GraphAnalyticsCoordinator] = Logger[GraphAnalyticsCoordinator]
-  private[analytics] val metadata: ProjectionMetadata   = ProjectionMetadata("system", "ga-coordinator", None, None)
+  final val id                                        = nxv + "graph-analytics"
+  private val logger: Logger                          = Logger[GraphAnalyticsCoordinator]
+  private[analytics] val metadata: ProjectionMetadata = ProjectionMetadata("system", "ga-coordinator", None, None)
 
   private def analyticsMetadata(project: ProjectRef) = ProjectionMetadata(
     "ga",
