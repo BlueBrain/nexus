@@ -1,14 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.views
 
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef
 import ch.epfl.bluebrain.nexus.delta.sdk.views.View.{AggregateView, IndexingView}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef, Tag}
-import ch.epfl.bluebrain.nexus.delta.sourcing.{EntityDependencyStore, Predicate, Serializer}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{EntityDependencyStore, Predicate, Serializer, Transactors}
 import com.typesafe.scalalogging.Logger
 import doobie._
 import doobie.implicits._

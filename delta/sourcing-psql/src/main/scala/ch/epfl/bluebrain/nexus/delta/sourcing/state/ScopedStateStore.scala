@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.state
 
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.IriInstances
@@ -12,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.query.{RefreshStrategy, StreamingQ
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore.StateNotFound
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore.StateNotFound.{TagNotFound, UnknownState}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
-import ch.epfl.bluebrain.nexus.delta.sourcing.{Execute, PartitionInit, Predicate, Serializer}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{Execute, PartitionInit, Predicate, Serializer, Transactors}
 import doobie._
 import doobie.implicits._
 import doobie.postgres.implicits._

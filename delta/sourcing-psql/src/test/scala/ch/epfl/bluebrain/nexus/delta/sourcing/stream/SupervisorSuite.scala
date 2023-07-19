@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ExecutionStrategy.{EveryNod
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionProgress.NoProgress
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.SupervisorSuite.UnstableDestroy
 import ch.epfl.bluebrain.nexus.testkit.bio.{BioSuite, PatienceConfig}
-import ch.epfl.bluebrain.nexus.testkit.postgres.Doobie
+import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import fs2.Stream
 import monix.bio.Task
 import munit.AnyFixture

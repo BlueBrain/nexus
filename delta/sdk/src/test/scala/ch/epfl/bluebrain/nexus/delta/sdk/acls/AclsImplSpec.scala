@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.acls
 
-import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, SSEUtils}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddressFilter.{AnyOrganization, AnyOrganizationAnyProject, AnyProject}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclEvent.{AclAppended, AclDeleted, AclReplaced, AclSubtracted}
@@ -11,14 +10,16 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.PermissionsGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
+import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, SSEUtils}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Group, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, DoobieScalaTestFixture, IOFixedClock, IOValues}
+import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
+import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues}
 import monix.bio.UIO
 import monix.execution.Scheduler
-import org.scalatest.{CancelAfterFailure, Inspectors}
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.{CancelAfterFailure, Inspectors}
 
 import java.time.Instant
 
