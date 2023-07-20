@@ -49,6 +49,12 @@ The json payload:
 - If the `@id` value is not found on the payload, an @id will be generated as follows: `base:{UUID}`. The `base` is the 
   `prefix` defined on the resource's project (`{project_label}`).
 
+@@@ note { .warning }
+
+The json payload cannot contain keys beginning with underscore (_), as these fields are reserved for Nexus metadata
+
+@@@
+
 **Example**
 
 Request
@@ -71,6 +77,12 @@ PUT /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}
 ```
  
 Note that if the payload contains an @id different from the `{resource_id}`, the request will fail.
+
+@@@ note { .warning }
+
+The json payload cannot contain keys beginning with underscore (_), as these fields are reserved for Nexus metadata
+
+@@@
 
 **Example**
 
@@ -96,6 +108,12 @@ PUT /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}?rev={pre
   {...}
 ```
 ... where `{previous_rev}` is the last known revision number for the resource.
+
+@@@ note { .warning }
+
+The json payload cannot contain keys beginning with underscore (_), as these fields are reserved for Nexus metadata
+
+@@@
 
 
 **Example**
