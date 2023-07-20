@@ -1,0 +1,6 @@
+{
+  "@context" : "https://bluebrain.github.io/nexus/contexts/error.json",
+  "@type" : "MalformedRequestContentRejection",
+  "reason" : "The request content was malformed.",
+  "details" : "DecodingFailure at : Field(s) starting with _ found in payload: _createdAt"
+}

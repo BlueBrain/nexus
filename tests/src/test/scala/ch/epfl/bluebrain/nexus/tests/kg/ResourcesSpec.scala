@@ -256,6 +256,18 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
         response.status shouldEqual StatusCodes.NotFound
       }
     }
+
+    "fail if the payload contains nexus metadata fields (underscore fields)" in {
+      val payload = jsonContentOf(
+        "/kg/resources/simple-resource.json",
+        "priority"   -> "3",
+        "resourceId" -> "1"
+      ).deepMerge(json"""{"_self":  "http://delta/resources/path"}""")
+
+      deltaClient.put[Json](s"/resources/$id2/_/test-resource:1", payload, Rick) { (_, response) =>
+        response.status shouldEqual StatusCodes.BadRequest
+      }
+    }
   }
 
   "cross-project resolvers" should {
