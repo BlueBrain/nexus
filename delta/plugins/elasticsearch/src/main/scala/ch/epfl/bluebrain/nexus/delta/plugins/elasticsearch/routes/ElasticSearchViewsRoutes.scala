@@ -25,7 +25,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
 import ch.epfl.bluebrain.nexus.delta.sourcing.ProgressStatistics
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projections
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionErrors, Projections}
 import io.circe.generic.semiauto.deriveEncoder
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
@@ -45,6 +45,8 @@ import monix.execution.Scheduler
   *   the elasticsearch views query operations bundle
   * @param projections
   *   the projections module
+  * @param projectionErrors
+  *   the projection errors module
   * @param schemeDirectives
   *   directives related to orgs and projects
   * @param index
@@ -56,6 +58,7 @@ final class ElasticSearchViewsRoutes(
     views: ElasticSearchViews,
     viewsQuery: ElasticSearchViewsQuery,
     projections: Projections,
+    projectionErrors: ProjectionErrors,
     schemeDirectives: DeltaSchemeDirectives,
     index: IndexingAction.Execute[ElasticSearchView]
 )(implicit
@@ -183,8 +186,7 @@ final class ElasticSearchViewsRoutes(
                           views
                             .fetch(id, ref)
                             .map { view =>
-                              projections
-                                .failedElemSses(view.value.project, view.value.id, offset)
+                              projectionErrors.failedElemSses(view.value.project, view.value.id, offset)
                             }
                         )
                       }
@@ -282,6 +284,7 @@ object ElasticSearchViewsRoutes {
       views: ElasticSearchViews,
       viewsQuery: ElasticSearchViewsQuery,
       projections: Projections,
+      projectionErrors: ProjectionErrors,
       schemeDirectives: DeltaSchemeDirectives,
       index: IndexingAction.Execute[ElasticSearchView]
   )(implicit
@@ -297,6 +300,7 @@ object ElasticSearchViewsRoutes {
       views,
       viewsQuery,
       projections,
+      projectionErrors,
       schemeDirectives,
       index
     ).routes

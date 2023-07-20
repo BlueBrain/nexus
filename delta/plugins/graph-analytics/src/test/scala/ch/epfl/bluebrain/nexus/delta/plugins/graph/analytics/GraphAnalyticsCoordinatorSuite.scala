@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.SupervisorSetup.unapply
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{CacheSink, Elem, ExecutionStatus, ProjectionProgress, SupervisorSetup}
 import ch.epfl.bluebrain.nexus.testkit.bio.{BioSuite, PatienceConfig}
 import munit.AnyFixture
@@ -26,9 +27,9 @@ class GraphAnalyticsCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtu
 
   implicit private val patienceConfig: PatienceConfig = PatienceConfig(5.seconds, 10.millis)
 
-  private lazy val (sv, projections) = supervisor()
-  private val project1               = ProjectRef.unsafe("org", "proj1")
-  private val project1Id             = Projects.encodeId(project1)
+  private lazy val (sv, projections, _) = unapply(supervisor())
+  private val project1                  = ProjectRef.unsafe("org", "proj1")
+  private val project1Id                = Projects.encodeId(project1)
 
   private val project2   = ProjectRef.unsafe("org", "proj2")
   private val project2Id = Projects.encodeId(project1)

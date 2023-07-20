@@ -590,33 +590,24 @@ class SearchConfigSpec extends BaseSpec {
       }
     }
 
-    "have the correct attributes for a simulation campaign" in {
-      val query    = queryField(simulationCampaignId, "attrs")
+    "have the correct parameter for a simulation campaign" in {
+      val query    = queryField(simulationCampaignId, "parameter")
       val expected =
         json"""{
-             "attrs" : {
-               "blue_config_template" : "simulation.tmpl",
-               "circuit_config" : "/path/to/circuit_config.json",
-               "duration" : 1000,
-               "path_prefix" : "/home/simulations",
-               "user_target" : "target.json"
-             }
-         }"""
-
-      assertOneSource(query) { json =>
-        json should equalIgnoreArrayOrder(expected)
-      }
-    }
-
-    "have the correct coords for a simulation campaign" in {
-      val query    = queryField(simulationCampaignId, "coords")
-      val expected =
-        json"""{
-             "coords" : {
-               "depol_stdev_mean_ratio" : [ 0.2, 0.3, 0.4 ],
-               "sample" : [ "small", "medium", "big" ],
-               "seed" : 273986
-             }
+               "parameter": {
+                 "attrs" : {
+                   "blue_config_template" : "simulation.tmpl",
+                   "circuit_config" : "/path/to/circuit_config.json",
+                   "duration" : 1000,
+                   "path_prefix" : "/home/simulations",
+                   "user_target" : "target.json"
+                 },
+                 "coords" : {
+                    "depol_stdev_mean_ratio" : [ 0.2, 0.3, 0.4 ],
+                    "sample" : [ "small", "medium", "big" ],
+                    "seed" : 273986
+                  }
+               }
          }"""
 
       assertOneSource(query) { json =>
@@ -667,15 +658,17 @@ class SearchConfigSpec extends BaseSpec {
       }
     }
 
-    "have the correct coords for a simulation" in {
-      val query    = queryField(simulationId, "coords")
+    "have the correct parameter for a simulation" in {
+      val query    = queryField(simulationId, "parameter")
       val expected =
         json"""{
-             "coords" : {
-               "depol_stdev_mean_ratio" : 0.4,
-               "sample" : "medium",
-               "seed" : 273986
-             }
+               "parameter": {
+                 "coords" : {
+                   "depol_stdev_mean_ratio" : 0.4,
+                   "sample" : "medium",
+                   "seed" : 273986
+                 }
+               }
            }"""
 
       assertOneSource(query) { json =>

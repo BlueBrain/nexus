@@ -13,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionProgress.NoProgre
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.SupervisorSuite.UnstableDestroy
 import ch.epfl.bluebrain.nexus.testkit.bio.{BioSuite, PatienceConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.SupervisorSetup.unapply
 import fs2.Stream
 import monix.bio.Task
 import munit.AnyFixture
@@ -27,12 +28,12 @@ class SupervisorSuite extends BioSuite with SupervisorSetup.Fixture with Doobie.
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(supervisor3_1)
 
-  private lazy val (sv, projections) = supervisor3_1()
+  private lazy val (sv, projections, _) = unapply(supervisor3_1())
   // name1 should run on the node with index 1 in a 3-node cluster
-  private val runnableByNode1        = ProjectionMetadata("test", "name1", None, None)
+  private val runnableByNode1           = ProjectionMetadata("test", "name1", None, None)
   // name2 should NOT run on the node with index 1 of a 3-node cluster
-  private val ignoredByNode1         = ProjectionMetadata("test", "name2", None, None)
-  private val random                 = ProjectionMetadata("test", "name3", None, None)
+  private val ignoredByNode1            = ProjectionMetadata("test", "name2", None, None)
+  private val random                    = ProjectionMetadata("test", "name3", None, None)
 
   private val rev = 1
 

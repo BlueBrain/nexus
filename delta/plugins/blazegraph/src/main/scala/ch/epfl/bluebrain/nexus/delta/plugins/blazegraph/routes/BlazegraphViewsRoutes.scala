@@ -32,7 +32,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment}
 import ch.epfl.bluebrain.nexus.delta.sourcing.ProgressStatistics
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projections
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionErrors, Projections}
 import io.circe.generic.semiauto.deriveEncoder
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
@@ -51,6 +51,8 @@ import monix.execution.Scheduler
   *   to check the acls
   * @param projections
   *   the projections module
+  * @param projectionErrors
+  *   the projection errors module
   * @param schemeDirectives
   *   directives related to orgs and projects
   * @param index
@@ -62,6 +64,7 @@ class BlazegraphViewsRoutes(
     identities: Identities,
     aclCheck: AclCheck,
     projections: Projections,
+    projectionErrors: ProjectionErrors,
     schemeDirectives: DeltaSchemeDirectives,
     index: IndexingAction.Execute[BlazegraphView]
 )(implicit
@@ -196,8 +199,7 @@ class BlazegraphViewsRoutes(
                               views
                                 .fetch(id, ref)
                                 .map { view =>
-                                  projections
-                                    .failedElemSses(view.value.project, view.value.id, offset)
+                                  projectionErrors.failedElemSses(view.value.project, view.value.id, offset)
                                 }
                             )
                           }
@@ -333,6 +335,7 @@ object BlazegraphViewsRoutes {
       identities: Identities,
       aclCheck: AclCheck,
       projections: Projections,
+      projectionErrors: ProjectionErrors,
       schemeDirectives: DeltaSchemeDirectives,
       index: IndexingAction.Execute[BlazegraphView]
   )(implicit
@@ -349,6 +352,7 @@ object BlazegraphViewsRoutes {
       identities,
       aclCheck,
       projections,
+      projectionErrors: ProjectionErrors,
       schemeDirectives,
       index
     ).routes
