@@ -176,11 +176,11 @@ CONSTRUCT {
                                                       :name           ?campaignConfigName .
 
   ## Simulation campaigns / simulations
-  ?id  :parameter           ?simulationParameterBN    .
-                            ?simulationParameterBN    :attrs          ?attrs              .
+  ?id  :parameter           ?parameter                .
+                            ?parameter                :attrs          ?attrs              .
                                                       ?attrs          ?attrs_prop         ?attrs_value .
-  ?id  :parameter           ?simulationParameterBN    .
-                            ?simulationParameterBN    :coords         ?coords             .
+  ?id  :parameter           ?parameter                .
+                            ?parameter                :coords         ?coords             .
                                                       ?coords         ?coords_prop        ?coords_value .
 
   ## Simulations
@@ -607,16 +607,16 @@ CONSTRUCT {
       } .
     } .
 
-    BIND( BNODE() AS ?simulationParameterBN ) .
+    ?id nsg:parameter ?parameter
 
     OPTIONAL {
-      ?id nsg:parameter / bmo:attrs ?attrs .
+      ?parameter bmo:attrs ?attrs .
       ?attrs  ?attrs_prop_orig ?attrs_value .
       BIND (IRI(replace(str(?attrs_prop_orig), str(bmo:), str(:)))  AS ?attrs_prop)
     } .
 
     OPTIONAL {
-      ?id nsg:parameter / bmo:coords ?coords .
+      ?parameter bmo:coords ?coords .
       ?coords  ?coords_prop_orig ?coords_value .
       BIND (IRI(replace(str(?coords_prop_orig), str(bmo:), str(:)))  AS ?coords_prop)
     } .
@@ -641,10 +641,10 @@ CONSTRUCT {
 
     OPTIONAL { ?id  nsg:status  ?status    . } .
 
-    BIND( BNODE() AS ?simulationParameterBN ) .
+    ?id nsg:parameter ?parameter
 
     OPTIONAL {
-      ?id nsg:parameter / bmo:coords ?coords .
+      ?parameter bmo:coords ?coords .
       ?coords  ?coords_prop_orig ?coords_value .
       BIND (IRI(replace(str(?coords_prop_orig), str(bmo:), str(:)))  AS ?coords_prop)
     } .
