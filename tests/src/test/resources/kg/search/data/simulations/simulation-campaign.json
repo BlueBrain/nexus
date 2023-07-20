@@ -6,27 +6,29 @@
   "@id": "https://bbp.epfl.ch/data/simulation-campaign",
   "name": "Simulation campaign",
   "description": "Description",
-  "attrs": {
-    "blue_config_template": "simulation.tmpl",
-    "circuit_config": "/path/to/circuit_config.json",
-    "duration": 1000,
-    "path_prefix": "/home/simulations",
-    "user_target": "target.json"
-  },
-  "coords": {
-    "seed": [
-      273986
-    ],
-    "sample": [
-      "small",
-      "medium",
-      "big"
-    ],
-    "depol_stdev_mean_ratio": [
-      0.2,
-      0.3,
-      0.4
-    ]
+  "parameter": {
+    "attrs": {
+      "blue_config_template": "simulation.tmpl",
+      "circuit_config": "/path/to/circuit_config.json",
+      "duration": 1000,
+      "path_prefix": "/home/simulations",
+      "user_target": "target.json"
+    },
+    "coords": {
+      "seed": [
+        273986
+      ],
+      "sample": [
+        "small",
+        "medium",
+        "big"
+      ],
+      "depol_stdev_mean_ratio": [
+        0.2,
+        0.3,
+        0.4
+      ]
+    }
   },
   "wasGeneratedBy": {
     "@id": "https://bbp.epfl.ch/neurosciencegraph/data/simulation-campaign-execution",
