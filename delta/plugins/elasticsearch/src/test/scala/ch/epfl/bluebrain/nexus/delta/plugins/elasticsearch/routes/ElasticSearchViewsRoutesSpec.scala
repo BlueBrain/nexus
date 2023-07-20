@@ -30,14 +30,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, FetchContextDum
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, IndexingAction}
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projections
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionErrors, Projections}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.model.ProjectionRestart
-import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{FailedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeChain, ProjectionMetadata}
 import ch.epfl.bluebrain.nexus.testkit._
@@ -153,7 +151,8 @@ class ElasticSearchViewsRoutesSpec
 
   private lazy val viewsQuery = new DummyElasticSearchViewsQuery(views)
 
-  private lazy val projections = Projections(xas, QueryConfig(10, RefreshStrategy.Stop), 1.hour)
+  private lazy val projections      = Projections(xas, queryConfig, 1.hour)
+  private lazy val projectionErrors = ProjectionErrors(xas, queryConfig)
 
   private lazy val routes =
     Route.seal(
@@ -163,6 +162,7 @@ class ElasticSearchViewsRoutesSpec
         views,
         viewsQuery,
         projections,
+        projectionErrors,
         groupDirectives,
         IndexingAction.noop
       )
@@ -528,7 +528,7 @@ class ElasticSearchViewsRoutesSpec
       val rev      = 1
       val fail1    = FailedElem(EntityType("ACL"), myId, Some(projectRef), Instant.EPOCH, Offset.At(42L), error, rev)
       val fail2    = FailedElem(EntityType("Schema"), myId, None, Instant.EPOCH, Offset.At(42L), error, rev)
-      projections.saveFailedElems(metadata, List(fail1, fail2)).accepted
+      projectionErrors.saveFailedElems(metadata, List(fail1, fail2)).accepted
 
       Get("/v1/views/myorg/myproject/myid/failures") ~> routes ~> check {
         mediaType shouldBe MediaTypes.`text/event-stream`

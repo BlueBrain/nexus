@@ -32,14 +32,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, IndexingAction}
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projections
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionErrors, Projections}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.model.ProjectionRestart
-import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{FailedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionMetadata
 import ch.epfl.bluebrain.nexus.testkit._
@@ -123,7 +121,8 @@ class BlazegraphViewsRoutesSpec
     xas
   ).accepted
 
-  private lazy val projections = Projections(xas, QueryConfig(10, RefreshStrategy.Stop), 1.hour)
+  private lazy val projections      = Projections(xas, queryConfig, 1.hour)
+  private lazy val projectionErrors = ProjectionErrors(xas, queryConfig)
 
   lazy val viewsQuery = new BlazegraphViewsQueryDummy(
     projectRef,
@@ -142,6 +141,7 @@ class BlazegraphViewsRoutesSpec
         identities,
         aclCheck,
         projections,
+        projectionErrors,
         groupDirectives,
         IndexingAction.noop
       )
@@ -510,7 +510,7 @@ class BlazegraphViewsRoutesSpec
       val fail1    =
         FailedElem(EntityType("ACL"), nxv + "myid", Some(projectRef), Instant.EPOCH, Offset.At(42L), error, rev)
       val fail2    = FailedElem(EntityType("Schema"), nxv + "myid", None, Instant.EPOCH, Offset.At(42L), error, rev)
-      projections.saveFailedElems(metadata, List(fail1, fail2)).accepted
+      projectionErrors.saveFailedElems(metadata, List(fail1, fail2)).accepted
 
       Get("/v1/views/org/proj/indexing-view/failures") ~> routes ~> check {
         mediaType shouldBe MediaTypes.`text/event-stream`

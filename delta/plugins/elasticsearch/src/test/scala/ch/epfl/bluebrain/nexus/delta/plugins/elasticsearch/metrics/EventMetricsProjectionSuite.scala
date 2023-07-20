@@ -19,8 +19,8 @@ class EventMetricsProjectionSuite extends BioSuite with SupervisorSetup.Fixture 
 
   implicit private val patienceConfig: PatienceConfig = PatienceConfig(2.seconds, 10.millis)
 
-  private lazy val (sv, _) = supervisor()
-  private val sink         = CacheSink.events[Json]
+  private lazy val sv = supervisor().supervisor
+  private val sink    = CacheSink.events[Json]
 
   test("Start the metrics projection") {
     for {
