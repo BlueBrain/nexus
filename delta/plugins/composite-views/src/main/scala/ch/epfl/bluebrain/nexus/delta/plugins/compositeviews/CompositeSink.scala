@@ -1,9 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
-import cats.implicits.toTraverseOps
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.QueryGraph
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
 import fs2.Chunk
 import monix.bio.Task
@@ -37,18 +38,19 @@ final class CompositeSink[SinkFormat](
   override type In = GraphResource
   override def inType: Typeable[GraphResource] = Typeable[GraphResource]
 
-  private def query: Elem[GraphResource] => Task[Elem[GraphResource]] =
-    elem => elem.evalMapFilter(gr => queryGraph(gr))
-
-  private def liftedTransform: Elem[GraphResource] => Task[Elem[SinkFormat]] =
-    elem => elem.evalMap(transform)
-
-  private def queryAndTransform: Elem[GraphResource] => Task[Elem[SinkFormat]] =
-    elem => query(elem).flatMap(liftedTransform)
+  private def queryTransform: GraphResource => Task[Option[SinkFormat]] = gr =>
+    for {
+      graph       <- queryGraph(gr)
+      transformed <- graph.traverse(transform)
+    } yield transformed
 
   override def apply(elements: Chunk[Elem[GraphResource]]): Task[Chunk[Elem[Unit]]] =
     elements
-      .traverse(queryAndTransform)
+      .traverse {
+        case e: SuccessElem[GraphResource] => e.evalMapFilter(queryTransform)
+        case e: DroppedElem                => Task.pure(e)
+        case e: FailedElem                 => Task.pure(e)
+      }
       .flatMap(sink)
 
 }
