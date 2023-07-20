@@ -13,13 +13,13 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{BatchConfig, QueryConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.FailedElemLogStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
 import com.typesafe.scalalogging.Logger
 import fs2.{Pipe, Stream}
 import monix.bio.{Task, UIO}
 
 import concurrent.duration.FiniteDuration
-
 import java.time.Instant
 
 /**
@@ -125,7 +125,7 @@ object CompositeProjections {
       clock: Clock[UIO]
   ): CompositeProjections =
     new CompositeProjections {
-      private val projectionStore        = ProjectionStore(xas, query)
+      private val failedElemLogStore     = FailedElemLogStore(xas, query)
       private val compositeProgressStore = new CompositeProgressStore(xas)
 
       override def progress(view: ViewRef, rev: Int): UIO[CompositeProgress] =
@@ -142,7 +142,7 @@ object CompositeProjections {
           Projection.persist(
             progress,
             compositeProgressStore.save(view, rev, branch, _),
-            projectionStore.saveFailedElems(metadata, _)
+            failedElemLogStore.saveFailedElems(metadata, _)
           )(batch)
         )
 
