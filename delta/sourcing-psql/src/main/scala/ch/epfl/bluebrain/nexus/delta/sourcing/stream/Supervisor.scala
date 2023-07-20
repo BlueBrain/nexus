@@ -299,8 +299,7 @@ object Supervisor {
       val metadata = projection.metadata
       val strategy = projection.executionStrategy
       if (!strategy.shouldRun(metadata.name, cfg.cluster))
-        log.debug(s"Ignoring '${metadata.module}/${metadata.name}' with strategy '$strategy'.") >>
-          Task.pure(ignored)
+        log.debug(s"Ignoring '${metadata.module}/${metadata.name}' with strategy '$strategy'.").as(ignored)
       else
         log.info(s"Starting '${metadata.module}/${metadata.name}' with strategy '$strategy'.") >>
           init >>
@@ -334,10 +333,9 @@ object Supervisor {
           status     <- supervised.traverse { s =>
                           val metadata = s.metadata
                           if (!s.executionStrategy.shouldRun(name, cfg.cluster))
-                            Task.delay(
-                              log.info(s"'${metadata.module}/${metadata.name}' is ignored. Skipping restart...")
-                            ) >>
-                              Task.pure(ExecutionStatus.Ignored)
+                            log
+                              .info(s"'${metadata.module}/${metadata.name}' is ignored. Skipping restart...")
+                              .as(ExecutionStatus.Ignored)
                           else {
                             for {
                               _      <- log.info(s"Restarting '${metadata.module}/${metadata.name}'...")
@@ -361,8 +359,9 @@ object Supervisor {
                           val metadata      = s.metadata
                           val retryStrategy = createRetryStrategy(cfg, metadata, "destroying")
                           if (!s.executionStrategy.shouldRun(name, cfg.cluster))
-                            log.info(s"'${metadata.module}/${metadata.name}' is ignored. Skipping...") >>
-                              Task.pure(ExecutionStatus.Ignored)
+                            log
+                              .info(s"'${metadata.module}/${metadata.name}' is ignored. Skipping...")
+                              .as(ExecutionStatus.Ignored)
                           else {
                             for {
                               _      <- log.info(s"Destroying '${metadata.module}/${metadata.name}'...")

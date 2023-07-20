@@ -57,7 +57,7 @@ object RetryStrategy {
   /**
     * Log errors when retrying
     */
-  def logIOError[E](logger: Logger, action: String): (E, RetryDetails) => IO[E, Unit] = {
+  def logError[E](logger: Logger, action: String): (E, RetryDetails) => IO[E, Unit] = {
     case (err, WillDelayAndRetry(nextDelay, retriesSoFar, _)) =>
       val message = s"""Error $err while $action: retrying in ${nextDelay.toMillis}ms (retries so far: $retriesSoFar)"""
       logger.warn(message)
@@ -122,7 +122,7 @@ object RetryStrategy {
     RetryStrategy(
       config,
       (t: Throwable) => NonFatal(t),
-      (t: Throwable, d: RetryDetails) => logIOError(logger, action)(t, d)
+      (t: Throwable, d: RetryDetails) => logError(logger, action)(t, d)
     )
 
 }
