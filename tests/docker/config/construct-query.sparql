@@ -172,15 +172,16 @@ CONSTRUCT {
 
   ## Simulation campaigns
   ?id  :config               ?campaignConfigId        .
-                             ?campaignConfigId        :identifier      ?campaignConfigId   ;
+                             ?campaignConfigId        :identifier     ?campaignConfigId   ;
                                                       :name           ?campaignConfigName .
 
   ## Simulation campaigns / simulations
-  ?id  :attrs                ?attrs                   .
-                             ?attrs                   ?attrs_prop       ?attrs_value .
-
-  ?id  :coords               ?coords                  .
-                             ?coords                  ?coords_prop       ?coords_value .
+  ?id  :parameter           ?simulationParameterBN    .
+                            ?simulationParameterBN    :attrs          ?attrs              .
+                                                      ?attrs          ?attrs_prop         ?attrs_value .
+  ?id  :parameter           ?simulationParameterBN    .
+                            ?simulationParameterBN    :coords         ?coords             .
+                                                      ?coords         ?coords_prop        ?coords_value .
 
   ## Simulations
   ?id  :campaign             ?campaignId              .
@@ -606,14 +607,16 @@ CONSTRUCT {
       } .
     } .
 
+    BIND( BNODE() AS ?simulationParameterBN ) .
+
     OPTIONAL {
-      ?id bmo:attrs ?attrs .
+      ?id nsg:parameter / bmo:attrs ?attrs .
       ?attrs  ?attrs_prop_orig ?attrs_value .
       BIND (IRI(replace(str(?attrs_prop_orig), str(bmo:), str(:)))  AS ?attrs_prop)
     } .
 
     OPTIONAL {
-      ?id bmo:coords ?coords .
+      ?id nsg:parameter / bmo:coords ?coords .
       ?coords  ?coords_prop_orig ?coords_value .
       BIND (IRI(replace(str(?coords_prop_orig), str(bmo:), str(:)))  AS ?coords_prop)
     } .
@@ -638,8 +641,10 @@ CONSTRUCT {
 
     OPTIONAL { ?id  nsg:status  ?status    . } .
 
+    BIND( BNODE() AS ?simulationParameterBN ) .
+
     OPTIONAL {
-      ?id bmo:coords ?coords .
+      ?id nsg:parameter / bmo:coords ?coords .
       ?coords  ?coords_prop_orig ?coords_value .
       BIND (IRI(replace(str(?coords_prop_orig), str(bmo:), str(:)))  AS ?coords_prop)
     } .
