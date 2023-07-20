@@ -21,10 +21,16 @@ Please visit @ref:[Authentication & authorization](authentication.md) section to
 
 @@@
 
-@@@ note { .warning }
+@@@ note { .warning title="Remote contexts" }
 
 From Delta v1.5, remote contexts are only resolved during creates and updates.
 That means that when those get updated, the resources importing them must be also updated to take them into account the new version.
+
+@@@
+
+@@@ note { .warning title="JSON payloads" }
+
+The json payload for create and update operations cannot contain keys beginning with underscore (_), as these fields are reserved for Nexus metadata
 
 @@@
 
@@ -49,12 +55,6 @@ The json payload:
 - If the `@id` value is not found on the payload, an @id will be generated as follows: `base:{UUID}`. The `base` is the 
   `prefix` defined on the resource's project (`{project_label}`).
 
-@@@ note { .warning }
-
-The json payload cannot contain keys beginning with underscore (_), as these fields are reserved for Nexus metadata
-
-@@@
-
 **Example**
 
 Request
@@ -77,12 +77,6 @@ PUT /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}
 ```
  
 Note that if the payload contains an @id different from the `{resource_id}`, the request will fail.
-
-@@@ note { .warning }
-
-The json payload cannot contain keys beginning with underscore (_), as these fields are reserved for Nexus metadata
-
-@@@
 
 **Example**
 
@@ -108,12 +102,6 @@ PUT /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}?rev={pre
   {...}
 ```
 ... where `{previous_rev}` is the last known revision number for the resource.
-
-@@@ note { .warning }
-
-The json payload cannot contain keys beginning with underscore (_), as these fields are reserved for Nexus metadata
-
-@@@
 
 
 **Example**
