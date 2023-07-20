@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.tests.kg
 import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.testkit.{CirceEq, EitherValuable}
-import ch.epfl.bluebrain.nexus.tests.BaseSpec
+import ch.epfl.bluebrain.nexus.tests.{BaseSpec, SchemaPayload}
 import ch.epfl.bluebrain.nexus.tests.Identity.listings.{Alice, Bob}
 import ch.epfl.bluebrain.nexus.tests.Identity.{Anonymous, Delta}
 import ch.epfl.bluebrain.nexus.tests.Optics.{filterMetadataKeys, filterSearchMetadata, listing}
@@ -12,6 +12,7 @@ import io.circe.Json
 import org.scalatest.Inspectors
 
 import java.net.URLEncoder
+import java.util.UUID
 
 final class ListingsSpec extends BaseSpec with Inspectors with EitherValuable with CirceEq {
 
@@ -24,6 +25,8 @@ final class ListingsSpec extends BaseSpec with Inspectors with EitherValuable wi
   private val org2   = genId()
   private val proj21 = genId()
   private val ref21  = s"$org2/$proj21"
+
+  private val resourceType = s"https://bluebrain.github.io/nexus/vocabulary/Type-${UUID.randomUUID()}"
 
   "Setting up" should {
     "succeed in setting up orgs, projects and acls" in {
@@ -45,9 +48,10 @@ final class ListingsSpec extends BaseSpec with Inspectors with EitherValuable wi
       val resourcePayload =
         jsonContentOf(
           "/kg/resources/simple-resource.json",
-          "priority" -> "5"
+          "priority"     -> "5",
+          "resourceType" -> resourceType
         )
-      val schemaPayload   = jsonContentOf("/kg/schemas/simple-schema.json")
+      val schemaPayload   = SchemaPayload.loadSimple(resourceType)
       for {
         // Creation
         _ <- deltaClient.put[Json](s"/resources/$ref11/_/resource11", resourcePayload, Bob)(expectCreated)
@@ -97,8 +101,9 @@ final class ListingsSpec extends BaseSpec with Inspectors with EitherValuable wi
       "/kg/listings/project/resource11-schema.json",
       replacements(
         Bob,
-        "org"  -> org1,
-        "proj" -> proj11
+        "org"          -> org1,
+        "proj"         -> proj11,
+        "resourceType" -> resourceType
       ): _*
     )
 
@@ -153,7 +158,7 @@ final class ListingsSpec extends BaseSpec with Inspectors with EitherValuable wi
 
       val result = deltaClient
         .stream(
-          s"/resources/$ref11?type=nxv:TestResource&size=2",
+          s"/resources/$ref11?type=$resourceType&size=2",
           next,
           lens,
           Bob
@@ -167,8 +172,9 @@ final class ListingsSpec extends BaseSpec with Inspectors with EitherValuable wi
             "/kg/listings/project/resource-by-type.json",
             replacements(
               Bob,
-              "org"  -> org1,
-              "proj" -> proj11
+              "org"          -> org1,
+              "proj"         -> proj11,
+              "resourceType" -> resourceType
             ): _*
           )
         )
@@ -226,18 +232,19 @@ final class ListingsSpec extends BaseSpec with Inspectors with EitherValuable wi
   }
 
   "Listing resources within all accessible projects in the system" should {
-    val testResourceType = URLEncoder.encode("https://bluebrain.github.io/nexus/vocabulary/TestResource", "UTF-8")
+    val testResourceType = URLEncoder.encode(resourceType, "UTF-8")
 
     "get resources from all projects for user with appropriate acls" in {
       val expected = jsonContentOf(
         "/kg/listings/all/resource-by-type-4.json",
         replacements(
           Bob,
-          "org1"  -> org1,
-          "org2"  -> org2,
-          "proj1" -> proj11,
-          "proj2" -> proj12,
-          "proj3" -> proj21
+          "org1"         -> org1,
+          "org2"         -> org2,
+          "proj1"        -> proj11,
+          "proj2"        -> proj12,
+          "proj3"        -> proj21,
+          "resourceType" -> resourceType
         ): _*
       )
 
@@ -254,8 +261,9 @@ final class ListingsSpec extends BaseSpec with Inspectors with EitherValuable wi
         "/kg/listings/all/resource-by-type-1.json",
         replacements(
           Bob,
-          "org"  -> org1,
-          "proj" -> proj12
+          "org"          -> org1,
+          "proj"         -> proj12,
+          "resourceType" -> resourceType
         ): _*
       )
 

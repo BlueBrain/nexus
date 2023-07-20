@@ -8,7 +8,7 @@
   "_results": [
     {
       "@id": "{{deltaUri}}/resources/{{proj}}/_/resource12",
-      "@type": "https://bluebrain.github.io/nexus/vocabulary/TestResource",
+      "@type": "{{resourceType}}",
       "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/unconstrained.json",
       "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
       "_deprecated": true,

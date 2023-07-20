@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.tests.Identity.projects.{Bojack, PrincessCarolyn}
 import ch.epfl.bluebrain.nexus.tests.Identity.{Anonymous, ServiceAccount}
 import ch.epfl.bluebrain.nexus.tests.Optics.{admin, listing, supervision}
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Events, Organizations, Projects, Resources}
-import ch.epfl.bluebrain.nexus.tests.{BaseSpec, Identity}
+import ch.epfl.bluebrain.nexus.tests.{BaseSpec, Identity, SchemaPayload}
 import io.circe.Json
 import io.circe.optics.JsonPath.root
 import org.scalatest.AppendedClues
@@ -100,7 +100,7 @@ final class ProjectsDeletionSpec extends BaseSpec with CirceEq with EitherValuab
           "/kg/resources/simple-resource.json",
           "priority" -> "5"
         )
-      val schemaPayload          = jsonContentOf("/kg/schemas/simple-schema.json")
+      val schemaPayload          = SchemaPayload.loadSimple()
       val resolverPayload        =
         jsonContentOf(
           "/kg/resources/cross-project-resolver.json",

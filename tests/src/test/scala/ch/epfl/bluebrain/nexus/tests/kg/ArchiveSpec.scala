@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.tests.Identity.archives.Tweety
 import ch.epfl.bluebrain.nexus.tests.Identity.testRealm
 import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Projects, Resources}
-import ch.epfl.bluebrain.nexus.tests.{BaseSpec, Identity}
+import ch.epfl.bluebrain.nexus.tests.{BaseSpec, Identity, SchemaPayload}
 import io.circe.Json
 
 import java.nio.file.Paths
@@ -25,7 +25,7 @@ class ArchiveSpec extends BaseSpec with ArchiveHelpers with CirceEq {
   private val fullId  = s"$orgId/$projId"
   private val fullId2 = s"$orgId/$projId2"
 
-  private val schemaPayload = jsonContentOf("/kg/schemas/simple-schema.json")
+  private val schemaPayload = SchemaPayload.loadSimple()
 
   private val payload1 = jsonContentOf(
     "/kg/resources/simple-resource.json",

@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.testkit.{CirceEq, EitherValuable}
-import ch.epfl.bluebrain.nexus.tests.BaseSpec
+import ch.epfl.bluebrain.nexus.tests.{BaseSpec, SchemaPayload}
 import ch.epfl.bluebrain.nexus.tests.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.tests.Identity.listings.{Alice, Bob}
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Organizations, Resources, Views}
@@ -42,7 +42,7 @@ final class AggregationsSpec extends BaseSpec with Inspectors with EitherValuabl
         "/kg/resources/simple-resource.json",
         "priority" -> "5"
       )
-    val schemaPayload   = jsonContentOf("/kg/schemas/simple-schema.json")
+    val schemaPayload   = SchemaPayload.loadSimple()
     val postResources   = for {
       // Creation
       _ <- deltaClient.put[Json](s"/resources/$ref11/_/resource11", resourcePayload, Bob)(expectCreated)
