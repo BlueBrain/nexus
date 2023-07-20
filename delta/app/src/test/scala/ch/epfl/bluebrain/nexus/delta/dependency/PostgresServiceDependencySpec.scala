@@ -2,8 +2,8 @@ package ch.epfl.bluebrain.nexus.delta.dependency
 
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
-import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresDocker
-import ch.epfl.bluebrain.nexus.testkit.{DoobieScalaTestFixture, IOValues}
+import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.{DoobieScalaTestFixture, PostgresDocker}
+import ch.epfl.bluebrain.nexus.testkit.IOValues
 import org.scalatest.matchers.should.Matchers
 
 class PostgresServiceDependencySpec extends DoobieScalaTestFixture with Matchers with PostgresDocker with IOValues {

@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.plugin.PluginDef
 import ch.epfl.bluebrain.nexus.delta.wiring.DeltaModule
 import ch.epfl.bluebrain.nexus.testkit.bio.{BioSuite, ResourceFixture}
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchContainer
-import ch.epfl.bluebrain.nexus.testkit.postgres.Doobie._
+import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie._
 import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresContainer
 import com.typesafe.config.impl.ConfigImpl
 import izumi.distage.model.definition.{Module, ModuleDef}

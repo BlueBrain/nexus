@@ -1,20 +1,25 @@
-package ch.epfl.bluebrain.nexus.delta.kernel.database
+package ch.epfl.bluebrain.nexus.delta.sourcing
 
+import cats.syntax.all._
 import cats.effect.{Blocker, Resource}
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.{CacheConfig, KeyValueStore}
-import ch.epfl.bluebrain.nexus.delta.kernel.database.DatabaseConfig.DatabaseAccess
-import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors.PartitionsCache
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseConfig.DatabaseAccess
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
+import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors.PartitionsCache
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseConfig
 import com.zaxxer.hikari.HikariDataSource
 import doobie.Fragment
 import doobie.hikari.HikariTransactor
 import doobie.implicits._
 import doobie.util.ExecutionContexts
 import doobie.util.transactor.Transactor
+import io.github.classgraph.ClassGraph
 import monix.bio.Task
 
-import concurrent.duration._
+import scala.concurrent.duration._
+
+import scala.jdk.CollectionConverters._
 
 /**
   * Allow to define different transactors (and connection pools) for the different query purposes
@@ -26,12 +31,37 @@ final case class Transactors(
     cache: PartitionsCache
 ) {
 
-  def execDDL(filePath: String)(implicit cl: ClassLoader): Task[Unit] =
-    ClasspathResourceUtils.ioContentOf(filePath).flatMap(Fragment.const0(_).update.run.transact(write)).void
+  def execDDL(ddl: String)(implicit cl: ClassLoader): Task[Unit] =
+    ClasspathResourceUtils.ioContentOf(ddl).flatMap(Fragment.const0(_).update.run.transact(write)).void
+
+  def execDDLs(ddls: List[String])(implicit cl: ClassLoader): Task[Unit] =
+    ddls.traverse(execDDL).void
 
 }
 
 object Transactors {
+
+  private val dropScript      = "/scripts/postgres/drop/drop-tables.ddl"
+  private val scriptDirectory = "/scripts/postgres/init/"
+
+  /**
+    * Scans the available DDLs to create the schema
+    */
+  def ddls: Task[List[String]] = Task.delay {
+    new ClassGraph()
+      .acceptPaths(scriptDirectory)
+      .scan()
+      .getResourcesWithExtension("ddl")
+      .getPaths
+      .asScala
+      .sorted
+      .toList
+  }
+
+  /**
+    * For testing purposes, drop the current tables and then executes the different available scripts
+    */
+  private[sourcing] def dropAndCreateDDLs: Task[List[String]] = ddls.map(dropScript :: _)
 
   /** Type of a cache that contains the hashed names of the projectRefs for which a partition was already created. */
   type PartitionsCache = KeyValueStore[String, Unit]
@@ -89,7 +119,8 @@ object Transactors {
       cache     <- Resource.eval(KeyValueStore.localLRU[String, Unit](config.cache))
     } yield Transactors(read, write, streaming, cache)
   }.evalTap { xas =>
-    Task.when(config.tablesAutocreate)(xas.execDDL("/scripts/schema.ddl"))
+    Task.when(config.tablesAutocreate) {
+      ddls.flatMap(xas.execDDLs)
+    }
   }
-
 }

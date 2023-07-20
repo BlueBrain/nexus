@@ -2,13 +2,12 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
 import akka.actor.typed.ActorSystem
 import cats.effect.Clock
-import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.DeltaClient
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.deletion.CompositeViewsDeletionTask
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.{CompositeSpaces, CompositeViewsCoordinator, MetadataPredicates}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.{CompositeProjectionLifeCycle, CompositeSpaces, CompositeViewsCoordinator, MetadataPredicates}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.projections.{CompositeIndexingDetails, CompositeProjections}
@@ -36,6 +35,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, Projects}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
+import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ProjectionConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeChain, ReferenceRegistry, Supervisor}
 import distage.ModuleDef
@@ -185,26 +185,39 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
     CompositeGraphStream(local, remote)
   }
 
-  make[CompositeViewsCoordinator].fromEffect {
+  many[CompositeProjectionLifeCycle.Hook].addValue(CompositeProjectionLifeCycle.NoopHook)
+
+  make[CompositeProjectionLifeCycle].from {
     (
-        compositeViews: CompositeViews,
-        supervisor: Supervisor,
+        hooks: Set[CompositeProjectionLifeCycle.Hook],
         registry: ReferenceRegistry,
         graphStream: CompositeGraphStream,
         buildSpaces: CompositeSpaces.Builder,
         compositeProjections: CompositeProjections,
-        config: CompositeViewsConfig,
         cr: RemoteContextResolution @Id("aggregate")
+    ) =>
+      CompositeProjectionLifeCycle(
+        hooks,
+        PipeChain.compile(_, registry),
+        graphStream,
+        buildSpaces.apply,
+        compositeProjections
+      )(cr)
+  }
+
+  make[CompositeViewsCoordinator].fromEffect {
+    (
+        compositeViews: CompositeViews,
+        supervisor: Supervisor,
+        lifecycle: CompositeProjectionLifeCycle,
+        config: CompositeViewsConfig
     ) =>
       CompositeViewsCoordinator(
         compositeViews,
         supervisor,
-        PipeChain.compile(_, registry),
-        graphStream,
-        buildSpaces.apply,
-        compositeProjections,
+        lifecycle,
         config
-      )(cr)
+      )
   }
 
   many[ProjectDeletionTask].add { (views: CompositeViews) => CompositeViewsDeletionTask(views) }

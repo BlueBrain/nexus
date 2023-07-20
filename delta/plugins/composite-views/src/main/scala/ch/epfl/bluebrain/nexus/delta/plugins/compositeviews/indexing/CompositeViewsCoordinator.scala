@@ -5,14 +5,11 @@ import ch.epfl.bluebrain.nexus.delta.kernel.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef.{ActiveViewDef, DeprecatedViewDef}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.projections.CompositeProjections
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.CompositeGraphStream
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ElemStream
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
-import com.typesafe.scalalogging.Logger
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import fs2.Stream
 import monix.bio.Task
 
@@ -22,10 +19,7 @@ object CompositeViewsCoordinator {
 
   /** If indexing is disabled we can only log */
   final private case object Noop extends CompositeViewsCoordinator {
-    def log: Task[Unit] =
-      Task.delay {
-        logger.info("Composite Views indexing has been disabled via config")
-      }
+    def log: Task[Unit] = logger.info("Composite Views indexing has been disabled via config")
   }
 
   /**
@@ -36,42 +30,30 @@ object CompositeViewsCoordinator {
     *   a cache of the current running views
     * @param supervisor
     *   the general supervisor
-    * @param compilePipeChain
-    *   how to compile pipe chains
-    * @param graphStream
-    *   to provide the data feeding the indexing
-    * @param buildSpaces
-    *   to create the necessary namespaces / indices and the pipes/sinks to interact with them
-    * @param compositeProjections
-    *   to fetch/save progress as well as handling restarts
+    * @param lifecycle
+    *   defines how to init, run and destroy the projection related to the view
     */
   final private class Active(
       fetchViews: Offset => ElemStream[CompositeViewDef],
       cache: KeyValueStore[ViewRef, ActiveViewDef],
       supervisor: Supervisor,
-      compilePipeChain: PipeChain.Compile,
-      graphStream: CompositeGraphStream,
-      buildSpaces: ActiveViewDef => CompositeSpaces,
-      compositeProjections: CompositeProjections
-  )(implicit cr: RemoteContextResolution)
-      extends CompositeViewsCoordinator {
+      lifecycle: CompositeProjectionLifeCycle
+  ) extends CompositeViewsCoordinator {
 
     def run(offset: Offset): Stream[Task, Elem[Unit]] = {
       fetchViews(offset).evalMap {
         _.traverse {
           case active: ActiveViewDef =>
-            val spaces = buildSpaces(active)
             for {
               // Compiling and validating the view
-              projection <-
-                CompositeViewDef.compile(active, spaces, compilePipeChain, graphStream, compositeProjections)
+              projection <- lifecycle.build(active)
               // Stopping the previous version
               _          <- cleanupCurrent(cache, active, destroy)
               // Init, register and run the new version
               _          <- supervisor.run(
                               projection,
                               for {
-                                _ <- spaces.init
+                                _ <- lifecycle.init(active)
                                 _ <- cache.put(active.ref, active)
                               } yield ()
                             )
@@ -86,8 +68,7 @@ object CompositeViewsCoordinator {
         .destroy(
           active.projection,
           for {
-            _ <- buildSpaces(active).destroy
-            _ <- compositeProjections.deleteAll(active.ref, active.rev)
+            _ <- lifecycle.destroy(active)
             _ <- cache.remove(active.ref)
           } yield ()
         )
@@ -107,21 +88,15 @@ object CompositeViewsCoordinator {
     cache.get(ref).flatMap { cachedOpt =>
       (cachedOpt, viewDef) match {
         case (Some(cached), active: ActiveViewDef) if cached.projection == active.projection =>
-          Task.delay(logger.info(s"Projection '${cached.projection}' is already running and will not be recreated."))
+          logger.info(s"Projection '${cached.projection}' is already running and will not be recreated.")
         case (Some(cached), _: ActiveViewDef)                                                =>
-          Task.delay(
-            logger.info(s"View '${ref.project}/${ref.viewId}' has been updated, cleaning up the current one.")
-          ) >>
+          logger.info(s"View '${ref.project}/${ref.viewId}' has been updated, cleaning up the current one.") >>
             destroy(cached)
         case (Some(cached), _: DeprecatedViewDef)                                            =>
-          Task.delay(
-            logger.info(s"View '${ref.project}/${ref.viewId}' has been deprecated, cleaning up the current one.")
-          ) >>
+          logger.info(s"View '${ref.project}/${ref.viewId}' has been deprecated, cleaning up the current one.") >>
             destroy(cached)
         case (None, _)                                                                       =>
-          Task.delay(
-            logger.debug(s"View '${ref.project}/${ref.viewId}' is not referenced yet, cleaning is aborted.")
-          )
+          logger.debug(s"View '${ref.project}/${ref.viewId}' is not referenced yet, cleaning is aborted.")
       }
     }
   }
@@ -129,12 +104,9 @@ object CompositeViewsCoordinator {
   def apply(
       compositeViews: CompositeViews,
       supervisor: Supervisor,
-      compilePipeChain: PipeChain.Compile,
-      graphStream: CompositeGraphStream,
-      buildSpaces: ActiveViewDef => CompositeSpaces,
-      compositeProjections: CompositeProjections,
+      builder: CompositeProjectionLifeCycle,
       config: CompositeViewsConfig
-  )(implicit cr: RemoteContextResolution): Task[CompositeViewsCoordinator] = {
+  ): Task[CompositeViewsCoordinator] = {
     if (config.indexingEnabled) {
       for {
         cache      <- KeyValueStore[ViewRef, ActiveViewDef]()
@@ -142,10 +114,7 @@ object CompositeViewsCoordinator {
                         compositeViews.views,
                         cache,
                         supervisor,
-                        compilePipeChain: PipeChain.Compile,
-                        graphStream: CompositeGraphStream,
-                        buildSpaces: ActiveViewDef => CompositeSpaces,
-                        compositeProjections: CompositeProjections
+                        builder
                       )
         _          <- supervisor.run(
                         CompiledProjection.fromStream(

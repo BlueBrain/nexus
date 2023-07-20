@@ -112,8 +112,8 @@ object BlazegraphCoordinator {
 
   }
 
-  val metadata: ProjectionMetadata                  = ProjectionMetadata("system", "blazegraph-coordinator", None, None)
-  private val logger: Logger[BlazegraphCoordinator] = Logger[BlazegraphCoordinator]
+  val metadata: ProjectionMetadata = ProjectionMetadata("system", "blazegraph-coordinator", None, None)
+  private val logger: Logger       = Logger[BlazegraphCoordinator]
 
   def apply(
       views: BlazegraphViews,

@@ -1,13 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.event
 
 import cats.data.NonEmptyList
-import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.Predicate.Root
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Envelope, EnvelopeStream}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
-import ch.epfl.bluebrain.nexus.delta.sourcing.{MultiDecoder, Predicate}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{MultiDecoder, Predicate, Transactors}
 import doobie.implicits._
 import doobie.{Fragment, Fragments}
 import io.circe.Json

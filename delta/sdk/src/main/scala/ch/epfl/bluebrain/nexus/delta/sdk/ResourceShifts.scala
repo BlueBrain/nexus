@@ -1,11 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
-import ch.epfl.bluebrain.nexus.delta.sourcing.EntityCheck
+import ch.epfl.bluebrain.nexus.delta.sourcing.{EntityCheck, Transactors}
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
