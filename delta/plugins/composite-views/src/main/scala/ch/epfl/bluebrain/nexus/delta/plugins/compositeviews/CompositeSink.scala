@@ -38,7 +38,7 @@ final class CompositeSink[SinkFormat](
   override def inType: Typeable[GraphResource] = Typeable[GraphResource]
 
   private def query: Elem[GraphResource] => Task[Elem[GraphResource]] =
-    elem => queryGraph(elem)
+    elem => elem.evalMapFilter(gr => queryGraph(gr))
 
   private def liftedTransform: Elem[GraphResource] => Task[Elem[SinkFormat]] =
     elem => elem.evalMap(transform)
