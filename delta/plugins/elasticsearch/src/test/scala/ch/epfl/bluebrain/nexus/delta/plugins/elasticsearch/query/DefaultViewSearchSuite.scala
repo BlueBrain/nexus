@@ -159,17 +159,21 @@ class DefaultViewSearchSuite
     } yield ()
   }
 
-  private val all                       = ResourcesSearchParams()
-  private val orgByType                 = ResourcesSearchParams(types = List(IncludedType(orgType)))
-  private val orgBySchema               = ResourcesSearchParams(schema = Some(orgSchema))
-  private val excludeDatasetType        = ResourcesSearchParams(types = List(ExcludedType(datasetType)))
-  private val byDeprecated              = ResourcesSearchParams(deprecated = Some(true))
-  private val byCreated                 = ResourcesSearchParams(createdBy = Some(alice))
-  private val between_8_and_16          = TimeRange.Between.unsafe(epochPlus(8L), epochPlus(16))
-  private val byCreatedBetween_8_and_16 = ResourcesSearchParams(createdAt = between_8_and_16)
-  private val byCreatedAfter_11         = ResourcesSearchParams(createdAt = TimeRange.After(epochPlus(11L)))
-  private val byUpdated                 = ResourcesSearchParams(updatedBy = Some(alice))
-  private val byUpdated_Before_12       = ResourcesSearchParams(updatedAt = TimeRange.Before(epochPlus(12L)))
+  private val all                                        = ResourcesSearchParams()
+  private val orgByType                                  = ResourcesSearchParams(types = List(IncludedType(orgType)))
+  private val datasetAndCellTypes: ResourcesSearchParams =
+    ResourcesSearchParams(types = List(IncludedType(datasetType), IncludedType(cellType)))
+  private val datasetOrCellTypes: ResourcesSearchParams  =
+    ResourcesSearchParams(types = List(IncludedType(datasetType), IncludedType(cellType)), typeOperator = OR)
+  private val orgBySchema                                = ResourcesSearchParams(schema = Some(orgSchema))
+  private val excludeDatasetType                         = ResourcesSearchParams(types = List(ExcludedType(datasetType)))
+  private val byDeprecated                               = ResourcesSearchParams(deprecated = Some(true))
+  private val byCreated                                  = ResourcesSearchParams(createdBy = Some(alice))
+  private val between_8_and_16                           = TimeRange.Between.unsafe(epochPlus(8L), epochPlus(16))
+  private val byCreatedBetween_8_and_16                  = ResourcesSearchParams(createdAt = between_8_and_16)
+  private val byCreatedAfter_11                          = ResourcesSearchParams(createdAt = TimeRange.After(epochPlus(11L)))
+  private val byUpdated                                  = ResourcesSearchParams(updatedBy = Some(alice))
+  private val byUpdated_Before_12                        = ResourcesSearchParams(updatedAt = TimeRange.Before(epochPlus(12L)))
 
   private val bbpResource    = bbp.asResourceF
   private val byId           = ResourcesSearchParams(id = Some(bbpResource.id))
@@ -177,15 +181,12 @@ class DefaultViewSearchSuite
   private val byLocatingSelf = ResourcesSearchParams(locate = Some(bbpResource.self))
 
   // Action / params / matching resources
+
   List(
     ("all resources", all, allResources),
     ("org resources by type", orgByType, orgs),
-    ("types AND", ResourcesSearchParams(types = List(IncludedType(datasetType), IncludedType(cellType))), List(cell)),
-    (
-      "types OR",
-      ResourcesSearchParams(types = List(IncludedType(datasetType), IncludedType(cellType)), typeOperator = OR),
-      List(trace, cell)
-    ),
+    ("types AND", datasetAndCellTypes, List(cell)),
+    ("types OR", datasetOrCellTypes, List(trace, cell)),
     ("org resources by schema", orgBySchema, orgs),
     ("all resources but the ones with 'Dataset' type", excludeDatasetType, orgs),
     ("deprecated resources", byDeprecated, deprecated),
