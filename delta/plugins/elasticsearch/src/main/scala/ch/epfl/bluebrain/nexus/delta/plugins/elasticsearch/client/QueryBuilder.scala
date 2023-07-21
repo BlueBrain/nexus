@@ -57,7 +57,7 @@ final case class QueryBuilder private[client] (private val query: JsonObject) {
     } else {
       typeOperator match {
         case TypeOperator.And => terms
-        case TypeOperator.Or  => List(or(terms:_*))
+        case TypeOperator.Or  => List(or(terms: _*))
       }
     }
   }

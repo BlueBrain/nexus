@@ -36,18 +36,18 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
   *   a full text search query parameter
   */
 final case class ResourcesSearchParams(
-                                        locate: Option[Iri] = None,
-                                        id: Option[Iri] = None,
-                                        deprecated: Option[Boolean] = None,
-                                        rev: Option[Int] = None,
-                                        createdBy: Option[Subject] = None,
-                                        createdAt: TimeRange = TimeRange.Anytime,
-                                        updatedBy: Option[Subject] = None,
-                                        updatedAt: TimeRange = TimeRange.Anytime,
-                                        types: List[Type] = List.empty,
-                                        typeOperator: TypeOperator = TypeOperator.Or,
-                                        schema: Option[ResourceRef] = None,
-                                        q: Option[String] = None
+    locate: Option[Iri] = None,
+    id: Option[Iri] = None,
+    deprecated: Option[Boolean] = None,
+    rev: Option[Int] = None,
+    createdBy: Option[Subject] = None,
+    createdAt: TimeRange = TimeRange.Anytime,
+    updatedBy: Option[Subject] = None,
+    updatedAt: TimeRange = TimeRange.Anytime,
+    types: List[Type] = List.empty,
+    typeOperator: TypeOperator = TypeOperator.Or,
+    schema: Option[ResourceRef] = None,
+    q: Option[String] = None
 ) {
 
   /**
