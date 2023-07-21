@@ -1,4 +1,4 @@
-name: Delta Core
+name: Delta App
 on:
   pull_request:
     paths:
