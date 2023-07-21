@@ -6,17 +6,14 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.CompositeGraphStream
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.NTriples
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Pipe
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.FilterDeprecated
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{NoopSink, RemainingElems, Source}
 import ch.epfl.bluebrain.nexus.testkit.bio.{BioSuite, PatienceConfig}
 import fs2.Stream
-import io.circe.Json
 import monix.bio.{Task, UIO}
 import shapeless.Typeable
 
@@ -25,8 +22,6 @@ import scala.concurrent.duration._
 class CompositeViewDefSuite extends BioSuite with CompositeViewsFixture {
 
   implicit private val patienceConfig: PatienceConfig = PatienceConfig(1.second, 50.millis)
-
-  implicit private val rcr: RemoteContextResolution = RemoteContextResolution.never
 
   private val sleep = UIO.sleep(50.millis)
 
@@ -65,8 +60,7 @@ class CompositeViewDefSuite extends BioSuite with CompositeViewsFixture {
     CompositeViewDef
       .compileTarget(
         _ => Right(FilterDeprecated.withConfig(())),
-        _ => Pipe.identity[GraphResource],
-        _ => new NoopSink[Json]()
+        _ => new NoopSink[GraphResource]()
       )(esProjection)
       .map(_._1)
       .assert(esProjection.id)
@@ -76,8 +70,7 @@ class CompositeViewDefSuite extends BioSuite with CompositeViewsFixture {
     CompositeViewDef
       .compileTarget(
         _ => Right(FilterDeprecated.withConfig(())),
-        _ => Pipe.identity[GraphResource],
-        _ => new NoopSink[NTriples]()
+        _ => new NoopSink[GraphResource]()
       )(blazegraphProjection)
       .map(_._1)
       .assert(blazegraphProjection.id)

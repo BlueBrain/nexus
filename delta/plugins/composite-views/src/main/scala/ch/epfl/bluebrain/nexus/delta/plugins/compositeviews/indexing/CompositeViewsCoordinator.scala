@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing
 
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
@@ -9,7 +10,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ElemStream
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
-import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import fs2.Stream
 import monix.bio.Task
 
@@ -24,6 +24,7 @@ object CompositeViewsCoordinator {
 
   /**
     * Coordinates the lifecycle of composite views as projections
+    *
     * @param fetchViews
     *   to fetch the composite views
     * @param cache
