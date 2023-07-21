@@ -18,7 +18,6 @@ final case class QueryBuilder private[client] (private val query: JsonObject) {
 
   private val trackTotalHits = "track_total_hits"
   private val searchAfter    = "search_after"
-  private val source         = "_source"
 
   implicit private def subjectEncoder(implicit baseUri: BaseUri): Encoder[Subject] = IriEncoder.jsonEncoder[Subject]
 
@@ -42,13 +41,6 @@ final case class QueryBuilder private[client] (private val query: JsonObject) {
     */
   def withTotalHits(value: Boolean): QueryBuilder =
     copy(query.add(trackTotalHits, value.asJson))
-
-  /**
-    * Defines what fields are going to be present in the response
-    */
-  def withFields(fields: Set[String]): QueryBuilder =
-    if (fields.isEmpty) this
-    else copy(query.add(source, fields.asJson))
 
   /**
     * Adds sort to the current payload
