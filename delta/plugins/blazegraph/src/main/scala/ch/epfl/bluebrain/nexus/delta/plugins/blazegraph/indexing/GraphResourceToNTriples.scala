@@ -19,17 +19,13 @@ object GraphResourceToNTriples extends Pipe {
   override def inType: Typeable[GraphResource] = Typeable[GraphResource]
   override def outType: Typeable[NTriples]     = Typeable[NTriples]
 
-  def graphToNTriples(graphResource: GraphResource): Task[NTriples] = {
+  def graphToNTriples(graphResource: GraphResource): Task[Option[NTriples]] = {
     val graph = graphResource.graph ++ graphResource.metadataGraph
-    Task.fromEither(graph.toNTriples)
+    Task
+      .fromEither(graph.toNTriples)
+      .map(triples => Option.when(!triples.isEmpty)(triples))
   }
 
-  override def apply(element: SuccessElem[GraphResource]): Task[Elem[NTriples]] = {
-    element
-      .evalMap(graphToNTriples)
-      .map {
-        case ntriples: SuccessElem[NTriples] if ntriples.value.isEmpty => element.dropped
-        case ntriples                                                  => ntriples
-      }
-  }
+  override def apply(element: SuccessElem[GraphResource]): Task[Elem[NTriples]] =
+    element.evalMapFilter(graphToNTriples)
 }

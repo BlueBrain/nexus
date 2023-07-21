@@ -29,7 +29,7 @@ import scala.concurrent.duration.FiniteDuration
   */
 final class CompositeSink[SinkFormat](
     queryGraph: QueryGraph,
-    transform: GraphResource => Task[SinkFormat],
+    transform: GraphResource => Task[Option[SinkFormat]],
     sink: Chunk[Elem[SinkFormat]] => Task[Chunk[Elem[Unit]]],
     override val chunkSize: Int,
     override val maxWindow: FiniteDuration
@@ -41,7 +41,7 @@ final class CompositeSink[SinkFormat](
   private def queryTransform: GraphResource => Task[Option[SinkFormat]] = gr =>
     for {
       graph       <- queryGraph(gr)
-      transformed <- graph.traverse(transform)
+      transformed <- graph.flatTraverse(transform)
     } yield transformed
 
   override def apply(elements: Chunk[Elem[GraphResource]]): Task[Chunk[Elem[Unit]]] =

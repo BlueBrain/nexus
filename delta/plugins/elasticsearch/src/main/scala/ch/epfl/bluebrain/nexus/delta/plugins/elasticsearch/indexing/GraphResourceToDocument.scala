@@ -32,28 +32,25 @@ final class GraphResourceToDocument(context: ContextValue, includeContext: Boole
   implicit private val api: JsonLdApi = JsonLdJavaApi.lenient
 
   /** Given a [[GraphResource]] returns a JSON-LD created from the merged graph and metadata graph */
-  def graphToDocument(element: GraphResource): Task[Json] = {
+  def graphToDocument(element: GraphResource): Task[Option[Json]] = {
     val graph = element.graph ++ element.metadataGraph
-    if (element.source.isEmpty())
-      graph
-        .toCompactedJsonLd(context)
-        .map(ld => injectContext(ld.obj.asJson))
-    else {
-      val id = getSourceId(element.source).getOrElse(element.id.toString)
-      (graph -- graph.rootTypesGraph)
-        .toCompactedJsonLd(context)
-        .map(ld => injectContext(mergeJsonLd(element.source, ld.json)))
-        .map(json => injectId(json, id))
-    }
+    val json  =
+      if (element.source.isEmpty())
+        graph
+          .toCompactedJsonLd(context)
+          .map(ld => injectContext(ld.obj.asJson))
+      else {
+        val id = getSourceId(element.source).getOrElse(element.id.toString)
+        (graph -- graph.rootTypesGraph)
+          .toCompactedJsonLd(context)
+          .map(ld => injectContext(mergeJsonLd(element.source, ld.json)))
+          .map(json => injectId(json, id))
+      }
+    json.map(j => Option.when(!j.isEmpty())(j))
   }
 
   override def apply(element: SuccessElem[GraphResource]): Task[Elem[Json]] =
-    element
-      .evalMap(graphToDocument)
-      .map {
-        case json: SuccessElem[Json] if json.value.isEmpty() => element.dropped
-        case json                                            => json
-      }
+    element.evalMapFilter(graphToDocument)
 
   private def getSourceId(source: Json): Option[String] =
     source.hcursor.get[String]("@id").toOption
