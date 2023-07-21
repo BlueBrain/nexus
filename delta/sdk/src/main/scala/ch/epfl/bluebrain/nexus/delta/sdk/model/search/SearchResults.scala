@@ -4,12 +4,13 @@ import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.Uri.Query
 import cats.Functor
 import cats.syntax.functor._
+import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.instances._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination._
+import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import fs2.Stream
 import io.circe.syntax._

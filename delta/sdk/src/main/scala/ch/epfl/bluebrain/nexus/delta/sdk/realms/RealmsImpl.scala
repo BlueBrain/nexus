@@ -4,9 +4,10 @@ import akka.http.scaladsl.model.Uri
 import cats.data.NonEmptySet
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
+import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.sdk.RealmResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchParams, SearchResults}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{SearchParams, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.Realms.entityType
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.RealmsImpl.RealmsLog
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.RealmCommand.{CreateRealm, DeprecateRealm, UpdateRealm}

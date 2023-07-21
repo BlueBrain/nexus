@@ -1,13 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resolvers
 
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, ResultEntry}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.{Fetch, ResolverResolutionResult}

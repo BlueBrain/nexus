@@ -2,10 +2,11 @@ package ch.epfl.bluebrain.nexus.delta.sdk.projects
 
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
+import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchParams, SearchResults}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{SearchParams, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects.{entityType, FetchOrganization}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.ProjectsImpl.{logger, ProjectsLog}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectCommand.{CreateProject, DeleteProject, DeprecateProject, UpdateProject}

@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.organizations
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.OrganizationGen.{organization, resourceFor}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
+import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.OrganizationSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
