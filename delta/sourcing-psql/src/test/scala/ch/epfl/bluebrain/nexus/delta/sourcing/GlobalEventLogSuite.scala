@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GlobalStateStore
 import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
-import ch.epfl.bluebrain.nexus.testkit.postgres.Doobie
+import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import munit.AnyFixture
 
 import scala.concurrent.duration._

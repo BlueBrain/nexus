@@ -1,48 +1,42 @@
-package ch.epfl.bluebrain.nexus.testkit.postgres
+package ch.epfl.bluebrain.nexus.delta.sourcing.postgres
 
 import cats.effect.Resource
-import cats.implicits.toTraverseOps
-import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
+import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.testkit.bio.ResourceFixture.TaskFixture
 import ch.epfl.bluebrain.nexus.testkit.bio.{BioSuite, ResourceFixture}
+import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresContainer
 import doobie.postgres.sqlstate
 import monix.bio.{IO, Task, UIO}
 import munit.Location
 import org.postgresql.util.PSQLException
 
-import java.nio.file.{Path, Paths}
-
 object Doobie {
 
   val PostgresUser     = "postgres"
   val PostgresPassword = "postgres"
-  val DDLs: List[Path] = List(Paths.get("/scripts/drop-tables.ddl"), Paths.get("/scripts/schema.ddl"))
 
   def apply(
       postgres: Resource[Task, PostgresContainer],
       user: String = PostgresUser,
-      pass: String = PostgresPassword,
-      ddls: List[Path] = DDLs
+      pass: String = PostgresPassword
   )(implicit cl: ClassLoader): Resource[Task, Transactors] = {
     postgres
       .flatMap(container => Transactors.test(container.getHost, container.getMappedPort(5432), user, pass))
-      .evalTap(xas => ddls.traverse(path => xas.execDDL(path.toString)))
+      .evalTap(xas => Transactors.dropAndCreateDDLs.flatMap(xas.execDDLs))
   }
 
   def resource(
       user: String = PostgresUser,
-      pass: String = PostgresPassword,
-      ddls: List[Path] = DDLs
+      pass: String = PostgresPassword
   )(implicit cl: ClassLoader): Resource[Task, Transactors] =
-    apply(PostgresContainer.resource(user, pass), user, pass, ddls)
+    apply(PostgresContainer.resource(user, pass), user, pass)
 
   def suiteLocalFixture(
       name: String,
       user: String = PostgresUser,
-      pass: String = PostgresPassword,
-      ddls: List[Path] = DDLs
+      pass: String = PostgresPassword
   )(implicit cl: ClassLoader): TaskFixture[Transactors] =
-    ResourceFixture.suiteLocal(name, resource(user, pass, ddls))
+    ResourceFixture.suiteLocal(name, resource(user, pass))
 
   trait Fixture { self: BioSuite =>
     val doobie: ResourceFixture.TaskFixture[Transactors] = Doobie.suiteLocalFixture("doobie")

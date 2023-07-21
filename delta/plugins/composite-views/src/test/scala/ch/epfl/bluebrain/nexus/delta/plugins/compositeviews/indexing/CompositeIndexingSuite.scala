@@ -47,7 +47,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{DiscardMetadata, FilterByType, FilterDeprecated}
 import ch.epfl.bluebrain.nexus.testkit.bio.ResourceFixture.TaskFixture
 import ch.epfl.bluebrain.nexus.testkit.bio.{BioSuite, JsonAssertions, PatienceConfig, ResourceFixture, TextAssertions}
-import ch.epfl.bluebrain.nexus.testkit.postgres.Doobie
+import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, TestHelpers}
 import fs2.Stream
 import io.circe.generic.extras.Configuration

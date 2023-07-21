@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.utils
 
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
+import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{Inspectors, OptionValues}

@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.jira
 import ch.epfl.bluebrain.nexus.delta.plugins.jira.OAuthToken.{AccessToken, RequestToken}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit._
 import org.scalatest.OptionValues
 
@@ -14,7 +15,7 @@ class TokenStoreSpec
     with TestHelpers
     with ShouldMatchers {
 
-  private lazy val tokenStore: TokenStore = TokenStore(xas, tablesAutocreate = true).accepted
+  private lazy val tokenStore: TokenStore = TokenStore(xas)
 
   "A store" should {
 
@@ -23,19 +24,19 @@ class TokenStoreSpec
     val request = RequestToken("request")
     val access  = AccessToken("access")
 
-    "return none if no token exist for the " in {
+    "return none if no token exist for the user" in {
       tokenStore.get(user).accepted shouldEqual None
     }
 
-    "save a given token" in {
+    "save a given token for the user" in {
       tokenStore.save(user, request).accepted
     }
 
-    "get a token" in {
+    "get a token for the user" in {
       tokenStore.get(user).accepted.value shouldEqual request
     }
 
-    "overwrite an existing token" in {
+    "overwrite an existing token for the user" in {
       tokenStore.save(user, access).accepted
       tokenStore.get(user).accepted.value shouldEqual access
     }

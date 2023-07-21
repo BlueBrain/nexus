@@ -19,7 +19,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, DoobieScalaTestFixture, IOFixedClock, IOValues}
+import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
+import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues}
 import monix.bio.IO
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
@@ -84,7 +85,8 @@ class SchemasImplSpec
     FetchContextDummy(Map(project.ref -> project.context), Set(projectDeprecated.ref), ProjectContextRejection)
   private val config       = SchemasConfig(eventLogConfig)
 
-  private lazy val schemas: Schemas = SchemasImpl(fetchContext, schemaImports, resolverContextResolution, config, xas)
+  private lazy val schemas: Schemas =
+    SchemasImpl(fetchContext, schemaImports, resolverContextResolution, config, xas)
 
   private def schemaSourceWithId(id: Iri) = {
     source deepMerge json"""{"@id": "$id"}"""

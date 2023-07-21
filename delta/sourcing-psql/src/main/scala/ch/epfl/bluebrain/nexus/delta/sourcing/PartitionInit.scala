@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors.PartitionsCache
+import Transactors.PartitionsCache
 import ch.epfl.bluebrain.nexus.delta.sourcing.PartitionInit.{createOrgPartition, createProjectPartition, projectRefHash}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import doobie.Fragment
@@ -10,8 +10,8 @@ import monix.bio.Task
 
 /**
   * Indicates the actions to take in order to initialize the partition of the scoped event/state tables. The main scoped
-  * event/state table is partitioned by organization (cf. schema.ddl). Each organization partition is itself partitioned
-  * by project.
+  * event/state table is partitioned by organization (cf. V1_08_001__init.ddl). Each organization partition is itself
+  * partitioned by project.
   */
 sealed trait PartitionInit {
 

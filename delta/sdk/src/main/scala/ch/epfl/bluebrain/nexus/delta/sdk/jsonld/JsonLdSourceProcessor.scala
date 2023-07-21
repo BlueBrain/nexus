@@ -68,7 +68,10 @@ object JsonLdSourceProcessor {
   /**
     * Allows to parse the given json source to JsonLD compacted and expanded using static contexts
     */
-  final class JsonLdSourceParser[R](contextIri: Seq[Iri], override val uuidF: UUIDF)(implicit
+  final class JsonLdSourceParser[R](
+      contextIri: Seq[Iri],
+      override val uuidF: UUIDF
+  )(implicit
       api: JsonLdApi,
       rejectionMapper: Mapper[InvalidJsonLdRejection, R]
   ) extends JsonLdSourceProcessor {

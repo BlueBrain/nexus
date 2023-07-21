@@ -15,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.{FetchResource, ResourceResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport.ResolverReport
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{ResolverResolutionRejection, ResourceResolutionReport}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.NexusSource.DecodingOption
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{BlankResourceId, IncorrectRev, InvalidJsonLdFormat, InvalidResource, InvalidSchemaRejection, ProjectContextRejection, ResourceAlreadyExists, ResourceIsDeprecated, ResourceNotFound, RevisionNotFound, SchemaIsDeprecated, TagNotFound, UnexpectedResourceId, UnexpectedResourceSchema}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -22,7 +23,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef, ResourceRef}
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, DoobieScalaTestFixture, IOFixedClock, IOValues}
+import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
+import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues}
 import monix.bio.UIO
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
@@ -83,7 +85,7 @@ class ResourcesImplSpec
     Set(projectDeprecated.ref),
     ProjectContextRejection
   )
-  private val config       = ResourcesConfig(eventLogConfig)
+  private val config       = ResourcesConfig(eventLogConfig, DecodingOption.Strict)
 
   private val resolverContextResolution: ResolverContextResolution = new ResolverContextResolution(
     res,
@@ -671,8 +673,6 @@ class ResourcesImplSpec
       "reject if the tag doesn't exist" in {
         resources.deleteTag(myId, projectRef, Some(schemas.resources), tag, 3).rejectedWith[TagNotFound]
       }
-
     }
   }
-
 }

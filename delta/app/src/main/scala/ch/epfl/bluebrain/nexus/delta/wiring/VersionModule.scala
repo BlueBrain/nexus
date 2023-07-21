@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.wiring
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.dependency.PostgresServiceDependency
-import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.VersionRoutes
@@ -11,6 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.PluginDescription
 import ch.epfl.bluebrain.nexus.delta.sdk.{PriorityRoute, ServiceDependency}
+import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.execution.Scheduler
 

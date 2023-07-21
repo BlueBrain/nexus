@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
 import cats.effect.Clock
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax.kamonSyntax
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
@@ -37,7 +36,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.{Predicate, ScopedEntityDefinition, ScopedEventLog, StateMachine}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{Predicate, ScopedEntityDefinition, ScopedEventLog, StateMachine, Transactors}
 import io.circe.Json
 import monix.bio.{IO, Task, UIO}
 

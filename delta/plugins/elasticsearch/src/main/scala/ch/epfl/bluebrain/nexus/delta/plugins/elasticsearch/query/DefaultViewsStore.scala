@@ -1,12 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query
 
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultViewId, permissions, ElasticSearchViewState}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.View.IndexingView
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.Predicate
+import ch.epfl.bluebrain.nexus.delta.sourcing.{Predicate, Transactors}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag
 import doobie._
 import doobie.implicits._

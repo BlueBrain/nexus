@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.{GlobalStateStore, ScopedStateStore}
 import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
-import ch.epfl.bluebrain.nexus.testkit.postgres.Doobie
+import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import doobie.implicits._
 import munit.AnyFixture
 

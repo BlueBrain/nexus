@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.archive
 
 import cats.effect.Clock
-import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
@@ -22,7 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectCon
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EphemeralLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sourcing.{EphemeralDefinition, EphemeralLog}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{EphemeralDefinition, EphemeralLog, Transactors}
 import io.circe.Json
 import monix.bio.{IO, UIO}
 import monix.execution.Scheduler

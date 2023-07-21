@@ -1,9 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.model
 
-import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sourcing.MultiDecoder
+import ch.epfl.bluebrain.nexus.delta.sourcing.{MultiDecoder, Transactors}
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset

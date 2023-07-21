@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.config
 
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.CacheConfig
-import ch.epfl.bluebrain.nexus.delta.kernel.database.DatabaseConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApiConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclsConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.EncryptionConfig
@@ -17,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolversConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.ResourcesConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.SchemasConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.ProjectionConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.{DatabaseConfig, ProjectionConfig}
 import com.typesafe.config.{Config, ConfigFactory, ConfigParseOptions, ConfigResolveOptions}
 import monix.bio.{IO, UIO}
 import pureconfig.error.ConfigReaderFailures

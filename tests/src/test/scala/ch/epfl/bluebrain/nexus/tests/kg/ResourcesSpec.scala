@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.testkit.{CirceEq, EitherValuable}
 import ch.epfl.bluebrain.nexus.tests.Identity.resources.{Morty, Rick}
 import ch.epfl.bluebrain.nexus.tests.Optics.{filterKey, filterMetadataKeys, filterSearchMetadata}
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Organizations
-import ch.epfl.bluebrain.nexus.tests.{BaseSpec, Optics}
+import ch.epfl.bluebrain.nexus.tests.{BaseSpec, Optics, SchemaPayload}
 import io.circe.Json
 import io.circe.optics.JsonPath.root
 import monix.bio.Task
@@ -75,7 +75,7 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
 
   "adding schema" should {
     "create a schema" in {
-      val schemaPayload = jsonContentOf("/kg/schemas/simple-schema.json")
+      val schemaPayload = SchemaPayload.loadSimple()
 
       deltaClient.put[Json](s"/schemas/$id1/test-schema", schemaPayload, Rick) { (_, response) =>
         response.status shouldEqual StatusCodes.Created
@@ -254,6 +254,18 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
 
       deltaClient.put[Json](s"/resources/$id2/test-schema/test-resource:1", payload, Rick) { (_, response) =>
         response.status shouldEqual StatusCodes.NotFound
+      }
+    }
+
+    "fail if the payload contains nexus metadata fields (underscore fields)" in {
+      val payload = jsonContentOf(
+        "/kg/resources/simple-resource.json",
+        "priority"   -> "3",
+        "resourceId" -> "1"
+      ).deepMerge(json"""{"_self":  "http://delta/resources/path"}""")
+
+      deltaClient.put[Json](s"/resources/$id2/_/test-resource:1", payload, Rick) { (_, response) =>
+        response.status shouldEqual StatusCodes.BadRequest
       }
     }
   }

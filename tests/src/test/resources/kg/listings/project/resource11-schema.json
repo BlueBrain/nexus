@@ -8,7 +8,7 @@
   "_results": [
     {
       "@id": "{{deltaUri}}/resources/{{proj}}/_/resource11_with_schema",
-      "@type": "https://bluebrain.github.io/nexus/vocabulary/TestResource",
+      "@type": "{{resourceType}}",
       "_constrainedBy": "https://dev.nexus.test.com/test-schema",
       "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
       "_deprecated": false,

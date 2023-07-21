@@ -4497,6 +4497,5 @@
       "@type": "@id"
     }
   },
-  "@id": "https://neuroshapes.org",
-  "_self": "https://bbp.epfl.ch/nexus/v1/resources/neurosciencegraph/datamodels/_/https:%2F%2Fneuroshapes.org"
+  "@id": "https://neuroshapes.org"
 }

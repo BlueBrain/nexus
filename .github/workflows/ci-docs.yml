@@ -8,7 +8,7 @@ on:
       - '.github/workflows/ci-docs.yml'
 
 jobs:
-  review:
+  static-analysis:
     if: github.event_name == 'pull_request'
     runs-on: it
     timeout-minutes: 20

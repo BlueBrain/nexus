@@ -1,15 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
 import cats.effect.{Clock, Sync}
-import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceShifts
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.ProjectContextCache
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{ProjectionConfig, QueryConfig}
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projections
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionErrors, Projections}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes._
-import ch.epfl.bluebrain.nexus.delta.sourcing.{DeleteExpired, PurgeElemFailures}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{DeleteExpired, PurgeElemFailures, Transactors}
 import izumi.distage.model.definition.ModuleDef
 import monix.bio.{Task, UIO}
 
@@ -48,8 +47,13 @@ object StreamModule extends ModuleDef {
     Projections(xas, cfg.query, cfg.restartTtl)
   }
 
-  make[Supervisor].fromResource { (projections: Projections, cfg: ProjectionConfig) =>
-    Supervisor(projections, cfg)
+  make[ProjectionErrors].from { (xas: Transactors, cfg: ProjectionConfig) =>
+    ProjectionErrors(xas, cfg.query)
+  }
+
+  make[Supervisor].fromResource {
+    (projections: Projections, projectionErrors: ProjectionErrors, cfg: ProjectionConfig) =>
+      Supervisor(projections, projectionErrors, cfg)
   }
 
   make[DeleteExpired].fromEffect {

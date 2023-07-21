@@ -1,8 +1,8 @@
-package ch.epfl.bluebrain.nexus.delta.kernel.database
+package ch.epfl.bluebrain.nexus.delta.sourcing.config
 
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.CacheConfig
-import ch.epfl.bluebrain.nexus.delta.kernel.database.DatabaseConfig.DatabaseAccess
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseConfig.DatabaseAccess
 import pureconfig.ConfigReader
 import pureconfig.generic.semiauto.deriveReader
 
