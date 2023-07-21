@@ -45,7 +45,7 @@ final case class ResourcesSearchParams(
                                         updatedBy: Option[Subject] = None,
                                         updatedAt: TimeRange = TimeRange.Anytime,
                                         types: List[Type] = List.empty,
-                                        typeOperator: TypeOperator = TypeOperator.And,
+                                        typeOperator: TypeOperator = TypeOperator.Or,
                                         schema: Option[ResourceRef] = None,
                                         q: Option[String] = None
 ) {

@@ -1,11 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
 
+import akka.http.scaladsl.common.NameDefaultReceptacle
 import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive, Directive1, MalformedQueryParamRejection}
 import akka.http.scaladsl.unmarshalling.{FromStringUnmarshaller, Unmarshaller}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.TypeOperator.And
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.TypeOperator.Or
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.{Type, TypeOperator}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{DeltaSchemeDirectives, UriDirectives}
@@ -29,8 +30,9 @@ trait ElasticSearchViewsDirectives extends UriDirectives {
   private def types(implicit um: FromStringUnmarshaller[Type]): Directive1[List[Type]] =
     parameter("type".as[Type].*).map(_.toList.reverse)
 
-  private def typeOperator(implicit um: FromStringUnmarshaller[TypeOperator]): Directive1[Option[TypeOperator]] = {
-    parameter("typeOperator".as[TypeOperator].?)
+  private def typeOperator(implicit um: FromStringUnmarshaller[TypeOperator]): Directive1[TypeOperator] = {
+    val value: NameDefaultReceptacle[TypeOperator] = "typeOperator".as[TypeOperator].?(Or)
+    parameter(value)
   }
 
   private def schema(implicit um: FromStringUnmarshaller[IriBase]): Directive1[Option[ResourceRef]] =
@@ -78,7 +80,7 @@ trait ElasticSearchViewsDirectives extends UriDirectives {
           updatedBy,
           updatedAt,
           types,
-          typeOperator.getOrElse(And),
+          typeOperator,
           schema,
           qq
         )
@@ -105,7 +107,7 @@ trait ElasticSearchViewsDirectives extends UriDirectives {
           updatedBy,
           updatedAt,
           types,
-          typeOperator.getOrElse(And),
+          typeOperator,
           schema,
           qq
         )
