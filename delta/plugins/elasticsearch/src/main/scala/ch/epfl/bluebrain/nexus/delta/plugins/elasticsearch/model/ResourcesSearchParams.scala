@@ -36,18 +36,18 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
   *   a full text search query parameter
   */
 final case class ResourcesSearchParams(
-    locate: Option[Iri] = None,
-    id: Option[Iri] = None,
-    deprecated: Option[Boolean] = None,
-    rev: Option[Int] = None,
-    createdBy: Option[Subject] = None,
-    createdAt: TimeRange = TimeRange.Anytime,
-    updatedBy: Option[Subject] = None,
-    updatedAt: TimeRange = TimeRange.Anytime,
-    types: List[Type] = List.empty,
-    typeOperator: TypeOperator = TypeOperator.AND,
-    schema: Option[ResourceRef] = None,
-    q: Option[String] = None
+                                        locate: Option[Iri] = None,
+                                        id: Option[Iri] = None,
+                                        deprecated: Option[Boolean] = None,
+                                        rev: Option[Int] = None,
+                                        createdBy: Option[Subject] = None,
+                                        createdAt: TimeRange = TimeRange.Anytime,
+                                        updatedBy: Option[Subject] = None,
+                                        updatedAt: TimeRange = TimeRange.Anytime,
+                                        types: List[Type] = List.empty,
+                                        typeOperator: TypeOperator = TypeOperator.And,
+                                        schema: Option[ResourceRef] = None,
+                                        q: Option[String] = None
 ) {
 
   /**
@@ -61,14 +61,14 @@ object ResourcesSearchParams {
   sealed trait TypeOperator
 
   object TypeOperator {
-    case object AND extends TypeOperator
-    case object OR  extends TypeOperator
+    case object And extends TypeOperator
+    case object Or  extends TypeOperator
 
     implicit val typeFromStringUnmarshaller: FromStringUnmarshaller[TypeOperator] =
       Unmarshaller.strict[String, TypeOperator] { str =>
         str.toLowerCase() match {
-          case "and" => TypeOperator.AND
-          case "or"  => TypeOperator.OR
+          case "and" => TypeOperator.And
+          case "or"  => TypeOperator.Or
           case other => throw new IllegalArgumentException(s"'$other' is not a valid type operator (and/or)")
         }
       }

@@ -5,7 +5,7 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchBulk, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.Type.{ExcludedType, IncludedType}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.TypeOperator.OR
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.TypeOperator.Or
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.DefaultViewSearchSuite._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchClientSetup, Fixtures}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -164,7 +164,7 @@ class DefaultViewSearchSuite
   private val datasetAndCellTypes: ResourcesSearchParams =
     ResourcesSearchParams(types = List(IncludedType(datasetType), IncludedType(cellType)))
   private val datasetOrCellTypes: ResourcesSearchParams  =
-    ResourcesSearchParams(types = List(IncludedType(datasetType), IncludedType(cellType)), typeOperator = OR)
+    ResourcesSearchParams(types = List(IncludedType(datasetType), IncludedType(cellType)), typeOperator = Or)
   private val orgBySchema                                = ResourcesSearchParams(schema = Some(orgSchema))
   private val excludeDatasetType                         = ResourcesSearchParams(types = List(ExcludedType(datasetType)))
   private val byDeprecated                               = ResourcesSearchParams(deprecated = Some(true))

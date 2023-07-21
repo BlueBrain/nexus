@@ -59,8 +59,8 @@ final case class QueryBuilder private[client] (private val query: JsonObject) {
 
   private def typesTerms(typeOperator: TypeOperator, types: List[Type]) = {
     typeOperator match {
-      case TypeOperator.AND => types.map(tpe => term(keywords.tpe, tpe.value))
-      case TypeOperator.OR  => List(terms(keywords.tpe, types.map(_.value)))
+      case TypeOperator.And => types.map(tpe => term(keywords.tpe, tpe.value))
+      case TypeOperator.Or  => List(terms(keywords.tpe, types.map(_.value)))
     }
   }
 

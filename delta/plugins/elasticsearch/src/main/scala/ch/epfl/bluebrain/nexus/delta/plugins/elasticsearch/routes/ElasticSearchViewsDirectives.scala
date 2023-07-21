@@ -5,7 +5,7 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive, Directive1, MalformedQueryParamRejection}
 import akka.http.scaladsl.unmarshalling.{FromStringUnmarshaller, Unmarshaller}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.TypeOperator.AND
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.TypeOperator.And
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.{Type, TypeOperator}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{DeltaSchemeDirectives, UriDirectives}
@@ -78,7 +78,7 @@ trait ElasticSearchViewsDirectives extends UriDirectives {
           updatedBy,
           updatedAt,
           types,
-          typeOperator.getOrElse(AND),
+          typeOperator.getOrElse(And),
           schema,
           qq
         )
@@ -105,7 +105,7 @@ trait ElasticSearchViewsDirectives extends UriDirectives {
           updatedBy,
           updatedAt,
           types,
-          typeOperator.getOrElse(AND),
+          typeOperator.getOrElse(And),
           schema,
           qq
         )
