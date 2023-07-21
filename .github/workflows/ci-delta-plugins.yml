@@ -27,6 +27,4 @@ jobs:
         run: |
           sbt -Dsbt.color=always -Dsbt.supershell=false \
             clean \
-            coverage \
-            plugins/test \
-            plugins/coverageReport
+            plugins-unit-tests-with-coverage

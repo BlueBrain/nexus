@@ -28,31 +28,7 @@ jobs:
           sbt -Dsbt.color=always -Dsbt.supershell=false \
             "project delta" \
             clean \
-            kernel/scalafmtCheck \
-            kernel/Test/scalafmtCheck \
-            kernel/scalafmtSbtCheck \
-            kernel/scapegoat \
-            kernel/doc \
-            rdf/scalafmtCheck \
-            rdf/Test/scalafmtCheck \
-            rdf/scalafmtSbtCheck \
-            rdf/scapegoat \
-            rdf/doc \
-            sdk/scalafmtCheck \
-            sdk/Test/scalafmtCheck \
-            sdk/scalafmtSbtCheck \
-            sdk/scapegoat \
-            sdk/doc \
-            sourcing-psql/scalafmtCheck \
-            sourcing-psql/Test/scalafmtCheck \
-            sourcing-psql/scalafmtSbtCheck \
-            sourcing-psql/scapegoat \
-            sourcing-psql/doc \
-            testkit/scalafmtCheck \
-            testkit/Test/scalafmtCheck \
-            testkit/scalafmtSbtCheck \
-            testkit/scapegoat \
-            testkit/doc
+            core-static-analysis
 
   unit-tests:
     if: github.event_name == 'pull_request'
@@ -69,14 +45,4 @@ jobs:
         run: |
           sbt -Dsbt.color=always -Dsbt.supershell=false \
             clean \
-            coverage \
-            kernel/test \
-            rdf/test \
-            sdk/test \
-            sourcingPsql/test \
-            testkit/test \
-            kernel/coverageReport \
-            rdf/coverageReport \
-            sdk/coverageReport \
-            sourcingPsql/coverageReport \
-            testkit/coverageReport
+            core-unit-tests-with-coverage

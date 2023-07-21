@@ -23,11 +23,7 @@ jobs:
           sbt -Dsbt.color=always -Dsbt.supershell=false \
             "project app" \
             clean \
-            scalafmtCheck \
-            Test/scalafmtCheck \
-            scalafmtSbtCheck \
-            scapegoat \
-            doc
+            app-static-analysis
   unit-tests:
     if: github.event_name == 'pull_request'
     runs-on: it
@@ -44,6 +40,4 @@ jobs:
           sbt -Dsbt.color=always -Dsbt.supershell=false \
             "project app" \
             clean \
-            coverage \
-            app/test \
-            app/coverageReport \
+            app-unit-tests-with-coverage
