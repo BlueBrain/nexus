@@ -5,6 +5,7 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchBulk, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.Type.{ExcludedType, IncludedType}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.TypeOperator.OR
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.DefaultViewSearchSuite._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchClientSetup, Fixtures}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -70,7 +71,9 @@ class DefaultViewSearchSuite
       updatedBy = alice
     )
   private val datasetSchema           = ResourceRef.Latest(nxv + "dataset")
-  private val traceTypes              = Set(nxv + "Dataset", nxv + "Trace")
+  private val datasetType: Iri        = nxv + "Dataset"
+  private val traceType: Iri          = nxv + "Trace"
+  private val traceTypes              = Set(datasetType, traceType)
   private val trace                   = Sample(
     "trace",
     traceTypes,
@@ -80,7 +83,8 @@ class DefaultViewSearchSuite
     createdAt = epochPlus(15L),
     updatedAt = epochPlus(30L)
   )
-  private val cellTypes               = Set(nxv + "Dataset", nxv + "Cell")
+  private val cellType: Iri           = nxv + "Cell"
+  private val cellTypes               = Set(datasetType, cellType)
   private val cell                    =
     Sample(
       "cell",
@@ -158,7 +162,7 @@ class DefaultViewSearchSuite
   private val all                       = ResourcesSearchParams()
   private val orgByType                 = ResourcesSearchParams(types = List(IncludedType(orgType)))
   private val orgBySchema               = ResourcesSearchParams(schema = Some(orgSchema))
-  private val excludeDatasetType        = ResourcesSearchParams(types = List(ExcludedType(nxv + "Dataset")))
+  private val excludeDatasetType        = ResourcesSearchParams(types = List(ExcludedType(datasetType)))
   private val byDeprecated              = ResourcesSearchParams(deprecated = Some(true))
   private val byCreated                 = ResourcesSearchParams(createdBy = Some(alice))
   private val between_8_and_16          = TimeRange.Between.unsafe(epochPlus(8L), epochPlus(16))
@@ -176,6 +180,12 @@ class DefaultViewSearchSuite
   List(
     ("all resources", all, allResources),
     ("org resources by type", orgByType, orgs),
+    ("types AND", ResourcesSearchParams(types = List(IncludedType(datasetType), IncludedType(cellType))), List(cell)),
+    (
+      "types OR",
+      ResourcesSearchParams(types = List(IncludedType(datasetType), IncludedType(cellType)), typeOperator = OR),
+      List(trace, cell)
+    ),
     ("org resources by schema", orgBySchema, orgs),
     ("all resources but the ones with 'Dataset' type", excludeDatasetType, orgs),
     ("deprecated resources", byDeprecated, deprecated),
@@ -226,9 +236,9 @@ class DefaultViewSearchSuite
     assertAggregation(all) { agg =>
       assertEquals(agg.types.buckets.size, 4)
       assert(agg.types.buckets.contains(Bucket((nxv + "Organization").toString, 2)))
-      assert(agg.types.buckets.contains(Bucket((nxv + "Dataset").toString, 2)))
-      assert(agg.types.buckets.contains(Bucket((nxv + "Cell").toString, 1)))
-      assert(agg.types.buckets.contains(Bucket((nxv + "Trace").toString, 1)))
+      assert(agg.types.buckets.contains(Bucket(datasetType.toString, 2)))
+      assert(agg.types.buckets.contains(Bucket(cellType.toString, 1)))
+      assert(agg.types.buckets.contains(Bucket(traceType.toString, 1)))
     }
   }
 

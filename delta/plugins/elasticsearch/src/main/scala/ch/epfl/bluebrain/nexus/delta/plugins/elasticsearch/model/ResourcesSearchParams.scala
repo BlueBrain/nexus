@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 
 import akka.http.scaladsl.unmarshalling.{FromStringUnmarshaller, Unmarshaller}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.Type
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.{Type, TypeOperator}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.QueryParamsUnmarshalling.{iriFromStringUnmarshaller, iriVocabFromStringUnmarshaller => iriUnmarshaller}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.TimeRange
@@ -45,6 +45,7 @@ final case class ResourcesSearchParams(
     updatedBy: Option[Subject] = None,
     updatedAt: TimeRange = TimeRange.Anytime,
     types: List[Type] = List.empty,
+    typeOperator: TypeOperator = TypeOperator.AND,
     schema: Option[ResourceRef] = None,
     q: Option[String] = None
 ) {
@@ -56,6 +57,22 @@ final case class ResourcesSearchParams(
 }
 
 object ResourcesSearchParams {
+
+  sealed trait TypeOperator
+
+  object TypeOperator {
+    case object AND extends TypeOperator
+    case object OR  extends TypeOperator
+
+    implicit val typeFromStringUnmarshaller: FromStringUnmarshaller[TypeOperator] =
+      Unmarshaller.strict[String, TypeOperator] { str =>
+        str.toLowerCase() match {
+          case "and" => TypeOperator.AND
+          case "or"  => TypeOperator.OR
+          case other => throw new IllegalArgumentException(s"'$other' is not a valid type operator (and/or)")
+        }
+      }
+  }
 
   /**
     * Enumeration of 'type' search parameters

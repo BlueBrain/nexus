@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client
 
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.QueryBuilder.allFields
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.{Type, TypeOperator}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
@@ -56,6 +57,13 @@ final case class QueryBuilder private[client] (private val query: JsonObject) {
     if (sortList.isEmpty) this
     else copy(query.add("sort", sortList.values.asJson))
 
+  private def typesTerms(typeOperator: TypeOperator, types: List[Type]) = {
+    typeOperator match {
+      case TypeOperator.AND => types.map(tpe => term(keywords.tpe, tpe.value))
+      case TypeOperator.OR  => List(terms(keywords.tpe, types.map(_.value)))
+    }
+  }
+
   /**
     * Filters by the passed ''params''
     */
@@ -63,7 +71,7 @@ final case class QueryBuilder private[client] (private val query: JsonObject) {
     val (includeTypes, excludeTypes) = params.types.partition(_.include)
     QueryBuilder(
       query deepMerge queryPayload(
-        mustTerms = includeTypes.map(tpe => term(keywords.tpe, tpe.value)) ++
+        mustTerms = typesTerms(params.typeOperator, includeTypes) ++
           params.locate.map { l => or(term(keywords.id, l), term(nxv.self.prefix, l)) } ++
           params.id.map(term(keywords.id, _)) ++
           params.q.map(matchPhrasePrefix(allFields, _)) ++
@@ -74,7 +82,7 @@ final case class QueryBuilder private[client] (private val query: JsonObject) {
           range(nxv.createdAt.prefix, params.createdAt) ++
           params.updatedBy.map(term(nxv.updatedBy.prefix, _)) ++
           range(nxv.updatedAt.prefix, params.updatedAt),
-        mustNotTerms = excludeTypes.map(tpe => term(keywords.tpe, tpe.value)),
+        mustNotTerms = typesTerms(params.typeOperator, excludeTypes),
         withScore = params.q.isDefined
       )
     )

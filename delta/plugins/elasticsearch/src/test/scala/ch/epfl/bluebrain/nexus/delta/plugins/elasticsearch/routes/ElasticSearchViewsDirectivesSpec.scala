@@ -56,8 +56,10 @@ class ElasticSearchViewsDirectivesSpec
   implicit val sortCodec: Codec[Sort]           = deriveConfiguredCodec[Sort]
   implicit val sortListCodec: Codec[SortList]   = deriveConfiguredCodec[SortList]
 
-  implicit val paramTypesCodec: Codec[ResourcesSearchParams.Type] = deriveConfiguredCodec[ResourcesSearchParams.Type]
-  implicit val paramsCodec: Codec[ResourcesSearchParams]          = deriveConfiguredCodec[ResourcesSearchParams]
+  implicit val paramTypesCodec: Codec[ResourcesSearchParams.Type]                = deriveConfiguredCodec[ResourcesSearchParams.Type]
+  implicit val paramTypeOperatorCodec: Codec[ResourcesSearchParams.TypeOperator] =
+    deriveConfiguredCodec[ResourcesSearchParams.TypeOperator]
+  implicit val paramsCodec: Codec[ResourcesSearchParams]                         = deriveConfiguredCodec[ResourcesSearchParams]
 
   private val route: Route =
     get {
