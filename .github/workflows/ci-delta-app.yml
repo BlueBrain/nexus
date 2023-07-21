@@ -1,0 +1,49 @@
+name: Delta Core
+on:
+  pull_request:
+    paths:
+      - 'delta/**'
+      - 'build.sbt'
+      - 'project/**'
+      - '.github/workflows/ci-delta-app.yml'
+jobs:
+  static-analysis:
+    if: github.event_name == 'pull_request'
+    runs-on: it
+    timeout-minutes: 10
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Static Analysis
+        run: |
+          sbt -Dsbt.color=always -Dsbt.supershell=false \
+            "project app" \
+            clean \
+            scalafmtCheck \
+            Test/scalafmtCheck \
+            scalafmtSbtCheck \
+            scapegoat \
+            doc
+  unit-tests:
+    if: github.event_name == 'pull_request'
+    runs-on: it
+    timeout-minutes: 20
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Tests
+        run: |
+          sbt -Dsbt.color=always -Dsbt.supershell=false \
+            "project app" \
+            clean \
+            coverage \
+            app/test \
+            app/coverageReport \

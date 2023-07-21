@@ -2,7 +2,12 @@ name: Delta Plugins
 on:
   pull_request:
     paths:
-      - 'delta/**'
+      - 'delta/kernel/**'
+      - 'delta/plugins/**'
+      - 'delta/rdf/**'
+      - 'delta/sdk/**'
+      - 'delta/sourcing-psql/**'
+      - 'delta/testkit/**'
       - 'build.sbt'
       - 'project/**'
       - '.github/workflows/ci-delta-plugins.yml'

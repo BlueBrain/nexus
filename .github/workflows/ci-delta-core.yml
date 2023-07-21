@@ -2,7 +2,12 @@ name: Delta Core
 on:
   pull_request:
     paths:
-      - 'delta/**'
+      - 'delta/kernel/**'
+      - 'delta/plugins/**'
+      - 'delta/rdf/**'
+      - 'delta/sdk/**'
+      - 'delta/sourcing-psql/**'
+      - 'delta/testkit/**'
       - 'build.sbt'
       - 'project/**'
       - '.github/workflows/ci-delta-core.yml'
@@ -23,11 +28,32 @@ jobs:
           sbt -Dsbt.color=always -Dsbt.supershell=false \
             "project delta" \
             clean \
-            scalafmtCheck \
-            Test/scalafmtCheck \
-            scalafmtSbtCheck \
-            scapegoat \
-            doc
+            kernel/scalafmtCheck \
+            kernel/Test/scalafmtCheck \
+            kernel/scalafmtSbtCheck \
+            kernel/scapegoat \
+            kernel/doc \
+            rdf/scalafmtCheck \
+            rdf/Test/scalafmtCheck \
+            rdf/scalafmtSbtCheck \
+            rdf/scapegoat \
+            rdf/doc \
+            sdk/scalafmtCheck \
+            sdk/Test/scalafmtCheck \
+            sdk/scalafmtSbtCheck \
+            sdk/scapegoat \
+            sdk/doc \
+            sourcing-psql/scalafmtCheck \
+            sourcing-psql/Test/scalafmtCheck \
+            sourcing-psql/scalafmtSbtCheck \
+            sourcing-psql/scapegoat \
+            sourcing-psql/doc \
+            testkit/scalafmtCheck \
+            testkit/Test/scalafmtCheck \
+            testkit/scalafmtSbtCheck \
+            testkit/scapegoat \
+            testkit/doc
+
   unit-tests:
     if: github.event_name == 'pull_request'
     runs-on: it
@@ -44,13 +70,11 @@ jobs:
           sbt -Dsbt.color=always -Dsbt.supershell=false \
             clean \
             coverage \
-            app/test \
             kernel/test \
             rdf/test \
             sdk/test \
             sourcingPsql/test \
             testkit/test \
-            app/coverageReport \
             kernel/coverageReport \
             rdf/coverageReport \
             sdk/coverageReport \
