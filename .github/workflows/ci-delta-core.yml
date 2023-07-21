@@ -28,7 +28,7 @@ jobs:
             scalafmtSbtCheck \
             scapegoat \
             doc
-  review:
+  unit-tests:
     if: github.event_name == 'pull_request'
     runs-on: it
     timeout-minutes: 20

@@ -21,10 +21,16 @@ Please visit @ref:[Authentication & authorization](authentication.md) section to
 
 @@@
 
-@@@ note { .warning }
+@@@ note { .warning title="Remote contexts" }
 
 From Delta v1.5, remote contexts are only resolved during creates and updates.
 That means that when those get updated, the resources importing them must be also updated to take them into account the new version.
+
+@@@
+
+@@@ note { .warning title="JSON payloads" }
+
+The json payload for create and update operations cannot contain keys beginning with underscore (_), as these fields are reserved for Nexus metadata
 
 @@@
 

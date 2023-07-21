@@ -160,9 +160,13 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         esClient: ElasticSearchClient,
         blazeClient: BlazegraphClient @Id("blazegraph-composite-indexing-client"),
         cfg: CompositeViewsConfig,
-        baseUri: BaseUri
+        baseUri: BaseUri,
+        cr: RemoteContextResolution @Id("aggregate")
     ) =>
-      CompositeSpaces.Builder(cfg.prefix, esClient, cfg.elasticsearchBatch, blazeClient, cfg.blazegraphBatch)(baseUri)
+      CompositeSpaces.Builder(cfg.prefix, esClient, cfg.elasticsearchBatch, blazeClient, cfg.blazegraphBatch)(
+        baseUri,
+        cr
+      )
   }
 
   make[MetadataPredicates].fromEffect {
@@ -193,8 +197,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         registry: ReferenceRegistry,
         graphStream: CompositeGraphStream,
         buildSpaces: CompositeSpaces.Builder,
-        compositeProjections: CompositeProjections,
-        cr: RemoteContextResolution @Id("aggregate")
+        compositeProjections: CompositeProjections
     ) =>
       CompositeProjectionLifeCycle(
         hooks,
@@ -202,7 +205,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         graphStream,
         buildSpaces.apply,
         compositeProjections
-      )(cr)
+      )
   }
 
   make[CompositeViewsCoordinator].fromEffect {

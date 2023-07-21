@@ -228,7 +228,7 @@ object SchemaRejection {
   implicit val schemaJsonLdRejectionMapper: Mapper[InvalidJsonLdRejection, SchemaRejection] = {
     case UnexpectedId(id, payloadIri)                      => UnexpectedSchemaId(id, payloadIri)
     case JsonLdRejection.InvalidJsonLdFormat(id, rdfError) => InvalidJsonLdFormat(id, rdfError)
-    case BlankId                                           => InvalidSchemaId("")
+    case BlankId                                           => BlankSchemaId
   }
 
   implicit val responseFieldsSchemas: HttpResponseFields[SchemaRejection] =

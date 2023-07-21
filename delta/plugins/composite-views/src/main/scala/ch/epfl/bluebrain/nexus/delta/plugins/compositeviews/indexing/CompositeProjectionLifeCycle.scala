@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef.ActiveViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.projections.CompositeProjections
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.CompositeGraphStream
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ExecutionStrategy.TransientSingleNode
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{CompiledProjection, PipeChain}
 import monix.bio.Task
@@ -53,7 +52,7 @@ object CompositeProjectionLifeCycle {
       graphStream: CompositeGraphStream,
       buildSpaces: ActiveViewDef => CompositeSpaces,
       compositeProjections: CompositeProjections
-  )(implicit cr: RemoteContextResolution): CompositeProjectionLifeCycle = {
+  ): CompositeProjectionLifeCycle = {
     def init(view: ActiveViewDef): Task[Unit] = buildSpaces(view).init
 
     def index(view: ActiveViewDef): Task[CompiledProjection] =

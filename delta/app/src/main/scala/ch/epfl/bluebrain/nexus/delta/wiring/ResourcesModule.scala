@@ -81,14 +81,16 @@ object ResourcesModule extends ModuleDef {
         s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering,
-        fusionConfig: FusionConfig
+        fusionConfig: FusionConfig,
+        config: AppConfig
     ) =>
       new ResourcesRoutes(identities, aclCheck, resources, schemeDirectives, indexingAction(_, _, _)(shift, cr))(
         baseUri,
         s,
         cr,
         ordering,
-        fusionConfig
+        fusionConfig,
+        config.resources.decodingOption
       )
   }
 

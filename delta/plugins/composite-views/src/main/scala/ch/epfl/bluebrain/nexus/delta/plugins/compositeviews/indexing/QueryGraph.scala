@@ -1,19 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing
 
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.SparqlNTriples
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.QueryGraph.logger
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.idTemplating
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Graph, NTriples}
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Pipe
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, PipeRef}
-import com.typesafe.scalalogging.Logger
 import monix.bio.Task
-import shapeless.Typeable
 
 import java.util.regex.Pattern.quote
 
@@ -26,13 +21,9 @@ import java.util.regex.Pattern.quote
   * @param query
   *   the query to perform on each resource
   */
-final class QueryGraph(client: BlazegraphClient, namespace: String, query: SparqlConstructQuery) extends Pipe {
+final case class QueryGraph(client: BlazegraphClient, namespace: String, query: SparqlConstructQuery) {
 
-  override type In  = GraphResource
-  override type Out = GraphResource
-  override def ref: PipeRef                     = QueryGraph.ref
-  override def inType: Typeable[GraphResource]  = Typeable[GraphResource]
-  override def outType: Typeable[GraphResource] = Typeable[GraphResource]
+  private val logger: Logger = Logger[QueryGraph]
 
   private def newGraph(ntriples: NTriples, id: Iri): Task[Option[Graph]] =
     if (ntriples.isEmpty) {
@@ -43,23 +34,15 @@ final class QueryGraph(client: BlazegraphClient, namespace: String, query: Sparq
         Some(g.replaceRootNode(id))
       }
 
-  override def apply(element: SuccessElem[GraphResource]): Task[Elem[GraphResource]] =
+  def apply(graphResource: GraphResource): Task[Option[GraphResource]] =
     for {
-      ntriples    <- client.query(Set(namespace), replaceId(query, element.id), SparqlNTriples)
-      graphResult <- newGraph(ntriples.value, element.id)
-      _           <- Task.when(graphResult.isEmpty && logger.underlying.isDebugEnabled)(
-                       Task.delay(logger.debug(s"Querying blazegraph did not return any triples, '$element' will be dropped."))
+      ntriples    <- client.query(Set(namespace), replaceId(query, graphResource.id), SparqlNTriples)
+      graphResult <- newGraph(ntriples.value, graphResource.id)
+      _           <- Task.when(graphResult.isEmpty)(
+                       logger.debug(s"Querying blazegraph did not return any triples, '$graphResource' will be dropped.")
                      )
-    } yield graphResult.map(g => element.map(_.copy(graph = g))).getOrElse(element.dropped)
+    } yield graphResult.map(g => graphResource.copy(graph = g))
 
   private def replaceId(query: SparqlConstructQuery, iri: Iri): SparqlConstructQuery =
     SparqlConstructQuery.unsafe(query.value.replaceAll(quote(idTemplating), s"<$iri>"))
-}
-
-object QueryGraph {
-
-  private val logger: Logger = Logger[QueryGraph]
-
-  val ref: PipeRef = PipeRef.unsafe("query-graph")
-
 }

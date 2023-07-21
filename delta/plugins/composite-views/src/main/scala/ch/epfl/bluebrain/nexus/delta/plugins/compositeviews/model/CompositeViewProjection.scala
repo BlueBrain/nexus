@@ -1,17 +1,20 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 
 import cats.Order
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.GraphResourceToNTriples
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjectionFields.{ElasticSearchProjectionFields, SparqlProjectionFields}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.ProjectionType._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel.IndexGroup
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.GraphResourceToDocument
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.PipeChain
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Operation, PipeChain}
 import io.circe.{Encoder, JsonObject}
 
 import java.util.UUID
@@ -103,6 +106,8 @@ sealed trait CompositeViewProjection extends Product with Serializable {
     *   this [[CompositeViewProjection]] as [[CompositeViewProjectionFields]]
     */
   def toFields: CompositeViewProjectionFields
+
+  def transformationPipe(implicit rcr: RemoteContextResolution): Operation.Pipe
 }
 
 object CompositeViewProjection {
@@ -135,6 +140,9 @@ object CompositeViewProjection {
     override def tpe: ProjectionType                              = ElasticSearchProjectionType
     override def asSparql: Option[SparqlProjection]               = None
     override def asElasticSearch: Option[ElasticSearchProjection] = Some(this)
+
+    override def transformationPipe(implicit rcr: RemoteContextResolution) =
+      new GraphResourceToDocument(context, includeContext)
 
     override def toFields: CompositeViewProjectionFields =
       ElasticSearchProjectionFields(
@@ -172,6 +180,9 @@ object CompositeViewProjection {
     override def tpe: ProjectionType                              = SparqlProjectionType
     override def asSparql: Option[SparqlProjection]               = Some(this)
     override def asElasticSearch: Option[ElasticSearchProjection] = None
+
+    override def transformationPipe(implicit rcr: RemoteContextResolution): Operation.Pipe =
+      GraphResourceToNTriples
 
     override def toFields: CompositeViewProjectionFields =
       SparqlProjectionFields(
