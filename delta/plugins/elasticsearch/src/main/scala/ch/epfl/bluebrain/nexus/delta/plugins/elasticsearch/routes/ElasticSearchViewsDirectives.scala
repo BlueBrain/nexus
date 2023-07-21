@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
 
-import akka.http.scaladsl.common.NameDefaultReceptacle
 import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive, Directive1, MalformedQueryParamRejection}
@@ -31,8 +30,7 @@ trait ElasticSearchViewsDirectives extends UriDirectives {
     parameter("type".as[Type].*).map(_.toList.reverse)
 
   private def typeOperator(implicit um: FromStringUnmarshaller[TypeOperator]): Directive1[TypeOperator] = {
-    val value: NameDefaultReceptacle[TypeOperator] = "typeOperator".as[TypeOperator].?(Or)
-    parameter(value)
+    parameter("typeOperator".as[TypeOperator].?[TypeOperator](Or))
   }
 
   private def schema(implicit um: FromStringUnmarshaller[IriBase]): Directive1[Option[ResourceRef]] =

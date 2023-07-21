@@ -58,7 +58,7 @@ final case class ResourcesSearchParams(
 
 object ResourcesSearchParams {
 
-  sealed trait TypeOperator
+  sealed trait TypeOperator extends Product with Serializable
 
   object TypeOperator {
     case object And extends TypeOperator
@@ -80,7 +80,6 @@ object ResourcesSearchParams {
   sealed trait Type extends Product with Serializable {
     def value: Iri
     def include: Boolean
-    def exclude: Boolean = !include
   }
 
   object Type {
