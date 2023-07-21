@@ -64,7 +64,7 @@ object ResourcesSearchParams {
     case object And extends TypeOperator
     case object Or  extends TypeOperator
 
-    implicit val typeFromStringUnmarshaller: FromStringUnmarshaller[TypeOperator] =
+    implicit val fromStringUnmarshaller: FromStringUnmarshaller[TypeOperator] =
       Unmarshaller.strict[String, TypeOperator] { str =>
         str.toLowerCase() match {
           case "and" => TypeOperator.And

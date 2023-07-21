@@ -58,12 +58,14 @@ final case class QueryBuilder private[client] (private val query: JsonObject) {
     else copy(query.add("sort", sortList.values.asJson))
 
   private def typesTerms(typeOperator: TypeOperator, types: List[Type]) = {
+    val terms = types.map(tpe => term(keywords.tpe, tpe.value))
+
     if (types.isEmpty) {
       Nil
     } else {
       typeOperator match {
-        case TypeOperator.And => types.map(tpe => term(keywords.tpe, tpe.value))
-        case TypeOperator.Or  => List(terms(keywords.tpe, types.map(_.value)))
+        case TypeOperator.And => terms
+        case TypeOperator.Or  => List(or(terms:_*))
       }
     }
   }
