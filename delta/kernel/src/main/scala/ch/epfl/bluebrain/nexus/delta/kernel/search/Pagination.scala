@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.model.search
+package ch.epfl.bluebrain.nexus.delta.kernel.search
 
 import io.circe.Json
 

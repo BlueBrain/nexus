@@ -2,8 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.sdk.organizations
 
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
+import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchParams, SearchResults}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{SearchParams, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations.entityType
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.OrganizationsImpl.OrganizationsLog
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationCommand._

@@ -1,9 +1,10 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.model.search
+package ch.epfl.bluebrain.nexus.delta.kernel.search
 
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.search.TimeRange.ParseError._
+
 import java.time.Instant
 import scala.util.Try
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.TimeRange.ParseError._
 
 /**
   * Defines a date time range for search purposes

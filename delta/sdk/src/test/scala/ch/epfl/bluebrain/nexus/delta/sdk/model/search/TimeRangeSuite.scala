@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.search
 
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.TimeRange.ParseError.{InvalidFormat, InvalidRange, InvalidValue}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.TimeRange.{parse, After, Anytime, Before, Between}
+import ch.epfl.bluebrain.nexus.delta.kernel.search.TimeRange.ParseError.{InvalidFormat, InvalidRange, InvalidValue}
+import ch.epfl.bluebrain.nexus.delta.kernel.search.TimeRange.{parse, After, Anytime, Before, Between}
 import ch.epfl.bluebrain.nexus.testkit.bio.EitherAssertions
 import munit.FunSuite
 
