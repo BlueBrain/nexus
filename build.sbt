@@ -1014,7 +1014,13 @@ addCommandAlias("build-docs", ";docs/clean;docs/makeSite")
 addCommandAlias("preview-docs", ";docs/clean;docs/previewSite")
 
 val coreModules = List("kernel", "rdf", "sdk", "sourcingPsql", "testkit")
-def staticAnalysisCommandForModule(module: String) = s";$module/scalafmtCheck;$module/Test/scalafmtCheck;$module/scalafmtSbtCheck;$module/scapegoat;$module/doc"
+def staticAnalysisCommandForModule(module: String) = {
+  s";$module/scalafmtCheck;" +
+    s"$module/Test/scalafmtCheck;" +
+    s"$module/scalafmtSbtCheck;" +
+    s"$module/scapegoat;" +
+    s"$module/doc;"
+}
 addCommandAlias("core-static-analysis", coreModules.map(staticAnalysisCommandForModule).mkString)
 addCommandAlias("app-static-analysis", staticAnalysisCommandForModule("app"))
 addCommandAlias("plugins-static-analysis", staticAnalysisCommandForModule("plugins"))
@@ -1027,10 +1033,3 @@ def unitTestsWithCoverageCommandsForModules(modules: List[String]) = {
 addCommandAlias("core-unit-tests-with-coverage", unitTestsWithCoverageCommandsForModules(coreModules))
 addCommandAlias("app-unit-tests-with-coverage", unitTestsWithCoverageCommandsForModules(List("app")))
 addCommandAlias("plugins-unit-tests-with-coverage", unitTestsWithCoverageCommandsForModules(List("plugins")))
-
-addCommandAlias("core-clean", cleanForModules(coreModules))
-addCommandAlias("app-clean", cleanForModules(List("app")))
-addCommandAlias("plugins-clean", cleanForModules(List("plugins")))
-def cleanForModules(modules: List[String]) = {
-  modules.map(module => s"$module/clean;").mkString
-}

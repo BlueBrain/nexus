@@ -26,8 +26,7 @@ jobs:
       - name: Static analysis
         run: |
           sbt -Dsbt.color=always -Dsbt.supershell=false \
-            "project delta" \
-            core-clean \
+            clean \
             core-static-analysis
 
   unit-tests:
@@ -44,5 +43,5 @@ jobs:
       - name: Unit tests
         run: |
           sbt -Dsbt.color=always -Dsbt.supershell=false \
-            core-clean \
+            clean \
             core-unit-tests-with-coverage
