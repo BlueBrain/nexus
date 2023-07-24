@@ -20,8 +20,8 @@ CONSTRUCT {
         :deprecated         ?deprecated            ;
         :self               ?self                  .
 
-  ?id  :project             ?projectBN             .
-                            ?projectBN             :identifier  ?projectId    ;
+  ?id  :project             ?projectId             .
+                            ?projectId             :identifier  ?projectId    ;
                                                    :label       ?projectLabel .
 
   # Common properties
@@ -47,9 +47,9 @@ CONSTRUCT {
 
   ## Brain region / layer
   ?id  :brainRegion        ?brainRegionId         .
-                            ?brainRegionId         :identifier  ?brainRegionId      ;
-                                                   :label       ?brainRegionLabel   ;
-                                                   :idLabel     ?brainRegionIdLabel .
+                           ?brainRegionId         :identifier  ?brainRegionId      ;
+                                                  :label       ?brainRegionLabel   ;
+                                                  :idLabel     ?brainRegionIdLabel .
   ?id  :layer              ?layerId               .
                            ?layerId               :identifier  ?layerId      ;
                                                   :label       ?layerLabel   ;
@@ -97,8 +97,8 @@ CONSTRUCT {
                                                   :stimulusType    ?imageStimulusTypeLabel .
 
   ## License
-  ?id  :license            ?licenseBN             .
-                           ?licenseBN             :identifier  ?licenseId     ;
+  ?id  :license            ?licenseId             .
+                           ?licenseId             :identifier  ?licenseId     ;
                                                   :label       ?licenseLabel  .
 
   ## Series
@@ -126,25 +126,25 @@ CONSTRUCT {
        :status               ?status              .
 
   ## Subject
-  ?id  :subjectAge           ?age                   .
-                             ?age                   :value       ?subjectAgeValue    ;
-                                                    :minValue    ?subjectAgeMinValue ;
-                                                    :maxValue    ?subjectAgeMaxValue ;
-                                                    :unit        ?subjectAgeUnit     ;
-                                                    :period      ?subjectAgePeriod   ;
-                                                    :label       ?subjectAgeLabel    .
-  ?id  :subjectWeight        ?subjectWeightBN       .
-                             ?subjectWeightBN       :value       ?subjectWeightValue     ;
-                                                    :unit        ?subjectWeightUnit      ;
-                                                    :minValue    ?subjectWeightMinValue  ;
-                                                    :maxValue    ?subjectWeightMaxValue  ;
-                                                    :label       ?subjectWeightLabel     .
+  ?id  :subjectAge           ?age                 .
+                             ?age                 :value       ?subjectAgeValue    ;
+                                                  :minValue    ?subjectAgeMinValue ;
+                                                  :maxValue    ?subjectAgeMaxValue ;
+                                                  :unit        ?subjectAgeUnit     ;
+                                                  :period      ?subjectAgePeriod   ;
+                                                  :label       ?subjectAgeLabel    .
+  ?id  :subjectWeight        ?weight              .
+                             ?weight              :value       ?subjectWeightValue     ;
+                                                  :unit        ?subjectWeightUnit      ;
+                                                  :minValue    ?subjectWeightMinValue  ;
+                                                  :maxValue    ?subjectWeightMaxValue  ;
+                                                  :label       ?subjectWeightLabel     .
 
   # Properties specific to types
 
   ## Bouton density
-  ?id  :boutonDensity      ?boutonDensityBN            .
-                           ?boutonDensityBN            :value       ?boutonDensityValue  ;
+  ?id  :boutonDensity      ?boutonDensityMean          .
+                           ?boutonDensityMean          :value       ?boutonDensityValue  ;
                                                        :unit        ?boutonDensityUnit   ;
                                                        :label       ?boutonDensityLabel  .
 
@@ -152,20 +152,20 @@ CONSTRUCT {
   ?id  :circuitType          ?circuitType              ;
        :circuitBase          ?circuitBaseUrlStr        ;
        :circuitConfigPath    ?circuitConfigPathUrlStr  ;
-       :circuitBrainRegion   ?circuitBrainRegionBN     .
-                             ?circuitBrainRegionBN     :identifier  ?circuitBrainRegionId    ;
+       :circuitBrainRegion   ?circuitBrainRegionId     .
+                             ?circuitBrainRegionId     :identifier  ?circuitBrainRegionId    ;
                                                        :label       ?circuitBrainRegionLabel .
 
   ## Layer thickness
-  ?id  :layerThickness     ?thicknessBN           .
-                           ?thicknessBN           :value       ?thicknessValue   ;
+  ?id  :layerThickness       ?thickness           .
+                             ?thickness           :value       ?thicknessValue   ;
                                                   :unit        ?thicknessUnit    ;
                                                   :nValue      ?thicknessNValue  ;
                                                   :label       ?thicknessLabel   .
 
   ## Neuron density
-  ?id  :neuronDensity      ?neuronDensityBN       .
-                           ?neuronDensityBN       :value       ?neuronDensityValue   ;
+  ?id  :neuronDensity        ?neuronDensity       .
+                             ?neuronDensity       :value       ?neuronDensityValue   ;
                                                   :unit        ?neuronDensityUnit    ;
                                                   :nValue      ?neuronDensityNValue  ;
                                                   :label       ?neuronDensityLabel   .
@@ -211,7 +211,6 @@ CONSTRUCT {
        nxv:self        ?self           ;
        nxv:project     ?projectId      .
   BIND( STRAFTER(STR(?projectId), "/v1/projects/") as ?projectLabel ) .
-  BIND( BNODE() AS ?projectBN ) .
 
   # We read the following nodes as text. This is done in order to avoid conflict
   # when another triple uses the same @id. For instance, createdBy and updatedBy
@@ -401,10 +400,7 @@ CONSTRUCT {
   # License
   OPTIONAL {
     ?id  schema:license  ?licenseId .
-    OPTIONAL {
-      ?licenseId  schema:name  ?licenseLabel .
-    } .
-    BIND( BNODE() AS ?licenseBN ) .
+    OPTIONAL { ?licenseId  schema:name  ?licenseLabel . } .
   } .
 
   # Series
@@ -469,12 +465,11 @@ CONSTRUCT {
         CONCAT(STR(?subjectWeightMinValue), " to ", STR(?subjectWeightMaxValue), " ", STR(?subjectWeightUnit))
         ) as ?subjectWeightLabel
       ) .
-    BIND( BNODE() as ?subjectWeightBN ) .
   } .
 
   # Bouton density
   OPTIONAL {
-    ?id  a             nsg:BoutonDensity   ;
+    ?id   a            nsg:BoutonDensity   ;
           nsg:density  ?boutonDensityMean  .
                        ?boutonDensityMean  nsg:statistic    "mean"              ;
                                            schema:value     ?boutonDensityValue ;
@@ -485,7 +480,6 @@ CONSTRUCT {
         STR(?boutonDensityUnit)
       ) as ?boutonDensityLabel
     ) .
-    BIND( BNODE() as ?boutonDensityBN ) .
   } .
 
   # Circuit
@@ -522,14 +516,17 @@ CONSTRUCT {
 
   # Layer thickness
   OPTIONAL {
-    ?id  a           nsg:LayerThickness ;
-         nsg:series  ?meanSeries        .
-                     ?meanSeries  nsg:statistic    "mean"          ;
-                                  schema:value     ?thicknessValue ;
-                                  schema:unitCode  ?thicknessUnit  .
-    ?id  nsg:series  ?nSeries  .
-                     ?nSeries  nsg:statistic  "N"              ;
-                               schema:value   ?thicknessNValue .
+    ?id  a           nsg:LayerThickness .
+    ?id  nsg:series  ?thickness         .
+
+    # Thickness mean value
+    ?thickness  nsg:statistic    "mean"           ;
+                schema:value     ?thicknessValue  ;
+                schema:unitCode  ?thicknessUnit   .
+
+    # Thickness N value
+    ?thickness  nsg:statistic    "N"              ;
+                schema:value     ?thicknessNValue .
     BIND(
       CONCAT(
         STR(?thicknessValue), " ",
@@ -537,19 +534,22 @@ CONSTRUCT {
         STR(?thicknessNValue), ")"
       ) as ?thicknessLabel
     ) .
-    BIND( BNODE() as ?thicknessBN ) .
   } .
 
   # Neuron density
   OPTIONAL {
-    ?id  a           nsg:NeuronDensity ;
-         nsg:series  ?meanSeries       .
-                     ?meanSeries  nsg:statistic    ?stat               ;
-                                  schema:value     ?neuronDensityValue ;
-                                  schema:unitCode  ?neuronDensityUnit  .
-    ?id  nsg:series  ?nSeries  .
-                     ?nSeries  nsg:statistic  "N" ;
-                               schema:value   ?neuronDensityNValue .
+    ?id  a           nsg:NeuronDensity .
+    ?id  nsg:series  ?neuronDensity    .
+
+    # Neuron density mean
+    ?neuronDensity  nsg:statistic    ?stat               ;
+                    schema:value     ?neuronDensityValue ;
+                    schema:unitCode  ?neuronDensityUnit  .
+
+    # Neuron density N value
+    ?neuronDensity  nsg:statistic  "N"                   ;
+                    schema:value   ?neuronDensityNValue  .
+
     FILTER ( ?stat = "mean" || ?stat = "data point" ) .
     BIND(
       CONCAT(
@@ -558,7 +558,6 @@ CONSTRUCT {
         STR(?neuronDensityNValue), ")"
       ) as ?neuronDensityLabel
     ) .
-    BIND( BNODE() as ?neuronDensityBN ) .
   } .
 
   # Simulation campaign configuration
@@ -585,7 +584,6 @@ CONSTRUCT {
           OPTIONAL {
             ?circuitBrainRegionId  rdfs:label  ?circuitBrainRegionLabel .
           }
-          BIND( BNODE() AS ?circuitBrainRegionBN ) .
         } .
       } .
     } .
