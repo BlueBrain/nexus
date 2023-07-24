@@ -1,16 +1,11 @@
-name: Delta Core
+name: Delta App
 on:
   pull_request:
     paths:
-      - 'delta/kernel/**'
-      - 'delta/plugins/**'
-      - 'delta/rdf/**'
-      - 'delta/sdk/**'
-      - 'delta/sourcing-psql/**'
-      - 'delta/testkit/**'
+      - 'delta/**'
       - 'build.sbt'
       - 'project/**'
-      - '.github/workflows/ci-delta-core.yml'
+      - '.github/workflows/ci-delta-app.yml'
 jobs:
   static-analysis:
     if: github.event_name == 'pull_request'
@@ -27,8 +22,7 @@ jobs:
         run: |
           sbt -Dsbt.color=always -Dsbt.supershell=false \
             clean \
-            core-static-analysis
-
+            app-static-analysis
   unit-tests:
     if: github.event_name == 'pull_request'
     runs-on: it
@@ -44,4 +38,4 @@ jobs:
         run: |
           sbt -Dsbt.color=always -Dsbt.supershell=false \
             clean \
-            core-unit-tests-with-coverage
+            app-unit-tests-with-coverage

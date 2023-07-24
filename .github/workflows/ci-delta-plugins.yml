@@ -2,11 +2,32 @@ name: Delta Plugins
 on:
   pull_request:
     paths:
-      - 'delta/**'
+      - 'delta/kernel/**'
+      - 'delta/plugins/**'
+      - 'delta/rdf/**'
+      - 'delta/sdk/**'
+      - 'delta/sourcing-psql/**'
+      - 'delta/testkit/**'
       - 'build.sbt'
       - 'project/**'
       - '.github/workflows/ci-delta-plugins.yml'
 jobs:
+  static-analysis:
+    if: github.event_name == 'pull_request'
+    runs-on: it
+    timeout-minutes: 10
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Static analysis
+        run: |
+          sbt -Dsbt.color=always -Dsbt.supershell=false \
+            clean \
+            plugins-static-analysis
   unit-tests:
     if: github.event_name == 'pull_request'
     runs-on: it
@@ -18,10 +39,8 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      - name: Tests
+      - name: Unit tests
         run: |
           sbt -Dsbt.color=always -Dsbt.supershell=false \
             clean \
-            coverage \
-            plugins/test \
-            plugins/coverageReport
+            plugins-unit-tests-with-coverage
