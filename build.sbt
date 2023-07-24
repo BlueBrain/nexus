@@ -1028,3 +1028,9 @@ addCommandAlias("core-unit-tests-with-coverage", unitTestsWithCoverageCommandsFo
 addCommandAlias("app-unit-tests-with-coverage", unitTestsWithCoverageCommandsForModules(List("app")))
 addCommandAlias("plugins-unit-tests-with-coverage", unitTestsWithCoverageCommandsForModules(List("plugins")))
 
+addCommandAlias("core-clean", cleanForModules(coreModules))
+addCommandAlias("app-clean", cleanForModules(List("app")))
+addCommandAlias("plugins-clean", cleanForModules(List("plugins")))
+def cleanForModules(modules: List[String]) = {
+  modules.map(module => s"$module/clean;").mkString
+}
