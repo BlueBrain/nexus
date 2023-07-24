@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.{BlazegraphSink, GraphResourceToNTriples}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeSink
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.NewCompositeSink
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef.ActiveViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
@@ -68,8 +68,8 @@ object CompositeSpaces {
       // Create the Blazegraph sink
       def createBlazeSink(namespace: String): SparqlProjection => Sink = { target =>
         val blazeSink = BlazegraphSink(blazeClient, blazeBatchConfig, namespace)
-        new CompositeSink(
-          QueryGraph(blazeClient, common, target.query),
+        new NewCompositeSink(
+          NewQueryGraph(blazeClient, common, target.query),
           GraphResourceToNTriples.graphToNTriples,
           blazeSink.apply,
           blazeBatchConfig.maxElements,
@@ -81,8 +81,8 @@ object CompositeSpaces {
       def createEsSink(index: IndexLabel): ElasticSearchProjection => Sink = { target =>
         val esSink =
           ElasticSearchSink.states(esClient, esBatchConfig.maxElements, esBatchConfig.maxInterval, index, Refresh.False)
-        new CompositeSink(
-          QueryGraph(blazeClient, common, target.query),
+        new NewCompositeSink(
+          NewQueryGraph(blazeClient, common, target.query),
           new GraphResourceToDocument(target.context, target.includeContext).graphToDocument,
           esSink.apply,
           esBatchConfig.maxElements,
