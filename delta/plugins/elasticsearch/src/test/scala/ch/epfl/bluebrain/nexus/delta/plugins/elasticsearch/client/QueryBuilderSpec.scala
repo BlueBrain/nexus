@@ -5,6 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearch
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.TypeOperator
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Sort, SortList}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -31,7 +32,8 @@ class QueryBuilderSpec extends AnyWordSpecLike with Matchers with TestHelpers wi
       val params   = ResourcesSearchParams(
         deprecated = Some(true),
         schema = Some(schema),
-        types = List(IncludedType(nxv.Resolver), ExcludedType(nxv.CrossProject))
+        types = List(IncludedType(nxv.Resolver), ExcludedType(nxv.CrossProject)),
+        typeOperator = TypeOperator.And
       )
       QueryBuilder(params).withSort(SortList(List(Sort("@id")))).withPage(FromPagination(0, 10)).build shouldEqual
         expected
