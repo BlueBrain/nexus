@@ -1005,37 +1005,53 @@ Global / excludeLintKeys        += docs / paradoxRoots
 Global / excludeLintKeys        += docs / Paradox / paradoxNavigationDepth
 Global / concurrentRestrictions += Tags.limit(Tags.Test, 1)
 
-addCommandAlias("review", ";clean;scalafmtCheck;test:scalafmtCheck;scalafmtSbtCheck;coverage;scapegoat;test;coverageReport;coverageAggregate")
+addCommandAlias("review",
+  s"""
+     |;clean
+     |;scalafmtCheck
+     |;test:scalafmtCheck
+     |;scalafmtSbtCheck
+     |;coverage
+     |;scapegoat
+     |;test
+     |;coverageReport
+     |;coverageAggregate
+     |""".stripMargin
+)
 addCommandAlias(
   "deltaReview",
-  ";delta/clean" +
-    ";delta/scalafmtCheck" +
-    ";delta/test:scalafmtCheck" +
-    ";scalafmtSbtCheck;coverage" +
-    ";delta/scapegoat" +
-    ";delta/test" +
-    ";delta/coverageReport" +
-    ";delta/coverageAggregate"
+  """
+     |;delta/clean
+     |;delta/scalafmtCheck
+     |;delta/test:scalafmtCheck
+     |;scalafmtSbtCheck;coverage
+     |;delta/scapegoat
+     |;delta/test
+     |;delta/coverageReport
+     |;delta/coverageAggregate
+     |""".stripMargin
 )
 addCommandAlias("build-docs", ";docs/clean;docs/makeSite")
 addCommandAlias("preview-docs", ";docs/clean;docs/previewSite")
 
 val coreModules = List("kernel", "rdf", "sdk", "sourcingPsql", "testkit")
-def staticAnalysisCommandForModule(module: String) = {
-  s";$module/scalafmtCheck" +
-    s";$module/Test/scalafmtCheck" +
-    s";$module/scalafmtSbtCheck" +
-    s";$module/scapegoat" +
-    s";$module/doc"
-}
+def staticAnalysisCommandForModule(module: String) =
+  s"""
+    |;$module/scalafmtCheck
+    |;$module/Test/scalafmtCheck
+    |;$module/scalafmtSbtCheck
+    |;$module/scapegoat
+    |;$module/doc
+    |""".stripMargin
+
 addCommandAlias("core-static-analysis", coreModules.map(staticAnalysisCommandForModule).mkString)
 addCommandAlias("app-static-analysis", staticAnalysisCommandForModule("app"))
 addCommandAlias("plugins-static-analysis", staticAnalysisCommandForModule("plugins"))
 
 def unitTestsWithCoverageCommandsForModules(modules: List[String]) = {
-  "coverage;" +
-    modules.map(module => s"$module/test;").mkString +
-    modules.map(module => s"$module/coverageReport;").mkString
+  ";coverage" +
+    modules.map(module => s";$module/test").mkString +
+    modules.map(module => s";$module/coverageReport").mkString
 }
 addCommandAlias("core-unit-tests-with-coverage", unitTestsWithCoverageCommandsForModules(coreModules))
 addCommandAlias("app-unit-tests-with-coverage", unitTestsWithCoverageCommandsForModules(List("app")))
