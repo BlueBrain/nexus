@@ -385,7 +385,7 @@ Examples of ranges:
 - `{rev}`: Number - can be used to filter the resulting resources based on their revision value
 - `{type}`: Iri - can be used to filter the resulting resources based on their `@type` value. This parameter can appear 
   multiple times, filtering further the `@type` value.
-- `{typeOperator}`: String (`and`/`or`) - used to determine how multiple `type` values affect the query, either requiring all to match (`and`) or any to match (`or`)
+- `{typeOperator}`: String (`and`/`or`) - used to determine how multiple `type` values affect the query, either requiring all to match (`and`) or any to match (`or`); defaults to `or`
 - `{createdBy}`: Iri - can be used to filter the resulting resources based on their creator
 - `{createdAt}`: Time range - can be used to filter the resulting resources based on their creation date
 - `{updatedBy}`: Iri - can be used to filter the resulting resources based on the person which performed the last update
