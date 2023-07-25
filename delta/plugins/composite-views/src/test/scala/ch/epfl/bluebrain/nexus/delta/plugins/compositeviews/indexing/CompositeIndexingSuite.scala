@@ -99,17 +99,18 @@ class CompositeIndexingSuite
     """
       |prefix music: <http://music.com/>
       |CONSTRUCT {
-      |	{resource_id}   music:name       ?bandName ;
+      |	?id             music:name       ?bandName ;
       |					music:genre      ?bandGenre ;
       |					music:start      ?bandStartYear ;
       |					music:album      ?albumId .
       |	?albumId        music:title   	 ?albumTitle .
       |} WHERE {
-      |	{resource_id}   music:name       ?bandName ;
+      | VALUES ?id { {resource_id} }
+      |	?id             music:name       ?bandName ;
       |					music:start      ?bandStartYear;
       |					music:genre      ?bandGenre .
       |	OPTIONAL {
-      |		{resource_id} 	^music:by 		?albumId .
+      |		?id         	^music:by 		?albumId .
       |		?albumId        music:title   	?albumTitle .
       |	}
       |}
