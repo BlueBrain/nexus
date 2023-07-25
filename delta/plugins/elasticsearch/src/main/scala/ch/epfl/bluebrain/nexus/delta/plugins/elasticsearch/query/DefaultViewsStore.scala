@@ -40,12 +40,12 @@ object DefaultViewsStore {
       implicit val stateDecoder: Decoder[ElasticSearchViewState] = ElasticSearchViewState.serializer.codec
       def find(scope: Scope): UIO[List[IndexingView]]            =
         (fr"SELECT value FROM scoped_states" ++
-          Fragments.whereAnd(
-            fr"type = ${ElasticSearchViews.entityType}",
+          Fragments.whereAndOpt(
+            Some(fr"type = ${ElasticSearchViews.entityType}"),
             scope.asFragment,
-            fr"tag = ${Tag.Latest.value}",
-            fr"id = $defaultViewId",
-            fr"deprecated = false"
+            Some(fr"tag = ${Tag.Latest.value}"),
+            Some(fr"id = $defaultViewId"),
+            Some(fr"deprecated = false")
           ))
           .query[Json]
           .to[List]

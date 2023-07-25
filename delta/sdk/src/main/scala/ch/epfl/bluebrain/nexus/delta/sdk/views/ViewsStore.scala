@@ -76,12 +76,12 @@ object ViewsStore {
 
     override def fetchDefaultViews(scope: Scope): UIO[AggregateView] = {
       (fr"SELECT value FROM scoped_states" ++
-        Fragments.whereAnd(
-          fr"type = $entityType",
+        Fragments.whereAndOpt(
+          Some(fr"type = $entityType"),
           scope.asFragment,
-          fr"tag = ${Tag.Latest.value}",
-          fr"id = $defaultViewId",
-          fr"deprecated = false"
+          Some(fr"tag = ${Tag.Latest.value}"),
+          Some(fr"id = $defaultViewId"),
+          Some(fr"deprecated = false")
         ))
         .query[Json]
         .to[List]
