@@ -42,32 +42,32 @@ object NexusSource {
     }
   }
 
-  implicit def nexusSourceDecoder(implicit decodingOption: DecodingOption): Decoder[NexusSource] = {
+  private val strictDecoder = new Decoder[NexusSource] {
+    private val decoder = implicitly[Decoder[Json]]
 
-    decodingOption match {
-      case DecodingOption.Lenient => implicitly[Decoder[Json]].map(NexusSource(_))
-      case DecodingOption.Strict => new Decoder[NexusSource] {
-        private val decoder = implicitly[Decoder[Json]]
-
-        override def apply(c: HCursor): Result[NexusSource] = {
-          decoder(c).flatMap { json =>
-            val underscoreFields = json.asObject.toList.flatMap(_.keys).filter(_.startsWith("_"))
-            if (underscoreFields.nonEmpty) {
-              Left(
-                DecodingFailure(
-                  s"Field(s) starting with _ found in payload: ${underscoreFields.mkString(", ")}",
-                  c.history
-                )
-              )
-            } else {
-              Right(NexusSource(json))
-            }
-          }
+    override def apply(c: HCursor): Result[NexusSource] = {
+      decoder(c).flatMap { json =>
+        val underscoreFields = json.asObject.toList.flatMap(_.keys).filter(_.startsWith("_"))
+        if (underscoreFields.nonEmpty) {
+          Left(
+            DecodingFailure(
+              s"Field(s) starting with _ found in payload: ${underscoreFields.mkString(", ")}",
+              c.history
+            )
+          )
+        } else {
+          Right(NexusSource(json))
         }
       }
     }
-
-
   }
 
+  private val lenientDecoder = implicitly[Decoder[Json]].map(NexusSource(_))
+
+  implicit def nexusSourceDecoder(implicit decodingOption: DecodingOption): Decoder[NexusSource] = {
+    decodingOption match {
+      case DecodingOption.Lenient => lenientDecoder
+      case DecodingOption.Strict => strictDecoder
+    }
+  }
 }
