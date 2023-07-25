@@ -2,8 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.query
 
 import cats.effect.ExitCase
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sourcing.Predicate.Project
-import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
+import ch.epfl.bluebrain.nexus.delta.sourcing.{Scope, Transactors}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef, Tag}
@@ -41,7 +40,7 @@ object StreamingQuery {
     *   the transactors
     */
   def remaining(project: ProjectRef, tag: Tag, start: Offset, xas: Transactors): UIO[Option[RemainingElems]] = {
-    val where = Fragments.whereAndOpt(Project(project).asFragment, Some(fr"tag = $tag"), start.asFragment)
+    val where = Fragments.whereAndOpt(Scope(project).asFragment, Some(fr"tag = $tag"), start.asFragment)
     sql"""SELECT count(ordering), max(instant)
          |FROM public.scoped_states
          |$where
@@ -81,7 +80,7 @@ object StreamingQuery {
       xas: Transactors
   ): Stream[Task, Elem[Unit]] = {
     def query(offset: Offset): Query0[Elem[Unit]] = {
-      val where = Fragments.whereAndOpt(Project(project).asFragment, Some(fr"tag = $tag"), offset.asFragment)
+      val where = Fragments.whereAndOpt(Scope(project).asFragment, Some(fr"tag = $tag"), offset.asFragment)
       sql"""((SELECT 'newState', type, id, org, project, instant, ordering, rev
            |FROM public.scoped_states
            |$where
@@ -137,7 +136,7 @@ object StreamingQuery {
       decodeValue: (EntityType, Json) => Task[A]
   ): Stream[Task, Elem[A]] = {
     def query(offset: Offset): Query0[Elem[Json]] = {
-      val where = Fragments.whereAndOpt(Project(project).asFragment, Some(fr"tag = $tag"), offset.asFragment)
+      val where = Fragments.whereAndOpt(Scope(project).asFragment, Some(fr"tag = $tag"), offset.asFragment)
       sql"""((SELECT 'newState', type, id, org, project, value, instant, ordering, rev
            |FROM public.scoped_states
            |$where

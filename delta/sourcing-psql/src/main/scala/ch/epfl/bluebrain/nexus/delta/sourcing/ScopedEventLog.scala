@@ -114,66 +114,66 @@ trait ScopedEventLog[Id, S <: ScopedState, Command, E <: ScopedEvent, Rejection]
 
   /**
     * Allow to stream all current events within [[Envelope]] s
-    * @param predicate
+    * @param scope
     *   to filter returned events
     * @param offset
     *   offset to start from
     */
-  def currentEvents(predicate: Predicate, offset: Offset): EnvelopeStream[E]
+  def currentEvents(scope: Scope, offset: Offset): EnvelopeStream[E]
 
   /**
     * Allow to stream all current events within [[Envelope]] s
-    * @param predicate
+    * @param scope
     *   to filter returned events
     * @param offset
     *   offset to start from
     */
-  def events(predicate: Predicate, offset: Offset): EnvelopeStream[E]
+  def events(scope: Scope, offset: Offset): EnvelopeStream[E]
 
   /**
     * Allow to stream all latest states within [[Envelope]] s without applying transformation
-    * @param predicate
+    * @param scope
     *   to filter returned states
     * @param offset
     *   offset to start from
     */
-  def currentStates(predicate: Predicate, offset: Offset): EnvelopeStream[S]
+  def currentStates(scope: Scope, offset: Offset): EnvelopeStream[S]
 
   /**
     * Allow to stream all latest states from the beginning within [[Envelope]] s without applying transformation
-    * @param predicate
+    * @param scope
     *   to filter returned states
     */
-  def currentStates(predicate: Predicate): EnvelopeStream[S] = currentStates(predicate, Offset.Start)
+  def currentStates(scope: Scope): EnvelopeStream[S] = currentStates(scope, Offset.Start)
 
   /**
     * Allow to stream all current states from the provided offset
-    * @param predicate
+    * @param scope
     *   to filter returned states
     * @param offset
     *   offset to start from
     * @param f
     *   the function to apply on each state
     */
-  def currentStates[T](predicate: Predicate, offset: Offset, f: S => T): Stream[Task, T]
+  def currentStates[T](scope: Scope, offset: Offset, f: S => T): Stream[Task, T]
 
   /**
     * Allow to stream all current states from the beginning
-    * @param predicate
+    * @param scope
     *   to filter returned states
     * @param f
     *   the function to apply on each state
     */
-  def currentStates[T](predicate: Predicate, f: S => T): Stream[Task, T] = currentStates(predicate, Offset.Start, f)
+  def currentStates[T](scope: Scope, f: S => T): Stream[Task, T] = currentStates(scope, Offset.Start, f)
 
   /**
     * Stream the state changes continuously from the provided offset.
-    * @param predicate
+    * @param scope
     *   to filter returned states
     * @param offset
     *   the start offset
     */
-  def states(predicate: Predicate, offset: Offset): EnvelopeStream[S]
+  def states(scope: Scope, offset: Offset): EnvelopeStream[S]
 }
 
 object ScopedEventLog {
@@ -313,22 +313,22 @@ object ScopedEventLog {
           stateMachine.evaluate(state, command, maxDuration)
         }
 
-      override def currentEvents(predicate: Predicate, offset: Offset): EnvelopeStream[E] =
-        eventStore.currentEvents(predicate, offset)
+      override def currentEvents(scope: Scope, offset: Offset): EnvelopeStream[E] =
+        eventStore.currentEvents(scope, offset)
 
-      override def events(predicate: Predicate, offset: Offset): EnvelopeStream[E] =
-        eventStore.events(predicate, offset)
+      override def events(scope: Scope, offset: Offset): EnvelopeStream[E] =
+        eventStore.events(scope, offset)
 
-      override def currentStates(predicate: Predicate, offset: Offset): EnvelopeStream[S] =
-        stateStore.currentStates(predicate, offset)
+      override def currentStates(scope: Scope, offset: Offset): EnvelopeStream[S] =
+        stateStore.currentStates(scope, offset)
 
-      override def currentStates[T](predicate: Predicate, offset: Offset, f: S => T): Stream[Task, T] =
-        currentStates(predicate, offset).map { s =>
+      override def currentStates[T](scope: Scope, offset: Offset, f: S => T): Stream[Task, T] =
+        currentStates(scope, offset).map { s =>
           f(s.value)
         }
 
-      override def states(predicate: Predicate, offset: Offset): EnvelopeStream[S] =
-        stateStore.states(predicate, offset)
+      override def states(scope: Scope, offset: Offset): EnvelopeStream[S] =
+        stateStore.states(scope, offset)
     }
 
 }

@@ -95,16 +95,16 @@ final class ProjectsImpl private (
   ): UIO[SearchResults.UnscoredSearchResults[ProjectResource]] =
     SearchResults(
       log
-        .currentStates(params.organization.fold(Predicate.root)(Predicate.Org), _.toResource(defaultApiMappings))
+        .currentStates(params.organization.fold(Scope.root)(Scope.Org), _.toResource(defaultApiMappings))
         .evalFilter(params.matches),
       pagination,
       ordering
     ).span("listProjects")
 
   override def currentRefs: Stream[Task, ProjectRef] =
-    log.currentStates(Predicate.root).map(_.value.project)
+    log.currentStates(Scope.root).map(_.value.project)
 
-  override def states(offset: Offset): ElemStream[ProjectState] = log.states(Predicate.root, offset).map {
+  override def states(offset: Offset): ElemStream[ProjectState] = log.states(Scope.root, offset).map {
     _.toElem { p => Some(p.project) }
   }
 

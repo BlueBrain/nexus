@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef
 import ch.epfl.bluebrain.nexus.delta.sdk.views.View.{AggregateView, IndexingView}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef, Tag}
-import ch.epfl.bluebrain.nexus.delta.sourcing.{EntityDependencyStore, Predicate, Serializer, Transactors}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{EntityDependencyStore, Scope, Serializer, Transactors}
 import com.typesafe.scalalogging.Logger
 import doobie._
 import doobie.implicits._
@@ -28,11 +28,11 @@ trait ViewsStore[Rejection] {
 
   /**
     * Fetch default views and combine them in an aggregate view
-    * @param predicate
+    * @param scope
     *   to get all default view from the system / a given organization / a given project
     * @return
     */
-  def fetchDefaultViews(predicate: Predicate): UIO[AggregateView]
+  def fetchDefaultViews(scope: Scope): UIO[AggregateView]
 
 }
 
@@ -74,14 +74,14 @@ object ViewsStore {
                             }
       } yield singleOrMultiple
 
-    override def fetchDefaultViews(predicate: Predicate): UIO[AggregateView] = {
+    override def fetchDefaultViews(scope: Scope): UIO[AggregateView] = {
       (fr"SELECT value FROM scoped_states" ++
-        Fragments.whereAndOpt(
-          Some(fr"type = $entityType"),
-          predicate.asFragment,
-          Some(fr"tag = ${Tag.Latest.value}"),
-          Some(fr"id = $defaultViewId"),
-          Some(fr"deprecated = false")
+        Fragments.whereAnd(
+          fr"type = $entityType",
+          scope.asFragment,
+          fr"tag = ${Tag.Latest.value}",
+          fr"id = $defaultViewId",
+          fr"deprecated = false"
         ))
         .query[Json]
         .to[List]

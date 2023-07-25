@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Envelope, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
-import ch.epfl.bluebrain.nexus.delta.sourcing.{Predicate, PullRequest}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{PullRequest, Scope}
 import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import doobie.implicits._
@@ -90,28 +90,28 @@ class ScopedEventStoreSuite extends BioSuite with Doobie.Fixture with Doobie.Ass
 
   test("Fetch all current events from the beginning") {
     store
-      .currentEvents(Predicate.Root, Offset.Start)
+      .currentEvents(Scope.Root, Offset.Start)
       .assert(envelope1, envelope2, envelope3, envelope4, envelope5, envelope6)
   }
 
   test("Fetch current events for `org` from offset 2") {
-    store.currentEvents(Predicate.Org(Label.unsafe("org")), Offset.at(2L)).assert(envelope3, envelope4, envelope5)
+    store.currentEvents(Scope.Org(Label.unsafe("org")), Offset.at(2L)).assert(envelope3, envelope4, envelope5)
   }
 
   test("Fetch current events for `proj1` from the beginning") {
-    store.currentEvents(Predicate.Project(project1), Offset.Start).assert(envelope1, envelope2, envelope3, envelope4)
+    store.currentEvents(Scope.Project(project1), Offset.Start).assert(envelope1, envelope2, envelope3, envelope4)
   }
 
   test("Fetch all events from the beginning") {
-    store.events(Predicate.Root, Offset.Start).assert(envelope1, envelope2, envelope3, envelope4, envelope5, envelope6)
+    store.events(Scope.Root, Offset.Start).assert(envelope1, envelope2, envelope3, envelope4, envelope5, envelope6)
   }
 
   test(s"Fetch current events for `${project1.organization}` from offset 2") {
-    store.events(Predicate.Org(project1.organization), Offset.at(2L)).assert(envelope3, envelope4, envelope5)
+    store.events(Scope.Org(project1.organization), Offset.at(2L)).assert(envelope3, envelope4, envelope5)
   }
 
   test(s"Fetch current events for `$project1` from the beginning") {
-    store.events(Predicate.Project(project1), Offset.Start).assert(envelope1, envelope2, envelope3, envelope4)
+    store.events(Scope.Project(project1), Offset.Start).assert(envelope1, envelope2, envelope3, envelope4)
   }
 
 }

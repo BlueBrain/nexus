@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SortList
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectBase}
-import ch.epfl.bluebrain.nexus.delta.sourcing.Predicate
+import ch.epfl.bluebrain.nexus.delta.sourcing.Scope
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
 import monix.bio.IO
 
@@ -33,9 +33,9 @@ sealed trait DefaultSearchRequest extends Product with Serializable {
   def sort: SortList
 
   /**
-    * If the search applies to the project/org/root level
+    * If the search applies to the project/org/root scope
     */
-  def predicate: Predicate
+  def scope: Scope
 
 }
 
@@ -46,7 +46,7 @@ object DefaultSearchRequest {
     */
   case class ProjectSearch(ref: ProjectRef, params: ResourcesSearchParams, pagination: Pagination, sort: SortList)
       extends DefaultSearchRequest {
-    override def predicate: Predicate = Predicate.Project(ref)
+    override def scope: Scope = Scope(ref)
   }
 
   object ProjectSearch {
@@ -82,7 +82,7 @@ object DefaultSearchRequest {
     */
   case class OrgSearch(label: Label, params: ResourcesSearchParams, pagination: Pagination, sort: SortList)
       extends DefaultSearchRequest {
-    override def predicate: Predicate = Predicate.Org(label)
+    override def scope: Scope = Scope.Org(label)
   }
 
   object OrgSearch {
@@ -103,7 +103,7 @@ object DefaultSearchRequest {
     */
   case class RootSearch(params: ResourcesSearchParams, pagination: Pagination, sort: SortList)
       extends DefaultSearchRequest {
-    override def predicate: Predicate = Predicate.Root
+    override def scope: Scope = Scope.Root
   }
 
   object RootSearch {

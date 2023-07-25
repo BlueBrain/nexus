@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.AsJson
-import ch.epfl.bluebrain.nexus.delta.sourcing.{MultiDecoder, Predicate, Transactors}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{MultiDecoder, Scope, Transactors}
 import monix.bio.Task
 
 trait EventMetricsProjection
@@ -73,8 +73,7 @@ object EventMetricsProjection {
       MultiDecoder(metricEncoders.map { encoder => encoder.entityType -> encoder.toMetric }.toMap)
 
     // define how to get metrics from a given offset
-    val metrics                                                  = (offset: Offset) =>
-      EventStreaming.fetchScoped(Predicate.root, allEntityTypes, offset, queryConfig, xas)
+    val metrics                                                  = (offset: Offset) => EventStreaming.fetchScoped(Scope.root, allEntityTypes, offset, queryConfig, xas)
 
     val index = eventMetricsIndex(indexPrefix)
 

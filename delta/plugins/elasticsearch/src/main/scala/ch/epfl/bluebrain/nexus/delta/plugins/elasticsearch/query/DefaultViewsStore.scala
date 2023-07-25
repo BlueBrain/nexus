@@ -5,8 +5,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultViewId, permissions, ElasticSearchViewState}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.View.IndexingView
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.{Predicate, Transactors}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag
+import ch.epfl.bluebrain.nexus.delta.sourcing.{Scope, Transactors}
 import doobie._
 import doobie.implicits._
 import io.circe.{Decoder, Json}
@@ -18,9 +18,9 @@ import monix.bio.{IO, UIO}
 trait DefaultViewsStore {
 
   /**
-    * Return views at the given predicate
+    * Return views at the given scope
     */
-  def find(predicate: Predicate): UIO[List[IndexingView]]
+  def find(scope: Scope): UIO[List[IndexingView]]
 }
 
 object DefaultViewsStore {
@@ -38,14 +38,14 @@ object DefaultViewsStore {
   def apply(prefix: String, xas: Transactors): DefaultViewsStore = {
     new DefaultViewsStore {
       implicit val stateDecoder: Decoder[ElasticSearchViewState] = ElasticSearchViewState.serializer.codec
-      def find(predicate: Predicate): UIO[List[IndexingView]]    =
+      def find(scope: Scope): UIO[List[IndexingView]]            =
         (fr"SELECT value FROM scoped_states" ++
-          Fragments.whereAndOpt(
-            Some(fr"type = ${ElasticSearchViews.entityType}"),
-            predicate.asFragment,
-            Some(fr"tag = ${Tag.Latest.value}"),
-            Some(fr"id = $defaultViewId"),
-            Some(fr"deprecated = false")
+          Fragments.whereAnd(
+            fr"type = ${ElasticSearchViews.entityType}",
+            scope.asFragment,
+            fr"tag = ${Tag.Latest.value}",
+            fr"id = $defaultViewId",
+            fr"deprecated = false"
           ))
           .query[Json]
           .to[List]

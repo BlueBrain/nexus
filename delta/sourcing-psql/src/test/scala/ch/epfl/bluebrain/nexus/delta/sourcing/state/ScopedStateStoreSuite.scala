@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Envelope, Label, ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore.StateNotFound.{TagNotFound, UnknownState}
-import ch.epfl.bluebrain.nexus.delta.sourcing.{EntityCheck, Predicate, PullRequest}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{EntityCheck, PullRequest, Scope}
 import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import doobie.implicits._
@@ -84,35 +84,35 @@ class ScopedStateStoreSuite extends BioSuite with Doobie.Fixture with Doobie.Ass
   }
 
   test("Fetch all current latest states from the beginning") {
-    store.currentStates(Predicate.Root).assert(envelope1, envelope2, envelope3, envelope4)
+    store.currentStates(Scope.Root).assert(envelope1, envelope2, envelope3, envelope4)
   }
 
   test("Fetch all latest states from the beginning") {
-    store.states(Predicate.Root).assert(envelope1, envelope2, envelope3, envelope4)
+    store.states(Scope.Root).assert(envelope1, envelope2, envelope3, envelope4)
   }
 
   test(s"Fetch current states for ${project1.organization} from the beginning") {
-    store.currentStates(Predicate.Org(project1.organization)).assert(envelope1, envelope2, envelope3)
+    store.currentStates(Scope.Org(project1.organization)).assert(envelope1, envelope2, envelope3)
   }
 
   test(s"Fetch states for  ${project1.organization} from the beginning") {
-    store.states(Predicate.Org(project1.organization)).assert(envelope1, envelope2, envelope3)
+    store.states(Scope.Org(project1.organization)).assert(envelope1, envelope2, envelope3)
   }
 
   test(s"Fetch current states for $project1 from offset 2") {
-    store.currentStates(Predicate.Project(project1), Offset.at(1L)).assert(envelope2)
+    store.currentStates(Scope.Project(project1), Offset.at(1L)).assert(envelope2)
   }
 
   test(s"Fetch states for $project1 from offset 2") {
-    store.states(Predicate.Project(project1), Offset.at(1L)).assert(envelope2)
+    store.states(Scope.Project(project1), Offset.at(1L)).assert(envelope2)
   }
 
   test(s"Fetch all current states from the beginning for tag `$customTag`") {
-    store.currentStates(Predicate.Root, customTag).assert(envelope1Tagged, envelope3Tagged)
+    store.currentStates(Scope.Root, customTag).assert(envelope1Tagged, envelope3Tagged)
   }
 
   test(s"Fetch all states from the beginning for tag `$customTag`") {
-    store.states(Predicate.Root, customTag).assert(envelope1Tagged, envelope3Tagged)
+    store.states(Scope.Root, customTag).assert(envelope1Tagged, envelope3Tagged)
   }
 
   test("Update state 1 successfully") {
@@ -124,7 +124,7 @@ class ScopedStateStoreSuite extends BioSuite with Doobie.Fixture with Doobie.Ass
   }
 
   test("Fetch all current latest states from the beginning") {
-    store.currentStates(Predicate.Root).assert(envelope2, envelope3, envelope4, envelopeUpdated1)
+    store.currentStates(Scope.Root).assert(envelope2, envelope3, envelope4, envelopeUpdated1)
   }
 
   test("Delete tagged state 3 successfully") {
@@ -136,7 +136,7 @@ class ScopedStateStoreSuite extends BioSuite with Doobie.Fixture with Doobie.Ass
   }
 
   test(s"Fetch all states from the beginning for tag `$customTag` after deletion of `state3`") {
-    store.states(Predicate.Root, customTag).assert(envelope1Tagged)
+    store.states(Scope.Root, customTag).assert(envelope1Tagged)
   }
 
   test("Check that the given ids does exist") {

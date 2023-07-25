@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
-import ch.epfl.bluebrain.nexus.delta.sourcing.{Arithmetic, MultiDecoder, Predicate, PullRequest}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{Arithmetic, MultiDecoder, PullRequest, Scope}
 import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import doobie.implicits._
@@ -82,7 +82,7 @@ class EventStreamingSuite extends BioSuite with Doobie.Fixture with Doobie.Asser
   test("Get events of all types from the start") {
     EventStreaming
       .fetchAll(
-        Predicate.root,
+        Scope.root,
         List.empty,
         Offset.Start,
         queryConfig,
@@ -102,7 +102,7 @@ class EventStreamingSuite extends BioSuite with Doobie.Fixture with Doobie.Asser
   test("Get events of all types from offset 2") {
     EventStreaming
       .fetchAll(
-        Predicate.root,
+        Scope.root,
         List.empty,
         Offset.at(2L),
         queryConfig,
@@ -120,7 +120,7 @@ class EventStreamingSuite extends BioSuite with Doobie.Fixture with Doobie.Asser
   test("Get PR events from offset 2") {
     EventStreaming
       .fetchAll(
-        Predicate.root,
+        Scope.root,
         List(PullRequest.entityType),
         Offset.at(2L),
         queryConfig,
@@ -137,7 +137,7 @@ class EventStreamingSuite extends BioSuite with Doobie.Fixture with Doobie.Asser
   test("Get events from project 1 from offset 1") {
     EventStreaming
       .fetchAll(
-        Predicate.Project(project1),
+        Scope.Project(project1),
         List.empty,
         Offset.at(1L),
         queryConfig,
@@ -153,7 +153,7 @@ class EventStreamingSuite extends BioSuite with Doobie.Fixture with Doobie.Asser
   test("Get events from org 1 from offset 1") {
     EventStreaming
       .fetchAll(
-        Predicate.Org(project1.organization),
+        Scope.Org(project1.organization),
         List.empty,
         Offset.at(1L),
         queryConfig,
@@ -170,7 +170,7 @@ class EventStreamingSuite extends BioSuite with Doobie.Fixture with Doobie.Asser
   test("Get all scoped events from offset 1") {
     EventStreaming
       .fetchScoped(
-        Predicate.Root,
+        Scope.Root,
         List.empty,
         Offset.at(1L),
         queryConfig,
