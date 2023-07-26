@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
-import cats.effect.Clock
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.NewQueryGraph
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
@@ -11,7 +10,7 @@ import fs2.Chunk
 import monix.bio.Task
 import shapeless.Typeable
 
-import scala.concurrent.duration.{FiniteDuration, MILLISECONDS}
+import scala.concurrent.duration.FiniteDuration
 
 /**
   * A sink that queries N-Triples in Blazegraph, transforms them, and pushes the result to the provided sink
