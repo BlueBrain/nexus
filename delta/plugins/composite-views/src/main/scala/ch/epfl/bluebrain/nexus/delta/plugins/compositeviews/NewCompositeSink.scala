@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
+import cats.effect.Clock
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.NewQueryGraph
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
@@ -10,7 +11,7 @@ import fs2.Chunk
 import monix.bio.Task
 import shapeless.Typeable
 
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration.{FiniteDuration, MILLISECONDS}
 
 /**
   * A sink that queries N-Triples in Blazegraph, transforms them, and pushes the result to the provided sink
@@ -44,22 +45,14 @@ final class NewCompositeSink[SinkFormat](
       case _                       => Task.none
     }
 
-  private def transformAndSink(elements: Chunk[Elem[GraphResource]], graph: Graph) =
-    elements
-      .traverse { elem =>
-        elem.evalMapFilter(gr => transform(replaceGraph(gr, graph)))
-      }
-      .flatMap(sink)
-
   private def replaceGraph(gr: GraphResource, graph: Graph) =
     gr.copy(graph = graph.copy(rootNode = gr.id))
 
-  override def apply(elements: Chunk[Elem[GraphResource]]): Task[Chunk[Elem[Unit]]] = {
-    val graph = query(elements)
-
-    graph.flatMap {
-      case Some(g) => transformAndSink(elements, g)
-      case None    => Task.pure(elements.map(_.dropped))
-    }
-  }
+  override def apply(elements: Chunk[Elem[GraphResource]]): Task[Chunk[Elem[Unit]]] =
+    query(elements)
+      .flatMap {
+        case Some(value) => elements.traverse { elem => elem.evalMapFilter(gr => transform(replaceGraph(gr, value))) }
+        case None        => elements.traverse { elem => elem.evalMapFilter(gr => transform(gr)) }
+      }
+      .flatMap(sink)
 }
