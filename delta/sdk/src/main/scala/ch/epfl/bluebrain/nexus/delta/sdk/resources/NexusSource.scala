@@ -47,17 +47,16 @@ object NexusSource {
 
     override def apply(c: HCursor): Result[NexusSource] = {
       decoder(c).flatMap { json =>
+
         val underscoreFields = json.asObject.toList.flatMap(_.keys).filter(_.startsWith("_"))
-        if (underscoreFields.nonEmpty) {
-          Left(
-            DecodingFailure(
-              s"Field(s) starting with _ found in payload: ${underscoreFields.mkString(", ")}",
-              c.history
-            )
+        Either.cond(
+          underscoreFields.isEmpty,
+          NexusSource(json),
+          DecodingFailure(
+            s"Field(s) starting with _ found in payload: ${underscoreFields.mkString(", ")}",
+            c.history
           )
-        } else {
-          Right(NexusSource(json))
-        }
+        )
       }
     }
   }
