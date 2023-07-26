@@ -64,12 +64,13 @@ class ResourcesRoutesSpec extends BaseRouteSpec {
   private val myId2                       = nxv + "myid2" // Resource created against schema1 with id present on the payload
   private val myId3                       = nxv + "myid3" // Resource created against no schema with id passed and present on the payload
   private val myId4                       = nxv + "myid4" // Resource created against schema1 with id passed and present on the payload
+  private val myId5                       = nxv + "myid5" // Resource created against schema1 with id passed and present on the payload
   private val myIdEncoded                 = UrlUtils.encode(myId.toString)
   private val myId2Encoded                = UrlUtils.encode(myId2.toString)
   private val payload                     = jsonContentOf("resources/resource.json", "id" -> myId)
   private val payloadWithBlankId          = jsonContentOf("resources/resource.json", "id" -> "")
   private val payloadWithUnderscoreFields =
-    jsonContentOf("resources/resource-with-underscore-fields.json", "id" -> myId)
+    jsonContentOf("resources/resource-with-underscore-fields.json", "id" -> myId5)
   private val payloadWithMetadata         = jsonContentOf("resources/resource-with-metadata.json", "id" -> myId)
 
   private val aclCheck = AclSimpleCheck().accepted
@@ -195,10 +196,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec {
       val lenientDecodingRoutes = routesWithDecodingOption(DecodingOption.Lenient)
 
       Post("/v1/resources/myorg/myproject/_/", payloadWithUnderscoreFields.toEntity) ~> lenientDecodingRoutes ~> check {
-        response.status shouldEqual StatusCodes.BadRequest
-        response.asJson shouldEqual jsonContentOf(
-          "/resources/errors/underscore-fields.json"
-        )
+        response.status shouldEqual StatusCodes.Created
       }
     }
 
