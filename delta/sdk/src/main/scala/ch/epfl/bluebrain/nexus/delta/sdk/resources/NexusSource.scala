@@ -47,7 +47,6 @@ object NexusSource {
 
     override def apply(c: HCursor): Result[NexusSource] = {
       decoder(c).flatMap { json =>
-
         val underscoreFields = json.asObject.toList.flatMap(_.keys).filter(_.startsWith("_"))
         Either.cond(
           underscoreFields.isEmpty,
@@ -66,7 +65,7 @@ object NexusSource {
   implicit def nexusSourceDecoder(implicit decodingOption: DecodingOption): Decoder[NexusSource] = {
     decodingOption match {
       case DecodingOption.Lenient => lenientDecoder
-      case DecodingOption.Strict => strictDecoder
+      case DecodingOption.Strict  => strictDecoder
     }
   }
 }
