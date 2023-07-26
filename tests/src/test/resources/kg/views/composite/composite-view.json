@@ -80,7 +80,7 @@
         },
         "dynamic": false
       },
-      "query": "prefix music: <https://music.example.com/> prefix nxv: <https://bluebrain.github.io/nexus/vocabulary/> CONSTRUCT { {resource_id}   music:name       ?bandName ; music:genre      ?bandGenre ; music:album      ?albumId . ?albumId        music:released   ?albumReleaseDate ; music:song       ?songId . ?songId         music:title      ?songTitle ; music:number     ?songNumber ; music:length     ?songLength } WHERE { {resource_id}   music:name       ?bandName ; music:genre      ?bandGenre . OPTIONAL { {resource_id} ^music:by        ?albumId . ?albumId        music:released   ?albumReleaseDate . OPTIONAL {?albumId         ^music:on        ?songId . ?songId          music:title      ?songTitle ; music:number     ?songNumber ; music:length     ?songLength } } } ORDER BY(?songNumber)",
+      "query": "prefix music: <https://music.example.com/> prefix nxv: <https://bluebrain.github.io/nexus/vocabulary/> CONSTRUCT { ?id   music:name       ?bandName ; music:genre      ?bandGenre ; music:album      ?albumId . ?albumId        music:released   ?albumReleaseDate ; music:song       ?songId . ?songId         music:title      ?songTitle ; music:number     ?songNumber ; music:length     ?songLength } WHERE { VALUES ?id { {resource_id} }.  ?id music:name       ?bandName ; music:genre      ?bandGenre . OPTIONAL { ?id ^music:by        ?albumId . ?albumId        music:released   ?albumReleaseDate . OPTIONAL {?albumId         ^music:on        ?songId . ?songId          music:title      ?songTitle ; music:number     ?songNumber ; music:length     ?songLength } } } ORDER BY(?songNumber)",
       "context": {
         "@base": "https://music.example.com/",
         "@vocab": "https://music.example.com/"
