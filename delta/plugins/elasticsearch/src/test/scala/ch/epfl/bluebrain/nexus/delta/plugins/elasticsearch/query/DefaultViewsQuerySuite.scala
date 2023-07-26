@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SortList
 import ch.epfl.bluebrain.nexus.delta.sdk.views.View.IndexingView
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.Predicate
+import ch.epfl.bluebrain.nexus.delta.sourcing.Scope
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
@@ -45,13 +45,13 @@ class DefaultViewsQuerySuite extends BioSuite {
     (charlie.subject, AclAddress.Project(project1), Set(permissions.read))
   )
 
-  private def fetchViews(predicate: Predicate) = UIO.pure {
+  private def fetchViews(predicate: Scope) = UIO.pure {
     val viewRefs = predicate match {
-      case Predicate.Root             => List(defaultView, defaultView2, defaultView3)
-      case Predicate.Org(`org`)       => List(defaultView, defaultView2)
-      case Predicate.Org(`org2`)      => List(defaultView3)
-      case Predicate.Org(_)           => List.empty
-      case Predicate.Project(project) => List(ViewRef(project, defaultViewId))
+      case Scope.Root             => List(defaultView, defaultView2, defaultView3)
+      case Scope.Org(`org`)       => List(defaultView, defaultView2)
+      case Scope.Org(`org2`)      => List(defaultView3)
+      case Scope.Org(_)           => List.empty
+      case Scope.Project(project) => List(ViewRef(project, defaultViewId))
     }
     viewRefs.map { ref =>
       IndexingView(ref, "index", permissions.read)

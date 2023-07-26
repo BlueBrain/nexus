@@ -31,7 +31,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, EntityType, ProjectRef, ResourceRef}
-import ch.epfl.bluebrain.nexus.delta.sourcing.{Predicate, ScopedEntityDefinition, ScopedEventLog, StateMachine, Transactors}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{Scope, ScopedEntityDefinition, ScopedEventLog, StateMachine, Transactors}
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import io.circe.Json
@@ -288,7 +288,7 @@ final class Storages private (
 
   private def fetchDefaults(project: ProjectRef): IO[StorageFetchRejection, Stream[Task, StorageResource]] =
     fetchContext.onRead(project).map { pc =>
-      log.currentStates(Predicate.Project(project), _.toResource(pc.apiMappings, pc.base)).filter(_.value.default)
+      log.currentStates(Scope.Project(project), _.toResource(pc.apiMappings, pc.base)).filter(_.value.default)
     }
 
   /**
@@ -309,7 +309,7 @@ final class Storages private (
     * Return the existing storages in a project in a finite stream
     */
   def currentStorages(project: ProjectRef): ElemStream[StorageState] =
-    log.currentStates(Predicate.Project(project)).map {
+    log.currentStates(Scope.Project(project)).map {
       _.toElem { s => Some(s.project) }
     }
 

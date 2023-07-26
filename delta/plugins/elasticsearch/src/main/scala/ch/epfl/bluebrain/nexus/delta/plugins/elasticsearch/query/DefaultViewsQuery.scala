@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{AggregationResult, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.View.IndexingView
-import ch.epfl.bluebrain.nexus.delta.sourcing.{Predicate, Transactors}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{Scope, Transactors}
 import io.circe.JsonObject
 import monix.bio.{IO, UIO}
 
@@ -58,14 +58,14 @@ object DefaultViewsQuery {
   }
 
   def apply[Result, Aggregate](
-      fetchViews: Predicate => UIO[List[IndexingView]],
+      fetchViews: Scope => UIO[List[IndexingView]],
       aclCheck: AclCheck,
       listAction: (DefaultSearchRequest, Set[IndexingView]) => IO[ElasticSearchQueryError, Result],
       aggregateAction: (DefaultSearchRequest, Set[IndexingView]) => IO[ElasticSearchQueryError, Aggregate]
   ): DefaultViewsQuery[Result, Aggregate] = new DefaultViewsQuery[Result, Aggregate] {
 
-    private def filterViews(predicate: Predicate)(implicit caller: Caller) =
-      fetchViews(predicate)
+    private def filterViews(scope: Scope)(implicit caller: Caller) =
+      fetchViews(scope)
         .flatMap { allViews =>
           aclCheck.mapFilter[IndexingView, IndexingView](
             allViews,
@@ -80,7 +80,7 @@ object DefaultViewsQuery {
     override def list(
         searchRequest: DefaultSearchRequest
     )(implicit caller: Caller): IO[ElasticSearchQueryError, Result] =
-      filterViews(searchRequest.predicate).flatMap { views =>
+      filterViews(searchRequest.scope).flatMap { views =>
         listAction(searchRequest, views)
       }
 
@@ -90,7 +90,7 @@ object DefaultViewsQuery {
     override def aggregate(
         searchRequest: DefaultSearchRequest
     )(implicit caller: Caller): IO[ElasticSearchQueryError, Aggregate] =
-      filterViews(searchRequest.predicate).flatMap { views =>
+      filterViews(searchRequest.scope).flatMap { views =>
         aggregateAction(searchRequest, views)
       }
 

@@ -36,7 +36,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.{Predicate, ScopedEntityDefinition, ScopedEventLog, StateMachine, Transactors}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{Scope, ScopedEntityDefinition, ScopedEventLog, StateMachine, Transactors}
 import io.circe.Json
 import monix.bio.{IO, Task, UIO}
 
@@ -400,7 +400,7 @@ final class CompositeViews private (
       params: CompositeViewSearchParams,
       ordering: Ordering[ViewResource]
   ): UIO[UnscoredSearchResults[ViewResource]] = {
-    val predicate = params.project.fold[Predicate](Predicate.Root)(ref => Predicate.Project(ref))
+    val predicate = params.project.fold[Scope](Scope.Root)(ref => Scope.Project(ref))
     SearchResults(
       log.currentStates(predicate, identity(_)).evalMapFilter[Task, ViewResource] { state =>
         fetchContext.cacheOnReads
@@ -422,19 +422,19 @@ final class CompositeViews private (
     * Return all existing views for the given project in a finite stream
     */
   def currentViews(project: ProjectRef): ElemStream[CompositeViewDef] =
-    log.currentStates(Predicate.Project(project)).map(toCompositeViewDef)
+    log.currentStates(Scope.Project(project)).map(toCompositeViewDef)
 
   /**
     * Return all existing indexing views in a finite stream
     */
   def currentViews: ElemStream[CompositeViewDef] =
-    log.currentStates(Predicate.Root).map(toCompositeViewDef)
+    log.currentStates(Scope.Root).map(toCompositeViewDef)
 
   /**
     * Return the indexing views in a non-ending stream
     */
   def views(start: Offset): ElemStream[CompositeViewDef] =
-    log.states(Predicate.Root, start).map(toCompositeViewDef)
+    log.states(Scope.Root, start).map(toCompositeViewDef)
 
   private def toCompositeViewDef(envelope: Envelope[CompositeViewState]) =
     envelope.toElem { v => Some(v.project) }.map { v =>

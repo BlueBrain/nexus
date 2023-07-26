@@ -153,9 +153,9 @@ final class ResolversImpl private (
       params: ResolverSearchParams,
       ordering: Ordering[ResolverResource]
   ): UIO[UnscoredSearchResults[ResolverResource]] = {
-    val predicate = params.project.fold[Predicate](Predicate.Root)(ref => Predicate.Project(ref))
+    val scope = params.project.fold[Scope](Scope.Root)(ref => Scope.Project(ref))
     SearchResults(
-      log.currentStates(predicate, identity(_)).evalMapFilter[Task, ResolverResource] { state =>
+      log.currentStates(scope, identity(_)).evalMapFilter[Task, ResolverResource] { state =>
         fetchContext.cacheOnReads
           .onRead(state.project)
           .redeemWith(

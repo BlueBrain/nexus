@@ -8,11 +8,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{FailedElemLogRow, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.FailedElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionMetadata
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionStore.FailedElemLogRow
 import fs2.Stream
 import io.circe.Printer
 import monix.bio.{Task, UIO}
@@ -84,16 +83,16 @@ object ProjectionErrors {
     val store = FailedElemLogStore(xas, config)
 
     override def saveFailedElems(metadata: ProjectionMetadata, failures: List[FailedElem]): UIO[Unit] =
-      store.saveFailedElems(metadata, failures)
+      store.save(metadata, failures)
 
     override def failedElemEntries(
         projectionProject: ProjectRef,
         projectionId: Iri,
         offset: Offset
-    ): Stream[Task, FailedElemLogRow] = store.failedElemEntries(projectionProject, projectionId, offset)
+    ): Stream[Task, FailedElemLogRow] = store.stream(projectionProject, projectionId, offset)
 
     override def failedElemEntries(projectionName: String, offset: Offset): Stream[Task, FailedElemLogRow] =
-      store.failedElemEntries(projectionName, offset)
+      store.stream(projectionName, offset)
 
     override def failedElemSses(projectionProject: ProjectRef, projectionId: Iri, offset: Offset)(implicit
         rcr: RemoteContextResolution
