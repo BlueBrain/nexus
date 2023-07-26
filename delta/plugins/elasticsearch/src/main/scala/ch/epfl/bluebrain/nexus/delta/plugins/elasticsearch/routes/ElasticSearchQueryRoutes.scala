@@ -20,7 +20,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{AggregationResult, Pagina
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import io.circe.JsonObject
-import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.bio.IO
 import monix.execution.Scheduler
 
@@ -40,13 +39,9 @@ class ElasticSearchQueryRoutes(
 ) extends AuthDirectives(identities, aclCheck)
     with ElasticSearchViewsDirectives {
 
-  import baseUri.prefixSegment
   import schemeDirectives._
 
-  def routes: Route =
-    (baseUriPrefix(baseUri.prefix) & replaceUri("views", schema.iri)) {
-      concat(genericResourcesRoutes, resourcesListings)
-    }
+  def routes: Route = concat(genericResourcesRoutes, resourcesListings)
 
   private val genericResourcesRoutes: Route =
     pathPrefix("resources") {
@@ -55,13 +50,13 @@ class ElasticSearchQueryRoutes(
           (searchParametersAndSortList & paginated) { (params, sort, page) =>
             concat(
               // List/aggregate all resources
-              (pathEndOrSingleSlash & operationName(s"$prefixSegment/resources")) {
+              pathEndOrSingleSlash {
                 concat(
                   aggregated { _ => aggregate(RootSearch(params)) },
                   list(RootSearch(params, page, sort))
                 )
               },
-              (label & pathEndOrSingleSlash & operationName(s"$prefixSegment/resources")) { org =>
+              (label & pathEndOrSingleSlash) { org =>
                 concat(
                   aggregated { _ => aggregate(OrgSearch(org, params)) },
                   list(OrgSearch(org, params, page, sort))
@@ -74,7 +69,7 @@ class ElasticSearchQueryRoutes(
               (searchParametersInProject & paginated) { (params, sort, page) =>
                 concat(
                   // List/aggregate all resources inside a project
-                  (pathEndOrSingleSlash & operationName(s"$prefixSegment/resources/{org}/{project}")) {
+                  pathEndOrSingleSlash {
                     concat(
                       aggregated { _ => aggregate(ProjectSearch(ref, params)) },
                       list(ProjectSearch(ref, params, page, sort))
@@ -82,7 +77,7 @@ class ElasticSearchQueryRoutes(
                   },
                   idSegment { schema =>
                     // List/aggregate all resources inside a project filtering by its schema type
-                    (pathEndOrSingleSlash & operationName(s"$prefixSegment/resources/{org}/{project}/{schema}")) {
+                    pathEndOrSingleSlash {
                       underscoreToOption(schema) match {
                         case None        =>
                           concat(
@@ -113,12 +108,12 @@ class ElasticSearchQueryRoutes(
             (searchParametersAndSortList & paginated) { (params, sort, page) =>
               concat(
                 // List all resources of type resourceSegment
-                (pathEndOrSingleSlash & operationName(s"$prefixSegment/$resourceSegment")) {
+                pathEndOrSingleSlash {
                   val request = DefaultSearchRequest.RootSearch(params, page, sort, resourceSchema)(fetchContext)
                   list(request)
                 },
                 // List all resources of type resourceSegment inside an organization
-                (label & pathEndOrSingleSlash & operationName(s"$prefixSegment/$resourceSegment/{org}")) { org =>
+                (label & pathEndOrSingleSlash) { org =>
                   val request = DefaultSearchRequest.OrgSearch(org, params, page, sort, resourceSchema)(fetchContext)
                   list(request)
                 }
@@ -128,11 +123,9 @@ class ElasticSearchQueryRoutes(
               projectContext(ref) { implicit pc =>
                 // List all resources of type resourceSegment inside a project
                 (searchParametersInProject & paginated & pathEndOrSingleSlash) { (params, sort, page) =>
-                  operationName(s"$prefixSegment/$resourceSegment/{org}/{project}") {
-                    val request =
-                      DefaultSearchRequest.ProjectSearch(ref, params, page, sort, resourceSchema)(fetchContext)
-                    list(request)
-                  }
+                  val request =
+                    DefaultSearchRequest.ProjectSearch(ref, params, page, sort, resourceSchema)(fetchContext)
+                  list(request)
                 }
               }
             }

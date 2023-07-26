@@ -135,6 +135,10 @@ class FailedElemLogStoreSuite extends BioSuite with MutableClock.Fixture with Do
     assertList(project1, projection12, Pagination.OnePage, TimeRange.Anytime, List(fail2, fail3, fail4))
   }
 
+  test(s"Count all failures for ${metadata12.name}") {
+    store.count(project1, projection12, TimeRange.Anytime).assert(3L)
+  }
+
   test(s"Paginate to list 'fail3' for ${metadata12.name}") {
     assertList(project1, projection12, FromPagination(1, 1), TimeRange.Anytime, List(fail3))
   }
@@ -143,8 +147,22 @@ class FailedElemLogStoreSuite extends BioSuite with MutableClock.Fixture with Do
     assertList(project1, projection12, FromPagination(1, 2), TimeRange.Anytime, List(fail3, fail4))
   }
 
+  private val after = TimeRange.After(fail3.instant)
+  test(s"List failures after ${fail3.instant} for ${metadata12.name}") {
+    assertList(project1, projection12, Pagination.OnePage, after, List(fail3, fail4))
+  }
+
+  test(s"Count failures after ${fail3.instant} for ${metadata12.name}") {
+    store.count(project1, projection12, after).assert(2L)
+  }
+
+  private val before = TimeRange.Before(fail3.instant)
   test(s"List failures before ${fail3.instant} for ${metadata12.name}") {
-    assertList(project1, projection12, Pagination.OnePage, TimeRange.Before(fail3.instant), List(fail2, fail3))
+    assertList(project1, projection12, Pagination.OnePage, before, List(fail2, fail3))
+  }
+
+  test(s"Count failures before ${fail3.instant} for ${metadata12.name}") {
+    store.count(project1, projection12, before).assert(2L)
   }
 
   private val between = TimeRange.Between(fail2.instant.plusMillis(1L), fail3.instant.plusMillis(1L))

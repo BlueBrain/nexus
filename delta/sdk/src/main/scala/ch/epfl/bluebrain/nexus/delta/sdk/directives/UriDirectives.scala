@@ -161,7 +161,7 @@ trait UriDirectives extends QueryParamsUnmarshalling {
       )
   }
 
-  private def timeRange(paramName: String): Directive1[TimeRange] = parameter(paramName.as[String].?).flatMap {
+  def timeRange(paramName: String): Directive1[TimeRange] = parameter(paramName.as[String].?).flatMap {
     case None        => provide(TimeRange.default)
     case Some(value) =>
       TimeRange.parse(value) match {

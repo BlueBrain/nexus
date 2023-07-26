@@ -2,6 +2,8 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.projections
 
 import akka.http.scaladsl.model.sse.ServerSentEvent
 import cats.effect.Clock
+import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
+import ch.epfl.bluebrain.nexus.delta.kernel.search.TimeRange
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
@@ -29,23 +31,6 @@ trait ProjectionErrors {
   def saveFailedElems(metadata: ProjectionMetadata, failures: List[FailedElem]): UIO[Unit]
 
   /**
-    * Get available failed elem entries for a given projection (provided by project and id), starting from a failed elem
-    * offset.
-    *
-    * @param projectionProject
-    *   the project the projection belongs to
-    * @param projectionId
-    *   IRI of the projection
-    * @param offset
-    *   failed elem offset
-    */
-  def failedElemEntries(
-      projectionProject: ProjectRef,
-      projectionId: Iri,
-      offset: Offset
-  ): Stream[Task, FailedElemLogRow]
-
-  /**
     * Get available failed elem entries for a given projection by projection name, starting from a failed elem offset.
     *
     * @param projectionName
@@ -71,6 +56,39 @@ trait ProjectionErrors {
       rcr: RemoteContextResolution
   ): Stream[Task, ServerSentEvent]
 
+  /**
+    * Return a list of errors for the given projection on a time window ordered by instant
+    *
+    * @param project
+    *   the project of the projection
+    * @param projectionId
+    *   its identifier
+    * @param timeRange
+    *   the time range to restrict on
+    * @return
+    */
+  def count(project: ProjectRef, projectionId: Iri, timeRange: TimeRange): UIO[Long]
+
+  /**
+    * Return a list of errors for the given projection on a time window ordered by instant
+    *
+    * @param project
+    *   the project of the projection
+    * @param projectionId
+    *   its identifier
+    * @param pagination
+    *   the pagination to apply
+    * @param timeRange
+    *   the time range to restrict on
+    * @return
+    */
+  def list(
+      project: ProjectRef,
+      projectionId: Iri,
+      pagination: FromPagination,
+      timeRange: TimeRange
+  ): UIO[List[FailedElemLogRow]]
+
 }
 
 object ProjectionErrors {
@@ -85,7 +103,7 @@ object ProjectionErrors {
     override def saveFailedElems(metadata: ProjectionMetadata, failures: List[FailedElem]): UIO[Unit] =
       store.save(metadata, failures)
 
-    override def failedElemEntries(
+    private def failedElemEntries(
         projectionProject: ProjectRef,
         projectionId: Iri,
         offset: Offset
@@ -106,6 +124,16 @@ object ProjectionErrors {
           )
         }
       }
+
+    override def count(project: ProjectRef, projectionId: Iri, timeRange: TimeRange): UIO[Long] =
+      store.count(project, projectionId, timeRange)
+
+    override def list(
+        project: ProjectRef,
+        projectionId: Iri,
+        pagination: FromPagination,
+        timeRange: TimeRange
+    ): UIO[List[FailedElemLogRow]] = store.list(project, projectionId, pagination, timeRange)
   }
 
 }
