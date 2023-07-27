@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearc
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, defaultElasticsearchMapping, defaultElasticsearchSettings, schema => viewsSchemaId, ElasticSearchView, ElasticSearchViewEvent}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.{DefaultViewsQuery, ElasticSearchQueryError}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.{ElasticSearchAllRoutes, ElasticSearchIndexingRoutes, ElasticSearchQueryRoutes, ElasticSearchViewsRoutes}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.{ElasticSearchIndexingRoutes, ElasticSearchQueryRoutes, ElasticSearchViewsRoutes, ElasticSearchViewsRoutesHandler}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
@@ -328,7 +328,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
     ) =>
       PriorityRoute(
         priority,
-        ElasticSearchAllRoutes(
+        ElasticSearchViewsRoutesHandler(
           schemeDirectives,
           es.routes,
           query.routes,

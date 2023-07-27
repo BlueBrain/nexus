@@ -1,13 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.projections
 
-import akka.http.scaladsl.model.sse.ServerSentEvent
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.kernel.search.TimeRange
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{FailedElemLogRow, ProjectRef}
@@ -15,7 +11,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.FailedElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionMetadata
 import fs2.Stream
-import io.circe.Printer
 import monix.bio.{Task, UIO}
 
 trait ProjectionErrors {
@@ -31,6 +26,23 @@ trait ProjectionErrors {
   def saveFailedElems(metadata: ProjectionMetadata, failures: List[FailedElem]): UIO[Unit]
 
   /**
+    * Get available failed elem entries for a given projection (provided by project and id), starting from a failed elem
+    * offset.
+    *
+    * @param projectionProject
+    *   the project the projection belongs to
+    * @param projectionId
+    *   IRI of the projection
+    * @param offset
+    *   failed elem offset
+    */
+  def failedElemEntries(
+      projectionProject: ProjectRef,
+      projectionId: Iri,
+      offset: Offset
+  ): Stream[Task, FailedElemLogRow]
+
+  /**
     * Get available failed elem entries for a given projection by projection name, starting from a failed elem offset.
     *
     * @param projectionName
@@ -40,21 +52,6 @@ trait ProjectionErrors {
     * @return
     */
   def failedElemEntries(projectionName: String, offset: Offset): Stream[Task, FailedElemLogRow]
-
-  /**
-    * Get available failed elem entries for a given projection (provided by project and id), starting from a failed elem
-    * offset as a stream of Server Sent Events
-    *
-    * @param projectionProject
-    *   the project the projection belongs to
-    * @param projectionId
-    *   IRI of the projection
-    * @param offset
-    *   failed elem offset
-    */
-  def failedElemSses(projectionProject: ProjectRef, projectionId: Iri, offset: Offset)(implicit
-      rcr: RemoteContextResolution
-  ): Stream[Task, ServerSentEvent]
 
   /**
     * Return the total of errors for the given projection on a time window ordered by instant
@@ -91,47 +88,32 @@ trait ProjectionErrors {
 
 object ProjectionErrors {
 
-  implicit private val api: JsonLdApi = JsonLdJavaApi.lenient
-  private val defaultPrinter: Printer = Printer(dropNullValues = true, indent = "")
+  def apply(xas: Transactors, config: QueryConfig)(implicit clock: Clock[UIO]): ProjectionErrors =
+    new ProjectionErrors {
 
-  def apply(xas: Transactors, config: QueryConfig)(implicit clock: Clock[UIO]) = new ProjectionErrors {
+      private val store = FailedElemLogStore(xas, config)
 
-    val store = FailedElemLogStore(xas, config)
+      override def saveFailedElems(metadata: ProjectionMetadata, failures: List[FailedElem]): UIO[Unit] =
+        store.save(metadata, failures)
 
-    override def saveFailedElems(metadata: ProjectionMetadata, failures: List[FailedElem]): UIO[Unit] =
-      store.save(metadata, failures)
+      override def failedElemEntries(
+          projectionProject: ProjectRef,
+          projectionId: Iri,
+          offset: Offset
+      ): Stream[Task, FailedElemLogRow] = store.stream(projectionProject, projectionId, offset)
 
-    private def failedElemEntries(
-        projectionProject: ProjectRef,
-        projectionId: Iri,
-        offset: Offset
-    ): Stream[Task, FailedElemLogRow] = store.stream(projectionProject, projectionId, offset)
+      override def failedElemEntries(projectionName: String, offset: Offset): Stream[Task, FailedElemLogRow] =
+        store.stream(projectionName, offset)
 
-    override def failedElemEntries(projectionName: String, offset: Offset): Stream[Task, FailedElemLogRow] =
-      store.stream(projectionName, offset)
+      override def count(project: ProjectRef, projectionId: Iri, timeRange: TimeRange): UIO[Long] =
+        store.count(project, projectionId, timeRange)
 
-    override def failedElemSses(projectionProject: ProjectRef, projectionId: Iri, offset: Offset)(implicit
-        rcr: RemoteContextResolution
-    ): Stream[Task, ServerSentEvent] =
-      failedElemEntries(projectionProject, projectionId, offset).evalMap { felem =>
-        felem.failedElemData.toCompactedJsonLd.map { compactJson =>
-          ServerSentEvent(
-            defaultPrinter.print(compactJson.json),
-            "IndexingFailure",
-            felem.ordering.value.toString
-          )
-        }
-      }
-
-    override def count(project: ProjectRef, projectionId: Iri, timeRange: TimeRange): UIO[Long] =
-      store.count(project, projectionId, timeRange)
-
-    override def list(
-        project: ProjectRef,
-        projectionId: Iri,
-        pagination: FromPagination,
-        timeRange: TimeRange
-    ): UIO[List[FailedElemLogRow]] = store.list(project, projectionId, pagination, timeRange)
-  }
+      override def list(
+          project: ProjectRef,
+          projectionId: Iri,
+          pagination: FromPagination,
+          timeRange: TimeRange
+      ): UIO[List[FailedElemLogRow]] = store.list(project, projectionId, pagination, timeRange)
+    }
 
 }
