@@ -50,7 +50,16 @@ object IndexingViewDef {
       context: Option[ContextObject],
       indexingRev: Int,
       rev: Int
-  ) extends IndexingViewDef
+  ) extends IndexingViewDef {
+
+    def projectionMetadata: ProjectionMetadata =
+      ProjectionMetadata(
+        ElasticSearchViews.entityType.value,
+        projection,
+        Some(ref.project),
+        Some(ref.viewId)
+      )
+  }
 
   /**
     * Deprecated view to be cleaned up and removed from the supervisor
@@ -106,14 +115,6 @@ object IndexingViewDef {
       stream: Offset => ElemStream[GraphResource],
       sink: Sink
   )(implicit cr: RemoteContextResolution): Task[CompiledProjection] = {
-    val project  = v.ref.project
-    val id       = v.ref.viewId
-    val metadata = ProjectionMetadata(
-      ElasticSearchViews.entityType.value,
-      v.projection,
-      Some(project),
-      Some(id)
-    )
 
     val mergedContext        = v.context.fold(defaultContext) { defaultContext.merge(_) }
     val postPipes: Operation = new GraphResourceToDocument(mergedContext, false)
@@ -122,7 +123,7 @@ object IndexingViewDef {
       pipes      <- v.pipeChain.traverse(compilePipeChain)
       chain       = pipes.fold(NonEmptyChain.one(postPipes))(NonEmptyChain(_, postPipes))
       projection <- CompiledProjection.compile(
-                      metadata,
+                      v.projectionMetadata,
                       ExecutionStrategy.PersistentSingleNode,
                       Source(stream),
                       chain,
@@ -131,7 +132,7 @@ object IndexingViewDef {
     } yield projection
 
     Task.fromEither(compiled).tapError { e =>
-      Task.delay(logger.error(s"View '$project/$id' could not be compiled.", e))
+      Task.delay(logger.error(s"View '${v.ref}' could not be compiled.", e))
     }
   }
 }

@@ -58,6 +58,8 @@ object FailedElemLogRow {
       stackTrace: String
   )
 
+  val context: ContextValue = ContextValue(contexts.error)
+
   implicit val failedElemDataEncoder: Encoder.AsObject[FailedElemData]    =
     deriveEncoder[FailedElemData]
       .mapJsonObject(_.remove("stackTrace"))
