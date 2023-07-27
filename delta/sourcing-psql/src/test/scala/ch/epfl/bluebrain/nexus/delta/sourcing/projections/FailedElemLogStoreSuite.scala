@@ -166,11 +166,11 @@ class FailedElemLogStoreSuite extends BioSuite with MutableClock.Fixture with Do
   }
 
   private val between = TimeRange.Between(fail2.instant.plusMillis(1L), fail3.instant.plusMillis(1L))
-  test(s"List failures in the given time window") {
+  test(s"List failures within the time window") {
     assertList(project1, projection12, Pagination.OnePage, between, List(fail3))
   }
 
-  test(s"Count failures in the given time window") {
+  test(s"Count failures within the time window") {
     store.count(project1, projection12, between).assert(1L)
   }
 
