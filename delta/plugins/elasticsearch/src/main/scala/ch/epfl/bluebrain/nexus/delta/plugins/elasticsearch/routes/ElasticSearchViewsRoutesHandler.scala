@@ -4,22 +4,16 @@ import akka.http.scaladsl.server.Directives.concat
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.UriDirectives.baseUriPrefix
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 
-class ElasticSearchAllRoutes(schemeDirectives: DeltaSchemeDirectives, underlying: Route*)(implicit baseUri: BaseUri)
-    extends ElasticSearchViewsDirectives {
-
-  import schemeDirectives._
-
-  def routes: Route =
-    (baseUriPrefix(baseUri.prefix) & replaceUri("views", schema.iri)) {
-      concat(underlying: _*)
-    }
-
-}
-
-object ElasticSearchAllRoutes {
+/**
+  * Transforms the incoming request to consume the baseUri prefix and rewrite the generic resource endpoint
+  */
+object ElasticSearchViewsRoutesHandler extends {
 
   def apply(schemeDirectives: DeltaSchemeDirectives, routes: Route*)(implicit baseUri: BaseUri): Route =
-    new ElasticSearchAllRoutes(schemeDirectives, routes: _*).routes
+    (baseUriPrefix(baseUri.prefix) & schemeDirectives.replaceUri("views", schema.iri)) {
+      concat(routes: _*)
+    }
 }

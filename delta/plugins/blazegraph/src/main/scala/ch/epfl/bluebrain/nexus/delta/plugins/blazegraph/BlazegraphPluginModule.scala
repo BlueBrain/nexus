@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.config.BlazegraphViewsCo
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphCoordinator
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{contexts, schema => viewsSchemaId, BlazegraphView, BlazegraphViewEvent}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.BlazegraphViewsRoutes
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.{BlazegraphViewsIndexingRoutes, BlazegraphViewsRoutes, BlazegraphViewsRoutesHandler}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries.{BlazegraphSlowQueryDeleter, BlazegraphSlowQueryLogger, BlazegraphSlowQueryStore}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
@@ -178,8 +178,6 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         identities: Identities,
         aclCheck: AclCheck,
         views: BlazegraphViews,
-        projections: Projections,
-        projectionErrors: ProjectionErrors,
         viewsQuery: BlazegraphViewsQuery,
         schemeDirectives: DeltaSchemeDirectives,
         indexingAction: IndexingAction @Id("aggregate"),
@@ -196,8 +194,6 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         viewsQuery,
         identities,
         aclCheck,
-        projections,
-        projectionErrors,
         schemeDirectives,
         indexingAction(_, _, _)(shift, cr)
       )(
@@ -207,6 +203,36 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         ordering,
         cfg.pagination,
         fusionConfig
+      )
+  }
+
+  make[BlazegraphViewsIndexingRoutes].from {
+    (
+        identities: Identities,
+        aclCheck: AclCheck,
+        views: BlazegraphViews,
+        projections: Projections,
+        projectionErrors: ProjectionErrors,
+        schemeDirectives: DeltaSchemeDirectives,
+        baseUri: BaseUri,
+        cfg: BlazegraphViewsConfig,
+        s: Scheduler,
+        cr: RemoteContextResolution @Id("aggregate"),
+        ordering: JsonKeyOrdering
+    ) =>
+      new BlazegraphViewsIndexingRoutes(
+        views.fetchIndexingView(_, _),
+        identities,
+        aclCheck,
+        projections,
+        projectionErrors,
+        schemeDirectives
+      )(
+        baseUri,
+        s,
+        cr,
+        ordering,
+        cfg.pagination
       )
   }
 
@@ -240,8 +266,22 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
 
   many[ApiMappings].add(BlazegraphViews.mappings)
 
-  many[PriorityRoute].add { (route: BlazegraphViewsRoutes) =>
-    PriorityRoute(priority, route.routes, requiresStrictEntity = true)
+  many[PriorityRoute].add {
+    (
+        bg: BlazegraphViewsRoutes,
+        indexing: BlazegraphViewsIndexingRoutes,
+        schemeDirectives: DeltaSchemeDirectives,
+        baseUri: BaseUri
+    ) =>
+      PriorityRoute(
+        priority,
+        BlazegraphViewsRoutesHandler(
+          schemeDirectives,
+          bg.routes,
+          indexing.routes
+        )(baseUri),
+        requiresStrictEntity = true
+      )
   }
 
   many[ServiceDependency].add { (client: BlazegraphClient @Id("blazegraph-indexing-client")) =>

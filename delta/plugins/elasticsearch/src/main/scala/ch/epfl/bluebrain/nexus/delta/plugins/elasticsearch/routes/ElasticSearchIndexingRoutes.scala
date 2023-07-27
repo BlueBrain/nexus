@@ -2,9 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
 
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
-import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
-import ch.epfl.bluebrain.nexus.delta.kernel.search.TimeRange
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.IndexingViewDef.ActiveViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
@@ -25,7 +22,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
-import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.ProgressStatistics
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.FailedElemLogRow.FailedElemData
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{FailedElemLogRow, ProjectRef}
@@ -103,7 +99,7 @@ final class ElasticSearchIndexingRoutes(
                         emit(
                           fetch(id, ref)
                             .map { view =>
-                              projectionErrors.failedElemSses(view.ref.project, view.ref.viewId, offset)
+                              projectionErrors.sses(view.ref.project, view.ref.viewId, offset)
                             }
                         )
                       },
@@ -114,7 +110,7 @@ final class ElasticSearchIndexingRoutes(
                           emit(
                             fetch(id, ref)
                               .flatMap { view =>
-                                listErrors(view.ref, pagination, timeRange)
+                                projectionErrors.search(view.ref, pagination, timeRange)
                               }
                           )
                       }
@@ -149,13 +145,6 @@ final class ElasticSearchIndexingRoutes(
         }
       }
     }
-
-  private def listErrors(ref: ViewRef, pagination: FromPagination, timeRange: TimeRange) = {
-    for {
-      results <- projectionErrors.list(ref.project, ref.viewId, pagination, timeRange)
-      count   <- projectionErrors.count(ref.project, ref.viewId, timeRange)
-    } yield SearchResults(count, results.map { _.failedElemData })
-  }.widen[SearchResults[FailedElemData]]
 }
 
 object ElasticSearchIndexingRoutes {
