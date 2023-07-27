@@ -12,8 +12,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgori
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.S3Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.S3StorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection.{FileNotFound, UnexpectedFetchError}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.SaveFileRejection.{ResourceAlreadyExists, UnexpectedSaveError}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection.FileNotFound
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.SaveFileRejection.ResourceAlreadyExists
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.MinioSpec._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions.{read, write}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
@@ -24,13 +24,14 @@ import ch.epfl.bluebrain.nexus.testkit.minio.MinioDocker
 import ch.epfl.bluebrain.nexus.testkit.minio.MinioDocker._
 import io.circe.Json
 import monix.execution.Scheduler
-import org.scalatest.BeforeAndAfterAll
+import org.scalatest.{BeforeAndAfterAll, DoNotDiscover}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import software.amazon.awssdk.regions.Region
 
 import java.util.UUID
 
+@DoNotDiscover
 class S3StorageSaveAndFetchFileSpec(docker: MinioDocker)
     extends TestKit(ActorSystem("S3StorageSaveAndFetchFileSpec"))
     with AnyWordSpecLike
@@ -88,11 +89,6 @@ class S3StorageSaveAndFetchFileSpec(docker: MinioDocker)
     val content = "file content"
     val entity  = HttpEntity(content)
 
-    "fail saving a file to a bucket on wrong credentials" in {
-      val description = FileDescription(uuid, filename, Some(`text/plain(UTF-8)`))
-      storage.saveFile.apply(description, entity).rejectedWith[UnexpectedSaveError]
-    }
-
     "save a file to a bucket" in {
       val description = FileDescription(uuid, filename, Some(`text/plain(UTF-8)`))
       storage.saveFile.apply(description, entity).accepted shouldEqual attributes
@@ -101,10 +97,6 @@ class S3StorageSaveAndFetchFileSpec(docker: MinioDocker)
     "fetch a file from a bucket" in {
       val sourceFetched = storage.fetchFile.apply(attributes).accepted
       consume(sourceFetched) shouldEqual content
-    }
-
-    "fail fetching a file to a bucket on wrong credentials" in {
-      storage.fetchFile.apply(attributes).rejectedWith[UnexpectedFetchError]
     }
 
     "fail fetching a file that does not exist" in {

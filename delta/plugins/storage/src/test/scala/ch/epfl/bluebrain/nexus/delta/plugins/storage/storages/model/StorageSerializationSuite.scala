@@ -51,21 +51,21 @@ class StorageSerializationSuite extends SerializationSuite with StorageFixtures 
   private val storageEventMetricEncoder = StorageEvent.storageEventMetricEncoder
 
   storagesMapping.foreach { case (event, (database, sse), action) =>
-    test(s"Correctly serialize ${event.getClass.getName}") {
+    test(s"Correctly serialize ${event.getClass.getSimpleName} for ${event.tpe}") {
       assertEquals(storageEventSerializer.codec(event), database)
     }
 
-    test(s"Correctly deserialize ${event.getClass.getName}") {
+    test(s"Correctly deserialize ${event.getClass.getSimpleName} for ${event.tpe}") {
       assertEquals(storageEventSerializer.codec.decodeJson(database), Right(event))
     }
 
-    test(s"Correctly serialize ${event.getClass.getName} as an SSE") {
+    test(s"Correctly serialize ${event.getClass.getSimpleName} for ${event.tpe} as an SSE") {
       storageSseEncoder.toSse
         .decodeJson(database)
         .assertRight(SseData(ClassUtils.simpleName(event), Some(projectRef), sse))
     }
 
-    test(s"Correctly encode ${event.getClass.getName} to metric") {
+    test(s"Correctly encode ${event.getClass.getSimpleName} for ${event.tpe} to metric") {
       storageEventMetricEncoder.toMetric.decodeJson(database).assertRight {
         ProjectScopedMetric(
           instant,

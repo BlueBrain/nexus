@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.testkit.minio.MinioDocker
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
 import software.amazon.awssdk.regions.Region
 
@@ -27,7 +28,7 @@ trait StorageFixtures extends TestHelpers with CirceLiteral {
   // format: off
   implicit val config: StorageTypeConfig = StorageTypeConfig(
     disk = DiskStorageConfig(diskVolume, Set(diskVolume,tmpVolume), DigestAlgorithm.default, permissions.read, permissions.write, showLocation = false, Some(5000), 50),
-    amazon = Some(S3StorageConfig(DigestAlgorithm.default, Some("localhost"), Some(Secret("accessKey")), Some(Secret("secretKey")), permissions.read, permissions.write, showLocation = false, 60)),
+    amazon = Some(S3StorageConfig(DigestAlgorithm.default, Some("localhost"), Some(Secret(MinioDocker.RootUser)), Some(Secret(MinioDocker.RootPassword)), permissions.read, permissions.write, showLocation = false, 60)),
     remoteDisk = Some(RemoteDiskStorageConfig(DigestAlgorithm.default, BaseUri("http://localhost", Label.unsafe("v1")), None, permissions.read, permissions.write, showLocation = false, 70, RetryStrategyConfig.AlwaysGiveUp)),
   )
   val diskFields        = DiskStorageFields(Some("diskName"), Some("diskDescription"), default = true, Some(tmpVolume), Some(Permission.unsafe("disk/read")), Some(Permission.unsafe("disk/write")), Some(1000), Some(50))
