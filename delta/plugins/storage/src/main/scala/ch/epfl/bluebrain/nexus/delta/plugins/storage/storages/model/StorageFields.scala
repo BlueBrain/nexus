@@ -69,9 +69,8 @@ sealed trait StorageFields extends Product with Serializable { self =>
   /**
     * Returns the decrypted Json representation of the storage fields with the passed @id
     */
-  def toJson(iri: Iri): Secret[Json] =
-    Secret(self.asJsonObject.add(keywords.id, iri.asJson).asJson)
-
+  def toJson(iri: Iri): Json =
+    self.asJsonObject.add(keywords.id, iri.asJson).asJson
 }
 
 @nowarn("cat=unused")
@@ -154,8 +153,6 @@ object StorageFields {
       default: Boolean,
       bucket: String,
       endpoint: Option[Uri],
-      accessKey: Option[Secret[String]],
-      secretKey: Option[Secret[String]],
       region: Option[Region],
       readPermission: Option[Permission],
       writePermission: Option[Permission],
@@ -174,8 +171,6 @@ object StorageFields {
           cfg.digestAlgorithm,
           bucket,
           endpoint.orElse(cfg.defaultEndpoint),
-          accessKey,
-          secretKey,
           region,
           readPermission.getOrElse(cfg.defaultReadPermission),
           writePermission.getOrElse(cfg.defaultWritePermission),
@@ -207,7 +202,6 @@ object StorageFields {
       description: Option[String],
       default: Boolean,
       endpoint: Option[BaseUri],
-      credentials: Option[Secret[String]],
       folder: Label,
       readPermission: Option[Permission],
       writePermission: Option[Permission],
@@ -226,7 +220,6 @@ object StorageFields {
           default,
           cfg.digestAlgorithm,
           endpoint = endpoint.getOrElse(cfg.defaultEndpoint),
-          credentials = credentials,
           folder,
           readPermission.getOrElse(cfg.defaultReadPermission),
           writePermission.getOrElse(cfg.defaultWritePermission),

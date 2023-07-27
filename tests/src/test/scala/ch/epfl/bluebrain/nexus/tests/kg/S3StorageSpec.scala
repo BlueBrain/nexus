@@ -71,18 +71,14 @@ class S3StorageSpec extends StorageSpec {
       "/kg/storages/s3.json",
       "storageId" -> s"https://bluebrain.github.io/nexus/vocabulary/$storageId",
       "bucket"    -> bucket,
-      "endpoint"  -> s3Endpoint,
-      "accessKey" -> s3Config.accessKey.get,
-      "secretKey" -> s3Config.secretKey.get
+      "endpoint"  -> s3Endpoint
     )
 
     val payload2 = jsonContentOf(
       "/kg/storages/s3.json",
       "storageId"       -> s"https://bluebrain.github.io/nexus/vocabulary/${storageId}2",
       "bucket"          -> bucket,
-      "endpoint"        -> s3Endpoint,
-      "accessKey"       -> s3Config.accessKey.get,
-      "secretKey"       -> s3Config.secretKey.get
+      "endpoint"        -> s3Endpoint
     ) deepMerge Json.obj(
       "region"          -> Json.fromString("eu-west-2"),
       "readPermission"  -> Json.fromString(s"$storageName/read"),
@@ -140,9 +136,7 @@ class S3StorageSpec extends StorageSpec {
         "/kg/storages/s3.json",
         "storageId" -> s"https://bluebrain.github.io/nexus/vocabulary/missing",
         "bucket"    -> "foobar",
-        "endpoint"  -> s3Endpoint,
-        "accessKey" -> s3Config.accessKey.get,
-        "secretKey" -> s3Config.secretKey.get
+        "endpoint"  -> s3Endpoint
       )
 
       deltaClient.post[Json](s"/storages/$fullId", payload, Coyote) { (json, response) =>

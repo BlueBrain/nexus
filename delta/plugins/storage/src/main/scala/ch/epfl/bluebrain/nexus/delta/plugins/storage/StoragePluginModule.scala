@@ -24,7 +24,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
-import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.ProjectDeletionTask
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
@@ -68,7 +67,6 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           fetchContext: FetchContext[ContextRejection],
           contextResolution: ResolverContextResolution,
           permissions: Permissions,
-          crypto: Crypto,
           xas: Transactors,
           cfg: StoragePluginConfig,
           serviceAccount: ServiceAccount,
@@ -86,7 +84,6 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           contextResolution,
           permissions.fetchPermissionSet,
           StorageAccess.apply(_, _),
-          crypto,
           xas,
           cfg.storages,
           serviceAccount
@@ -112,7 +109,6 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
 
   make[StoragesRoutes].from {
     (
-        crypto: Crypto,
         identities: Identities,
         aclCheck: AclCheck,
         storages: Storages,
@@ -136,7 +132,6 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           indexingAction(_, _, _)(shift, cr)
         )(
           baseUri,
-          crypto,
           s,
           cr,
           ordering,
@@ -145,8 +140,8 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
       }
   }
 
-  make[Storage.Shift].from { (storages: Storages, base: BaseUri, crypto: Crypto) =>
-    Storage.shift(storages)(base, crypto)
+  make[Storage.Shift].from { (storages: Storages, base: BaseUri) =>
+    Storage.shift(storages)(base)
   }
 
   many[ResourceShift[_, _, _]].ref[Storage.Shift]
@@ -264,11 +259,11 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
 
   many[ApiMappings].add(Storages.mappings + Files.mappings)
 
-  many[SseEncoder[_]].add { (crypto: Crypto, base: BaseUri) => StorageEvent.sseEncoder(crypto)(base) }
+  many[SseEncoder[_]].add { (base: BaseUri) => StorageEvent.sseEncoder(base) }
   many[SseEncoder[_]].add { (base: BaseUri, config: StorageTypeConfig) => FileEvent.sseEncoder(base, config) }
 
   many[ScopedEventMetricEncoder[_]].add { FileEvent.fileEventMetricEncoder }
-  many[ScopedEventMetricEncoder[_]].add { (crypto: Crypto) => StorageEvent.storageEventMetricEncoder(crypto) }
+  many[ScopedEventMetricEncoder[_]].add { () => StorageEvent.storageEventMetricEncoder }
 
   many[PriorityRoute].add { (storagesRoutes: StoragesRoutes) =>
     PriorityRoute(priority, storagesRoutes.routes, requiresStrictEntity = true)

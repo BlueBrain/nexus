@@ -46,9 +46,9 @@ class StorageSerializationSuite extends SerializationSuite with StorageFixtures 
     (diskDeprecated, loadEvents("storages", "storage-deprecated.json"), Deprecated)
   )
 
-  private val storageEventSerializer    = StorageEvent.serializer(crypto)
-  private val storageSseEncoder         = StorageEvent.sseEncoder(crypto)
-  private val storageEventMetricEncoder = StorageEvent.storageEventMetricEncoder(crypto)
+  private val storageEventSerializer    = StorageEvent.serializer
+  private val storageSseEncoder         = StorageEvent.sseEncoder
+  private val storageEventMetricEncoder = StorageEvent.storageEventMetricEncoder
 
   storagesMapping.foreach { case (event, (database, sse), action) =>
     test(s"Correctly serialize ${event.getClass.getName}") {
@@ -102,7 +102,7 @@ class StorageSerializationSuite extends SerializationSuite with StorageFixtures 
     ) -> v
   }
 
-  private val storageStateSerializer = StorageState.serializer(crypto)
+  private val storageStateSerializer = StorageState.serializer
 
   statesMapping.foreach { case (state, json) =>
     test(s"Correctly serialize state ${state.value.tpe}") {

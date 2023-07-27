@@ -3,7 +3,5 @@
   "@type": "S3Storage",
   "default": false,
   "bucket": "{{bucket}}",
-  "endpoint": "{{endpoint}}",
-  "accessKey": "{{accessKey}}",
-  "secretKey": "{{secretKey}}"
+  "endpoint": "{{endpoint}}"
 }

@@ -4,7 +4,7 @@ import cats.effect.Clock
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
-import ch.epfl.bluebrain.nexus.delta.kernel.{Mapper, Secret}
+import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageCommand._
@@ -16,7 +16,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.schemas.{storage =
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
-import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{Caller, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
@@ -63,11 +62,11 @@ final class Storages private (
     */
   def create(
       projectRef: ProjectRef,
-      source: Secret[Json]
+      source: Json
   )(implicit caller: Caller): IO[StorageRejection, StorageResource] = {
     for {
       pc                   <- fetchContext.onCreate(projectRef)
-      (iri, storageFields) <- sourceDecoder(projectRef, pc, source.value)
+      (iri, storageFields) <- sourceDecoder(projectRef, pc, source)
       res                  <- eval(CreateStorage(iri, projectRef, storageFields, source, caller.subject), pc)
       _                    <- unsetPreviousDefaultIfRequired(projectRef, res)
     } yield res
@@ -86,12 +85,12 @@ final class Storages private (
   def create(
       id: IdSegment,
       projectRef: ProjectRef,
-      source: Secret[Json]
+      source: Json
   )(implicit caller: Caller): IO[StorageRejection, StorageResource] = {
     for {
       pc            <- fetchContext.onCreate(projectRef)
       iri           <- expandIri(id, pc)
-      storageFields <- sourceDecoder(projectRef, pc, iri, source.value)
+      storageFields <- sourceDecoder(projectRef, pc, iri, source)
       res           <- eval(CreateStorage(iri, projectRef, storageFields, source, caller.subject), pc)
       _             <- unsetPreviousDefaultIfRequired(projectRef, res)
     } yield res
@@ -137,7 +136,7 @@ final class Storages private (
       id: IdSegment,
       projectRef: ProjectRef,
       rev: Int,
-      source: Secret[Json]
+      source: Json
   )(implicit caller: Caller): IO[StorageRejection, StorageResource] =
     update(id, projectRef, rev, source, unsetPreviousDefault = true)
 
@@ -145,13 +144,13 @@ final class Storages private (
       id: IdSegment,
       projectRef: ProjectRef,
       rev: Int,
-      source: Secret[Json],
+      source: Json,
       unsetPreviousDefault: Boolean
   )(implicit caller: Caller): IO[StorageRejection, StorageResource] = {
     for {
       pc            <- fetchContext.onModify(projectRef)
       iri           <- expandIri(id, pc)
-      storageFields <- sourceDecoder(projectRef, pc, iri, source.value)
+      storageFields <- sourceDecoder(projectRef, pc, iri, source)
       res           <- eval(UpdateStorage(iri, projectRef, storageFields, source, rev, caller.subject), pc)
       _             <- IO.when(unsetPreviousDefault)(unsetPreviousDefaultIfRequired(projectRef, res))
     } yield res
@@ -322,7 +321,7 @@ final class Storages private (
         resources
           .evalTap { storage =>
             val source =
-              storage.value.source.map(_.replace("default" -> true, false).replace("default" -> "true", false))
+              storage.value.source.replace("default" -> true, false).replace("default" -> "true", false)
             val io     = update(storage.id, project, storage.rev, source, unsetPreviousDefault = false)(
               serviceAccount.caller
             )
@@ -407,8 +406,7 @@ object Storages {
   private[storages] def evaluate(
       access: StorageAccess,
       fetchPermissions: UIO[Set[Permission]],
-      config: StorageTypeConfig,
-      crypto: Crypto
+      config: StorageTypeConfig
   )(
       state: Option[StorageState],
       cmd: StorageCommand
@@ -430,17 +428,9 @@ object Storages {
         config.amazon.as(StorageType.S3Storage) ++
         config.remoteDisk.as(StorageType.RemoteDiskStorage)
 
-    def verifyCrypto(value: StorageValue) =
-      value.secrets.toList
-        .foldM(()) { case (_, Secret(value)) =>
-          crypto.encrypt(value).flatMap(crypto.decrypt).toEither.void
-        }
-        .leftMap(t => InvalidEncryptionSecrets(value.tpe, t.getMessage))
-
     def validateAndReturnValue(id: Iri, fields: StorageFields): IO[StorageRejection, StorageValue] =
       for {
         value <- IO.fromOption(fields.toValue(config), InvalidStorageType(id, fields.tpe, allowedStorageTypes))
-        _     <- IO.fromEither(verifyCrypto(value))
         _     <- validatePermissions(fields)
         _     <- access(id, value)
         _     <- verifyAllowedDiskVolume(id, value)
@@ -513,16 +503,15 @@ object Storages {
   def definition(
       config: StorageTypeConfig,
       access: StorageAccess,
-      fetchPermissions: UIO[Set[Permission]],
-      crypto: Crypto
+      fetchPermissions: UIO[Set[Permission]]
   )(implicit
       clock: Clock[UIO]
   ): ScopedEntityDefinition[Iri, StorageState, StorageCommand, StorageEvent, StorageRejection] =
     ScopedEntityDefinition(
       entityType,
-      StateMachine(None, evaluate(access, fetchPermissions, config, crypto), next),
-      StorageEvent.serializer(crypto),
-      StorageState.serializer(crypto),
+      StateMachine(None, evaluate(access, fetchPermissions, config), next),
+      StorageEvent.serializer,
+      StorageState.serializer,
       Tagger[StorageEvent](
         {
           case r: StorageTagAdded => Some(r.tag -> r.targetRev)
@@ -548,7 +537,6 @@ object Storages {
       contextResolution: ResolverContextResolution,
       fetchPermissions: UIO[Set[Permission]],
       access: StorageAccess,
-      crypto: Crypto,
       xas: Transactors,
       config: StoragesConfig,
       serviceAccount: ServiceAccount
@@ -565,7 +553,7 @@ object Storages {
       }
       .map { sourceDecoder =>
         new Storages(
-          ScopedEventLog(definition(config.storageTypeConfig, access, fetchPermissions, crypto), config.eventLog, xas),
+          ScopedEventLog(definition(config.storageTypeConfig, access, fetchPermissions), config.eventLog, xas),
           fetchContext,
           sourceDecoder,
           serviceAccount

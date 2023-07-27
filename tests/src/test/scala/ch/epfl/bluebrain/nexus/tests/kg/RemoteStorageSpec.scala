@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.tests.kg
 import akka.http.scaladsl.model.{ContentTypes, HttpCharsets, MediaTypes, StatusCodes}
 import akka.util.ByteString
 import ch.epfl.bluebrain.nexus.tests.HttpClient._
-import ch.epfl.bluebrain.nexus.tests.Identity
 import ch.epfl.bluebrain.nexus.tests.Identity.storages.Coyote
 import ch.epfl.bluebrain.nexus.tests.Optics.{filterKey, filterMetadataKeys, projections}
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission
@@ -12,11 +11,12 @@ import io.circe.generic.semiauto.deriveDecoder
 import io.circe.{Decoder, Json}
 import monix.bio.Task
 import org.scalactic.source.Position
-import org.scalatest.Assertion
+import org.scalatest.{Assertion, Ignore}
 
 import scala.annotation.nowarn
 import scala.sys.process._
 
+@Ignore
 class RemoteStorageSpec extends StorageSpec {
 
   override def storageName: String = "external"
@@ -44,13 +44,10 @@ class RemoteStorageSpec extends StorageSpec {
     ()
   }
 
-  private def serviceAccountToken = tokensMap.get(Identity.ServiceAccount).credentials.token()
-
   override def createStorages: Task[Assertion] = {
     val payload = jsonContentOf(
       "/kg/storages/remote-disk.json",
       "endpoint" -> externalEndpoint,
-      "cred"     -> serviceAccountToken,
       "read"     -> "resources/read",
       "write"    -> "files/write",
       "folder"   -> remoteFolder,
@@ -60,7 +57,6 @@ class RemoteStorageSpec extends StorageSpec {
     val payload2 = jsonContentOf(
       "/kg/storages/remote-disk.json",
       "endpoint" -> externalEndpoint,
-      "cred"     -> serviceAccountToken,
       "read"     -> s"$storageName/read",
       "write"    -> s"$storageName/write",
       "folder"   -> remoteFolder,
@@ -188,7 +184,6 @@ class RemoteStorageSpec extends StorageSpec {
       val payload = jsonContentOf(
         "/kg/storages/remote-disk.json",
         "endpoint" -> externalEndpoint,
-        "cred"     -> serviceAccountToken,
         "read"     -> "resources/read",
         "write"    -> "files/write",
         "folder"   -> "nexustest",

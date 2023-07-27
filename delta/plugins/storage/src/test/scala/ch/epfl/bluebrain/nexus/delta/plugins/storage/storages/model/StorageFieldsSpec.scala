@@ -50,7 +50,7 @@ class StorageFieldsSpec
     }
 
     "dealing with S3 storages" should {
-      val json = s3FieldsJson.value.addContext(contexts.storages)
+      val json = s3FieldsJson.addContext(contexts.storages)
 
       "be created from Json-LD" in {
         sourceDecoder(pc, json).accepted._2 shouldEqual s3Fields
@@ -70,12 +70,12 @@ class StorageFieldsSpec
             "region"
           )
         sourceDecoder(pc, jsonNoDefaults).accepted._2 shouldEqual
-          S3StorageFields(None, None, default = true, "mybucket", None, None, None, None, None, None, None)
+          S3StorageFields(None, None, default = true, "mybucket", None, None, None, None, None)
       }
     }
 
     "dealing with remote storages" should {
-      val json = remoteFieldsJson.value.addContext(contexts.storages)
+      val json = remoteFieldsJson.addContext(contexts.storages)
 
       "be created from Json-LD" in {
         sourceDecoder(pc, json).accepted._2 shouldEqual remoteFields
@@ -93,7 +93,7 @@ class StorageFieldsSpec
             "credentials"
           )
         sourceDecoder(pc, jsonNoDefaults).accepted._2 shouldEqual
-          RemoteDiskStorageFields(None, None, default = true, None, None, Label.unsafe("myfolder"), None, None, None)
+          RemoteDiskStorageFields(None, None, default = true, None, Label.unsafe("myfolder"), None, None, None)
       }
     }
   }

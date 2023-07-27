@@ -4,7 +4,6 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
 import akka.http.scaladsl.model.{HttpEntity, Uri}
 import akka.testkit.TestKit
-import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
@@ -25,14 +24,13 @@ import ch.epfl.bluebrain.nexus.testkit.minio.MinioDocker
 import ch.epfl.bluebrain.nexus.testkit.minio.MinioDocker._
 import io.circe.Json
 import monix.execution.Scheduler
+import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
-import org.scalatest.{BeforeAndAfterAll, DoNotDiscover}
 import software.amazon.awssdk.regions.Region
 
 import java.util.UUID
 
-@DoNotDiscover
 class S3StorageSaveAndFetchFileSpec(docker: MinioDocker)
     extends TestKit(ActorSystem("S3StorageSaveAndFetchFileSpec"))
     with AnyWordSpecLike
@@ -62,15 +60,13 @@ class S3StorageSaveAndFetchFileSpec(docker: MinioDocker)
       algorithm = DigestAlgorithm.default,
       bucket = "bucket2",
       endpoint = Some(docker.hostConfig.endpoint),
-      accessKey = Some(Secret(RootUser)),
-      secretKey = Some(Secret(RootPassword)),
       region = Some(Region.EU_CENTRAL_1),
       readPermission = read,
       writePermission = write,
       maxFileSize = 20
     )
     createBucket(storageValue).hideErrors.accepted
-    storage = S3Storage(iri, project, storageValue, Tags.empty, Secret(Json.obj()))
+    storage = S3Storage(iri, project, storageValue, Tags.empty, Json.obj())
     attributes = FileAttributes(
       uuid,
       s"http://bucket2.$VirtualHost:${docker.hostConfig.port}/org/project/8/0/4/9/b/a/9/0/myfile.txt",
@@ -93,9 +89,8 @@ class S3StorageSaveAndFetchFileSpec(docker: MinioDocker)
     val entity  = HttpEntity(content)
 
     "fail saving a file to a bucket on wrong credentials" in {
-      val description  = FileDescription(uuid, filename, Some(`text/plain(UTF-8)`))
-      val otherStorage = storage.copy(value = storage.value.copy(accessKey = Some(Secret("wrong"))))
-      otherStorage.saveFile.apply(description, entity).rejectedWith[UnexpectedSaveError]
+      val description = FileDescription(uuid, filename, Some(`text/plain(UTF-8)`))
+      storage.saveFile.apply(description, entity).rejectedWith[UnexpectedSaveError]
     }
 
     "save a file to a bucket" in {
@@ -109,8 +104,7 @@ class S3StorageSaveAndFetchFileSpec(docker: MinioDocker)
     }
 
     "fail fetching a file to a bucket on wrong credentials" in {
-      val otherStorage = storage.copy(value = storage.value.copy(accessKey = Some(Secret("wrong"))))
-      otherStorage.fetchFile.apply(attributes).rejectedWith[UnexpectedFetchError]
+      storage.fetchFile.apply(attributes).rejectedWith[UnexpectedFetchError]
     }
 
     "fail fetching a file that does not exist" in {

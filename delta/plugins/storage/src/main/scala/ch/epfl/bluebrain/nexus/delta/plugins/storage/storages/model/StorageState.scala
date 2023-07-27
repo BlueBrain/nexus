@@ -1,12 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 
-import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.{DiskStorage, RemoteDiskStorage, S3Storage}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{schemas, StorageResource}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceUris, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectBase}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
@@ -16,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredCodec
-import io.circe.{Codec, Decoder, Encoder, Json}
+import io.circe.{Codec, Json}
 
 import java.time.Instant
 import scala.annotation.nowarn
@@ -51,7 +48,7 @@ final case class StorageState(
     id: Iri,
     project: ProjectRef,
     value: StorageValue,
-    source: Secret[Json],
+    source: Json,
     tags: Tags,
     rev: Int,
     deprecated: Boolean,
@@ -90,17 +87,11 @@ final case class StorageState(
 
 object StorageState {
   @nowarn("cat=unused")
-  implicit def serializer(implicit crypto: Crypto): Serializer[Iri, StorageState] = {
+  implicit def serializer: Serializer[Iri, StorageState] = {
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
     implicit val configuration: Configuration = Serializer.circeConfiguration
 
-    implicit val jsonSecretEncryptEncoder: Encoder[Secret[Json]] =
-      Encoder.encodeJson.contramap(Storage.encryptSourceUnsafe(_, crypto))
-
-    implicit val jsonSecretDecryptDecoder: Decoder[Secret[Json]] =
-      Decoder.decodeJson.emap(Storage.decryptSource(_, crypto).toEither.leftMap(_.getMessage))
-
-    implicit val storageValueCodec: Codec.AsObject[StorageValue] = StorageValue.databaseCodec(crypto)
+    implicit val storageValueCodec: Codec.AsObject[StorageValue] = StorageValue.databaseCodec
     implicit val codec: Codec.AsObject[StorageState]             = deriveConfiguredCodec[StorageState]
     Serializer.dropNullsInjectType()
   }
