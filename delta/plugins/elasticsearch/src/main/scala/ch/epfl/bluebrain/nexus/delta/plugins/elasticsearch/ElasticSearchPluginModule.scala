@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearc
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, defaultElasticsearchMapping, defaultElasticsearchSettings, schema => viewsSchemaId, ElasticSearchView, ElasticSearchViewEvent}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.{DefaultViewsQuery, ElasticSearchQueryError}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.{ElasticSearchQueryRoutes, ElasticSearchViewsRoutes}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.{ElasticSearchAllRoutes, ElasticSearchIndexingRoutes, ElasticSearchQueryRoutes, ElasticSearchViewsRoutes}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
@@ -170,8 +170,6 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         identities: Identities,
         aclCheck: AclCheck,
         views: ElasticSearchViews,
-        projections: Projections,
-        projectionErrors: ProjectionErrors,
         schemeDirectives: DeltaSchemeDirectives,
         indexingAction: IndexingAction @Id("aggregate"),
         viewsQuery: ElasticSearchViewsQuery,
@@ -187,8 +185,6 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         aclCheck,
         views,
         viewsQuery,
-        projections,
-        projectionErrors,
         schemeDirectives,
         indexingAction(_, _, _)(shift, cr)
       )(
@@ -228,6 +224,36 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         cr,
         ordering,
         fetchContext.mapRejection(ElasticSearchQueryError.ProjectContextRejection)
+      )
+  }
+
+  make[ElasticSearchIndexingRoutes].from {
+    (
+        identities: Identities,
+        aclCheck: AclCheck,
+        views: ElasticSearchViews,
+        projections: Projections,
+        projectionErrors: ProjectionErrors,
+        schemeDirectives: DeltaSchemeDirectives,
+        baseUri: BaseUri,
+        s: Scheduler,
+        cr: RemoteContextResolution @Id("aggregate"),
+        esConfig: ElasticSearchViewsConfig,
+        ordering: JsonKeyOrdering
+    ) =>
+      new ElasticSearchIndexingRoutes(
+        identities,
+        aclCheck,
+        views.fetchIndexingView(_, _),
+        projections,
+        projectionErrors,
+        schemeDirectives
+      )(
+        baseUri,
+        esConfig.pagination,
+        s,
+        cr,
+        ordering
       )
   }
 
@@ -292,11 +318,24 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
 
   many[ApiMappings].add(ElasticSearchViews.mappings)
 
-  many[PriorityRoute].add { (route: ElasticSearchViewsRoutes) =>
-    PriorityRoute(priority, route.routes, requiresStrictEntity = true)
-  }
-  many[PriorityRoute].add { (route: ElasticSearchQueryRoutes) =>
-    PriorityRoute(priority, route.routes, requiresStrictEntity = true)
+  many[PriorityRoute].add {
+    (
+        es: ElasticSearchViewsRoutes,
+        query: ElasticSearchQueryRoutes,
+        indexing: ElasticSearchIndexingRoutes,
+        schemeDirectives: DeltaSchemeDirectives,
+        baseUri: BaseUri
+    ) =>
+      PriorityRoute(
+        priority,
+        ElasticSearchAllRoutes(
+          schemeDirectives,
+          es.routes,
+          query.routes,
+          indexing.routes
+        )(baseUri),
+        requiresStrictEntity = true
+      )
   }
 
   many[ServiceDependency].add { new ElasticSearchServiceDependency(_) }

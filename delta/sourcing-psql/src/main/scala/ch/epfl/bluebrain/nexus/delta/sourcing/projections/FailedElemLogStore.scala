@@ -80,7 +80,20 @@ trait FailedElemLogStore {
   ): Stream[Task, FailedElemLogRow]
 
   /**
-    * Return a list of errors for the given projection ordered by instant
+    * Return a list of errors for the given projection on a time window ordered by instant
+    *
+    * @param project
+    *   the project of the projection
+    * @param projectionId
+    *   its identifier
+    * @param timeRange
+    *   the time range to restrict on
+    * @return
+    */
+  def count(project: ProjectRef, projectionId: Iri, timeRange: TimeRange): UIO[Long]
+
+  /**
+    * Return a list of errors for the given projection on a time window ordered by instant
     * @param project
     *   the project of the projection
     * @param projectionId
@@ -184,26 +197,33 @@ object FailedElemLogStore {
           .streamWithChunkSize(config.batchSize)
           .transact(xas.read)
 
+      override def count(project: ProjectRef, projectionId: Iri, timeRange: TimeRange): UIO[Long] =
+        sql"SELECT count(ordering) from public.failed_elem_logs  ${whereClause(project, projectionId, timeRange)}"
+          .query[Long]
+          .unique
+          .transact(xas.read)
+          .hideErrors
+
       override def list(
           project: ProjectRef,
           projectionId: Iri,
           pagination: FromPagination,
           timeRange: TimeRange
-      ): UIO[List[FailedElemLogRow]] = {
-        val where = Fragments.whereAndOpt(
-          Some(fr"projection_project = $project"),
-          Some(fr"projection_id = $projectionId"),
-          timeRange.asFragment
-        )
+      ): UIO[List[FailedElemLogRow]] =
         sql"""SELECT * from public.failed_elem_logs
-             |$where
+             |${whereClause(project, projectionId, timeRange)}
              |ORDER BY ordering ASC
              |LIMIT ${pagination.size} OFFSET ${pagination.from}""".stripMargin
           .query[FailedElemLogRow]
           .to[List]
           .transact(xas.read)
           .hideErrors
-      }
+
+      private def whereClause(project: ProjectRef, projectionId: Iri, timeRange: TimeRange) = Fragments.whereAndOpt(
+        Some(fr"projection_project = $project"),
+        Some(fr"projection_id = $projectionId"),
+        timeRange.asFragment
+      )
     }
 
 }

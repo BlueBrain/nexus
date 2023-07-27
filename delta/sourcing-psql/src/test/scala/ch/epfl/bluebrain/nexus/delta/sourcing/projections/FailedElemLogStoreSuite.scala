@@ -122,7 +122,7 @@ class FailedElemLogStoreSuite extends BioSuite with MutableClock.Fixture with Do
     } yield ()
   }
 
-  test(s"Get stream of failures for ${metadata12.name}") {
+  test(s"Get a stream of all failures") {
     assertStream(metadata12, Offset.start, List(fail2, fail3, fail4))
   }
 
@@ -131,25 +131,47 @@ class FailedElemLogStoreSuite extends BioSuite with MutableClock.Fixture with Do
     assertStream(unknownMetadata, Offset.start, List.empty)
   }
 
-  test(s"List all failures for ${metadata12.name}") {
+  test(s"List all failures") {
     assertList(project1, projection12, Pagination.OnePage, TimeRange.Anytime, List(fail2, fail3, fail4))
   }
 
-  test(s"Paginate to list 'fail3' for ${metadata12.name}") {
+  test(s"Count all failures") {
+    store.count(project1, projection12, TimeRange.Anytime).assert(3L)
+  }
+
+  test(s"Paginate failures to get one result") {
     assertList(project1, projection12, FromPagination(1, 1), TimeRange.Anytime, List(fail3))
   }
 
-  test(s"Paginate to list 'fail3' and 'fail4' for ${metadata12.name}") {
+  test(s"Paginate failures to get the last results ") {
     assertList(project1, projection12, FromPagination(1, 2), TimeRange.Anytime, List(fail3, fail4))
   }
 
-  test(s"List failures before ${fail3.instant} for ${metadata12.name}") {
-    assertList(project1, projection12, Pagination.OnePage, TimeRange.Before(fail3.instant), List(fail2, fail3))
+  private val after = TimeRange.After(fail3.instant)
+  test(s"List failures after a given time") {
+    assertList(project1, projection12, Pagination.OnePage, after, List(fail3, fail4))
+  }
+
+  test(s"Count failures after a given time") {
+    store.count(project1, projection12, after).assert(2L)
+  }
+
+  private val before = TimeRange.Before(fail3.instant)
+  test(s"List failures before a given time") {
+    assertList(project1, projection12, Pagination.OnePage, before, List(fail2, fail3))
+  }
+
+  test(s"Count failures before a given time") {
+    store.count(project1, projection12, before).assert(2L)
   }
 
   private val between = TimeRange.Between(fail2.instant.plusMillis(1L), fail3.instant.plusMillis(1L))
-  test(s"List failures between ${between.start} and ${between.end} for ${metadata12.name}") {
+  test(s"List failures within the time window") {
     assertList(project1, projection12, Pagination.OnePage, between, List(fail3))
+  }
+
+  test(s"Count failures within the time window") {
+    store.count(project1, projection12, between).assert(1L)
   }
 
   test("Purge failures after predefined ttl") {
