@@ -23,7 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.PipeChain
 import io.circe.Json
 import monix.bio.{IO, UIO}
 
-class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesBaseSpec {
+class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures {
 
   implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
 
@@ -78,7 +78,7 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesBaseSpec {
 
   private lazy val routes =
     Route.seal(
-      ElasticSearchAllRoutes(
+      ElasticSearchViewsRoutesHandler(
         groupDirectives,
         ElasticSearchViewsRoutes(
           identities,

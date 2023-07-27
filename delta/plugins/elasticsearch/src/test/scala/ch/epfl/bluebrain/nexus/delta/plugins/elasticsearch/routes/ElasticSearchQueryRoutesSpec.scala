@@ -20,7 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
 
-class ElasticSearchQueryRoutesSpec extends ElasticSearchViewsRoutesBaseSpec {
+class ElasticSearchQueryRoutesSpec extends ElasticSearchViewsRoutesFixtures {
 
   private val myId2        = nxv + "myid2"
   private val myId2Encoded = UrlUtils.encode(myId2.toString)
@@ -44,7 +44,7 @@ class ElasticSearchQueryRoutesSpec extends ElasticSearchViewsRoutesBaseSpec {
 
   private lazy val routes =
     Route.seal(
-      ElasticSearchAllRoutes(
+      ElasticSearchViewsRoutesHandler(
         groupDirectives,
         new ElasticSearchQueryRoutes(
           identities,

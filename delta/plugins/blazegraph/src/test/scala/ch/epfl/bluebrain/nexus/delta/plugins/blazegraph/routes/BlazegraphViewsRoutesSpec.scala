@@ -1,91 +1,40 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes
 
-import akka.actor.typed.ActorSystem
 import akka.http.scaladsl.model.MediaTypes.`text/html`
 import akka.http.scaladsl.model.headers._
-import akka.http.scaladsl.model.{HttpEntity, MediaTypes, StatusCodes, Uri}
-import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
+import akka.http.scaladsl.model.{HttpEntity, StatusCodes, Uri}
+import akka.http.scaladsl.server.Route
 import akka.util.ByteString
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{SparqlQueryClientDummy, SparqlResults}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{BlazegraphViews, Fixtures}
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
-import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
-import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
-import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, IndexingAction}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, User}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label}
-import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionErrors, Projections}
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.model.ProjectionRestart
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{FailedElem, SuccessElem}
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionMetadata
-import ch.epfl.bluebrain.nexus.testkit._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import io.circe.Json
 import io.circe.syntax._
 import monix.bio.UIO
-import monix.execution.Scheduler
-import org.scalatest._
-import org.scalatest.matchers.should.Matchers
 
-import java.time.Instant
-import java.util.UUID
-import scala.concurrent.duration._
+class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures {
 
-class BlazegraphViewsRoutesSpec
-    extends RouteHelpers
-    with DoobieScalaTestFixture
-    with Matchers
-    with CirceLiteral
-    with CirceEq
-    with IOFixedClock
-    with IOValues
-    with OptionValues
-    with TestMatchers
-    with Inspectors
-    with CancelAfterFailure
-    with ConfigFixtures
-    with BeforeAndAfterAll
-    with TestHelpers
-    with Fixtures
-    with BlazegraphViewRoutesFixtures {
+  private val prefix = "prefix"
 
-  import akka.actor.typed.scaladsl.adapter._
-  implicit private val typedSystem: ActorSystem[Nothing] = system.toTyped
-
-  private val prefix                    = "prefix"
-  private val uuid                      = UUID.randomUUID()
-  implicit private val uuidF: UUIDF     = UUIDF.fixed(uuid)
-  implicit private val sc: Scheduler    = Scheduler.global
-  private val realm                     = Label.unsafe("myrealm")
-  private val bob                       = User("Bob", realm)
-  implicit private val caller: Caller   = Caller(bob, Set(bob, Group("mygroup", realm), Authenticated(realm)))
-  implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
-  private val identities                = IdentitiesDummy(caller)
-  private val asBob                     = addCredentials(OAuth2BearerToken("Bob"))
+  implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
 
   private val indexingSource  = jsonContentOf("indexing-view-source.json")
-  private val indexingSource2 = jsonContentOf("indexing-view-source-2.json")
   private val aggregateSource = jsonContentOf("aggregate-view-source.json")
 
   private val updatedIndexingSource = indexingSource.mapObject(_.add("resourceTag", Json.fromString("v1.5")))
@@ -98,15 +47,7 @@ class BlazegraphViewsRoutesSpec
     ProjectContextRejection
   )
 
-  implicit private val ordering: JsonKeyOrdering  =
-    JsonKeyOrdering.default(topKeys =
-      List("@context", "@id", "@type", "reason", "details", "sourceId", "projectionId", "_total", "_results")
-    )
-  implicit val rejectionHandler: RejectionHandler = RdfRejectionHandler.apply
-  implicit val exceptionHandler: ExceptionHandler = RdfExceptionHandler.apply
-
-  implicit val paginationConfig: PaginationConfig = pagination
-  implicit private val f: FusionConfig            = fusionConfig
+  implicit private val f: FusionConfig = fusionConfig
 
   private val selectQuery    = SparqlQuery("SELECT * {?s ?p ?o}")
   private val constructQuery = SparqlConstructQuery("CONSTRUCT {?s ?p ?o} WHERE {?s ?p ?o}").rightValue
@@ -121,9 +62,6 @@ class BlazegraphViewsRoutesSpec
     xas
   ).accepted
 
-  private lazy val projections      = Projections(xas, queryConfig, 1.hour)
-  private lazy val projectionErrors = ProjectionErrors(xas, queryConfig)
-
   lazy val viewsQuery = new BlazegraphViewsQueryDummy(
     projectRef,
     new SparqlQueryClientDummy(),
@@ -131,19 +69,19 @@ class BlazegraphViewsRoutesSpec
     Map("resource-incoming-outgoing" -> linksResults)
   )
 
-  private val aclCheck        = AclSimpleCheck().accepted
   private val groupDirectives = DeltaSchemeDirectives(fetchContext, _ => UIO.none, _ => UIO.none)
   private lazy val routes     =
     Route.seal(
-      BlazegraphViewsRoutes(
-        views,
-        viewsQuery,
-        identities,
-        aclCheck,
-        projections,
-        projectionErrors,
+      BlazegraphViewsRoutesHandler(
         groupDirectives,
-        IndexingAction.noop
+        BlazegraphViewsRoutes(
+          views,
+          viewsQuery,
+          identities,
+          aclCheck,
+          groupDirectives,
+          IndexingAction.noop
+        )
       )
     )
 
@@ -200,39 +138,6 @@ class BlazegraphViewsRoutesSpec
             response.asString shouldEqual expected
           }
         }
-      }
-    }
-
-    "fail to fetch statistics and offset from view without resources/read permission" in {
-
-      val endpoints = List(
-        "/v1/views/org/proj/indexing-view/statistics",
-        "/v1/views/org/proj/indexing-view/offset"
-      )
-      forAll(endpoints) { endpoint =>
-        Get(endpoint) ~> routes ~> check {
-          response.status shouldEqual StatusCodes.Forbidden
-          response.asJson shouldEqual jsonContentOf("routes/errors/authorization-failed.json")
-        }
-      }
-    }
-
-    "fetch statistics from view" in {
-
-      Get("/v1/views/org/proj/indexing-view/statistics") ~> asBob ~> routes ~> check {
-        response.status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual jsonContentOf(
-          "routes/responses/statistics.json",
-          "projectLatestInstant" -> Instant.EPOCH,
-          "viewLatestInstant"    -> Instant.EPOCH
-        )
-      }
-    }
-
-    "fetch offset from view" in {
-      Get("/v1/views/org/proj/indexing-view/offset") ~> asBob ~> routes ~> check {
-        response.status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual jsonContentOf("routes/responses/offset.json")
       }
     }
 
@@ -449,81 +354,6 @@ class BlazegraphViewsRoutesSpec
           response.status shouldEqual StatusCodes.Forbidden
           response.asJson shouldEqual jsonContentOf("routes/errors/authorization-failed.json")
         }
-      }
-    }
-    "fail to restart offset from view without resources/write permission" in {
-
-      Delete("/v1/views/org/proj/indexing-view/offset") ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("/routes/errors/authorization-failed.json")
-      }
-    }
-
-    "restart offset from view" in {
-      // Creating a new view, as indexing-view is deprecated and cannot be restarted
-      Post("/v1/views/org/proj", indexingSource2.toEntity) ~> asBob ~> routes
-
-      aclCheck.append(AclAddress.Root, Anonymous -> Set(permissions.write)).accepted
-      projections.restarts(Offset.start).compile.toList.accepted.size shouldEqual 0
-      Delete("/v1/views/org/proj/indexing-view-2/offset") ~> routes ~> check {
-        response.status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual json"""{"@context": "${Vocabulary.contexts.offset}", "@type": "Start"}"""
-        projections.restarts(Offset.start).compile.lastOrError.accepted shouldEqual SuccessElem(
-          ProjectionRestart.entityType,
-          ProjectionRestart.restartId(Offset.at(1L)),
-          None,
-          Instant.EPOCH,
-          Offset.at(1L),
-          ProjectionRestart(
-            "blazegraph-org/proj-https://bluebrain.github.io/nexus/vocabulary/indexing-view-2-1",
-            Instant.EPOCH,
-            Anonymous
-          ),
-          1
-        )
-      }
-    }
-
-    "return no blazegraph projection failures without write permission" in {
-      aclCheck.subtract(AclAddress.Root, Anonymous -> Set(permissions.write)).accepted
-
-      Get("/v1/views/org/proj/indexing-view/failures") ~> routes ~> check {
-        response.status shouldBe StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("/routes/errors/authorization-failed.json")
-      }
-    }
-
-    "not return any failures if there aren't any" in {
-      aclCheck.append(AclAddress.Root, Anonymous -> Set(permissions.write)).accepted
-
-      Get("/v1/views/org/proj/indexing-view/failures") ~> routes ~> check {
-        mediaType shouldBe MediaTypes.`text/event-stream`
-        response.status shouldBe StatusCodes.OK
-        chunksStream.asString(2).strip shouldBe ""
-      }
-    }
-
-    "return all available failures when no LastEventID is provided" in {
-      val metadata = ProjectionMetadata("testModule", "testName", Some(projectRef), Some(indexingViewId))
-      val error    = new Exception("boom")
-      val rev      = 1
-      val fail1    =
-        FailedElem(EntityType("ACL"), nxv + "myid", Some(projectRef), Instant.EPOCH, Offset.At(42L), error, rev)
-      val fail2    = FailedElem(EntityType("Schema"), nxv + "myid", None, Instant.EPOCH, Offset.At(42L), error, rev)
-      projectionErrors.saveFailedElems(metadata, List(fail1, fail2)).accepted
-
-      Get("/v1/views/org/proj/indexing-view/failures") ~> routes ~> check {
-        mediaType shouldBe MediaTypes.`text/event-stream`
-        response.status shouldBe StatusCodes.OK
-        chunksStream.asString(2).strip shouldEqual contentOf("/routes/sse/indexing-failures-1-2.txt")
-      }
-    }
-
-    "return failures only from the given LastEventID" in {
-      Get("/v1/views/org/proj/indexing-view/failures") ~> `Last-Event-ID`("1") ~> routes ~> check {
-        mediaType shouldBe MediaTypes.`text/event-stream`
-        response.status shouldBe StatusCodes.OK
-        chunksStream.asString(3).strip shouldEqual contentOf("/routes/sse/indexing-failure-2.txt")
       }
     }
 

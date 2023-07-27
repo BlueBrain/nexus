@@ -27,7 +27,7 @@ import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
 
 import java.util.UUID
 
-class ElasticSearchViewsRoutesBaseSpec
+class ElasticSearchViewsRoutesFixtures
     extends RouteHelpers
     with DoobieScalaTestFixture
     with Matchers
