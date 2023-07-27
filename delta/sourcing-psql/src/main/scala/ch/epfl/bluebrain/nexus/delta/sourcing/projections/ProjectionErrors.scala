@@ -57,7 +57,7 @@ trait ProjectionErrors {
   ): Stream[Task, ServerSentEvent]
 
   /**
-    * Return a list of errors for the given projection on a time window ordered by instant
+    * Return the total of errors for the given projection on a time window ordered by instant
     *
     * @param project
     *   the project of the projection
@@ -65,7 +65,6 @@ trait ProjectionErrors {
     *   its identifier
     * @param timeRange
     *   the time range to restrict on
-    * @return
     */
   def count(project: ProjectRef, projectionId: Iri, timeRange: TimeRange): UIO[Long]
 
@@ -80,7 +79,6 @@ trait ProjectionErrors {
     *   the pagination to apply
     * @param timeRange
     *   the time range to restrict on
-    * @return
     */
   def list(
       project: ProjectRef,
