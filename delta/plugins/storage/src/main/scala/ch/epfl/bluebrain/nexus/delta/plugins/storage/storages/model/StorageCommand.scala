@@ -1,10 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 
-import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.Json
 
 /**
@@ -57,7 +56,7 @@ object StorageCommand {
       id: Iri,
       project: ProjectRef,
       fields: StorageFields,
-      source: Secret[Json],
+      source: Json,
       subject: Subject
   ) extends StorageCommand {
     override def rev: Int = 0
@@ -83,7 +82,7 @@ object StorageCommand {
       id: Iri,
       project: ProjectRef,
       fields: StorageFields,
-      source: Secret[Json],
+      source: Json,
       rev: Int,
       subject: Subject
   ) extends StorageCommand

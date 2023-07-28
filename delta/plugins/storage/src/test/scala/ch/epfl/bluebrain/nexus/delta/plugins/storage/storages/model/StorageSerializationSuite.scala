@@ -46,26 +46,26 @@ class StorageSerializationSuite extends SerializationSuite with StorageFixtures 
     (diskDeprecated, loadEvents("storages", "storage-deprecated.json"), Deprecated)
   )
 
-  private val storageEventSerializer    = StorageEvent.serializer(crypto)
-  private val storageSseEncoder         = StorageEvent.sseEncoder(crypto)
-  private val storageEventMetricEncoder = StorageEvent.storageEventMetricEncoder(crypto)
+  private val storageEventSerializer    = StorageEvent.serializer
+  private val storageSseEncoder         = StorageEvent.sseEncoder
+  private val storageEventMetricEncoder = StorageEvent.storageEventMetricEncoder
 
   storagesMapping.foreach { case (event, (database, sse), action) =>
-    test(s"Correctly serialize ${event.getClass.getName}") {
+    test(s"Correctly serialize ${event.getClass.getSimpleName} for ${event.tpe}") {
       assertEquals(storageEventSerializer.codec(event), database)
     }
 
-    test(s"Correctly deserialize ${event.getClass.getName}") {
+    test(s"Correctly deserialize ${event.getClass.getSimpleName} for ${event.tpe}") {
       assertEquals(storageEventSerializer.codec.decodeJson(database), Right(event))
     }
 
-    test(s"Correctly serialize ${event.getClass.getName} as an SSE") {
+    test(s"Correctly serialize ${event.getClass.getSimpleName} for ${event.tpe} as an SSE") {
       storageSseEncoder.toSse
         .decodeJson(database)
         .assertRight(SseData(ClassUtils.simpleName(event), Some(projectRef), sse))
     }
 
-    test(s"Correctly encode ${event.getClass.getName} to metric") {
+    test(s"Correctly encode ${event.getClass.getSimpleName} for ${event.tpe} to metric") {
       storageEventMetricEncoder.toMetric.decodeJson(database).assertRight {
         ProjectScopedMetric(
           instant,
@@ -102,7 +102,7 @@ class StorageSerializationSuite extends SerializationSuite with StorageFixtures 
     ) -> v
   }
 
-  private val storageStateSerializer = StorageState.serializer(crypto)
+  private val storageStateSerializer = StorageState.serializer
 
   statesMapping.foreach { case (state, json) =>
     test(s"Correctly serialize state ${state.value.tpe}") {

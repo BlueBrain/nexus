@@ -8,8 +8,6 @@
     "algorithm" : "SHA-256",
     "bucket" : "mybucket2",
     "endpoint" : "http://localhost",
-    "accessKey" : "O2vOp16ah21Fk/B0OucyxQ==",
-    "secretKey" : "dqO3PR6kLOCFNBk9I6zsZQ==",
     "readPermission" : "s3/read",
     "region": "eu-west-1",
     "writePermission" : "s3/write",
@@ -17,8 +15,6 @@
     "@type" : "S3StorageValue"
   },
   "source" : {
-    "secretKey" : "dqO3PR6kLOCFNBk9I6zsZQ==",
-    "accessKey" : "O2vOp16ah21Fk/B0OucyxQ==",
     "@type" : "S3Storage",
     "name": "s3name",
     "description": "s3description",

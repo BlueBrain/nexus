@@ -7,7 +7,6 @@
   "name": "remoteName",
   "description": "remoteDescription",
   "endpoint": "http://localhost",
-  "credentials": "authToken",
   "folder": "myfolder",
   "readPermission": "remote/read",
   "writePermission": "remote/write",

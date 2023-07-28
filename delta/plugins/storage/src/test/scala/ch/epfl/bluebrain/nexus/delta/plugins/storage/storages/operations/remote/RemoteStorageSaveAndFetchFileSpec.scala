@@ -4,7 +4,6 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
 import akka.http.scaladsl.model.{HttpEntity, Uri}
 import akka.testkit.TestKit
-import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
@@ -66,13 +65,12 @@ class RemoteStorageSaveAndFetchFileSpec(docker: RemoteStorageDocker)
       default = true,
       DigestAlgorithm.default,
       BaseUri(docker.hostConfig.endpoint).rightValue,
-      None,
       Label.unsafe(RemoteStorageDocker.BucketName),
       read,
       write,
       10
     )
-    storage = RemoteDiskStorage(iri, project, storageValue, Tags.empty, Secret(Json.obj()))
+    storage = RemoteDiskStorage(iri, project, storageValue, Tags.empty, Json.obj())
   }
 
   "RemoteDiskStorage operations" should {

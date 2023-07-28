@@ -58,7 +58,6 @@ class StorageScopeInitializationSpec
       new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport())),
       IO.pure(allowedPerms.toSet),
       (_, _) => IO.unit,
-      crypto,
       xas,
       StoragesConfig(eventLogConfig, pagination, config),
       serviceAccount

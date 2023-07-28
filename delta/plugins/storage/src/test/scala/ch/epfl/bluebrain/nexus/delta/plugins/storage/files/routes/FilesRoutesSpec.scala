@@ -82,7 +82,6 @@ class FilesRoutesSpec extends BaseRouteSpec with CancelAfterFailure with Storage
     new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport())),
     IO.pure(allowedPerms.toSet),
     (_, _) => IO.unit,
-    crypto,
     xas,
     StoragesConfig(eventLogConfig, pagination, config),
     ServiceAccount(User("nexus-sa", Label.unsafe("sa")))
@@ -117,9 +116,9 @@ class FilesRoutesSpec extends BaseRouteSpec with CancelAfterFailure with Storage
           caller.subject -> Set(storagesPermissions.write)
         )
         .accepted
-      storages.create(s3Id, projectRef, diskFieldsJson.map(_ deepMerge defaults deepMerge s3Perms)).accepted
+      storages.create(s3Id, projectRef, diskFieldsJson deepMerge defaults deepMerge s3Perms).accepted
       storages
-        .create(dId, projectRef, diskFieldsJson.map(_ deepMerge defaults deepMerge json"""{"capacity":5000}"""))
+        .create(dId, projectRef, diskFieldsJson deepMerge defaults deepMerge json"""{"capacity":5000}""")
         .accepted
     }
 
@@ -189,7 +188,7 @@ class FilesRoutesSpec extends BaseRouteSpec with CancelAfterFailure with Storage
 
     "fail to update a file without disk/write permission" in {
       aclCheck.subtract(AclAddress.Root, Anonymous -> Set(diskWrite)).accepted
-      Put(s"/v1/files/org/proj/file1?rev=1", s3FieldsJson.value.toEntity) ~> routes ~> check {
+      Put(s"/v1/files/org/proj/file1?rev=1", s3FieldsJson.toEntity) ~> routes ~> check {
         response.status shouldEqual StatusCodes.Forbidden
         response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
       }
