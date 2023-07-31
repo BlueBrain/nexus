@@ -4,25 +4,9 @@
     "https://bluebrain.github.io/nexus/contexts/search.json",
     "https://bluebrain.github.io/nexus/contexts/offset.json"
   ],
-  "_total" : 6,
+  "_total" : 2,
   "_results" : [
     {
-      "sourceId" : "http://example.com/cross-project-source",
-      "projectionId" : "http://example.com/blazegraph-projection",
-      "offset" : {
-        "@type" : "At",
-        "value" : 6
-      }
-    },
-    {
-      "sourceId" : "http://example.com/cross-project-source",
-      "projectionId" : "http://example.com/es-projection",
-      "offset" : {
-        "@type" : "At",
-        "value" : 6
-      }
-    },
-    {
       "sourceId" : "http://example.com/project-source",
       "projectionId" : "http://example.com/blazegraph-projection",
       "offset" : {
@@ -36,22 +20,6 @@
       "offset" : {
         "@type" : "At",
         "value" : 3
-      }
-    },
-    {
-      "sourceId" : "http://example.com/remote-project-source",
-      "projectionId" : "http://example.com/blazegraph-projection",
-      "offset" : {
-        "@type" : "At",
-        "value" : 7
-      }
-    },
-    {
-      "sourceId" : "http://example.com/remote-project-source",
-      "projectionId" : "http://example.com/es-projection",
-      "offset" : {
-        "@type" : "At",
-        "value" : 7
       }
     }
   ]

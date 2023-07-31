@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.{CompositeP
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.projections.{CompositeIndexingDetails, CompositeProjections}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.routes.CompositeViewsRoutes
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.routes.{CompositeViewsIndexingRoutes, CompositeViewsRoutes, CompositeViewsRoutesHandler}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.store.CompositeRestartStore
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.{CompositeGraphStream, RemoteGraphStream}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
@@ -37,6 +37,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ProjectionConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionErrors
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeChain, ReferenceRegistry, Supervisor}
 import distage.ModuleDef
 import izumi.distage.model.definition.Id
@@ -256,8 +257,6 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         identities: Identities,
         aclCheck: AclCheck,
         views: CompositeViews,
-        projections: CompositeProjections,
-        graphStream: CompositeGraphStream,
         blazegraphQuery: BlazegraphQuery,
         elasticSearchQuery: ElasticSearchQuery,
         schemeDirectives: DeltaSchemeDirectives,
@@ -271,12 +270,38 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         identities,
         aclCheck,
         views,
-        CompositeIndexingDetails(projections, graphStream),
-        projections,
         blazegraphQuery,
         elasticSearchQuery,
         schemeDirectives
       )(baseUri, s, cr, ordering, fusionConfig)
+  }
+
+  make[CompositeViewsIndexingRoutes].from {
+    (
+        identities: Identities,
+        aclCheck: AclCheck,
+        views: CompositeViews,
+        graphStream: CompositeGraphStream,
+        projections: CompositeProjections,
+        projectionErrors: ProjectionErrors,
+        schemeDirectives: DeltaSchemeDirectives,
+        baseUri: BaseUri,
+        config: CompositeViewsConfig,
+        s: Scheduler,
+        cr: RemoteContextResolution @Id("aggregate"),
+        ordering: JsonKeyOrdering
+    ) =>
+      new CompositeViewsIndexingRoutes(
+        identities,
+        aclCheck,
+        views.fetch,
+        views.fetchProjection,
+        views.fetchSource,
+        CompositeIndexingDetails(projections, graphStream),
+        projections,
+        projectionErrors,
+        schemeDirectives
+      )(baseUri, config.pagination, s, cr, ordering)
   }
 
   make[CompositeView.Shift].from { (views: CompositeViews, base: BaseUri, crypto: Crypto) =>
@@ -289,7 +314,21 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
 
   many[ScopedEventMetricEncoder[_]].add { (crypto: Crypto) => CompositeViewEvent.compositeViewMetricEncoder(crypto) }
 
-  many[PriorityRoute].add { (route: CompositeViewsRoutes) =>
-    PriorityRoute(priority, route.routes, requiresStrictEntity = true)
+  many[PriorityRoute].add {
+    (
+        cv: CompositeViewsRoutes,
+        indexing: CompositeViewsIndexingRoutes,
+        schemeDirectives: DeltaSchemeDirectives,
+        baseUri: BaseUri
+    ) =>
+      PriorityRoute(
+        priority,
+        CompositeViewsRoutesHandler(
+          schemeDirectives,
+          cv.routes,
+          indexing.routes
+        )(baseUri),
+        requiresStrictEntity = true
+      )
   }
 }
