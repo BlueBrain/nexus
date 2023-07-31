@@ -87,7 +87,7 @@ final class ElasticSearchIndexingRoutes(
                     emit(
                       fetch(id, ref)
                         .flatMap(v => projections.statistics(ref, v.resourceTag, v.projection))
-                        .rejectWhen(decodingFailedOrViewNotFound)
+                        .rejectOn[ViewNotFound]
                     )
                   }
                 },
@@ -112,6 +112,7 @@ final class ElasticSearchIndexingRoutes(
                               .flatMap { view =>
                                 projectionErrors.search(view.ref, pagination, timeRange)
                               }
+                              .rejectOn[ViewNotFound]
                           )
                       }
                     )
@@ -125,7 +126,7 @@ final class ElasticSearchIndexingRoutes(
                       emit(
                         fetch(id, ref)
                           .flatMap(v => projections.offset(v.projection))
-                          .rejectWhen(decodingFailedOrViewNotFound)
+                          .rejectOn[ViewNotFound]
                       )
                     },
                     // Remove an elasticsearch view offset (restart the view)
@@ -134,7 +135,7 @@ final class ElasticSearchIndexingRoutes(
                         fetch(id, ref)
                           .flatMap { v => projections.scheduleRestart(v.projection) }
                           .as(Offset.start)
-                          .rejectWhen(decodingFailedOrViewNotFound)
+                          .rejectOn[ViewNotFound]
                       )
                     }
                   )

@@ -95,6 +95,7 @@ class BlazegraphViewsIndexingRoutes(
                             .flatMap { view =>
                               projectionErrors.search(view.ref, pagination, timeRange)
                             }
+                            .rejectOn[ViewNotFound]
                         )
                     }
                   )
