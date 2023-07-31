@@ -143,8 +143,8 @@ CONSTRUCT {
   # Properties specific to types
 
   ## Bouton density
-  ?alias  :boutonDensity      ?boutonDensityMean          .
-                           ?boutonDensityMean          :value       ?boutonDensityValue  ;
+  ?alias  :boutonDensity      ?boutonDensityBN          .
+                           ?boutonDensityBN          :value       ?boutonDensityValue  ;
                                                        :unit        ?boutonDensityUnit   ;
                                                        :label       ?boutonDensityLabel  .
 
@@ -157,15 +157,15 @@ CONSTRUCT {
                                                        :label       ?circuitBrainRegionLabel .
 
   ## Layer thickness
-  ?alias  :layerThickness       ?thickness           .
-                             ?thickness           :value       ?thicknessValue   ;
+  ?alias  :layerThickness       ?thicknessBN           .
+                             ?thicknessBN           :value       ?thicknessValue   ;
                                                   :unit        ?thicknessUnit    ;
                                                   :nValue      ?thicknessNValue  ;
                                                   :label       ?thicknessLabel   .
 
   ## Neuron density
-  ?alias  :neuronDensity        ?neuronDensity       .
-                             ?neuronDensity       :value       ?neuronDensityValue   ;
+  ?alias  :neuronDensity        ?neuronDensityBN       .
+                             ?neuronDensityBN       :value       ?neuronDensityValue   ;
                                                   :unit        ?neuronDensityUnit    ;
                                                   :nValue      ?neuronDensityNValue  ;
                                                   :label       ?neuronDensityLabel   .
@@ -470,7 +470,7 @@ CONSTRUCT {
 
   # Bouton density
   OPTIONAL {
-    ?id   a            nsg:BoutonDensity   ;
+    ?id  a             nsg:BoutonDensity   ;
           nsg:density  ?boutonDensityMean  .
                        ?boutonDensityMean  nsg:statistic    "mean"              ;
                                            schema:value     ?boutonDensityValue ;
@@ -481,6 +481,7 @@ CONSTRUCT {
         STR(?boutonDensityUnit)
       ) as ?boutonDensityLabel
     ) .
+    BIND( BNODE(CONCAT(STR(?id), '/boutonDensity')) as ?boutonDensityBN ) .
   } .
 
   # Circuit
