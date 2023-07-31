@@ -84,6 +84,7 @@ class BlazegraphViewsIndexingRoutes(
                           .map { view =>
                             projectionErrors.sses(view.ref.project, view.ref.viewId, offset)
                           }
+                          .rejectOn[ViewNotFound]
                       )
                     },
                     (fromPaginated & timeRange("instant") & extractUri & pathEndOrSingleSlash) {
@@ -95,6 +96,7 @@ class BlazegraphViewsIndexingRoutes(
                             .flatMap { view =>
                               projectionErrors.search(view.ref, pagination, timeRange)
                             }
+                            .rejectOn[ViewNotFound]
                         )
                     }
                   )
