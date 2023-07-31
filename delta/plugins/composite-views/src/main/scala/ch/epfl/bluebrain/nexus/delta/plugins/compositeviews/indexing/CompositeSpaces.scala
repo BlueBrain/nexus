@@ -69,7 +69,7 @@ object CompositeSpaces {
       def createBlazeSink(namespace: String): SparqlProjection => Sink = { target =>
         val blazeSink = BlazegraphSink(blazeClient, blazeBatchConfig, namespace)
         new BatchCompositeSink(
-          NewQueryGraph(blazeClient, common, target.query),
+          new BatchQueryGraph(blazeClient, common, target.query),
           GraphResourceToNTriples.graphToNTriples,
           blazeSink.apply,
           blazeBatchConfig.maxElements,
@@ -82,7 +82,7 @@ object CompositeSpaces {
         val esSink =
           ElasticSearchSink.states(esClient, esBatchConfig.maxElements, esBatchConfig.maxInterval, index, Refresh.False)
         new BatchCompositeSink(
-          NewQueryGraph(blazeClient, common, target.query),
+          new BatchQueryGraph(blazeClient, common, target.query),
           new GraphResourceToDocument(target.context, target.includeContext).graphToDocument,
           esSink.apply,
           esBatchConfig.maxElements,

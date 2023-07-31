@@ -13,9 +13,19 @@ import monix.bio.Task
 
 import java.util.regex.Pattern.quote
 
-final case class NewQueryGraph(client: BlazegraphClient, namespace: String, query: SparqlConstructQuery) {
+/**
+  * Provides a way to query for the multiple incoming resources (from a chunk). This assumes that the query contains the
+  * template: `VALUE ?id { {resource_id} }`. The result is a single Graph for all given resources.
+  * @param client
+  *   the blazegraph client used to query
+  * @param namespace
+  *   the namespace to query
+  * @param query
+  *   the sparql query to perform
+  */
+final class BatchQueryGraph(client: BlazegraphClient, namespace: String, query: SparqlConstructQuery) {
 
-  private val logger: Logger = Logger[NewQueryGraph]
+  private val logger: Logger = Logger[BatchQueryGraph]
 
   private def newGraph(ntriples: NTriples): Task[Option[Graph]] =
     if (ntriples.isEmpty) Task.none
@@ -38,9 +48,9 @@ final case class NewQueryGraph(client: BlazegraphClient, namespace: String, quer
 }
 
 /**
-  * Pipe that performs the provided query for the incoming resource and replaces the graph with the result of query
+  * Provides a way to query for the incoming resource and replaces the graph with the result of query
   * @param client
-  *   the blazegraph client
+  *   the blazegraph client used to query
   * @param namespace
   *   the namespace to query
   * @param query

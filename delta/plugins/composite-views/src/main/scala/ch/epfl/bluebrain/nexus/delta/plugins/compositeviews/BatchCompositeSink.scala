@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.NewQueryGraph
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.BatchQueryGraph
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
@@ -31,7 +31,7 @@ import scala.concurrent.duration.FiniteDuration
   *   the type of data accepted by the sink
   */
 final class BatchCompositeSink[SinkFormat](
-    queryGraph: NewQueryGraph,
+    queryGraph: BatchQueryGraph,
     transform: GraphResource => Task[Option[SinkFormat]],
     sink: Chunk[Elem[SinkFormat]] => Task[Chunk[Elem[Unit]]],
     override val chunkSize: Int,
