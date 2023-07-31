@@ -1,4 +1,4 @@
-name: Delta Plugins
+name: Delta Plugins unit tests
 on:
   pull_request:
     paths:

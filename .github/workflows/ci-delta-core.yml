@@ -1,4 +1,4 @@
-name: Delta Core
+name: Delta Core unit tests
 on:
   pull_request:
     paths:

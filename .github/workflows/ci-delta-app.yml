@@ -1,4 +1,4 @@
-name: Delta App
+name: Delta App unit tests
 on:
   pull_request:
     paths:
