@@ -1,0 +1,55 @@
+package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
+
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model._
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceUris, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.Project
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
+import io.circe.Json
+
+import java.time.Instant
+import java.util.UUID
+
+object CompositeViewsGen {
+
+  def resourceFor(
+      project: Project,
+      id: Iri,
+      uuid: UUID,
+      value: CompositeViewValue,
+      rev: Int = 1,
+      deprecated: Boolean = false,
+      createdAt: Instant = Instant.EPOCH,
+      createdBy: Subject = Anonymous,
+      updatedAt: Instant = Instant.EPOCH,
+      updatedBy: Subject = Anonymous,
+      tags: Tags = Tags.empty,
+      source: Json
+  ): ViewResource = {
+    ResourceF(
+      id,
+      ResourceUris("views", project.ref, id)(project.apiMappings, project.base),
+      rev,
+      Set(nxv.View, compositeViewType),
+      deprecated,
+      createdAt,
+      createdBy,
+      updatedAt,
+      updatedBy,
+      schema,
+      CompositeView(
+        id,
+        project.ref,
+        value.sources,
+        value.projections,
+        value.rebuildStrategy,
+        uuid,
+        tags,
+        source,
+        Instant.EPOCH
+      )
+    )
+  }
+
+}

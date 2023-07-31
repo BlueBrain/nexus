@@ -80,31 +80,20 @@ class CompositeViewsSpec
         updatedBy: Subject = alice.subject,
         tags: Tags = Tags.empty,
         source: Json
-    ): ViewResource = {
-      ResourceF(
-        id,
-        ResourceUris("views", projectRef, id)(project.apiMappings, project.base),
-        rev,
-        Set(nxv.View, compositeViewType),
-        deprecated,
-        createdAt,
-        createdBy,
-        updatedAt,
-        updatedBy,
-        schema,
-        CompositeView(
-          id,
-          projectRef,
-          value.sources,
-          value.projections,
-          value.rebuildStrategy,
-          uuid,
-          tags,
-          source,
-          Instant.EPOCH
-        )
-      )
-    }
+    ): ViewResource = CompositeViewsGen.resourceFor(
+      project,
+      id,
+      uuid,
+      value,
+      rev = rev,
+      deprecated = deprecated,
+      createdAt = createdAt,
+      createdBy = createdBy,
+      updatedAt = updatedAt,
+      updatedBy = updatedBy,
+      tags = tags,
+      source = source
+    )
 
     "create a composite view" when {
       "using JSON source" in {
