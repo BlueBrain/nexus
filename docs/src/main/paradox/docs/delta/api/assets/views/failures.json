@@ -1,3 +1,31 @@
-data:{"@context":"https://bluebrain.github.io/nexus/contexts/error.json","errorType":"java.lang.Exception","id":"myid","message":"boom","offset":{"@type":"At","value":42}}
-event:IndexingFailure
-id:1
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/metadata.json",
+    "https://bluebrain.github.io/nexus/contexts/search.json",
+    "https://bluebrain.github.io/nexus/contexts/error.json"
+  ],
+  "_total": 2,
+  "_results": [
+    {
+      "errorType": "java.lang.Exception",
+      "id": "https://bluebrain.github.io/nexus/vocabulary/myid",
+      "message": "The resource could not be indexed for the following reason: '...'",
+      "offset": {
+        "@type": "At",
+        "value": 42
+      },
+      "project": "myorg/myproj",
+      "_rev": 1
+    },
+    {
+      "errorType": "java.lang.Exception",
+      "id": "https://bluebrain.github.io/nexus/vocabulary/myid",
+      "message": "The resource could not be indexed for the following reason: '...'",
+      "offset": {
+        "@type": "At",
+        "value": 42
+      },
+      "_rev": 1
+    }
+  ]
+}
