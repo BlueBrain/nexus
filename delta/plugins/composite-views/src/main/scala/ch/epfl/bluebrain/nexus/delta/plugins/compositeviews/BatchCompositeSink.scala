@@ -67,11 +67,7 @@ final class BatchCompositeSink[SinkFormat](
             }
           }
         case None            =>
-          elements.traverse {
-            case e: Elem.SuccessElem[GraphResource] => Task.pure(e.dropped)
-            case e: Elem.FailedElem                 => Task.pure(e)
-            case e: Elem.DroppedElem                => Task.pure(e)
-          }
+          Task.pure(elements.map(_.drop))
       }
       .flatMap(sink)
 }
