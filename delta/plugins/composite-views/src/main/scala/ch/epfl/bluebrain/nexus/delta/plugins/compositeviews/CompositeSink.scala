@@ -90,7 +90,7 @@ final class BatchCompositeSink[SinkFormat](
 
   private def query(elements: Chunk[Elem[GraphResource]]): Task[Option[Graph]] =
     elements.mapFilter(elem => elem.toOption) match {
-      case elems if elems.nonEmpty => queryGraph(elems)
+      case elems if elems.nonEmpty => queryGraph(elems.map(_.id))
       case _                       => Task.none
     }
 

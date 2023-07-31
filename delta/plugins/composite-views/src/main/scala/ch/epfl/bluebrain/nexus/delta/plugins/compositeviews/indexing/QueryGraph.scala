@@ -31,12 +31,12 @@ final class BatchQueryGraph(client: BlazegraphClient, namespace: String, query: 
     if (ntriples.isEmpty) Task.none
     else Task.fromEither(Graph(ntriples)).map(Some(_))
 
-  def apply(graphResource: Chunk[GraphResource]): Task[Option[Graph]] =
+  def apply(ids: Chunk[Iri]): Task[Option[Graph]] =
     for {
-      ntriples    <- client.query(Set(namespace), replaceIds(query, graphResource.map(_.id)), SparqlNTriples)
+      ntriples    <- client.query(Set(namespace), replaceIds(query, ids), SparqlNTriples)
       graphResult <- newGraph(ntriples.value)
       _           <- Task.when(graphResult.isEmpty)(
-                       logger.debug(s"Querying blazegraph did not return any triples, '$graphResource' will be dropped.")
+                       logger.debug(s"Querying blazegraph did not return any triples, '$ids' will be dropped.")
                      )
     } yield graphResult
 
@@ -56,7 +56,7 @@ final class BatchQueryGraph(client: BlazegraphClient, namespace: String, query: 
   * @param query
   *   the query to perform on each resource
   */
-final case class QueryGraph(client: BlazegraphClient, namespace: String, query: SparqlConstructQuery) {
+final class QueryGraph(client: BlazegraphClient, namespace: String, query: SparqlConstructQuery) {
 
   private val logger: Logger = Logger[QueryGraph]
 
