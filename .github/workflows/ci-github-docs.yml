@@ -6,7 +6,7 @@ on:
       - 'README.md'
 
 jobs:
-  review:
+  run:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 20
