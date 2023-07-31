@@ -8,9 +8,9 @@ on:
       - '.github/workflows/ci-docs.yml'
 
 jobs:
-  static-analysis:
+  run:
     if: github.event_name == 'pull_request'
-    runs-on: it
+    runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - name: Checkout

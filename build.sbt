@@ -1035,18 +1035,18 @@ addCommandAlias("build-docs", ";docs/clean;docs/makeSite")
 addCommandAlias("preview-docs", ";docs/clean;docs/previewSite")
 
 val coreModules = List("kernel", "rdf", "sdk", "sourcingPsql", "testkit")
-def staticAnalysisCommandForModule(module: String) =
+
+val staticAnalysis =
   s"""
-    |;$module/scalafmtCheck
-    |;$module/Test/scalafmtCheck
-    |;$module/scalafmtSbtCheck
-    |;$module/scapegoat
-    |;$module/doc
+    |project delta ;
+    |scalafmtSbtCheck ;
+    |scalafmtCheck ;
+    |Test/scalafmtCheck ;
+    |scapegoat ;
+    |doc
     |""".stripMargin
 
-addCommandAlias("core-static-analysis", coreModules.map(staticAnalysisCommandForModule).mkString)
-addCommandAlias("app-static-analysis", staticAnalysisCommandForModule("app"))
-addCommandAlias("plugins-static-analysis", staticAnalysisCommandForModule("plugins"))
+addCommandAlias("static-analysis", staticAnalysis)
 
 def unitTestsWithCoverageCommandsForModules(modules: List[String]) = {
   ";coverage" +

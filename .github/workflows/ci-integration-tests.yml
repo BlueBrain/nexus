@@ -9,7 +9,7 @@ on:
       - 'project/**'
       - '.github/workflows/ci-integration-tests.yml'
 jobs:
-  integration-tests:
+  run:
     runs-on: it
     timeout-minutes: 40
     env:

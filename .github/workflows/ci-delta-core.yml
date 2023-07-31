@@ -12,24 +12,7 @@ on:
       - 'project/**'
       - '.github/workflows/ci-delta-core.yml'
 jobs:
-  static-analysis:
-    if: github.event_name == 'pull_request'
-    runs-on: it
-    timeout-minutes: 10
-    env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-      - name: Static analysis
-        run: |
-          sbt -Dsbt.color=always -Dsbt.supershell=false \
-            clean \
-            core-static-analysis
-
-  unit-tests:
+  run:
     if: github.event_name == 'pull_request'
     runs-on: it
     timeout-minutes: 20

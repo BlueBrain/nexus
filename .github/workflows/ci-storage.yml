@@ -9,7 +9,7 @@ on:
       - 'project/**'
       - '.github/workflows/ci-storage.yml'
 jobs:
-  review:
+  run:
     if: github.event_name == 'pull_request'
     runs-on: it
     timeout-minutes: 20
