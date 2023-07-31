@@ -73,18 +73,18 @@ class CompositeViewsIndexingRoutes(
                 concat(
                   // Fetch all composite view offsets
                   (get & authorizeFor(ref, Read)) {
-                    emit(fetchOffsets(ref, id).rejectWhen(decodingFailedOrViewNotFound))
+                    emit(fetchOffsets(ref, id).rejectOn[ViewNotFound])
                   },
                   // Remove all composite view offsets (restart the view)
                   (delete & authorizeFor(ref, Write)) {
-                    emit(fullRestart(ref, id).rejectWhen(decodingFailedOrViewNotFound))
+                    emit(fullRestart(ref, id).rejectOn[ViewNotFound])
                   }
                 )
               },
               // Fetch composite view statistics
               (get & pathPrefix("statistics") & pathEndOrSingleSlash) {
                 authorizeFor(ref, Read).apply {
-                  emit(fetchView(id, ref).flatMap(details.statistics))
+                  emit(fetchView(id, ref).flatMap(details.statistics).rejectOn[ViewNotFound])
                 }
               },
               // Fetch elastic search view indexing failures
@@ -108,6 +108,7 @@ class CompositeViewsIndexingRoutes(
                             .flatMap { view =>
                               projectionErrors.search(ViewRef(ref, view.id), pagination, timeRange)
                             }
+                            .rejectOn[ViewNotFound]
                         )
                     }
                   )
@@ -141,9 +142,13 @@ class CompositeViewsIndexingRoutes(
                     concat(
                       // Fetch a composite view projection offset
                       (get & authorizeFor(ref, Read)) {
-                        emit(fetchProjection(id, projectionId, ref).flatMap { v =>
-                          details.projectionOffsets(ref, v.id, v.rev, v.value._2.id)
-                        })
+                        emit(
+                          fetchProjection(id, projectionId, ref)
+                            .flatMap { v =>
+                              details.projectionOffsets(ref, v.id, v.rev, v.value._2.id)
+                            }
+                            .rejectOn[ViewNotFound]
+                        )
                       },
                       // Remove a composite view projection offset
                       (delete & authorizeFor(ref, Write)) {
@@ -155,9 +160,11 @@ class CompositeViewsIndexingRoutes(
                   (get & idSegment & pathPrefix("statistics") & pathEndOrSingleSlash) { projectionId =>
                     authorizeFor(ref, Read).apply {
                       emit(
-                        fetchProjection(id, projectionId, ref).flatMap { v =>
-                          details.projectionStatistics(v.map(_._1), v.value._2.id)
-                        }
+                        fetchProjection(id, projectionId, ref)
+                          .flatMap { v =>
+                            details.projectionStatistics(v.map(_._1), v.value._2.id)
+                          }
+                          .rejectOn[ViewNotFound]
                       )
                     }
                   }
