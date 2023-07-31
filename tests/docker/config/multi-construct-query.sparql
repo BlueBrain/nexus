@@ -517,17 +517,14 @@ CONSTRUCT {
 
   # Layer thickness
   OPTIONAL {
-    ?id  a           nsg:LayerThickness .
-    ?id  nsg:series  ?thickness         .
-
-    # Thickness mean value
-    ?thickness  nsg:statistic    "mean"           ;
-                schema:value     ?thicknessValue  ;
-                schema:unitCode  ?thicknessUnit   .
-
-    # Thickness N value
-    ?thickness  nsg:statistic    "N"              ;
-                schema:value     ?thicknessNValue .
+    ?id  a           nsg:LayerThickness ;
+         nsg:series  ?meanSeries        .
+                     ?meanSeries        nsg:statistic    "mean"          ;
+                                        schema:value     ?thicknessValue ;
+                                        schema:unitCode  ?thicknessUnit  .
+    ?id  nsg:series  ?nSeries           .
+                     ?nSeries           nsg:statistic  "N"               ;
+                                        schema:value   ?thicknessNValue  .
     BIND(
       CONCAT(
         STR(?thicknessValue), " ",
@@ -535,22 +532,20 @@ CONSTRUCT {
         STR(?thicknessNValue), ")"
       ) as ?thicknessLabel
     ) .
+
+    BIND( BNODE(CONCAT(STR(?id), '/layerThickness')) as ?thicknessBN ) .
   } .
 
   # Neuron density
   OPTIONAL {
-    ?id  a           nsg:NeuronDensity .
-    ?id  nsg:series  ?neuronDensity    .
-
-    # Neuron density mean
-    ?neuronDensity  nsg:statistic    ?stat               ;
-                    schema:value     ?neuronDensityValue ;
-                    schema:unitCode  ?neuronDensityUnit  .
-
-    # Neuron density N value
-    ?neuronDensity  nsg:statistic  "N"                   ;
-                    schema:value   ?neuronDensityNValue  .
-
+    ?id  a           nsg:NeuronDensity ;
+         nsg:series  ?meanSeries       .
+                     ?meanSeries  nsg:statistic    ?stat               ;
+                                  schema:value     ?neuronDensityValue ;
+                                  schema:unitCode  ?neuronDensityUnit  .
+    ?id  nsg:series  ?nSeries  .
+                     ?nSeries  nsg:statistic  "N" ;
+                               schema:value   ?neuronDensityNValue .
     FILTER ( ?stat = "mean" || ?stat = "data point" ) .
     BIND(
       CONCAT(
@@ -559,6 +554,8 @@ CONSTRUCT {
         STR(?neuronDensityNValue), ")"
       ) as ?neuronDensityLabel
     ) .
+
+    BIND( BNODE((CONCAT(STR(?id), '/neuronDensity'))) as ?neuronDensityBN ) .
   } .
 
   # Simulation campaign configuration
