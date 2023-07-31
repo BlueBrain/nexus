@@ -101,7 +101,6 @@ final class ElasticSearchIndexingRoutes(
                             .map { view =>
                               projectionErrors.sses(view.ref.project, view.ref.viewId, offset)
                             }
-                            .rejectOn[ViewNotFound]
                         )
                       },
                       (fromPaginated & timeRange("instant") & extractUri & pathEndOrSingleSlash) {
