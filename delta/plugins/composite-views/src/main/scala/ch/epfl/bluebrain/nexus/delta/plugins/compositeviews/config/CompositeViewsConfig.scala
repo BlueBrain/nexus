@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config
 
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.config.BlazegraphViewsConfig.Credentials
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig.SinkConfig.SinkConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig.{BlazegraphAccess, RemoteSourceClientConfig, SourcesConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
@@ -42,6 +43,8 @@ import scala.concurrent.duration.{Duration, FiniteDuration}
   *   the interval at which a view will look for requested restarts
   * @param indexingEnabled
   *   if false, disables composite view indexing
+  * @param sinkConfig
+  *   type of sink used for composite indexing
   */
 final case class CompositeViewsConfig(
     sources: SourcesConfig,
@@ -55,7 +58,8 @@ final case class CompositeViewsConfig(
     blazegraphBatch: BatchConfig,
     elasticsearchBatch: BatchConfig,
     restartCheckInterval: FiniteDuration,
-    indexingEnabled: Boolean
+    indexingEnabled: Boolean,
+    sinkConfig: SinkConfig
 )
 
 object CompositeViewsConfig {
@@ -105,6 +109,25 @@ object CompositeViewsConfig {
       maxBatchSize: Int,
       maxTimeWindow: FiniteDuration
   )
+
+  object SinkConfig {
+
+    /** Represents the choice of composite sink */
+    sealed trait SinkConfig
+
+    /** A sink that only supports querying one resource at once from blazegraph */
+    case object Legacy extends SinkConfig
+
+    /** A sink that supports querying multiple resources at once from blazegraph */
+    case object Batch extends SinkConfig
+
+    implicit val sinkConfigReaderString: ConfigReader[SinkConfig] =
+      ConfigReader.fromString {
+        case "batch"  => Right(Batch)
+        case "legacy" => Right(Legacy)
+        case _        => Right(Legacy)
+      }
+  }
 
   /**
     * Converts a [[Config]] into an [[CompositeViewsConfig]]

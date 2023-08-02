@@ -13,6 +13,9 @@ import monix.bio.Task
 
 import java.util.regex.Pattern.quote
 
+/** Describes a way to obtain a graph from blazegraph */
+trait QueryGraph
+
 /**
   * Provides a way to query for the multiple incoming resources (from a chunk). This assumes that the query contains the
   * template: `VALUE ?id { {resource_id} }`. The result is a single Graph for all given resources.
@@ -23,7 +26,8 @@ import java.util.regex.Pattern.quote
   * @param query
   *   the sparql query to perform
   */
-final class BatchQueryGraph(client: BlazegraphClient, namespace: String, query: SparqlConstructQuery) {
+final class BatchQueryGraph(client: BlazegraphClient, namespace: String, query: SparqlConstructQuery)
+    extends QueryGraph {
 
   private val logger: Logger = Logger[BatchQueryGraph]
 
@@ -56,7 +60,8 @@ final class BatchQueryGraph(client: BlazegraphClient, namespace: String, query: 
   * @param query
   *   the query to perform on each resource
   */
-final class QueryGraph(client: BlazegraphClient, namespace: String, query: SparqlConstructQuery) {
+final class SingleQueryGraph(client: BlazegraphClient, namespace: String, query: SparqlConstructQuery)
+    extends QueryGraph {
 
   private val logger: Logger = Logger[QueryGraph]
 

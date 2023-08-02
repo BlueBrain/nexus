@@ -20,7 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.projections.Composit
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.store.CompositeRestartStore
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.CompositeBranch.Run.{Main, Rebuild}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.{CompositeBranch, CompositeGraphStream, CompositeProgress}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.{CompositeViews, Fixtures}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.{CompositeViews, CompositeViewsFixture, Fixtures}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchClientSetup
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel, QueryBuilder}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -545,8 +545,10 @@ object CompositeIndexingSuite extends IOFixedClock {
   implicit private val baseUri: BaseUri             = BaseUri("http://localhost", Label.unsafe("v1"))
   implicit private val rcr: RemoteContextResolution = RemoteContextResolution.never
 
-  private val queryConfig: QueryConfig = QueryConfig(10, RefreshStrategy.Delay(10.millis))
-  val batchConfig: BatchConfig         = BatchConfig(2, 50.millis)
+  private val queryConfig     = QueryConfig(10, RefreshStrategy.Delay(10.millis))
+  private val batchConfig     = BatchConfig(2, 50.millis)
+  private val compositeConfig =
+    CompositeViewsFixture.config.copy(blazegraphBatch = batchConfig, elasticsearchBatch = batchConfig)
 
   type Result = (ElasticSearchClient, BlazegraphClient, CompositeProjections, CompositeSpaces.Builder)
 
@@ -556,7 +558,7 @@ object CompositeIndexingSuite extends IOFixedClock {
         val compositeRestartStore = new CompositeRestartStore(xas)
         val projections           =
           CompositeProjections(compositeRestartStore, xas, queryConfig, batchConfig, 3.seconds)
-        val spacesBuilder         = CompositeSpaces.Builder("delta", esClient, batchConfig, bgClient, batchConfig)(baseUri, rcr)
+        val spacesBuilder         = CompositeSpaces.Builder("delta", esClient, bgClient, compositeConfig)(baseUri, rcr)
         (esClient, bgClient, projections, spacesBuilder)
     }
   }
