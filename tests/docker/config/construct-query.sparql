@@ -10,7 +10,7 @@ prefix : <https://bluebrain.github.io/nexus/field/>
 
 CONSTRUCT {
   # Metadata
-  ?id   a                   ?type                  ;
+  ?alias   a                   ?type                  ;
         :name               ?name                  ;
         :description        ?description           ;
         :createdAt          ?createdAt             ;
@@ -20,68 +20,68 @@ CONSTRUCT {
         :deprecated         ?deprecated            ;
         :self               ?self                  .
 
-  ?id  :project             ?projectId             .
+  ?alias  :project             ?projectId             .
                             ?projectId             :identifier  ?projectId    ;
                                                    :label       ?projectLabel .
 
   # Common properties
   ## Annotations
-  ?id  :mType              ?mType                 .
+  ?alias  :mType              ?mType                 .
                            ?mType                 :identifier  ?mType        ;
                                                   :label       ?mTypeLabel   ;
                                                   :idLabel     ?mTypeIdLabel .
-  ?id  :eType              ?eType                 .
+  ?alias  :eType              ?eType                 .
                            ?eType                 :identifier  ?eType        ;
                                                   :label       ?eTypeLabel   ;
                                                   :idLabel     ?eTypeIdLabel .
-  ?id  :sType              ?sType                 .
+  ?alias  :sType              ?sType                 .
                            ?sType                 :identifier  ?sType        ;
                                                   :label       ?sTypeLabel   ;
                                                   :idLabel     ?sTypeIdLabel .
 
   ## Atlas
-  ?id  :coordinatesInBrainAtlas  ?coordinates     .
+  ?alias  :coordinatesInBrainAtlas  ?coordinates     .
                                  ?coordinates     :valueX      ?valueX       ;
                                                   :valueY      ?valueY       ;
                                                   :valueZ      ?valueZ       .
 
   ## Brain region / layer
-  ?id  :brainRegion        ?brainRegionId         .
+  ?alias  :brainRegion        ?brainRegionId         .
                            ?brainRegionId         :identifier  ?brainRegionId      ;
                                                   :label       ?brainRegionLabel   ;
                                                   :idLabel     ?brainRegionIdLabel .
-  ?id  :layer              ?layerId               .
+  ?alias  :layer              ?layerId               .
                            ?layerId               :identifier  ?layerId      ;
                                                   :label       ?layerLabel   ;
                                                   :idLabel     ?layerIdLabel .
 
   ## Contributors / Organizations
-  ?id  :contributors       ?personId              .
+  ?alias  :contributors       ?personId              .
                            ?personId              :identifier  ?personId     ;
                                                   :label       ?personName   ;
                                                   :idLabel     ?personIdName ;
                                                   :affiliation ?affiliation  .
                                                                ?affiliation  :label ?affiliationName .
-  ?id  :organizations      ?orgId                 .
+  ?alias  :organizations      ?orgId                 .
                            ?orgId                 :identifier  ?orgId              ;
                                                   :label       ?organizationName   ;
                                                   :idLabel     ?organizationIdName .
 
   ## Derivation
-  ?id  :derivation         ?derivation            .
+  ?alias  :derivation         ?derivation            .
                            ?derivation            :identifier      ?entity     ;
                                                   rdf:type         ?entityType ;
                                                   :label           ?entityName .
 
   ## Distribution
-  ?id  :distribution       ?distribution          .
+  ?alias  :distribution       ?distribution          .
                            ?distribution          :label           ?distributionName           ;
                                                   :encodingFormat  ?distributionEncodingFormat ;
                                                   :contentUrl      ?distributionContentUrl     ;
                                                   :contentSize     ?distributionContentSize    .
 
   ## Generation
-  ?id  :generation         ?generation            .
+  ?alias  :generation         ?generation            .
                            ?generation            :protocol        ?protocol                ;
                                                   :startedAt       ?generationStartedAtTime ;
                                                   :endedAt         ?generationEndedAtTime   .
@@ -90,25 +90,25 @@ CONSTRUCT {
                                                                                             :value      ?protocolValue      .
 
   ## Images
-  ?id  :image              ?image                 .
+  ?alias  :image              ?image                 .
                            ?image                 :identifier      ?image                  ;
                                                   :about           ?imageAbout             ;
                                                   :repetition      ?imageRepetition        ;
                                                   :stimulusType    ?imageStimulusTypeLabel .
 
   ## License
-  ?id  :license            ?licenseId             .
+  ?alias  :license            ?licenseId             .
                            ?licenseId             :identifier  ?licenseId     ;
                                                   :label       ?licenseLabel  .
 
   ## Series
-  ?id  :series             ?series                .
+  ?alias  :series             ?series                .
                            ?series                :value       ?seriesValue      ;
                                                   :unit        ?seriesUnit       ;
                                                   :statistic   ?seriesStatistic  .
 
   ## Source
-  ?id  :source             ?source                .
+  ?alias  :source             ?source                .
                            ?source                :title        ?sourceTitle       ;
                                                   rdf:type      ?sourceType        ;
                                                   :identifier   ?sourceIdentifier  .
@@ -116,24 +116,24 @@ CONSTRUCT {
                                                                                    :value       ?sourceIdentifierValue      .
 
   ## Species
-  ?id  :subjectSpecies     ?species              .
+  ?alias  :subjectSpecies     ?species              .
                            ?species              :identifier  ?species      ;
                                                  :label       ?speciesLabel .
 
   ## Start / end / status
-  ?id  :startedAt            ?startedAt           ;
+  ?alias  :startedAt            ?startedAt           ;
        :endedAt              ?endedAt             ;
        :status               ?status              .
 
   ## Subject
-  ?id  :subjectAge           ?age                 .
+  ?alias  :subjectAge           ?age                 .
                              ?age                 :value       ?subjectAgeValue    ;
                                                   :minValue    ?subjectAgeMinValue ;
                                                   :maxValue    ?subjectAgeMaxValue ;
                                                   :unit        ?subjectAgeUnit     ;
                                                   :period      ?subjectAgePeriod   ;
                                                   :label       ?subjectAgeLabel    .
-  ?id  :subjectWeight        ?weight              .
+  ?alias  :subjectWeight        ?weight              .
                              ?weight              :value       ?subjectWeightValue     ;
                                                   :unit        ?subjectWeightUnit      ;
                                                   :minValue    ?subjectWeightMinValue  ;
@@ -143,13 +143,13 @@ CONSTRUCT {
   # Properties specific to types
 
   ## Bouton density
-  ?id  :boutonDensity      ?boutonDensityMean          .
-                           ?boutonDensityMean          :value       ?boutonDensityValue  ;
+  ?alias  :boutonDensity      ?boutonDensityBN          .
+                           ?boutonDensityBN          :value       ?boutonDensityValue  ;
                                                        :unit        ?boutonDensityUnit   ;
                                                        :label       ?boutonDensityLabel  .
 
   ## Circuit
-  ?id  :circuitType          ?circuitType              ;
+  ?alias  :circuitType          ?circuitType              ;
        :circuitBase          ?circuitBaseUrlStr        ;
        :circuitConfigPath    ?circuitConfigPathUrlStr  ;
        :circuitBrainRegion   ?circuitBrainRegionId     .
@@ -157,38 +157,39 @@ CONSTRUCT {
                                                        :label       ?circuitBrainRegionLabel .
 
   ## Layer thickness
-  ?id  :layerThickness       ?thickness           .
-                             ?thickness           :value       ?thicknessValue   ;
+  ?alias  :layerThickness       ?thicknessBN           .
+                             ?thicknessBN           :value       ?thicknessValue   ;
                                                   :unit        ?thicknessUnit    ;
                                                   :nValue      ?thicknessNValue  ;
                                                   :label       ?thicknessLabel   .
 
   ## Neuron density
-  ?id  :neuronDensity        ?neuronDensity       .
-                             ?neuronDensity       :value       ?neuronDensityValue   ;
+  ?alias  :neuronDensity        ?neuronDensityBN       .
+                             ?neuronDensityBN       :value       ?neuronDensityValue   ;
                                                   :unit        ?neuronDensityUnit    ;
                                                   :nValue      ?neuronDensityNValue  ;
                                                   :label       ?neuronDensityLabel   .
 
   ## Simulation campaigns
-  ?id  :config               ?campaignConfigId        .
+  ?alias  :config               ?campaignConfigId        .
                              ?campaignConfigId        :identifier     ?campaignConfigId   ;
                                                       :name           ?campaignConfigName .
 
   ## Simulation campaigns / simulations
-  ?id  :parameter           ?parameter                .
+  ?alias  :parameter           ?parameter                .
                             ?parameter                :attrs          ?attrs              .
                                                       ?attrs          ?attrs_prop         ?attrs_value .
-  ?id  :parameter           ?parameter                .
+  ?alias  :parameter           ?parameter                .
                             ?parameter                :coords         ?coords             .
                                                       ?coords         ?coords_prop        ?coords_value .
 
   ## Simulations
-  ?id  :campaign             ?campaignId              .
+  ?alias  :campaign             ?campaignId              .
                              ?campaignId              :identifier      ?campaignId   ;
                                                       :name           ?campaignName .
 } WHERE {
-  BIND({resource_id} as ?id) .
+  VALUES ?id { {resource_id} } .
+  BIND( IRI(concat(str(?id), '/', 'alias')) AS ?alias ) .
 
   ?id  a  ?type  .
 
@@ -469,7 +470,7 @@ CONSTRUCT {
 
   # Bouton density
   OPTIONAL {
-    ?id   a            nsg:BoutonDensity   ;
+    ?id  a             nsg:BoutonDensity   ;
           nsg:density  ?boutonDensityMean  .
                        ?boutonDensityMean  nsg:statistic    "mean"              ;
                                            schema:value     ?boutonDensityValue ;
@@ -480,6 +481,7 @@ CONSTRUCT {
         STR(?boutonDensityUnit)
       ) as ?boutonDensityLabel
     ) .
+    BIND( BNODE(CONCAT(STR(?id), '/boutonDensity')) as ?boutonDensityBN ) .
   } .
 
   # Circuit
@@ -516,17 +518,14 @@ CONSTRUCT {
 
   # Layer thickness
   OPTIONAL {
-    ?id  a           nsg:LayerThickness .
-    ?id  nsg:series  ?thickness         .
-
-    # Thickness mean value
-    ?thickness  nsg:statistic    "mean"           ;
-                schema:value     ?thicknessValue  ;
-                schema:unitCode  ?thicknessUnit   .
-
-    # Thickness N value
-    ?thickness  nsg:statistic    "N"              ;
-                schema:value     ?thicknessNValue .
+    ?id  a           nsg:LayerThickness ;
+         nsg:series  ?meanSeries        .
+                     ?meanSeries        nsg:statistic    "mean"          ;
+                                        schema:value     ?thicknessValue ;
+                                        schema:unitCode  ?thicknessUnit  .
+    ?id  nsg:series  ?nSeries           .
+                     ?nSeries           nsg:statistic  "N"               ;
+                                        schema:value   ?thicknessNValue  .
     BIND(
       CONCAT(
         STR(?thicknessValue), " ",
@@ -534,22 +533,20 @@ CONSTRUCT {
         STR(?thicknessNValue), ")"
       ) as ?thicknessLabel
     ) .
+
+    BIND( BNODE(CONCAT(STR(?id), '/layerThickness')) as ?thicknessBN ) .
   } .
 
   # Neuron density
   OPTIONAL {
-    ?id  a           nsg:NeuronDensity .
-    ?id  nsg:series  ?neuronDensity    .
-
-    # Neuron density mean
-    ?neuronDensity  nsg:statistic    ?stat               ;
-                    schema:value     ?neuronDensityValue ;
-                    schema:unitCode  ?neuronDensityUnit  .
-
-    # Neuron density N value
-    ?neuronDensity  nsg:statistic  "N"                   ;
-                    schema:value   ?neuronDensityNValue  .
-
+    ?id  a           nsg:NeuronDensity ;
+         nsg:series  ?meanSeries       .
+                     ?meanSeries  nsg:statistic    ?stat               ;
+                                  schema:value     ?neuronDensityValue ;
+                                  schema:unitCode  ?neuronDensityUnit  .
+    ?id  nsg:series  ?nSeries  .
+                     ?nSeries  nsg:statistic  "N" ;
+                               schema:value   ?neuronDensityNValue .
     FILTER ( ?stat = "mean" || ?stat = "data point" ) .
     BIND(
       CONCAT(
@@ -558,6 +555,8 @@ CONSTRUCT {
         STR(?neuronDensityNValue), ")"
       ) as ?neuronDensityLabel
     ) .
+
+    BIND( BNODE((CONCAT(STR(?id), '/neuronDensity'))) as ?neuronDensityBN ) .
   } .
 
   # Simulation campaign configuration
