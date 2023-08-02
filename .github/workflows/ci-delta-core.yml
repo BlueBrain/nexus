@@ -3,7 +3,6 @@ on:
   pull_request:
     paths:
       - 'delta/kernel/**'
-      - 'delta/plugins/**'
       - 'delta/rdf/**'
       - 'delta/sdk/**'
       - 'delta/sourcing-psql/**'
