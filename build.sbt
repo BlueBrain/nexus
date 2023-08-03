@@ -745,7 +745,6 @@ lazy val storage = project
     buildInfoKeys            := Seq[BuildInfoKey](version),
     buildInfoPackage         := "ch.epfl.bluebrain.nexus.storage.config",
     Docker / packageName     := "nexus-storage",
-    javaSpecificationVersion := "1.8",
     libraryDependencies     ++= Seq(
       apacheCompress,
       apacheIo,
