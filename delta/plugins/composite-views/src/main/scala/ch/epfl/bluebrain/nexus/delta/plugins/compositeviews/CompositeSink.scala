@@ -103,6 +103,7 @@ final class Batch[SinkFormat](
     extends CompositeSink {
 
   override type In = GraphResource
+
   override def inType: Typeable[GraphResource] = Typeable[GraphResource]
 
   /** Performs the sparql query only using [[SuccessElem]]s from the chunk */
@@ -137,6 +138,7 @@ final class Batch[SinkFormat](
                      }
       sank        <- sink(transformed)
     } yield sank
+}
 
 object CompositeSink {
 
