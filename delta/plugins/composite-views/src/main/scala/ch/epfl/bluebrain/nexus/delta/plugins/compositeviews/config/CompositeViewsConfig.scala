@@ -10,6 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{BatchConfig, EventLogConfig}
 import com.typesafe.config.Config
 import monix.bio.UIO
+import pureconfig.error.CannotConvert
 import pureconfig.generic.auto._
 import pureconfig.generic.semiauto.deriveReader
 import pureconfig.{ConfigReader, ConfigSource}
@@ -116,7 +117,7 @@ object CompositeViewsConfig {
     sealed trait SinkConfig
 
     /** A sink that only supports querying one resource at once from blazegraph */
-    case object Legacy extends SinkConfig
+    case object Single extends SinkConfig
 
     /** A sink that supports querying multiple resources at once from blazegraph */
     case object Batch extends SinkConfig
@@ -124,8 +125,9 @@ object CompositeViewsConfig {
     implicit val sinkConfigReaderString: ConfigReader[SinkConfig] =
       ConfigReader.fromString {
         case "batch"  => Right(Batch)
-        case "legacy" => Right(Legacy)
-        case _        => Right(Legacy)
+        case "single" => Right(Single)
+        case value    =>
+          Left(CannotConvert(value, SinkConfig.getClass.getSimpleName, s"$value is not one of: [single, batch]"))
       }
   }
 

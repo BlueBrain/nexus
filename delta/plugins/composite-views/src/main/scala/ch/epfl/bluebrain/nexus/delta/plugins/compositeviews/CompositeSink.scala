@@ -49,7 +49,7 @@ trait CompositeSink extends Sink
   * @tparam SinkFormat
   *   the type of data accepted by the sink
   */
-final class Legacy[SinkFormat](
+final class Single[SinkFormat](
     queryGraph: SingleQueryGraph,
     transform: GraphResource => Task[Option[SinkFormat]],
     sink: Chunk[Elem[SinkFormat]] => Task[Chunk[Elem[Unit]]],
@@ -107,9 +107,9 @@ final class Batch[SinkFormat](
 
   /** Performs the sparql query only using [[SuccessElem]]s from the chunk */
   private def query(elements: Chunk[Elem[GraphResource]]): Task[Option[Graph]] =
-    elements.mapFilter(elem => elem.toOption) match {
-      case elems if elems.nonEmpty => queryGraph(elems.map(_.id))
-      case _                       => Task.none
+    elements.mapFilter(elem => elem.map(_.id).toOption) match {
+      case ids if ids.nonEmpty => queryGraph(ids)
+      case _                   => Task.none
     }
 
   /** Replaces the graph of a provided [[GraphResource]] by extracting its new graph from the provided (full) graph. */
@@ -217,8 +217,8 @@ object CompositeSink {
       batchConfig: BatchConfig,
       sinkConfig: SinkConfig
   )(implicit rcr: RemoteContextResolution): CompositeSink = sinkConfig match {
-    case SinkConfig.Legacy =>
-      new Legacy(
+    case SinkConfig.Single =>
+      new Single(
         new SingleQueryGraph(blazeClient, common, query),
         transform,
         sink,
