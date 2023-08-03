@@ -123,19 +123,20 @@ final class Batch[SinkFormat](
   }
 
   override def apply(elements: Chunk[Elem[GraphResource]]): Task[Chunk[Elem[Unit]]] =
-    query(elements)
-      .flatMap {
-        case Some(fullGraph) =>
-          elements.traverse { elem =>
-            elem.evalMapFilter { gr =>
-              replaceGraph(gr, fullGraph).flatMap(transform)
-            }
-          }
-        case None            =>
-          Task.pure(elements.map(_.drop))
-      }
-      .flatMap(sink)
-}
+    for {
+      graph       <- query(elements)
+      transformed <- graph match {
+                       case Some(fullGraph) =>
+                         elements.traverse { elem =>
+                           elem.evalMapFilter { gr =>
+                             replaceGraph(gr, fullGraph).flatMap(transform)
+                           }
+                         }
+                       case None            =>
+                         Task.pure(elements.map(_.drop))
+                     }
+      sank        <- sink(transformed)
+    } yield sank
 
 object CompositeSink {
 
