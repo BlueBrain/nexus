@@ -205,7 +205,6 @@ lazy val kernel = project
   .settings(name := "delta-kernel", moduleName := "delta-kernel")
   .settings(shared, compilation, coverage, release, assertJavaVersion)
   .settings(
-    javaSpecificationVersion := "1.8",
     libraryDependencies     ++= Seq(
       caffeine,
       catsRetry,
@@ -229,7 +228,6 @@ lazy val testkit = project
   .settings(name := "delta-testkit", moduleName := "delta-testkit")
   .settings(shared, compilation, coverage, release, assertJavaVersion)
   .settings(
-    javaSpecificationVersion := "1.8",
     coverageMinimumStmtTotal := 0,
     libraryDependencies     ++= Seq(
       akkaActorTyped, // Needed to create Uri
@@ -284,7 +282,6 @@ lazy val rdf = project
     moduleName := "delta-rdf"
   )
   .settings(
-    javaSpecificationVersion := "1.8",
     libraryDependencies     ++= Seq(
       akkaActorTyped, // Needed to create Uri
       akkaHttpCore,
@@ -745,6 +742,7 @@ lazy val storage = project
     buildInfoKeys            := Seq[BuildInfoKey](version),
     buildInfoPackage         := "ch.epfl.bluebrain.nexus.storage.config",
     Docker / packageName     := "nexus-storage",
+    javaSpecificationVersion := "1.8",
     libraryDependencies     ++= Seq(
       apacheCompress,
       apacheIo,
