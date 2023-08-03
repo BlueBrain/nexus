@@ -722,7 +722,7 @@ lazy val cargo = taskKey[(File, String)]("Run Cargo to build 'nexus-fixer'")
 lazy val storage = project
   .in(file("storage"))
   .enablePlugins(UniversalPlugin, JavaAppPackaging, JavaAgent, DockerPlugin, BuildInfoPlugin)
-  .settings(shared, compilation, assertJavaVersion, kamonSettings, storageAssemblySettings, coverage, release, servicePackaging)
+  .settings(shared, compilation, assertJavaVersion, kamonSettings, storageAssemblySettings, coverage, release, servicePackaging, coverageMinimumStmtTotal := 75)
   .settings(cargo := {
     import scala.sys.process._
 
