@@ -4,7 +4,6 @@ import akka.http.scaladsl.marshalling.GenericMarshallers.eitherMarshaller
 import akka.http.scaladsl.marshalling._
 import akka.http.scaladsl.model.MediaTypes._
 import akka.http.scaladsl.model._
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.storage.JsonLdCirceSupport.sortKeys
 import ch.epfl.bluebrain.nexus.storage.JsonLdCirceSupport.OrderedKeys
 import ch.epfl.bluebrain.nexus.storage.Rejection
@@ -14,6 +13,7 @@ import io.circe._
 import io.circe.syntax._
 import monix.eval.Task
 import monix.execution.Scheduler
+import ch.epfl.bluebrain.nexus.storage.MediaTypes.`application/ld+json`
 
 import scala.collection.immutable.Seq
 import scala.concurrent.Future
