@@ -7,11 +7,13 @@ import ch.epfl.bluebrain.nexus.tests.HttpClient._
 import ch.epfl.bluebrain.nexus.tests.Identity.compositeviews.Jerry
 import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Events, Organizations, Views}
+import ch.epfl.bluebrain.nexus.tests.kg.CompositeViewsSpec.{albumQuery, bandQuery}
 import com.typesafe.scalalogging.Logger
 import io.circe.Json
 import io.circe.optics.JsonPath._
 import monix.bio.Task
 import monix.execution.Scheduler.Implicits.global
+
 import scala.concurrent.duration._
 
 class CompositeViewsSpec extends BaseSpec {
@@ -136,7 +138,9 @@ class CompositeViewsSpec extends BaseSpec {
           "org"            -> orgId,
           "org2"           -> orgId,
           "remoteEndpoint" -> "http://delta:8080/v1",
-          "token"          -> jerryToken
+          "token"          -> jerryToken,
+          "bandQuery"      -> bandQuery,
+          "albumQuery"     -> albumQuery
         ): _*
       )
 
@@ -166,7 +170,9 @@ class CompositeViewsSpec extends BaseSpec {
           "org"            -> orgId,
           "org2"           -> orgId,
           "remoteEndpoint" -> "http://delta:8080/v1/other",
-          "token"          -> jerryToken
+          "token"          -> jerryToken,
+          "bandQuery"      -> bandQuery,
+          "albumQuery"     -> albumQuery
         ): _*
       )
 
@@ -183,7 +189,9 @@ class CompositeViewsSpec extends BaseSpec {
           "org"            -> orgId,
           "org2"           -> orgId,
           "remoteEndpoint" -> "http://delta:8080/v1",
-          "token"          -> s"${jerryToken}wrong"
+          "token"          -> s"${jerryToken}wrong",
+          "bandQuery"      -> bandQuery,
+          "albumQuery"     -> albumQuery
         ): _*
       )
 
@@ -207,7 +215,9 @@ class CompositeViewsSpec extends BaseSpec {
           "org"            -> orgId,
           "org2"           -> orgId,
           "remoteEndpoint" -> "http://fail.does.not.exist.at.all.asndkajbskhabsdfjhabsdfjkh/v1",
-          "token"          -> jerryToken
+          "token"          -> jerryToken,
+          "bandQuery"      -> bandQuery,
+          "albumQuery"     -> albumQuery
         ): _*
       )
 
@@ -312,7 +322,9 @@ class CompositeViewsSpec extends BaseSpec {
           "org"            -> orgId,
           "org2"           -> orgId,
           "remoteEndpoint" -> "http://delta:8080/v1",
-          "token"          -> jerryToken
+          "token"          -> jerryToken,
+          "bandQuery"      -> bandQuery,
+          "albumQuery"     -> albumQuery
         ): _*
       )
 
@@ -390,4 +402,75 @@ class CompositeViewsSpec extends BaseSpec {
       }
     }
   }
+
+}
+
+object CompositeViewsSpec {
+
+  private val bandQuery =
+    raw"""
+         |PREFIX  nxv:  <https://bluebrain.github.io/nexus/vocabulary/>
+         |PREFIX  music: <https://music.example.com/>
+         |
+         |CONSTRUCT
+         |  {
+         |    ?alias   music:name     ?bandName         ;
+         |             music:genre    ?bandGenre        ;
+         |             music:album    ?albumId          .
+         |    ?albumId music:released ?albumReleaseDate ;
+         |             music:song     ?songId           .
+         |    ?songId  music:title    ?songTitle        ;
+         |             music:number   ?songNumber       ;
+         |             music:length   ?songLength       .
+         |  }
+         |WHERE
+         |  { VALUES ?id { {resource_id} }
+         |    BIND(IRI(concat(str(?id), '/alias')) AS ?alias)
+         |
+         |    ?id  music:name   ?bandName ;
+         |         music:genre  ?bandGenre
+         |
+         |    OPTIONAL
+         |      { ?id ^music:by ?albumId .
+         |        ?albumId  music:released  ?albumReleaseDate
+         |        OPTIONAL
+         |          { ?albumId ^music:on ?songId .
+         |            ?songId  music:title   ?songTitle ;
+         |                     music:number  ?songNumber ;
+         |                     music:length  ?songLength
+         |          }
+         |      }
+         |  }
+         |ORDER BY ?songNumber
+         |""".stripMargin
+      .replaceAll("\\n", " ")
+
+  private val albumQuery =
+    raw"""
+         |PREFIX  xsd:  <http://www.w3.org/2001/XMLSchema#>
+         |PREFIX  music: <https://music.example.com/>
+         |PREFIX  nxv:  <https://bluebrain.github.io/nexus/vocabulary/>
+         |
+         |CONSTRUCT 
+         |  { 
+         |    ?alias music:name          ?albumTitle    ;
+         |           music:length        ?albumLength   ;
+         |           music:numberOfSongs ?numberOfSongs .
+         |  }
+         |WHERE
+         |  { { SELECT  ?id ?albumReleaseDate ?albumTitle (SUM(xsd:integer(?songLength)) AS ?albumLength) (COUNT(?albumReleaseDate) AS ?numberOfSongs)
+         |      WHERE
+         |        { VALUES ?id { {resource_id} } .
+         |          OPTIONAL
+         |            { ?id ^music:on/music:length ?songLength }
+         |          ?id  music:released  ?albumReleaseDate ;
+         |               music:title     ?albumTitle .
+         |        }
+         |      GROUP BY ?id ?albumReleaseDate ?albumTitle
+         |    }
+         |    BIND(IRI(concat(str(?id), '/alias')) AS ?alias)
+         |  }
+         |""".stripMargin
+      .replaceAll("\\n", " ")
+
 }
