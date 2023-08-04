@@ -45,7 +45,7 @@ Accepts the following values: source (to get the original payload), compacted, e
 
 The following example shows how to perform a multi-fetch and an example of response
 containing errors (missing permissions and resource not found).
-As a response, a json is returned.
+As a response, a regular json is returned containing the different resources in the requested format.
 
 Request
 :   @@snip [request.sh](assets/multi-fetch/request.sh)
