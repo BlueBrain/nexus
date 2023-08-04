@@ -46,18 +46,3 @@ class MultiFetchRoutes(
     }
 
 }
-
-object MultiFetchRoutes {
-
-  /**
-    * @return
-    *   the [[Route]] for the multi-fetch operation
-    */
-  def apply(identities: Identities, aclCheck: AclCheck, multiFetch: MultiFetch)(implicit
-      baseUri: BaseUri,
-      cr: RemoteContextResolution,
-      ordering: JsonKeyOrdering,
-      s: Scheduler
-  ): Route = new MultiFetchRoutes(identities, aclCheck, multiFetch).routes
-
-}

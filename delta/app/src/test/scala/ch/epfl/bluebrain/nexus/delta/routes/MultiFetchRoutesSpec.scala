@@ -55,7 +55,7 @@ class MultiFetchRoutesSpec extends BaseRouteSpec {
   )
 
   private val routes = Route.seal(
-    MultiFetchRoutes(identities, aclCheck, multiFetch)
+    new MultiFetchRoutes(identities, aclCheck, multiFetch).routes
   )
 
   "The Multi fetch route" should {
