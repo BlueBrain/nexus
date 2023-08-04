@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.testkit.{CirceEq, EitherValuable}
 import ch.epfl.bluebrain.nexus.tests.{BaseSpec, SchemaPayload}
 import ch.epfl.bluebrain.nexus.tests.Identity.Anonymous
-import ch.epfl.bluebrain.nexus.tests.Identity.listings.{Alice, Bob}
+import ch.epfl.bluebrain.nexus.tests.Identity.aggregations.{Charlie, Rose}
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Organizations, Resources, Views}
 import io.circe.Json
 import org.scalatest.Inspectors
@@ -25,16 +25,16 @@ final class AggregationsSpec extends BaseSpec with Inspectors with EitherValuabl
     super.beforeAll()
 
     val setup = for {
-      _ <- aclDsl.addPermission("/", Bob, Organizations.Create)
+      _ <- aclDsl.addPermission("/", Charlie, Organizations.Create)
       // First org and projects
-      _ <- adminDsl.createOrganization(org1, org1, Bob)
-      _ <- adminDsl.createProject(org1, proj11, kgDsl.projectJson(name = proj11), Bob)
-      _ <- adminDsl.createProject(org1, proj12, kgDsl.projectJson(name = proj12), Bob)
+      _ <- adminDsl.createOrganization(org1, org1, Charlie)
+      _ <- adminDsl.createProject(org1, proj11, kgDsl.projectJson(name = proj11), Charlie)
+      _ <- adminDsl.createProject(org1, proj12, kgDsl.projectJson(name = proj12), Charlie)
       // Second org and projects
-      _ <- adminDsl.createOrganization(org2, org2, Bob)
-      _ <- adminDsl.createProject(org2, proj21, kgDsl.projectJson(name = proj21), Bob)
-      _ <- aclDsl.addPermission(s"/$ref12", Alice, Resources.Read)
-      _ <- aclDsl.addPermission(s"/$ref12", Alice, Views.Query)
+      _ <- adminDsl.createOrganization(org2, org2, Charlie)
+      _ <- adminDsl.createProject(org2, proj21, kgDsl.projectJson(name = proj21), Charlie)
+      _ <- aclDsl.addPermission(s"/$ref12", Rose, Resources.Read)
+      _ <- aclDsl.addPermission(s"/$ref12", Rose, Views.Query)
     } yield ()
 
     val resourcePayload =
@@ -45,13 +45,13 @@ final class AggregationsSpec extends BaseSpec with Inspectors with EitherValuabl
     val schemaPayload   = SchemaPayload.loadSimple()
     val postResources   = for {
       // Creation
-      _ <- deltaClient.put[Json](s"/resources/$ref11/_/resource11", resourcePayload, Bob)(expectCreated)
-      _ <- deltaClient.put[Json](s"/schemas/$ref11/test-schema", schemaPayload, Bob)(expectCreated)
-      _ <- deltaClient.put[Json](s"/resources/$ref11/test-schema/resource11_with_schema", resourcePayload, Bob)(
+      _ <- deltaClient.put[Json](s"/resources/$ref11/_/resource11", resourcePayload, Charlie)(expectCreated)
+      _ <- deltaClient.put[Json](s"/schemas/$ref11/test-schema", schemaPayload, Charlie)(expectCreated)
+      _ <- deltaClient.put[Json](s"/resources/$ref11/test-schema/resource11_with_schema", resourcePayload, Charlie)(
              expectCreated
            )
-      _ <- deltaClient.put[Json](s"/resources/$ref12/_/resource12", resourcePayload, Bob)(expectCreated)
-      _ <- deltaClient.put[Json](s"/resources/$ref21/_/resource21", resourcePayload, Bob)(expectCreated)
+      _ <- deltaClient.put[Json](s"/resources/$ref12/_/resource12", resourcePayload, Charlie)(expectCreated)
+      _ <- deltaClient.put[Json](s"/resources/$ref21/_/resource21", resourcePayload, Charlie)(expectCreated)
     } yield ()
 
     (setup >> postResources).accepted
@@ -61,7 +61,7 @@ final class AggregationsSpec extends BaseSpec with Inspectors with EitherValuabl
 
     "get an error if the user has no access" in {
 
-      deltaClient.get[Json](s"/resources/$ref11?aggregations=true", Alice) { (_, response) =>
+      deltaClient.get[Json](s"/resources/$ref11?aggregations=true", Rose) { (_, response) =>
         response.status shouldEqual StatusCodes.Forbidden
       }
     }
@@ -72,7 +72,7 @@ final class AggregationsSpec extends BaseSpec with Inspectors with EitherValuabl
         "org"     -> org1,
         "project" -> proj11
       )
-      deltaClient.get[Json](s"/resources/$ref11?aggregations=true", Bob) { (json, response) =>
+      deltaClient.get[Json](s"/resources/$ref11?aggregations=true", Charlie) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
         json should equalIgnoreArrayOrder(expected)
       }
@@ -83,7 +83,7 @@ final class AggregationsSpec extends BaseSpec with Inspectors with EitherValuabl
   "Aggregating resources within an org" should {
 
     "get an error if the user has no access on the org" in {
-      deltaClient.get[Json](s"/resources/$org2?aggregations=true", Alice) { (_, response) =>
+      deltaClient.get[Json](s"/resources/$org2?aggregations=true", Rose) { (_, response) =>
         response.status shouldEqual StatusCodes.Forbidden
       }
     }
@@ -95,7 +95,7 @@ final class AggregationsSpec extends BaseSpec with Inspectors with EitherValuabl
         "proj11" -> proj11,
         "proj12" -> proj12
       )
-      deltaClient.get[Json](s"/resources/$org1?aggregations=true", Bob) { (json, response) =>
+      deltaClient.get[Json](s"/resources/$org1?aggregations=true", Charlie) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
         json should equalIgnoreArrayOrder(expected)
       }
@@ -120,7 +120,7 @@ final class AggregationsSpec extends BaseSpec with Inspectors with EitherValuabl
         "proj12" -> proj12,
         "proj21" -> proj21
       )
-      deltaClient.get[Json](s"/resources?aggregations=true", Bob) { (json, response) =>
+      deltaClient.get[Json](s"/resources?aggregations=true", Charlie) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
         json should equalIgnoreArrayOrder(expected)
       }
