@@ -34,6 +34,7 @@ GET /v1/multi-fetch/resources
 ```
 
 where...
+
 - `{format}`: String - the format we expect for the resources in the response. 
 Accepts the following values: source (to get the original payload), compacted, expanded, n-triples, dot
 - `{project}`: String - the project (in the format 'myorg/myproject') where the specified resource belongs. This field
