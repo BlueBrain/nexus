@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import cats.data.NonEmptySet
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.{CacheConfig, KeyValueStore}
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
@@ -19,7 +20,6 @@ import com.nimbusds.jose.jwk.source.ImmutableJWKSet
 import com.nimbusds.jose.jwk.{JWK, JWKSet}
 import com.nimbusds.jose.proc.{JWSVerificationKeySelector, SecurityContext}
 import com.nimbusds.jwt.proc.{DefaultJWTClaimsVerifier, DefaultJWTProcessor}
-import com.typesafe.scalalogging.Logger
 import io.circe.{Decoder, HCursor, Json}
 import monix.bio.{IO, UIO}
 
@@ -83,7 +83,7 @@ class IdentitiesImpl private (
     }
     result.span("exchangeToken")
   }.tapError { rejection =>
-    UIO.delay(logger.debug(s"Extracting and validating the caller failed for the reason: $rejection"))
+    logger.debug(s"Extracting and validating the caller failed for the reason: $rejection")
   }
 }
 
@@ -109,12 +109,11 @@ object IdentitiesImpl {
         case e: HttpClientStatusError if e.code == StatusCodes.Unauthorized || e.code == StatusCodes.Forbidden =>
           val message =
             s"A provided client token was rejected by the OIDC provider for user '${token.subject}' of realm '${token.issuer}', reason: '${e.reason}'"
-          UIO.delay(logger.error(message, e)) >>
-            IO.raiseError(InvalidAccessToken(token.subject, token.issuer, e.getMessage))
+          logger.debug(e)(message) >> IO.raiseError(InvalidAccessToken(token.subject, token.issuer, e.getMessage))
         case e                                                                                                 =>
           val message =
             s"A call to get the groups from the OIDC provider failed unexpectedly for user '${token.subject}' of realm '${token.issuer}'."
-          UIO.delay(logger.error(message, e)) >> IO.raiseError(GetGroupsFromOidcError(token.subject, token.issuer))
+          logger.error(e)(message) >> IO.raiseError(GetGroupsFromOidcError(token.subject, token.issuer))
       }
   }
 
