@@ -8,6 +8,13 @@ import io.circe.Decoder
 
 import scala.annotation.nowarn
 
+/**
+  * Request to get multiple resources
+  * @param format
+  *   the output format for these resources
+  * @param resources
+  *   the list of resources
+  */
 final case class MultiFetchRequest(format: ResourceRepresentation, resources: NonEmptyList[Input]) {}
 
 object MultiFetchRequest {

@@ -16,6 +16,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.multifetch.MultiFetch
 import ch.epfl.bluebrain.nexus.delta.sdk.multifetch.model.MultiFetchRequest
 import monix.execution.Scheduler
 
+/**
+  * Route allowing to fetch multiple resources in a single request
+  */
 class MultiFetchRoutes(
     identities: Identities,
     aclCheck: AclCheck,

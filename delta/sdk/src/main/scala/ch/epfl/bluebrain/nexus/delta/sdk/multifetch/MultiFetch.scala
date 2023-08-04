@@ -9,6 +9,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.multifetch.model.{MultiFetchRequest, Mu
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources
 import monix.bio.UIO
 
+/**
+  * Allows to fetch multiple resources of different types in one request.
+  *
+  * The response includes a resources array that contains the resources in the order specified in the request. If there
+  * is a failure getting a particular resource, the error is included in place of the resource.
+  */
 trait MultiFetch {
 
   def apply(request: MultiFetchRequest)(implicit caller: Caller): UIO[MultiFetchResponse]
