@@ -78,6 +78,13 @@ sealed trait Elem[+A] extends Product with Serializable {
     */
   def dropped: DroppedElem = DroppedElem(tpe, id, project, instant, offset, rev)
 
+  /** Action of dropping an Elem */
+  def drop: Elem[Nothing] = this match {
+    case e: SuccessElem[A] => e.dropped
+    case e: FailedElem     => e
+    case e: DroppedElem    => e
+  }
+
   /**
     * Maps the underlying element value if this is a [[Elem.SuccessElem]] using f.
     * @param f
