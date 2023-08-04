@@ -1,0 +1,25 @@
+name: Delta App unit tests
+on:
+  pull_request:
+    paths:
+      - 'delta/**'
+      - 'build.sbt'
+      - 'project/**'
+      - '.github/workflows/ci-delta-app.yml'
+jobs:
+  run:
+    if: github.event_name == 'pull_request'
+    runs-on: it
+    timeout-minutes: 20
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Unit tests
+        run: |
+          sbt -Dsbt.color=always -Dsbt.supershell=false \
+            clean \
+            app-unit-tests-with-coverage

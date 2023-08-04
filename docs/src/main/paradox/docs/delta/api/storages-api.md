@@ -70,7 +70,6 @@ In order to be able to use this storage, the configuration flag `plugins.storage
   "@type": "RemoteDiskStorage",
   "default": "{default}",
   "endpoint": "{endpoint}",
-  "credentials": "{credentials}",
   "folder": "{folder}",
   "readPermission": "{read_permission}",
   "writePermission": "{write_permission}",
@@ -82,7 +81,6 @@ In order to be able to use this storage, the configuration flag `plugins.storage
 
 - `{default}`: Boolean - the flag to decide whether this storage is going to become the default storage for the target project or not.
 - `{endpoint}`: Uri - the endpoint where the storage service is listening to requests. This field is optional, defaulting to the configuration flag `plugins.storage.storages.remote-disk.default-endpoint`.
-- `{credentials}`: String - the service account access token to authenticate and authorize Nexus Delta client against the storage service. This field is optional, defaulting to the configuration flag `plugins.storage.storages.remote-disk.default-credentials`.
 - `{folder}`: String - the storage service bucket where files using this storage are going to be saved.
 - `{read_permission}`: String - the permission a client must have in order to fetch files using this storage. This field is optional, defaulting to the configuration flag `plugins.storage.storages.remote-disk.default-read-permission` (`resources/read`).
 - `{write_permission}`: String - the permission a client must have in order to create files using this storage. This field is optional, defaulting to the configuration flag `plugins.storage.storages.remote-disk.default-write-permission` (`files/write`).
@@ -99,8 +97,6 @@ In order to be able to use this storage, the configuration flag `plugins.storage
   "@type": "S3Storage",
   "default": "{default}",
   "endpoint": "{endpoint}",
-  "accessKey": "{access_key}",
-  "secretKey": "{secret_key}",
   "region": "{region}",
   "readPermission": "{read_permission}",
   "writePermission": "{write_permission}",
@@ -112,8 +108,6 @@ In order to be able to use this storage, the configuration flag `plugins.storage
 
 - `{default}`: Boolean - the flag to decide whether this storage is going to become the default storage for the target project or not.
 - `{endpoint}`: Uri - the Amazon S3 compatible service endpoint. This field is optional, defaulting to the configuration flag `plugins.storage.storages.amazon.default-endpoint`.
-- `{access_key}`: String - the Amazon S3 compatible access key. This field is optional, defaulting to the configuration flag `plugins.storage.storages.amazon.default-access-key`.
-- `{secret_key}`: String - the Amazon S3 compatible secret key. This field is optional, defaulting to the configuration flag `plugins.storage.storages.amazon.default-secret-key`.
 - `{region}`: String - the Amazon S3 compatible region. This field is optional, defaulting to the S3 default region configuration.
 - `{read_permission}`: String - the permission a client must have in order to fetch files using this storage. This field is optional, defaulting to the configuration flag `plugins.storage.storages.amazon.default-read-permission` (`resources/read`).
 - `{write_permission}`: String - the permission a client must have in order to create files using this storage. This field is optional, defaulting to the configuration flag `plugins.storage.storages.amazon.default-write-permission` (`files/write`).

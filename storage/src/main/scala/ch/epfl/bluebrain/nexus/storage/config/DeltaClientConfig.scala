@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.storage.config
 
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import akka.http.scaladsl.model.Uri
+import ch.epfl.bluebrain.nexus.storage.UriUtils.addPath
 
 /**
   * Configuration for DeltaClient identities endpoint.
@@ -13,11 +14,11 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
   *   the prefix
   */
 final case class DeltaClientConfig(
-    publicIri: Iri,
-    internalIri: Iri,
+    publicIri: Uri,
+    internalIri: Uri,
     prefix: String
 ) {
-  lazy val baseInternalIri: Iri = internalIri / prefix
-  lazy val basePublicIri: Iri   = publicIri / prefix
-  lazy val identitiesIri: Iri   = baseInternalIri / "identities"
+  lazy val baseInternalIri: Uri = addPath(internalIri, prefix)
+  lazy val basePublicIri: Uri   = addPath(publicIri, prefix)
+  lazy val identitiesIri: Uri   = addPath(baseInternalIri, "identities")
 }

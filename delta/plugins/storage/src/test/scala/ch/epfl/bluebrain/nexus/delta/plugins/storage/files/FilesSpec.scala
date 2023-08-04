@@ -5,7 +5,6 @@ import akka.actor.{typed, ActorSystem}
 import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
 import akka.http.scaladsl.model.Uri
 import akka.testkit.TestKit
-import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.RemoteContextResolutionFixture
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.NotComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Storage
@@ -107,7 +106,6 @@ class FilesSpec(docker: RemoteStorageDocker)
       new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport())),
       IO.pure(allowedPerms),
       (_, _) => IO.unit,
-      crypto,
       xas,
       StoragesConfig(eventLogConfig, pagination, cfg),
       ServiceAccount(User("nexus-sa", Label.unsafe("sa")))
@@ -125,12 +123,12 @@ class FilesSpec(docker: RemoteStorageDocker)
     "creating a file" should {
 
       "create storages for files" in {
-        val payload = diskFieldsJson.map(_ deepMerge json"""{"capacity": 320, "maxFileSize": 300, "volume": "$path"}""")
+        val payload = diskFieldsJson deepMerge json"""{"capacity": 320, "maxFileSize": 300, "volume": "$path"}"""
         storages.create(diskId, projectRef, payload).accepted
 
         val payload2 =
           json"""{"@type": "RemoteDiskStorage", "endpoint": "${docker.hostConfig.endpoint}", "folder": "${RemoteStorageDocker.BucketName}", "readPermission": "$otherRead", "writePermission": "$otherWrite", "maxFileSize": 300, "default": false}"""
-        storages.create(remoteId, projectRef, Secret(payload2)).accepted
+        storages.create(remoteId, projectRef, payload2).accepted
       }
 
       "succeed with the id passed" in {

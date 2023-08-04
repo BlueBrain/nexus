@@ -204,7 +204,7 @@ class ScopedEventLogSuite extends BioSuite with Doobie.Fixture {
   test("Stream continuously the current states") {
     for {
       queue <- Queue.unbounded[Task, Envelope[PullRequestState]]
-      _     <- eventLog.states(Predicate.root, Offset.Start).through(queue.enqueue).compile.drain.timeout(500.millis)
+      _     <- eventLog.states(Scope.root, Offset.Start).through(queue.enqueue).compile.drain.timeout(500.millis)
       elems <- queue.tryDequeueChunk1(Int.MaxValue).map(opt => opt.map(_.toList).getOrElse(Nil))
       _      = elems.assertSize(2)
     } yield ()

@@ -4,7 +4,6 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
 import akka.http.scaladsl.model.{HttpEntity, Uri}
 import akka.testkit.TestKit
-import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
@@ -61,15 +60,13 @@ class S3StorageLinkFileSpec(docker: MinioDocker)
       algorithm = DigestAlgorithm.default,
       bucket = "bucket3",
       endpoint = Some(docker.hostConfig.endpoint),
-      accessKey = Some(Secret(RootUser)),
-      secretKey = Some(Secret(RootPassword)),
       region = Some(Region.EU_CENTRAL_1),
       readPermission = read,
       writePermission = write,
       maxFileSize = 20
     )
     createBucket(storageValue).hideErrors.accepted
-    storage = S3Storage(iri, project, storageValue, Tags.empty, Secret(Json.obj()))
+    storage = S3Storage(iri, project, storageValue, Tags.empty, Json.obj())
     attributes = FileAttributes(
       uuid,
       s"http://bucket3.$VirtualHost:${docker.hostConfig.port}/org/project/8/0/4/9/b/a/9/0/myfile.txt",

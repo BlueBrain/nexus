@@ -4,7 +4,6 @@ import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageRejection}
@@ -14,7 +13,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
@@ -50,7 +48,6 @@ final class StoragesRoutes(
     index: IndexingAction.Execute[Storage]
 )(implicit
     baseUri: BaseUri,
-    crypto: Crypto,
     s: Scheduler,
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering,
@@ -74,7 +71,7 @@ final class StoragesRoutes(
                   authorizeFor(ref, Write).apply {
                     emit(
                       Created,
-                      storages.create(ref, Secret(source)).tapEval(index(ref, _, mode)).mapValue(_.metadata)
+                      storages.create(ref, source).tapEval(index(ref, _, mode)).mapValue(_.metadata)
                     )
                   }
                 }
@@ -93,7 +90,7 @@ final class StoragesRoutes(
                                 emit(
                                   Created,
                                   storages
-                                    .create(id, ref, Secret(source))
+                                    .create(id, ref, source)
                                     .tapEval(index(ref, _, mode))
                                     .mapValue(_.metadata)
                                 )
@@ -101,7 +98,7 @@ final class StoragesRoutes(
                                 // Update a storage
                                 emit(
                                   storages
-                                    .update(id, ref, rev, Secret(source))
+                                    .update(id, ref, rev, source)
                                     .tapEval(index(ref, _, mode))
                                     .mapValue(_.metadata)
                                 )
@@ -139,7 +136,7 @@ final class StoragesRoutes(
                       authorizeFor(ref, Read).apply {
                         val sourceIO = storages
                           .fetch(id, ref)
-                          .map(res => Storage.encryptSourceUnsafe(res.value.source, crypto))
+                          .map(res => res.value.source)
                         emit(sourceIO.leftWiden[StorageRejection].rejectOn[StorageNotFound])
                       }
                     }
@@ -206,7 +203,6 @@ object StoragesRoutes {
       s: Scheduler,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering,
-      crypto: Crypto,
       fusionConfig: FusionConfig
   ): Route =
     new StoragesRoutes(identities, aclCheck, storages, storagesStatistics, schemeDirectives, index).routes

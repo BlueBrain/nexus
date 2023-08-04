@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.{Metadata, RebuildStrategy}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{ProjectionNotFound, SourceNotFound}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -33,7 +34,7 @@ import scala.concurrent.duration.FiniteDuration
   * Representation of a composite view.
   *
   * @param id
-  *   the id of the project
+  *   the id of the view
   * @param project
   *   the project to which this view belongs
   * @param sources
@@ -68,6 +69,18 @@ final case class CompositeView(
     *   [[CompositeView]] metadata
     */
   def metadata: Metadata = Metadata(uuid)
+
+  /**
+    * Looks for a source with the given identifier
+    */
+  def sources(sourceId: Iri): Either[SourceNotFound, CompositeViewSource] =
+    sources.value.find(_.id == sourceId).toRight(SourceNotFound(id, sourceId, project))
+
+  /**
+    * Looks for a projection with the given identifier
+    */
+  def projections(projectionId: Iri): Either[ProjectionNotFound, CompositeViewProjection] =
+    projections.value.find(_.id == projectionId).toRight(ProjectionNotFound(id, projectionId, project))
 }
 
 object CompositeView {

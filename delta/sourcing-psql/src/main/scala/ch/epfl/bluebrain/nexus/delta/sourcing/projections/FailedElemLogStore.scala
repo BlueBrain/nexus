@@ -3,17 +3,18 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.projections
 import cats.effect.Clock
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
+import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
+import ch.epfl.bluebrain.nexus.delta.kernel.search.TimeRange
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ThrowableUtils._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{FailedElemLogRow, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.FailedElem
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionStore.FailedElemLogRow
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{ProjectionMetadata, ProjectionStore}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{FragmentEncoder, Transactors}
 import doobie._
 import doobie.implicits._
 import doobie.postgres.implicits._
@@ -28,6 +29,11 @@ import java.time.Instant
 trait FailedElemLogStore {
 
   /**
+    * Returns the total number of elems
+    */
+  def count: UIO[Long]
+
+  /**
     * Saves a list of failed elems
     *
     * @param metadata
@@ -35,7 +41,7 @@ trait FailedElemLogStore {
     * @param failures
     *   the FailedElem to save
     */
-  def saveFailedElems(metadata: ProjectionMetadata, failures: List[FailedElem]): UIO[Unit]
+  def save(metadata: ProjectionMetadata, failures: List[FailedElem]): UIO[Unit]
 
   /**
     * Saves one failed elem
@@ -53,7 +59,7 @@ trait FailedElemLogStore {
     * @param offset
     *   failed elem offset
     */
-  def failedElemEntries(
+  def stream(
       projectionProject: ProjectRef,
       projectionId: Iri,
       offset: Offset
@@ -68,10 +74,42 @@ trait FailedElemLogStore {
     *   failed elem offset
     * @return
     */
-  def failedElemEntries(
+  def stream(
       projectionName: String,
       offset: Offset
   ): Stream[Task, FailedElemLogRow]
+
+  /**
+    * Return a list of errors for the given projection on a time window ordered by instant
+    *
+    * @param project
+    *   the project of the projection
+    * @param projectionId
+    *   its identifier
+    * @param timeRange
+    *   the time range to restrict on
+    * @return
+    */
+  def count(project: ProjectRef, projectionId: Iri, timeRange: TimeRange): UIO[Long]
+
+  /**
+    * Return a list of errors for the given projection on a time window ordered by instant
+    * @param project
+    *   the project of the projection
+    * @param projectionId
+    *   its identifier
+    * @param pagination
+    *   the pagination to apply
+    * @param timeRange
+    *   the time range to restrict on
+    * @return
+    */
+  def list(
+      project: ProjectRef,
+      projectionId: Iri,
+      pagination: FromPagination,
+      timeRange: TimeRange
+  ): UIO[List[FailedElemLogRow]]
 
 }
 
@@ -82,7 +120,16 @@ object FailedElemLogStore {
   def apply(xas: Transactors, config: QueryConfig)(implicit clock: Clock[UIO]): FailedElemLogStore =
     new FailedElemLogStore {
 
-      override def saveFailedElems(metadata: ProjectionMetadata, failures: List[FailedElem]): UIO[Unit] = {
+      implicit val timeRangeFragmentEncoder: FragmentEncoder[TimeRange] = createTimeRangeFragmentEncoder("instant")
+
+      override def count: UIO[Long] =
+        sql"SELECT count(ordering) FROM public.failed_elem_logs"
+          .query[Long]
+          .unique
+          .transact(xas.read)
+          .hideErrors
+
+      override def save(metadata: ProjectionMetadata, failures: List[FailedElem]): UIO[Unit] = {
         val log  = logger.debug(s"[${metadata.name}] Saving ${failures.length} failed elems.")
         val save = IOUtils.instant.flatMap { instant =>
           failures.traverse(elem => saveFailedElem(metadata, elem, instant)).transact(xas.write).void.hideErrors
@@ -127,7 +174,7 @@ object FailedElemLogStore {
            |  $instant
            | )""".stripMargin.update.run.void
 
-      override def failedElemEntries(
+      override def stream(
           projectionProject: ProjectRef,
           projectionId: Iri,
           offset: Offset
@@ -141,7 +188,7 @@ object FailedElemLogStore {
           .streamWithChunkSize(config.batchSize)
           .transact(xas.read)
 
-      override def failedElemEntries(projectionName: String, offset: Offset): Stream[Task, FailedElemLogRow] =
+      override def stream(projectionName: String, offset: Offset): Stream[Task, FailedElemLogRow] =
         sql"""SELECT * from public.failed_elem_logs
            |WHERE projection_name = $projectionName
            |AND ordering > $offset
@@ -149,6 +196,34 @@ object FailedElemLogStore {
           .query[FailedElemLogRow]
           .streamWithChunkSize(config.batchSize)
           .transact(xas.read)
+
+      override def count(project: ProjectRef, projectionId: Iri, timeRange: TimeRange): UIO[Long] =
+        sql"SELECT count(ordering) from public.failed_elem_logs  ${whereClause(project, projectionId, timeRange)}"
+          .query[Long]
+          .unique
+          .transact(xas.read)
+          .hideErrors
+
+      override def list(
+          project: ProjectRef,
+          projectionId: Iri,
+          pagination: FromPagination,
+          timeRange: TimeRange
+      ): UIO[List[FailedElemLogRow]] =
+        sql"""SELECT * from public.failed_elem_logs
+             |${whereClause(project, projectionId, timeRange)}
+             |ORDER BY ordering ASC
+             |LIMIT ${pagination.size} OFFSET ${pagination.from}""".stripMargin
+          .query[FailedElemLogRow]
+          .to[List]
+          .transact(xas.read)
+          .hideErrors
+
+      private def whereClause(project: ProjectRef, projectionId: Iri, timeRange: TimeRange) = Fragments.whereAndOpt(
+        Some(fr"projection_project = $project"),
+        Some(fr"projection_id = $projectionId"),
+        timeRange.asFragment
+      )
     }
 
 }

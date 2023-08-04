@@ -21,6 +21,7 @@ val akkaCorsVersion         = "1.2.0"
 val akkaVersion             = "2.6.21"
 val alpakkaVersion          = "3.0.4"
 val apacheCompressVersion   = "1.23.0"
+val apacheIoVersion         = "1.3.2"
 val awsSdkVersion           = "2.17.184"
 val byteBuddyAgentVersion   = "1.10.17"
 val betterMonadicForVersion = "0.3.1"
@@ -76,6 +77,7 @@ lazy val alpakkaFile        = "com.lightbend.akka"           %% "akka-stream-alp
 lazy val alpakkaSse         = "com.lightbend.akka"           %% "akka-stream-alpakka-sse"  % alpakkaVersion
 lazy val alpakkaS3          = "com.lightbend.akka"           %% "akka-stream-alpakka-s3"   % alpakkaVersion
 lazy val apacheCompress     = "org.apache.commons"            % "commons-compress"         % apacheCompressVersion
+lazy val apacheIo           = "org.apache.commons"            % "commons-io"               % apacheIoVersion
 lazy val awsSdk             = "software.amazon.awssdk"        % "s3"                       % awsSdkVersion
 lazy val betterMonadicFor   = "com.olegpy"                   %% "better-monadic-for"       % betterMonadicForVersion
 lazy val byteBuddyAgent     = "net.bytebuddy"                 % "byte-buddy-agent"         % byteBuddyAgentVersion
@@ -203,7 +205,6 @@ lazy val kernel = project
   .settings(name := "delta-kernel", moduleName := "delta-kernel")
   .settings(shared, compilation, coverage, release, assertJavaVersion)
   .settings(
-    javaSpecificationVersion := "1.8",
     libraryDependencies     ++= Seq(
       caffeine,
       catsRetry,
@@ -227,7 +228,6 @@ lazy val testkit = project
   .settings(name := "delta-testkit", moduleName := "delta-testkit")
   .settings(shared, compilation, coverage, release, assertJavaVersion)
   .settings(
-    javaSpecificationVersion := "1.8",
     coverageMinimumStmtTotal := 0,
     libraryDependencies     ++= Seq(
       akkaActorTyped, // Needed to create Uri
@@ -282,7 +282,6 @@ lazy val rdf = project
     moduleName := "delta-rdf"
   )
   .settings(
-    javaSpecificationVersion := "1.8",
     libraryDependencies     ++= Seq(
       akkaActorTyped, // Needed to create Uri
       akkaHttpCore,
@@ -723,8 +722,7 @@ lazy val cargo = taskKey[(File, String)]("Run Cargo to build 'nexus-fixer'")
 lazy val storage = project
   .in(file("storage"))
   .enablePlugins(UniversalPlugin, JavaAppPackaging, JavaAgent, DockerPlugin, BuildInfoPlugin)
-  .settings(shared, compilation, assertJavaVersion, kamonSettings, storageAssemblySettings, coverage, release, servicePackaging)
-  .dependsOn(rdf)
+  .settings(shared, compilation, assertJavaVersion, kamonSettings, storageAssemblySettings, coverage, release, servicePackaging, coverageMinimumStmtTotal := 75)
   .settings(cargo := {
     import scala.sys.process._
 
@@ -747,6 +745,7 @@ lazy val storage = project
     javaSpecificationVersion := "1.8",
     libraryDependencies     ++= Seq(
       apacheCompress,
+      apacheIo,
       akkaHttp,
       akkaHttpCirce,
       akkaStream,
@@ -758,6 +757,7 @@ lazy val storage = project
       circeGenericExtras,
       logback,
       monixEval,
+      pureconfig,
       scalaLogging,
       akkaHttpTestKit % Test,
       akkaTestKit     % Test,
@@ -1005,10 +1005,54 @@ Global / excludeLintKeys        += docs / paradoxRoots
 Global / excludeLintKeys        += docs / Paradox / paradoxNavigationDepth
 Global / concurrentRestrictions += Tags.limit(Tags.Test, 1)
 
-addCommandAlias("review", ";clean;scalafmtCheck;test:scalafmtCheck;scalafmtSbtCheck;coverage;scapegoat;test;coverageReport;coverageAggregate")
+addCommandAlias("review",
+  s"""
+     |;clean
+     |;scalafmtCheck
+     |;test:scalafmtCheck
+     |;scalafmtSbtCheck
+     |;coverage
+     |;scapegoat
+     |;test
+     |;coverageReport
+     |;coverageAggregate
+     |""".stripMargin
+)
 addCommandAlias(
   "deltaReview",
-  ";delta/clean;delta/scalafmtCheck;delta/test:scalafmtCheck;scalafmtSbtCheck;coverage;delta/scapegoat;delta/test;delta/coverageReport;delta/coverageAggregate"
+  """
+     |;delta/clean
+     |;delta/scalafmtCheck
+     |;delta/test:scalafmtCheck
+     |;scalafmtSbtCheck;coverage
+     |;delta/scapegoat
+     |;delta/test
+     |;delta/coverageReport
+     |;delta/coverageAggregate
+     |""".stripMargin
 )
 addCommandAlias("build-docs", ";docs/clean;docs/makeSite")
 addCommandAlias("preview-docs", ";docs/clean;docs/previewSite")
+
+val coreModules = List("kernel", "rdf", "sdk", "sourcingPsql", "testkit")
+
+val staticAnalysis =
+  s"""
+    |project delta ;
+    |scalafmtSbtCheck ;
+    |scalafmtCheck ;
+    |Test/scalafmtCheck ;
+    |scapegoat ;
+    |doc
+    |""".stripMargin
+
+addCommandAlias("static-analysis", staticAnalysis)
+
+def unitTestsWithCoverageCommandsForModules(modules: List[String]) = {
+  ";coverage" +
+    modules.map(module => s";$module/test").mkString +
+    modules.map(module => s";$module/coverageReport").mkString
+}
+addCommandAlias("core-unit-tests-with-coverage", unitTestsWithCoverageCommandsForModules(coreModules))
+addCommandAlias("app-unit-tests-with-coverage", unitTestsWithCoverageCommandsForModules(List("app")))
+addCommandAlias("plugins-unit-tests-with-coverage", unitTestsWithCoverageCommandsForModules(List("plugins")))

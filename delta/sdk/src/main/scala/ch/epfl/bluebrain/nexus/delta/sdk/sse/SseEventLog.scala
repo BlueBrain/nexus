@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.event.EventStreaming
 import ch.epfl.bluebrain.nexus.delta.sourcing.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset.{At, Start}
-import ch.epfl.bluebrain.nexus.delta.sourcing.{MultiDecoder, Predicate, Transactors}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{MultiDecoder, Scope, Transactors}
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import io.circe.syntax.EncoderOps
@@ -161,8 +161,7 @@ object SseEventLog {
           private def fetchUuids(ref: ProjectRef) =
             cache.getOrElseUpdate(ref, fetchProject(ref)).attempt.map(_.toOption)
 
-          private def stream(predicate: Predicate, selector: Option[Label], offset: Offset)
-              : Stream[Task, ServerSentEvent] = {
+          private def stream(scope: Scope, selector: Option[Label], offset: Offset): Stream[Task, ServerSentEvent] = {
             Stream
               .fromEither[Task](
                 selector
@@ -174,7 +173,7 @@ object SseEventLog {
               .flatMap { entityTypes =>
                 EventStreaming
                   .fetchAll(
-                    predicate,
+                    scope,
                     entityTypes,
                     offset,
                     config.query,
@@ -184,25 +183,25 @@ object SseEventLog {
               }
           }
 
-          override def stream(offset: Offset): Stream[Task, ServerSentEvent] = stream(Predicate.root, None, offset)
+          override def stream(offset: Offset): Stream[Task, ServerSentEvent] = stream(Scope.root, None, offset)
 
           override def streamBy(selector: Label, offset: Offset): Stream[Task, ServerSentEvent] =
-            stream(Predicate.root, Some(selector), offset)
+            stream(Scope.root, Some(selector), offset)
 
           override def stream(org: Label, offset: Offset): IO[OrganizationRejection, Stream[Task, ServerSentEvent]] =
-            fetchOrg(org).as(stream(Predicate.Org(org), None, offset))
+            fetchOrg(org).as(stream(Scope.Org(org), None, offset))
 
           override def streamBy(selector: Label, org: Label, offset: Offset)
               : IO[OrganizationRejection, Stream[Task, ServerSentEvent]] =
-            fetchOrg(org).as(stream(Predicate.Org(org), Some(selector), offset))
+            fetchOrg(org).as(stream(Scope.Org(org), Some(selector), offset))
 
           override def stream(project: ProjectRef, offset: Offset)
               : IO[ProjectRejection, Stream[Task, ServerSentEvent]] =
-            fetchProject(project).as(stream(Predicate.Project(project), None, offset))
+            fetchProject(project).as(stream(Scope.Project(project), None, offset))
 
           override def streamBy(selector: Label, project: ProjectRef, offset: Offset)
               : IO[ProjectRejection, Stream[Task, ServerSentEvent]] =
-            fetchProject(project).as(stream(Predicate.Project(project), Some(selector), offset))
+            fetchProject(project).as(stream(Scope.Project(project), Some(selector), offset))
         }
       }
       .tapEval { sseLog =>

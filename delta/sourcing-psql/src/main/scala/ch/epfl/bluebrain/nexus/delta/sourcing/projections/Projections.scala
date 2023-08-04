@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef, Tag
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.model.ProjectionRestart
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.StreamingQuery
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{ProjectionMetadata, ProjectionProgress, ProjectionStore, RemainingElems}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{ProjectionMetadata, ProjectionProgress, ProjectionStore}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{ProgressStatistics, Transactors}
 import monix.bio.UIO
 
@@ -88,17 +88,6 @@ trait Projections {
     *   the projection id for which the statistics are computed
     */
   def statistics(project: ProjectRef, tag: Option[Tag], projectionId: String): UIO[ProgressStatistics]
-
-  /**
-    * Retrieves the progress of the provided ''projectionId'' and uses the provided ''remaining elems'' to compute its
-    * statistics.
-    *
-    * @param projectionId
-    *   the projection id for which the statistics are computed
-    * @param remaining
-    *   a description of the remaining elements to stream
-    */
-  def statistics(projectionId: String, remaining: Option[RemainingElems]): UIO[ProgressStatistics]
 }
 
 object Projections {
@@ -132,14 +121,11 @@ object Projections {
           projectionRestartStore.deleteExpired(now.minusMillis(restartTtl.toMillis))
         }
 
-      def statistics(project: ProjectRef, tag: Option[Tag], projectionId: String): UIO[ProgressStatistics] =
+      override def statistics(project: ProjectRef, tag: Option[Tag], projectionId: String): UIO[ProgressStatistics] =
         for {
           current   <- progress(projectionId)
           remaining <-
             StreamingQuery.remaining(project, tag.getOrElse(Tag.latest), current.fold(Offset.start)(_.offset), xas)
         } yield ProgressStatistics(current, remaining)
-
-      def statistics(projectionId: String, remaining: Option[RemainingElems]): UIO[ProgressStatistics] =
-        progress(projectionId).map(ProgressStatistics(_, remaining))
     }
 }

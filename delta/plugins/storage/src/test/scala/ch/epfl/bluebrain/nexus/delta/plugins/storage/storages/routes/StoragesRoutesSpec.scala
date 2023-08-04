@@ -8,7 +8,7 @@ import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts => fileContexts}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.{ProjectContextRejection, StorageFetchRejection, StorageNotFound}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, Storage, StorageStatEntry, StorageType}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, StorageStatEntry, StorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{contexts => storageContexts, _}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
@@ -17,7 +17,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
@@ -93,8 +92,6 @@ class StoragesRoutesSpec extends BaseRouteSpec with TryValues with StorageFixtur
     ProjectContextRejection
   )
 
-  implicit private val c: Crypto = crypto
-
   private val storageStatistics: StoragesStatistics =
     (storage, project) =>
       if (project.equals(projectRef) && storage.toString.equals("remote-disk-storage"))
@@ -108,7 +105,6 @@ class StoragesRoutesSpec extends BaseRouteSpec with TryValues with StorageFixtur
     new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport())),
     IO.pure(perms),
     (_, _) => IO.unit,
-    crypto,
     xas,
     cfg,
     serviceAccount
@@ -125,7 +121,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with TryValues with StorageFixtur
 
     "fail to create a storage without storages/write permission" in {
       aclCheck.append(AclAddress.Root, Anonymous -> Set(events.read)).accepted
-      val payload = s3FieldsJson.value deepMerge json"""{"@id": "$s3Id"}"""
+      val payload = s3FieldsJson deepMerge json"""{"@id": "$s3Id"}"""
       Post("/v1/storages/myorg/myproject", payload.toEntity) ~> routes ~> check {
         response.status shouldEqual StatusCodes.Forbidden
         response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
@@ -136,7 +132,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with TryValues with StorageFixtur
       aclCheck
         .append(AclAddress.Root, Anonymous -> Set(permissions.write), caller.subject -> Set(permissions.write))
         .accepted
-      val payload = s3FieldsJson.value deepMerge json"""{"@id": "$s3Id", "bucket": "mybucket2"}"""
+      val payload = s3FieldsJson deepMerge json"""{"@id": "$s3Id", "bucket": "mybucket2"}"""
       Post("/v1/storages/myorg/myproject", payload.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
         response.asJson shouldEqual storageMetadata(projectRef, s3Id, StorageType.S3Storage)
@@ -146,7 +142,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with TryValues with StorageFixtur
     "create a storage with an authenticated user and provided id" in {
       Put(
         "/v1/storages/myorg/myproject/remote-disk-storage",
-        remoteFieldsJson.value.toEntity
+        remoteFieldsJson.toEntity
       ) ~> asAlice ~> routes ~> check {
         status shouldEqual StatusCodes.Created
         response.asJson shouldEqual
@@ -155,7 +151,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with TryValues with StorageFixtur
     }
 
     "reject the creation of a storage which already exists" in {
-      Put("/v1/storages/myorg/myproject/s3-storage", s3FieldsJson.value.toEntity) ~> routes ~> check {
+      Put("/v1/storages/myorg/myproject/s3-storage", s3FieldsJson.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.Conflict
         response.asJson shouldEqual jsonContentOf("/storages/errors/already-exists.json", "id" -> s3Id)
       }
@@ -163,7 +159,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with TryValues with StorageFixtur
 
     "fail to update a storage without storages/write permission" in {
       aclCheck.subtract(AclAddress.Root, Anonymous -> Set(permissions.write)).accepted
-      Put(s"/v1/storages/myorg/myproject/s3-storage?rev=1", s3FieldsJson.value.toEntity) ~> routes ~> check {
+      Put(s"/v1/storages/myorg/myproject/s3-storage?rev=1", s3FieldsJson.toEntity) ~> routes ~> check {
         response.status shouldEqual StatusCodes.Forbidden
         response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
       }
@@ -177,7 +173,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with TryValues with StorageFixtur
       )
       forAll(endpoints.zipWithIndex) { case (endpoint, idx) =>
         // the starting revision is 2 because this storage has been updated to default = false
-        Put(s"$endpoint?rev=${idx + 2}", s3FieldsJson.value.toEntity) ~> routes ~> check {
+        Put(s"$endpoint?rev=${idx + 2}", s3FieldsJson.toEntity) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           response.asJson shouldEqual storageMetadata(projectRef, s3Id, StorageType.S3Storage, rev = idx + 3)
         }
@@ -185,7 +181,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with TryValues with StorageFixtur
     }
 
     "reject the update of a non-existent storage" in {
-      Put("/v1/storages/myorg/myproject/myid10?rev=1", s3FieldsJson.value.toEntity) ~> routes ~> check {
+      Put("/v1/storages/myorg/myproject/myid10?rev=1", s3FieldsJson.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
         response.asJson shouldEqual
           jsonContentOf("/storages/errors/not-found.json", "id" -> (nxv + "myid10"), "proj" -> "myorg/myproject")
@@ -193,7 +189,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with TryValues with StorageFixtur
     }
 
     "reject the update of a storage at a non-existent revision" in {
-      Put("/v1/storages/myorg/myproject/s3-storage?rev=10", s3FieldsJson.value.toEntity) ~> routes ~> check {
+      Put("/v1/storages/myorg/myproject/s3-storage?rev=10", s3FieldsJson.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.Conflict
         response.asJson shouldEqual
           jsonContentOf("/storages/errors/incorrect-rev.json", "provided" -> 10, "expected" -> 4)
@@ -288,7 +284,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with TryValues with StorageFixtur
     }
 
     "fetch a storage original payload" in {
-      val expectedSource = remoteFieldsJson.map(_ deepMerge json"""{"default": false}""")
+      val expectedSource = remoteFieldsJson deepMerge json"""{"default": false}"""
       val endpoints      = List(
         s"/v1/storages/$uuid/$uuid/remote-disk-storage/source",
         s"/v1/resources/$uuid/$uuid/_/remote-disk-storage/source",
@@ -301,7 +297,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with TryValues with StorageFixtur
       forAll(endpoints) { endpoint =>
         Get(endpoint) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
-          response.asJson shouldEqual Storage.encryptSource(expectedSource, crypto).success.value
+          response.asJson shouldEqual expectedSource
         }
       }
     }
@@ -316,7 +312,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with TryValues with StorageFixtur
         forAll(List("rev=1", "tag=mytag")) { param =>
           Get(s"$endpoint?$param") ~> routes ~> check {
             status shouldEqual StatusCodes.OK
-            response.asJson shouldEqual Storage.encryptSource(remoteFieldsJson, crypto).success.value
+            response.asJson shouldEqual remoteFieldsJson
           }
         }
       }

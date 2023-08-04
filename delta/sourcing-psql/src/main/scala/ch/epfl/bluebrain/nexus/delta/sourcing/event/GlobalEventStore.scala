@@ -4,7 +4,7 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Serializer, Transactors}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.GlobalEvent
-import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.IriInstances
+import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Envelope, EnvelopeStream}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.{RefreshStrategy, StreamingQuery}

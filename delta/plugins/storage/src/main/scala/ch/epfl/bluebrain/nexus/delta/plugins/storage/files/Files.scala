@@ -467,7 +467,7 @@ final class Files(
                              .bimap(WrappedStorageRejection, _.value)
                          )
       stream        <- log
-                         .states(Predicate.root, offset)
+                         .states(Scope.root, offset)
                          .map { envelope =>
                            envelope.value match {
                              case f

@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 
-import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{StorageState, StorageValue}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -18,7 +17,7 @@ object StorageGen {
       id: Iri,
       project: ProjectRef,
       value: StorageValue,
-      source: Secret[Json] = Secret(Json.obj()),
+      source: Json = Json.obj(),
       rev: Int = 1,
       deprecated: Boolean = false,
       tags: Tags = Tags.empty,
@@ -44,7 +43,7 @@ object StorageGen {
       id: Iri,
       project: ProjectRef,
       value: StorageValue,
-      source: Secret[Json] = Secret(Json.obj()),
+      source: Json = Json.obj(),
       rev: Int = 1,
       deprecated: Boolean = false,
       tags: Tags = Tags.empty,

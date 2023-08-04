@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3
 
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
-import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotAccessible
@@ -11,7 +10,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.Mini
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions.{read, write}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.minio.MinioDocker
-import ch.epfl.bluebrain.nexus.testkit.minio.MinioDocker._
 import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
@@ -38,8 +36,6 @@ class S3StorageAccessSpec(docker: MinioDocker)
       algorithm = DigestAlgorithm.default,
       bucket = "bucket",
       endpoint = Some(docker.hostConfig.endpoint),
-      accessKey = Some(Secret(RootUser)),
-      secretKey = Some(Secret(RootPassword)),
       region = Some(Region.EU_CENTRAL_1),
       readPermission = read,
       writePermission = write,
@@ -58,10 +54,6 @@ class S3StorageAccessSpec(docker: MinioDocker)
 
     "succeed verifying the bucket" in eventually {
       access(iri, storage).accepted
-    }
-
-    "fail on wrong credentials" in {
-      access(iri, storage.copy(secretKey = Some(Secret("other")))).rejectedWith[StorageNotAccessible]
     }
 
     "fail when bucket does not exist" in {

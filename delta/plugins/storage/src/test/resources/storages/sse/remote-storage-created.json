@@ -13,7 +13,6 @@
     "@type": "RemoteDiskStorage",
     "name": "remoteName",
     "description": "remoteDescription",
-    "credentials": "wqUglodAZzmNk3CEZeZgBA==",
     "default": true,
     "endpoint": "http://localhost",
     "folder": "myfolder",

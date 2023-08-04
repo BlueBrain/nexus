@@ -1,14 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 
-import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{contexts, schemas, Storages}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.IriEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
@@ -23,7 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectR
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.{deriveConfiguredCodec, deriveConfiguredEncoder}
 import io.circe.syntax._
-import io.circe.{Codec, Decoder, Encoder, Json, JsonObject}
+import io.circe._
 
 import java.time.Instant
 import scala.annotation.nowarn
@@ -72,7 +69,7 @@ object StorageEvent {
       id: Iri,
       project: ProjectRef,
       value: StorageValue,
-      source: Secret[Json],
+      source: Json,
       rev: Int,
       instant: Instant,
       subject: Subject
@@ -100,7 +97,7 @@ object StorageEvent {
       id: Iri,
       project: ProjectRef,
       value: StorageValue,
-      source: Secret[Json],
+      source: Json,
       rev: Int,
       instant: Instant,
       subject: Subject
@@ -165,24 +162,18 @@ object StorageEvent {
   ) extends StorageEvent
 
   @nowarn("cat=unused")
-  def serializer(crypto: Crypto): Serializer[Iri, StorageEvent] = {
+  def serializer: Serializer[Iri, StorageEvent] = {
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
     implicit val configuration: Configuration = Serializer.circeConfiguration
 
-    implicit val jsonSecretEncryptEncoder: Encoder[Secret[Json]] =
-      Encoder.encodeJson.contramap(Storage.encryptSourceUnsafe(_, crypto))
-
-    implicit val jsonSecretDecryptDecoder: Decoder[Secret[Json]] =
-      Decoder.decodeJson.emap(Storage.decryptSource(_, crypto).toEither.leftMap(_.getMessage))
-
-    implicit val storageValueCodec: Codec.AsObject[StorageValue] = StorageValue.databaseCodec(crypto)
+    implicit val storageValueCodec: Codec.AsObject[StorageValue] = StorageValue.databaseCodec
     implicit val coder: Codec.AsObject[StorageEvent]             = deriveConfiguredCodec[StorageEvent]
     Serializer.dropNulls()
   }
 
-  def storageEventMetricEncoder(crypto: Crypto): ScopedEventMetricEncoder[StorageEvent] =
+  def storageEventMetricEncoder: ScopedEventMetricEncoder[StorageEvent] =
     new ScopedEventMetricEncoder[StorageEvent] {
-      override def databaseDecoder: Decoder[StorageEvent] = serializer(crypto).codec
+      override def databaseDecoder: Decoder[StorageEvent] = serializer.codec
 
       override def entityType: EntityType = Storages.entityType
 
@@ -201,8 +192,8 @@ object StorageEvent {
         )
     }
 
-  def sseEncoder(crypto: Crypto)(implicit base: BaseUri): SseEncoder[StorageEvent] = new SseEncoder[StorageEvent] {
-    override val databaseDecoder: Decoder[StorageEvent] = serializer(crypto).codec
+  def sseEncoder(implicit base: BaseUri): SseEncoder[StorageEvent] = new SseEncoder[StorageEvent] {
+    override val databaseDecoder: Decoder[StorageEvent] = serializer.codec
 
     override def entityType: EntityType = Storages.entityType
 
@@ -224,11 +215,9 @@ object StorageEvent {
           case other     => other
         })
 
-      implicit val subjectEncoder: Encoder[Subject]                = IriEncoder.jsonEncoder[Subject]
-      implicit val storageValueEncoder: Encoder[StorageValue]      = Encoder.instance[StorageValue](_ => Json.Null)
-      implicit val jsonSecretEncryptEncoder: Encoder[Secret[Json]] =
-        Encoder.encodeJson.contramap(Storage.encryptSourceUnsafe(_, crypto))
-      implicit val projectRefEncoder: Encoder[ProjectRef]          = IriEncoder.jsonEncoder[ProjectRef]
+      implicit val subjectEncoder: Encoder[Subject]           = IriEncoder.jsonEncoder[Subject]
+      implicit val storageValueEncoder: Encoder[StorageValue] = Encoder.instance[StorageValue](_ => Json.Null)
+      implicit val projectRefEncoder: Encoder[ProjectRef]     = IriEncoder.jsonEncoder[ProjectRef]
 
       Encoder.encodeJsonObject.contramapObject { event =>
         deriveConfiguredEncoder[StorageEvent]

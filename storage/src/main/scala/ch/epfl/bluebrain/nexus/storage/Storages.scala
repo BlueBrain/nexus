@@ -4,14 +4,12 @@ import java.net.URLDecoder
 import java.nio.file.StandardCopyOption._
 import java.nio.file.{Files, Path, Paths}
 import java.security.MessageDigest
-
 import akka.http.scaladsl.model.Uri
 import akka.stream.Materializer
 import akka.stream.alpakka.file.scaladsl.Directory
 import akka.stream.scaladsl.{FileIO, Keep, Sink}
 import cats.effect.Effect
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import ch.epfl.bluebrain.nexus.storage.File._
 import ch.epfl.bluebrain.nexus.storage.Rejection.{PathAlreadyExists, PathContainsLinks, PathNotFound}
 import ch.epfl.bluebrain.nexus.storage.StorageError.{InternalError, PathInvalid, PermissionsFixingFailed}
@@ -22,6 +20,7 @@ import ch.epfl.bluebrain.nexus.storage.attributes.AttributesCache
 import ch.epfl.bluebrain.nexus.storage.attributes.AttributesComputation._
 import ch.epfl.bluebrain.nexus.storage.config.AppConfig.{DigestConfig, StorageConfig}
 
+import scala.annotation.tailrec
 import scala.concurrent.{ExecutionContext, Future}
 import scala.sys.process._
 import scala.util.{Success, Try}
@@ -116,6 +115,21 @@ trait Storages[F[_], Source] {
 
 object Storages {
 
+  /**
+    * Checks if the ''target'' path is a descendant of the ''parent'' path. E.g.: path = /some/my/path ; parent = /some
+    * will return true E.g.: path = /some/my/path ; parent = /other will return false
+    */
+  private def descendantOf(target: Path, parent: Path): Boolean =
+    inner(parent, target.getParent)
+
+  @tailrec
+  @SuppressWarnings(Array("NullParameter"))
+  private def inner(parent: Path, child: Path): Boolean = {
+    if (child == null) false
+    else if (parent == child) true
+    else inner(parent, child.getParent)
+  }
+
   sealed trait BucketExistence
   sealed trait PathExistence
 
@@ -162,7 +176,7 @@ object Storages {
 
     def pathExists(name: String, relativeFilePath: Uri.Path): PathExistence = {
       val path = filePath(name, relativeFilePath)
-      if (Files.exists(path) && Files.isReadable(path) && path.descendantOf(basePath(name))) PathExists
+      if (Files.exists(path) && Files.isReadable(path) && descendantOf(path, basePath(name))) PathExists
       else PathDoesNotExist
     }
 
@@ -172,7 +186,7 @@ object Storages {
         source: AkkaSource
     )(implicit bucketEv: BucketExists, pathEv: PathDoesNotExist): F[FileAttributes] = {
       val absFilePath = filePath(name, relativeFilePath)
-      if (absFilePath.descendantOf(basePath(name)))
+      if (descendantOf(absFilePath, basePath(name)))
         F.fromTry(Try(Files.createDirectories(absFilePath.getParent))) >>
           F.fromTry(Try(MessageDigest.getInstance(digestConfig.algorithm))).flatMap { msgDigest =>
             source
@@ -243,9 +257,9 @@ object Storages {
       fixPermissions(absSourcePath).flatMap { fixPermsResult =>
         if (!Files.exists(absSourcePath))
           F.pure(Left(PathNotFound(name, sourceRelativePath)))
-        else if (!absSourcePath.descendantOf(bucketPath) || absSourcePath.descendantOf(bucketProtectedPath))
+        else if (!descendantOf(absSourcePath, bucketPath) || descendantOf(absSourcePath, bucketProtectedPath))
           F.pure(Left(PathNotFound(name, sourceRelativePath)))
-        else if (!absDestPath.descendantOf(bucketProtectedPath))
+        else if (!descendantOf(absDestPath, bucketProtectedPath))
           F.raiseError(PathInvalid(name, destRelativePath))
         else if (Files.exists(absDestPath))
           F.pure(Left(PathAlreadyExists(name, destRelativePath)))

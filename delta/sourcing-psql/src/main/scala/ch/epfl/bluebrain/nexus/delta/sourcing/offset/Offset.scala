@@ -5,9 +5,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.sourcing.FragmentEncoder
 import doobie._
 import doobie.implicits._
-import doobie.util.fragment.Fragment
 import io.circe.Codec
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredCodec
@@ -17,8 +17,6 @@ import scala.annotation.nowarn
 sealed trait Offset extends Product with Serializable {
 
   def value: Long
-
-  def asFragment: Option[Fragment]
 
   def ordering: Long = this match {
     case Offset.Start     => 0L
@@ -32,10 +30,7 @@ object Offset {
     * To fetch all rows from the beginning
     */
   final case object Start extends Offset {
-
     override val value: Long = 0L
-
-    override def asFragment: Option[Fragment] = None
   }
 
   def from(value: Long): Offset = if (value > 0L) Offset.at(value) else Offset.Start
@@ -43,9 +38,7 @@ object Offset {
   /**
     * To fetch rows from the given offset
     */
-  final case class At(value: Long) extends Offset {
-    override def asFragment: Option[Fragment] = Some(fr"ordering > $value")
-  }
+  final case class At(value: Long) extends Offset
 
   val start: Offset = Start
 
@@ -67,6 +60,11 @@ object Offset {
 
   implicit final val offsetGet: Get[Offset] = Get[Long].map(from)
   implicit final val offsetPut: Put[Offset] = Put[Long].contramap(_.value)
+
+  implicit val offsetFragmentEncoder: FragmentEncoder[Offset] = FragmentEncoder.instance {
+    case Start     => None
+    case At(value) => Some(fr"ordering > $value")
+  }
 
   implicit val offsetJsonLdEncoder: JsonLdEncoder[Offset] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.offset))

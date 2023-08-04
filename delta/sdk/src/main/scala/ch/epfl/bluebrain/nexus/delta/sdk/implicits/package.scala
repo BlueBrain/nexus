@@ -4,7 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.syntax.{ClassTagSyntax, IOSyntax, In
 import ch.epfl.bluebrain.nexus.delta.rdf.instances.{SecretInstances, TripleInstances, UriInstances}
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.{IriSyntax, IterableSyntax, JsonLdEncoderSyntax, JsonSyntax, PathSyntax, UriSyntax}
 import ch.epfl.bluebrain.nexus.delta.sdk.instances.{CredentialsInstances, IdentityInstances, IriInstances, ProjectRefInstances}
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax.{HttpRequestSyntax, HttpResponseFieldsSyntax, IORejectSyntax, IriEncodingSyntax}
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax.{HttpRequestSyntax, HttpResponseFieldsSyntax, IORejectSyntax, IriEncodingSyntax, ProjectionErrorsSyntax}
 
 /**
   * Aggregate instances and syntax from rdf plus the current sdk instances and syntax to avoid importing multiple
@@ -32,3 +32,4 @@ package object implicits
     with IOSyntax
     with ClassTagSyntax
     with InstantSyntax
+    with ProjectionErrorsSyntax

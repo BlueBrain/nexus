@@ -47,7 +47,6 @@ class RemoteDiskStorageAccessSpec(docker: RemoteStorageDocker)
       default = true,
       DigestAlgorithm.default,
       BaseUri(docker.hostConfig.endpoint).rightValue,
-      None,
       Label.unsafe(RemoteStorageDocker.BucketName),
       read,
       write,

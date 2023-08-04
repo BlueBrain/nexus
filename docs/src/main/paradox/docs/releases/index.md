@@ -22,10 +22,17 @@ The latest stable release is **v1.8.0** released on **14.06.2023**.
 
 ## 1.9.0
 
+### Breaking changes
+
+- @ref:[Resource payloads can't contain fields starting by `_` anymore](../delta/api/resources-api.md)
+- @ref:[The endpoint for fetching indexing errors as SSEs changed](../delta/api/views/index.md#fetch-indexing-failures-as-sses)
+- @ref:[Credentials for storages can now only be defined at the configuration level](../releases/v1.9-release-notes.md#storages)
+
 ### New features / enhancements
 
 - @ref:[Aggregations of resources by `@type` and `project`](../delta/api/resources-api.md#aggregations)
 - @ref:[Resources can be added to an archive using `_self`](../delta/api/archives-api.md#payload)
+- @ref:[Indexing errors can now be listed and filtered](../delta/api/views/index.md#listing-indexing-failures)
 
 ## 1.8.0 (14.06.2023)
 

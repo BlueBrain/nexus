@@ -142,7 +142,7 @@ object CompositeProjections {
           Projection.persist(
             progress,
             compositeProgressStore.save(view, rev, branch, _),
-            failedElemLogStore.saveFailedElems(metadata, _)
+            failedElemLogStore.save(metadata, _)
           )(batch)
         )
 

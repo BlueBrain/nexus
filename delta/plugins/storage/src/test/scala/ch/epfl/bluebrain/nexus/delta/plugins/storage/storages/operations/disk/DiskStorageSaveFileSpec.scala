@@ -4,7 +4,6 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
 import akka.http.scaladsl.model.{HttpEntity, Uri}
 import akka.testkit.TestKit
-import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
@@ -47,7 +46,7 @@ class DiskStorageSaveFileSpec
     val iri     = iri"http://localhost/disk"
     val project = ProjectRef.unsafe("org", "project")
     val value   = DiskStorageValue(default = true, DigestAlgorithm.default, volume, read, write, Some(100), 10)
-    val storage = DiskStorage(iri, project, value, Tags.empty, Secret(Json.obj()))
+    val storage = DiskStorage(iri, project, value, Tags.empty, Json.obj())
     val uuid    = UUID.fromString("8049ba90-7cc6-4de5-93a1-802c04200dcc")
     val content = "file content"
     val entity  = HttpEntity(content)
