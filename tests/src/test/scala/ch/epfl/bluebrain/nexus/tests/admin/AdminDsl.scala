@@ -82,16 +82,18 @@ class AdminDsl(cl: HttpClient, config: TestsConfig) extends TestHelpers with Cir
       id: String,
       description: String,
       authenticated: Authenticated,
-      expectedResponse: Option[ExpectedResponse] = None
+      expectedResponse: Option[ExpectedResponse] = None,
+      ignoreConflict: Boolean = false
   ): Task[Assertion] =
-    updateOrganization(id, description, authenticated, 0, expectedResponse)
+    updateOrganization(id, description, authenticated, 0, expectedResponse, ignoreConflict)
 
   def updateOrganization(
       id: String,
       description: String,
       authenticated: Authenticated,
       rev: Int,
-      expectedResponse: Option[ExpectedResponse] = None
+      expectedResponse: Option[ExpectedResponse] = None,
+      ignoreConflict: Boolean = false
   ): Task[Assertion] = {
     cl.put[Json](s"/orgs/$id${queryParams(rev)}", orgPayload(description), authenticated) { (json, response) =>
       expectedResponse match {
@@ -99,19 +101,23 @@ class AdminDsl(cl: HttpClient, config: TestsConfig) extends TestHelpers with Cir
           response.status shouldEqual e.statusCode
           json shouldEqual e.json
         case None    =>
-          if (rev == 0L)
-            response.status shouldEqual StatusCodes.Created
-          else
-            response.status shouldEqual StatusCodes.OK
+          if (ignoreConflict && response.status == StatusCodes.Conflict)
+            succeed
+          else {
+            if (rev == 0L)
+              response.status shouldEqual StatusCodes.Created
+            else
+              response.status shouldEqual StatusCodes.OK
 
-          filterMetadataKeys(json) shouldEqual createOrgRespJson(
-            id,
-            rev + 1,
-            "orgs",
-            "Organization",
-            authenticated,
-            "organizations"
-          )
+            filterMetadataKeys(json) shouldEqual createOrgRespJson(
+              id,
+              rev + 1,
+              "orgs",
+              "Organization",
+              authenticated,
+              "organizations"
+            )
+          }
       }
     }
   }
