@@ -88,7 +88,8 @@ In order to decide whether we want to select a resource or a file, the `@type` d
 possibilities:
 
 - `Resource`: targets a resource
-- `File`: targets a file
+- `File`: targets a file using its project and id
+- `FileSelf`: targets a file using its address (`_self`)
 
 ## Create using POST
 

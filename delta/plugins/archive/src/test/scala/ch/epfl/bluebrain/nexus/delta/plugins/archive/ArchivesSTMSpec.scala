@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.archive
 
 import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.ResourceReference
-import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveResourceRepresentation.SourceJson
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRepresentation.SourceJson
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.{ArchiveState, ArchiveValue, CreateArchive}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.AbsolutePath
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._

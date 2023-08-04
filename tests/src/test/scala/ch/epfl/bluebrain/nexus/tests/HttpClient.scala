@@ -117,6 +117,11 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit as: ActorSyst
   )(implicit um: FromEntityUnmarshaller[A]): Task[Assertion] =
     requestAssert(PATCH, url, Some(body), identity, extraHeaders)(assertResponse)
 
+  def getWithBody[A](url: String, body: Json, identity: Identity, extraHeaders: Seq[HttpHeader] = jsonHeaders)(
+      assertResponse: (A, HttpResponse) => Assertion
+  )(implicit um: FromEntityUnmarshaller[A]): Task[Assertion] =
+    requestAssert(GET, url, Some(body), identity, extraHeaders)(assertResponse)
+
   def get[A](url: String, identity: Identity, extraHeaders: Seq[HttpHeader] = jsonHeaders)(
       assertResponse: (A, HttpResponse) => Assertion
   )(implicit um: FromEntityUnmarshaller[A]): Task[Assertion] =
