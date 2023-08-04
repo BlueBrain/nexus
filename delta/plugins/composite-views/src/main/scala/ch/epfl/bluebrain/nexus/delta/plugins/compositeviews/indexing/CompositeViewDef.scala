@@ -6,6 +6,7 @@ import cats.effect.ExitCase.{Canceled, Completed, Error}
 import cats.effect.concurrent.Ref
 import cats.kernel.Semigroup
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.GraphResourceToNTriples
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.{Interval, RebuildStrategy}
@@ -18,7 +19,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemPipe, ElemStream, Proje
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
-import com.typesafe.scalalogging.Logger
 import fs2.{Pipe, Stream}
 import monix.bio.{Task, UIO}
 
@@ -202,17 +202,16 @@ object CompositeViewDef {
     val targets = NonEmptyChain.fromNonEmptyList(view.value.projections.toNonEmptyList)
 
     def startLog(sourceId: Iri, branch: String)                                  =
-      Task.delay(logger.debug(s"Running '$branch' branch for source '{}' of composite view '{}'.", sourceId, view.ref))
+      logger.debug(s"Running '$branch' branch for source '$sourceId' of composite view '${view.ref}'.")
     def finalizeLog[E](sourceId: Iri, branch: String): ExitCase[E] => Task[Unit] = {
       case Completed =>
-        val message = "Completed '{}' branch for source '{}' of composite view '{}'."
-        Task.delay(logger.debug(message, branch, sourceId, view.ref))
+        logger.debug(s"Completed '$branch' branch for source '$sourceId' of composite view '${view.ref}'.")
       case Error(e)  =>
-        val message = s"Error raised running '$branch' branch for source '$sourceId' of composite view '${view.ref}'."
-        Task.delay(logger.error(message, e))
+        logger.error(
+          s"Error $e raised running '$branch' branch for source '$sourceId' of composite view '${view.ref}'."
+        )
       case Canceled  =>
-        val message = "Cancelled '{}' branch for source '{}' of composite view '{}'."
-        Task.delay(logger.debug(message, branch, sourceId, view.ref))
+        logger.debug(s"Cancelled '$branch' branch for source '$sourceId' of composite view '${view.ref}'.")
     }
 
     for {
@@ -235,7 +234,7 @@ object CompositeViewDef {
                           )
       start             = Stream.eval(
                             fetchProgress.tapEval { progress =>
-                              UIO.delay(logger.info(s"Starting composite view '${view.ref}' with offset $progress."))
+                              logger.info(s"Starting composite view '${view.ref}' with offset $progress.")
                             }
                           )
     } yield restarts(start >> (mains |+| rebuilds))
@@ -260,11 +259,11 @@ object CompositeViewDef {
       case Some(Interval(fixedRate)) =>
         val rebuildWhen       = Stream.awakeEvery[Task](fixedRate).flatMap(_ => Stream.eval(predicate))
         val waitingForRebuild = Stream.never[Task].interruptWhen(rebuildWhen).drain
-        Stream.eval(Task.delay(logger.debug(s"Rebuild has been defined at $fixedRate for view '{}'.", view))) >>
+        Stream.eval(logger.debug(s"Rebuild has been defined at $fixedRate for view '$view'.")) >>
           (waitingForRebuild ++ Stream.eval(resetProgress).drain ++ stream).repeat
       case None                      =>
         // No rebuild strategy has been defined
-        Stream.eval(Task.delay(logger.debug(s"No rebuild strategy has been defined for view '{}'.", view))) >>
+        Stream.eval(logger.debug(s"No rebuild strategy has been defined for view '${view}'.")) >>
           Stream.empty[Task]
     }
   }
@@ -285,7 +284,7 @@ object CompositeViewDef {
   ): UIO[Boolean] = {
 
     def test(condition: Boolean, message: String): UIO[Boolean] =
-      UIO.when(condition)(UIO.delay(logger.info(message))).as(condition)
+      UIO.when(condition)(logger.debug(message)).as(condition)
 
     def checkSource(
         s: CompositeViewSource,
