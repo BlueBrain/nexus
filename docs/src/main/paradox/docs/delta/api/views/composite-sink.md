@@ -38,13 +38,13 @@ In order to enable the Batch Composite Sink, configure the following Nexus Delta
 
 Furthermore, you can configure the maximum size of a batch and the maximum interval using
 
-`plugins.composite-views.{plugin}-batch.max-elements = {max-elements}`
+`plugins.composite-views.{projection-plugin}-batch.max-elements = {max-elements}`
 
-`plugins.composite-views.{plugin}-batch.max-interval = {max-interval}`
+`plugins.composite-views.{projection-plugin}-batch.max-interval = {max-interval}`
 
 where:
 
-* `{plugin}` is either `elasticsearch` or `blazegraph`. The batching options of a Composite Sink can be set separately for each target type.
+* `{projection-plugin}` is either `elasticsearch` or `blazegraph`. The batching options of a Composite Sink can be set separately for each target type.
 * `{max-elements}` is the maximum number of elements to batch at once (defaults to `10`)
 * `{max-interval}` is the maximum interval of time to wait for `{max-elements}` elements
 
