@@ -21,11 +21,16 @@ object Optics extends Optics {
       val filtered = keys.foldLeft(jsonObject) { (o, k) => o.remove(k) }
       JsonObject.fromIterable(
         filtered.toList.map { case (k, v) =>
-          v.asObject.fold(k -> v) { o =>
-            k -> Json.fromJsonObject(
-              inner(o)
-            )
-          }
+          v.arrayOrObject(
+            k -> v,
+            a =>
+              k -> Json.fromValues(
+                a.map { element =>
+                  element.asObject.fold(element) { e => Json.fromJsonObject(inner(e)) }
+                }
+              ),
+            o => k -> Json.fromJsonObject(inner(o))
+          )
         }
       )
     }

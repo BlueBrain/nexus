@@ -31,8 +31,9 @@ The latest stable release is **v1.8.0** released on **14.06.2023**.
 ### New features / enhancements
 
 - @ref:[Aggregations of resources by `@type` and `project`](../delta/api/resources-api.md#aggregations)
-- @ref:[Resources can be added to an archive using `_self`](../delta/api/archives-api.md#payload)
+- @ref:[Files can be added to an archive using `_self`](../delta/api/archives-api.md#payload)
 - @ref:[Indexing errors can now be listed and filtered](../delta/api/views/index.md#listing-indexing-failures)
+- @ref:[Multi fetch operation allows to get multiple resources in a single call](../delta/api/multi-fetch.md)
 
 ## 1.8.0 (14.06.2023)
 

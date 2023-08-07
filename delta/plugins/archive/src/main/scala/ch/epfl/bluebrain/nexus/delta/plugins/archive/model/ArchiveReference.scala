@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.archive.model
 import akka.http.scaladsl.model.Uri
 import cats.Order
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
-import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveResourceRepresentation.{CompactedJsonLd, SourceJson}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRepresentation.{CompactedJsonLd, SourceJson}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.AbsolutePath
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -12,6 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.configuration.semiauto._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{Configuration, JsonLdDecoder}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRepresentation
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
@@ -68,10 +69,10 @@ object ArchiveReference {
       ref: ResourceRef,
       project: Option[ProjectRef],
       path: Option[AbsolutePath],
-      representation: Option[ArchiveResourceRepresentation]
+      representation: Option[ResourceRepresentation]
   ) extends FullArchiveReference {
 
-    def representationOrDefault: ArchiveResourceRepresentation = representation.getOrElse(CompactedJsonLd)
+    def representationOrDefault: ResourceRepresentation = representation.getOrElse(CompactedJsonLd)
 
     def defaultFileName = s"${UrlUtils.encode(ref.original.toString)}${representationOrDefault.extension}"
   }
@@ -132,7 +133,7 @@ object ArchiveReference {
       rev: Option[Int],
       path: Option[AbsolutePath],
       originalSource: Option[Boolean],
-      format: Option[ArchiveResourceRepresentation]
+      format: Option[ResourceRepresentation]
   ) extends ReferenceInput
 
   final private case class FileInput(
@@ -165,11 +166,11 @@ object ArchiveReference {
     implicit val cfg: Configuration = Configuration.default.copy(context = ctx)
 
     deriveConfigJsonLdDecoder[ReferenceInput].flatMap {
-      case ResourceInput(_, _, Some(_: UserTag), Some(_: Int), _, _, _)                           =>
+      case ResourceInput(_, _, Some(_: UserTag), Some(_: Int), _, _, _)                    =>
         Left(ParsingFailure("An archive resource reference cannot use both 'rev' and 'tag' fields."))
-      case ResourceInput(_, _, _, _, _, Some(_: Boolean), Some(_: ArchiveResourceRepresentation)) =>
+      case ResourceInput(_, _, _, _, _, Some(_: Boolean), Some(_: ResourceRepresentation)) =>
         Left(ParsingFailure("An archive resource reference cannot use both 'originalSource' and 'format' fields."))
-      case ResourceInput(resourceId, project, tag, rev, path, originalSource, format)             =>
+      case ResourceInput(resourceId, project, tag, rev, path, originalSource, format)      =>
         val ref  = refOf(resourceId, tag, rev)
         val repr = (originalSource, format) match {
           case (_, Some(repr))  => Some(repr)
@@ -178,12 +179,12 @@ object ArchiveReference {
           case _                => None
         }
         Right(ResourceReference(ref, project, path, repr))
-      case FileInput(_, _, Some(_: UserTag), Some(_: Int), _)                                     =>
+      case FileInput(_, _, Some(_: UserTag), Some(_: Int), _)                              =>
         Left(ParsingFailure("An archive file reference cannot use both 'rev' and 'tag' fields."))
-      case FileInput(resourceId, project, tag, rev, path)                                         =>
+      case FileInput(resourceId, project, tag, rev, path)                                  =>
         val ref = refOf(resourceId, tag, rev)
         Right(FileReference(ref, project, path))
-      case FileSelfInput(value, path)                                                             =>
+      case FileSelfInput(value, path)                                                      =>
         Right(FileSelfReference(value, path))
     }
   }

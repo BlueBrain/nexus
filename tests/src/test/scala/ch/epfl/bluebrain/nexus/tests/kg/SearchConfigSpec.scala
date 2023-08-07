@@ -89,6 +89,7 @@ class SearchConfigSpec extends BaseSpec {
         json"""
         {
           "project" : {
+            "@id": "http://delta:8080/v1/projects/$id1",
             "identifier" : "http://delta:8080/v1/projects/$id1",
             "label" : "$id1"
           }
@@ -106,6 +107,7 @@ class SearchConfigSpec extends BaseSpec {
         json"""
         {
           "license" : {
+            "@id" : "https://bbp.epfl.ch/neurosciencegraph/data/licenses/97521f71-605d-4f42-8f1b-c37e742a30bf",
             "identifier" : "https://bbp.epfl.ch/neurosciencegraph/data/licenses/97521f71-605d-4f42-8f1b-c37e742a30bf",
             "label" : "SSCX Portal Data Licence final v1.0"
           }

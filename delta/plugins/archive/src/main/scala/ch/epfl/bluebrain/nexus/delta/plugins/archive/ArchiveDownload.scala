@@ -5,7 +5,7 @@ import akka.util.ByteString
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.{FileReference, FileSelfReference, ResourceReference}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection._
-import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveResourceRepresentation._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRepresentation._
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
@@ -21,7 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.Response.Complete
 import ch.epfl.bluebrain.nexus.delta.sdk.error.SDKError
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
-import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceRepresentation}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.StreamConverter
 import ch.epfl.bluebrain.nexus.delta.sdk.{AkkaSource, JsonLdValue}
@@ -249,7 +249,7 @@ object ArchiveDownload {
 
       private def valueToByteString[A](
           value: JsonLdContent[A, _],
-          repr: ArchiveResourceRepresentation
+          repr: ResourceRepresentation
       ): IO[RdfError, ByteString] = {
         implicit val encoder: JsonLdEncoder[A] = value.encoder
         repr match {

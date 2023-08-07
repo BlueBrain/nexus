@@ -2,18 +2,16 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing
 
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.{BlazegraphSink, GraphResourceToNTriples}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphSink
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeSink
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef.ActiveViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.{ElasticSearchSink, GraphResourceToDocument}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
 import com.typesafe.scalalogging.Logger
 import monix.bio.Task
@@ -54,41 +52,21 @@ object CompositeSpaces {
     def apply(
         prefix: String,
         esClient: ElasticSearchClient,
-        esBatchConfig: BatchConfig,
         blazeClient: BlazegraphClient,
-        blazeBatchConfig: BatchConfig
+        cfg: CompositeViewsConfig
     )(implicit base: BaseUri, rcr: RemoteContextResolution): CompositeSpaces.Builder = (view: ActiveViewDef) => {
 
       // Operations and sinks for the common space
       val common       = commonNamespace(view.uuid, view.rev, prefix)
-      val commonSink   = BlazegraphSink(blazeClient, blazeBatchConfig, common)
+      val commonSink   = BlazegraphSink(blazeClient, cfg.blazegraphBatch, common)
       val createCommon = blazeClient.createNamespace(common)
       val deleteCommon = blazeClient.deleteNamespace(common)
 
-      // Create the Blazegraph sink
-      def createBlazeSink(namespace: String): SparqlProjection => Sink = { target =>
-        val blazeSink = BlazegraphSink(blazeClient, blazeBatchConfig, namespace)
-        new CompositeSink(
-          QueryGraph(blazeClient, common, target.query),
-          GraphResourceToNTriples.graphToNTriples,
-          blazeSink.apply,
-          blazeBatchConfig.maxElements,
-          blazeBatchConfig.maxInterval
-        )
-      }
-
-      // Create the Elasticsearch index
-      def createEsSink(index: IndexLabel): ElasticSearchProjection => Sink = { target =>
-        val esSink =
-          ElasticSearchSink.states(esClient, esBatchConfig.maxElements, esBatchConfig.maxInterval, index, Refresh.False)
-        new CompositeSink(
-          QueryGraph(blazeClient, common, target.query),
-          new GraphResourceToDocument(target.context, target.includeContext).graphToDocument,
-          esSink.apply,
-          esBatchConfig.maxElements,
-          esBatchConfig.maxInterval
-        )
-      }
+      // Create sinks
+      def createBlazeSink(namespace: String): SparqlProjection => Sink     =
+        CompositeSink.blazeSink(blazeClient, namespace, common, cfg)
+      def createEsSink(index: IndexLabel): ElasticSearchProjection => Sink =
+        CompositeSink.elasticSink(blazeClient, esClient, index, common, cfg)
 
       // Compute the init and destroy operations as well as the sink for the different projections of the composite views
       val start: (Task[Unit], Task[Unit], Map[Iri, Sink]) = (createCommon.void, deleteCommon.void, Map.empty[Iri, Sink])
