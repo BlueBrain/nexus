@@ -1,0 +1,52 @@
+{
+  "format": "compacted",
+  "resources": [
+    {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/success",
+      "project": "org/proj1",
+      "value": {
+        "@context": [
+          {
+            "@vocab": "https://bluebrain.github.io/nexus/vocabulary/"
+          },
+          "https://bluebrain.github.io/nexus/contexts/metadata.json"
+        ],
+        "@id": "https://bluebrain.github.io/nexus/vocabulary/success",
+        "@type": "Custom",
+        "bool": false,
+        "name": "Alex",
+        "number": 24,
+        "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/unconstrained.json",
+        "_createdAt": "1970-01-01T00:00:00Z",
+        "_createdBy": "http://localhost/v1/anonymous",
+        "_deprecated": false,
+        "_incoming": "http://localhost/v1/resources/org/proj1/https:%2F%2Fbluebrain.github.io%2Fnexus%2Fschemas%2Funconstrained.json/success/incoming",
+        "_outgoing": "http://localhost/v1/resources/org/proj1/https:%2F%2Fbluebrain.github.io%2Fnexus%2Fschemas%2Funconstrained.json/success/outgoing",
+        "_project": "http://localhost/v1/projects/org/proj1",
+        "_rev": 1,
+        "_schemaProject": "http://localhost/v1/projects/org/proj1",
+        "_self": "http://localhost/v1/resources/org/proj1/https:%2F%2Fbluebrain.github.io%2Fnexus%2Fschemas%2Funconstrained.json/success",
+        "_updatedAt": "1970-01-01T00:00:00Z",
+        "_updatedBy": "http://localhost/v1/anonymous"
+      }
+    },
+    {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/not-found",
+      "error": {
+        "@context": "https://bluebrain.github.io/nexus/contexts/error.json",
+        "@type": "NotFound",
+        "reason": "The resource 'https://bluebrain.github.io/nexus/vocabulary/not-found' was not found in project 'org/proj1'."
+      },
+      "project": "org/proj1"
+    },
+    {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/unauthorized",
+      "error": {
+        "@context": "https://bluebrain.github.io/nexus/contexts/error.json",
+        "@type": "AuthorizationFailed",
+        "reason": "The supplied authentication is not authorized to access this resource."
+      },
+      "project": "org/proj2"
+    }
+  ]
+}

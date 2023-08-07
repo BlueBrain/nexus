@@ -102,7 +102,7 @@ trait DeltaDirectives extends UriDirectives {
   def unacceptedMediaTypeRejection(values: Seq[MediaType]): UnacceptedResponseContentTypeRejection =
     UnacceptedResponseContentTypeRejection(values.map(mt => Alternative(mt)).toSet)
 
-  private[directives] def requestMediaType: Directive1[MediaType] =
+  def requestMediaType: Directive1[MediaType] =
     extractRequest.flatMap { req =>
       HeadersUtils.findFirst(req.headers, mediaTypes) match {
         case Some(value) => provide(value)

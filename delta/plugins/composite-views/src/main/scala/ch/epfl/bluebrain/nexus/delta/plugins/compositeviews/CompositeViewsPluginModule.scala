@@ -164,7 +164,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate")
     ) =>
-      CompositeSpaces.Builder(cfg.prefix, esClient, cfg.elasticsearchBatch, blazeClient, cfg.blazegraphBatch)(
+      CompositeSpaces.Builder(cfg.prefix, esClient, blazeClient, cfg)(
         baseUri,
         cr
       )

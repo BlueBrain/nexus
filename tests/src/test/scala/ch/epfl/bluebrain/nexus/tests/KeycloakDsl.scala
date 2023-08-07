@@ -74,9 +74,10 @@ class KeycloakDsl(implicit as: ActorSystem, materializer: Materializer, um: From
   def userToken(user: UserCredentials, client: ClientCredentials): Task[String] = {
     logger.info(s"Getting token for user ${user.name} for ${user.realm.name}")
     val clientFields = if (client.secret == "") {
-      Map("client_id" -> client.id)
+      Map("scope" -> "openid", "client_id" -> client.id)
     } else {
       Map(
+        "scope"         -> "openid",
         "client_id"     -> client.id,
         "client_secret" -> client.secret
       )
@@ -125,6 +126,7 @@ class KeycloakDsl(implicit as: ActorSystem, materializer: Materializer, um: From
         entity = akka.http.scaladsl.model
           .FormData(
             Map(
+              "scope"      -> "openid",
               "grant_type" -> "client_credentials"
             )
           )

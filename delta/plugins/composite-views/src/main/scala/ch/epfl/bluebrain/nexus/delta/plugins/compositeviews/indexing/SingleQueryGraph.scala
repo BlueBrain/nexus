@@ -13,17 +13,18 @@ import monix.bio.Task
 import java.util.regex.Pattern.quote
 
 /**
-  * Pipe that performs the provided query for the incoming resource and replaces the graph with the result of query
+  * Provides a way to query for the incoming resource and replaces the graph with the result of query
+  *
   * @param client
-  *   the blazegraph client
+  *   the blazegraph client used to query
   * @param namespace
   *   the namespace to query
   * @param query
   *   the query to perform on each resource
   */
-final case class QueryGraph(client: BlazegraphClient, namespace: String, query: SparqlConstructQuery) {
+final class SingleQueryGraph(client: BlazegraphClient, namespace: String, query: SparqlConstructQuery) {
 
-  private val logger: Logger = Logger[QueryGraph]
+  private val logger: Logger = Logger[SingleQueryGraph]
 
   private def newGraph(ntriples: NTriples, id: Iri): Task[Option[Graph]] =
     if (ntriples.isEmpty) {

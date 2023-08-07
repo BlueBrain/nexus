@@ -4,7 +4,7 @@ import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.instances._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceUris}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceRepresentation, ResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectBase}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
@@ -65,11 +65,11 @@ object ArchiveState {
   @nowarn("cat=unused")
   implicit val serializer: Serializer[Iri, ArchiveState] = {
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
-    implicit val configuration: Configuration                                                 = Serializer.circeConfiguration
-    implicit val archiveResourceRepresentation: Codec.AsObject[ArchiveResourceRepresentation] =
-      deriveConfiguredCodec[ArchiveResourceRepresentation]
-    implicit val archiveReferenceCodec: Codec.AsObject[ArchiveReference]                      = deriveConfiguredCodec[ArchiveReference]
-    implicit val codec: Codec.AsObject[ArchiveState]                                          = deriveConfiguredCodec[ArchiveState]
+    implicit val configuration: Configuration                                          = Serializer.circeConfiguration
+    implicit val archiveResourceRepresentation: Codec.AsObject[ResourceRepresentation] =
+      deriveConfiguredCodec[ResourceRepresentation]
+    implicit val archiveReferenceCodec: Codec.AsObject[ArchiveReference]               = deriveConfiguredCodec[ArchiveReference]
+    implicit val codec: Codec.AsObject[ArchiveState]                                   = deriveConfiguredCodec[ArchiveState]
     Serializer()
   }
 

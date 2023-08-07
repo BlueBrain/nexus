@@ -1,0 +1,13 @@
+{
+  "format" : "source",
+  "resources" : [
+    {
+      "@id" : "https://bluebrain.github.io/nexus/vocabulary/xxx",
+      "project" : "{{project1}}",
+      "error": {
+        "@type": "NotFound",
+        "reason": "The resource 'https://bluebrain.github.io/nexus/vocabulary/xxx' was not found in project '{{project1}}'."
+      }
+    }
+  ]
+}
