@@ -32,11 +32,11 @@ the Composite Sink can query the Blazegraph common namespace for multiple resour
 
 ### Configuring the Batch Composite Sink
 
-In order to enable the Batch Composite Sink, configure the following Nexus Delta property
+In order to enable the Batch Composite Sink, configure the following Nexus Delta property:
 
 `plugins.composite-views.sink-config = batch`
 
-Furthermore, you can configure the maximum size of a batch and the maximum interval using
+Furthermore, you can configure the maximum size of a batch and the maximum interval using:
 
 `plugins.composite-views.{projection-plugin}-batch.max-elements = {max-elements}`
 
@@ -55,7 +55,7 @@ construct query. We explain the changes through an example.
 
 ### Example
 
-Suppose we are in a situation where Composite Views are using the Single Composite Sink and have the following query
+Suppose we are in a situation where Composite Views are using the Single Composite Sink and have the following query:
 
 ```
 PREFIX schema: <http://schema.org/>
@@ -74,7 +74,7 @@ CONSTRUCT {
 ```
 
 Using the default Single Composite Sink, Nexus Delta will query the resources Alice and Bob individually and obtain the
-following n-triples from Blazegraph
+following n-triples from Blazegraph:
 
 ```
 <http://people.com/Alice> <http://schema.org/name> <Alice>
@@ -122,7 +122,7 @@ Note how the results are the merged result of the individual queries. While we w
 simultaneously, we are now facing a framing problem. If we try to frame `http://people.com/Alice`, its graph now
 contains more information than before; it will now include the age of Bob, something that we did not request.
 
-In order to solve this problem, we will introduce aliasing for the root resource IDs. The query will now become
+In order to solve this problem, we will introduce aliasing for the root resource IDs. The query will now become:
 
 ```
 PREFIX schema: <http://schema.org/>
@@ -142,7 +142,7 @@ CONSTRUCT {
 }
 ```
 
-With this query, a batch query for both Alice and Bob will now yield
+With this query, a batch query for both Alice and Bob will now yield:
 
 ```
 <http://people.com/Alice/alias> <http://schema.org/name> <Alice>
