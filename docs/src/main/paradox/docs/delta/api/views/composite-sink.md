@@ -14,7 +14,9 @@ selected via configuration.
 
 ## Single Composite Sink
 
-By default Nexus Delta will use the Single Composite Sink.
+By default, Nexus Delta will use the Single Composite Sink. This sink performs one query to the Blazegraph common namespace for each resource in the project.
+
+We recommend reading through the @ref:[search configuration example use case](../../../getting-started/running-nexus/search-configuration.md#example-use-case) and the @ref[Composite View API](composite-view-api.md) reference to learn more about Composite Views.
 
 ## Batch Composite Sink
 
