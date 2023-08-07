@@ -1,7 +1,5 @@
 package ch.epfl.bluebrain.nexus.storage.routes
 
-import java.nio.file.Paths
-import java.util.regex.Pattern.quote
 import akka.http.scaladsl.model.ContentTypes._
 import akka.http.scaladsl.model.MediaRanges._
 import akka.http.scaladsl.model.MediaTypes.{`application/octet-stream`, `image/jpeg`}
@@ -14,15 +12,15 @@ import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
-import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
-import ch.epfl.bluebrain.nexus.storage.File.{Digest, FileAttributes}
 import ch.epfl.bluebrain.nexus.storage.DeltaIdentitiesClient.Caller
 import ch.epfl.bluebrain.nexus.storage.DeltaIdentitiesClient.Identity.Anonymous
+import ch.epfl.bluebrain.nexus.storage.File.{Digest, FileAttributes}
 import ch.epfl.bluebrain.nexus.storage.Rejection.PathNotFound
 import ch.epfl.bluebrain.nexus.storage.StorageError.InternalError
 import ch.epfl.bluebrain.nexus.storage.Storages.BucketExistence.{BucketDoesNotExist, BucketExists}
 import ch.epfl.bluebrain.nexus.storage.Storages.PathExistence.{PathDoesNotExist, PathExists}
 import ch.epfl.bluebrain.nexus.storage.config.{AppConfig, Settings}
+import ch.epfl.bluebrain.nexus.storage.jsonld.JsonLdContext.addContext
 import ch.epfl.bluebrain.nexus.storage.routes.instances._
 import ch.epfl.bluebrain.nexus.storage.utils.{Randomness, Resources}
 import ch.epfl.bluebrain.nexus.storage.{AkkaSource, DeltaIdentitiesClient, Storages}
@@ -34,6 +32,8 @@ import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
+import java.nio.file.Paths
+import java.util.regex.Pattern.quote
 import scala.concurrent.duration._
 
 class StorageRoutesSpec
@@ -58,7 +58,7 @@ class StorageRoutesSpec
 
   trait Ctx {
     val name        = genString()
-    val resourceCtx = iri"https://bluebrain.github.io/nexus/contexts/resource.json"
+    val resourceCtx = "https://bluebrain.github.io/nexus/contexts/resource.json"
   }
 
   trait RandomFile extends Ctx {
@@ -402,14 +402,16 @@ class StorageRoutesSpec
             "_algorithm" -> Json.fromString(attributes.digest.algorithm),
             "_value"     -> Json.fromString(attributes.digest.value)
           )
-          responseAs[Json] shouldEqual Json
-            .obj(
-              "_bytes"     -> Json.fromLong(attributes.bytes),
-              "_digest"    -> digestJson,
-              "_location"  -> Json.fromString(attributes.location.toString()),
-              "_mediaType" -> Json.fromString(attributes.mediaType.toString)
-            )
-            .addContext(resourceCtx)
+          responseAs[Json] shouldEqual addContext(
+            Json
+              .obj(
+                "_bytes"     -> Json.fromLong(attributes.bytes),
+                "_digest"    -> digestJson,
+                "_location"  -> Json.fromString(attributes.location.toString()),
+                "_mediaType" -> Json.fromString(attributes.mediaType.toString)
+              ),
+            resourceCtx
+          )
           storages.getAttributes(name, filePathUri) wasCalled once
         }
       }
@@ -425,14 +427,16 @@ class StorageRoutesSpec
         Get(s"/v1/buckets/$name/attributes/$filename") ~> Accept(`*/*`) ~> route ~> check {
           status shouldEqual Accepted
           val digestJson = Json.obj("_algorithm" -> Json.fromString(""), "_value" -> Json.fromString(""))
-          responseAs[Json] shouldEqual Json
-            .obj(
-              "_bytes"     -> Json.fromLong(0L),
-              "_digest"    -> digestJson,
-              "_location"  -> Json.fromString(s"file://${filePathUri.toString().toLowerCase}"),
-              "_mediaType" -> Json.fromString(`application/octet-stream`.toString())
-            )
-            .addContext(resourceCtx)
+          responseAs[Json] shouldEqual addContext(
+            Json
+              .obj(
+                "_bytes"     -> Json.fromLong(0L),
+                "_digest"    -> digestJson,
+                "_location"  -> Json.fromString(s"file://${filePathUri.toString().toLowerCase}"),
+                "_mediaType" -> Json.fromString(`application/octet-stream`.toString())
+              ),
+            resourceCtx
+          )
           storages.getAttributes(name, filePathUri) wasCalled once
         }
       }

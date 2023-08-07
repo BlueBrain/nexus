@@ -2,8 +2,6 @@ name: Storage Integration Service
 on:
   pull_request:
     paths:
-      - 'delta/kernel/**'
-      - 'delta/rdf/**'
       - 'storage/**'
       - 'build.sbt'
       - 'project/**'

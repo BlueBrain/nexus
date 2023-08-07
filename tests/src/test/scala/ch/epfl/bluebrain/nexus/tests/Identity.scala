@@ -57,6 +57,11 @@ object Identity extends TestHelpers {
     val Alice = UserCredentials(genString(), genString(), testRealm)
   }
 
+  object aggregations {
+    val Charlie = UserCredentials(genString(), genString(), testRealm)
+    val Rose    = UserCredentials(genString(), genString(), testRealm)
+  }
+
   object orgs {
     val Fry   = UserCredentials(genString(), genString(), testRealm)
     val Leela = UserCredentials(genString(), genString(), testRealm)
@@ -89,6 +94,6 @@ object Identity extends TestHelpers {
   }
 
   lazy val allUsers =
-    acls.Marge :: archives.Tweety :: compositeviews.Jerry :: events.BugsBunny :: listings.Bob :: listings.Alice :: orgs.Fry :: orgs.Leela :: projects.Bojack :: projects.PrincessCarolyn :: resources.Rick :: resources.Morty :: storages.Coyote :: views.ScoobyDoo :: mash.Radar :: supervision.Mickey :: Nil
+    acls.Marge :: archives.Tweety :: compositeviews.Jerry :: events.BugsBunny :: listings.Bob :: listings.Alice :: aggregations.Charlie :: aggregations.Rose :: orgs.Fry :: orgs.Leela :: projects.Bojack :: projects.PrincessCarolyn :: resources.Rick :: resources.Morty :: storages.Coyote :: views.ScoobyDoo :: mash.Radar :: supervision.Mickey :: Nil
 
 }
