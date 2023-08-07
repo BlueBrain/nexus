@@ -1,5 +1,17 @@
 # Composite Sinks
 
+A Composite Sink handles the following steps of composite view indexing
+
+* Querying for the graphs of resources in the Blazegraph common namespace of the view
+* Converting the obtained graphs into a format that can be pushed to a target sink
+* Finally, pushing the resources to the target sink
+
+These steps can be implemented in different ways. In Nexus Delta, there are two kinds of Composite Sink that can be
+selected via configuration.
+
+1. @ref:[Single Composite Sink](#single-composite-sink)
+2. @ref:[Batch Composite Sink](#batch-composite-sink)
+
 ## Single Composite Sink
 
 By default Nexus Delta will use the Single Composite Sink.
