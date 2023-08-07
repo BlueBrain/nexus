@@ -6,7 +6,6 @@
 * @ref:[Sparql view](sparql-view-api.md)
 * @ref:[Aggregated Sparql view](aggregated-sparql-view-api.md)
 * @ref:[Composite view](composite-view-api.md)
-* @ref:[Composite sink](composite-sink.md)
 
 @@@
 
