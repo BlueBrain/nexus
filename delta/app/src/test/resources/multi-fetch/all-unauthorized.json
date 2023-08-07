@@ -1,0 +1,32 @@
+{
+  "format": "compacted",
+  "resources": [
+    {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/success",
+      "error": {
+        "@context": "https://bluebrain.github.io/nexus/contexts/error.json",
+        "@type": "AuthorizationFailed",
+        "reason": "The supplied authentication is not authorized to access this resource."
+      },
+      "project": "org/proj1"
+    },
+    {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/not-found",
+      "error": {
+        "@context": "https://bluebrain.github.io/nexus/contexts/error.json",
+        "@type": "AuthorizationFailed",
+        "reason": "The supplied authentication is not authorized to access this resource."
+      },
+      "project": "org/proj1"
+    },
+    {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/unauthorized",
+      "error": {
+        "@context": "https://bluebrain.github.io/nexus/contexts/error.json",
+        "@type": "AuthorizationFailed",
+        "reason": "The supplied authentication is not authorized to access this resource."
+      },
+      "project": "org/proj2"
+    }
+  ]
+}

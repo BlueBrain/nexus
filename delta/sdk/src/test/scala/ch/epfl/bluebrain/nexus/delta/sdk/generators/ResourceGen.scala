@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.DataResource
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectBase}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{Resource, ResourceState}
@@ -127,5 +128,10 @@ object ResourceGen extends IOValues {
       Instant.EPOCH,
       subject
     ).toResource(am, ProjectBase.unsafe(base))
+
+  def jsonLdContent(id: Iri, project: ProjectRef, source: Json)(implicit resolution: RemoteContextResolution) = {
+    val resourceF = sourceToResourceF(id, project, source)
+    JsonLdContent(resourceF, resourceF.value.source, None)
+  }
 
 }

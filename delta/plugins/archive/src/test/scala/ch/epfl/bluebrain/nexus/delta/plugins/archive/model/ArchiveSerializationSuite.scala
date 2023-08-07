@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.AbsolutePath
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.SerializationSuite
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRepresentation
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
 
@@ -27,7 +28,7 @@ class ArchiveSerializationSuite extends SerializationSuite {
       ResourceRef.Revision(iri"$resourceId?rev=1", resourceId, 1),
       Some(anotherProject),
       absolutePath,
-      Some(ArchiveResourceRepresentation.CompactedJsonLd)
+      Some(ResourceRepresentation.CompactedJsonLd)
     )
 
   private val fileSelfReference = FileSelfReference(uri"https://bbp.epfl.ch/nexus/org/proj/file", absolutePath)
