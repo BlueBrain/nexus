@@ -249,6 +249,7 @@ final class ResourcesRoutes(
                                   .deleteTag(id, ref, schemaOpt, tag, rev)
                                   .tapEval(index(ref, _, mode))
                                   .map(_.void)
+                                  .rejectOn[ResourceNotFound]
                               )
                             }
                           )
