@@ -11,9 +11,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.UriDirectives.baseUriPrefix
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceRepresentation}
 import ch.epfl.bluebrain.nexus.delta.sdk.multifetch.MultiFetch
 import ch.epfl.bluebrain.nexus.delta.sdk.multifetch.model.MultiFetchRequest
+import io.circe.Printer
 import monix.execution.Scheduler
 
 /**
@@ -38,11 +39,18 @@ class MultiFetchRoutes(
         pathPrefix("resources") {
           extractCaller { implicit caller =>
             (get & entity(as[MultiFetchRequest])) { request =>
+              implicit val printer: Printer = selectPrinter(request)
               emit(multiFetch(request).flatMap(_.asJson))
             }
           }
         }
       }
     }
+
+  private def selectPrinter(request: MultiFetchRequest) =
+    if (request.format == ResourceRepresentation.SourceJson)
+      sourcePrinter
+    else
+      defaultPrinter
 
 }
