@@ -57,7 +57,7 @@ construct query. We explain the changes through an example.
 
 Suppose we are in a situation where Composite Views are using the Single Composite Sink and have the following query
 
-```sparql
+```
 PREFIX schema: <http://schema.org/>
 PREFIX nxv: <https://bluebrain.github.io/nexus/vocabulary/>
 CONSTRUCT {
@@ -92,7 +92,7 @@ The first change to introduce in order to make this query work with batches of r
 the `BIND({resource_id} AS ?id) .` with `VALUES ?id { {resources_id} }`. Nexus Delta will use this template to
 replace `{resource_id}` with multiple resource in case it receives a batch of more than one element. The query is now:
 
-```sparql
+```
 PREFIX schema: <http://schema.org/>
 PREFIX nxv: <https://bluebrain.github.io/nexus/vocabulary/>
 CONSTRUCT {
@@ -124,7 +124,7 @@ contains more information than before; it will now include the age of Bob, somet
 
 In order to solve this problem, we will introduce aliasing for the root resource IDs. The query will now become
 
-```sparql
+```
 PREFIX schema: <http://schema.org/>
 PREFIX nxv: <https://bluebrain.github.io/nexus/vocabulary/>
 CONSTRUCT {
