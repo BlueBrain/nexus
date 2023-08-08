@@ -168,7 +168,13 @@ final class SchemasRoutes(
                           ref,
                           Write
                         )) { (tag, rev) =>
-                          emit(schemas.deleteTag(id, ref, tag, rev).tapEval(index(ref, _, mode)).map(_.void))
+                          emit(
+                            schemas
+                              .deleteTag(id, ref, tag, rev)
+                              .tapEval(index(ref, _, mode))
+                              .map(_.void)
+                              .rejectOn[SchemaNotFound]
+                          )
                         }
                       )
                     }
