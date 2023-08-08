@@ -170,7 +170,7 @@ final class FilesRoutes(
                           ref,
                           Write
                         )) { (tag, rev) =>
-                          emit(files.deleteTag(id, ref, tag, rev).tapEval(index(ref, _, mode)))
+                          emit(files.deleteTag(id, ref, tag, rev).tapEval(index(ref, _, mode)).rejectOn[FileNotFound])
                         }
                       )
                     }

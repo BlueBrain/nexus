@@ -562,6 +562,13 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
           filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
       }
     }
+
+    "delete a tag" in {
+      deltaClient
+        .delete[Json](s"/resources/$id1/_/test-resource:1/tags/v1.0.1?rev=6", Rick) { (_, response) =>
+          response.status shouldEqual StatusCodes.OK
+        }
+    }
   }
 
   "check consistency of responses" in {
