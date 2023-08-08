@@ -87,7 +87,7 @@ POST /v1/graph-analytics/{org_label}/{project_label}/_search
   {...}
 ```
 
-Search documents that are in a given projects' Graph Analytics view.
+Search documents that are in a given project's Graph Analytics view.
 
 The supported payload is defined on the @link:[ElasticSearch documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-search.html#search-search-api-request-body){ open=new }.
 
