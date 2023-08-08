@@ -1,0 +1,81 @@
+{
+  "@id": "http://example.com/person1",
+  "@type": "http://schema.org/Person",
+  "properties": [
+    {
+      "@id": "http://example.com/epfl",
+      "dataType": "object",
+      "isInArray": false,
+      "path": "http://schema.org/worksFor"
+    },
+    {
+      "@id": "http://example.com/person4",
+      "dataType": "object",
+      "isInArray": false,
+      "path": "http://schema.org/colleague"
+    },
+    {
+      "dataType": "string",
+      "isInArray": false,
+      "path": "http://schema.org/givenName"
+    }
+  ],
+  "references": [
+    {
+      "@id": "http://example.com/epfl",
+      "@type": [
+        "http://schema.org/EducationalOrganization"
+      ],
+      "dataType": "object",
+      "found": true,
+      "isInArray": false,
+      "path": "http://schema.org/worksFor"
+    },
+    {
+      "@id": "http://example.com/person4",
+      "@type": [
+        "http://schema.org/Person"
+      ],
+      "dataType": "object",
+      "found": true,
+      "isInArray": false,
+      "path": "http://schema.org/colleague"
+    }
+  ],
+  "relationships": [
+    {
+      "@id": "http://example.com/epfl",
+      "@type": [
+        "http://schema.org/EducationalOrganization"
+      ],
+      "dataType": "object",
+      "isInArray": false,
+      "path": "http://schema.org/worksFor"
+    },
+    {
+      "@id": "http://example.com/person4",
+      "@type": [
+        "http://schema.org/Person"
+      ],
+      "dataType": "object",
+      "found": true,
+      "isInArray": false,
+      "path": "http://schema.org/colleague"
+    }
+  ],
+  "_createdAt": "2023-08-08T12:23:16.235Z",
+  "_createdBy": {
+    "@type": "User",
+    "realm": "test-armauidxyrrteqhl",
+    "subject": "cynfrbbtjlxrceea"
+  },
+  "_deprecated": false,
+  "_project": "rft1378gl2ckbd4/m2ufaden6k1k12v",
+  "_rev": 1,
+  "_updatedAt": "2023-08-08T12:23:16.235Z",
+  "_updatedBy": {
+    "@type": "User",
+    "realm": "test-armauidxyrrteqhl",
+    "subject": "cynfrbbtjlxrceea"
+  }
+}
