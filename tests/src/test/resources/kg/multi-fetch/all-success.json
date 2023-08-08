@@ -10,6 +10,7 @@
           "other" : "https://some.other.prefix.com/"
         },
         "@type" : "nxv:TestResource",
+        "nullValue" : null,
         "other:priority" : 5,
         "other:projects" : [
           "testProject",
