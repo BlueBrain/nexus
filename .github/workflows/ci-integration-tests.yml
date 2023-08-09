@@ -36,6 +36,7 @@ jobs:
             RED='\033[0;31m'
             NC='\033[0m' # No Color
             echo -e "${RED}Aborting:${NC} The Delta container was not healthy."
+            exit 1
           fi
       - name: Stop & clean Docker
         if: ${{ always() }}
