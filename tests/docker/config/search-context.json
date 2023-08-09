@@ -9,9 +9,6 @@
   "annotation": {
     "@container": "@set"
   },
-  "organizations": {
-    "@container": "@set"
-  },
   "derivation": {
     "@container": "@set"
   },

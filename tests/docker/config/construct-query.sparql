@@ -55,17 +55,12 @@ CONSTRUCT {
                                                   :label       ?layerLabel   ;
                                                   :idLabel     ?layerIdLabel .
 
-  ## Contributors / Organizations
-  ?alias  :contributors       ?personId              .
-                           ?personId              :identifier  ?personId     ;
-                                                  :label       ?personName   ;
-                                                  :idLabel     ?personIdName ;
-                                                  :affiliation ?affiliation  .
-                                                               ?affiliation  :label ?affiliationName .
-  ?alias  :organizations      ?orgId                 .
-                           ?orgId                 :identifier  ?orgId              ;
-                                                  :label       ?organizationName   ;
-                                                  :idLabel     ?organizationIdName .
+  ## Contributors
+  ?alias  :contributors    ?contributorId              .
+                           ?contributorId         rdf:type     ?contributorType   ;
+                                                  :label       ?contributorName   ;
+                                                  :idLabel     ?contributorIdName ;
+                                                  :affiliation ?affiliation       .
 
   ## Derivation
   ?alias  :derivation         ?derivation            .
@@ -308,50 +303,29 @@ CONSTRUCT {
   }
 
   # Contributors
-  # A contributor can be a schema:Person or a schema:Organization (zero or more of each).
-  # We separate below both cases
   OPTIONAL {
-    ?id  nsg:contribution / prov:agent ?contributorId
+    ?id  nsg:contribution / prov:agent  ?contributorId .
+    ?contributorId  a  ?contributorType .
 
-    # A graph of schema:Person contributors
+    OPTIONAL { ?contributorId  schema:name  ?contributorName . } .
     OPTIONAL {
-      ?contributorId a schema:Person .
-      BIND(?contributorId as ?personId) .
-      OPTIONAL { ?personId  schema:givenName    ?givenName   . } .
-      OPTIONAL { ?personId  schema:familyName   ?familyName  . } .
-      OPTIONAL {
-        ?personId  schema:affiliation  ?affiliation .
-        OPTIONAL { ?affiliation schema:name ?affiliationName . } .
-      } .
+      ?contributorId schema:givenName ?givenName   ;
+                     schema:familyName ?familyName .
       BIND(
         IF(
           BOUND(?givenName) && BOUND(?familyName),
-          CONCAT(STR(?givenName)," ", STR(?familyName)),
-          IF(
-            BOUND(?givenName),
-            ?givenName,
-            ?familyName)
-        ) AS ?personName ) .
-      BIND(
-        IF(
-          BOUND(?personName),
-          CONCAT(STR(?personId),"|", STR(?personName)),
-          ?undefined
-      ) AS ?personIdName) .
-    } .
-
-    # A graph of schema:Organization contributors
-    OPTIONAL {
-      ?contributorId a schema:Organization .
-      BIND(?contributorId as ?orgId) .
-      OPTIONAL { ?orgId  schema:name  ?organizationName . } .
-      BIND(
+          CONCAT(STR(?givenName), " ", STR(?familyName)),
+          ?contributorName)
+        AS ?contributorName
+      ) .
+    }
+    OPTIONAL { ?contributorId  schema:affiliation / schema:name  ?affiliation . } .
+    BIND(
       IF(
-        BOUND(?organizationName),
-        CONCAT(STR(?orgId),"|", STR(?organizationName)),
+        BOUND(?contributorId),
+        CONCAT(STR(?contributorId),"|", STR(?contributorName)),
         ?undefined
-      ) AS ?organizationIdName) .
-    } .
+    ) AS ?contributorIdName) .
   } .
 
   # Derivation
