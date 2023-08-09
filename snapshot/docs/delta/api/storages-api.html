@@ -154,6 +154,7 @@ BlueBrain/nexus
   </ul></li>
   <li><a href="../../../docs/releases/index.html" class="page">Releases</a>
   <ul>
+    <li><a href="../../../docs/releases/v1.9-release-notes.html" class="page">v1.9 Release Notes</a></li>
     <li><a href="../../../docs/releases/v1.8-release-notes.html" class="page">v1.8 Release Notes</a></li>
     <li><a href="../../../docs/releases/v1.7-to-v1.8-migration.html" class="page">v1.7 To v1.8 Migration</a></li>
     <li><a href="../../../docs/releases/v1.7-release-notes.html" class="page">v1.7 Release Notes</a></li>
@@ -162,14 +163,7 @@ BlueBrain/nexus
     <li><a href="../../../docs/releases/v1.5-to-v1.6-migration.html" class="page">v1.5 To v1.6 Migration</a></li>
     <li><a href="../../../docs/releases/v1.5-release-notes.html" class="page">v1.5 Release Notes</a></li>
     <li><a href="../../../docs/releases/v1.4-to-v1.5-migration.html" class="page">v1.4 To v1.5 Migration</a></li>
-    <li><a href="../../../docs/releases/v1.4-release-notes.html" class="page">v1.4 Release Notes</a></li>
-    <li><a href="../../../docs/releases/v1.3-to-v1.4-migration.html" class="page">v1.3 To v1.4 Migration</a></li>
-    <li><a href="../../../docs/releases/v1.3-release-notes.html" class="page">v1.3 Release Notes</a></li>
-    <li><a href="../../../docs/releases/v1.2-to-v1.3-migration.html" class="page">v1.2 To v1.3 Migration</a></li>
-    <li><a href="../../../docs/releases/v1.2-release-notes.html" class="page">v1.2 Release Notes</a></li>
-    <li><a href="../../../docs/releases/v1.1-release-notes.html" class="page">v1.1 Release Notes</a></li>
-    <li><a href="../../../docs/releases/v1.0-to-v1.1-migration.html" class="page">v1.0 To v1.1 Migration</a></li>
-    <li><a href="../../../docs/releases/v1.0-release-notes.html" class="page">v1.0 Release Notes</a></li>
+    <li><a href="../../../docs/releases/older-releases.html" class="page">Older releases</a></li>
   </ul></li>
   <li><a href="../../../docs/roadmap.html" class="page">Roadmap</a></li>
   <li><a href="../../../docs/fusion/index.html" class="page">Nexus Fusion</a>
@@ -207,6 +201,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/quotas.html" class="page">Quotas</a></li>
       <li><a href="../../../docs/delta/api/schemas-api.html" class="page">Schemas</a></li>
       <li><a href="../../../docs/delta/api/resources-api.html" class="page">Resources</a></li>
+      <li><a href="../../../docs/delta/api/multi-fetch.html" class="page">Multi fetch</a></li>
       <li><a href="../../../docs/delta/api/resolvers-api.html" class="page">Resolvers</a></li>
       <li><a href="../../../docs/delta/api/views/index.html" class="page">Views</a>
       <ul>
@@ -368,7 +363,6 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   &quot;@type&quot;: &quot;RemoteDiskStorage&quot;,
   &quot;default&quot;: &quot;{default}&quot;,
   &quot;endpoint&quot;: &quot;{endpoint}&quot;,
-  &quot;credentials&quot;: &quot;{credentials}&quot;,
   &quot;folder&quot;: &quot;{folder}&quot;,
   &quot;readPermission&quot;: &quot;{read_permission}&quot;,
   &quot;writePermission&quot;: &quot;{write_permission}&quot;,
@@ -379,7 +373,6 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <ul>
   <li><code>{default}</code>: Boolean - the flag to decide whether this storage is going to become the default storage for the target project or not.</li>
   <li><code>{endpoint}</code>: Uri - the endpoint where the storage service is listening to requests. This field is optional, defaulting to the configuration flag <code>plugins.storage.storages.remote-disk.default-endpoint</code>.</li>
-  <li><code>{credentials}</code>: String - the service account access token to authenticate and authorize Nexus Delta client against the storage service. This field is optional, defaulting to the configuration flag <code>plugins.storage.storages.remote-disk.default-credentials</code>.</li>
   <li><code>{folder}</code>: String - the storage service bucket where files using this storage are going to be saved.</li>
   <li><code>{read_permission}</code>: String - the permission a client must have in order to fetch files using this storage. This field is optional, defaulting to the configuration flag <code>plugins.storage.storages.remote-disk.default-read-permission</code> (<code>resources/read</code>).</li>
   <li><code>{write_permission}</code>: String - the permission a client must have in order to create files using this storage. This field is optional, defaulting to the configuration flag <code>plugins.storage.storages.remote-disk.default-write-permission</code> (<code>files/write</code>).</li>
@@ -392,8 +385,6 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   &quot;@type&quot;: &quot;S3Storage&quot;,
   &quot;default&quot;: &quot;{default}&quot;,
   &quot;endpoint&quot;: &quot;{endpoint}&quot;,
-  &quot;accessKey&quot;: &quot;{access_key}&quot;,
-  &quot;secretKey&quot;: &quot;{secret_key}&quot;,
   &quot;region&quot;: &quot;{region}&quot;,
   &quot;readPermission&quot;: &quot;{read_permission}&quot;,
   &quot;writePermission&quot;: &quot;{write_permission}&quot;,
@@ -404,8 +395,6 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <ul>
   <li><code>{default}</code>: Boolean - the flag to decide whether this storage is going to become the default storage for the target project or not.</li>
   <li><code>{endpoint}</code>: Uri - the Amazon S3 compatible service endpoint. This field is optional, defaulting to the configuration flag <code>plugins.storage.storages.amazon.default-endpoint</code>.</li>
-  <li><code>{access_key}</code>: String - the Amazon S3 compatible access key. This field is optional, defaulting to the configuration flag <code>plugins.storage.storages.amazon.default-access-key</code>.</li>
-  <li><code>{secret_key}</code>: String - the Amazon S3 compatible secret key. This field is optional, defaulting to the configuration flag <code>plugins.storage.storages.amazon.default-secret-key</code>.</li>
   <li><code>{region}</code>: String - the Amazon S3 compatible region. This field is optional, defaulting to the S3 default region configuration.</li>
   <li><code>{read_permission}</code>: String - the permission a client must have in order to fetch files using this storage. This field is optional, defaulting to the configuration flag <code>plugins.storage.storages.amazon.default-read-permission</code> (<code>resources/read</code>).</li>
   <li><code>{write_permission}</code>: String - the permission a client must have in order to create files using this storage. This field is optional, defaulting to the configuration flag <code>plugins.storage.storages.amazon.default-write-permission</code> (<code>files/write</code>).</li>

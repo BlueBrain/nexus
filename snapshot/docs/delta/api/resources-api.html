@@ -154,6 +154,7 @@ BlueBrain/nexus
   </ul></li>
   <li><a href="../../../docs/releases/index.html" class="page">Releases</a>
   <ul>
+    <li><a href="../../../docs/releases/v1.9-release-notes.html" class="page">v1.9 Release Notes</a></li>
     <li><a href="../../../docs/releases/v1.8-release-notes.html" class="page">v1.8 Release Notes</a></li>
     <li><a href="../../../docs/releases/v1.7-to-v1.8-migration.html" class="page">v1.7 To v1.8 Migration</a></li>
     <li><a href="../../../docs/releases/v1.7-release-notes.html" class="page">v1.7 Release Notes</a></li>
@@ -162,14 +163,7 @@ BlueBrain/nexus
     <li><a href="../../../docs/releases/v1.5-to-v1.6-migration.html" class="page">v1.5 To v1.6 Migration</a></li>
     <li><a href="../../../docs/releases/v1.5-release-notes.html" class="page">v1.5 Release Notes</a></li>
     <li><a href="../../../docs/releases/v1.4-to-v1.5-migration.html" class="page">v1.4 To v1.5 Migration</a></li>
-    <li><a href="../../../docs/releases/v1.4-release-notes.html" class="page">v1.4 Release Notes</a></li>
-    <li><a href="../../../docs/releases/v1.3-to-v1.4-migration.html" class="page">v1.3 To v1.4 Migration</a></li>
-    <li><a href="../../../docs/releases/v1.3-release-notes.html" class="page">v1.3 Release Notes</a></li>
-    <li><a href="../../../docs/releases/v1.2-to-v1.3-migration.html" class="page">v1.2 To v1.3 Migration</a></li>
-    <li><a href="../../../docs/releases/v1.2-release-notes.html" class="page">v1.2 Release Notes</a></li>
-    <li><a href="../../../docs/releases/v1.1-release-notes.html" class="page">v1.1 Release Notes</a></li>
-    <li><a href="../../../docs/releases/v1.0-to-v1.1-migration.html" class="page">v1.0 To v1.1 Migration</a></li>
-    <li><a href="../../../docs/releases/v1.0-release-notes.html" class="page">v1.0 Release Notes</a></li>
+    <li><a href="../../../docs/releases/older-releases.html" class="page">Older releases</a></li>
   </ul></li>
   <li><a href="../../../docs/roadmap.html" class="page">Roadmap</a></li>
   <li><a href="../../../docs/fusion/index.html" class="page">Nexus Fusion</a>
@@ -207,6 +201,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/quotas.html" class="page">Quotas</a></li>
       <li><a href="../../../docs/delta/api/schemas-api.html" class="page">Schemas</a></li>
       <li><a href="../../../docs/delta/api/resources-api.html" class="active page">Resources</a></li>
+      <li><a href="../../../docs/delta/api/multi-fetch.html" class="page">Multi fetch</a></li>
       <li><a href="../../../docs/delta/api/resolvers-api.html" class="page">Resolvers</a></li>
       <li><a href="../../../docs/delta/api/views/index.html" class="page">Views</a>
       <ul>
@@ -347,8 +342,9 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 </ul><div class="callout note tip"><div class="callout-title">Authorization notes</div>
 <p>When modifying resources, the caller must have <code>resources/write</code> permissions on the current path of the project or the ancestor paths.</p>
 <p>When reading resources, the caller must have <code>resources/read</code> permissions on the current path of the project or the ancestor paths.</p>
-<p>Please visit <a href="authentication.html">Authentication &amp; authorization</a> section to learn more about it.</p></div><div class="callout note warning"><div class="callout-title">Note</div>
-<p>From Delta v1.5, remote contexts are only resolved during creates and updates. That means that when those get updated, the resources importing them must be also updated to take them into account the new version.</p></div>
+<p>Please visit <a href="authentication.html">Authentication &amp; authorization</a> section to learn more about it.</p></div><div class="callout note warning"><div class="callout-title">Remote contexts</div>
+<p>From Delta v1.5, remote contexts are only resolved during creates and updates. That means that when those get updated, the resources importing them must be also updated to take them into account the new version.</p></div><div class="callout note warning"><div class="callout-title">JSON payloads</div>
+<p>The json payload for create and update operations cannot contain keys beginning with underscore (_), as these fields are reserved for Nexus metadata</p></div>
 <h2><a href="#indexing" name="indexing" class="anchor"><span class="anchor-link"></span></a>Indexing</h2>
 <p>All the API calls modifying a resource (creation, update, tagging, deprecation) can specify whether the resource should be indexed synchronously or in the background. This behaviour is controlled using <code>indexing</code> query param, which can be one of two values:</p>
 <ul>
@@ -806,6 +802,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
                                              &amp;deprecated={deprecated}
                                              &amp;rev={rev}
                                              &amp;type={type}
+                                             &amp;typeOperator={typeOperator}
                                              &amp;createdBy={createdBy}
                                              &amp;createdAt={createdAt}
                                              &amp;updatedBy={updatedBy}
@@ -823,6 +820,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
                              &amp;deprecated={deprecated}
                              &amp;rev={rev}
                              &amp;type={type}
+                             &amp;typeOperator={typeOperator}
                              &amp;createdBy={createdBy}
                              &amp;createdAt={createdAt}
                              &amp;updatedBy={updatedBy}
@@ -840,7 +838,10 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
                  &amp;deprecated={deprecated}
                  &amp;rev={rev}
                  &amp;type={type}
+                 &amp;typeOperator={typeOperator}
+                 &amp;createdAt={createdAt}
                  &amp;createdBy={createdBy}
+                 &amp;updatedAt={updatedAt}
                  &amp;updatedBy={updatedBy}
                  &amp;schema={schema}
                  &amp;q={search}
@@ -867,6 +868,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   <li><code>{deprecated}</code>: Boolean - can be used to filter the resulting resources based on their deprecation status</li>
   <li><code>{rev}</code>: Number - can be used to filter the resulting resources based on their revision value</li>
   <li><code>{type}</code>: Iri - can be used to filter the resulting resources based on their <code>@type</code> value. This parameter can appear  multiple times, filtering further the <code>@type</code> value.</li>
+  <li><code>{typeOperator}</code>: String (<code>and</code>/<code>or</code>) - used to determine how multiple <code>type</code> values affect the query, either requiring all to match (<code>and</code>) or any to match (<code>or</code>); defaults to <code>or</code></li>
   <li><code>{createdBy}</code>: Iri - can be used to filter the resulting resources based on their creator</li>
   <li><code>{createdAt}</code>: Time range - can be used to filter the resulting resources based on their creation date</li>
   <li><code>{updatedBy}</code>: Iri - can be used to filter the resulting resources based on the person which performed the last update</li>
@@ -1248,13 +1250,13 @@ Schemas
 </span>
 </div>
 </a>
-<a href="../../../docs/delta/api/resolvers-api.html" title="Resolvers" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../../docs/delta/api/multi-fetch.html" title="Multi fetch" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-Resolvers
+Multi fetch
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">

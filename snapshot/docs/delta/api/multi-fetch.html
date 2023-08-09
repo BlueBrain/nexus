@@ -20,7 +20,7 @@
 
 <meta name="description" content="docs">
 <link rel="shortcut icon" href="../../.././assets/img/favicon-32x32.png">
-<title>Identities · Blue Brain Nexus</title>
+<title>Multi fetch · Blue Brain Nexus</title>
 <link rel="stylesheet" href="../../../assets/stylesheets/application.451f80e5.css">
 <link rel="stylesheet" href="../../../assets/stylesheets/application-palette.22915126.css">
 <meta name="theme-color" content="#03a9f4" />
@@ -61,7 +61,7 @@ data-md-color-accent="cyan"
 Blue Brain Nexus
 </span>
 <span class="md-header-nav__topic">
-Identities
+Multi fetch
 </span>
 </div>
 </div>
@@ -192,7 +192,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/error-signaling.html" class="page">Error Signaling</a></li>
       <li><a href="../../../docs/delta/api/version.html" class="page">Version</a></li>
       <li><a href="../../../docs/delta/api/authentication.html" class="page">Authentication &amp; Authorization</a></li>
-      <li><a href="../../../docs/delta/api/identities.html" class="active page">Identities</a></li>
+      <li><a href="../../../docs/delta/api/identities.html" class="page">Identities</a></li>
       <li><a href="../../../docs/delta/api/permissions-api.html" class="page">Permissions</a></li>
       <li><a href="../../../docs/delta/api/realms-api.html" class="page">Realms</a></li>
       <li><a href="../../../docs/delta/api/acls-api.html" class="page">Access Control Lists</a></li>
@@ -201,7 +201,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/quotas.html" class="page">Quotas</a></li>
       <li><a href="../../../docs/delta/api/schemas-api.html" class="page">Schemas</a></li>
       <li><a href="../../../docs/delta/api/resources-api.html" class="page">Resources</a></li>
-      <li><a href="../../../docs/delta/api/multi-fetch.html" class="page">Multi fetch</a></li>
+      <li><a href="../../../docs/delta/api/multi-fetch.html" class="active page">Multi fetch</a></li>
       <li><a href="../../../docs/delta/api/resolvers-api.html" class="page">Resolvers</a></li>
       <li><a href="../../../docs/delta/api/views/index.html" class="page">Views</a>
       <ul>
@@ -232,6 +232,14 @@ BlueBrain/nexus
   <li><a href="../../../docs/faq.html" class="page">FAQ</a></li>
 </ul>
 <nav class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="__toc">Table of contents</label>
+<ul>
+  <li><a href="../../../docs/delta/api/multi-fetch.html#multi-fetch" class="header">Multi fetch</a>
+  <ul>
+    <li><a href="../../../docs/delta/api/multi-fetch.html#payload" class="header">Payload</a></li>
+    <li><a href="../../../docs/delta/api/multi-fetch.html#example" class="header">Example</a></li>
+  </ul></li>
+</ul>
 </nav>
 
 </nav>
@@ -245,6 +253,23 @@ BlueBrain/nexus
 </div>
 </div>
 </div>
+<div class="md-sidebar md-sidebar--secondary" data-md-component="toc">
+<div class="md-sidebar__scrollwrap">
+<div class="md-sidebar__inner">
+<nav class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="__toc">Table of contents</label>
+<ul>
+  <li><a href="../../../docs/delta/api/multi-fetch.html#multi-fetch" class="header">Multi fetch</a>
+  <ul>
+    <li><a href="../../../docs/delta/api/multi-fetch.html#payload" class="header">Payload</a></li>
+    <li><a href="../../../docs/delta/api/multi-fetch.html#example" class="header">Example</a></li>
+  </ul></li>
+</ul>
+</nav>
+
+</div>
+</div>
+</div>
 <div class="md-content">
 <article class="md-content__inner md-typeset">
 <div class="callout note warning admonition" style="visibility: visible; margin-top: 0px">
@@ -255,57 +280,118 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 </p>
 </div>
 <div class="md-content__searchable">
-<h1><a href="#identities" name="identities" class="anchor"><span class="anchor-link"></span></a>Identities</h1>
-<p>The <code>/v1/identities</code> endpoint allows user to retrieve the identities that the user has in the platform. Calling the endpoint without a token will result in only one identity returned: <code>Anonymous</code>. Calling it with token should return multiple identities. There are four different types of identities:</p>
-<ul>
-  <li><code>Anonymous</code> - represents anonymous user</li>
-  <li><code>Authenticated</code> - represents a realm via which the user is authenticated</li>
-  <li><code>Group</code> - represents a group to which a user belongs in a realm</li>
-  <li><code>User</code> - represents the user.</li>
-</ul>
-<p>The following HTTP call can used to retrieve the identities:</p>
-<pre><code>GET /v1/identities
+<h1><a href="#multi-fetch" name="multi-fetch" class="anchor"><span class="anchor-link"></span></a>Multi fetch</h1>
+<p>The multi-fetch operation allows to get in a given format multiple resources that can live in multiple projects.</p>
+<p>The response includes a resources array that contains the resources in the order specified in the request. The structure of the returned resources is similar to that returned by the fetch API. If there is a failure getting a particular resource, the error is included in place of the resource.</p>
+<p>This operation can be used to return every type of resource.</p><div class="callout note tip"><div class="callout-title">Authorization notes</div>
+<p>When performing a request, the caller must have <code>resources/read</code> permission on the project each resource belongs to.</p>
+<p>Please visit <a href="authentication.html">Authentication &amp; authorization</a> section to learn more about it.</p></div>
+<h2><a href="#payload" name="payload" class="anchor"><span class="anchor-link"></span></a>Payload</h2>
+<pre><code>GET /v1/multi-fetch/resources
+
+{
+  &quot;format&quot;: {format}
+  &quot;resources&quot;: [
+    {
+      &quot;id&quot;: &quot;{id}&quot;,
+      &quot;project&quot;: &quot;{project}&quot;
+    },
+    ...
+  ]
+}
 </code></pre>
-<p><strong>Example</strong></p>
+<p>where&hellip;</p>
+<ul>
+  <li><code>{format}</code>: String - the format we expect for the resources in the response. Accepts the following values: source (to get the original payload), compacted, expanded, n-triples, dot</li>
+  <li><code>{project}</code>: String - the project (in the format &lsquo;myorg/myproject&rsquo;) where the specified resource belongs. This field  is optional. It defaults to the current project.</li>
+  <li><code>{id}</code>: Iri - the @id value of the resource to be returned. Can contain a tag or a revision.</li>
+</ul>
+<h2><a href="#example" name="example" class="anchor"><span class="anchor-link"></span></a>Example</h2>
+<p>The following example shows how to perform a multi-fetch and an example of response containing errors (missing permissions and resource not found). As a response, a regular json is returned containing the different resources in the requested format.</p>
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/identities/identities-fetch.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl &quot;http://localhost:8080/v1/identities&quot;</code></pre></dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/multi-fetch/request.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl -L \
+     -X GET \
+     -d &#39;
+     {
+       &quot;format&quot;: &quot;source&quot;,
+        &quot;resources&quot; : [
+          {
+            &quot;id&quot;: &quot;https://bbp.epfl.ch/person/alex&quot;,
+            &quot;project&quot;: &quot;public/person&quot;
+          },
+          {
+            &quot;id&quot;: &quot;https://bbp.epfl.ch/person/john-doe&quot;,
+            &quot;project&quot;: &quot;public/person&quot;
+          },
+          {
+             &quot;id&quot;: &quot;https://bbp.epfl.ch/secret/xxx&quot;,
+             &quot;project&quot;: &quot;restricted/xxx&quot;
+          }
+      ]
+     }
+&#39;</code></pre></dd>
+  <dt>Payload</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/multi-fetch/payload.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
+  &quot;format&quot;: &quot;source&quot;,
+  &quot;resources&quot; : [
+    {
+      &quot;id&quot;: &quot;https://bbp.epfl.ch/person/alex&quot;,
+      &quot;project&quot;: &quot;public/person&quot;
+    },
+    {
+      &quot;id&quot;: &quot;https://bbp.epfl.ch/person/john-doe&quot;,
+      &quot;project&quot;: &quot;public/person&quot;
+    },
+    {
+      &quot;id&quot;: &quot;https://bbp.epfl.ch/secret/xxx&quot;,
+      &quot;project&quot;: &quot;restricted/xxx&quot;
+    }
+  ]
+}</code></pre></dd>
   <dt>Response</dt>
   <dd>
-  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/identities/identities-fetch-response.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
-  &quot;@context&quot;: [
-    &quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,
-    &quot;https://bluebrain.github.io/nexus/contexts/identities.json&quot;
-  ],
-  &quot;identities&quot;: [
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/multi-fetch/response.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
+  &quot;format&quot;: &quot;source&quot;,
+  &quot;resources&quot;: [
     {
-      &quot;@id&quot;: &quot;http://localhost:8080/v1/anonymous&quot;,
-      &quot;@type&quot;: &quot;Anonymous&quot;
+      &quot;@id&quot;: &quot;https://bbp.epfl.ch/person/alex&quot;,
+      &quot;project&quot;: &quot;public/person&quot;,
+      &quot;value&quot;: {
+        &quot;@context&quot;: {
+          &quot;@vocab&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/&quot;
+        },
+        &quot;@id&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/success&quot;,
+        &quot;@type&quot;: &quot;Person&quot;,
+        &quot;bool&quot;: false,
+        &quot;name&quot;: &quot;Alex&quot;,
+        &quot;number&quot;: 24
+      }
     },
     {
-      &quot;@id&quot;: &quot;localhost:8080/v1/realms/nexusdev/authenticated&quot;,
-      &quot;@type&quot;: &quot;Authenticated&quot;,
-      &quot;realm&quot;: &quot;nexusdev&quot;
+      &quot;@id&quot;: &quot;https://bbp.epfl.ch/person/john-doe&quot;,
+      &quot;project&quot;: &quot;public/person&quot;,
+      &quot;error&quot;: {
+        &quot;@type&quot;: &quot;NotFound&quot;,
+        &quot;reason&quot;: &quot;The resource &#39;https://bbp.epfl.ch/person/john-doe&#39; was not found in project &#39;public/person&#39;.&quot;
+      }
     },
     {
-      &quot;@id&quot;: &quot;localhost:8080/v1/realms/nexusdev/groups/test-group&quot;,
-      &quot;@type&quot;: &quot;Group&quot;,
-      &quot;group&quot;: &quot;test-group&quot;,
-      &quot;realm&quot;: &quot;nexusdev&quot;
-    },
-    {
-      &quot;@id&quot;: &quot;localhost:8080/v1/realms/nexusdev/users/test-user&quot;,
-      &quot;@type&quot;: &quot;User&quot;,
-      &quot;realm&quot;: &quot;nexusdev&quot;,
-      &quot;subject&quot;: &quot;test-user&quot;
+      &quot;@id&quot;: &quot;https://bbp.epfl.ch/secret/xxx&quot;,
+      &quot;project&quot;: &quot;restricted/xxx&quot;,
+      &quot;error&quot;: {
+        &quot;@type&quot;: &quot;AuthorizationFailed&quot;,
+        &quot;reason&quot;: &quot;The supplied authentication is not authorized to access this resource.&quot;
+      }
     }
   ]
 }</code></pre></dd>
 </dl>
 </div>
 <div>
-<a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/identities.md" title="Edit this page" class="md-source-file md-edit">
+<a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/multi-fetch.md" title="Edit this page" class="md-source-file md-edit">
 Edit this page
 </a>
 </div>
@@ -321,7 +407,7 @@ Snapshot
 <footer class="md-footer">
 <div class="md-footer-nav">
 <nav class="md-footer-nav__inner md-grid">
-<a href="../../../docs/delta/api/authentication.html" title="Authentication & Authorization" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+<a href="../../../docs/delta/api/resources-api.html" title="Resources" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
 <div class="md-flex__cell md-flex__cell--shrink">
 <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
 </div>
@@ -330,17 +416,17 @@ Snapshot
 <span class="md-footer-nav__direction">
 Previous
 </span>
-Authentication & Authorization
+Resources
 </span>
 </div>
 </a>
-<a href="../../../docs/delta/api/permissions-api.html" title="Permissions" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../../docs/delta/api/resolvers-api.html" title="Resolvers" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-Permissions
+Resolvers
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">

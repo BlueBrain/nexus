@@ -154,6 +154,7 @@ BlueBrain/nexus
   </ul></li>
   <li><a href="../../docs/releases/index.html" class="page">Releases</a>
   <ul>
+    <li><a href="../../docs/releases/v1.9-release-notes.html" class="page">v1.9 Release Notes</a></li>
     <li><a href="../../docs/releases/v1.8-release-notes.html" class="page">v1.8 Release Notes</a></li>
     <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html" class="page">v1.7 To v1.8 Migration</a></li>
     <li><a href="../../docs/releases/v1.7-release-notes.html" class="page">v1.7 Release Notes</a></li>
@@ -162,14 +163,7 @@ BlueBrain/nexus
     <li><a href="../../docs/releases/v1.5-to-v1.6-migration.html" class="page">v1.5 To v1.6 Migration</a></li>
     <li><a href="../../docs/releases/v1.5-release-notes.html" class="page">v1.5 Release Notes</a></li>
     <li><a href="../../docs/releases/v1.4-to-v1.5-migration.html" class="active page">v1.4 To v1.5 Migration</a></li>
-    <li><a href="../../docs/releases/v1.4-release-notes.html" class="page">v1.4 Release Notes</a></li>
-    <li><a href="../../docs/releases/v1.3-to-v1.4-migration.html" class="page">v1.3 To v1.4 Migration</a></li>
-    <li><a href="../../docs/releases/v1.3-release-notes.html" class="page">v1.3 Release Notes</a></li>
-    <li><a href="../../docs/releases/v1.2-to-v1.3-migration.html" class="page">v1.2 To v1.3 Migration</a></li>
-    <li><a href="../../docs/releases/v1.2-release-notes.html" class="page">v1.2 Release Notes</a></li>
-    <li><a href="../../docs/releases/v1.1-release-notes.html" class="page">v1.1 Release Notes</a></li>
-    <li><a href="../../docs/releases/v1.0-to-v1.1-migration.html" class="page">v1.0 To v1.1 Migration</a></li>
-    <li><a href="../../docs/releases/v1.0-release-notes.html" class="page">v1.0 Release Notes</a></li>
+    <li><a href="../../docs/releases/older-releases.html" class="page">Older releases</a></li>
   </ul></li>
   <li><a href="../../docs/roadmap.html" class="page">Roadmap</a></li>
   <li><a href="../../docs/fusion/index.html" class="page">Nexus Fusion</a>
@@ -207,6 +201,7 @@ BlueBrain/nexus
       <li><a href="../../docs/delta/api/quotas.html" class="page">Quotas</a></li>
       <li><a href="../../docs/delta/api/schemas-api.html" class="page">Schemas</a></li>
       <li><a href="../../docs/delta/api/resources-api.html" class="page">Resources</a></li>
+      <li><a href="../../docs/delta/api/multi-fetch.html" class="page">Multi fetch</a></li>
       <li><a href="../../docs/delta/api/resolvers-api.html" class="page">Resolvers</a></li>
       <li><a href="../../docs/delta/api/views/index.html" class="page">Views</a>
       <ul>
@@ -363,7 +358,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <pre><code>    nodetool repair
 </code></pre>
 <h3><a href="#create-a-materialized-view-on-the-messages-table-on-the-original-keyspace" name="create-a-materialized-view-on-the-messages-table-on-the-original-keyspace" class="anchor"><span class="anchor-link"></span></a>Create a materialized view on the messages table on the original keyspace</h3>
-<p>Create a materialized view on the messages table on the original keyspace <code>delta_1_4</code>: </p>
+<p>Create a materialized view on the messages table on the original keyspace <code>delta_1_4</code>:</p>
 <pre><code>    CREATE MATERIALIZED VIEW {delta_1_4}.ordered_messages AS
         SELECT ser_manifest, ser_id, event
         FROM delta.messages
@@ -729,7 +724,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 </code></pre>
 <h3><a href="#restart-in-normal-mode" name="restart-in-normal-mode" class="anchor"><span class="anchor-link"></span></a>Restart in normal mode</h3>
 <p>Once migration is completed and the previous checks have been performed, Delta can be restarted in normal mode.</p>
-<p>The previous Delta instance can be stopped. After the restart, a complete reindexing of the data in elasticsearch/blazegraph will take place. </p>
+<p>The previous Delta instance can be stopped. After the restart, a complete reindexing of the data in elasticsearch/blazegraph will take place.</p>
 <ul>
   <li>Stop the Delta 1.4 instance ;</li>
   <li>Delete all ElasticSearch indices:
@@ -798,13 +793,13 @@ v1.5 Release Notes
 </span>
 </div>
 </a>
-<a href="../../docs/releases/v1.4-release-notes.html" title="v1.4 Release Notes" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../docs/releases/older-releases.html" title="Older releases" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-v1.4 Release Notes
+Older releases
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">
