@@ -66,7 +66,7 @@ object Search {
             .flatMap { entry =>
               val res = entry.source
               for {
-                projection   <- res.value.projections.value.find(_.id == defaultProjectionId)
+                projection   <- res.value.projections.lookup(defaultProjectionId)
                 esProjection <- projection.asElasticSearch
               } yield TargetProjection(esProjection, res.value, res.rev)
             }

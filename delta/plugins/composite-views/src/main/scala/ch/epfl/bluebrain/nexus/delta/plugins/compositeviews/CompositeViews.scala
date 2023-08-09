@@ -29,7 +29,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSear
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, Projects}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax.nonEmptySetSyntax
 import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityDependency.DependsOn
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
@@ -520,7 +519,7 @@ object CompositeViews {
         for {
           t     <- IOUtils.instant
           u     <- uuidF()
-          value <- CompositeViewValue(c.value, Map.empty, Map.empty, c.projectBase)
+          value <- CompositeViewFactory.create(c.value)(c.projectBase, uuidF)
           _     <- validate(u, 1, value)
         } yield CompositeViewCreated(c.id, c.project, u, value, c.source, 1, t, c.subject)
       case Some(_) => IO.raiseError(ViewAlreadyExists(c.id, c.project))
@@ -534,14 +533,9 @@ object CompositeViews {
       case Some(s) if s.deprecated   =>
         IO.raiseError(ViewIsDeprecated(c.id))
       case Some(s)                   =>
+        val newRev = s.rev + 1
         for {
-          value <- CompositeViewValue(
-                     c.value,
-                     s.value.sources.toMap(source => source.id -> source.uuid),
-                     s.value.projections.toMap(projection => projection.id -> projection.uuid),
-                     c.projectBase
-                   )
-          newRev = s.rev + 1
+          value <- CompositeViewFactory.update(c.value, s.value, newRev)(c.projectBase, uuidF)
           _     <- validate(s.uuid, newRev, value)
           t     <- IOUtils.instant
         } yield CompositeViewUpdated(c.id, c.project, s.uuid, value, c.source, newRev, t, c.subject)

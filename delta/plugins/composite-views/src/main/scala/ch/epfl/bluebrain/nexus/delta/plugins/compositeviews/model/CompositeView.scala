@@ -1,8 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 
-import cats.data.NonEmptySet
+import cats.data.{NonEmptyList, NonEmptyMap}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.{Metadata, RebuildStrategy}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{ProjectionNotFound, SourceNotFound}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
@@ -29,6 +30,7 @@ import java.time.Instant
 import java.util.UUID
 import scala.annotation.nowarn
 import scala.concurrent.duration.FiniteDuration
+import scala.reflect.ClassTag
 
 /**
   * Representation of a composite view.
@@ -55,8 +57,8 @@ import scala.concurrent.duration.FiniteDuration
 final case class CompositeView(
     id: Iri,
     project: ProjectRef,
-    sources: NonEmptySet[CompositeViewSource],
-    projections: NonEmptySet[CompositeViewProjection],
+    sources: NonEmptyMap[Iri, CompositeViewSource],
+    projections: NonEmptyMap[Iri, CompositeViewProjection],
     rebuildStrategy: Option[RebuildStrategy],
     uuid: UUID,
     tags: Tags,
@@ -74,16 +76,54 @@ final case class CompositeView(
     * Looks for a source with the given identifier
     */
   def sources(sourceId: Iri): Either[SourceNotFound, CompositeViewSource] =
-    sources.value.find(_.id == sourceId).toRight(SourceNotFound(id, sourceId, project))
+    sources.lookup(sourceId).toRight(SourceNotFound(id, sourceId, project))
 
   /**
     * Looks for a projection with the given identifier
     */
   def projections(projectionId: Iri): Either[ProjectionNotFound, CompositeViewProjection] =
-    projections.value.find(_.id == projectionId).toRight(ProjectionNotFound(id, projectionId, project))
+    projections.lookup(projectionId).toRight(ProjectionNotFound(id, projectionId, project))
+
+  /**
+    * Looks for Elasticsearch projections
+    */
+  def elasticSearchProjections: Set[ElasticSearchProjection] = projectionsOf[ElasticSearchProjection]
+
+  /**
+    * Looks for Sparql projections
+    */
+  def sparqlProjections: Set[SparqlProjection] = projectionsOf[SparqlProjection]
+
+  private def projectionsOf[X: ClassTag] =
+    projections.foldLeft(Set.empty[X]) {
+      case (acc, projection: X) => acc + projection
+      case (acc, _)             => acc
+    }
 }
 
 object CompositeView {
+
+  def apply(
+      id: Iri,
+      project: ProjectRef,
+      sources: NonEmptyList[CompositeViewSource],
+      projections: NonEmptyList[CompositeViewProjection],
+      rebuildStrategy: Option[RebuildStrategy],
+      uuid: UUID,
+      tags: Tags,
+      source: Json,
+      updatedAt: Instant
+  ): CompositeView = CompositeView(
+    id,
+    project,
+    sources.map { s => s.id -> s }.toNem,
+    projections.map { p => p.id -> p }.toNem,
+    rebuildStrategy,
+    uuid,
+    tags,
+    source,
+    updatedAt
+  )
 
   /**
     * The rebuild strategy for a [[CompositeView]].
@@ -109,6 +149,7 @@ object CompositeView {
   @nowarn("cat=unused")
   implicit private def compositeViewEncoder(implicit base: BaseUri): Encoder.AsObject[CompositeView] = {
     implicit val config: Configuration = Configuration.default.withDiscriminator(keywords.tpe)
+    import ch.epfl.bluebrain.nexus.delta.sdk.circe.nonEmptyMap._
     Encoder.encodeJsonObject.contramapObject { v =>
       deriveConfiguredEncoder[CompositeView]
         .encodeObject(v)
@@ -121,6 +162,7 @@ object CompositeView {
         .mapAllKeys("context", _.noSpaces.asJson)
         .mapAllKeys("mapping", _.noSpaces.asJson)
         .mapAllKeys("settings", _.noSpaces.asJson)
+        .removeAllKeys("indexingRev")
         .addContext(v.source.topContextValueOrEmpty.excludeRemoteContexts.contextObj)
     }
   }

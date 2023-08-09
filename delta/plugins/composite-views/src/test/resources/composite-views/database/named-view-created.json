@@ -90,10 +90,12 @@
   "value": {
     "name": "viewName",
     "description": "viewDescription",
+    "sourceIndexingRev": 1,
     "projections": [
       {
         "@type": "SparqlProjection",
         "id": "http://example.com/blazegraph-projection",
+        "indexingRev": 1,
         "includeDeprecated": false,
         "includeMetadata": false,
         "permission": "views/query",
@@ -109,6 +111,7 @@
         "context": {
         },
         "id": "http://example.com/es-projection",
+        "indexingRev": 1,
         "includeDeprecated": false,
         "includeMetadata": false,
         "includeContext" : false,

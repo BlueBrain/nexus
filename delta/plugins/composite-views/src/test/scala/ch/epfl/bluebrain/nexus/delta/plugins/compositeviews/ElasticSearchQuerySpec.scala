@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.Uri.Query
-import cats.data.NonEmptySet
+import cats.data.NonEmptyList
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.permissions
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.projectionIndex
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
@@ -87,6 +87,7 @@ class ElasticSearchQuerySpec
     ElasticSearchProjection(
       id,
       UUID.randomUUID(),
+      1,
       construct,
       Set.empty,
       Set.empty,
@@ -108,6 +109,7 @@ class ElasticSearchQuerySpec
     SparqlProjection(
       nxv + "blaze1",
       UUID.randomUUID(),
+      1,
       construct,
       Set.empty,
       Set.empty,
@@ -122,8 +124,8 @@ class ElasticSearchQuerySpec
   private val compositeView           = CompositeView(
     id,
     project.ref,
-    NonEmptySet.of(projectSource),
-    NonEmptySet.of(esProjection1, esProjection2, blazeProjection),
+    NonEmptyList.of(projectSource),
+    NonEmptyList.of(esProjection1, esProjection2, blazeProjection),
     None,
     UUID.randomUUID(),
     Tags.empty,
@@ -133,8 +135,8 @@ class ElasticSearchQuerySpec
   private val deprecatedCompositeView = CompositeView(
     deprecatedId,
     project.ref,
-    NonEmptySet.of(projectSource),
-    NonEmptySet.of(esProjection1, esProjection2, blazeProjection),
+    NonEmptyList.of(projectSource),
+    NonEmptyList.of(esProjection1, esProjection2, blazeProjection),
     None,
     UUID.randomUUID(),
     Tags.empty,

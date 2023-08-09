@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
 import akka.http.scaladsl.model.Uri
-import cats.data.NonEmptySet
+import cats.data.NonEmptyList
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewP
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjectionFields.{ElasticSearchProjectionFields, SparqlProjectionFields}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.{AccessToken, CrossProjectSource, ProjectSource, RemoteProjectSource}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSourceFields.{CrossProjectSourceFields, ProjectSourceFields, RemoteProjectSourceFields}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{permissions, CompositeViewFields, CompositeViewValue, TemplateSparqlConstructQuery}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{permissions, CompositeViewFields, TemplateSparqlConstructQuery}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
@@ -87,8 +87,8 @@ trait CompositeViewsFixture extends ConfigFixtures with EitherValuable {
   )
 
   val viewFields = CompositeViewFields(
-    NonEmptySet.of(projectFields, crossProjectFields, remoteProjectFields),
-    NonEmptySet.of(esProjectionFields, blazegraphProjectionFields),
+    NonEmptyList.of(projectFields, crossProjectFields, remoteProjectFields),
+    NonEmptyList.of(esProjectionFields, blazegraphProjectionFields),
     Some(Interval(1.minute))
   )
 
@@ -131,6 +131,7 @@ trait CompositeViewsFixture extends ConfigFixtures with EitherValuable {
   val esProjection         = ElasticSearchProjection(
     iri"http://example.com/es-projection",
     uuid,
+    1,
     query,
     Set.empty,
     Set.empty,
@@ -147,6 +148,7 @@ trait CompositeViewsFixture extends ConfigFixtures with EitherValuable {
   val blazegraphProjection = SparqlProjection(
     iri"http://example.com/blazegraph-projection",
     uuid,
+    1,
     query,
     Set.empty,
     Set.empty,
@@ -156,9 +158,9 @@ trait CompositeViewsFixture extends ConfigFixtures with EitherValuable {
     permissions.query
   )
 
-  val viewValue      = CompositeViewValue(
-    NonEmptySet.of(projectSource, crossProjectSource, remoteProjectSource),
-    NonEmptySet.of(esProjection, blazegraphProjection),
+  val viewValue      = CompositeViewFactory.unsafe(
+    NonEmptyList.of(projectSource, crossProjectSource, remoteProjectSource),
+    NonEmptyList.of(esProjection, blazegraphProjection),
     Some(Interval(1.minute))
   )
   val viewValueNamed = viewValue.copy(name = Some("viewName"), description = Some("viewDescription"))

@@ -88,10 +88,12 @@
   },
   "uuid": "f8468909-a797-4b10-8b5f-000cba337bfa",
   "value": {
+    "sourceIndexingRev": 1,
     "projections": [
       {
         "@type": "SparqlProjection",
         "id": "http://example.com/blazegraph-projection",
+        "indexingRev": 1,
         "includeDeprecated": false,
         "includeMetadata": false,
         "permission": "views/query",
@@ -107,6 +109,7 @@
         "context": {
         },
         "id": "http://example.com/es-projection",
+        "indexingRev": 1,
         "includeDeprecated": false,
         "includeMetadata": false,
         "includeContext" : false,

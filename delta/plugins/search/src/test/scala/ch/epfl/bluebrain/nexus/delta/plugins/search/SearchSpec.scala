@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.search
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri.Query
 import akka.testkit.TestKit
-import cats.data.NonEmptySet
+import cats.data.NonEmptyList
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView
@@ -80,28 +80,29 @@ class SearchSpec
 
   private val mappings = jsonObjectContentOf("test-mapping.json")
 
+  private val esProjection = ElasticSearchProjection(
+    nxv + "searchProjection",
+    UUID.randomUUID(),
+    1,
+    SparqlConstructQuery.unsafe("CONSTRUCT ..."),
+    Set.empty,
+    Set.empty,
+    None,
+    false,
+    false,
+    false,
+    permissions.query,
+    Some(IndexGroup.unsafe("search")),
+    mappings,
+    None,
+    ContextObject(JsonObject())
+  )
+
   private val compViewProj1   = CompositeView(
     nxv + "searchView",
     project1.ref,
-    NonEmptySet.of(ProjectSource(nxv + "searchSource", UUID.randomUUID(), Set.empty, Set.empty, None, false)),
-    NonEmptySet.of(
-      ElasticSearchProjection(
-        nxv + "searchProjection",
-        UUID.randomUUID(),
-        SparqlConstructQuery.unsafe(""),
-        Set.empty,
-        Set.empty,
-        None,
-        false,
-        false,
-        false,
-        permissions.query,
-        Some(IndexGroup.unsafe("search")),
-        mappings,
-        None,
-        ContextObject(JsonObject())
-      )
-    ),
+    NonEmptyList.of(ProjectSource(nxv + "searchSource", UUID.randomUUID(), Set.empty, Set.empty, None, false)),
+    NonEmptyList.of(esProjection),
     None,
     UUID.randomUUID(),
     Tags.empty,
@@ -109,15 +110,10 @@ class SearchSpec
     Instant.EPOCH
   )
   private val compViewProj2   = compViewProj1.copy(project = project2.ref, uuid = UUID.randomUUID())
-  private val projectionProj1 =
-    TargetProjection(compViewProj1.projections.value.head.asElasticSearch.value, compViewProj1, 1)
-  private val projectionProj2 =
-    TargetProjection(compViewProj2.projections.value.head.asElasticSearch.value, compViewProj2, 1)
+  private val projectionProj1 = TargetProjection(esProjection, compViewProj1, 1)
+  private val projectionProj2 = TargetProjection(esProjection, compViewProj2, 1)
 
-  private val projections = Seq(
-    projectionProj1,
-    projectionProj2
-  )
+  private val projections = Seq(projectionProj1, projectionProj2)
 
   private val listViews: ListProjections = () => UIO.pure(projections)
 

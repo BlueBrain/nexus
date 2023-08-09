@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 
-import cats.Order
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.ProjectionType.{ElasticSearchProjectionType, SparqlProjectionType}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.TemplateSparqlConstructQuery._
@@ -81,13 +80,10 @@ sealed trait CompositeViewProjectionFields {
     * @return
     *   transform from [[CompositeViewProjectionFields]] to [[CompositeViewProjection]]
     */
-  def toProjection(uuid: UUID, generatedId: Iri): CompositeViewProjection
+  def toProjection(uuid: UUID, generatedId: Iri, indexingRev: Int): CompositeViewProjection
 }
 
 object CompositeViewProjectionFields {
-
-  implicit def compositeViewProjectionFieldsOrder[A <: CompositeViewProjectionFields]: Order[A] =
-    Order.by(_.id)
 
   /**
     * Necessary fields to create/update an ElasticSearch projection.
@@ -109,22 +105,24 @@ object CompositeViewProjectionFields {
   ) extends CompositeViewProjectionFields {
     override def tpe: ProjectionType = ElasticSearchProjectionType
 
-    override def toProjection(uuid: UUID, generatedId: Iri): CompositeViewProjection = ElasticSearchProjection(
-      id.getOrElse(generatedId),
-      uuid,
-      query,
-      resourceSchemas,
-      resourceTypes,
-      resourceTag,
-      includeMetadata,
-      includeDeprecated,
-      includeContext,
-      permission,
-      indexGroup,
-      mapping,
-      settings,
-      context
-    )
+    override def toProjection(uuid: UUID, generatedId: Iri, indexingRev: Int): CompositeViewProjection =
+      ElasticSearchProjection(
+        id.getOrElse(generatedId),
+        uuid,
+        indexingRev,
+        query,
+        resourceSchemas,
+        resourceTypes,
+        resourceTag,
+        includeMetadata,
+        includeDeprecated,
+        includeContext,
+        permission,
+        indexGroup,
+        mapping,
+        settings,
+        context
+      )
   }
 
   /**
@@ -142,17 +140,19 @@ object CompositeViewProjectionFields {
   ) extends CompositeViewProjectionFields {
     override def tpe: ProjectionType = SparqlProjectionType
 
-    override def toProjection(uuid: UUID, generatedId: Iri): CompositeViewProjection = SparqlProjection(
-      id.getOrElse(generatedId),
-      uuid,
-      query,
-      resourceSchemas,
-      resourceTypes,
-      resourceTag,
-      includeMetadata,
-      includeDeprecated,
-      permission
-    )
+    override def toProjection(uuid: UUID, generatedId: Iri, indexingRev: Int): CompositeViewProjection =
+      SparqlProjection(
+        id.getOrElse(generatedId),
+        uuid,
+        indexingRev,
+        query,
+        resourceSchemas,
+        resourceTypes,
+        resourceTag,
+        includeMetadata,
+        includeDeprecated,
+        permission
+      )
   }
 
   @nowarn("cat=unused")

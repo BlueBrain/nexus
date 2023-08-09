@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 
 import akka.http.scaladsl.model.Uri
-import cats.Order
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSourceFields.{CrossProjectSourceFields, ProjectSourceFields, RemoteProjectSourceFields}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.SourceType._
@@ -247,10 +246,4 @@ object CompositeViewSource {
     implicit val accessTokenLdDecoder: JsonLdDecoder[AccessToken] = deriveDefaultJsonLdDecoder[AccessToken]
     deriveDefaultJsonLdDecoder[CompositeViewSource]
   }
-
-  implicit final def compositeViewSourceOrdering[A <: CompositeViewSource]: Ordering[A] =
-    Ordering.by(_.id)
-
-  implicit final def compositeViewSourceOrder[A <: CompositeViewSource]: Order[A] =
-    Order.fromOrdering
 }

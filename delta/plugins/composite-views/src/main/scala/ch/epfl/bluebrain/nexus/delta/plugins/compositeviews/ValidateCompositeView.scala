@@ -87,15 +87,15 @@ object ValidateCompositeView {
     }
 
     for {
-      _          <- IO.raiseWhen(value.sources.value.size > maxSources)(TooManySources(value.sources.length, maxSources))
-      _          <- IO.raiseWhen(value.projections.value.size > maxProjections)(
+      _          <- IO.raiseWhen(value.sources.length > maxSources)(TooManySources(value.sources.length, maxSources))
+      _          <- IO.raiseWhen(value.projections.length > maxProjections)(
                       TooManyProjections(value.projections.length, maxProjections)
                     )
-      allIds      = value.sources.value.toList.map(_.id) ++ value.projections.value.toList.map(_.id)
+      allIds      = value.sources.keys.toList ++ value.projections.keys.toList
       distinctIds = allIds.distinct
       _          <- IO.raiseWhen(allIds.size != distinctIds.size)(DuplicateIds(allIds))
-      _          <- value.sources.value.toList.foldLeftM(())((_, s) => validateSource(s))
-      _          <- value.projections.value.toList.foldLeftM(())((_, s) => validateProjection(s))
+      _          <- value.sources.toNel.foldLeftM(()) { case (_, (_, s)) => validateSource(s) }
+      _          <- value.projections.toNel.foldLeftM(()) { case (_, (_, p)) => validateProjection(p) }
 
     } yield ()
 

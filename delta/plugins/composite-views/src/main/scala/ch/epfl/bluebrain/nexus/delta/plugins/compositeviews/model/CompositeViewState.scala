@@ -35,6 +35,8 @@ import scala.annotation.nowarn
   *   the collection of tags
   * @param rev
   *   the current revision of the view
+  * @param indexingRev
+  *   the last meaningful revision for indexing in the common space and each projection
   * @param deprecated
   *   the deprecation status of the view
   * @param createdAt

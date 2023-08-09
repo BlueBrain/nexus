@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
-import cats.data.NonEmptySet
+import cats.data.NonEmptyList
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryClientDummy
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.SparqlNTriples
@@ -81,6 +81,7 @@ class BlazegraphQuerySpec
     SparqlProjection(
       id,
       UUID.randomUUID(),
+      1,
       construct,
       Set.empty,
       Set.empty,
@@ -97,6 +98,7 @@ class BlazegraphQuerySpec
     ElasticSearchProjection(
       nxv + "es1",
       UUID.randomUUID(),
+      1,
       construct,
       Set.empty,
       Set.empty,
@@ -116,8 +118,8 @@ class BlazegraphQuerySpec
   private val compositeView = CompositeView(
     id,
     project.ref,
-    NonEmptySet.of(projectSource),
-    NonEmptySet.of(blazeProjection1, blazeProjection2, esProjection),
+    NonEmptyList.of(projectSource),
+    NonEmptyList.of(blazeProjection1, blazeProjection2, esProjection),
     None,
     UUID.randomUUID(),
     Tags.empty,
@@ -128,8 +130,8 @@ class BlazegraphQuerySpec
   private val deprecatedCompositeView = CompositeView(
     deprecatedId,
     project.ref,
-    NonEmptySet.of(projectSource),
-    NonEmptySet.of(blazeProjection1, blazeProjection2, esProjection),
+    NonEmptyList.of(projectSource),
+    NonEmptyList.of(blazeProjection1, blazeProjection2, esProjection),
     None,
     UUID.randomUUID(),
     Tags.empty,

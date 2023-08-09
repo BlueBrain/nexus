@@ -120,8 +120,8 @@ object BlazegraphQuery {
         for {
           viewRes    <- fetchView(id, project)
           _          <- IO.raiseWhen(viewRes.deprecated)(ViewIsDeprecated(viewRes.id))
-          permissions = viewRes.value.projections.map(_.permission)
-          _          <- aclCheck.authorizeForEveryOr(project, permissions.toSortedSet)(AuthorizationFailed)
+          permissions = viewRes.value.sparqlProjections.map(_.permission)
+          _          <- aclCheck.authorizeForEveryOr(project, permissions)(AuthorizationFailed)
           namespace   = BlazegraphViews.namespace(viewRes.value.uuid, viewRes.rev, prefix)
           result     <- client.query(Set(namespace), query, responseType).mapError(WrappedBlazegraphClientError)
         } yield result
@@ -163,7 +163,7 @@ object BlazegraphQuery {
       )(implicit caller: Caller): IO[AuthorizationFailed, Set[String]] =
         aclCheck
           .mapFilterAtAddress[SparqlProjection, String](
-            view.projections.value.collect { case p: SparqlProjection => p },
+            view.sparqlProjections,
             project,
             p => p.permission,
             p => projectionNamespace(p, view.uuid, rev, prefix)

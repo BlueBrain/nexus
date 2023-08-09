@@ -126,7 +126,7 @@ object ElasticSearchQuery {
       )(implicit caller: Caller): IO[AuthorizationFailed, Set[String]] =
         aclCheck
           .mapFilterAtAddress[ElasticSearchProjection, String](
-            view.projections.collect { case p: ElasticSearchProjection => p },
+            view.elasticSearchProjections,
             project,
             p => p.permission,
             p => projectionIndex(p, view.uuid, rev, prefix).value
