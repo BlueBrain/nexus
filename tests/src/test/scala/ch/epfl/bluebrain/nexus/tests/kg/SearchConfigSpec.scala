@@ -216,46 +216,29 @@ class SearchConfigSpec extends BaseSpec {
       }
     }
     "have the correct contributor property" in {
-      // The affiliation property of a contributor is not indexed as expected
-      // because of the @embed property being set to @last. If another field
-      // already embeds the object with the same @id, it will not embed it
-      // for the affiliation.
-      pending
       val query    = queryField(neuronMorphologyId, "contributors")
       val expected =
         json"""
         {
           "contributors" : [
             {
-              "@id" : "https://bbp.epfl.ch/neurosciencegraph/data/d3a0dafe-f8ed-4b4d-bd90-93d64baf63a1",
-              "idLabel" : "https://bbp.epfl.ch/neurosciencegraph/data/d3a0dafe-f8ed-4b4d-bd90-93d64baf63a1|John Doe",
-              "identifier" : "https://bbp.epfl.ch/neurosciencegraph/data/d3a0dafe-f8ed-4b4d-bd90-93d64baf63a1",
-              "label" : "John Doe",
-              "affiliation": {
-                "@id": "https://www.grid.ac/institutes/grid.5333.6",
-                "label": "École Polytechnique Fédérale de Lausanne"
-              }
-            }
-          ]
-        }
-            """
-
-      assertOneSource(query) { json =>
-        json should equalIgnoreArrayOrder(expected)
-      }
-    }
-
-    "have the correct organization property" in {
-      val query    = queryField(neuronMorphologyId, "organizations")
-      val expected =
-        json"""
-        {
-          "organizations" : [
-            {
               "@id" : "https://www.grid.ac/institutes/grid.5333.6",
-              "idLabel" : "https://www.grid.ac/institutes/grid.5333.6|École Polytechnique Fédérale de Lausanne",
-              "identifier" : "https://www.grid.ac/institutes/grid.5333.6",
-              "label" : "École Polytechnique Fédérale de Lausanne"
+              "@type" : [
+                "http://schema.org/Organization",
+                "http://www.w3.org/ns/prov#Agent"
+              ],
+              "idLabel": "https://www.grid.ac/institutes/grid.5333.6|École Polytechnique Fédérale de Lausanne",
+              "label": "École Polytechnique Fédérale de Lausanne"
+            },
+            {
+              "@id" : "https://bbp.epfl.ch/neurosciencegraph/data/d3a0dafe-f8ed-4b4d-bd90-93d64baf63a1",
+              "@type" : [
+                "http://www.w3.org/ns/prov#Agent",
+                "http://schema.org/Person"
+              ],
+              "idLabel" : "https://bbp.epfl.ch/neurosciencegraph/data/d3a0dafe-f8ed-4b4d-bd90-93d64baf63a1|John Doe",
+              "label" : "John Doe",
+              "affiliation": "École Polytechnique Fédérale de Lausanne"
             }
           ]
         }
