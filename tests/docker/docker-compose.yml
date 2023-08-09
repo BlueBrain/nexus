@@ -1,6 +1,7 @@
-version: "3.3"
+version: "3.8"
 services:
   delta:
+    container_name: delta
     depends_on:
       - keycloak
       - elasticsearch
@@ -26,6 +27,10 @@ services:
     volumes:
       - ./config:/config
       - /tmp:/default-volume
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/v1/version" ]
+      start_period: 30s
+      interval: 10s
 
 #  delta2:
 #    depends_on:
