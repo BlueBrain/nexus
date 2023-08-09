@@ -98,8 +98,14 @@ final class GraphAnalyticsSpec extends BaseSpec with CirceEq with EitherValuable
     }
 
     "query for person1" in eventually {
-      val expected     = jsonContentOf("/kg/graph-analytics/es-hit-source-person1.json")
-      val filterSource = filterMetadataKeys andThen filterRealmKeys andThen filterKey("_project")
+      val expected = jsonContentOf("/kg/graph-analytics/es-hit-source-person1.json")
+
+      // We ignore fields that are time or project dependent.
+      // "relationships" are ignored as its "found" field can sometimes be
+      // missing and making the test flaky while not being relevant to what's being tested
+      val filterSource = filterMetadataKeys andThen filterRealmKeys andThen
+        filterKey("_project") andThen filterKey("relationships")
+
       deltaClient.post[Json](s"/graph-analytics/$ref/_search", matchPerson1, Bojack) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
         val sources = extractSources(json)
