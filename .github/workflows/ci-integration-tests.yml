@@ -29,7 +29,7 @@ jobs:
         run: docker-compose -f tests/docker/docker-compose.yml up -d && sleep 60
       - name: Test
         run: |
-          DELTA_HEALTH=$(docker inspect --format='{{json .State.Health.Status}}' delta | jq -r)
+          DELTA_HEALTH=$(docker inspect --format='{{lower .State.Health.Status}}' delta)
           if [[ $DELTA_HEALTH == "healthy" ]]; then
             sbt -Dsbt.color=always -Dsbt.supershell=false "project tests" test
           else
