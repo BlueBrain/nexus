@@ -28,8 +28,8 @@ services:
       - ./config:/config
       - /tmp:/default-volume
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8080/v1/version" ]
-      start_period: 30s
+      test: [ "CMD", "curl", "-f", "http://delta:8080/v1/version" ]
+      start_period: 40s
       interval: 10s
 
 #  delta2:
