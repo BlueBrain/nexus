@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.DeltaClient
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.deletion.CompositeViewsDeletionTask
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.{CompositeProjectionLifeCycle, CompositeSpaces, CompositeViewsCoordinator, MetadataPredicates}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.migration.MigrateCompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.projections.{CompositeIndexingDetails, CompositeProjections}
@@ -41,7 +42,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionErrors
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeChain, ReferenceRegistry, Supervisor}
 import distage.ModuleDef
 import izumi.distage.model.definition.Id
-import monix.bio.UIO
+import monix.bio.{Task, UIO}
 import monix.execution.Scheduler
 
 class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
@@ -209,19 +210,23 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
       )
   }
 
+  private def isCompositeMigrationRunning =
+    sys.env.getOrElse("MIGRATE_COMPOSITE_VIEWS", "false").toBooleanOption.getOrElse(false)
   make[CompositeViewsCoordinator].fromEffect {
     (
         compositeViews: CompositeViews,
         supervisor: Supervisor,
         lifecycle: CompositeProjectionLifeCycle,
-        config: CompositeViewsConfig
+        config: CompositeViewsConfig,
+        xas: Transactors
     ) =>
-      CompositeViewsCoordinator(
-        compositeViews,
-        supervisor,
-        lifecycle,
-        config
-      )
+      Task.when(isCompositeMigrationRunning)(new MigrateCompositeViews(xas).run.void) >>
+        CompositeViewsCoordinator(
+          compositeViews,
+          supervisor,
+          lifecycle,
+          config
+        )
   }
 
   many[ProjectDeletionTask].add { (views: CompositeViews) => CompositeViewsDeletionTask(views) }

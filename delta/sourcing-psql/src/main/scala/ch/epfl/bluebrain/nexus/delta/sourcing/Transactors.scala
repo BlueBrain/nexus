@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseConfig.DatabaseAcce
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors.PartitionsCache
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import com.zaxxer.hikari.HikariDataSource
 import doobie.Fragment
 import doobie.hikari.HikariTransactor
@@ -18,7 +19,6 @@ import io.github.classgraph.ClassGraph
 import monix.bio.Task
 
 import scala.concurrent.duration._
-
 import scala.jdk.CollectionConverters._
 
 /**
@@ -36,6 +36,18 @@ final case class Transactors(
 
   def execDDLs(ddls: List[String])(implicit cl: ClassLoader): Task[Unit] =
     ddls.traverse(execDDL).void
+
+  /**
+    * Init the partition in the events and states table for the given projects
+    */
+  def initPartitions(projects: ProjectRef*): Task[Unit] =
+    projects
+      .traverse { project =>
+        val partitionInit = Execute(project)
+        partitionInit.initializePartition("scoped_events") >> partitionInit.initializePartition("scoped_states")
+      }
+      .transact(write)
+      .void
 
 }
 
