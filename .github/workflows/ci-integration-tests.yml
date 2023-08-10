@@ -30,6 +30,7 @@ jobs:
       - name: Test
         run: |
           DELTA_HEALTH=$(docker inspect --format='{{lower .State.Health.Status}}' delta)
+          echo $DELTA_HEALTH
           if [[ $DELTA_HEALTH == "healthy" ]]; then
             sbt -Dsbt.color=always -Dsbt.supershell=false "project tests" test
           else
