@@ -112,7 +112,7 @@ object CompositeViewDef {
         _.asElasticSearch.toRight(ProjectionNotFound(ref, id, ElasticSearchProjectionType))
       }
 
-    def source(id: Iri) =
+    def source(id: Iri): Either[SourceNotFound, CompositeViewSource] =
       value.sources(id).toRight(SourceNotFound(ref, id))
   }
 
@@ -315,7 +315,7 @@ object CompositeViewDef {
           (waitingForRebuild ++ Stream.eval(resetProgress).drain ++ stream).repeat
       case None                      =>
         // No rebuild strategy has been defined
-        Stream.eval(logger.debug(s"No rebuild strategy has been defined for view '${view}'.")) >>
+        Stream.eval(logger.debug(s"No rebuild strategy has been defined for view '$view'.")) >>
           Stream.empty[Task]
     }
   }
