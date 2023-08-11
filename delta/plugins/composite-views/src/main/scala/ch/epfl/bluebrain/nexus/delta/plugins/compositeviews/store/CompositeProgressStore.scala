@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.store.CompositeProgr
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.CompositeBranch
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.CompositeBranch.Run
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, ViewIndexingRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, IndexingViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
@@ -27,7 +27,7 @@ final class CompositeProgressStore(xas: Transactors)(implicit clock: Clock[UIO])
   /**
     * Saves a projection offset.
     */
-  def save(view: ViewIndexingRef, branch: CompositeBranch, progress: ProjectionProgress): UIO[Unit] = {
+  def save(view: IndexingViewRef, branch: CompositeBranch, progress: ProjectionProgress): UIO[Unit] = {
     logger.debug(s"Saving progress $progress for branch $branch of view $view") >>
       IOUtils.instant.flatMap { instant =>
         sql"""INSERT INTO public.composite_offsets (project, view_id, rev, source_id, target_id, run, ordering,
@@ -53,7 +53,7 @@ final class CompositeProgressStore(xas: Transactors)(implicit clock: Clock[UIO])
   /**
     * Retrieves a projection offset if found.
     */
-  def progress(view: ViewIndexingRef): UIO[Map[CompositeBranch, ProjectionProgress]] =
+  def progress(view: IndexingViewRef): UIO[Map[CompositeBranch, ProjectionProgress]] =
     sql"""SELECT * FROM public.composite_offsets
          |WHERE project = ${view.project} and view_id = ${view.id} and rev = ${view.indexingRev};
          |""".stripMargin
@@ -101,7 +101,7 @@ final class CompositeProgressStore(xas: Transactors)(implicit clock: Clock[UIO])
   /**
     * Delete all entries for the given view
     */
-  def deleteAll(view: ViewIndexingRef): UIO[Unit] =
+  def deleteAll(view: IndexingViewRef): UIO[Unit] =
     sql"""DELETE FROM public.composite_offsets
          |WHERE project = ${view.project} and view_id = ${view.id} and rev = ${view.indexingRev};
          |""".stripMargin.update.run
@@ -115,7 +115,7 @@ object CompositeProgressStore {
   private val logger: Logger = Logger[CompositeProgressStore]
 
   final private[store] case class CompositeProgressRow(
-      view: ViewIndexingRef,
+      view: IndexingViewRef,
       branch: CompositeBranch,
       progress: ProjectionProgress
   )
@@ -125,7 +125,7 @@ object CompositeProgressStore {
       Read[(ProjectRef, Iri, IndexingRev, Iri, Iri, Run, Long, Long, Long, Long, Instant, Instant)].map {
         case (project, viewId, rev, source, target, run, offset, processed, discarded, failed, _, updatedAt) =>
           CompositeProgressRow(
-            ViewIndexingRef(project, viewId, rev),
+            IndexingViewRef(project, viewId, rev),
             CompositeBranch(
               source,
               target,

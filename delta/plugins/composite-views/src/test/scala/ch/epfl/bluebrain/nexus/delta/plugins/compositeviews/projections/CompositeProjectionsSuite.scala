@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.{CompositeBra
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.CompositeBranch.Run
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
-import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, ViewIndexingRef, ViewRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, IndexingViewRef, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
@@ -44,7 +44,7 @@ class CompositeProjectionsSuite
   private val project     = ProjectRef.unsafe("org", "proj")
   private val viewRef     = ViewRef(project, nxv + "id")
   private val indexingRev = IndexingRev(2)
-  private val view        = ViewIndexingRef(viewRef, indexingRev)
+  private val view        = IndexingViewRef(viewRef, indexingRev)
 
   private val source  = nxv + "source"
   private val target1 = nxv + "target1"
@@ -57,7 +57,7 @@ class CompositeProjectionsSuite
   private val mainProgress2 = ProjectionProgress(Offset.At(22L), Instant.EPOCH, 2, 1, 0)
 
   private val viewRef2      = ViewRef(project, nxv + "id2")
-  private val view2         = ViewIndexingRef(viewRef2, indexingRev)
+  private val view2         = IndexingViewRef(viewRef2, indexingRev)
   private val view2Progress = ProjectionProgress(Offset.At(999L), Instant.EPOCH, 514, 140, 0)
 
   // Check that view 2 is not affected by changes on view 1

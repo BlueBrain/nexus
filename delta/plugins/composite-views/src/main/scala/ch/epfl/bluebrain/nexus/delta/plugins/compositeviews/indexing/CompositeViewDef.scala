@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeView
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.projections.CompositeProjections
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.{CompositeBranch, CompositeGraphStream, CompositeProgress}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, ViewIndexingRef, ViewRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, IndexingViewRef, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemPipe, ElemStream, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
@@ -66,7 +66,7 @@ object CompositeViewDef {
       */
     val indexingRev: IndexingRev = value.sourceIndexingRev
 
-    val indexingRef: ViewIndexingRef = ViewIndexingRef(ref, value.sourceIndexingRev)
+    val indexingRef: IndexingViewRef = IndexingViewRef(ref, value.sourceIndexingRev)
 
     /**
       * The projection name for this view

@@ -4,7 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeResta
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.CompositeBranch
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.CompositeBranch.Run
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, ViewIndexingRef, ViewRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, IndexingViewRef, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
@@ -27,7 +27,7 @@ class CompositeProgressStoreSuite extends BioSuite with IOFixedClock with Doobie
   private val project     = ProjectRef.unsafe("org", "proj")
   private val viewRef     = ViewRef(project, nxv + "id")
   private val indexingRev = IndexingRev(2)
-  private val view        = ViewIndexingRef(viewRef, indexingRev)
+  private val view        = IndexingViewRef(viewRef, indexingRev)
   private val source      = nxv + "source"
   private val target1     = nxv + "target1"
   private val target2     = nxv + "target2"
@@ -43,7 +43,7 @@ class CompositeProgressStoreSuite extends BioSuite with IOFixedClock with Doobie
   private val rebuildProgress2 = ProjectionProgress(Offset.At(33L), Instant.EPOCH, 4, 2, 0)
 
   private val view2Ref      = ViewRef(project, nxv + "id2")
-  private val view2         = ViewIndexingRef(view2Ref, indexingRev)
+  private val view2         = IndexingViewRef(view2Ref, indexingRev)
   private val view2Progress = ProjectionProgress(Offset.At(999L), Instant.EPOCH, 514, 140, 0)
 
   // Check that view 2 is not affected by changes on view 1

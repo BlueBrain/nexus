@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.CompositeBran
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.{CompositeBranch, CompositeGraphStream, CompositeProgress}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewIndexingRef
+import ch.epfl.bluebrain.nexus.delta.sdk.views.IndexingViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.ProgressStatistics
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
@@ -22,14 +22,14 @@ import monix.bio.UIO
   *   to get the remaining information to build statistics
   */
 final class CompositeIndexingDetails(
-    fetchProgress: ViewIndexingRef => UIO[CompositeProgress],
+    fetchProgress: IndexingViewRef => UIO[CompositeProgress],
     fetchRemaining: (CompositeViewSource, ProjectRef, Offset) => UIO[Option[RemainingElems]]
 ) {
 
   /**
     * List the offsets for the given composite view
     */
-  def offsets(view: ViewIndexingRef): UIO[SearchResults[ProjectionOffset]] =
+  def offsets(view: IndexingViewRef): UIO[SearchResults[ProjectionOffset]] =
     listOffsets(view, _ => true)
 
   /**
@@ -40,10 +40,10 @@ final class CompositeIndexingDetails(
     * @param target
     *   the target projection
     */
-  def projectionOffsets(view: ViewIndexingRef, target: Iri): UIO[SearchResults[ProjectionOffset]] =
+  def projectionOffsets(view: IndexingViewRef, target: Iri): UIO[SearchResults[ProjectionOffset]] =
     listOffsets(view, _.target == target)
 
-  private def listOffsets(view: ViewIndexingRef, c: CompositeBranch => Boolean) =
+  private def listOffsets(view: IndexingViewRef, c: CompositeBranch => Boolean) =
     fetchProgress(view).map { progress =>
       val offsets = progress.branches.foldLeft(List.empty[ProjectionOffset]) {
         case (acc, (branch, progress)) if branch.run == Run.Main && c(branch) =>

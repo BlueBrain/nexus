@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeResta
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.store.{CompositeProgressStore, CompositeRestartStore}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.{CompositeBranch, CompositeProgress}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.views.{ViewIndexingRef, ViewRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingViewRef, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{BatchConfig, QueryConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
@@ -30,7 +30,7 @@ trait CompositeProjections {
   /**
     * Return the composite progress for the given view
     */
-  def progress(view: ViewIndexingRef): UIO[CompositeProgress]
+  def progress(view: IndexingViewRef): UIO[CompositeProgress]
 
   /**
     * Creates the save [[Operation]] for a given branch of the specified view.
@@ -47,7 +47,7 @@ trait CompositeProjections {
   /**
     * Delete all entries for the given view
     */
-  def deleteAll(view: ViewIndexingRef): UIO[Unit]
+  def deleteAll(view: IndexingViewRef): UIO[Unit]
 
   /**
     * Schedules a full rebuild restarting indexing process for all targets while keeping the sources (and the
@@ -97,7 +97,7 @@ object CompositeProjections {
       private val failedElemLogStore     = FailedElemLogStore(xas, query)
       private val compositeProgressStore = new CompositeProgressStore(xas)
 
-      override def progress(view: ViewIndexingRef): UIO[CompositeProgress] =
+      override def progress(view: IndexingViewRef): UIO[CompositeProgress] =
         compositeProgressStore.progress(view).map(CompositeProgress(_))
 
       override def saveOperation(
@@ -113,7 +113,7 @@ object CompositeProjections {
           )(batch)
         )
 
-      override def deleteAll(view: ViewIndexingRef): UIO[Unit] = compositeProgressStore.deleteAll(view)
+      override def deleteAll(view: IndexingViewRef): UIO[Unit] = compositeProgressStore.deleteAll(view)
 
       override def fullRestart(view: ViewRef)(implicit subject: Subject): UIO[Unit] =
         scheduleRestart(FullRestart(view, _, subject))
