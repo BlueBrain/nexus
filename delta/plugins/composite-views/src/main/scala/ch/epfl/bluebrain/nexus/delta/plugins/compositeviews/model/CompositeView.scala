@@ -3,8 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 import cats.data.{NonEmptyList, NonEmptyMap}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.{Metadata, RebuildStrategy}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{ProjectionNotFound, SourceNotFound}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -30,7 +28,6 @@ import java.time.Instant
 import java.util.UUID
 import scala.annotation.nowarn
 import scala.concurrent.duration.FiniteDuration
-import scala.reflect.ClassTag
 
 /**
   * Representation of a composite view.
@@ -71,34 +68,6 @@ final case class CompositeView(
     *   [[CompositeView]] metadata
     */
   def metadata: Metadata = Metadata(uuid)
-
-  /**
-    * Looks for a source with the given identifier
-    */
-  def sources(sourceId: Iri): Either[SourceNotFound, CompositeViewSource] =
-    sources.lookup(sourceId).toRight(SourceNotFound(id, sourceId, project))
-
-  /**
-    * Looks for a projection with the given identifier
-    */
-  def projections(projectionId: Iri): Either[ProjectionNotFound, CompositeViewProjection] =
-    projections.lookup(projectionId).toRight(ProjectionNotFound(id, projectionId, project))
-
-  /**
-    * Looks for Elasticsearch projections
-    */
-  def elasticSearchProjections: Set[ElasticSearchProjection] = projectionsOf[ElasticSearchProjection]
-
-  /**
-    * Looks for Sparql projections
-    */
-  def sparqlProjections: Set[SparqlProjection] = projectionsOf[SparqlProjection]
-
-  private def projectionsOf[X: ClassTag] =
-    projections.foldLeft(Set.empty[X]) {
-      case (acc, projection: X) => acc + projection
-      case (acc, _)             => acc
-    }
 }
 
 object CompositeView {

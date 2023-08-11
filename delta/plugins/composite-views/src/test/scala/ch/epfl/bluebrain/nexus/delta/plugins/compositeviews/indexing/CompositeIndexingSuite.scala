@@ -38,7 +38,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.syntax.{iriStringContextSyntax, jsonOps
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Sort, SortList}
-import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
+import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{BatchConfig, QueryConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
@@ -290,7 +290,7 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
   private val elasticSearchProjection = ElasticSearchProjection(
     projection1Id,
     UUID.randomUUID(),
-    1,
+    IndexingRev.init,
     query,
     resourceSchemas = Set.empty,
     resourceTypes = Set(iri"http://music.com/Band"),
@@ -308,7 +308,7 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
   private val blazegraphProjection = SparqlProjection(
     projection2Id,
     UUID.randomUUID(),
-    1,
+    IndexingRev.init,
     query,
     resourceSchemas = Set.empty,
     resourceTypes = Set.empty,
@@ -332,19 +332,19 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
     val view = ActiveViewDef(ref, uuid, rev, noRebuild)
 
     val spaces          = spacesBuilder(view)
-    val commonNamespace = s"${prefix}_${uuid}_$rev"
-    val sparqlNamespace = s"${prefix}_${uuid}_${blazegraphProjection.uuid}_$rev"
-    val elasticIndex    = IndexLabel.unsafe(s"${prefix}_${uuid}_${elasticSearchProjection.uuid}_$rev")
+    val commonNs        = commonNamespace(uuid, noRebuild.sourceIndexingRev, prefix)
+    val sparqlNamespace = projectionNamespace(blazegraphProjection, uuid, prefix)
+    val elasticIndex    = projectionIndex(elasticSearchProjection, uuid, prefix)
 
     for {
       // Initialise the namespaces and indices
       _ <- spaces.init
-      _ <- bgClient.existsNamespace(commonNamespace).assert(true)
+      _ <- bgClient.existsNamespace(commonNs).assert(true)
       _ <- bgClient.existsNamespace(sparqlNamespace).assert(true)
       _ <- esClient.existsIndex(elasticIndex).assert(true)
       // Delete them on destroy
       _ <- spaces.destroy
-      _ <- bgClient.existsNamespace(commonNamespace).assert(false)
+      _ <- bgClient.existsNamespace(commonNs).assert(false)
       _ <- bgClient.existsNamespace(sparqlNamespace).assert(false)
       _ <- esClient.existsIndex(elasticIndex).assert(false)
     } yield ()
@@ -364,10 +364,11 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
     val viewId = iri"https://bbp.epfl.ch/composite"
     val rev    = 1
 
-    val view = ActiveViewDef(ViewRef(project1, viewId), uuid, rev, noRebuild)
+    val viewRef = ViewRef(project1, viewId)
+    val view    = ActiveViewDef(viewRef, uuid, rev, noRebuild)
 
-    val elasticIndex    = projectionIndex(elasticSearchProjection, uuid, rev, prefix)
-    val sparqlNamespace = projectionNamespace(blazegraphProjection, uuid, rev, prefix)
+    val elasticIndex    = projectionIndex(elasticSearchProjection, uuid, prefix)
+    val sparqlNamespace = projectionNamespace(blazegraphProjection, uuid, prefix)
 
     val projectionName   = s"composite-views-${view.ref.project}-${view.ref.viewId}-${view.rev}"
     val expectedMetadata =
@@ -397,7 +398,7 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
       _        <- mainCompleted.get.map(_.get(project2)).eventuallySome(1)
       _        <- mainCompleted.get.map(_.get(project3)).eventuallySome(1)
       _        <- rebuildCompleted.get.assert(Map.empty)
-      _        <- projections.progress(view.ref, rev).eventually(expectedProgress)
+      _        <- projections.progress(view.indexingRef).eventually(expectedProgress)
       _        <- checkElasticSearchDocuments(
                     elasticIndex,
                     jsonContentOf("indexing/result_muse.json"),
@@ -427,8 +428,8 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
 
     val view = ActiveViewDef(ViewRef(project1, viewId), uuid, rev, value)
 
-    val elasticIndex    = projectionIndex(elasticSearchProjection, uuid, rev, prefix)
-    val sparqlNamespace = projectionNamespace(blazegraphProjection, uuid, rev, prefix)
+    val elasticIndex    = projectionIndex(elasticSearchProjection, uuid, prefix)
+    val sparqlNamespace = projectionNamespace(blazegraphProjection, uuid, prefix)
 
     for {
       _ <- resetCompleted
@@ -451,12 +452,13 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
 
     val rebuild = noRebuild.copy(rebuildStrategy = Some(CompositeView.Interval(2.seconds)))
 
-    val viewId = iri"https://bbp.epfl.ch/composite3"
-    val rev    = 1
-    val view   = ActiveViewDef(ViewRef(project1, viewId), uuid, rev, rebuild)
+    val viewId  = iri"https://bbp.epfl.ch/composite3"
+    val rev     = 1
+    val viewRef = ViewRef(project1, viewId)
+    val view    = ActiveViewDef(viewRef, uuid, rev, rebuild)
 
-    val elasticIndex    = projectionIndex(elasticSearchProjection, uuid, rev, prefix)
-    val sparqlNamespace = projectionNamespace(blazegraphProjection, uuid, rev, prefix)
+    val elasticIndex    = projectionIndex(elasticSearchProjection, uuid, prefix)
+    val sparqlNamespace = projectionNamespace(blazegraphProjection, uuid, prefix)
 
     implicit def mapSemigroup[A, B]: Semigroup[Map[A, B]] = (x: Map[A, B], y: Map[A, B]) => x ++ y
 
@@ -481,7 +483,7 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
 
     def checkIndexingState =
       for {
-        _ <- projections.progress(view.ref, rev).eventually(expectedProgress)
+        _ <- projections.progress(view.indexingRef).eventually(expectedProgress)
         _ <- checkElasticSearchDocuments(
                elasticIndex,
                jsonContentOf("indexing/result_muse.json"),
@@ -500,7 +502,7 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
       _ <- rebuildCompleted.get.map(_.get(project2)).eventuallySome(1)
       _ <- rebuildCompleted.get.map(_.get(project3)).eventuallySome(1)
       _ <- checkIndexingState
-      _ <- projections.fullRestart(project1, viewId)(Anonymous)
+      _ <- projections.fullRestart(viewRef)(Anonymous)
       _ <- mainCompleted.get.map(_.get(project1)).eventuallySome(2)
       _ <- mainCompleted.get.map(_.get(project2)).eventuallySome(2)
       _ <- mainCompleted.get.map(_.get(project3)).eventuallySome(2)
@@ -523,7 +525,7 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
     val viewId       = iri"https://bbp.epfl.ch/composite4"
     val rev          = 1
     val view         = ActiveViewDef(ViewRef(project1, viewId), uuid, rev, value)
-    val elasticIndex = projectionIndex(elasticSearchProjection, uuid, rev, prefix)
+    val elasticIndex = projectionIndex(elasticSearchProjection, uuid, prefix)
 
     for {
       _ <- resetCompleted

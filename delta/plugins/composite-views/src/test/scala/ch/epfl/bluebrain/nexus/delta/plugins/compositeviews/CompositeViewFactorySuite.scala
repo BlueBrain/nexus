@@ -14,6 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObje
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectBase
+import ch.epfl.bluebrain.nexus.delta.sdk.views.IndexingRev
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
@@ -146,13 +147,14 @@ class CompositeViewFactorySuite extends BioSuite {
   }
 
   test("Create the matching projection from the Elasticsearch projection field with a defined id") {
+    val nextRev = IndexingRev(5)
     CompositeViewFactory
-      .create(esProjectionFields, 5)
+      .create(esProjectionFields, nextRev)
       .assert(
         esProjectionId -> ElasticSearchProjection(
           esProjectionId,
           uuid,
-          indexingRev = 5,
+          indexingRev = nextRev,
           esProjectionFields.query,
           schemas,
           types,
@@ -170,13 +172,14 @@ class CompositeViewFactorySuite extends BioSuite {
   }
 
   test("Create the matching projection from the Blazegraph projection field with a defined id") {
+    val nextRev = IndexingRev(5)
     CompositeViewFactory
-      .create(blazegraphProjectionFields, 5)
+      .create(blazegraphProjectionFields, nextRev)
       .assert(
         blazegraphProjectionId -> SparqlProjection(
           blazegraphProjectionId,
           uuid,
-          indexingRev = 5,
+          indexingRev = nextRev,
           blazegraphProjectionFields.query,
           schemas,
           types,
@@ -205,13 +208,14 @@ class CompositeViewFactorySuite extends BioSuite {
   }
 
   test("Create a projection when upserting a non-existing projection") {
+    val nextRev = IndexingRev(5)
     CompositeViewFactory
-      .upsert(blazegraphProjectionFields, _ => None, 5, false)
+      .upsert(blazegraphProjectionFields, _ => None, nextRev, false)
       .assert(
         blazegraphProjectionId -> SparqlProjection(
           blazegraphProjectionId,
           uuid,
-          indexingRev = 5,
+          indexingRev = nextRev,
           blazegraphProjectionFields.query,
           schemas,
           types,
@@ -224,10 +228,12 @@ class CompositeViewFactorySuite extends BioSuite {
   }
 
   test("Preserve the uuid and the indexing rev when sources and projection have not changed.") {
-    val current             = SparqlProjection(
+    val nextRev       = IndexingRev(5)
+    val projectionRev = IndexingRev(3)
+    val current       = SparqlProjection(
       blazegraphProjectionId,
       uuid,
-      indexingRev = 3,
+      indexingRev = projectionRev,
       blazegraphProjectionFields.query,
       schemas,
       types,
@@ -236,20 +242,21 @@ class CompositeViewFactorySuite extends BioSuite {
       includeDeprecated,
       permissions.query
     )
-    val expectedIndexingRev = 3
     CompositeViewFactory
-      .upsert(blazegraphProjectionFields, _ => Some(current), 5, false)
+      .upsert(blazegraphProjectionFields, _ => Some(current), nextRev, false)
       .map { case (_, p) =>
         p.uuid -> p.indexingRev
       }
-      .assert(current.uuid -> expectedIndexingRev)
+      .assert(current.uuid -> projectionRev)
   }
 
   test("Preserve the uuid and update the indexing rev when source has changed.") {
-    val current             = SparqlProjection(
+    val nextRev       = IndexingRev(5)
+    val projectionRev = IndexingRev(3)
+    val current       = SparqlProjection(
       blazegraphProjectionId,
       uuid,
-      indexingRev = 3,
+      indexingRev = projectionRev,
       blazegraphProjectionFields.query,
       schemas,
       types,
@@ -258,20 +265,21 @@ class CompositeViewFactorySuite extends BioSuite {
       includeDeprecated,
       permissions.query
     )
-    val expectedIndexingRev = 5
     CompositeViewFactory
-      .upsert(blazegraphProjectionFields, _ => Some(current), 5, true)
+      .upsert(blazegraphProjectionFields, _ => Some(current), nextRev, true)
       .map { case (_, p) =>
         p.uuid -> p.indexingRev
       }
-      .assert(current.uuid -> expectedIndexingRev)
+      .assert(current.uuid -> nextRev)
   }
 
   test("Preserve the uuid and update the indexing rev when the projection has changed.") {
-    val current             = SparqlProjection(
+    val nextRev       = IndexingRev(5)
+    val projectionRev = IndexingRev(3)
+    val current       = SparqlProjection(
       blazegraphProjectionId,
       uuid,
-      indexingRev = 3,
+      indexingRev = projectionRev,
       blazegraphProjectionFields.query,
       schemas,
       Set(nxv + "OldType"),
@@ -280,12 +288,11 @@ class CompositeViewFactorySuite extends BioSuite {
       includeDeprecated,
       permissions.query
     )
-    val expectedIndexingRev = 5
     CompositeViewFactory
-      .upsert(blazegraphProjectionFields, _ => Some(current), 5, false)
+      .upsert(blazegraphProjectionFields, _ => Some(current), nextRev, false)
       .map { case (_, p) =>
         p.uuid -> p.indexingRev
       }
-      .assert(current.uuid -> expectedIndexingRev)
+      .assert(current.uuid -> nextRev)
   }
 }

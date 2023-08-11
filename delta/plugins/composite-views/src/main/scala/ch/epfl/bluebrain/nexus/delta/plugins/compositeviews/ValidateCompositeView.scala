@@ -25,7 +25,7 @@ import java.util.UUID
   */
 trait ValidateCompositeView {
 
-  def apply(uuid: UUID, rev: Int, value: CompositeViewValue): IO[CompositeViewRejection, Unit]
+  def apply(uuid: UUID, value: CompositeViewValue): IO[CompositeViewRejection, Unit]
 
 }
 
@@ -41,7 +41,7 @@ object ValidateCompositeView {
       prefix: String,
       maxSources: Int,
       maxProjections: Int
-  )(implicit baseUri: BaseUri): ValidateCompositeView = (uuid: UUID, rev: Int, value: CompositeViewValue) => {
+  )(implicit baseUri: BaseUri): ValidateCompositeView = (uuid: UUID, value: CompositeViewValue) => {
     def validateAcls(cpSource: CrossProjectSource): IO[CrossProjectSourceForbidden, Unit] =
       aclCheck.authorizeForOr(cpSource.project, events.read, cpSource.identities)(CrossProjectSourceForbidden(cpSource))
 
@@ -83,7 +83,7 @@ object ValidateCompositeView {
       case sparql: SparqlProjection    => validatePermission(sparql.permission)
       case es: ElasticSearchProjection =>
         validatePermission(es.permission) >>
-          validateIndex(es, projectionIndex(es, uuid, rev, prefix))
+          validateIndex(es, projectionIndex(es, uuid, prefix))
     }
 
     for {

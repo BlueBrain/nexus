@@ -17,6 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
+import ch.epfl.bluebrain.nexus.delta.sdk.views.IndexingRev
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
@@ -33,7 +34,7 @@ trait CompositeViewsFixture extends ConfigFixtures with EitherValuable {
 
   val crypto: Crypto = Crypto("changeme", "salt")
 
-  val alwaysValidate: ValidateCompositeView = (_, _, _) => IO.unit
+  val alwaysValidate: ValidateCompositeView = (_, _) => IO.unit
 
   val query =
     TemplateSparqlConstructQuery(
@@ -131,7 +132,7 @@ trait CompositeViewsFixture extends ConfigFixtures with EitherValuable {
   val esProjection         = ElasticSearchProjection(
     iri"http://example.com/es-projection",
     uuid,
-    1,
+    IndexingRev.init,
     query,
     Set.empty,
     Set.empty,
@@ -148,7 +149,7 @@ trait CompositeViewsFixture extends ConfigFixtures with EitherValuable {
   val blazegraphProjection = SparqlProjection(
     iri"http://example.com/blazegraph-projection",
     uuid,
-    1,
+    IndexingRev.init,
     query,
     Set.empty,
     Set.empty,

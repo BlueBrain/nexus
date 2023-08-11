@@ -27,6 +27,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
+import ch.epfl.bluebrain.nexus.delta.sdk.views.IndexingRev
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit._
@@ -83,7 +84,7 @@ class SearchSpec
   private val esProjection = ElasticSearchProjection(
     nxv + "searchProjection",
     UUID.randomUUID(),
-    1,
+    IndexingRev.init,
     SparqlConstructQuery.unsafe("CONSTRUCT ..."),
     Set.empty,
     Set.empty,
@@ -110,8 +111,8 @@ class SearchSpec
     Instant.EPOCH
   )
   private val compViewProj2   = compViewProj1.copy(project = project2.ref, uuid = UUID.randomUUID())
-  private val projectionProj1 = TargetProjection(esProjection, compViewProj1, 1)
-  private val projectionProj2 = TargetProjection(esProjection, compViewProj2, 1)
+  private val projectionProj1 = TargetProjection(esProjection, compViewProj1)
+  private val projectionProj2 = TargetProjection(esProjection, compViewProj2)
 
   private val projections = Seq(projectionProj1, projectionProj2)
 
@@ -160,7 +161,7 @@ class SearchSpec
 
     "index documents" in {
       val bulkSeq = projections.foldLeft(Seq.empty[ElasticSearchBulk]) { (bulk, p) =>
-        val index   = projectionIndex(p.projection, p.view.uuid, p.rev, prefix)
+        val index   = projectionIndex(p.projection, p.view.uuid, prefix)
         esClient.createIndex(index, Some(mappings), None).accepted
         val newBulk = createDocuments(p).zipWithIndex.map { case (json, idx) =>
           ElasticSearchBulk.Index(index, idx.toString, json)

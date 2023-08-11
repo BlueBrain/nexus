@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeViewFields, CompositeViewProjection, CompositeViewProjectionFields, CompositeViewSource, CompositeViewSourceFields, CompositeViewValue}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectBase
+import ch.epfl.bluebrain.nexus.delta.sdk.views.IndexingRev
 import monix.bio.UIO
 
 object CompositeViewFactory {
@@ -18,11 +19,11 @@ object CompositeViewFactory {
   def create(fields: CompositeViewFields)(implicit projectBase: ProjectBase, uuidF: UUIDF): UIO[CompositeViewValue] =
     for {
       sources     <- fields.sources.traverse { create }
-      projections <- fields.projections.traverse { create(_, 1) }
+      projections <- fields.projections.traverse { create(_, IndexingRev.init) }
     } yield CompositeViewValue(
       fields.name,
       fields.description,
-      1,
+      IndexingRev.init,
       sources.toNem,
       projections.toNem,
       fields.rebuildStrategy
@@ -36,7 +37,7 @@ object CompositeViewFactory {
     *     are updated
     *   - When a projection is updated, only the indexing revision of this projection is updated
     */
-  def update(fields: CompositeViewFields, current: CompositeViewValue, nextRev: Int)(implicit
+  def update(fields: CompositeViewFields, current: CompositeViewValue, nextRev: IndexingRev)(implicit
       projectBase: ProjectBase,
       uuidF: UUIDF
   ): UIO[CompositeViewValue] = {
@@ -90,7 +91,7 @@ object CompositeViewFactory {
       }
   }
 
-  private[compositeviews] def create(input: CompositeViewProjectionFields, nextRev: Int)(implicit
+  private[compositeviews] def create(input: CompositeViewProjectionFields, nextRev: IndexingRev)(implicit
       projectBase: ProjectBase,
       uuidF: UUIDF
   ) =
@@ -103,7 +104,7 @@ object CompositeViewFactory {
   private[compositeviews] def upsert(
       input: CompositeViewProjectionFields,
       find: Iri => Option[CompositeViewProjection],
-      newRev: Int,
+      newRev: IndexingRev,
       sourceHasChanged: Boolean
   )(implicit projectBase: ProjectBase, uuidF: UUIDF) = {
     val currentProjectionOpt = input.id.flatMap(find)
@@ -135,7 +136,7 @@ object CompositeViewFactory {
     CompositeViewValue(
       None,
       None,
-      1,
+      IndexingRev(1),
       sources.map { s => s.id -> s }.toNem,
       projections.map { p => p.id -> p }.toNem,
       rebuildStrategy

@@ -11,6 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.configuration.semiauto.d
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{Configuration, JsonLdDecoder}
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
+import ch.epfl.bluebrain.nexus.delta.sdk.views.IndexingRev
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.{Encoder, JsonObject}
 
@@ -80,7 +81,7 @@ sealed trait CompositeViewProjectionFields {
     * @return
     *   transform from [[CompositeViewProjectionFields]] to [[CompositeViewProjection]]
     */
-  def toProjection(uuid: UUID, generatedId: Iri, indexingRev: Int): CompositeViewProjection
+  def toProjection(uuid: UUID, generatedId: Iri, indexingRev: IndexingRev): CompositeViewProjection
 }
 
 object CompositeViewProjectionFields {
@@ -105,7 +106,7 @@ object CompositeViewProjectionFields {
   ) extends CompositeViewProjectionFields {
     override def tpe: ProjectionType = ElasticSearchProjectionType
 
-    override def toProjection(uuid: UUID, generatedId: Iri, indexingRev: Int): CompositeViewProjection =
+    override def toProjection(uuid: UUID, generatedId: Iri, indexingRev: IndexingRev): CompositeViewProjection =
       ElasticSearchProjection(
         id.getOrElse(generatedId),
         uuid,
@@ -140,7 +141,7 @@ object CompositeViewProjectionFields {
   ) extends CompositeViewProjectionFields {
     override def tpe: ProjectionType = SparqlProjectionType
 
-    override def toProjection(uuid: UUID, generatedId: Iri, indexingRev: Int): CompositeViewProjection =
+    override def toProjection(uuid: UUID, generatedId: Iri, indexingRev: IndexingRev): CompositeViewProjection =
       SparqlProjection(
         id.getOrElse(generatedId),
         uuid,

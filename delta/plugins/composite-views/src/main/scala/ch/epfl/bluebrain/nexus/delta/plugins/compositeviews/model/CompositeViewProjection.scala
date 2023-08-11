@@ -11,6 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
+import ch.epfl.bluebrain.nexus.delta.sdk.views.IndexingRev
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Operation, PipeChain}
 import io.circe.{Encoder, JsonObject}
@@ -35,7 +36,11 @@ sealed trait CompositeViewProjection extends Product with Serializable {
     */
   def uuid: UUID
 
-  def indexingRev: Int
+  /**
+    * @return
+    *   the indexing revision of the projection
+    */
+  def indexingRev: IndexingRev
 
   /**
     * SPARQL query used to create values indexed into the projection.
@@ -103,7 +108,7 @@ sealed trait CompositeViewProjection extends Product with Serializable {
 
   def transformationPipe(implicit rcr: RemoteContextResolution): Operation.Pipe
 
-  def updateIndexingRev(value: Int): CompositeViewProjection =
+  def updateIndexingRev(value: IndexingRev): CompositeViewProjection =
     this match {
       case e: ElasticSearchProjection => e.copy(indexingRev = value)
       case s: SparqlProjection        => s.copy(indexingRev = value)
@@ -123,7 +128,7 @@ object CompositeViewProjection {
   final case class ElasticSearchProjection(
       id: Iri,
       uuid: UUID,
-      indexingRev: Int,
+      indexingRev: IndexingRev,
       query: SparqlConstructQuery,
       resourceSchemas: Set[Iri],
       resourceTypes: Set[Iri],
@@ -152,7 +157,7 @@ object CompositeViewProjection {
   final case class SparqlProjection(
       id: Iri,
       uuid: UUID,
-      indexingRev: Int,
+      indexingRev: IndexingRev,
       query: SparqlConstructQuery,
       resourceSchemas: Set[Iri],
       resourceTypes: Set[Iri],

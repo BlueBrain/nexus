@@ -39,7 +39,7 @@ trait Search {
 
 object Search {
 
-  final case class TargetProjection(projection: ElasticSearchProjection, view: CompositeView, rev: Int)
+  final case class TargetProjection(projection: ElasticSearchProjection, view: CompositeView)
 
   private[search] type ListProjections = () => UIO[Seq[TargetProjection]]
 
@@ -68,7 +68,7 @@ object Search {
               for {
                 projection   <- res.value.projections.lookup(defaultProjectionId)
                 esProjection <- projection.asElasticSearch
-              } yield TargetProjection(esProjection, res.value, res.rev)
+              } yield TargetProjection(esProjection, res.value)
             }
         )
     apply(listProjections, aclCheck, client, prefix, suites)
@@ -94,7 +94,7 @@ object Search {
           accessibleIndices <- aclCheck.mapFilter[TargetProjection, String](
                                  allProjections,
                                  p => ProjectAcl(p.view.project) -> p.projection.permission,
-                                 p => projectionIndex(p.projection, p.view.uuid, p.rev, prefix).value
+                                 p => projectionIndex(p.projection, p.view.uuid, prefix).value
                                )
           results           <- client.search(payload, accessibleIndices, qp)().mapError(WrappedElasticSearchClientError)
         } yield results

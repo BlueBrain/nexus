@@ -21,7 +21,4 @@ package object circe {
       }
 
   }
-
-  object decoder {}
-
 }

@@ -299,9 +299,8 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
       new CompositeViewsIndexingRoutes(
         identities,
         aclCheck,
-        views.fetch,
-        views.fetchProjection,
-        views.fetchSource,
+        views.fetchIndexingView,
+        views.expand,
         CompositeIndexingDetails(projections, graphStream),
         projections,
         projectionErrors,

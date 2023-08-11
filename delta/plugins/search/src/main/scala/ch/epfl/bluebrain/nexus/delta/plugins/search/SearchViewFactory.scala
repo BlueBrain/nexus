@@ -38,7 +38,8 @@ object SearchViewFactory {
   /**
     * Checks if the current value for the search view matches the configuration.
     *
-    * Those checks are limited to the dynamic parts provided by the configuration
+    * Those checks are limited to the dynamic parts provided by the configuration as search views have a fixed shape
+    * provided by [[SearchViewFactory.apply]]
     */
   def matches(current: CompositeViewValue, defaults: Defaults, config: IndexingConfig): Boolean = {
     current.name.contains(defaults.name) &&

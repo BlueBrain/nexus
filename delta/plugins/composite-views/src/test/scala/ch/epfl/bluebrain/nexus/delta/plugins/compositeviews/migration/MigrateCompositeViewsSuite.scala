@@ -40,15 +40,15 @@ class MigrateCompositeViewsSuite extends BioSuite with Doobie.Fixture with Class
   implicit val stateGet: Get[CompositeViewState] = stateSerializer.getValue
 
   private def assertMigratedValue(value: CompositeViewValue, rev: Int)(implicit loc: Location): Unit = {
-    assertEquals(value.sourceIndexingRev, rev)
+    assertEquals(value.sourceIndexingRev.value, rev)
     value.projections.toNel.toList.foreach { case (_, projection) =>
-      assertEquals(projection.indexingRev, rev)
+      assertEquals(projection.indexingRev.value, rev)
     }
   }
 
   test("Insert states and events and run migration") {
     for {
-      _ <- xas.initPartitions(proj)
+      _ <- initPartitions(xas, proj)
       // Events to migrate
       _ <- loadEvent("migration/event-created.json")
       _ <- loadEvent("migration/event-updated.json")

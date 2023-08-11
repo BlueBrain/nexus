@@ -1,18 +1,18 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
 import cats.effect.Clock
-import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
+import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax.kamonSyntax
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef.{ActiveViewDef, DeprecatedViewDef}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewCommand._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource._
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.ProjectionType.{ElasticSearchProjectionType, SparqlProjectionType}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.serialization.CompositeViewFieldsJsonLdSourceDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -23,19 +23,19 @@ import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, Projects}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.views.IndexingRev
 import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityDependency.DependsOn
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.{Scope, ScopedEntityDefinition, ScopedEventLog, StateMachine, Transactors}
+import ch.epfl.bluebrain.nexus.delta.sourcing._
 import io.circe.Json
 import monix.bio.{IO, Task, UIO}
 
@@ -291,98 +291,22 @@ final class CompositeViews private (
   }.span("fetchCompositeView")
 
   /**
-    * Retrieves a current composite view resource and its selected projection.
-    *
-    * @param id
-    *   the view identifier
-    * @param projectionId
-    *   the view projection identifier
-    * @param project
-    *   the view parent project
+    * Fetch a non-deprecated view as an active view
     */
-  def fetchProjection(
-      id: IdSegment,
-      projectionId: IdSegment,
-      project: ProjectRef
-  ): IO[CompositeViewRejection, ViewProjectionResource]       =
-    for {
-      (p, view)     <- fetchState(id, project)
-      projectionIri <- expandIri(projectionId, p)
-      projection    <- IO.fromOption(
-                         view.value.projections.value.find(_.id == projectionIri),
-                         ProjectionNotFound(view.id, projectionIri, project)
-                       )
-    } yield view.toResource(p.apiMappings, p.base).map(_ -> projection)
+  def fetchIndexingView(id: IdSegmentRef, project: ProjectRef): IO[CompositeViewRejection, ActiveViewDef] =
+    fetchState(id, project)
+      .flatMap { case (_, state) =>
+        CompositeViewDef(state) match {
+          case v: ActiveViewDef     => IO.pure(v)
+          case d: DeprecatedViewDef => IO.raiseError(ViewIsDeprecated(d.ref.viewId))
+        }
+      }
 
   /**
-    * Retrieves a current composite view resource and its selected source.
-    *
-    * @param id
-    *   the view identifier
-    * @param sourceId
-    *   the view source identifier
-    * @param project
-    *   the view parent project
+    * Attempts to expand the segment to get back an [[Iri]]
     */
-  def fetchSource(
-      id: IdSegment,
-      sourceId: IdSegment,
-      project: ProjectRef
-  ): IO[CompositeViewRejection, ViewSourceResource]           =
-    for {
-      (p, view) <- fetchState(id, project)
-      sourceIri <- expandIri(sourceId, p)
-      source    <- IO.fromOption(
-                     view.value.sources.value.find(_.id == sourceIri),
-                     SourceNotFound(view.id, sourceIri, project)
-                   )
-    } yield view.toResource(p.apiMappings, p.base).map(_ -> source)
-
-  /**
-    * Retrieves a current composite view resource and its selected blazegraph projection.
-    *
-    * @param id
-    *   the view identifier
-    * @param projectionId
-    *   the view projection identifier
-    * @param project
-    *   the view parent project
-    */
-  def fetchBlazegraphProjection(
-      id: IdSegment,
-      projectionId: IdSegment,
-      project: ProjectRef
-  ): IO[CompositeViewRejection, ViewSparqlProjectionResource] =
-    fetchProjection(id, projectionId, project).flatMap { v =>
-      val (view, projection) = v.value
-      IO.fromOption(
-        projection.asSparql.map(p => v.as(view -> p)),
-        ProjectionNotFound(v.id, projection.id, project, SparqlProjectionType)
-      )
-    }
-
-  /**
-    * Retrieves a current composite view resource and its selected elasticsearch projection.
-    *
-    * @param id
-    *   the view identifier
-    * @param projectionId
-    *   the view projection identifier
-    * @param project
-    *   the view parent project
-    */
-  def fetchElasticSearchProjection(
-      id: IdSegment,
-      projectionId: IdSegment,
-      project: ProjectRef
-  ): IO[CompositeViewRejection, ViewElasticSearchProjectionResource] =
-    fetchProjection(id, projectionId, project).flatMap { v =>
-      val (view, projection) = v.value
-      IO.fromOption(
-        projection.asElasticSearch.map(p => v.as(view -> p)),
-        ProjectionNotFound(v.id, projection.id, project, ElasticSearchProjectionType)
-      )
-    }
+  def expand(id: IdSegmentRef, project: ProjectRef): IO[CompositeViewRejection, Iri] =
+    fetchContext.onRead(project).flatMap(pc => expandIri(id.value, pc))
 
   /**
     * Retrieves a list of CompositeViews using specific pagination, filter and ordering configuration.
@@ -520,7 +444,7 @@ object CompositeViews {
           t     <- IOUtils.instant
           u     <- uuidF()
           value <- CompositeViewFactory.create(c.value)(c.projectBase, uuidF)
-          _     <- validate(u, 1, value)
+          _     <- validate(u, value)
         } yield CompositeViewCreated(c.id, c.project, u, value, c.source, 1, t, c.subject)
       case Some(_) => IO.raiseError(ViewAlreadyExists(c.id, c.project))
     }
@@ -533,10 +457,11 @@ object CompositeViews {
       case Some(s) if s.deprecated   =>
         IO.raiseError(ViewIsDeprecated(c.id))
       case Some(s)                   =>
-        val newRev = s.rev + 1
+        val newRev         = s.rev + 1
+        val newIndexingRev = IndexingRev(newRev)
         for {
-          value <- CompositeViewFactory.update(c.value, s.value, newRev)(c.projectBase, uuidF)
-          _     <- validate(s.uuid, newRev, value)
+          value <- CompositeViewFactory.update(c.value, s.value, newIndexingRev)(c.projectBase, uuidF)
+          _     <- validate(s.uuid, value)
           t     <- IOUtils.instant
         } yield CompositeViewUpdated(c.id, c.project, s.uuid, value, c.source, newRev, t, c.subject)
     }

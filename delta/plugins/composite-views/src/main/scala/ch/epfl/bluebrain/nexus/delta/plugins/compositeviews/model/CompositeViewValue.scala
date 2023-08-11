@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewS
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.views.IndexingRev
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.{deriveConfiguredCodec, deriveConfiguredDecoder, deriveConfiguredEncoder}
 import io.circe.{Codec, Decoder, Encoder}
@@ -28,7 +29,7 @@ import scala.concurrent.duration.{Duration, FiniteDuration}
 final case class CompositeViewValue(
     name: Option[String],
     description: Option[String],
-    sourceIndexingRev: Int,
+    sourceIndexingRev: IndexingRev,
     sources: NonEmptyMap[Iri, CompositeViewSource],
     projections: NonEmptyMap[Iri, CompositeViewProjection],
     rebuildStrategy: Option[RebuildStrategy]

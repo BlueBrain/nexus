@@ -33,7 +33,7 @@ final class CompositeRestartStore(xas: Transactors) {
     */
   def save(restart: CompositeRestart): UIO[Unit] =
     sql"""INSERT INTO public.composite_restarts (project, id, value, instant, acknowledged)
-         |VALUES (${restart.project}, ${restart.id}, ${restart.asJson} ,${restart.instant}, false)
+         |VALUES (${restart.view.project}, ${restart.view.viewId}, ${restart.asJson} ,${restart.instant}, false)
          |""".stripMargin.update.run
       .transact(xas.write)
       .void
