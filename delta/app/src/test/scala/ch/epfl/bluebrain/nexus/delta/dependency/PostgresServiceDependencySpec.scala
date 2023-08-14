@@ -12,7 +12,7 @@ class PostgresServiceDependencySpec extends DoobieScalaTestFixture with Matchers
 
     "fetch its service name and version" in {
       new PostgresServiceDependency(xas).serviceDescription.accepted shouldEqual
-        ServiceDescription(Name.unsafe("postgres"), "15.3")
+        ServiceDescription(Name.unsafe("postgres"), "15.4")
     }
   }
 
