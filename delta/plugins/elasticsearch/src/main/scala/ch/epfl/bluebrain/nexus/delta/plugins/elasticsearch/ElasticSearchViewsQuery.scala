@@ -5,7 +5,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearch
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{AuthorizationFailed, DifferentElasticSearchViewType, ViewIsDeprecated, WrappedElasticSearchClientError}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
-import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress.{Project => ProjectAcl}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
@@ -115,7 +114,7 @@ final class ElasticSearchViewsQueryImpl private[elasticsearch] (
                   case _: AggregateView =>
                     IO.raiseError(
                       DifferentElasticSearchViewType(
-                        iri"$id",
+                        id.toString,
                         ElasticSearchViewType.AggregateElasticSearch,
                         ElasticSearchViewType.ElasticSearch
                       )
