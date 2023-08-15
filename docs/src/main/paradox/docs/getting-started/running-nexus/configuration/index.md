@@ -32,7 +32,7 @@ A default Postgres deployment will limit the number of connections to 100, unles
 
 @@@
 
-Before running Nexus Delta, the @link:[expected tables](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/sourcing-psql/src/main/resources/scripts/schema.ddl){ open=new } should be created.
+Before running Nexus Delta, the @link:[init scripts](https://github.com/BlueBrain/nexus/tree/$git.branch$/delta/sourcing-psql/src/main/resources/scripts/postgres/init){ open=new } should be run in the lexicographical order.
 
 It is possible to let Nexus Delta automatically create them using the following configuration parameters: `app.database.tables-autocreate=true`.
 
