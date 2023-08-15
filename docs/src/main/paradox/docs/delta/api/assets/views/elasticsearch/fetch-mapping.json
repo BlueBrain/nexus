@@ -1,0 +1,19 @@
+{
+  "delta_f488d131-5f29-4721-979e-277a0850fed2_1": {
+    "mappings": {
+      "properties": {
+        "title": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword"
+            }
+          }
+        },
+        "description": {
+          "type": "text"
+        }
+      }
+    }
+  }
+}
