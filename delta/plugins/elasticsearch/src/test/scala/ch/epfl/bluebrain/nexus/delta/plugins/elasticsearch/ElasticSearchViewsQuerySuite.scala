@@ -369,7 +369,7 @@ class ElasticSearchViewsQuerySuite
       .mapping(aggregate1.viewId, project1.ref)
       .assertError(
         _ == DifferentElasticSearchViewType(
-          aggregate1.viewId,
+          aggregate1.viewId.toString,
           ElasticSearchViewType.AggregateElasticSearch,
           ElasticSearchViewType.ElasticSearch
         )
