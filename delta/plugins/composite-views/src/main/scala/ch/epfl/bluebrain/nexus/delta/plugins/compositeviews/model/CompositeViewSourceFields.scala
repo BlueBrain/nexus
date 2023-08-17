@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 
 import akka.http.scaladsl.model.Uri
-import cats.Order
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.{AccessToken, CrossProjectSource, ProjectSource, RemoteProjectSource}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.SourceType._
@@ -69,9 +68,6 @@ sealed trait CompositeViewSourceFields {
 }
 
 object CompositeViewSourceFields {
-
-  implicit def compositeViewSourceFieldsOrder[A <: CompositeViewSourceFields]: Order[A] =
-    Order.by(_.id)
 
   /**
     * Necessary fields to create/update a project source.

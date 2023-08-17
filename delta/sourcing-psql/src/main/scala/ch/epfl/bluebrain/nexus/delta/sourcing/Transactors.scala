@@ -1,13 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
-import cats.syntax.all._
 import cats.effect.{Blocker, Resource}
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.{CacheConfig, KeyValueStore}
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseConfig.DatabaseAccess
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors.PartitionsCache
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseConfig.DatabaseAccess
 import com.zaxxer.hikari.HikariDataSource
 import doobie.Fragment
 import doobie.hikari.HikariTransactor
@@ -18,7 +18,6 @@ import io.github.classgraph.ClassGraph
 import monix.bio.Task
 
 import scala.concurrent.duration._
-
 import scala.jdk.CollectionConverters._
 
 /**

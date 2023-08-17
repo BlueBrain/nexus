@@ -21,6 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.syntax._
@@ -71,8 +72,15 @@ object CompositeViewRejection {
   final case class ProjectionNotFound private (msg: String) extends CompositeViewRejection(msg)
 
   object ProjectionNotFound {
+
+    def apply(ref: ViewRef, projectionId: Iri): ProjectionNotFound =
+      apply(ref.viewId, projectionId, ref.project)
+
     def apply(id: Iri, projectionId: Iri, project: ProjectRef): ProjectionNotFound =
       ProjectionNotFound(s"Projection '$projectionId' not found in composite view '$id' and project '$project'.")
+
+    def apply(ref: ViewRef, projectionId: Iri, tpe: ProjectionType): ProjectionNotFound =
+      apply(ref.viewId, projectionId, ref.project, tpe)
 
     def apply(id: Iri, projectionId: Iri, project: ProjectRef, tpe: ProjectionType): ProjectionNotFound =
       ProjectionNotFound(s"$tpe '$projectionId' not found in composite view '$id' and project '$project'.")
@@ -86,6 +94,11 @@ object CompositeViewRejection {
       extends CompositeViewRejection(
         s"Projection '$projectionId' not found in composite view '$id' and project '$project'."
       )
+
+  object SourceNotFound {
+    def apply(ref: ViewRef, projectionId: Iri): SourceNotFound =
+      new SourceNotFound(ref.viewId, projectionId, ref.project)
+  }
 
   /**
     * Rejection returned when attempting to update/deprecate a view that is already deprecated.

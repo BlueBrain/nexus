@@ -1,23 +1,19 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 
-import cats.data.NonEmptySet
+import cats.data.NonEmptyMap
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.RebuildStrategy
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.AccessToken
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectBase
+import ch.epfl.bluebrain.nexus.delta.sdk.views.IndexingRev
 import io.circe.generic.extras.Configuration
-import io.circe.{Codec, Decoder, Encoder}
 import io.circe.generic.extras.semiauto.{deriveConfiguredCodec, deriveConfiguredDecoder, deriveConfiguredEncoder}
-import monix.bio.UIO
+import io.circe.{Codec, Decoder, Encoder}
 
-import java.util.UUID
 import scala.annotation.nowarn
-import scala.collection.immutable.SortedSet
 import scala.concurrent.duration.{Duration, FiniteDuration}
 
 /**
@@ -33,55 +29,13 @@ import scala.concurrent.duration.{Duration, FiniteDuration}
 final case class CompositeViewValue(
     name: Option[String],
     description: Option[String],
-    sources: NonEmptySet[CompositeViewSource],
-    projections: NonEmptySet[CompositeViewProjection],
+    sourceIndexingRev: IndexingRev,
+    sources: NonEmptyMap[Iri, CompositeViewSource],
+    projections: NonEmptyMap[Iri, CompositeViewProjection],
     rebuildStrategy: Option[RebuildStrategy]
 )
 
 object CompositeViewValue {
-
-  /**
-    * Create a [[CompositeViewValue]] from [[CompositeViewFields]] and previous Ids/UUIDs.
-    */
-  def apply(
-      fields: CompositeViewFields,
-      currentSources: Map[Iri, UUID],
-      currentProjections: Map[Iri, UUID],
-      projectBase: ProjectBase
-  )(implicit uuidF: UUIDF): UIO[CompositeViewValue] = {
-    val sources                                         = UIO.traverse(fields.sources.toSortedSet) { source =>
-      val currentUuid = source.id.flatMap(currentSources.get)
-      for {
-        uuid       <- currentUuid.fold(uuidF())(UIO.delay(_))
-        generatedId = projectBase.iri / uuid.toString
-      } yield source.toSource(uuid, generatedId)
-    }
-    val projections: UIO[List[CompositeViewProjection]] = UIO.traverse(fields.projections.toSortedSet) { projection =>
-      val currentUuid = projection.id.flatMap(currentProjections.get)
-      for {
-        uuid       <- currentUuid.fold(uuidF())(UIO.delay(_))
-        generatedId = projectBase.iri / uuid.toString
-      } yield projection.toProjection(uuid, generatedId)
-    }
-    for {
-      s <- sources
-      p <- projections
-    } yield CompositeViewValue(
-      fields.name,
-      fields.description,
-      NonEmptySet.fromSetUnsafe(SortedSet.from(s)),
-      NonEmptySet.fromSetUnsafe(SortedSet.from(p)),
-      fields.rebuildStrategy
-    )
-  }
-
-  /** Construct a [[CompositeViewValue]] without name and description */
-  def apply(
-      sources: NonEmptySet[CompositeViewSource],
-      projections: NonEmptySet[CompositeViewProjection],
-      rebuildStrategy: Option[RebuildStrategy]
-  ): CompositeViewValue =
-    CompositeViewValue(None, None, sources, projections, rebuildStrategy)
 
   @SuppressWarnings(Array("TryGet"))
   @nowarn("cat=unused")
@@ -117,6 +71,16 @@ object CompositeViewValue {
 
     implicit val compositeViewSourceCodec: Codec.AsObject[CompositeViewSource] =
       deriveConfiguredCodec[CompositeViewSource]
+
+    // No need to repeat the key (as it is included in the value) in the json result so we just encode the value
+    import ch.epfl.bluebrain.nexus.delta.sdk.circe.nonEmptyMap._
+
+    // Decoding and extracting the id/key back from the value
+    implicit val nonEmptyMapProjectionDecoder: Decoder[NonEmptyMap[Iri, CompositeViewProjection]] =
+      dropKeyDecoder(_.id)
+
+    implicit val nonEmptyMapSourceDecoder: Decoder[NonEmptyMap[Iri, CompositeViewSource]] =
+      dropKeyDecoder(_.id)
 
     Codec.from(
       deriveConfiguredDecoder[CompositeViewValue],

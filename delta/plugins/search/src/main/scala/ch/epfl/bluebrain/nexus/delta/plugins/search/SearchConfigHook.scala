@@ -1,16 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.search
 
-import cats.Eq
-import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeProjectionLifeCycle.Hook
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef.ActiveViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewFields
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewFields.indexingEq
-import ch.epfl.bluebrain.nexus.delta.plugins.search.model.defaultViewId
-import ch.epfl.bluebrain.nexus.delta.plugins.search.SearchScopeInitialization.defaultSearchCompositeViewFields
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchConfig.IndexingConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.search.model.defaultViewId
 import ch.epfl.bluebrain.nexus.delta.sdk.Defaults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
@@ -22,17 +18,13 @@ final class SearchConfigHook(
     update: (ActiveViewDef, CompositeViewFields) => UIO[Unit]
 ) extends Hook {
 
-  private val defaultSearchViewFields                         = defaultSearchCompositeViewFields(defaults, config)
+  private val defaultSearchViewFields                         = SearchViewFactory(defaults, config)
   override def apply(view: ActiveViewDef): Option[Task[Unit]] =
     Option.when(viewIsDefault(view) && configHasChanged(view))(update(view, defaultSearchViewFields))
 
-  private def configHasChanged(v: ActiveViewDef): Boolean = {
-    implicit val eq: Eq[CompositeViewFields] = indexingEq
-    CompositeViewFields.fromValue(v.value) =!= defaultSearchViewFields
-  }
+  private def configHasChanged(v: ActiveViewDef): Boolean = !SearchViewFactory.matches(v.value, defaults, config)
 
-  private def viewIsDefault(v: ActiveViewDef): Boolean =
-    v.ref.viewId == defaultViewId
+  private def viewIsDefault(v: ActiveViewDef): Boolean = v.ref.viewId == defaultViewId
 }
 
 object SearchConfigHook {

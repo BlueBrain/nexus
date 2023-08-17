@@ -1,11 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.projections
 
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeViewSource, ProjectionOffset, ProjectionStatistics, ViewResource}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef.ActiveViewDef
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeViewSource, ProjectionOffset, ProjectionStatistics}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.CompositeBranch.Run
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.{CompositeBranch, CompositeGraphStream, CompositeProgress}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
+import ch.epfl.bluebrain.nexus.delta.sdk.views.IndexingViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.ProgressStatistics
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
@@ -20,38 +22,29 @@ import monix.bio.UIO
   *   to get the remaining information to build statistics
   */
 final class CompositeIndexingDetails(
-    fetchProgress: (ProjectRef, Iri, Int) => UIO[CompositeProgress],
+    fetchProgress: IndexingViewRef => UIO[CompositeProgress],
     fetchRemaining: (CompositeViewSource, ProjectRef, Offset) => UIO[Option[RemainingElems]]
 ) {
 
   /**
     * List the offsets for the given composite view
-    *
-    * @param project
-    *   the project of the view
-    * @param id
-    *   the id of the view
-    * @param rev
-    *   its revision
     */
-  def offsets(project: ProjectRef, id: Iri, rev: Int): UIO[SearchResults[ProjectionOffset]] =
-    listOffsets(project, id, rev, _ => true)
+  def offsets(view: IndexingViewRef): UIO[SearchResults[ProjectionOffset]] =
+    listOffsets(view, _ => true)
 
   /**
     * List the offsets for a specific projection of the composite view
     *
-    * @param project
-    *   the project of the view
-    * @param id
-    *   the id of the view
-    * @param rev
-    *   its revision
+    * @param view
+    *   the view
+    * @param target
+    *   the target projection
     */
-  def projectionOffsets(project: ProjectRef, id: Iri, rev: Int, target: Iri): UIO[SearchResults[ProjectionOffset]] =
-    listOffsets(project, id, rev, _.target == target)
+  def projectionOffsets(view: IndexingViewRef, target: Iri): UIO[SearchResults[ProjectionOffset]] =
+    listOffsets(view, _.target == target)
 
-  private def listOffsets(project: ProjectRef, id: Iri, rev: Int, c: CompositeBranch => Boolean) =
-    fetchProgress(project, id, rev).map { progress =>
+  private def listOffsets(view: IndexingViewRef, c: CompositeBranch => Boolean) =
+    fetchProgress(view).map { progress =>
       val offsets = progress.branches.foldLeft(List.empty[ProjectionOffset]) {
         case (acc, (branch, progress)) if branch.run == Run.Main && c(branch) =>
           ProjectionOffset(branch.source, branch.target, progress.offset) :: acc
@@ -65,7 +58,7 @@ final class CompositeIndexingDetails(
     * @param view
     *   the view
     */
-  def statistics(view: ViewResource): UIO[SearchResults[ProjectionStatistics]] =
+  def statistics(view: ActiveViewDef): UIO[SearchResults[ProjectionStatistics]] =
     statistics(view, _ => true)
 
   /**
@@ -75,7 +68,7 @@ final class CompositeIndexingDetails(
     * @param source
     *   the source identifier
     */
-  def sourceStatistics(view: ViewResource, source: Iri): UIO[SearchResults[ProjectionStatistics]] =
+  def sourceStatistics(view: ActiveViewDef, source: Iri): UIO[SearchResults[ProjectionStatistics]] =
     statistics(view, _.source == source)
 
   /**
@@ -85,19 +78,19 @@ final class CompositeIndexingDetails(
     * @param projection
     *   the source identifier
     */
-  def projectionStatistics(view: ViewResource, projection: Iri): UIO[SearchResults[ProjectionStatistics]] =
+  def projectionStatistics(view: ActiveViewDef, projection: Iri): UIO[SearchResults[ProjectionStatistics]] =
     statistics(view, _.target == projection)
 
-  private def statistics(view: ViewResource, c: CompositeBranch => Boolean) = {
+  private def statistics(view: ActiveViewDef, c: CompositeBranch => Boolean) = {
     for {
-      progress   <- fetchProgress(view.value.project, view.id, view.rev)
+      progress   <- fetchProgress(view.indexingRef)
       sourceById  = view.value.sources.foldLeft(Map.empty[Iri, CompositeViewSource]) { case (acc, source) =>
                       acc + (source.id -> source)
                     }
       statistics <- progress.branches.toList.traverseFilter {
                       case (branch, progress) if branch.run == Run.Main && c(branch) =>
                         sourceById.get(branch.source).traverse { s =>
-                          fetchRemaining(s, view.value.project, progress.offset)
+                          fetchRemaining(s, view.project, progress.offset)
                             .map { remaining =>
                               ProjectionStatistics(
                                 branch.source,
