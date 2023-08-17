@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import akka.http.scaladsl.model.Uri
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{AuthorizationFailed, ViewIsDeprecated, WrappedElasticSearchClientError}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{AuthorizationFailed, DifferentElasticSearchViewType, ViewIsDeprecated, WrappedElasticSearchClientError}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
@@ -18,11 +18,7 @@ import io.circe.{Json, JsonObject}
 import monix.bio.IO
 
 /**
-  * Allows two types of operations on Elasticsearch views
-  *   - List which allows to query default elasticsearch views using a Nexus DSL, the caller needs the `resources/read`
-  *     permission to perform this operation
-  *   - Query which allows to query all elasticsearch views using the Elasticsearch DSL, the caller need the
-  *     `views/query` permission or a custom one if the required permission is overridden at the view level
+  * Allows operations on Elasticsearch views
   */
 trait ElasticSearchViewsQuery {
 
@@ -61,6 +57,18 @@ trait ElasticSearchViewsQuery {
   ): IO[ElasticSearchViewRejection, Json] =
     this.query(view.viewId, view.project, query, qp)
 
+  /**
+    * Fetch the elasticsearch mapping of the provided view
+    * @param id
+    *   id of the view for which to fetch the mapping
+    * @param project
+    *   project reference in which the view is
+    */
+  def mapping(
+      id: IdSegment,
+      project: ProjectRef
+  )(implicit caller: Caller): IO[ElasticSearchViewRejection, Json]
+
 }
 
 /**
@@ -93,6 +101,29 @@ final class ElasticSearchViewsQueryImpl private[elasticsearch] (
       search  <- client.search(query, indices, qp)(SortList.empty).mapError(WrappedElasticSearchClientError)
     } yield search
   }
+
+  override def mapping(
+      id: IdSegment,
+      project: ProjectRef
+  )(implicit caller: Caller): IO[ElasticSearchViewRejection, Json] =
+    for {
+      view   <- aclCheck.authorizeForOr(project, permissions.write)(AuthorizationFailed).as(viewStore.fetch(id, project))
+      index  <- view.map {
+                  case v: IndexingView  =>
+                    IO.pure(v.index)
+                  case _: AggregateView =>
+                    IO.raiseError(
+                      DifferentElasticSearchViewType(
+                        id.toString,
+                        ElasticSearchViewType.AggregateElasticSearch,
+                        ElasticSearchViewType.ElasticSearch
+                      )
+                    )
+                }
+      search <- index.flatMap { ind =>
+                  client.mapping(IndexLabel.unsafe(ind)).mapError(WrappedElasticSearchClientError)
+                }
+    } yield search
 
 }
 

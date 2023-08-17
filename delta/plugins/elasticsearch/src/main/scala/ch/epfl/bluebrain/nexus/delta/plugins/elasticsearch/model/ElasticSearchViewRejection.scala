@@ -126,7 +126,7 @@ object ElasticSearchViewRejection {
     *   the view id
     */
   final case class DifferentElasticSearchViewType(
-      id: Iri,
+      id: String,
       provided: ElasticSearchViewType,
       expected: ElasticSearchViewType
   ) extends ElasticSearchViewRejection(

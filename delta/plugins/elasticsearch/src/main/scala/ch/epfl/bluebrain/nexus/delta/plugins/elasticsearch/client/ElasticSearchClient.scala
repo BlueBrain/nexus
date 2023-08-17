@@ -60,6 +60,7 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
   private val countPath                                             = "_count"
   private val searchPath                                            = "_search"
   private val source                                                = "_source"
+  private val mapping                                               = "_mapping"
   private val newLine                                               = System.lineSeparator()
   private val `application/x-ndjson`: MediaType.WithFixedCharset    =
     MediaType.applicationWithFixedCharset("x-ndjson", HttpCharsets.`UTF-8`, "json")
@@ -515,6 +516,12 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
       case resp if resp.status.isSuccess() =>
         discardEntity(resp) >> IO.pure(true)
     }
+
+  /**
+    * Obtain the mapping of the given index
+    */
+  def mapping(index: IndexLabel): HttpResult[Json] =
+    client.toJson(Get(endpoint / index.value / mapping).withHttpCredentials)
 
   private def discardEntity(resp: HttpResponse) =
     UIO.delay(resp.discardEntityBytes()) >> IO.unit

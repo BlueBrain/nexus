@@ -356,6 +356,24 @@ Payload
 Response
 :   @@snip [search-results.json](../assets/views/elasticsearch/search-results.json)
 
+## Fetch Elasticsearch mapping
+
+```
+GET /v1/views/{org_label}/{project_label}/{view_id}/_mapping
+```
+
+Retrieves the view's
+@link:[ElasticSearch mapping](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-get-mapping.html){
+open=new }.
+
+**Example**
+
+Request
+:   @@snip [fetch-mapping.sh](../assets/views/elasticsearch/fetch-mapping.sh)
+
+Response
+:   @@snip [fetch-mapping.json](../assets/views/elasticsearch/fetch-mapping.json)
+
 ## Fetch tags
 
 ```
