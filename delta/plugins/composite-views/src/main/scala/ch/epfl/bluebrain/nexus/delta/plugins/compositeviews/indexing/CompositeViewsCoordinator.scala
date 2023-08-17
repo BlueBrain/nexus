@@ -88,15 +88,15 @@ object CompositeViewsCoordinator {
     val ref = viewDef.ref
     cache.get(ref).flatMap { cachedOpt =>
       (cachedOpt, viewDef) match {
-        case (Some(cached), active: ActiveViewDef) if cached.projection == active.projection =>
+        case (Some(cached), active: ActiveViewDef) if cached.rev == active.rev =>
           logger.info(s"Projection '${cached.projection}' is already running and will not be recreated.")
-        case (Some(cached), _: ActiveViewDef)                                                =>
+        case (Some(cached), _: ActiveViewDef)                                  =>
           logger.info(s"View '${ref.project}/${ref.viewId}' has been updated, cleaning up the current one.") >>
             destroy(cached)
-        case (Some(cached), _: DeprecatedViewDef)                                            =>
+        case (Some(cached), _: DeprecatedViewDef)                              =>
           logger.info(s"View '${ref.project}/${ref.viewId}' has been deprecated, cleaning up the current one.") >>
             destroy(cached)
-        case (None, _)                                                                       =>
+        case (None, _)                                                         =>
           logger.debug(s"View '${ref.project}/${ref.viewId}' is not referenced yet, cleaning is aborted.")
       }
     }

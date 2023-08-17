@@ -57,7 +57,7 @@ object CompositeSpaces {
     )(implicit base: BaseUri, rcr: RemoteContextResolution): CompositeSpaces.Builder = (view: ActiveViewDef) => {
 
       // Operations and sinks for the common space
-      val common       = commonNamespace(view.uuid, view.rev, prefix)
+      val common       = commonNamespace(view.uuid, view.indexingRev, prefix)
       val commonSink   = BlazegraphSink(blazeClient, cfg.blazegraphBatch, common)
       val createCommon = blazeClient.createNamespace(common)
       val deleteCommon = blazeClient.deleteNamespace(common)
@@ -72,14 +72,14 @@ object CompositeSpaces {
       val start: (Task[Unit], Task[Unit], Map[Iri, Sink]) = (createCommon.void, deleteCommon.void, Map.empty[Iri, Sink])
       val (init, destroy, sinkMap)                        = view.value.projections.foldLeft(start) {
         case ((create, delete, sinkMap), p: ElasticSearchProjection) =>
-          val index = projectionIndex(p, view.uuid, view.rev, prefix)
+          val index = projectionIndex(p, view.uuid, prefix)
           (
             create >> esClient.createIndex(index, Some(p.mapping), p.settings).void,
             delete >> esClient.deleteIndex(index).void,
             sinkMap.updated(p.id, createEsSink(index)(p))
           )
         case ((create, delete, sinkMap), s: SparqlProjection)        =>
-          val namespace = projectionNamespace(s, view.uuid, view.rev, prefix)
+          val namespace = projectionNamespace(s, view.uuid, prefix)
           (
             create >> blazeClient.createNamespace(namespace).void,
             delete >> blazeClient.deleteNamespace(namespace).void,

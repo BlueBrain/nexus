@@ -15,10 +15,10 @@
       "@container": "@set"
     },
     "sources": {
-      "@container": "@set"
+      "@container": "@list"
     },
     "projections": {
-      "@container": "@set"
+      "@container": "@list"
     },
     "_uuid": "https://bluebrain.github.io/nexus/vocabulary/uuid"
   },

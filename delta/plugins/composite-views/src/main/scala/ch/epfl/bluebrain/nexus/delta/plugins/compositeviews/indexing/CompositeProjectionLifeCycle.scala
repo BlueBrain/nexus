@@ -61,7 +61,7 @@ object CompositeProjectionLifeCycle {
     def destroy(view: ActiveViewDef): Task[Unit] =
       for {
         _ <- buildSpaces(view).destroy
-        _ <- compositeProjections.deleteAll(view.ref, view.rev)
+        _ <- compositeProjections.deleteAll(view.indexingRef)
       } yield ()
 
     apply(hooks, init, index, destroy)

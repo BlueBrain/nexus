@@ -10,11 +10,14 @@ import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.GraphResourceToNTriples
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.{Interval, RebuildStrategy}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{ProjectionNotFound, SourceNotFound}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.ProjectionType.{ElasticSearchProjectionType, SparqlProjectionType}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeViewProjection, CompositeViewSource, CompositeViewState, CompositeViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.projections.CompositeProjections
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.{CompositeBranch, CompositeGraphStream, CompositeProgress}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
+import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, IndexingViewRef, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemPipe, ElemStream, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
@@ -49,9 +52,26 @@ object CompositeViewDef {
       extends CompositeViewDef {
 
     /**
+      * The id of the view
+      */
+    val id: Iri = ref.viewId
+
+    /**
+      * The project the view belongs to
+      */
+    val project: ProjectRef = ref.project
+
+    /**
+      * The indexing revision
+      */
+    val indexingRev: IndexingRev = value.sourceIndexingRev
+
+    val indexingRef: IndexingViewRef = IndexingViewRef(ref, value.sourceIndexingRev)
+
+    /**
       * The projection name for this view
       */
-    val projection = s"composite-views-${ref.project}-${ref.viewId}-$rev"
+    val projection = s"composite-views-${ref.project}-${ref.viewId}-${indexingRev.value}"
 
     /**
       * The projection metadata for this view
@@ -62,6 +82,38 @@ object CompositeViewDef {
       Some(ref.project),
       Some(ref.viewId)
     )
+
+    /**
+      * Looks for Elasticsearch projections
+      */
+    def elasticSearchProjections: Set[ElasticSearchProjection] =
+      value.projections.foldLeft(Set.empty[ElasticSearchProjection]) { case (acc, projection) =>
+        acc ++ projection.asElasticSearch
+      }
+
+    /**
+      * Looks for Sparql projections
+      */
+    def sparqlProjections: Set[SparqlProjection] =
+      value.projections.foldLeft(Set.empty[SparqlProjection]) { case (acc, projection) =>
+        acc ++ projection.asSparql
+      }
+
+    def projection(id: Iri): Either[ProjectionNotFound, CompositeViewProjection] =
+      value.projections(id).toRight(ProjectionNotFound(ref, id))
+
+    def sparqlProjection(id: Iri): Either[ProjectionNotFound, SparqlProjection] =
+      projection(id).flatMap {
+        _.asSparql.toRight(ProjectionNotFound(ref, id, SparqlProjectionType))
+      }
+
+    def elasticsearchProjection(id: Iri): Either[ProjectionNotFound, ElasticSearchProjection] =
+      projection(id).flatMap {
+        _.asElasticSearch.toRight(ProjectionNotFound(ref, id, ElasticSearchProjectionType))
+      }
+
+    def source(id: Iri): Either[SourceNotFound, CompositeViewSource] =
+      value.sources(id).toRight(SourceNotFound(ref, id))
   }
 
   /**
@@ -129,7 +181,7 @@ object CompositeViewDef {
       compositeProjections: CompositeProjections
   ): Task[CompiledProjection] = {
     val metadata                              = view.metadata
-    val fetchProgress: UIO[CompositeProgress] = compositeProjections.progress(view.ref, view.rev)
+    val fetchProgress: UIO[CompositeProgress] = compositeProjections.progress(view.indexingRef)
 
     def compileSource =
       CompositeViewDef.compileSource(view.ref.project, compilePipeChain, graphStream, spaces.commonSink)(_)
@@ -141,7 +193,7 @@ object CompositeViewDef {
         view.ref,
         view.value.rebuildStrategy,
         CompositeViewDef.rebuildWhen(view, progressRef, fetchProgress, graphStream),
-        compositeProjections.resetRebuild(view.ref, view.rev)
+        compositeProjections.resetRebuild(view.ref)
       )
 
       compile(
@@ -151,7 +203,7 @@ object CompositeViewDef {
         compileTarget,
         rebuild,
         compositeProjections.handleRestarts(view.ref),
-        compositeProjections.saveOperation(metadata, view.ref, view.rev, _, _)
+        compositeProjections.saveOperation(view, _, _)
       ).map { stream =>
         CompiledProjection.fromStream(
           metadata,
@@ -198,8 +250,8 @@ object CompositeViewDef {
     // We override the default implementation in FS2 (where it appends the two streams)
     implicit val semigroup: Semigroup[ElemStream[Unit]] = (x: ElemStream[Unit], y: ElemStream[Unit]) => x.merge(y)
 
-    val sources = NonEmptyChain.fromNonEmptyList(view.value.sources.toNonEmptyList)
-    val targets = NonEmptyChain.fromNonEmptyList(view.value.projections.toNonEmptyList)
+    val sources = NonEmptyChain.fromNonEmptyList(view.value.sources.toNel.map(_._2))
+    val targets = NonEmptyChain.fromNonEmptyList(view.value.projections.toNel.map(_._2))
 
     def startLog(sourceId: Iri, branch: String)                                  =
       logger.debug(s"Running '$branch' branch for source '$sourceId' of composite view '${view.ref}'.")
@@ -263,7 +315,7 @@ object CompositeViewDef {
           (waitingForRebuild ++ Stream.eval(resetProgress).drain ++ stream).repeat
       case None                      =>
         // No rebuild strategy has been defined
-        Stream.eval(logger.debug(s"No rebuild strategy has been defined for view '${view}'.")) >>
+        Stream.eval(logger.debug(s"No rebuild strategy has been defined for view '$view'.")) >>
           Stream.empty[Task]
     }
   }
