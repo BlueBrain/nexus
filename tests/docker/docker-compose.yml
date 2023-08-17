@@ -99,7 +99,7 @@ services:
       - ./config:/config
 
   postgres:
-    image: library/postgres:15.3
+    image: library/postgres:15.4
     environment:
       POSTGRES_USER: "postgres"
       POSTGRES_PASSWORD: "postgres"
