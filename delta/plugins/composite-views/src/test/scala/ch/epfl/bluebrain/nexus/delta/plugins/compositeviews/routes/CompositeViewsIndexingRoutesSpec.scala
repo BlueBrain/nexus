@@ -79,7 +79,8 @@ class CompositeViewsIndexingRoutesSpec extends CompositeViewsRoutesFixtures {
           )
         )
       ),
-    (_, _, _) => UIO.some(RemainingElems(10, nowPlus5))
+    (_, _, _) => UIO.some(RemainingElems(10, nowPlus5)),
+    "prefix"
   )
 
   private lazy val routes =
@@ -177,6 +178,26 @@ class CompositeViewsIndexingRoutesSpec extends CompositeViewsRoutesFixtures {
           response.status shouldEqual StatusCodes.OK
           response.asJson shouldEqual expected
         }
+      }
+    }
+
+    "fail to fetch indexing description without permission" in {
+      Get(s"$viewEndpoint/description") ~> routes ~> check {
+        response.status shouldEqual StatusCodes.Forbidden
+        response.asJson shouldEqual jsonContentOf("routes/errors/authorization-failed.json")
+      }
+    }
+
+    "fetch indexing description" in {
+      Get(s"$viewEndpoint/description") ~> asBob ~> routes ~> check {
+        response.status shouldEqual StatusCodes.OK
+        response.asJson shouldEqual jsonContentOf(
+          "routes/responses/view-indexing-description.json",
+          "uuid"                  -> uuid,
+          "last"                  -> nowPlus5,
+          "instant_elasticsearch" -> now,
+          "instant_blazegraph"    -> now
+        )
       }
     }
 

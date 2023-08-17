@@ -22,6 +22,7 @@ import com.typesafe.scalalogging.Logger
 import io.circe.Json
 import monix.bio.Task
 import monix.execution.Scheduler.Implicits.global
+import org.scalactic.source.Position
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpecLike
@@ -63,7 +64,7 @@ trait BaseSpec
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(config.patience, 300.millis)
 
-  def eventually(t: Task[Assertion]): Assertion =
+  def eventually(t: Task[Assertion])(implicit pos: Position): Assertion =
     eventually {
       t.runSyncUnsafe()
     }
@@ -229,7 +230,8 @@ trait BaseSpec
 
   private[tests] def expectCreated[A] = expect(StatusCodes.Created)
 
-  private[tests] def expectForbidden[A] = expect(StatusCodes.Forbidden)
+  private[tests] def expectForbidden[A]  = expect(StatusCodes.Forbidden)
+  private[tests] def expectBadRequest[A] = expect(StatusCodes.BadRequest)
 
   private[tests] def expectOk[A] = expect(StatusCodes.OK)
 

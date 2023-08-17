@@ -181,7 +181,7 @@ object SearchResults {
     JsonLdEncoder.computeFromCirce(context.merge(additionalContext))
   }
 
-  private def searchResultsEncoder[A: Encoder.AsObject](
+  def searchResultsEncoder[A: Encoder.AsObject](
       next: SearchResults[A] => Option[Uri]
   ): Encoder.AsObject[SearchResults[A]] =
     Encoder.AsObject.instance { r =>
