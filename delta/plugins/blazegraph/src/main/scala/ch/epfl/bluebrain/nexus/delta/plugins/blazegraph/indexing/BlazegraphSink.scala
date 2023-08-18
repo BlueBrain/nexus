@@ -43,7 +43,7 @@ final class BlazegraphSink(
   private val endpoint: Iri = base.endpoint.toIri
 
   override def apply(elements: Chunk[Elem[NTriples]]): Task[Chunk[Elem[Unit]]] = {
-    val bulk = elements.foldLeft(BlazegraphBulk(Set.empty, List.empty, endpoint)) {
+    val bulk = elements.foldLeft(BlazegraphBulk.empty(endpoint)) {
       case (acc, Elem.SuccessElem(_, id, _, _, _, triples, _)) =>
         acc.replace(id, triples)
       case (acc, Elem.DroppedElem(_, id, _, _, _, _))          =>
@@ -82,21 +82,25 @@ object BlazegraphSink {
   def apply(client: BlazegraphClient, batchConfig: BatchConfig, namespace: String)(implicit base: BaseUri) =
     new BlazegraphSink(client, batchConfig.maxElements, batchConfig.maxInterval, namespace = namespace)
 
-  final case class BlazegraphBulk(invalidIds: Set[Iri], queries: List[SparqlWriteQuery], endpoint: Iri) {
+  final case class BlazegraphBulk(invalidIds: Set[Iri], queries: Vector[SparqlWriteQuery], endpoint: Iri) {
 
     private def parseUri(id: Iri) = id.resolvedAgainst(endpoint).toUri
 
     def replace(id: Iri, triples: NTriples): BlazegraphBulk =
       parseUri(id).fold(
         _ => copy(invalidIds = invalidIds + id),
-        uri => copy(queries = SparqlWriteQuery.replace(uri, triples) :: queries)
+        uri => copy(queries = queries :+ SparqlWriteQuery.replace(uri, triples))
       )
 
     def drop(id: Iri): BlazegraphBulk =
       parseUri(id).fold(
         _ => copy(invalidIds = invalidIds + id),
-        uri => copy(queries = SparqlWriteQuery.drop(uri) :: queries)
+        uri => copy(queries = queries :+ SparqlWriteQuery.drop(uri))
       )
 
+  }
+
+  object BlazegraphBulk {
+    def empty(endpoint: Iri): BlazegraphBulk = BlazegraphBulk(Set.empty, Vector.empty, endpoint)
   }
 }
