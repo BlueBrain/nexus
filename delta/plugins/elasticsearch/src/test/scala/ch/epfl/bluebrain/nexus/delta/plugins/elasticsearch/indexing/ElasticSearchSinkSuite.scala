@@ -118,7 +118,7 @@ class ElasticSearchSinkSuite extends BioSuite with ElasticSearchClientSetup.Fixt
     } yield ()
   }
 
-  test("When the same resource appears twice in the chunk, only the last update prevails") {
+  test("When the same resource appears twice in a chunk, only the last update prevails") {
     val index     = IndexLabel.unsafe("test_last_update")
     val charlie   = (nxv + "charlie", json"""{"name": "Charlie", "age": 34 }""")
     val rose      = (nxv + "rose", json"""{"name": "Rose", "age": 66 }""")
@@ -134,7 +134,7 @@ class ElasticSearchSinkSuite extends BioSuite with ElasticSearchClientSetup.Fixt
     } yield ()
   }
 
-  test("When the same resource appears twice in the chunk, only the deletion prevails") {
+  test("When the same resource appears twice in a chunk, only the last deletion prevails") {
     val index   = IndexLabel.unsafe("test_last_delete")
     val charlie = (nxv + "charlie", json"""{"name": "Charlie", "age": 34 }""")
     val rose    = (nxv + "rose", json"""{"name": "Rose", "age": 66 }""")
