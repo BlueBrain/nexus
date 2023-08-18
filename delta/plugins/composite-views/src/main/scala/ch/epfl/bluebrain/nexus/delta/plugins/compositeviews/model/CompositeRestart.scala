@@ -75,6 +75,14 @@ object CompositeRestart {
   final case class PartialRebuild(view: ViewRef, target: Iri, instant: Instant, subject: Subject)
       extends CompositeRestart
 
+  object PartialRebuild {
+
+    /**
+      * Generates a partial rebuild event
+      */
+    def auto(viewRef: ViewRef, target: Iri): PartialRebuild = PartialRebuild(viewRef, target, Instant.EPOCH, Anonymous)
+  }
+
   @nowarn("cat=unused")
   implicit val compositeRestartCodec: Codec.AsObject[CompositeRestart] = {
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._

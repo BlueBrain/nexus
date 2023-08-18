@@ -50,6 +50,16 @@ class ElasticsearchDsl(implicit as: ActorSystem, materializer: Materializer)
     }
   }
 
+  def includes(indices: String*) =
+    allIndices.map { all =>
+      all should contain allElementsOf (indices)
+    }
+
+  def excludes(indices: String*) =
+    allIndices.map { all =>
+      all should not contain allElementsOf(indices)
+    }
+
   def allIndices: Task[List[String]] = {
     elasticClient(
       HttpRequest(
