@@ -30,4 +30,8 @@ private[routes] class DummyElasticSearchViewsQuery(views: ElasticSearchViews) ex
       qp.toMap
     ).asJson deepMerge query.asJson
   }
+
+  def mapping(id: IdSegment, project: ProjectRef)(implicit caller: Caller): IO[ElasticSearchViewRejection, Json] =
+    IO.pure(json"""{"mappings": "mapping"}""")
+
 }

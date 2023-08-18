@@ -6,9 +6,9 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViewsQuerySuite.Sample
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchBulk
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{AuthorizationFailed, ProjectContextRejection, ViewIsDeprecated}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{AuthorizationFailed, DifferentElasticSearchViewType, ProjectContextRejection, ViewIsDeprecated, ViewNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultViewId, permissions, ElasticSearchViewRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultViewId, permissions, ElasticSearchViewRejection, ElasticSearchViewType}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
@@ -27,9 +27,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.{PipeStep, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, DataResource}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Group, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{DiscardMetadata, FilterDeprecated}
 import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
-import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
 import io.circe.syntax.EncoderOps
 import io.circe.{Decoder, Json, JsonObject}
@@ -72,7 +72,7 @@ class ElasticSearchViewsQuerySuite
     // Bob has full access
     (bob.subject, AclAddress.Root, Set(queryPermission, permissions.read)),
     // Alice has access to views in project 1
-    (alice.subject, AclAddress.Project(project1.ref), Set(queryPermission, permissions.read)),
+    (alice.subject, AclAddress.Project(project1.ref), Set(queryPermission, permissions.read, permissions.write)),
     // Charlie has access to views in project 2
     (charlie.subject, AclAddress.Project(project2.ref), Set(queryPermission, permissions.read))
   ).runSyncUnsafe()
@@ -347,6 +347,38 @@ class ElasticSearchViewsQuerySuite
       .query(aggregate2, matchAllSorted, noParameters)
       .map(Ids.extractAll)
       .assert(expectedIds)
+  }
+
+  test("Obtaining the mapping without permission should fail") {
+    implicit val caller: Caller = anon
+    viewsQuery
+      .mapping(view1Proj1.viewId, project1.ref)
+      .assertError(_ == AuthorizationFailed)
+  }
+
+  test("Obtaining the mapping for a view that doesn't exist in the project should fail") {
+    implicit val caller: Caller = alice
+    viewsQuery
+      .mapping(view1Proj2.viewId, project1.ref)
+      .assertError(_ == ViewNotFound(view1Proj2.viewId, project1.ref))
+  }
+
+  test("Obtaining the mapping on an aggregate view should fail") {
+    implicit val caller: Caller = alice
+    viewsQuery
+      .mapping(aggregate1.viewId, project1.ref)
+      .assertError(
+        _ == DifferentElasticSearchViewType(
+          aggregate1.viewId.toString,
+          ElasticSearchViewType.AggregateElasticSearch,
+          ElasticSearchViewType.ElasticSearch
+        )
+      )
+  }
+
+  test("Obtaining the mapping with views/write permission should succeed") {
+    implicit val caller: Caller = alice
+    viewsQuery.mapping(view1Proj1.viewId, project1.ref)
   }
 }
 
