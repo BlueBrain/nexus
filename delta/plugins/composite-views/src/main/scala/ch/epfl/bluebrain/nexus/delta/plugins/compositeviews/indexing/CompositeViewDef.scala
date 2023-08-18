@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing
 
-import cats.data.NonEmptyChain
+import cats.data.{NonEmptyChain, NonEmptyMap}
 import cats.effect.ExitCase
 import cats.effect.ExitCase.{Canceled, Completed, Error}
 import cats.effect.concurrent.Ref
@@ -84,6 +84,11 @@ object CompositeViewDef {
     )
 
     /**
+      * View projections
+      */
+    def projections: NonEmptyMap[Iri, CompositeViewProjection] = value.projections
+
+    /**
       * Looks for Elasticsearch projections
       */
     def elasticSearchProjections: Set[ElasticSearchProjection] =
@@ -164,8 +169,8 @@ object CompositeViewDef {
     *
     * @param view
     *   the definition
-    * @param spaces
-    *   provides dependencies to Elasticsearch and Blazegraph
+    * @param sinks
+    *   provides the necessary sinks for the view
     * @param compilePipeChain
     *   compile the pipe chain for sources and projections
     * @param graphStream
@@ -175,7 +180,7 @@ object CompositeViewDef {
     */
   def compile(
       view: ActiveViewDef,
-      spaces: CompositeSpaces,
+      sinks: CompositeSinks,
       compilePipeChain: PipeChain.Compile,
       graphStream: CompositeGraphStream,
       compositeProjections: CompositeProjections
@@ -184,9 +189,9 @@ object CompositeViewDef {
     val fetchProgress: UIO[CompositeProgress] = compositeProjections.progress(view.indexingRef)
 
     def compileSource =
-      CompositeViewDef.compileSource(view.ref.project, compilePipeChain, graphStream, spaces.commonSink)(_)
+      CompositeViewDef.compileSource(view.ref.project, compilePipeChain, graphStream, sinks.commonSink(view))(_)
 
-    def compileTarget = CompositeViewDef.compileTarget(compilePipeChain, spaces.targetSink)(_)
+    def compileTarget = CompositeViewDef.compileTarget(compilePipeChain, sinks.projectionSink(view, _))(_)
 
     def compileAll(progressRef: Ref[Task, CompositeProgress]) = {
       def rebuild: ElemPipe[Unit, Unit] = CompositeViewDef.rebuild(

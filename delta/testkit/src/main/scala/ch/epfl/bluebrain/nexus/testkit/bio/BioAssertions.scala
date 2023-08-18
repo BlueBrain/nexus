@@ -125,6 +125,25 @@ trait BioAssertions { self: Assertions =>
         )
     }
 
+    def terminated[T <: Throwable](implicit T: ClassTag[T]): UIO[Unit] =
+      io.redeemCause(
+        {
+          case Error(err)        =>
+            fail(
+              s"Wrong raised error type caught, expected terminal: '${T.runtimeClass.getName}', actual typed: '${err.getClass.getName}'"
+            )
+          case Termination(T(_)) => ()
+          case Termination(t)    =>
+            fail(
+              s"Wrong raised error type caught, expected terminal: '${T.runtimeClass.getName}', actual terminal: '${t.getClass.getName}'"
+            )
+        },
+        a =>
+          fail(
+            s"Expected raising error, but returned successful response with type '${a.getClass.getName}'"
+          )
+      )
+
     def terminated[T <: Throwable](expectedMessage: String)(implicit T: ClassTag[T]): UIO[Unit] =
       io.redeemCause(
         {

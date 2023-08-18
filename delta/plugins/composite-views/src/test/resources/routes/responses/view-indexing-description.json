@@ -1,0 +1,64 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/offset.json",
+    "https://bluebrain.github.io/nexus/contexts/statistics.json"
+  ],
+  "commonSpace": "prefix_{{uuid}}_1",
+  "offsets": [
+    {
+      "sourceId": "http://example.com/project-source",
+      "projectionId": "http://example.com/blazegraph-projection",
+      "offset": {
+        "@type": "At",
+        "value": 3
+      }
+    },
+    {
+      "sourceId": "http://example.com/project-source",
+      "projectionId": "http://example.com/es-projection",
+      "offset": {
+        "@type": "At",
+        "value": 3
+      }
+    }
+  ],
+  "projectionName": "composite-views-myorg/myproj-https://bluebrain.github.io/nexus/vocabulary/myid-1",
+  "projectionSpaces": {
+    "http://example.com/blazegraph-projection": {
+      "@type": "SparqlSpace",
+      "value": "prefix_{{uuid}}_{{uuid}}_1"
+    },
+    "http://example.com/es-projection": {
+      "@type": "ElasticSearchSpace",
+      "value": "prefix_{{uuid}}_{{uuid}}_1"
+    }
+  },
+  "statistics": [
+    {
+      "sourceId": "http://example.com/project-source",
+      "projectionId": "http://example.com/es-projection",
+      "delayInSeconds": 5,
+      "discardedEvents": 1,
+      "evaluatedEvents": 4,
+      "failedEvents": 1,
+      "lastEventDateTime": "{{last}}",
+      "lastProcessedEventDateTime": "{{instant_elasticsearch}}",
+      "processedEvents": 6,
+      "remainingEvents": 10,
+      "totalEvents": 16
+    },
+    {
+      "sourceId": "http://example.com/project-source",
+      "projectionId": "http://example.com/blazegraph-projection",
+      "delayInSeconds": 5,
+      "discardedEvents": 1,
+      "evaluatedEvents": 4,
+      "failedEvents": 1,
+      "lastEventDateTime": "{{last}}",
+      "lastProcessedEventDateTime": "{{instant_blazegraph}}",
+      "processedEvents": 6,
+      "remainingEvents": 10,
+      "totalEvents": 16
+    }
+  ]
+}

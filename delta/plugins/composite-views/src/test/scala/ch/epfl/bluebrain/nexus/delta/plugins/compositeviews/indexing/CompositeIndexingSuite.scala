@@ -74,6 +74,8 @@ trait CompositeIndexingFixture extends BioSuite {
   implicit private val baseUri: BaseUri             = BaseUri("http://localhost", Label.unsafe("v1"))
   implicit private val rcr: RemoteContextResolution = RemoteContextResolution.never
 
+  val prefix: String = "delta"
+
   private val queryConfig      = QueryConfig(10, RefreshStrategy.Delay(10.millis))
   val batchConfig: BatchConfig = BatchConfig(2, 50.millis)
   private val compositeConfig  =
@@ -82,27 +84,22 @@ trait CompositeIndexingFixture extends BioSuite {
       elasticsearchBatch = batchConfig
     )
 
-  type Result = (ElasticSearchClient, BlazegraphClient, CompositeProjections, CompositeSpaces.Builder)
-
-  private def resource(sinkConfig: SinkConfig): Resource[Task, Result] = {
+  private def resource(sinkConfig: SinkConfig): Resource[Task, Setup] = {
     (Doobie.resource(), ElasticSearchClientSetup.resource(), BlazegraphClientSetup.resource()).parMapN {
       case (xas, esClient, bgClient) =>
         val compositeRestartStore = new CompositeRestartStore(xas)
         val projections           =
           CompositeProjections(compositeRestartStore, xas, queryConfig, batchConfig, 3.seconds)
-        val spacesBuilder         =
-          CompositeSpaces.Builder("delta", esClient, bgClient, compositeConfig.copy(sinkConfig = sinkConfig))(
-            baseUri,
-            rcr
-          )
-        (esClient, bgClient, projections, spacesBuilder)
+        val spaces                = CompositeSpaces(prefix, esClient, bgClient)
+        val sinks                 = CompositeSinks(prefix, esClient, bgClient, compositeConfig.copy(sinkConfig = sinkConfig))
+        Setup(esClient, bgClient, projections, spaces, sinks)
     }
   }
 
-  def suiteLocalFixture(name: String, sinkConfig: SinkConfig): TaskFixture[Result] =
+  def suiteLocalFixture(name: String, sinkConfig: SinkConfig): TaskFixture[Setup] =
     ResourceFixture.suiteLocal(name, resource(sinkConfig))
 
-  def compositeIndexing(sinkConfig: SinkConfig): ResourceFixture.TaskFixture[Result] =
+  def compositeIndexing(sinkConfig: SinkConfig): ResourceFixture.TaskFixture[Setup] =
     suiteLocalFixture("compositeIndexing", sinkConfig)
 
 }
@@ -120,8 +117,8 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
 
   implicit private val patienceConfig: PatienceConfig = PatienceConfig(10.seconds, 100.millis)
 
-  private val prefix                                                = "delta"
-  private lazy val (esClient, bgClient, projections, spacesBuilder) = fixture()
+  private lazy val result = fixture()
+  import result._
 
   // Data to index
   private val museId       = iri"http://music.com/muse"
@@ -331,30 +328,58 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
 
     val view = ActiveViewDef(ref, uuid, rev, noRebuild)
 
-    val spaces          = spacesBuilder(view)
     val commonNs        = commonNamespace(uuid, noRebuild.sourceIndexingRev, prefix)
     val sparqlNamespace = projectionNamespace(blazegraphProjection, uuid, prefix)
     val elasticIndex    = projectionIndex(elasticSearchProjection, uuid, prefix)
 
     for {
       // Initialise the namespaces and indices
-      _ <- spaces.init
+      _ <- spaces.init(view)
       _ <- bgClient.existsNamespace(commonNs).assert(true)
       _ <- bgClient.existsNamespace(sparqlNamespace).assert(true)
       _ <- esClient.existsIndex(elasticIndex).assert(true)
       // Delete them on destroy
-      _ <- spaces.destroy
+      _ <- spaces.destroyAll(view)
       _ <- bgClient.existsNamespace(commonNs).assert(false)
       _ <- bgClient.existsNamespace(sparqlNamespace).assert(false)
       _ <- esClient.existsIndex(elasticIndex).assert(false)
     } yield ()
   }
 
-  private def start(view: ActiveViewDef) = {
-    val spaces = spacesBuilder(view)
+  test("Init the namespaces and indices and destroy the projections individually") {
+    val ref  = ViewRef(ProjectRef.unsafe("org", "proj"), nxv + "id")
+    val uuid = UUID.randomUUID()
+    val rev  = 2
+
+    val view = ActiveViewDef(ref, uuid, rev, noRebuild)
+
+    val commonNs        = commonNamespace(uuid, noRebuild.sourceIndexingRev, prefix)
+    val sparqlNamespace = projectionNamespace(blazegraphProjection, uuid, prefix)
+    val elasticIndex    = projectionIndex(elasticSearchProjection, uuid, prefix)
+
     for {
-      compiled <- CompositeViewDef.compile(view, spaces, PipeChain.compile(_, registry), compositeStream, projections)
-      _        <- spaces.init
+      // Initialise the namespaces and indices
+      _ <- spaces.init(view)
+      _ <- bgClient.existsNamespace(commonNs).assert(true)
+      _ <- bgClient.existsNamespace(sparqlNamespace).assert(true)
+      _ <- esClient.existsIndex(elasticIndex).assert(true)
+      // Delete the blazegraph projection
+      _ <- spaces.destroyProjection(view, blazegraphProjection)
+      _ <- bgClient.existsNamespace(commonNs).assert(true)
+      _ <- bgClient.existsNamespace(sparqlNamespace).assert(false)
+      _ <- esClient.existsIndex(elasticIndex).assert(true)
+      // Delete the elasticsearch projection
+      _ <- spaces.destroyProjection(view, elasticSearchProjection)
+      _ <- bgClient.existsNamespace(commonNs).assert(true)
+      _ <- bgClient.existsNamespace(sparqlNamespace).assert(false)
+      _ <- esClient.existsIndex(elasticIndex).assert(false)
+    } yield ()
+  }
+
+  private def start(view: ActiveViewDef) = {
+    for {
+      compiled <- CompositeViewDef.compile(view, sinks, PipeChain.compile(_, registry), compositeStream, projections)
+      _        <- spaces.init(view)
       _        <- Projection(compiled, UIO.none, _ => UIO.unit, _ => UIO.unit)(batchConfig)
     } yield compiled
   }
@@ -502,7 +527,7 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
       _ <- rebuildCompleted.get.map(_.get(project2)).eventuallySome(1)
       _ <- rebuildCompleted.get.map(_.get(project3)).eventuallySome(1)
       _ <- checkIndexingState
-      _ <- projections.fullRestart(viewRef)(Anonymous)
+      _ <- projections.scheduleFullRestart(viewRef)(Anonymous)
       _ <- mainCompleted.get.map(_.get(project1)).eventuallySome(2)
       _ <- mainCompleted.get.map(_.get(project2)).eventuallySome(2)
       _ <- mainCompleted.get.map(_.get(project3)).eventuallySome(2)
@@ -577,6 +602,14 @@ object CompositeIndexingSuite {
       case "id"  => keywords.id
       case other => other
     }
+  )
+
+  final case class Setup(
+      esClient: ElasticSearchClient,
+      bgClient: BlazegraphClient,
+      projections: CompositeProjections,
+      spaces: CompositeSpaces,
+      sinks: CompositeSinks
   )
 
   sealed trait Music extends Product with Serializable {
