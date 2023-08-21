@@ -80,6 +80,25 @@ Request
 Response
 :   @@snip [fetched-progress.json](assets/graph-analytics/fetched-progress.json)
 
+## Search
+
+```
+POST /v1/graph-analytics/{org_label}/{project_label}/_search
+  {...}
+```
+
+Search documents that are in a given project's Graph Analytics view.
+
+The supported payload is defined on the @link:[ElasticSearch documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-search.html#search-search-api-request-body){ open=new }.
+
+**Example**
+
+Request
+:   @@snip [ga-search.sh](assets/graph-analytics/ga-search.sh)
+
+Response
+:   @@snip [ge-search.json](assets/graph-analytics/ga-search.json)
+
 ## Internals
 
 In order to implement the described endpoints we needed a way to transform our data so that it would answer the desired questions in a performant manner.

@@ -28,13 +28,14 @@ class CompositeRestartStoreSuite extends BioSuite with IOFixedClock with Doobie.
   private val id1     = nxv + "id1"
   private val viewRef = ViewRef(proj, id1)
 
-  private val cr1 = FullRestart(proj, id1, Instant.EPOCH, Anonymous)
+  private val cr1 = FullRestart(viewRef, Instant.EPOCH, Anonymous)
 
-  private val id2 = nxv + "id2"
-  private val cr2 = FullRebuild(proj, id2, Instant.EPOCH, Anonymous)
+  private val id2      = nxv + "id2"
+  private val viewRef2 = ViewRef(proj, id2)
+  private val cr2      = FullRebuild(viewRef2, Instant.EPOCH, Anonymous)
 
   private val projection = nxv + "projection"
-  private val cr3        = PartialRebuild(proj, id1, projection, Instant.EPOCH.plusSeconds(5L), Anonymous)
+  private val cr3        = PartialRebuild(viewRef, projection, Instant.EPOCH.plusSeconds(5L), Anonymous)
 
   private def toElem(offset: Offset, restart: CompositeRestart) =
     SuccessElem(entityType, restart.id, Some(restart.project), restart.instant, offset, restart, 1)

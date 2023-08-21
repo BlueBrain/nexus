@@ -1,0 +1,74 @@
+{
+  "hits": {
+    "hits": [
+      {
+        "_id": "http://example.com/person",
+        "_index": "delta_ga_myorg_myproj",
+        "_score": 1.3121864,
+        "_source": {
+          "@id": "http://example.com/person",
+          "@type": "http://schema.org/Person",
+          "properties": [
+            {
+              "@id": "http://example.com/epfl",
+              "dataType": "object",
+              "isInArray": false,
+              "path": "http://schema.org/worksFor"
+            }
+          ],
+          "references": [
+            {
+              "@id": "http://example.com/epfl",
+              "@type": [
+                "http://schema.org/EducationalOrganization"
+              ],
+              "dataType": "object",
+              "found": true,
+              "isInArray": false,
+              "path": "http://schema.org/worksFor"
+            }
+          ],
+          "relationships": [
+            {
+              "@id": "http://example.com/epfl",
+              "@type": [
+                "http://schema.org/EducationalOrganization"
+              ],
+              "dataType": "object",
+              "isInArray": false,
+              "path": "http://schema.org/worksFor"
+            }
+          ],
+          "_createdAt": "2023-08-08T15:49:14.081Z",
+          "_createdBy": {
+            "@type": "User",
+            "realm": "internal",
+            "subject": "delta"
+          },
+          "_deprecated": false,
+          "_project": "myorg/myproj",
+          "_rev": 1,
+          "_updatedAt": "2023-08-08T15:49:14.081Z",
+          "_updatedBy": {
+            "@type": "User",
+            "realm": "internal",
+            "subject": "delta"
+          }
+        }
+      }
+    ],
+    "max_score": 1.3121864,
+    "total": {
+      "relation": "eq",
+      "value": 1
+    }
+  },
+  "timed_out": false,
+  "took": 0,
+  "_shards": {
+    "failed": 0,
+    "skipped": 0,
+    "successful": 1,
+    "total": 1
+  }
+}

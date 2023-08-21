@@ -49,7 +49,7 @@ object CompositeViewsCoordinator {
               // Compiling and validating the view
               projection <- lifecycle.build(active)
               // Stopping the previous version
-              _          <- cleanupCurrent(cache, active, destroy)
+              _          <- cleanupCurrent(cache, active, triggerDestroy)
               // Init, register and run the new version
               _          <- supervisor.run(
                               projection,
@@ -59,18 +59,18 @@ object CompositeViewsCoordinator {
                               } yield ()
                             )
             } yield ()
-          case d: DeprecatedViewDef  => cleanupCurrent(cache, d, destroy)
+          case d: DeprecatedViewDef  => cleanupCurrent(cache, d, triggerDestroy)
         }
       }
     }
 
-    private def destroy(active: ActiveViewDef) =
+    private def triggerDestroy(prev: ActiveViewDef, next: CompositeViewDef) =
       supervisor
         .destroy(
-          active.projection,
+          prev.projection,
           for {
-            _ <- lifecycle.destroy(active)
-            _ <- cache.remove(active.ref)
+            _ <- lifecycle.destroyOnIndexingChange(prev, next)
+            _ <- cache.remove(prev.ref)
           } yield ()
         )
         .void
@@ -82,23 +82,13 @@ object CompositeViewsCoordinator {
 
   def cleanupCurrent(
       cache: KeyValueStore[ViewRef, ActiveViewDef],
-      viewDef: CompositeViewDef,
-      destroy: ActiveViewDef => Task[Unit]
+      next: CompositeViewDef,
+      triggerDestroy: (ActiveViewDef, CompositeViewDef) => Task[Unit]
   ): Task[Unit] = {
-    val ref = viewDef.ref
-    cache.get(ref).flatMap { cachedOpt =>
-      (cachedOpt, viewDef) match {
-        case (Some(cached), active: ActiveViewDef) if cached.projection == active.projection =>
-          logger.info(s"Projection '${cached.projection}' is already running and will not be recreated.")
-        case (Some(cached), _: ActiveViewDef)                                                =>
-          logger.info(s"View '${ref.project}/${ref.viewId}' has been updated, cleaning up the current one.") >>
-            destroy(cached)
-        case (Some(cached), _: DeprecatedViewDef)                                            =>
-          logger.info(s"View '${ref.project}/${ref.viewId}' has been deprecated, cleaning up the current one.") >>
-            destroy(cached)
-        case (None, _)                                                                       =>
-          logger.debug(s"View '${ref.project}/${ref.viewId}' is not referenced yet, cleaning is aborted.")
-      }
+    val ref = next.ref
+    cache.get(ref).flatMap {
+      case Some(cached) => triggerDestroy(cached, next)
+      case None         => logger.debug(s"View '${ref.project}/${ref.viewId}' is not referenced yet, cleaning is aborted.")
     }
   }
 

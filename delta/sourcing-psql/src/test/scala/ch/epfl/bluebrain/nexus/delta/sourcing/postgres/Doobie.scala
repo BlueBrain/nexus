@@ -1,12 +1,15 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.postgres
 
+import cats.syntax.all._
 import cats.effect.Resource
-import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
+import ch.epfl.bluebrain.nexus.delta.sourcing.{Execute, Transactors}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.testkit.bio.ResourceFixture.TaskFixture
 import ch.epfl.bluebrain.nexus.testkit.bio.{BioSuite, ResourceFixture}
 import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresContainer
 import doobie.postgres.sqlstate
 import monix.bio.{IO, Task, UIO}
+import doobie.implicits._
 import munit.Location
 import org.postgresql.util.PSQLException
 
@@ -40,6 +43,18 @@ object Doobie {
 
   trait Fixture { self: BioSuite =>
     val doobie: ResourceFixture.TaskFixture[Transactors] = Doobie.suiteLocalFixture("doobie")
+
+    /**
+      * Init the partition in the events and states table for the given projects
+      */
+    def initPartitions(xas: Transactors, projects: ProjectRef*): Task[Unit] =
+      projects
+        .traverse { project =>
+          val partitionInit = Execute(project)
+          partitionInit.initializePartition("scoped_events") >> partitionInit.initializePartition("scoped_states")
+        }
+        .transact(xas.write)
+        .void
   }
 
   trait Assertions { self: munit.Assertions =>

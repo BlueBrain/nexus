@@ -152,7 +152,7 @@ on the HTTP request, any SPARQL client should work.
 ### How can I create an organization as an anonymous user in the docker-compose file? What needs to be done to switch to "authenticated" mode?
 
 By default, the permissions used - for an authenticated user - when running Nexus Delta are the ones defined on the JVM 
-property @link:[app.permissions.minimum](https://github.com/BlueBrain/nexus/blob/v1.4.1/delta/src/main/resources/app.conf#L213){ open=new }.
+property @link:[app.permissions.minimum](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/app.conf#L92){ open=new }.
 In order to change that behaviour, please create some ACLs for the path `/`. For more details about ACLs creation, 
 visit the @ref:[ACLs page](delta/api/acls-api.md#create).
 

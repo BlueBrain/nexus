@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
 import akka.http.scaladsl.model.Uri
-import cats.data.NonEmptySet
+import cats.data.NonEmptyList
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.Interval
@@ -100,7 +100,7 @@ class CompositeViewDecodingSpec
       }""".asObject.value)
 
   val compositeViewValue      = CompositeViewFields(
-    NonEmptySet.of(
+    NonEmptyList.of(
       ProjectSourceFields(
         Some(iri"http://music.com/sources/local")
       ),
@@ -116,7 +116,7 @@ class CompositeViewDecodingSpec
         Some(Secret("mytoken"))
       )
     ),
-    NonEmptySet.of(
+    NonEmptyList.of(
       ElasticSearchProjectionFields(
         Some(iri"http://music.com/bands"),
         query1,
@@ -134,7 +134,7 @@ class CompositeViewDecodingSpec
     Some(Interval(1.minutes))
   )
   val compositeViewValueNoIds = CompositeViewFields(
-    NonEmptySet.of(
+    NonEmptyList.of(
       ProjectSourceFields(
         None
       ),
@@ -150,7 +150,7 @@ class CompositeViewDecodingSpec
         Some(Secret("mytoken"))
       )
     ),
-    NonEmptySet.of(
+    NonEmptyList.of(
       ElasticSearchProjectionFields(
         None,
         query1,

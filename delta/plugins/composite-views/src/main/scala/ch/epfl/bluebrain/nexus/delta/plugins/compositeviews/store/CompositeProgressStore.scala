@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.store
 
 import cats.effect.Clock
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeRestart
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeRestart.{FullRebuild, FullRestart, PartialRebuild}
@@ -8,13 +9,12 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.store.CompositeProgr
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.CompositeBranch
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.CompositeBranch.Run
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
+import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, IndexingViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionProgress
-import com.typesafe.scalalogging.Logger
 import doobie._
 import doobie.implicits._
 import doobie.postgres.implicits._
@@ -26,19 +26,14 @@ final class CompositeProgressStore(xas: Transactors)(implicit clock: Clock[UIO])
 
   /**
     * Saves a projection offset.
-    *
-    * @param branch
-    *   the composite branch
-    * @param progress
-    *   the offset to save
     */
-  def save(ref: ViewRef, rev: Int, branch: CompositeBranch, progress: ProjectionProgress): UIO[Unit] = {
-    UIO.delay(logger.debug("Saving progress {} for branch {} of view {}", progress, branch, ref)) >>
+  def save(view: IndexingViewRef, branch: CompositeBranch, progress: ProjectionProgress): UIO[Unit] = {
+    logger.debug(s"Saving progress $progress for branch $branch of view $view") >>
       IOUtils.instant.flatMap { instant =>
         sql"""INSERT INTO public.composite_offsets (project, view_id, rev, source_id, target_id, run, ordering,
            |processed, discarded, failed, created_at, updated_at)
            |VALUES (
-           |   ${ref.project}, ${ref.viewId}, $rev, ${branch.source}, ${branch.target}, ${branch.run},
+           |   ${view.project}, ${view.id}, ${view.indexingRev}, ${branch.source}, ${branch.target}, ${branch.run},
            |   ${progress.offset.value}, ${progress.processed}, ${progress.discarded}, ${progress.failed}, $instant, $instant
            |)
            |ON CONFLICT (project, view_id, rev, source_id, target_id, run)
@@ -57,15 +52,10 @@ final class CompositeProgressStore(xas: Transactors)(implicit clock: Clock[UIO])
 
   /**
     * Retrieves a projection offset if found.
-    *
-    * @param view
-    *   the reference to the composite view
-    * @param rev
-    *   the revision of the view
     */
-  def progress(view: ViewRef, rev: Int): UIO[Map[CompositeBranch, ProjectionProgress]] =
+  def progress(view: IndexingViewRef): UIO[Map[CompositeBranch, ProjectionProgress]] =
     sql"""SELECT * FROM public.composite_offsets
-         |WHERE project = ${view.project} and view_id = ${view.viewId} and rev = $rev;
+         |WHERE project = ${view.project} and view_id = ${view.id} and rev = ${view.indexingRev};
          |""".stripMargin
       .query[CompositeProgressRow]
       .map { row => row.branch -> row.progress }
@@ -79,15 +69,17 @@ final class CompositeProgressStore(xas: Transactors)(implicit clock: Clock[UIO])
     *   the restart to apply
     */
   def restart(restart: CompositeRestart): UIO[Unit] = IOUtils.instant.flatMap { instant =>
-    val reset = ProjectionProgress.NoProgress
-    val where = restart match {
-      case f: FullRestart    => Fragments.whereAnd(fr"project = ${f.project}", fr"view_id = ${f.id}")
-      case f: FullRebuild    =>
-        Fragments.whereAnd(fr"project = ${f.project}", fr"view_id = ${f.id}", fr"run = ${Run.Rebuild.value}")
+    val project = restart.view.project
+    val id      = restart.view.viewId
+    val reset   = ProjectionProgress.NoProgress
+    val where   = restart match {
+      case _: FullRestart    => Fragments.whereAnd(fr"project = $project", fr"view_id = $id")
+      case _: FullRebuild    =>
+        Fragments.whereAnd(fr"project = $project", fr"view_id = $id", fr"run = ${Run.Rebuild.value}")
       case p: PartialRebuild =>
         Fragments.whereAnd(
-          fr"project = ${p.project}",
-          fr"view_id = ${p.id}",
+          fr"project = $project",
+          fr"view_id = $id",
           fr"target_id = ${p.target}",
           fr"run = ${Run.Rebuild.value}"
         )
@@ -108,15 +100,10 @@ final class CompositeProgressStore(xas: Transactors)(implicit clock: Clock[UIO])
 
   /**
     * Delete all entries for the given view
-    *
-    * @param view
-    *   the reference to the composite view
-    * @param rev
-    *   the revision of the view
     */
-  def deleteAll(view: ViewRef, rev: Int): UIO[Unit] =
+  def deleteAll(view: IndexingViewRef): UIO[Unit] =
     sql"""DELETE FROM public.composite_offsets
-         |WHERE project = ${view.project} and view_id = ${view.viewId} and rev = $rev;
+         |WHERE project = ${view.project} and view_id = ${view.id} and rev = ${view.indexingRev};
          |""".stripMargin.update.run
       .transact(xas.write)
       .void
@@ -128,19 +115,17 @@ object CompositeProgressStore {
   private val logger: Logger = Logger[CompositeProgressStore]
 
   final private[store] case class CompositeProgressRow(
-      ref: ViewRef,
-      rev: Int,
+      view: IndexingViewRef,
       branch: CompositeBranch,
       progress: ProjectionProgress
   )
 
   object CompositeProgressRow {
     implicit val projectionProgressRowRead: Read[CompositeProgressRow] = {
-      Read[(ProjectRef, Iri, Int, Iri, Iri, Run, Long, Long, Long, Long, Instant, Instant)].map {
+      Read[(ProjectRef, Iri, IndexingRev, Iri, Iri, Run, Long, Long, Long, Long, Instant, Instant)].map {
         case (project, viewId, rev, source, target, run, offset, processed, discarded, failed, _, updatedAt) =>
           CompositeProgressRow(
-            ViewRef(project, viewId),
-            rev,
+            IndexingViewRef(project, viewId, rev),
             CompositeBranch(
               source,
               target,

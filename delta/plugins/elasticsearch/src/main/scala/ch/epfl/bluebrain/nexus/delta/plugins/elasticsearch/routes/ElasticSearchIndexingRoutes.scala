@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
 
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViewsQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.IndexingViewDef.ActiveViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
@@ -55,7 +56,8 @@ final class ElasticSearchIndexingRoutes(
     fetch: FetchIndexingView,
     projections: Projections,
     projectionErrors: ProjectionErrors,
-    schemeDirectives: DeltaSchemeDirectives
+    schemeDirectives: DeltaSchemeDirectives,
+    viewsQuery: ElasticSearchViewsQuery
 )(implicit
     baseUri: BaseUri,
     paginationConfig: PaginationConfig,
@@ -139,6 +141,10 @@ final class ElasticSearchIndexingRoutes(
                       )
                     }
                   )
+                },
+                // Get elasticsearch view mapping
+                (pathPrefix("_mapping") & get & pathEndOrSingleSlash) {
+                  emit(viewsQuery.mapping(id, ref))
                 }
               )
             }
@@ -162,7 +168,8 @@ object ElasticSearchIndexingRoutes {
       fetch: FetchIndexingView,
       projections: Projections,
       projectionErrors: ProjectionErrors,
-      schemeDirectives: DeltaSchemeDirectives
+      schemeDirectives: DeltaSchemeDirectives,
+      viewsQuery: ElasticSearchViewsQuery
   )(implicit
       baseUri: BaseUri,
       paginationConfig: PaginationConfig,
@@ -176,6 +183,7 @@ object ElasticSearchIndexingRoutes {
       fetch,
       projections,
       projectionErrors,
-      schemeDirectives
+      schemeDirectives,
+      viewsQuery
     ).routes
 }

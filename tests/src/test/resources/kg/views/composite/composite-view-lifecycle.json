@@ -1,0 +1,54 @@
+{
+  "@type": "CompositeView",
+  "sources": [
+    {
+      "@id": "https://localhost/sources/local",
+      "@type": "ProjectEventStream"
+    }
+    {{#if cross_project}},
+    {
+      "@id": "https://localhost/sources/cross-project",
+      "@type": "CrossProjectEventStream",
+      "project": "{{org}}/{{proj}}",
+      "identities": {
+        "realm": "{{realm}}",
+        "subject": "{{user}}"
+      }
+    }
+    {{/if}}
+  ],
+  "projections": [
+    {
+      "@id": "https://localhost/projections/es-projection",
+      "@type": "ElasticSearchProjection",
+      "mapping": {
+        "properties": {
+          "@type": {
+            "type": "keyword"
+          },
+          "@id": {
+            "type": "keyword"
+          },
+          "name": {
+            "type": "keyword"
+          }
+        },
+        "dynamic": false
+      },
+      "query": "{{query}}",
+      "context": {
+        "@base": "https://bluebrain.github.io/nexus/vocabulary/",
+        "@vocab": "https://bluebrain.github.io/nexus/vocabulary/"
+      }
+    }{{#if sparql}},
+    {
+      "@id": "https://localhost/projections/sparql-projection",
+      "@type": "SparqlProjection",
+      "query": "{{query}}"
+    }{{/if}}
+  ],
+  "rebuildStrategy": {
+    "@type": "Interval",
+    "value": "5 seconds"
+  }
+}

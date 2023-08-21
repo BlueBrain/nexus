@@ -7,18 +7,17 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViewsGen
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef.ActiveViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeRestart.{FullRebuild, FullRestart, PartialRebuild}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{permissions, CompositeViewRejection}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{InvalidCompositeViewId, ProjectContextRejection, ViewNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.projections.{CompositeIndexingDetails, CompositeProjections}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.routes.CompositeViewsIndexingRoutes.{FetchProjection, FetchSource, FetchView}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.store.CompositeRestartStore
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.CompositeBranch.Run.Main
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.{CompositeBranch, CompositeProgress}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.test.{expandOnlyIris, expectIndexingView}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.{IriSegment, StringSegment}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
@@ -32,7 +31,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.FailedElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{ProjectionProgress, RemainingElems}
 import io.circe.Json
 import io.circe.syntax._
-import monix.bio.{IO, UIO}
+import monix.bio.UIO
 
 import java.time.Instant
 import scala.concurrent.duration._
@@ -69,7 +68,7 @@ class CompositeViewsIndexingRoutesSpec extends CompositeViewsRoutesFixtures {
   private def lastRestart = restartStore.last(ViewRef(project.ref, myId)).map(_.flatMap(_.toOption)).accepted
 
   private val details: CompositeIndexingDetails = new CompositeIndexingDetails(
-    (_, _, _) =>
+    (_) =>
       UIO.pure(
         CompositeProgress(
           Map(
@@ -80,45 +79,17 @@ class CompositeViewsIndexingRoutesSpec extends CompositeViewsRoutesFixtures {
           )
         )
       ),
-    (_, _, _) => UIO.some(RemainingElems(10, nowPlus5))
+    (_, _, _) => UIO.some(RemainingElems(10, nowPlus5)),
+    "prefix"
   )
-
-  def fetchView: FetchView             =
-    (id, ref) =>
-      id.value match {
-        case IriSegment(`myId`)    => IO.pure(view)
-        case IriSegment(id)        => IO.raiseError(ViewNotFound(id, ref))
-        case StringSegment("myid") => IO.pure(view)
-        case StringSegment(id)     => IO.raiseError(InvalidCompositeViewId(id))
-      }
-  def fetchProjection: FetchProjection =
-    (id, projectionSegment, ref) =>
-      fetchView(id, ref).flatMap { v =>
-        projectionSegment match {
-          case IriSegment(projectionId) =>
-            IO.fromEither(v.value.projections(projectionId)).map { p => v.map(_ -> p) }
-          case _                        => IO.raiseError(ViewNotFound(v.id, ref))
-        }
-      }
-
-  def fetchSource: FetchSource =
-    (id, sourceSegment, ref) =>
-      fetchView(id, ref).flatMap { v =>
-        sourceSegment match {
-          case IriSegment(sourceId) =>
-            IO.fromEither(view.value.sources(sourceId)).map { s => v.map(_ -> s) }
-          case _                    => IO.raiseError(ViewNotFound(v.id, ref))
-        }
-      }
 
   private lazy val routes =
     Route.seal(
       CompositeViewsIndexingRoutes(
         identities,
         aclCheck,
-        fetchView,
-        fetchProjection,
-        fetchSource,
+        expectIndexingView(indexingView, "myid"),
+        expandOnlyIris,
         details,
         projections,
         projectionErrors,
@@ -210,6 +181,26 @@ class CompositeViewsIndexingRoutesSpec extends CompositeViewsRoutesFixtures {
       }
     }
 
+    "fail to fetch indexing description without permission" in {
+      Get(s"$viewEndpoint/description") ~> routes ~> check {
+        response.status shouldEqual StatusCodes.Forbidden
+        response.asJson shouldEqual jsonContentOf("routes/errors/authorization-failed.json")
+      }
+    }
+
+    "fetch indexing description" in {
+      Get(s"$viewEndpoint/description") ~> asBob ~> routes ~> check {
+        response.status shouldEqual StatusCodes.OK
+        response.asJson shouldEqual jsonContentOf(
+          "routes/responses/view-indexing-description.json",
+          "uuid"                  -> uuid,
+          "last"                  -> nowPlus5,
+          "instant_elasticsearch" -> now,
+          "instant_blazegraph"    -> now
+        )
+      }
+    }
+
     "delete offsets" in {
       val viewOffsets       =
         jsonContentOf("routes/responses/view-offsets.json").replaceKeyWithValue("offset", Offset.start.asJson)
@@ -222,19 +213,19 @@ class CompositeViewsIndexingRoutesSpec extends CompositeViewsRoutesFixtures {
       Delete(s"$viewEndpoint/offset") ~> asBob ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
         response.asJson shouldEqual viewOffsets
-        lastRestart.value shouldEqual FullRestart(project.ref, myId, Instant.EPOCH, bob)
+        lastRestart.value shouldEqual FullRestart(indexingView.ref, Instant.EPOCH, bob)
       }
 
       val endpoints = List(
         (
           s"$viewEndpoint/projections/_/offset",
           viewOffsets,
-          FullRebuild(project.ref, myId, Instant.EPOCH, bob)
+          FullRebuild(indexingView.ref, Instant.EPOCH, bob)
         ),
         (
           s"$viewEndpoint/projections/$bgProjectionEncodedId/offset",
           projectionOffsets,
-          PartialRebuild(project.ref, myId, blazegraphProjection.id, Instant.EPOCH, bob)
+          PartialRebuild(indexingView.ref, blazegraphProjection.id, Instant.EPOCH, bob)
         )
       )
       forAll(endpoints) { case (endpoint, expectedResult, restart) =>

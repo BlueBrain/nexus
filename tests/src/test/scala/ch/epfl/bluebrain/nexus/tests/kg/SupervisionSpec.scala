@@ -219,7 +219,7 @@ class SupervisionSpec extends BaseSpec with EitherValuable with CirceLiteral wit
         (_, _) =>
           eventually {
             deltaClient.get[Json]("/supervision/projections", Mickey) { (json, _) =>
-              val expected = compositeProjectionMetadata(revision = 2, restart = 0)
+              val expected = compositeProjectionMetadata(revision = 1, restart = 0)
               assert(metadataExists(expected)(json))
             }
           }
