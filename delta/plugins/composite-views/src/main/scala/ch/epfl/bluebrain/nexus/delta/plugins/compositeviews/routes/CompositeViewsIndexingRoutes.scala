@@ -80,6 +80,12 @@ class CompositeViewsIndexingRoutes(
                   }
                 )
               },
+              // Fetch composite indexing description
+              (get & pathPrefix("description") & pathEndOrSingleSlash) {
+                authorizeFor(ref, Read).apply {
+                  emit(fetchView(id, ref).flatMap(details.description).rejectOn[ViewNotFound])
+                }
+              },
               // Fetch composite view statistics
               (get & pathPrefix("statistics") & pathEndOrSingleSlash) {
                 authorizeFor(ref, Read).apply {
@@ -207,14 +213,14 @@ class CompositeViewsIndexingRoutes(
     for {
       view    <- fetchView(id, project)
       offsets <- details.offsets(view.indexingRef)
-      _       <- projections.fullRestart(view.ref)
+      _       <- projections.scheduleFullRestart(view.ref)
     } yield offsets.map(_.copy(offset = Offset.Start))
 
   private def fullRebuild(project: ProjectRef, id: IdSegment)(implicit s: Subject) =
     for {
       view    <- fetchView(id, project)
       offsets <- details.offsets(view.indexingRef)
-      _       <- projections.fullRebuild(view.ref)
+      _       <- projections.scheduleFullRebuild(view.ref)
     } yield offsets.map(_.copy(offset = Offset.Start))
 
   private def partialRebuild(project: ProjectRef, id: IdSegment, projectionId: IdSegment)(implicit s: Subject) =
@@ -222,7 +228,7 @@ class CompositeViewsIndexingRoutes(
       view       <- fetchView(id, project)
       projection <- fetchProjection(view, projectionId)
       offsets    <- details.projectionOffsets(view.indexingRef, projection.id)
-      _          <- projections.partialRebuild(view.ref, projection.id)
+      _          <- projections.schedulePartialRebuild(view.ref, projection.id)
     } yield offsets.map(_.copy(offset = Offset.Start))
 
   private def fetchProjection(view: ActiveViewDef, projectionId: IdSegment) =

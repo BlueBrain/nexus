@@ -53,24 +53,29 @@ trait CompositeProjections {
     * Schedules a full rebuild restarting indexing process for all targets while keeping the sources (and the
     * intermediate Sparql space) progress
     */
-  def fullRestart(view: ViewRef)(implicit subject: Subject): UIO[Unit]
+  def scheduleFullRestart(view: ViewRef)(implicit subject: Subject): UIO[Unit]
 
   /**
     * Schedules a full rebuild restarting indexing process for all targets while keeping the sources (and the
     * intermediate Sparql space) progress
     */
-  def fullRebuild(view: ViewRef)(implicit subject: Subject): UIO[Unit]
+  def scheduleFullRebuild(view: ViewRef)(implicit subject: Subject): UIO[Unit]
 
   /**
-    * Schedules a full rebuild restarting indexing process for all targets while keeping the sources (and the
-    * intermediate Sparql space) progress
+    * Schedules a rebuild restarting indexing process for the given target while keeping the progress for the sources
+    * and the other projections
     */
-  def partialRebuild(view: ViewRef, target: Iri)(implicit subject: Subject): UIO[Unit]
+  def schedulePartialRebuild(view: ViewRef, target: Iri)(implicit subject: Subject): UIO[Unit]
 
   /**
     * Reset the progress for the rebuild branches
     */
   def resetRebuild(view: ViewRef): UIO[Unit]
+
+  /**
+    * Reset the progress for the rebuild branches
+    */
+  def partialRebuild(view: ViewRef, target: Iri): UIO[Unit]
 
   /**
     * Detect an eventual restart for the given view
@@ -115,31 +120,30 @@ object CompositeProjections {
 
       override def deleteAll(view: IndexingViewRef): UIO[Unit] = compositeProgressStore.deleteAll(view)
 
-      override def fullRestart(view: ViewRef)(implicit subject: Subject): UIO[Unit] =
+      override def scheduleFullRestart(view: ViewRef)(implicit subject: Subject): UIO[Unit] =
         scheduleRestart(FullRestart(view, _, subject))
 
-      override def fullRebuild(view: ViewRef)(implicit subject: Subject): UIO[Unit] =
+      override def scheduleFullRebuild(view: ViewRef)(implicit subject: Subject): UIO[Unit] =
         scheduleRestart(FullRebuild(view, _, subject))
 
-      override def partialRebuild(view: ViewRef, target: Iri)(implicit subject: Subject): UIO[Unit] =
+      override def schedulePartialRebuild(view: ViewRef, target: Iri)(implicit subject: Subject): UIO[Unit] =
         scheduleRestart(PartialRebuild(view, target, _, subject))
 
       private def scheduleRestart(f: Instant => CompositeRestart) =
         for {
           now    <- IOUtils.instant
           restart = f(now)
-          _      <-
-            UIO.delay(
-              logger.info(
-                s"Scheduling a ${restart.getClass.getSimpleName} from composite view '${restart.view}'"
-              )
-            )
+          _      <- logger.info(s"Scheduling a ${restart.getClass.getSimpleName} from composite view '${restart.view}'")
           _      <- compositeRestartStore.save(restart)
         } yield ()
 
       override def resetRebuild(view: ViewRef): UIO[Unit] =
         logger.debug(s"Automatically reset rebuild offsets for composite view '$view'") >>
           compositeProgressStore.restart(FullRebuild.auto(view))
+
+      override def partialRebuild(view: ViewRef, target: Iri): UIO[Unit] =
+        logger.debug(s"Automatically reset rebuild offsets for projection $target of composite view '$view'") >>
+          compositeProgressStore.restart(PartialRebuild.auto(view, target))
 
       override def handleRestarts[A](view: ViewRef): Pipe[Task, A, A] = (stream: Stream[Task, A]) => {
         val applyRestart =

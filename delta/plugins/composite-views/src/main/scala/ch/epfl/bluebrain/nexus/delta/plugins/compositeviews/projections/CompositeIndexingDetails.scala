@@ -2,7 +2,10 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.projections
 
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef.ActiveViewDef
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeViewSource, ProjectionOffset, ProjectionStatistics}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.{commonNamespace, projectionIndex, projectionNamespace}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeIndexingDescription.ProjectionSpace._
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeIndexingDescription, CompositeViewSource, ProjectionOffset, ProjectionStatistics}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.CompositeBranch.Run
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.{CompositeBranch, CompositeGraphStream, CompositeProgress}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -23,14 +26,15 @@ import monix.bio.UIO
   */
 final class CompositeIndexingDetails(
     fetchProgress: IndexingViewRef => UIO[CompositeProgress],
-    fetchRemaining: (CompositeViewSource, ProjectRef, Offset) => UIO[Option[RemainingElems]]
+    fetchRemaining: (CompositeViewSource, ProjectRef, Offset) => UIO[Option[RemainingElems]],
+    prefix: String
 ) {
 
   /**
     * List the offsets for the given composite view
     */
   def offsets(view: IndexingViewRef): UIO[SearchResults[ProjectionOffset]] =
-    listOffsets(view, _ => true)
+    resultOffsets(view, _ => true)
 
   /**
     * List the offsets for a specific projection of the composite view
@@ -41,16 +45,20 @@ final class CompositeIndexingDetails(
     *   the target projection
     */
   def projectionOffsets(view: IndexingViewRef, target: Iri): UIO[SearchResults[ProjectionOffset]] =
-    listOffsets(view, _.target == target)
+    resultOffsets(view, _.target == target)
+
+  private def resultOffsets(view: IndexingViewRef, c: CompositeBranch => Boolean) =
+    listOffsets(view, c).map { offsets =>
+      SearchResults(offsets.size.toLong, offsets.sorted)
+    }
 
   private def listOffsets(view: IndexingViewRef, c: CompositeBranch => Boolean) =
     fetchProgress(view).map { progress =>
-      val offsets = progress.branches.foldLeft(List.empty[ProjectionOffset]) {
+      progress.branches.foldLeft(List.empty[ProjectionOffset]) {
         case (acc, (branch, progress)) if branch.run == Run.Main && c(branch) =>
           ProjectionOffset(branch.source, branch.target, progress.offset) :: acc
         case (acc, _)                                                         => acc
       }
-      SearchResults(offsets.size.toLong, offsets.sorted)
     }
 
   /**
@@ -59,7 +67,7 @@ final class CompositeIndexingDetails(
     *   the view
     */
   def statistics(view: ActiveViewDef): UIO[SearchResults[ProjectionStatistics]] =
-    statistics(view, _ => true)
+    resultStatistics(view, _ => true)
 
   /**
     * Return indexing statistics a specific source in the given composite view
@@ -69,7 +77,7 @@ final class CompositeIndexingDetails(
     *   the source identifier
     */
   def sourceStatistics(view: ActiveViewDef, source: Iri): UIO[SearchResults[ProjectionStatistics]] =
-    statistics(view, _.source == source)
+    resultStatistics(view, _.source == source)
 
   /**
     * Return indexing statistics a specific projection in the given composite view
@@ -79,7 +87,12 @@ final class CompositeIndexingDetails(
     *   the source identifier
     */
   def projectionStatistics(view: ActiveViewDef, projection: Iri): UIO[SearchResults[ProjectionStatistics]] =
-    statistics(view, _.target == projection)
+    resultStatistics(view, _.target == projection)
+
+  private def resultStatistics(view: ActiveViewDef, c: CompositeBranch => Boolean) =
+    statistics(view, c).map { statistics =>
+      SearchResults(statistics.size.toLong, statistics.sorted)
+    }
 
   private def statistics(view: ActiveViewDef, c: CompositeBranch => Boolean) = {
     for {
@@ -101,16 +114,35 @@ final class CompositeIndexingDetails(
                         }
                       case _                                                         => UIO.none
                     }
-    } yield SearchResults(statistics.size.toLong, statistics.sorted)
+    } yield statistics
   }
+
+  def description(view: ActiveViewDef): UIO[CompositeIndexingDescription] =
+    for {
+      offset          <- listOffsets(view.indexingRef, _ => true)
+      stats           <- statistics(view, _ => true)
+      cs               = commonNamespace(view.uuid, view.indexingRev, prefix)
+      projectionSpaces = view.projections.map {
+                           case e: ElasticSearchProjection =>
+                             ElasticSearchSpace(projectionIndex(e, view.uuid, prefix).value)
+                           case s: SparqlProjection        => SparqlSpace(projectionNamespace(s, view.uuid, prefix))
+                         }
+    } yield CompositeIndexingDescription(
+      view.projection,
+      cs,
+      projectionSpaces,
+      offset,
+      stats
+    )
 }
 
 object CompositeIndexingDetails {
 
-  def apply(projections: CompositeProjections, graphStream: CompositeGraphStream) =
+  def apply(projections: CompositeProjections, graphStream: CompositeGraphStream, prefix: String) =
     new CompositeIndexingDetails(
       projections.progress,
-      graphStream.remaining(_, _)(_)
+      graphStream.remaining(_, _)(_),
+      prefix
     )
 
 }
