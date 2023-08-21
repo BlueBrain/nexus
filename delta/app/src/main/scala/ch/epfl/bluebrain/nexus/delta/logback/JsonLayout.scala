@@ -11,10 +11,10 @@ class JsonLayout extends LayoutBase[ILoggingEvent] {
     Json
       .fromFields(
         Map(
-          "message" := event.getMessage,
-          "level"   := event.getLevel.toString,
-          "time"    := event.getInstant,
-          "logger"  := event.getLoggerName
+          "message"    := event.getMessage,
+          "log.level"  := event.getLevel.toString,
+          "@timestamp" := event.getInstant,
+          "log.logger" := event.getLoggerName
         ) ++ stackTraceField
       )
       .noSpaces + '\n'
