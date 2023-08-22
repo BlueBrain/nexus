@@ -5,7 +5,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.archive.model
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.instances._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceRepresentation, ResourceUris}
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectBase}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
@@ -44,10 +43,10 @@ final case class ArchiveState(
 
   override def types: Set[Iri] = Set(tpe)
 
-  def toResource(mappings: ApiMappings, base: ProjectBase, ttl: FiniteDuration): ArchiveResource =
+  def toResource(ttl: FiniteDuration): ArchiveResource =
     ResourceF(
       id = id,
-      uris = ResourceUris.ephemeral("archives", project, id)(mappings, base),
+      uris = ResourceUris.ephemeral("archives", project, id),
       rev = this.rev,
       types = this.types,
       deprecated = this.deprecated,

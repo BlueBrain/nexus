@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.testkit.{CirceEq, EitherValuable}
 import ch.epfl.bluebrain.nexus.tests.{BaseSpec, SchemaPayload}
 import ch.epfl.bluebrain.nexus.tests.Identity.listings.{Alice, Bob}
 import ch.epfl.bluebrain.nexus.tests.Identity.{Anonymous, Delta}
-import ch.epfl.bluebrain.nexus.tests.Optics.{filterMetadataKeys, filterSearchMetadata, listing}
+import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Organizations, Resources, Views}
 import io.circe.Json
 import org.scalatest.Inspectors
@@ -74,36 +74,86 @@ final class ListingsSpec extends BaseSpec with Inspectors with EitherValuable wi
 
   "Listing resources within a project" should {
 
-    "get default resources" in {
+    "get default resolver" in {
+      val defaultResolverId = "https://bluebrain.github.io/nexus/vocabulary/defaultInProject"
+
       val mapping = replacements(
         Delta,
         "project-label" -> ref11,
-        "project"       -> s"${config.deltaUri}/projects/$ref11"
+        "project"       -> s"${config.deltaUri}/projects/$ref11",
+        "id"            -> defaultResolverId,
+        "self"          -> resolverSelf(ref11, defaultResolverId)
       )
 
-      val endpoints = List(
-        s"/resolvers/$ref11" -> jsonContentOf("/kg/listings/default-resolver.json", mapping: _*),
-        s"/views/$ref11"     -> jsonContentOf("/kg/listings/default-view.json", mapping: _*),
-        s"/storages/$ref11"  -> jsonContentOf("/kg/listings/default-storage.json", mapping: _*)
-      )
+      val expected = jsonContentOf("/kg/listings/default-resolver.json", mapping: _*)
 
-      forAll(endpoints) { case (endpoint, expected) =>
-        eventually {
-          deltaClient.get[Json](endpoint, Bob) { (json, response) =>
-            response.status shouldEqual StatusCodes.OK
-            filterSearchMetadata(json) should equalIgnoreArrayOrder(expected)
-          }
+      eventually {
+        deltaClient.get[Json](s"/resolvers/$ref11", Bob) { (json, response) =>
+          response.status shouldEqual StatusCodes.OK
+          filterSearchMetadata(json) should equalIgnoreArrayOrder(expected)
         }
       }
     }
 
+    "get default views" in {
+      val defaultElasticSearchView = "https://bluebrain.github.io/nexus/vocabulary/defaultElasticSearchIndex"
+      val defaultSparqlView        = "https://bluebrain.github.io/nexus/vocabulary/defaultSparqlIndex"
+      val searchView               = "https://bluebrain.github.io/nexus/vocabulary/searchView"
+
+      val mapping = replacements(
+        Delta,
+        "project-label"                -> ref11,
+        "project"                      -> s"${config.deltaUri}/projects/$ref11",
+        "defaultElasticSearchView"     -> defaultElasticSearchView,
+        "defaultElasticSearchViewSelf" -> viewSelf(ref11, defaultElasticSearchView),
+        "defaultSparqlView"            -> defaultSparqlView,
+        "defaultSparqlViewSelf"        -> viewSelf(ref11, defaultSparqlView),
+        "searchView"                   -> searchView,
+        "searchViewSelf"               -> viewSelf(ref11, searchView)
+      )
+
+      val expected = jsonContentOf("/kg/listings/default-view.json", mapping: _*)
+      eventually {
+        deltaClient.get[Json](s"/views/$ref11", Bob) { (json, response) =>
+          response.status shouldEqual StatusCodes.OK
+          filterSearchMetadata(json) should equalIgnoreArrayOrder(expected)
+        }
+      }
+    }
+
+    "get default storage" in {
+      val defaultStorageId = "https://bluebrain.github.io/nexus/vocabulary/diskStorageDefault"
+
+      val mapping = replacements(
+        Delta,
+        "project-label" -> ref11,
+        "project"       -> s"${config.deltaUri}/projects/$ref11",
+        "id"            -> defaultStorageId,
+        "self"          -> storageSelf(ref11, defaultStorageId)
+      )
+
+      val expected = jsonContentOf("/kg/listings/default-storage.json", mapping: _*)
+
+      eventually {
+        deltaClient.get[Json](s"/storages/$ref11", Bob) { (json, response) =>
+          response.status shouldEqual StatusCodes.OK
+          filterSearchMetadata(json) should equalIgnoreArrayOrder(expected)
+        }
+      }
+    }
+
+    val resource11Id               = s"${config.deltaUri}/resources/$proj11/_/resource11"
+    val resource11WithSchemaId     = s"${config.deltaUri}/resources/$proj11/_/resource11_with_schema"
+    val resource11WithSchemaSelf   = resourceSelf(ref11, resource11WithSchemaId)
     val resource11WithSchemaResult = jsonContentOf(
       "/kg/listings/project/resource11-schema.json",
       replacements(
         Bob,
         "org"          -> org1,
         "proj"         -> proj11,
-        "resourceType" -> resourceType
+        "resourceType" -> resourceType,
+        "id"           -> resource11WithSchemaId,
+        "self"         -> resource11WithSchemaSelf
       ): _*
     )
 
@@ -115,22 +165,22 @@ final class ListingsSpec extends BaseSpec with Inspectors with EitherValuable wi
     }
 
     "get the resource via locate with an id and id parameters" in {
-      val id = UrlUtils.encode(s"${config.deltaUri}/resources/$proj11/_/resource11_with_schema")
-      deltaClient.get[Json](s"/resources?id=$id", Bob) { (json, response) =>
+      val encodedId = UrlUtils.encode(resource11WithSchemaId)
+      deltaClient.get[Json](s"/resources?id=$encodedId", Bob) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
         filterSearchMetadata(json) should equalIgnoreArrayOrder(resource11WithSchemaResult)
       }
 
-      deltaClient.get[Json](s"/resources?locate=$id", Bob) { (json, response) =>
+      deltaClient.get[Json](s"/resources?locate=$encodedId", Bob) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
         filterSearchMetadata(json) should equalIgnoreArrayOrder(resource11WithSchemaResult)
       }
     }
 
     "get the resource via locate with a self " in {
-      val self = UrlUtils.encode(s"${config.deltaUri}/resources/$ref11/test-schema/resource11_with_schema")
+      val encodedSelf = UrlUtils.encode(resource11WithSchemaSelf)
 
-      deltaClient.get[Json](s"/resources?locate=$self", Bob) { (json, response) =>
+      deltaClient.get[Json](s"/resources?locate=$encodedSelf", Bob) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
         filterSearchMetadata(json) should equalIgnoreArrayOrder(resource11WithSchemaResult)
       }
@@ -154,7 +204,7 @@ final class ListingsSpec extends BaseSpec with Inspectors with EitherValuable wi
       def lens(json: Json) =
         listing._results
           .getOption(json)
-          .fold(Vector.empty[Json]) { _.map(filterMetadataKeys) }
+          .fold(Vector.empty[String]) { _.flatMap(`@id`.getOption) }
 
       val result = deltaClient
         .stream(
@@ -166,19 +216,7 @@ final class ListingsSpec extends BaseSpec with Inspectors with EitherValuable wi
         .compile
         .toList
 
-      val expected = listing._results
-        .getOption(
-          jsonContentOf(
-            "/kg/listings/project/resource-by-type.json",
-            replacements(
-              Bob,
-              "org"          -> org1,
-              "proj"         -> proj11,
-              "resourceType" -> resourceType
-            ): _*
-          )
-        )
-        .value
+      val expected = Vector(resource11Id, resource11WithSchemaId)
 
       result.map(_.flatten shouldEqual expected)
     }
@@ -251,7 +289,7 @@ final class ListingsSpec extends BaseSpec with Inspectors with EitherValuable wi
       eventually {
         deltaClient.get[Json](s"/resources?type=$testResourceType", Bob) { (json, response) =>
           response.status shouldEqual StatusCodes.OK
-          filterSearchMetadata(json) should equalIgnoreArrayOrder(expected)
+          filterSearchMetadataAndLinks(json) should equalIgnoreArrayOrder(expected)
         }
       }
     }
@@ -269,7 +307,7 @@ final class ListingsSpec extends BaseSpec with Inspectors with EitherValuable wi
 
       deltaClient.get[Json](s"/resources?type=$testResourceType", Alice) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
-        filterSearchMetadata(json) should equalIgnoreArrayOrder(expected)
+        filterSearchMetadataAndLinks(json) should equalIgnoreArrayOrder(expected)
       }
     }
 

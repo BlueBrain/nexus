@@ -20,6 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceUris
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
@@ -39,7 +40,8 @@ class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures {
 
   private val updatedIndexingSource = indexingSource.mapObject(_.add("resourceTag", Json.fromString("v1.5")))
 
-  private val indexingViewId = nxv + "indexing-view"
+  private val indexingViewId  = nxv + "indexing-view"
+  private val aggregateViewId = nxv + "aggregate-view"
 
   private val fetchContext = FetchContextDummy[BlazegraphViewRejection](
     Map(project.ref -> project.context),
@@ -99,20 +101,17 @@ class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures {
         .accepted
       Post("/v1/views/org/proj", indexingSource.toEntity) ~> asBob ~> routes ~> check {
         response.status shouldEqual StatusCodes.Created
-        response.asJson shouldEqual jsonContentOf(
-          "routes/responses/indexing-view-metadata.json",
-          "uuid"        -> uuid,
-          "rev"         -> 1,
-          "indexingRev" -> 1,
-          "deprecated"  -> false
-        )
+        response.asJson shouldEqual indexingViewMetadata(1, 1, false)
       }
     }
 
     "create an aggregate view" in {
       Put("/v1/views/org/proj/aggregate-view", aggregateSource.toEntity) ~> asBob ~> routes ~> check {
         response.status shouldEqual StatusCodes.Created
-        response.asJson shouldEqual jsonContentOf("routes/responses/aggregate-view-metadata.json")
+        response.asJson shouldEqual jsonContentOf(
+          "routes/responses/aggregate-view-metadata.json",
+          "self" -> ResourceUris("views", projectRef, aggregateViewId).accessUri
+        )
       }
     }
 
@@ -157,14 +156,7 @@ class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures {
     "update a view" in {
       Put("/v1/views/org/proj/indexing-view?rev=1", updatedIndexingSource.toEntity) ~> asBob ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual jsonContentOf(
-          "routes/responses/indexing-view-metadata.json",
-          "uuid"        -> uuid,
-          "rev"         -> 2,
-          "indexingRev" -> 2,
-          "deprecated"  -> false
-        )
-
+        response.asJson shouldEqual indexingViewMetadata(2, 2, false)
       }
     }
     "reject update of a view at a non-existent revision" in {
@@ -179,13 +171,7 @@ class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures {
       val payload = json"""{"tag": "mytag", "rev": 1}"""
       Post("/v1/views/org/proj/indexing-view/tags?rev=2", payload.toEntity) ~> asBob ~> routes ~> check {
         status shouldEqual StatusCodes.Created
-        response.asJson shouldEqual jsonContentOf(
-          "routes/responses/indexing-view-metadata.json",
-          "uuid"        -> uuid,
-          "rev"         -> 3,
-          "indexingRev" -> 2,
-          "deprecated"  -> false
-        )
+        response.asJson shouldEqual indexingViewMetadata(3, 2, false)
       }
     }
 
@@ -204,14 +190,7 @@ class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures {
     "deprecate a view" in {
       Delete("/v1/views/org/proj/indexing-view?rev=3") ~> asBob ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual jsonContentOf(
-          "routes/responses/indexing-view-metadata.json",
-          "uuid"        -> uuid,
-          "rev"         -> 4,
-          "indexingRev" -> 2,
-          "deprecated"  -> true
-        )
-
+        response.asJson shouldEqual indexingViewMetadata(4, 2, true)
       }
     }
 
@@ -233,13 +212,7 @@ class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures {
     "fetch a view" in {
       Get("/v1/views/org/proj/indexing-view") ~> asBob ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual jsonContentOf(
-          "routes/responses/indexing-view.json",
-          "uuid"        -> uuid,
-          "deprecated"  -> true,
-          "rev"         -> 4,
-          "indexingRev" -> 2
-        )
+        response.asJson shouldEqual indexingView(4, 2, true)
       }
     }
     "fetch a view by rev or tag" in {
@@ -254,13 +227,7 @@ class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures {
       forAll(endpoints) { endpoint =>
         Get(endpoint) ~> asBob ~> routes ~> check {
           response.status shouldEqual StatusCodes.OK
-          response.asJson shouldEqual jsonContentOf(
-            "routes/responses/indexing-view.json",
-            "uuid"        -> uuid,
-            "deprecated"  -> false,
-            "rev"         -> 1,
-            "indexingRev" -> 1
-          ).mapObject(_.remove("resourceTag"))
+          response.asJson shouldEqual indexingView(1, 1, false).mapObject(_.remove("resourceTag"))
         }
       }
 
@@ -366,4 +333,24 @@ class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures {
       }
     }
   }
+
+  private def indexingViewMetadata(rev: Int, indexingRev: Int, deprecated: Boolean) =
+    jsonContentOf(
+      "routes/responses/indexing-view-metadata.json",
+      "uuid"        -> uuid,
+      "deprecated"  -> deprecated,
+      "rev"         -> rev,
+      "indexingRev" -> indexingRev,
+      "self"        -> ResourceUris("views", projectRef, indexingViewId).accessUri
+    )
+
+  private def indexingView(rev: Int, indexingRev: Int, deprecated: Boolean) =
+    jsonContentOf(
+      "routes/responses/indexing-view.json",
+      "uuid"        -> uuid,
+      "deprecated"  -> deprecated,
+      "rev"         -> rev,
+      "indexingRev" -> indexingRev,
+      "self"        -> ResourceUris("views", projectRef, indexingViewId).accessUri
+    )
 }

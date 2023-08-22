@@ -5,7 +5,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchVi
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceUris, Tags}
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectBase}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
@@ -111,14 +110,12 @@ final case class ElasticSearchViewState(
   }
 
   def toResource(
-      mappings: ApiMappings,
-      base: ProjectBase,
       defaultMapping: JsonObject,
       defaultSettings: JsonObject
   ): ViewResource = {
     ResourceF(
       id = id,
-      uris = ResourceUris("views", project, id)(mappings, base),
+      uris = ResourceUris("views", project, id),
       rev = rev,
       types = types,
       deprecated = deprecated,

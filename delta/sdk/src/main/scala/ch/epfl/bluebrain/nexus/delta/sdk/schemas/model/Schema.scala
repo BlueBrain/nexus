@@ -93,7 +93,7 @@ object Schema {
     ResourceShift.apply[SchemaState, Schema](
       Schemas.entityType,
       (ref, project) => schemas.fetch(IdSegmentRef(ref), project),
-      (context, state) => state.toResource(context.apiMappings, context.base),
+      state => state.toResource,
       value => JsonLdContent(value, value.value.source, None)
     )
 

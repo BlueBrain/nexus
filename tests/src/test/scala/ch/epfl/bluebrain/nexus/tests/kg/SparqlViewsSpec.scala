@@ -70,13 +70,13 @@ class SparqlViewsSpec extends BaseSpec with EitherValuable with CirceEq {
     "get the created SparqlView" in {
       deltaClient.get[Json](s"/views/$fullId/test-resource:cell-view", ScoobyDoo) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
-
+        val viewId   = "https://dev.nexus.test.com/simplified-resource/cell-view"
         val expected = jsonContentOf(
           "/kg/views/sparql-view-response.json",
           replacements(
             ScoobyDoo,
             "id"             -> "https://dev.nexus.test.com/simplified-resource/cell-view",
-            "resources"      -> s"${config.deltaUri}/views/$fullId/test-resource:cell-view",
+            "self"           -> viewSelf(fullId, viewId),
             "project-parent" -> s"${config.deltaUri}/projects/$fullId"
           ): _*
         )
@@ -96,12 +96,13 @@ class SparqlViewsSpec extends BaseSpec with EitherValuable with CirceEq {
     "get an AggregateSparqlView" in {
       deltaClient.get[Json](s"/views/$fullId2/test-resource:agg-cell-view", ScoobyDoo) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
+        val viewId   = "https://dev.nexus.test.com/simplified-resource/agg-cell-view"
         val expected = jsonContentOf(
           "/kg/views/agg-sparql-view-response.json",
           replacements(
             ScoobyDoo,
-            "id"             -> "https://dev.nexus.test.com/simplified-resource/agg-cell-view",
-            "resources"      -> s"${config.deltaUri}/views/$fullId2/test-resource:agg-cell-view",
+            "id"             -> viewId,
+            "resources"      -> viewSelf(fullId2, viewId),
             "project-parent" -> s"${config.deltaUri}/projects/$fullId2",
             "project1"       -> fullId,
             "project2"       -> fullId2

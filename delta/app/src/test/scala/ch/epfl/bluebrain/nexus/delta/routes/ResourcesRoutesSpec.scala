@@ -16,6 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceResolut
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceUris
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{events, resources}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
@@ -71,7 +72,11 @@ class ResourcesRoutesSpec extends BaseRouteSpec {
   private val payloadWithBlankId          = jsonContentOf("resources/resource.json", "id" -> "")
   private val payloadWithUnderscoreFields =
     jsonContentOf("resources/resource-with-underscore-fields.json", "id" -> myId5)
-  private val payloadWithMetadata         = jsonContentOf("resources/resource-with-metadata.json", "id" -> myId)
+  private val payloadWithMetadata         = jsonContentOf(
+    "resources/resource-with-metadata.json",
+    "id"   -> myId,
+    "self" -> ResourceUris.resource(projectRef, projectRef, myId).accessUri
+  )
 
   private val aclCheck = AclSimpleCheck().accepted
 
@@ -568,7 +573,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec {
   }
 
   def resourceMetadata(
-      ref: ProjectRef,
+      project: ProjectRef,
       id: Iri,
       schema: Iri,
       tpe: String,
@@ -579,16 +584,15 @@ class ResourcesRoutesSpec extends BaseRouteSpec {
   ): Json =
     jsonContentOf(
       "resources/resource-route-metadata-response.json",
-      "project"     -> ref,
-      "id"          -> id,
-      "rev"         -> rev,
-      "type"        -> tpe,
-      "deprecated"  -> deprecated,
-      "createdBy"   -> createdBy.asIri,
-      "updatedBy"   -> updatedBy.asIri,
-      "schema"      -> schema,
-      "label"       -> lastSegment(id),
-      "schemaLabel" -> (if (schema == schemas.resources) "_" else lastSegment(schema))
+      "project"    -> project,
+      "id"         -> id,
+      "rev"        -> rev,
+      "type"       -> tpe,
+      "deprecated" -> deprecated,
+      "createdBy"  -> createdBy.asIri,
+      "updatedBy"  -> updatedBy.asIri,
+      "schema"     -> schema,
+      "self"       -> ResourceUris.resource(project, project, id).accessUri
     )
 
 }

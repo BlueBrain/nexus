@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.headers.{ContentDispositionTypes, HttpEncodings}
-import akka.http.scaladsl.model.{ContentType, ContentTypes, HttpResponse, StatusCodes}
+import akka.http.scaladsl.model.{ContentType, ContentTypes, HttpResponse, StatusCodes, Uri}
 import akka.util.ByteString
 import ch.epfl.bluebrain.nexus.testkit.CirceEq
 import ch.epfl.bluebrain.nexus.tests.BaseSpec
@@ -31,6 +31,8 @@ abstract class StorageSpec extends BaseSpec with CirceEq {
   private[tests] val projId = genId()
   private[tests] val fullId = s"$orgId/$projId"
 
+  private[tests] val attachmentPrefix = s"${config.deltaUri}/resources/$fullId/_/"
+
   def storageName: String
 
   def storageType: String
@@ -40,6 +42,13 @@ abstract class StorageSpec extends BaseSpec with CirceEq {
   def locationPrefix: Option[String]
 
   def createStorages: Task[Assertion]
+
+  protected def fileSelf(project: String, id: String): String = {
+    val uri = Uri(s"${config.deltaUri}/files/$project")
+    uri.copy(path = uri.path / id).toString
+  }
+
+  private[tests] val fileSelfPrefix = fileSelf(fullId, attachmentPrefix)
 
   "creating projects" should {
 
@@ -202,12 +211,14 @@ abstract class StorageSpec extends BaseSpec with CirceEq {
     }
 
     "fetch attachment metadata" in {
+      val id       = s"${attachmentPrefix}attachment.json"
       val expected = jsonContentOf(
         "/kg/files/attachment-metadata.json",
         replacements(
           Coyote,
-          "id"          -> s"${config.deltaUri}/resources/$fullId/_/attachment.json",
-          "filename"    -> s"attachment.json",
+          "id"          -> id,
+          "self"        -> fileSelf(fullId, id),
+          "filename"    -> "attachment.json",
           "storageId"   -> storageId,
           "storageType" -> storageType,
           "projId"      -> s"$fullId",
@@ -290,11 +301,14 @@ abstract class StorageSpec extends BaseSpec with CirceEq {
     }
 
     "fetch second attachment metadata" in {
+      val id       = s"${attachmentPrefix}attachment2"
       val expected = jsonContentOf(
         "/kg/files/attachment2-metadata.json",
         replacements(
           Coyote,
+          "id"          -> id,
           "storageId"   -> storageId,
+          "self"        -> fileSelf(fullId, id),
           "storageType" -> storageType,
           "projId"      -> s"$fullId",
           "project"     -> s"${config.deltaUri}/projects/$fullId",
@@ -334,9 +348,10 @@ abstract class StorageSpec extends BaseSpec with CirceEq {
       response.status shouldEqual StatusCodes.OK
       val mapping  = replacements(
         Coyote,
-        "project"     -> fullId,
-        "storageId"   -> storageId,
-        "storageType" -> storageType
+        "project"        -> fullId,
+        "fileSelfPrefix" -> fileSelfPrefix,
+        "storageId"      -> storageId,
+        "storageType"    -> storageType
       )
       val expected = jsonContentOf("/kg/files/list.json", mapping: _*)
       filterSearchMetadata
@@ -345,6 +360,7 @@ abstract class StorageSpec extends BaseSpec with CirceEq {
   }
 
   "query the default sparql view for files" in eventually {
+    val id    = s"http://delta:8080/v1/resources/$fullId/_/attachment.json"
     val query =
       s"""
         |prefix nxv: <https://bluebrain.github.io/nexus/vocabulary/>
@@ -367,7 +383,7 @@ abstract class StorageSpec extends BaseSpec with CirceEq {
         |           :incoming           ?incoming       ;
         |           :outgoing           ?outgoing       ;
         |} WHERE {
-        |      BIND(<http://delta:8080/v1/resources/$fullId/_/attachment.json> as ?id) .
+        |      BIND(<$id> as ?id) .
         |
         |      ?id  a  ?type  .
         |      ?id  nxv:filename               ?filename;
@@ -394,6 +410,7 @@ abstract class StorageSpec extends BaseSpec with CirceEq {
       val mapping  = replacements(
         Coyote,
         "project"   -> fullId,
+        "self"      -> fileSelf(fullId, id),
         "storageId" -> storageId
       )
       val expected = jsonContentOf("/kg/files/sparql.json", mapping: _*)

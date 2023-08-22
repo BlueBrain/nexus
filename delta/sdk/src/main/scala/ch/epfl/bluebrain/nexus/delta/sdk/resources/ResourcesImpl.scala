@@ -45,7 +45,7 @@ final class ResourcesImpl private (
       projectContext             <- fetchContext.onCreate(projectRef)
       schemeRef                  <- expandResourceRef(schema, projectContext)
       (iri, compacted, expanded) <- sourceParser(projectRef, projectContext, source)
-      res                        <- eval(CreateResource(iri, projectRef, schemeRef, source, compacted, expanded, caller), projectContext)
+      res                        <- eval(CreateResource(iri, projectRef, schemeRef, source, compacted, expanded, caller))
     } yield res
   }.span("createResource")
 
@@ -60,7 +60,7 @@ final class ResourcesImpl private (
       iri                   <- expandIri(id, projectContext)
       schemeRef             <- expandResourceRef(schema, projectContext)
       (compacted, expanded) <- sourceParser(projectRef, projectContext, iri, source)
-      res                   <- eval(CreateResource(iri, projectRef, schemeRef, source, compacted, expanded, caller), projectContext)
+      res                   <- eval(CreateResource(iri, projectRef, schemeRef, source, compacted, expanded, caller))
     } yield res
   }.span("createResource")
 
@@ -77,7 +77,7 @@ final class ResourcesImpl private (
       schemeRefOpt          <- expandResourceRef(schemaOpt, projectContext)
       (compacted, expanded) <- sourceParser(projectRef, projectContext, iri, source)
       res                   <-
-        eval(UpdateResource(iri, projectRef, schemeRefOpt, source, compacted, expanded, rev, caller), projectContext)
+        eval(UpdateResource(iri, projectRef, schemeRefOpt, source, compacted, expanded, rev, caller))
     } yield res
   }.span("updateResource")
 
@@ -93,7 +93,7 @@ final class ResourcesImpl private (
       resource              <- log.stateOr(projectRef, iri, ResourceNotFound(iri, projectRef, schemaRefOpt))
       (compacted, expanded) <- sourceParser(projectRef, projectContext, iri, resource.source)
       res                   <-
-        eval(RefreshResource(iri, projectRef, schemaRefOpt, compacted, expanded, resource.rev, caller), projectContext)
+        eval(RefreshResource(iri, projectRef, schemaRefOpt, compacted, expanded, resource.rev, caller))
     } yield res
   }.span("refreshResource")
 
@@ -129,7 +129,7 @@ final class ResourcesImpl private (
       projectContext <- fetchContext.onModify(projectRef)
       iri            <- expandIri(id, projectContext)
       schemeRefOpt   <- expandResourceRef(schemaOpt, projectContext)
-      res            <- eval(TagResource(iri, projectRef, schemeRefOpt, tagRev, tag, rev, caller), projectContext)
+      res            <- eval(TagResource(iri, projectRef, schemeRefOpt, tagRev, tag, rev, caller))
     } yield res).span("tagResource")
 
   override def deleteTag(
@@ -143,7 +143,7 @@ final class ResourcesImpl private (
       projectContext <- fetchContext.onModify(projectRef)
       iri            <- expandIri(id, projectContext)
       schemeRefOpt   <- expandResourceRef(schemaOpt, projectContext)
-      res            <- eval(DeleteResourceTag(iri, projectRef, schemeRefOpt, tag, rev, caller), projectContext)
+      res            <- eval(DeleteResourceTag(iri, projectRef, schemeRefOpt, tag, rev, caller))
     } yield res).span("deleteResourceTag")
 
   override def deprecate(
@@ -156,7 +156,7 @@ final class ResourcesImpl private (
       projectContext <- fetchContext.onModify(projectRef)
       iri            <- expandIri(id, projectContext)
       schemeRefOpt   <- expandResourceRef(schemaOpt, projectContext)
-      res            <- eval(DeprecateResource(iri, projectRef, schemeRefOpt, rev, caller), projectContext)
+      res            <- eval(DeprecateResource(iri, projectRef, schemeRefOpt, rev, caller))
     } yield res).span("deprecateResource")
 
   override def fetch(
@@ -177,11 +177,11 @@ final class ResourcesImpl private (
                           log.stateOr(projectRef, iri, tag, notFound, TagNotFound(tag))
                       }
       _            <- IO.raiseWhen(schemaRefOpt.exists(_.iri != state.schema.iri))(notFound)
-    } yield state.toResource(pc.apiMappings, pc.base)
+    } yield state.toResource
   }.span("fetchResource")
 
-  private def eval(cmd: ResourceCommand, pc: ProjectContext): IO[ResourceRejection, DataResource] =
-    log.evaluate(cmd.project, cmd.id, cmd).map(_._2.toResource(pc.apiMappings, pc.base))
+  private def eval(cmd: ResourceCommand): IO[ResourceRejection, DataResource] =
+    log.evaluate(cmd.project, cmd.id, cmd).map(_._2.toResource)
 
   private def expandResourceRef(segment: IdSegment, context: ProjectContext): IO[InvalidResourceId, ResourceRef] =
     IO.fromOption(

@@ -141,7 +141,7 @@ object ElasticSearchViewsQuery {
         ElasticSearchViews.entityType,
         ElasticSearchViewState.serializer,
         defaultViewId,
-        views.fetchState(_, _).map(_._2),
+        views.fetchState(_, _),
         view =>
           IO.raiseWhen(view.deprecated)(ViewIsDeprecated(view.id)).as {
             view.value match {

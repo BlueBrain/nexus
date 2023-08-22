@@ -105,7 +105,7 @@ object Resolver {
     ResourceShift.apply[ResolverState, Resolver](
       Resolvers.entityType,
       (ref, project) => resolvers.fetch(IdSegmentRef(ref), project),
-      (context, state) => state.toResource(context.apiMappings, context.base),
+      state => state.toResource,
       value => JsonLdContent(value, value.value.source, None)
     )
 

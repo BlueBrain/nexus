@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EphemeralLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
@@ -90,7 +90,7 @@ class Archives(
     (for {
       p   <- fetchContext.onRead(project)
       iri <- expandIri(id, p)
-      res <- eval(CreateArchive(iri, project, value, subject), p)
+      res <- eval(CreateArchive(iri, project, value, subject))
     } yield res).span("createArchive")
 
   /**
@@ -108,7 +108,7 @@ class Archives(
     (for {
       p            <- fetchContext.onRead(project)
       (iri, value) <- sourceDecoder(p, source)
-      res          <- eval(CreateArchive(iri, project, value, subject), p)
+      res          <- eval(CreateArchive(iri, project, value, subject))
     } yield res).span("createArchive")
 
   /**
@@ -134,7 +134,7 @@ class Archives(
       p     <- fetchContext.onRead(project)
       iri   <- expandIri(id, p)
       value <- sourceDecoder(p, iri, source)
-      res   <- eval(CreateArchive(iri, project, value, subject), p)
+      res   <- eval(CreateArchive(iri, project, value, subject))
     } yield res).span("createArchive")
 
   /**
@@ -150,7 +150,7 @@ class Archives(
       p     <- fetchContext.onRead(project)
       iri   <- expandIri(id, p)
       state <- log.stateOr(project, iri, ArchiveNotFound(iri, project))
-      res    = state.toResource(p.apiMappings, p.base, config.ttl)
+      res    = state.toResource(config.ttl)
     } yield res).span("fetchArchive")
 
   /**
@@ -175,10 +175,8 @@ class Archives(
       source   <- archiveDownload(value.value, project, format, ignoreNotFound)
     } yield source).span("downloadArchive")
 
-  private def eval(cmd: CreateArchive, pc: ProjectContext): IO[ArchiveRejection, ArchiveResource] =
-    log.evaluate(cmd.project, cmd.id, cmd).map {
-      _.toResource(pc.apiMappings, pc.base, config.ttl)
-    }
+  private def eval(cmd: CreateArchive): IO[ArchiveRejection, ArchiveResource] =
+    log.evaluate(cmd.project, cmd.id, cmd).map { _.toResource(config.ttl) }
 }
 
 object Archives {

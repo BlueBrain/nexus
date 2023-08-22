@@ -5,7 +5,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{schemas, StorageResource}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceUris, Tags}
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectBase}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
@@ -69,10 +68,10 @@ final case class StorageState(
       case value: RemoteDiskStorageValue => RemoteDiskStorage(id, project, value, tags, source)
     }
 
-  def toResource(mappings: ApiMappings, base: ProjectBase): StorageResource =
+  def toResource: StorageResource =
     ResourceF(
       id = id,
-      uris = ResourceUris("storages", project, id)(mappings, base),
+      uris = ResourceUris("storages", project, id),
       rev = rev,
       types = value.tpe.types,
       deprecated = deprecated,

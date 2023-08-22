@@ -84,10 +84,6 @@ object ProjectsModule extends ModuleDef {
       Task.pure(FetchContext(organizations, projects, quotas))
   }
 
-  make[ProjectContextCache].fromEffect { (fetchContext: FetchContext[ContextRejection]) =>
-    ProjectContextCache(fetchContext)
-  }
-
   make[ProjectDeletionCoordinator].fromEffect {
     (
         projects: Projects,

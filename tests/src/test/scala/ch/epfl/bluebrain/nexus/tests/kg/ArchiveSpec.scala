@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.headers.{Accept, Location}
-import akka.http.scaladsl.model.{MediaRanges, MediaTypes, StatusCodes}
+import akka.http.scaladsl.model.{MediaRanges, MediaTypes, StatusCodes, Uri}
 import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers
 import akka.util.ByteString
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
@@ -46,7 +46,7 @@ class ArchiveSpec extends BaseSpec with ArchiveHelpers with CirceEq {
     "user"       -> Tweety.name,
     "priority"   -> "5",
     "rev"        -> "1",
-    "resources"  -> s"${config.deltaUri}/resources/$fullId",
+    "self"       -> resourceSelf(fullId, "https://dev.nexus.test.com/simplified-resource/1"),
     "project"    -> s"${config.deltaUri}/projects/$fullId",
     "resourceId" -> "1"
   )
@@ -58,13 +58,18 @@ class ArchiveSpec extends BaseSpec with ArchiveHelpers with CirceEq {
     "user"       -> Tweety.name,
     "priority"   -> "6",
     "rev"        -> "1",
-    "resources"  -> s"${config.deltaUri}/resources/$fullId2",
+    "self"       -> resourceSelf(fullId2, "https://dev.nexus.test.com/simplified-resource/2"),
     "project"    -> s"${config.deltaUri}/projects/$fullId2",
     "resourceId" -> "2"
   )
 
   private val nexusLogoDigest =
     "edd70eff895cde1e36eaedd22ed8e9c870bb04155d05d275f970f4f255488e993a32a7c914ee195f6893d43b8be4e0b00db0a6d545a8462491eae788f664ea6b"
+
+  private[tests] def archiveSelf(project: String, id: String): String = {
+    val uri = Uri(s"${config.deltaUri}/archives/$project")
+    uri.copy(path = uri.path / id).toString
+  }
 
   "Setup" should {
 
@@ -216,6 +221,7 @@ class ArchiveSpec extends BaseSpec with ArchiveHelpers with CirceEq {
           replacements(
             Tweety,
             "project2" -> fullId2,
+            "self"     -> archiveSelf(fullId, "https://dev.nexus.test.com/simplified-resource/archive"),
             "project1" -> fullId
           ): _*
         )

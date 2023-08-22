@@ -10,12 +10,12 @@
   "_createdAt": "1970-01-01T00:00:00Z",
   "_createdBy": "http://localhost/v1/anonymous",
   "_deprecated": true,
-  "_incoming": "http://localhost/v1/resources/myorg/myproject/_/myid/incoming",
-  "_outgoing": "http://localhost/v1/resources/myorg/myproject/_/myid/outgoing",
+  "_incoming": "{{self}}/incoming",
+  "_outgoing": "{{self}}/outgoing",
   "_project": "http://localhost/v1/projects/myorg/myproject",
   "_rev": 10,
   "_schemaProject": "http://localhost/v1/projects/myorg/myproject",
-  "_self": "http://localhost/v1/resources/myorg/myproject/_/myid",
+  "_self": "{{self}}",
   "_updatedAt": "1970-01-01T00:00:00Z",
   "_updatedBy": "http://localhost/v1/anonymous"
 }

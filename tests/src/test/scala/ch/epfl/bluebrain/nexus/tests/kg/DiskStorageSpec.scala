@@ -18,51 +18,46 @@ class DiskStorageSpec extends StorageSpec {
 
   override def locationPrefix: Option[String] = None
 
+  private def storageResponse(project: String, id: String, readPermission: String, writePermission: String) =
+    jsonContentOf(
+      "/kg/storages/disk-response.json",
+      replacements(
+        Coyote,
+        "id"          -> id,
+        "project"     -> project,
+        "self"        -> storageSelf(project, s"https://bluebrain.github.io/nexus/vocabulary/$id"),
+        "read"        -> readPermission,
+        "maxFileSize" -> storageConfig.maxFileSize.toString,
+        "write"       -> writePermission
+      ): _*
+    )
+
   override def createStorages: Task[Assertion] = {
     val payload  = jsonContentOf("/kg/storages/disk.json")
     val payload2 = jsonContentOf("/kg/storages/disk-perms.json")
 
     for {
-      _ <- deltaClient.post[Json](s"/storages/$fullId", payload, Coyote) { (_, response) =>
-             response.status shouldEqual StatusCodes.Created
-           }
-      _ <- deltaClient.get[Json](s"/storages/$fullId/nxv:$storageId", Coyote) { (json, response) =>
-             val expected = jsonContentOf(
-               "/kg/storages/disk-response.json",
-               replacements(
-                 Coyote,
-                 "id"          -> storageId,
-                 "project"     -> fullId,
-                 "read"        -> "resources/read",
-                 "maxFileSize" -> storageConfig.maxFileSize.toString,
-                 "write"       -> "files/write"
-               ): _*
-             )
-             filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
-             response.status shouldEqual StatusCodes.OK
-           }
-      _ <- permissionDsl.addPermissions(
-             Permission(storageName, "read"),
-             Permission(storageName, "write")
-           )
-      _ <- deltaClient.post[Json](s"/storages/$fullId", payload2, Coyote) { (_, response) =>
-             response.status shouldEqual StatusCodes.Created
-           }
-      _ <- deltaClient.get[Json](s"/storages/$fullId/nxv:${storageId}2", Coyote) { (json, response) =>
-             val expected = jsonContentOf(
-               "/kg/storages/disk-response.json",
-               replacements(
-                 Coyote,
-                 "id"          -> s"${storageId}2",
-                 "project"     -> fullId,
-                 "read"        -> s"$storageName/read",
-                 "maxFileSize" -> storageConfig.maxFileSize.toString,
-                 "write"       -> s"$storageName/write"
-               ): _*
-             )
-             filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
-             response.status shouldEqual StatusCodes.OK
-           }
+      _         <- deltaClient.post[Json](s"/storages/$fullId", payload, Coyote) { (_, response) =>
+                     response.status shouldEqual StatusCodes.Created
+                   }
+      _         <- deltaClient.get[Json](s"/storages/$fullId/nxv:$storageId", Coyote) { (json, response) =>
+                     val expected = storageResponse(fullId, storageId, "resources/read", "files/write")
+                     filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
+                     response.status shouldEqual StatusCodes.OK
+                   }
+      _         <- permissionDsl.addPermissions(
+                     Permission(storageName, "read"),
+                     Permission(storageName, "write")
+                   )
+      _         <- deltaClient.post[Json](s"/storages/$fullId", payload2, Coyote) { (_, response) =>
+                     response.status shouldEqual StatusCodes.Created
+                   }
+      storageId2 = s"${storageId}2"
+      _         <- deltaClient.get[Json](s"/storages/$fullId/nxv:$storageId2", Coyote) { (json, response) =>
+                     val expected = storageResponse(fullId, storageId2, s"$storageName/read", s"$storageName/write")
+                     filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
+                     response.status shouldEqual StatusCodes.OK
+                   }
     } yield succeed
   }
 

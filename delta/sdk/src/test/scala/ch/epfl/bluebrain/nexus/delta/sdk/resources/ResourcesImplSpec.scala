@@ -129,9 +129,7 @@ class ResourcesImplSpec
           resource shouldEqual ResourceGen.resourceFor(
             expectedData,
             types = types,
-            subject = subject,
-            am = allApiMappings,
-            base = projBase
+            subject = subject
           )
         }
       }
@@ -151,9 +149,7 @@ class ResourcesImplSpec
           resource shouldEqual ResourceGen.resourceFor(
             expectedData,
             types = types,
-            subject = subject,
-            am = allApiMappings,
-            base = projBase
+            subject = subject
           )
         }
       }
@@ -174,9 +170,7 @@ class ResourcesImplSpec
           resource shouldEqual ResourceGen.resourceFor(
             expectedData,
             types = types,
-            subject = subject,
-            am = allApiMappings,
-            base = projBase
+            subject = subject
           )
         }
       }
@@ -190,7 +184,7 @@ class ResourcesImplSpec
           ResourceGen.resource(myId7, projectRef, payloadWithCtx, schemaRev).copy(source = payload)
 
         resources.create(myId7, projectRef, schemas.resources, payload).accepted shouldEqual
-          ResourceGen.resourceFor(expectedData, subject = subject, am = allApiMappings, base = projBase)
+          ResourceGen.resourceFor(expectedData, subject = subject)
       }
 
       "succeed with the id present on the payload and pointing to another resource in its context" in {
@@ -203,9 +197,7 @@ class ResourcesImplSpec
         resource shouldEqual ResourceGen.resourceFor(
           expectedData,
           types = types,
-          subject = subject,
-          am = allApiMappings,
-          base = projBase
+          subject = subject
         )
       }
 
@@ -218,9 +210,7 @@ class ResourcesImplSpec
         resource shouldEqual ResourceGen.resourceFor(
           expectedData,
           types = types,
-          subject = subject,
-          am = allApiMappings,
-          base = projBase
+          subject = subject
         )
       }
 
@@ -309,9 +299,7 @@ class ResourcesImplSpec
             expectedData,
             types = types,
             subject = subject,
-            rev = 2,
-            am = allApiMappings,
-            base = projBase
+            rev = 2
           )
       }
 
@@ -323,9 +311,7 @@ class ResourcesImplSpec
             expectedData,
             types = types,
             subject = subject,
-            rev = 3,
-            am = allApiMappings,
-            base = projBase
+            rev = 3
           )
       }
 
@@ -382,9 +368,7 @@ class ResourcesImplSpec
             expectedData,
             types = types,
             subject = subject,
-            rev = 2,
-            am = allApiMappings,
-            base = projBase
+            rev = 2
           )
       }
 
@@ -396,9 +380,7 @@ class ResourcesImplSpec
             expectedData,
             types = types,
             subject = subject,
-            rev = 3,
-            am = allApiMappings,
-            base = projBase
+            rev = 3
           )
       }
 
@@ -447,9 +429,7 @@ class ResourcesImplSpec
             expectedData,
             types = types,
             subject = subject,
-            rev = 2,
-            am = allApiMappings,
-            base = projBase
+            rev = 2
           )
       }
 
@@ -519,9 +499,7 @@ class ResourcesImplSpec
             types = types,
             subject = subject,
             rev = 2,
-            deprecated = true,
-            am = allApiMappings,
-            base = projBase
+            deprecated = true
           )
       }
 
@@ -567,9 +545,7 @@ class ResourcesImplSpec
               expectedDataLatest,
               types = types,
               subject = subject,
-              rev = 2,
-              am = allApiMappings,
-              base = projBase
+              rev = 2
             )
         }
       }
@@ -580,9 +556,7 @@ class ResourcesImplSpec
             ResourceGen.resourceFor(
               expectedData,
               types = types,
-              subject = subject,
-              am = allApiMappings,
-              base = projBase
+              subject = subject
             )
         }
       }
@@ -593,9 +567,7 @@ class ResourcesImplSpec
             ResourceGen.resourceFor(
               expectedData,
               types = types,
-              subject = subject,
-              am = allApiMappings,
-              base = projBase
+              subject = subject
             )
         }
       }
@@ -649,9 +621,7 @@ class ResourcesImplSpec
             expectedData,
             types = types,
             subject = subject,
-            rev = 3,
-            am = allApiMappings,
-            base = projBase
+            rev = 3
           )
       }
 

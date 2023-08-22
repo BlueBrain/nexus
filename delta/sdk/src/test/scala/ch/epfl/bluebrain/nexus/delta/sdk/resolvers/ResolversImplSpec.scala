@@ -121,7 +121,7 @@ class ResolversImplSpec
           val payload = sourceWithoutId(value)
           resolvers
             .create(id, projectRef, payload)
-            .accepted shouldEqual resolverResourceFor(id, project, value, payload, subject = bob.subject)
+            .accepted shouldEqual resolverResourceFor(id, projectRef, value, payload, subject = bob.subject)
         }
 
         // Dependency to the referenced project should have been saved
@@ -140,7 +140,7 @@ class ResolversImplSpec
           val payload = sourceFrom(id, value)
           resolvers.create(projectRef, payload).accepted shouldEqual resolverResourceFor(
             id,
-            project,
+            projectRef,
             value,
             payload,
             subject = bob.subject
@@ -163,7 +163,7 @@ class ResolversImplSpec
             .create(id, projectRef, payload)(alice)
             .accepted shouldEqual resolverResourceFor(
             id,
-            project,
+            projectRef,
             value,
             payload,
             subject = alice.subject
@@ -177,7 +177,7 @@ class ResolversImplSpec
         val payload       = sourceWithoutId(expectedValue)
         resolvers.create(projectRef, payload).accepted shouldEqual resolverResourceFor(
           expectedId,
-          project,
+          projectRef,
           expectedValue,
           payload,
           subject = bob.subject
@@ -193,7 +193,7 @@ class ResolversImplSpec
         ) { case (id, value) =>
           resolvers.create(id, projectRef, value).accepted shouldEqual resolverResourceFor(
             id,
-            project,
+            projectRef,
             value,
             ResolverValue.generateSource(id, value),
             subject = bob.subject
@@ -339,7 +339,7 @@ class ResolversImplSpec
             .update(id, projectRef, 1, payload)
             .accepted shouldEqual resolverResourceFor(
             id,
-            project,
+            projectRef,
             value,
             payload,
             rev = 2,
@@ -357,7 +357,7 @@ class ResolversImplSpec
         ) { case (id, value) =>
           resolvers.update(id, projectRef, 1, value).accepted shouldEqual resolverResourceFor(
             id,
-            project,
+            projectRef,
             value,
             ResolverValue.generateSource(id, value),
             rev = 2,
@@ -471,7 +471,7 @@ class ResolversImplSpec
         ) { case (id, value) =>
           resolvers.tag(id, projectRef, tag, 1, 2).accepted shouldEqual resolverResourceFor(
             id,
-            project,
+            projectRef,
             value,
             sourceWithoutId(value),
             tags = Tags(tag -> 1),
@@ -547,7 +547,7 @@ class ResolversImplSpec
         ) { case (id, value) =>
           resolvers.deprecate(id, projectRef, 3).accepted shouldEqual resolverResourceFor(
             id,
-            project,
+            projectRef,
             value,
             sourceWithoutId(value),
             tags = Tags(tag -> 1),
@@ -635,7 +635,7 @@ class ResolversImplSpec
         ) { case (id, value) =>
           resolvers.tag(id, projectRef, tag2, 4, 4).accepted shouldEqual resolverResourceFor(
             id,
-            project,
+            projectRef,
             value,
             sourceWithoutId(value),
             tags = Tags(tag -> 1, tag2 -> 4),
@@ -649,7 +649,7 @@ class ResolversImplSpec
 
     val inProjectExpected    = resolverResourceFor(
       nxv + "in-project",
-      project,
+      projectRef,
       updatedInProjectValue,
       sourceWithoutId(updatedInProjectValue),
       tags = Tags(tag -> 1, tag2 -> 4),
@@ -659,7 +659,7 @@ class ResolversImplSpec
     )
     val crossProjectExpected = resolverResourceFor(
       nxv + "cross-project",
-      project,
+      projectRef,
       updatedCrossProjectValue,
       sourceWithoutId(updatedCrossProjectValue),
       tags = Tags(tag -> 1, tag2 -> 4),
@@ -679,7 +679,7 @@ class ResolversImplSpec
       "succeed by rev" in {
         val inProjectExpectedByRev    = resolverResourceFor(
           nxv + "in-project",
-          project,
+          projectRef,
           updatedInProjectValue,
           sourceWithoutId(updatedInProjectValue),
           tags = Tags(tag -> 1),
@@ -688,7 +688,7 @@ class ResolversImplSpec
         )
         val crossProjectExpectedByRev = resolverResourceFor(
           nxv + "cross-project",
-          project,
+          projectRef,
           updatedCrossProjectValue,
           sourceWithoutId(updatedCrossProjectValue),
           tags = Tags(tag -> 1),
@@ -711,7 +711,7 @@ class ResolversImplSpec
         ) { case (id, value) =>
           resolvers.fetch(IdSegmentRef(id, tag), projectRef).accepted shouldEqual resolverResourceFor(
             id,
-            project,
+            projectRef,
             value,
             sourceWithoutId(value),
             subject = bob.subject
@@ -770,14 +770,14 @@ class ResolversImplSpec
         results.results.map(_.source) should contain theSameElementsAs Vector(
           resolverResourceFor(
             nxv + "in-project-both",
-            project,
+            projectRef,
             inProj,
             sourceFrom(nxv + "in-project-both", inProj),
             subject = alice.subject
           ),
           resolverResourceFor(
             nxv + "cross-project-both",
-            project,
+            projectRef,
             crossProj,
             sourceFrom(nxv + "cross-project-both", crossProj),
             subject = alice.subject

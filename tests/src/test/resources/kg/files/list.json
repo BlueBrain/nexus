@@ -17,12 +17,9 @@
         "_value": "0e5ce4e33df07eb312e462d9b4646aebf44e7c4d758891e632dbb0533df85e3f"
       },
       "_filename": "attachment.json",
-      "_incoming": "{{deltaUri}}/files/{{project}}/attachment.json/incoming",
       "_mediaType": "application/json",
-      "_outgoing": "{{deltaUri}}/files/{{project}}/attachment.json/outgoing",
       "_project": "{{deltaUri}}/projects/{{project}}",
       "_rev": 3,
-      "_self": "{{deltaUri}}/files/{{project}}/attachment.json",
       "_storage": {
         "@id": "https://bluebrain.github.io/nexus/vocabulary/{{storageId}}",
         "@type": "{{storageType}}",
@@ -42,12 +39,9 @@
         "_value": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
       },
       "_filename": "empty",
-      "_incoming": "{{deltaUri}}/files/{{project}}/empty/incoming",
       "_mediaType": "text/plain; charset=UTF-8",
-      "_outgoing": "{{deltaUri}}/files/{{project}}/empty/outgoing",
       "_project": "{{deltaUri}}/projects/{{project}}",
       "_rev": 1,
-      "_self": "{{deltaUri}}/files/{{project}}/empty",
       "_storage": {
         "@id": "https://bluebrain.github.io/nexus/vocabulary/{{storageId}}",
         "@type": "{{storageType}}",
@@ -67,12 +61,9 @@
         "_value": "62ad07ee5e775552034186daafd7d77054620f2bc9fb8da629fd7af24b4c84e7"
       },
       "_filename": "attachment2",
-      "_incoming": "{{deltaUri}}/files/{{project}}/attachment2/incoming",
       "_mediaType": "text/plain; charset=UTF-8",
-      "_outgoing": "{{deltaUri}}/files/{{project}}/attachment2/outgoing",
       "_project": "{{deltaUri}}/projects/{{project}}",
       "_rev": 1,
-      "_self": "{{deltaUri}}/files/{{project}}/attachment2",
       "_storage": {
         "@id": "https://bluebrain.github.io/nexus/vocabulary/{{storageId}}",
         "@type": "{{storageType}}",
@@ -92,12 +83,9 @@
         "_value": "62ad07ee5e775552034186daafd7d77054620f2bc9fb8da629fd7af24b4c84e7"
       },
       "_filename": "attachment2",
-      "_incoming": "{{deltaUri}}/files/{{project}}/attachment3/incoming",
       "_mediaType": "text/plain; charset=UTF-8",
-      "_outgoing": "{{deltaUri}}/files/{{project}}/attachment3/outgoing",
       "_project": "{{deltaUri}}/projects/{{project}}",
       "_rev": 1,
-      "_self": "{{deltaUri}}/files/{{project}}/attachment3",
       "_storage": {
         "@id": "https://bluebrain.github.io/nexus/vocabulary/{{storageId}}2",
         "@type": "{{storageType}}",

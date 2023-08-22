@@ -25,7 +25,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSour
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing._
@@ -65,7 +65,7 @@ final class BlazegraphViews(
     for {
       pc               <- fetchContext.onCreate(project)
       (iri, viewValue) <- sourceDecoder(project, pc, source)
-      res              <- eval(CreateBlazegraphView(iri, project, viewValue, source, caller.subject), pc)
+      res              <- eval(CreateBlazegraphView(iri, project, viewValue, source, caller.subject))
       _                <- createNamespace(res)
     } yield res
   }.span("createBlazegraphView")
@@ -89,7 +89,7 @@ final class BlazegraphViews(
       pc        <- fetchContext.onCreate(project)
       iri       <- expandIri(id, pc)
       viewValue <- sourceDecoder(project, pc, iri, source)
-      res       <- eval(CreateBlazegraphView(iri, project, viewValue, source, caller.subject), pc)
+      res       <- eval(CreateBlazegraphView(iri, project, viewValue, source, caller.subject))
       _         <- createNamespace(res)
     } yield res
   }.span("createBlazegraphView")
@@ -110,7 +110,7 @@ final class BlazegraphViews(
       pc    <- fetchContext.onCreate(project)
       iri   <- expandIri(id, pc)
       source = view.toJson(iri)
-      res   <- eval(CreateBlazegraphView(iri, project, view, source, subject), pc)
+      res   <- eval(CreateBlazegraphView(iri, project, view, source, subject))
       _     <- createNamespace(res)
     } yield res
   }.span("createBlazegraphView")
@@ -136,7 +136,7 @@ final class BlazegraphViews(
       pc        <- fetchContext.onModify(project)
       iri       <- expandIri(id, pc)
       viewValue <- sourceDecoder(project, pc, iri, source)
-      res       <- eval(UpdateBlazegraphView(iri, project, viewValue, rev, source, caller.subject), pc)
+      res       <- eval(UpdateBlazegraphView(iri, project, viewValue, rev, source, caller.subject))
       _         <- createNamespace(res)
     } yield res
   }.span("updateBlazegraphView")
@@ -160,7 +160,7 @@ final class BlazegraphViews(
       pc    <- fetchContext.onModify(project)
       iri   <- expandIri(id, pc)
       source = view.toJson(iri)
-      res   <- eval(UpdateBlazegraphView(iri, project, view, rev, source, subject), pc)
+      res   <- eval(UpdateBlazegraphView(iri, project, view, rev, source, subject))
       _     <- createNamespace(res)
     } yield res
   }.span("updateBlazegraphView")
@@ -189,7 +189,7 @@ final class BlazegraphViews(
     for {
       pc  <- fetchContext.onModify(project)
       iri <- expandIri(id, pc)
-      res <- eval(TagBlazegraphView(iri, project, tagRev, tag, rev, subject), pc)
+      res <- eval(TagBlazegraphView(iri, project, tagRev, tag, rev, subject))
       _   <- createNamespace(res)
     } yield res
   }.span("tagBlazegraphView")
@@ -212,7 +212,7 @@ final class BlazegraphViews(
     for {
       pc  <- fetchContext.onModify(project)
       iri <- expandIri(id, pc)
-      res <- eval(DeprecateBlazegraphView(iri, project, rev, subject), pc)
+      res <- eval(DeprecateBlazegraphView(iri, project, rev, subject))
     } yield res
   }.span("deprecateBlazegraphView")
 
@@ -240,14 +240,12 @@ final class BlazegraphViews(
     *   the project to which the view belongs
     */
   def fetch(id: IdSegmentRef, project: ProjectRef): IO[BlazegraphViewRejection, ViewResource] =
-    fetchState(id, project).map { case (pc, state) =>
-      state.toResource(pc.apiMappings, pc.base)
-    }
+    fetchState(id, project).map(_.toResource)
 
   def fetchState(
       id: IdSegmentRef,
       project: ProjectRef
-  ): IO[BlazegraphViewRejection, (ProjectContext, BlazegraphViewState)] = {
+  ): IO[BlazegraphViewRejection, BlazegraphViewState] = {
     for {
       pc      <- fetchContext.onRead(project)
       iri     <- expandIri(id.value, pc)
@@ -259,7 +257,7 @@ final class BlazegraphViews(
                    case Tag(_, tag)      =>
                      log.stateOr(project, iri, tag, notFound, TagNotFound(tag))
                  }
-    } yield (pc, state)
+    } yield state
   }.span("fetchBlazegraphView")
 
   /**
@@ -274,7 +272,7 @@ final class BlazegraphViews(
       id: IdSegmentRef,
       project: ProjectRef
   ): IO[BlazegraphViewRejection, ActiveViewDef] =
-    fetchState(id, project).flatMap { case (_, state) =>
+    fetchState(id, project).flatMap { state =>
       IndexingViewDef(state, prefix) match {
         case Some(viewDef) =>
           viewDef match {
@@ -318,12 +316,8 @@ final class BlazegraphViews(
       IndexingViewDef(v, prefix)
     }
 
-  private def eval(cmd: BlazegraphViewCommand) =
-    log.evaluate(cmd.project, cmd.id, cmd)
-
-  private def eval(cmd: BlazegraphViewCommand, pc: ProjectContext): IO[BlazegraphViewRejection, ViewResource] =
-    eval(cmd)
-      .map(_._2.toResource(pc.apiMappings, pc.base))
+  private def eval(cmd: BlazegraphViewCommand): IO[BlazegraphViewRejection, ViewResource] =
+    log.evaluate(cmd.project, cmd.id, cmd).map(_._2.toResource)
 }
 
 object BlazegraphViews {

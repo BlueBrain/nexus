@@ -10,6 +10,6 @@ trait ProjectRefInstances {
 
   implicit final val projectRefIriEncoder: IriEncoder[ProjectRef] = new IriEncoder[ProjectRef] {
     override def apply(value: ProjectRef)(implicit base: BaseUri): Iri =
-      ResourceUris.project(value).accessUriShortForm.toIri
+      ResourceUris.project(value).accessUri.toIri
   }
 }

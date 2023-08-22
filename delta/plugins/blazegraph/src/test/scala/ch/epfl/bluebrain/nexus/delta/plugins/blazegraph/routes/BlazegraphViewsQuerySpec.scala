@@ -147,10 +147,7 @@ class BlazegraphViewsQuerySpec(docker: BlazegraphDocker)
     SparqlResourceLink(
       ResourceF(
         resourceId,
-        ResourceUris.resource(project1.ref, project1.ref, resourceId, ResourceRef(resourceId / "schema"))(
-          project1.apiMappings,
-          project1.base
-        ),
+        ResourceUris.resource(project1.ref, project1.ref, resourceId),
         2,
         Set(resourceId / "type"),
         deprecated = false,

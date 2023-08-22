@@ -8,7 +8,8 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.testkit.{CirceEq, EitherValuable}
 import ch.epfl.bluebrain.nexus.tests.Identity.resources.{Morty, Rick}
-import ch.epfl.bluebrain.nexus.tests.Optics.{filterKey, filterMetadataKeys, filterSearchMetadata}
+import ch.epfl.bluebrain.nexus.tests.Optics.listing._total
+import ch.epfl.bluebrain.nexus.tests.Optics.{filterKey, filterMetadataKeys}
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Organizations
 import ch.epfl.bluebrain.nexus.tests.{BaseSpec, Optics, SchemaPayload}
 import io.circe.Json
@@ -33,6 +34,34 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
 
   private val IdLens: Optional[Json, String]   = root.`@id`.string
   private val TypeLens: Optional[Json, String] = root.`@type`.string
+
+  private val resource1Self = resourceSelf(id1, "https://dev.nexus.test.com/simplified-resource/1")
+
+  private def resource1Response(rev: Int, priority: Int) =
+    jsonContentOf(
+      "/kg/resources/simple-resource-response.json",
+      replacements(
+        Rick,
+        "priority"   -> priority.toString,
+        "rev"        -> rev.toString,
+        "self"       -> resource1Self,
+        "project"    -> s"${config.deltaUri}/projects/$id1",
+        "resourceId" -> "1"
+      ): _*
+    )
+
+  private def resource1AnnotatedSource(rev: Int, priority: Int) =
+    jsonContentOf(
+      "/kg/resources/simple-resource-with-metadata.json",
+      replacements(
+        Rick,
+        "priority"   -> priority.toString,
+        "rev"        -> rev.toString,
+        "self"       -> resource1Self,
+        "project"    -> s"${config.deltaUri}/projects/$id1",
+        "resourceId" -> "1"
+      ): _*
+    )
 
   private def `@id`(expectedId: String) = HavePropertyMatcher[Json, String] { json =>
     val actualId = IdLens.getOption(json)
@@ -141,17 +170,7 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
 
     "fetch the payload wih metadata" in {
       deltaClient.get[Json](s"/resources/$id1/test-schema/test-resource:1", Rick) { (json, response) =>
-        val expected = jsonContentOf(
-          "/kg/resources/simple-resource-response.json",
-          replacements(
-            Rick,
-            "priority"   -> "5",
-            "rev"        -> "1",
-            "resources"  -> s"${config.deltaUri}/resources/$id1",
-            "project"    -> s"${config.deltaUri}/projects/$id1",
-            "resourceId" -> "1"
-          ): _*
-        )
+        val expected = resource1Response(1, 5)
         response.status shouldEqual StatusCodes.OK
         filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
       }
@@ -173,18 +192,8 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
     "fetch the original payload with metadata" in {
       deltaClient.get[Json](s"/resources/$id1/test-schema/test-resource:1/source?annotate=true", Rick) {
         (json, response) =>
-          val expected = jsonContentOf(
-            "/kg/resources/simple-resource-with-metadata.json",
-            replacements(
-              Rick,
-              "rev"        -> "1",
-              "resources"  -> s"${config.deltaUri}/resources/$id1",
-              "project"    -> s"${config.deltaUri}/projects/$id1",
-              "resourceId" -> "1",
-              "priority"   -> "5"
-            ): _*
-          )
           response.status shouldEqual StatusCodes.OK
+          val expected = resource1AnnotatedSource(1, 5)
           filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
       }
     }
@@ -209,11 +218,10 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
     }
 
     "fetch the original payload with generated id with metadata" in {
-      val payload =
-        jsonContentOf(
-          "/kg/resources/simple-resource-with-id.json",
-          "priority" -> "5"
-        )
+      val payload = jsonContentOf(
+        "/kg/resources/simple-resource-with-id.json",
+        "priority" -> "5"
+      )
 
       var generatedId: String = ""
 
@@ -304,7 +312,7 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
         replacements(
           Rick,
           "project"        -> id1,
-          "resources"      -> s"${config.deltaUri}/resolvers/$id2",
+          "self"           -> resolverSelf(id2, "http://localhost/resolver"),
           "project-parent" -> s"${config.deltaUri}/projects/$id2"
         ): _*
       )
@@ -316,20 +324,10 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
     }
 
     "wait for the cross-project resolver to be indexed" in {
-      val expected = jsonContentOf(
-        "/kg/resources/cross-project-resolver-list.json",
-        replacements(
-          Rick,
-          "project_resolver" -> id1,
-          "projId"           -> s"$id2",
-          "project"          -> s"${config.deltaUri}/projects/$id2"
-        ): _*
-      )
-
       eventually {
         deltaClient.get[Json](s"/resolvers/$id2", Rick) { (json, response) =>
           response.status shouldEqual StatusCodes.OK
-          filterSearchMetadata(json) should equalIgnoreArrayOrder(expected)
+          _total.getOption(json).value shouldEqual 2L
         }
       }
     }
@@ -397,17 +395,8 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
     }
 
     "fetch the update" in {
-      val expected = jsonContentOf(
-        "/kg/resources/simple-resource-response.json",
-        replacements(
-          Rick,
-          "priority"   -> "3",
-          "rev"        -> "2",
-          "resources"  -> s"${config.deltaUri}/resources/$id1",
-          "project"    -> s"${config.deltaUri}/projects/$id1",
-          "resourceId" -> "1"
-        ): _*
-      )
+      val expected = resource1Response(2, 3)
+
       List(
         s"/resources/$id1/test-schema/test-resource:1",
         s"/resources/$id1/_/test-resource:1"
@@ -420,17 +409,7 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
     }
 
     "fetch previous revision" in {
-      val expected = jsonContentOf(
-        "/kg/resources/simple-resource-response.json",
-        replacements(
-          Rick,
-          "priority"   -> "5",
-          "rev"        -> "1",
-          "resources"  -> s"${config.deltaUri}/resources/$id1",
-          "project"    -> s"${config.deltaUri}/projects/$id1",
-          "resourceId" -> "1"
-        ): _*
-      )
+      val expected = resource1Response(1, 5)
 
       List(
         s"/resources/$id1/test-schema/test-resource:1?rev=1",
@@ -446,17 +425,7 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
     "fetch previous revision original payload with metadata" in {
       deltaClient.get[Json](s"/resources/$id1/test-schema/test-resource:1/source?rev=1&annotate=true", Rick) {
         (json, response) =>
-          val expected = jsonContentOf(
-            "/kg/resources/simple-resource-with-metadata.json",
-            replacements(
-              Rick,
-              "rev"        -> "1",
-              "resources"  -> s"${config.deltaUri}/resources/$id1",
-              "project"    -> s"${config.deltaUri}/projects/$id1",
-              "resourceId" -> "1",
-              "priority"   -> "5"
-            ): _*
-          )
+          val expected = resource1AnnotatedSource(1, 5)
           response.status shouldEqual StatusCodes.OK
           filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
       }
@@ -492,40 +461,9 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
     }
 
     "fetch a tagged value" in {
-      val expectedTag1 = jsonContentOf(
-        "/kg/resources/simple-resource-response.json",
-        replacements(
-          Rick,
-          "priority"   -> "3",
-          "rev"        -> "2",
-          "resources"  -> s"${config.deltaUri}/resources/$id1",
-          "project"    -> s"${config.deltaUri}/projects/$id1",
-          "resourceId" -> "1"
-        ): _*
-      )
-
-      val expectedTag2 = jsonContentOf(
-        "/kg/resources/simple-resource-response.json",
-        replacements(
-          Rick,
-          "priority"   -> "5",
-          "rev"        -> "1",
-          "resources"  -> s"${config.deltaUri}/resources/$id1",
-          "project"    -> s"${config.deltaUri}/projects/$id1",
-          "resourceId" -> "1"
-        ): _*
-      )
-      val expectedTag3 = jsonContentOf(
-        "/kg/resources/simple-resource-response.json",
-        replacements(
-          Rick,
-          "priority"   -> "3",
-          "rev"        -> "5",
-          "resources"  -> s"${config.deltaUri}/resources/$id1",
-          "project"    -> s"${config.deltaUri}/projects/$id1",
-          "resourceId" -> "1"
-        ): _*
-      ) deepMerge Json.obj("_deprecated" -> Json.fromBoolean(true))
+      val expectedTag1 = resource1Response(2, 3)
+      val expectedTag2 = resource1Response(1, 5)
+      val expectedTag3 = resource1Response(5, 3) deepMerge Json.obj("_deprecated" -> Json.True)
 
       for {
         _ <-
@@ -547,17 +485,7 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
     "fetch tagged original payload with metadata" in {
       deltaClient.get[Json](s"/resources/$id1/test-schema/test-resource:1/source?tag=v1.0.1&annotate=true", Rick) {
         (json, response) =>
-          val expected = jsonContentOf(
-            "/kg/resources/simple-resource-with-metadata.json",
-            replacements(
-              Rick,
-              "rev"        -> "2",
-              "resources"  -> s"${config.deltaUri}/resources/$id1",
-              "project"    -> s"${config.deltaUri}/projects/$id1",
-              "resourceId" -> "1",
-              "priority"   -> "3"
-            ): _*
-          )
+          val expected = resource1AnnotatedSource(2, 3)
           response.status shouldEqual StatusCodes.OK
           filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
       }

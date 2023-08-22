@@ -25,7 +25,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef.{Latest, Revision, T
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, Projects}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.views.IndexingRev
@@ -82,7 +81,7 @@ final class CompositeViews private (
     for {
       pc  <- fetchContext.onCreate(project)
       iri <- expandIri(id, pc)
-      res <- eval(CreateCompositeView(iri, project, value, value.toJson(iri), subject, pc.base), pc)
+      res <- eval(CreateCompositeView(iri, project, value, value.toJson(iri), subject, pc.base))
     } yield res
   }.span("createCompositeView")
 
@@ -101,7 +100,7 @@ final class CompositeViews private (
     for {
       pc           <- fetchContext.onCreate(project)
       (iri, value) <- sourceDecoder(project, pc, source)
-      res          <- eval(CreateCompositeView(iri, project, value, source.removeAllKeys("token"), caller.subject, pc.base), pc)
+      res          <- eval(CreateCompositeView(iri, project, value, source.removeAllKeys("token"), caller.subject, pc.base))
     } yield res
   }.span("createCompositeView")
 
@@ -124,7 +123,7 @@ final class CompositeViews private (
       iri       <- expandIri(id, pc)
       viewValue <- sourceDecoder(project, pc, iri, source)
       res       <-
-        eval(CreateCompositeView(iri, project, viewValue, source.removeAllKeys("token"), caller.subject, pc.base), pc)
+        eval(CreateCompositeView(iri, project, viewValue, source.removeAllKeys("token"), caller.subject, pc.base))
     } yield res
   }.span("createCompositeView")
 
@@ -155,7 +154,7 @@ final class CompositeViews private (
       pc    <- fetchContext.onModify(project)
       iri   <- expandIri(id, pc)
       source = value.toJson(iri)
-      res   <- eval(UpdateCompositeView(iri, project, rev, value, source, subject, pc.base), pc)
+      res   <- eval(UpdateCompositeView(iri, project, rev, value, source, subject, pc.base))
     } yield res
   }.span("updateCompositeView")
 
@@ -182,8 +181,7 @@ final class CompositeViews private (
       viewValue <- sourceDecoder(project, pc, iri, source)
       res       <-
         eval(
-          UpdateCompositeView(iri, project, rev, viewValue, source.removeAllKeys("token"), caller.subject, pc.base),
-          pc
+          UpdateCompositeView(iri, project, rev, viewValue, source.removeAllKeys("token"), caller.subject, pc.base)
         )
     } yield res
   }.span("updateCompositeView")
@@ -214,7 +212,7 @@ final class CompositeViews private (
     for {
       pc  <- fetchContext.onModify(project)
       iri <- expandIri(id, pc)
-      res <- eval(TagCompositeView(iri, project, tagRev, tag, rev, subject), pc)
+      res <- eval(TagCompositeView(iri, project, tagRev, tag, rev, subject))
     } yield res
   }.span("tagCompositeView")
 
@@ -238,7 +236,7 @@ final class CompositeViews private (
     for {
       pc  <- fetchContext.onModify(project)
       iri <- expandIri(id, pc)
-      res <- eval(DeprecateCompositeView(iri, project, rev, subject), pc)
+      res <- eval(DeprecateCompositeView(iri, project, rev, subject))
     } yield res
   }.span("deprecateCompositeView")
 
@@ -268,14 +266,12 @@ final class CompositeViews private (
     *   the view parent project
     */
   def fetch(id: IdSegmentRef, project: ProjectRef): IO[CompositeViewRejection, ViewResource] =
-    fetchState(id, project).map { case (pc, state) =>
-      state.toResource(pc.apiMappings, pc.base)
-    }
+    fetchState(id, project).map(_.toResource)
 
   def fetchState(
       id: IdSegmentRef,
       project: ProjectRef
-  ): IO[CompositeViewRejection, (ProjectContext, CompositeViewState)] = {
+  ): IO[CompositeViewRejection, CompositeViewState] = {
     for {
       pc      <- fetchContext.onRead(project)
       iri     <- expandIri(id.value, pc)
@@ -287,7 +283,7 @@ final class CompositeViews private (
                    case Tag(_, tag)      =>
                      log.stateOr(project, iri, tag, notFound, TagNotFound(tag))
                  }
-    } yield (pc, state)
+    } yield state
   }.span("fetchCompositeView")
 
   /**
@@ -295,7 +291,7 @@ final class CompositeViews private (
     */
   def fetchIndexingView(id: IdSegmentRef, project: ProjectRef): IO[CompositeViewRejection, ActiveViewDef] =
     fetchState(id, project)
-      .flatMap { case (_, state) =>
+      .flatMap { state =>
         CompositeViewDef(state) match {
           case v: ActiveViewDef     => IO.pure(v)
           case d: DeprecatedViewDef => IO.raiseError(ViewIsDeprecated(d.ref.viewId))
@@ -323,19 +319,9 @@ final class CompositeViews private (
       params: CompositeViewSearchParams,
       ordering: Ordering[ViewResource]
   ): UIO[UnscoredSearchResults[ViewResource]] = {
-    val predicate = params.project.fold[Scope](Scope.Root)(ref => Scope.Project(ref))
+    val scope = params.project.fold[Scope](Scope.Root)(ref => Scope.Project(ref))
     SearchResults(
-      log.currentStates(predicate, identity(_)).evalMapFilter[Task, ViewResource] { state =>
-        fetchContext.cacheOnReads
-          .onRead(state.project)
-          .redeemWith(
-            _ => UIO.none,
-            pc => {
-              val res = state.toResource(pc.apiMappings, pc.base)
-              params.matches(res).map(Option.when(_)(res))
-            }
-          )
-      },
+      log.currentStates(scope, _.toResource).evalFilter(params.matches),
       pagination,
       ordering
     ).span("listCompositeViews")
@@ -364,14 +350,8 @@ final class CompositeViews private (
       CompositeViewDef(v)
     }
 
-  private def eval(cmd: CompositeViewCommand) =
-    log.evaluate(cmd.project, cmd.id, cmd)
-
-  private def eval(
-      cmd: CompositeViewCommand,
-      pc: ProjectContext
-  ): IO[CompositeViewRejection, ViewResource] =
-    eval(cmd).map(_._2.toResource(pc.apiMappings, pc.base))
+  private def eval(cmd: CompositeViewCommand): IO[CompositeViewRejection, ViewResource] =
+    log.evaluate(cmd.project, cmd.id, cmd).map(_._2.toResource)
 
 }
 

@@ -22,7 +22,7 @@
       "rev": 1
     }
   ],
-  "_self": "{{deltaUri}}/archives/{{project1}}/test-resource:archive",
+  "_self": "{{self}}",
   "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/archives.json",
   "_project": "{{deltaUri}}/projects/{{project1}}",
   "_rev": 1,

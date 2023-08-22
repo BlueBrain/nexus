@@ -22,6 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{Caller, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceUris
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
@@ -257,7 +258,10 @@ class StoragesRoutesSpec extends BaseRouteSpec with TryValues with StorageFixtur
       aclCheck.append(AclAddress.Root, Anonymous -> Set(permissions.read)).accepted
       Get("/v1/storages/myorg/myproject/s3-storage") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual jsonContentOf("storages/s3-storage-fetched.json")
+        response.asJson shouldEqual jsonContentOf(
+          "storages/s3-storage-fetched.json",
+          "self" -> self(s3Id)
+        )
       }
     }
 
@@ -277,7 +281,10 @@ class StoragesRoutesSpec extends BaseRouteSpec with TryValues with StorageFixtur
         forAll(List("rev=1", "tag=mytag")) { param =>
           Get(s"$endpoint?$param") ~> routes ~> check {
             status shouldEqual StatusCodes.OK
-            response.asJson shouldEqual jsonContentOf("storages/remote-storage-fetched.json")
+            response.asJson shouldEqual jsonContentOf(
+              "storages/remote-storage-fetched.json",
+              "self" -> self(rdId)
+            )
           }
         }
       }
@@ -399,6 +406,8 @@ class StoragesRoutesSpec extends BaseRouteSpec with TryValues with StorageFixtur
       "updatedBy"  -> updatedBy.asIri,
       "type"       -> storageType,
       "algorithm"  -> DigestAlgorithm.default,
-      "label"      -> lastSegment(id)
+      "self"       -> self(id)
     )
+
+  def self(id: Iri): Uri = ResourceUris("storages", projectRef, id).accessUri
 }

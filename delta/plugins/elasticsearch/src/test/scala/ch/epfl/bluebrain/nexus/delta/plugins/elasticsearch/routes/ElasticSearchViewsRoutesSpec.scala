@@ -15,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceUris
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, FetchContextDummy}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
@@ -379,7 +380,7 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures {
       "deprecated"  -> deprecated,
       "createdBy"   -> createdBy.asIri,
       "updatedBy"   -> updatedBy.asIri,
-      "label"       -> lastSegment(id)
+      "self"        -> ResourceUris("views", projectRef, id).accessUri
     )
 
   private def elasticSearchView(
@@ -402,9 +403,6 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures {
       "createdBy"         -> createdBy.asIri,
       "updatedBy"         -> updatedBy.asIri,
       "includeDeprecated" -> includeDeprecated,
-      "label"             -> lastSegment(id)
+      "self"              -> ResourceUris("views", projectRef, id).accessUri
     ).mapObject(_.add("settings", settings))
-
-  private def lastSegment(iri: Iri) =
-    iri.toString.substring(iri.toString.lastIndexOf("/") + 1)
 }

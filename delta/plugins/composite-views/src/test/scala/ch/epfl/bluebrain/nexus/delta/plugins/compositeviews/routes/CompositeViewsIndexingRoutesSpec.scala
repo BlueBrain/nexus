@@ -46,7 +46,7 @@ class CompositeViewsIndexingRoutesSpec extends CompositeViewsRoutesFixtures {
   private val groupDirectives = DeltaSchemeDirectives(fetchContext, _ => UIO.none, _ => UIO.none)
 
   private val myId         = nxv + "myid"
-  private val view         = CompositeViewsGen.resourceFor(project, myId, uuid, viewValue, source = Json.obj())
+  private val view         = CompositeViewsGen.resourceFor(projectRef, myId, uuid, viewValue, source = Json.obj())
   private val indexingView = ActiveViewDef(
     ViewRef(view.value.project, view.id),
     view.value.uuid,

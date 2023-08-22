@@ -4,7 +4,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.ResolverResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.Resolver.InProjectResolver
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverValue.InProjectValue
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{Priority, ResolverState, ResolverValue}
@@ -38,7 +37,7 @@ object ResolverGen {
     */
   def resolverResourceFor(
       id: Iri,
-      project: Project,
+      project: ProjectRef,
       value: ResolverValue,
       source: Json,
       tags: Tags = Tags.empty,
@@ -48,7 +47,7 @@ object ResolverGen {
   ): ResolverResource =
     ResolverState(
       id: Iri,
-      project.ref,
+      project,
       value,
       source,
       tags,
@@ -58,8 +57,7 @@ object ResolverGen {
       subject,
       Instant.EPOCH,
       subject
-    )
-      .toResource(project.apiMappings, project.base)
+    ).toResource
 
   /**
     * Generate a valid json source from resolver id and value
