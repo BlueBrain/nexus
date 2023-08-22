@@ -137,7 +137,7 @@ class StorageRoutesSpec
               quote("{type}") -> "PathAlreadyExists",
               quote(
                 "{reason}"
-              )               -> s"The provided location inside the bucket '$name' with the relative path '$filePathUri' already exists."
+              )               -> s"The provided location inside the bucket '$name' with the path '$filePathUri' already exists."
             )
           )
           storages.exists(name) wasCalled once
@@ -259,7 +259,7 @@ class StorageRoutesSpec
               quote("{type}") -> "PathInvalid",
               quote(
                 "{reason}"
-              )               -> s"The provided location inside the bucket '$name' with the relative path '$source' is invalid."
+              )               -> s"The provided location inside the bucket '$name' with the path '$source' is invalid."
             )
           )
         }
@@ -308,7 +308,7 @@ class StorageRoutesSpec
               quote("{type}") -> "PathNotFound",
               quote(
                 "{reason}"
-              )               -> s"The provided location inside the bucket '$name' with the relative path '$filePathUri' does not exist."
+              )               -> s"The provided location inside the bucket '$name' with the path '$filePathUri' does not exist."
             )
           )
           storages.pathExists(name, filePathUri) wasCalled once
@@ -329,7 +329,7 @@ class StorageRoutesSpec
               quote("{type}") -> "PathNotFound",
               quote(
                 "{reason}"
-              )               -> s"The provided location inside the bucket '$name' with the relative path '$filePathUri' does not exist."
+              )               -> s"The provided location inside the bucket '$name' with the path '$filePathUri' does not exist."
             )
           )
           storages.getFile(name, filePathUri) wasCalled once
@@ -381,7 +381,7 @@ class StorageRoutesSpec
               quote("{type}") -> "PathNotFound",
               quote(
                 "{reason}"
-              )               -> s"The provided location inside the bucket '$name' with the relative path '$filePathUri' does not exist."
+              )               -> s"The provided location inside the bucket '$name' with the path '$filePathUri' does not exist."
             )
           )
           storages.pathExists(name, filePathUri) wasCalled once
