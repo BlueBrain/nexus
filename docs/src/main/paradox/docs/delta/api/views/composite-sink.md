@@ -20,15 +20,15 @@ We recommend reading through the @ref:[search configuration example use case](..
 
 ## Batch Composite Sink
 
+Starting with Delta 1.9, it is possible to configure Nexus Delta to use a Batch Composite Sink. This implementation of
+the Composite Sink can query the Blazegraph common namespace for multiple resource IDs at the same time.
+
 @@@ note { .warning }
 
 We recommend to start using Composite Views with the default @ref:[Single Composite Sink](#single-composite-sink). Once
 you have a good understanding of it, the Batch Composite Sink can be used to enhance the performance of your deployment.
 
 @@@
-
-Starting with Delta 1.9, it is possible to configure Nexus Delta to use a Batch Composite Sink. This implementation of
-the Composite Sink can query the Blazegraph common namespace for multiple resource IDs at the same time.
 
 ### Configuring the Batch Composite Sink
 
