@@ -7,15 +7,17 @@ import io.circe.syntax._
 
 class JsonLayout extends LayoutBase[ILoggingEvent] {
   override def doLayout(event: ILoggingEvent): String = {
-    val stackTraceField = Option(event.getThrowableProxy).map("stackTrace" := ThrowableProxyUtil.asString(_))
+    val stackTraceFields = Option(event.getThrowableProxy)
+      .map(e => List("error.type" := e.getClassName, "error.stack_trace" := ThrowableProxyUtil.asString(e)))
+      .getOrElse(Nil)
     Json
       .fromFields(
         Map(
+          "@timestamp" := event.getInstant,
           "message"    := event.getMessage,
           "log.level"  := event.getLevel.toString,
-          "@timestamp" := event.getInstant,
           "log.logger" := event.getLoggerName
-        ) ++ stackTraceField
+        ) ++ stackTraceFields
       )
       .noSpaces + '\n'
   }
