@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.AnalyticsGrap
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.GraphAnalyticsRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.PropertiesStatistics.Metadata
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.{AnalyticsGraph, GraphAnalyticsRejection, PropertiesStatistics}
-import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.{contexts, GraphAnalytics}
+import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.{contexts, permissions, GraphAnalytics}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schema
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
@@ -78,6 +78,8 @@ class GraphAnalyticsRoutesSpec extends BaseRouteSpec with CancelAfterFailure {
         )
   }
 
+  private val viewQueryResponse = json"""{"key": "value"}"""
+
   private lazy val routes =
     Route.seal(
       new GraphAnalyticsRoutes(
@@ -85,7 +87,8 @@ class GraphAnalyticsRoutesSpec extends BaseRouteSpec with CancelAfterFailure {
         aclCheck,
         graphAnalytics,
         _ => UIO.pure(ProgressStatistics(0L, 0L, 0L, 10L, Some(Instant.EPOCH), None)),
-        DeltaSchemeDirectives.empty
+        DeltaSchemeDirectives.empty,
+        (_, _, _) => IO.pure(viewQueryResponse)
       ).routes
     )
 
@@ -140,6 +143,27 @@ class GraphAnalyticsRoutesSpec extends BaseRouteSpec with CancelAfterFailure {
           response.asJson shouldEqual jsonContentOf("routes/statistics.json")
         }
       }
+    }
+
+    "querying" should {
+
+      val query = json"""{ "query": { "match_all": {} } }"""
+
+      "fail without authorization" in {
+        Post("/v1/graph-analytics/org/project/_search", query.toEntity) ~> asAlice ~> routes ~> check {
+          response.status shouldEqual StatusCodes.Forbidden
+          response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+        }
+      }
+
+      "succeed" in {
+        aclCheck.append(AclAddress.Root, alice -> Set(permissions.query)).accepted
+        Post("/v1/graph-analytics/org/project/_search", query.toEntity) ~> asAlice ~> routes ~> check {
+          response.status shouldEqual StatusCodes.OK
+          response.asJson shouldEqual viewQueryResponse
+        }
+      }
+
     }
 
   }

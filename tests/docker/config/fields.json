@@ -135,31 +135,6 @@
       "sortable": true
     },
     {
-      "array": true,
-      "fields": [
-        {
-          "name": "identifier",
-          "format": [
-            "uri"
-          ],
-          "optional": false
-        },
-        {
-          "name": "label",
-          "format": [
-            "keyword",
-            "text"
-          ],
-          "optional": true
-        }
-      ],
-      "label": "Organizations",
-      "name": "organizations",
-      "filterable": true,
-      "optional": true,
-      "sortable": true
-    },
-    {
       "array": false,
       "fields": [
         {

@@ -30,7 +30,7 @@ class StorageDirectivesSpec
           quote("{type}") -> "PathInvalid",
           quote(
             "{reason}"
-          )               -> s"The provided location inside the bucket 'name' with the relative path '$path' is invalid."
+          )               -> s"The provided location inside the bucket 'name' with the path '$path' is invalid."
         )
       )
 

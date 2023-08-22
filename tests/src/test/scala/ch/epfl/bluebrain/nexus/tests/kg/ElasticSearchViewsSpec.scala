@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.tests.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.tests.Identity.views.ScoobyDoo
 import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Organizations, Views}
-import io.circe.Json
+import io.circe.{ACursor, Json}
 import monix.execution.Scheduler.Implicits.global
 
 class ElasticSearchViewsSpec extends BaseSpec with EitherValuable with CirceEq {
@@ -418,6 +418,57 @@ class ElasticSearchViewsSpec extends BaseSpec with EitherValuable with CirceEq {
         val expected =
           json"""{ "@context" : "https://bluebrain.github.io/nexus/contexts/offset.json", "@type" : "Start" }"""
         json shouldEqual expected
+      }
+    }
+
+    "fail to fetch mapping without permission" in {
+      deltaClient.get[Json](s"/views/$fullId/test-resource:cell-view/_mapping", Anonymous) { (json, response) =>
+        response.status shouldEqual StatusCodes.Forbidden
+        json shouldEqual jsonContentOf("/iam/errors/unauthorized-access.json")
+      }
+    }
+
+    "fail to fetch mapping for view that doesn't exist" in {
+      deltaClient.get[Json](s"/views/$fullId/test-resource:wrong-view/_mapping", ScoobyDoo) { (json, response) =>
+        response.status shouldEqual StatusCodes.NotFound
+        json shouldEqual jsonContentOf(
+          "/kg/views/elasticsearch/errors/es-view-not-found.json",
+          replacements(
+            ScoobyDoo,
+            "viewId"     -> "https://dev.nexus.test.com/simplified-resource/wrong-view",
+            "projectRef" -> fullId
+          ): _*
+        )
+      }
+    }
+
+    "fail to fetch mapping for aggregate view" in {
+      val view = "test-resource:agg-cell-view"
+      deltaClient.get[Json](s"/views/$fullId2/$view/_mapping", ScoobyDoo) { (json, response) =>
+        response.status shouldEqual StatusCodes.BadRequest
+        json shouldEqual jsonContentOf(
+          "/kg/views/elasticsearch/errors/es-incorrect-view-type.json",
+          replacements(
+            ScoobyDoo,
+            "view"         -> view,
+            "providedType" -> "AggregateElasticSearchView",
+            "expectedType" -> "ElasticSearchView"
+          ): _*
+        )
+      }
+    }
+
+    "return the view's mapping" in {
+      deltaClient.get[Json](s"/views/$fullId/test-resource:cell-view/_mapping", ScoobyDoo) { (json, response) =>
+        response.status shouldEqual StatusCodes.OK
+
+        def hasOnlyOneKey = (j: ACursor) => j.keys.exists(_.size == 1)
+        def downFirstKey  = (j: ACursor) => j.downField(j.keys.get.head)
+
+        assert(hasOnlyOneKey(json.hcursor))
+        val firstKey = downFirstKey(json.hcursor)
+        assert(hasOnlyOneKey(firstKey))
+        assert(downFirstKey(firstKey).key.contains("mappings"))
       }
     }
 

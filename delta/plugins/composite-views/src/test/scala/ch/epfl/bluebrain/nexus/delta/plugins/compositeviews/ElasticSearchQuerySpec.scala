@@ -2,16 +2,18 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.Uri.Query
-import cats.data.NonEmptySet
+import cats.data.NonEmptyList
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.permissions
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef.ActiveViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.projectionIndex
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{AuthorizationFailed, ProjectionNotFound, ViewIsDeprecated}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{AuthorizationFailed, ProjectionNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.ProjectSource
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.ProjectionType.ElasticSearchProjectionType
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeView, TemplateSparqlConstructQuery}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.TemplateSparqlConstructQuery
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.test.{expandOnlyIris, expectIndexingView}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
@@ -23,8 +25,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
+import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Group, User}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
@@ -35,7 +38,6 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
 
-import java.time.Instant
 import java.util.UUID
 import scala.annotation.nowarn
 import scala.concurrent.duration._
@@ -79,14 +81,15 @@ class ElasticSearchQuerySpec
     "prefix p: <http://localhost/>\nCONSTRUCT{ {resource_id} p:transformed ?v } WHERE { {resource_id} p:predicate ?v}"
   ).rightValue
 
-  private val query        = JsonObject.empty
-  private val id           = iri"http://localhost/${genString()}"
-  private val deprecatedId = id / "deprecated"
+  private val query = JsonObject.empty
+  private val id    = iri"http://localhost/${genString()}"
+  private val uuid  = UUID.randomUUID()
 
   private def esProjection(id: Iri, permission: Permission) =
     ElasticSearchProjection(
       id,
       UUID.randomUUID(),
+      IndexingRev.init,
       construct,
       Set.empty,
       Set.empty,
@@ -108,6 +111,7 @@ class ElasticSearchQuerySpec
     SparqlProjection(
       nxv + "blaze1",
       UUID.randomUUID(),
+      IndexingRev.init,
       construct,
       Set.empty,
       Set.empty,
@@ -119,64 +123,22 @@ class ElasticSearchQuerySpec
 
   private val projectSource = ProjectSource(nxv + "source1", UUID.randomUUID(), Set.empty, Set.empty, None, false)
 
-  private val compositeView           = CompositeView(
-    id,
-    project.ref,
-    NonEmptySet.of(projectSource),
-    NonEmptySet.of(esProjection1, esProjection2, blazeProjection),
-    None,
-    UUID.randomUUID(),
-    Tags.empty,
-    Json.obj(),
-    Instant.EPOCH
-  )
-  private val deprecatedCompositeView = CompositeView(
-    deprecatedId,
-    project.ref,
-    NonEmptySet.of(projectSource),
-    NonEmptySet.of(esProjection1, esProjection2, blazeProjection),
-    None,
-    UUID.randomUUID(),
-    Tags.empty,
-    Json.obj(),
-    Instant.EPOCH
-  )
-
-  private val compositeViewResource: ResourceF[CompositeView] =
-    ResourceF(
-      id,
-      ResourceUris.permissions,
-      1,
-      Set.empty,
-      false,
-      Instant.EPOCH,
-      anon.subject,
-      Instant.EPOCH,
-      anon.subject,
-      ResourceRef(schemas.resources),
-      compositeView
+  private val indexingView = ActiveViewDef(
+    ViewRef(project.ref, id),
+    uuid,
+    1,
+    CompositeViewFactory.unsafe(
+      NonEmptyList.of(projectSource),
+      NonEmptyList.of(esProjection1, esProjection2, blazeProjection),
+      None
     )
-
-  private val deprecatedCompositeViewResource: ResourceF[CompositeView] =
-    ResourceF(
-      deprecatedId,
-      ResourceUris.permissions,
-      1,
-      Set.empty,
-      true,
-      Instant.EPOCH,
-      anon.subject,
-      Instant.EPOCH,
-      anon.subject,
-      ResourceRef(schemas.resources),
-      deprecatedCompositeView
-    )
+  )
 
   private val prefix = "prefix"
 
   // projection namespaces
-  private val esP1Idx = projectionIndex(esProjection1, compositeView.uuid, 1, prefix).value
-  private val esP2Idx = projectionIndex(esProjection2, compositeView.uuid, 1, prefix).value
+  private val esP1Idx = projectionIndex(esProjection1, uuid, prefix).value
+  private val esP2Idx = projectionIndex(esProjection2, uuid, prefix).value
 
   private val indexResults = Map(esP1Idx -> document(), esP2Idx -> document())
 
@@ -190,9 +152,7 @@ class ElasticSearchQuerySpec
       IO.pure(Json.arr(indices.foldLeft(Seq.empty[Json])((acc, idx) => acc :+ indexResults(idx).asJson): _*))
     else IO.raiseError(HttpUnexpectedError(HttpRequest(), ""))
 
-  private val views = new CompositeViewsDummy(compositeViewResource, deprecatedCompositeViewResource)
-
-  private val viewsQuery = ElasticSearchQuery(acls, views.fetch, views.fetchElasticSearchProjection, esQuery, prefix)
+  private val viewsQuery = ElasticSearchQuery(acls, expectIndexingView(indexingView), expandOnlyIris, esQuery, prefix)
 
   "A ElasticSearchQuery" should {
 
@@ -217,19 +177,6 @@ class ElasticSearchQuerySpec
       viewsQuery.query(id, es1, project.ref, query, Query.Empty)(anon).rejectedWith[AuthorizationFailed]
       viewsQuery.query(id, blaze, project.ref, query, Query.Empty)(bob).rejected shouldEqual
         ProjectionNotFound(id, blaze, project.ref, ElasticSearchProjectionType)
-    }
-
-    "reject querying all the ElasticSearch projections' indices for a deprecated view" in {
-      viewsQuery
-        .queryProjections(deprecatedId, project.ref, query, Query.Empty)
-        .rejectedWith[ViewIsDeprecated]
-    }
-
-    "reject querying a ElasticSearch projections' index for a deprecated view" in {
-      val es1 = nxv + "es1"
-      viewsQuery
-        .query(deprecatedId, es1, project.ref, query, Query.Empty)
-        .rejectedWith[ViewIsDeprecated]
     }
   }
 

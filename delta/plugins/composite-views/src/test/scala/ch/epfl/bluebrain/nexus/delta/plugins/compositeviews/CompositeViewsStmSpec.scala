@@ -31,8 +31,8 @@ class CompositeViewsStmSpec
     with CompositeViewsFixture {
   "A CompositeViews STM" when {
 
-    val validView: ValidateCompositeView   = (_, _, _) => IO.unit
-    val invalidView: ValidateCompositeView = (_, _, _) => IO.raiseError(InvalidElasticSearchProjectionPayload(None))
+    val validView: ValidateCompositeView   = (_, _) => IO.unit
+    val invalidView: ValidateCompositeView = (_, _) => IO.raiseError(InvalidElasticSearchProjectionPayload(None))
 
     def current(
         id: Iri = id,

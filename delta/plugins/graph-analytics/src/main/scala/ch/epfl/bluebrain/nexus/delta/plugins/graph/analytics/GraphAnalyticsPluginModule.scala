@@ -12,8 +12,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, Projects}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, Projects}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projections
@@ -50,6 +50,10 @@ class GraphAnalyticsPluginModule(priority: Int) extends ModuleDef {
       GraphAnalyticsCoordinator(projects, analyticsStream, supervisor, client, config)
   }
 
+  make[GraphAnalyticsViewsQuery].from { (client: ElasticSearchClient, config: GraphAnalyticsConfig) =>
+    new GraphAnalyticsViewsQueryImpl(config.prefix, client)
+  }
+
   make[GraphAnalyticsRoutes].from {
     (
         identities: Identities,
@@ -60,14 +64,16 @@ class GraphAnalyticsPluginModule(priority: Int) extends ModuleDef {
         baseUri: BaseUri,
         s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
-        ordering: JsonKeyOrdering
+        ordering: JsonKeyOrdering,
+        viewsQuery: GraphAnalyticsViewsQuery
     ) =>
       new GraphAnalyticsRoutes(
         identities,
         aclCheck,
         graphAnalytics,
         project => projections.statistics(project, None, GraphAnalytics.projectionName(project)),
-        schemeDirectives
+        schemeDirectives,
+        viewsQuery
       )(
         baseUri,
         s,

@@ -33,11 +33,11 @@ object Rejection {
     * @param name
     *   the storage bucket name
     * @param path
-    *   the relative path to the file
+    *   the path to the file
     */
   final case class PathAlreadyExists(name: String, path: Path)
       extends Rejection(
-        s"The provided location inside the bucket '$name' with the relative path '$path' already exists."
+        s"The provided location inside the bucket '$name' with the path '$path' already exists."
       )
 
   /**
@@ -46,11 +46,11 @@ object Rejection {
     * @param name
     *   the storage bucket name
     * @param path
-    *   the relative path to the file
+    *   the path to the file
     */
   final case class PathNotFound(name: String, path: Path)
       extends Rejection(
-        s"The provided location inside the bucket '$name' with the relative path '$path' does not exist."
+        s"The provided location inside the bucket '$name' with the path '$path' does not exist."
       )
 
   /**
@@ -59,11 +59,11 @@ object Rejection {
     * @param name
     *   the storage bucket name
     * @param path
-    *   the relative path to the file
+    *   the path to the file
     */
   final case class PathContainsLinks(name: String, path: Path)
       extends Rejection(
-        s"The provided location inside the bucket '$name' with the relative path '$path' contains links. Please remove them in order to proceed with this call."
+        s"The provided location inside the bucket '$name' with the path '$path' contains links. Please remove them in order to proceed with this call."
       )
 
   /**

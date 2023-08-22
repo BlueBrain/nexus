@@ -3,6 +3,8 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
 import akka.http.scaladsl.model.headers.`Last-Event-ID`
 import akka.http.scaladsl.model.{MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.Route
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, ValidateElasticSearchView}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.IndexingViewDef.ActiveViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{InvalidResourceId, ViewNotFound}
@@ -13,21 +15,25 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.{IriSegment, StringSegment}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, FetchContextDummy}
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionErrors, Projections}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.FailedElem
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionProgress
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeChain, ProjectionProgress}
 import io.circe.JsonObject
-import monix.bio.IO
+import monix.bio.{IO, UIO}
 
 import java.time.Instant
 import scala.concurrent.duration._
 
 class ElasticSearchIndexingRoutesSpec extends ElasticSearchViewsRoutesFixtures {
+
+  implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
 
   private lazy val projections      = Projections(xas, queryConfig, 1.hour)
   private lazy val projectionErrors = ProjectionErrors(xas, queryConfig)
@@ -69,6 +75,26 @@ class ElasticSearchIndexingRoutesSpec extends ElasticSearchViewsRoutesFixtures {
         case StringSegment(id)     => IO.raiseError(InvalidResourceId(id))
       }
 
+  private val allowedPerms = Set(esPermissions.write, esPermissions.read, esPermissions.query, events.read)
+
+  private lazy val views: ElasticSearchViews = ElasticSearchViews(
+    fetchContextRejection,
+    ResolverContextResolution(rcr),
+    ValidateElasticSearchView(
+      PipeChain.validate(_, registry),
+      UIO.pure(allowedPerms),
+      (_, _, _) => IO.unit,
+      "prefix",
+      5,
+      xas
+    ),
+    eventLogConfig,
+    "prefix",
+    xas
+  ).accepted
+
+  private lazy val viewsQuery = new DummyElasticSearchViewsQuery(views)
+
   private lazy val routes =
     Route.seal(
       ElasticSearchIndexingRoutes(
@@ -77,7 +103,8 @@ class ElasticSearchIndexingRoutesSpec extends ElasticSearchViewsRoutesFixtures {
         fetchView,
         projections,
         projectionErrors,
-        groupDirectives
+        groupDirectives,
+        viewsQuery
       )
     )
 
@@ -203,6 +230,13 @@ class ElasticSearchIndexingRoutesSpec extends ElasticSearchViewsRoutesFixtures {
     Get(s"$viewEndpoint/failures") ~> routes ~> check {
       response.status shouldBe StatusCodes.OK
       response.asJson shouldEqual jsonContentOf("/routes/list-indexing-errors.json")
+    }
+  }
+
+  "return elasticsearch mapping" in {
+    Get(s"$viewEndpoint/_mapping") ~> routes ~> check {
+      response.status shouldBe StatusCodes.OK
+      response.asJson shouldEqual json"""{"mappings": "mapping"}"""
     }
   }
 

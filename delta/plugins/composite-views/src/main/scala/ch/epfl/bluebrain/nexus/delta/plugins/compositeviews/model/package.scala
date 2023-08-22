@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts => nxvContexts, nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
@@ -11,11 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 package object model {
   final val schema: ResourceRef = Latest(schemas + "views.json")
   final val compositeViewType   = nxv + "CompositeView"
-  type ViewResource                        = ResourceF[CompositeView]
-  type ViewProjectionResource              = ResourceF[(CompositeView, CompositeViewProjection)]
-  type ViewSourceResource                  = ResourceF[(CompositeView, CompositeViewSource)]
-  type ViewElasticSearchProjectionResource = ResourceF[(CompositeView, ElasticSearchProjection)]
-  type ViewSparqlProjectionResource        = ResourceF[(CompositeView, SparqlProjection)]
+  type ViewResource = ResourceF[CompositeView]
 
   /**
     * Composite views contexts.

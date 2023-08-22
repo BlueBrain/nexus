@@ -4,7 +4,7 @@
 GET /v1/version
 ```
 
-This endpoint returns information about the running Delta instance: Delta version, plugin versions and service dependency versions(e.g Cassandra).
+This endpoint returns information about the running Delta instance: Delta version, plugin versions and service dependency versions(e.g PostgreSQL).
 
 Example
 :   @@snip [version.json](assets/version.json)

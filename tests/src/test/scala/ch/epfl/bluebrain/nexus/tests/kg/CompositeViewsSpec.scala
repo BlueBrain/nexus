@@ -14,8 +14,6 @@ import io.circe.optics.JsonPath._
 import monix.bio.Task
 import monix.execution.Scheduler.Implicits.global
 
-import scala.concurrent.duration._
-
 class CompositeViewsSpec extends BaseSpec {
 
   private val logger = Logger[this.type]
@@ -155,14 +153,8 @@ class CompositeViewsSpec extends BaseSpec {
       }
     }
 
-    "wait for data to be indexed after creation" in {
-      Task
-        .sleep(10.seconds)
-        .runSyncUnsafe()
-      resetAndWait()
-    }
-
     "reject creating a composite view with remote source endpoint with a wrong suffix" in {
+      resetAndWait()
       val view = jsonContentOf(
         "/kg/views/composite/composite-view.json",
         replacements(
@@ -278,14 +270,11 @@ class CompositeViewsSpec extends BaseSpec {
           }
         }
     }
-
-    "waiting for data to be indexed" in
-      resetAndWait()
   }
 
   "searching the projections with more data" should {
     "find all bands" in {
-      waitForView()
+      resetAndWait()
       eventually {
         deltaClient.post[Json](s"/views/$orgId/bands/composite/projections/bands/_search", sortAscendingById, Jerry) {
           (json, response) =>
@@ -339,15 +328,8 @@ class CompositeViewsSpec extends BaseSpec {
       }
     }
 
-    "wait for data to be indexed after creation" in {
-      Task
-        .sleep(10.seconds)
-        .runSyncUnsafe()
-      resetAndWait("composite-ctx")
-    }
-
     "find all bands with context" in {
-      waitForView("composite-ctx")
+      resetAndWait("composite-ctx")
       eventually {
         deltaClient
           .post[Json](s"/views/$orgId/bands/composite-ctx/projections/bands/_search", sortAscendingById, Jerry) {
@@ -374,9 +356,6 @@ class CompositeViewsSpec extends BaseSpec {
         response.status shouldEqual StatusCodes.OK
       }
     }
-    Task
-      .sleep(5.seconds)
-      .runSyncUnsafe() // after the view reports completion there's a short window until ES returns the results
     succeed
   }
 

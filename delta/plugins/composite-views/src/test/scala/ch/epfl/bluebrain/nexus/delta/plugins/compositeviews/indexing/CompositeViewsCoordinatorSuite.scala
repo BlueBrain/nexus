@@ -4,7 +4,7 @@ import cats.effect.concurrent.Ref
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViewsFixture
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef.{ActiveViewDef, DeprecatedViewDef}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef.ActiveViewDef
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
@@ -23,8 +23,6 @@ class CompositeViewsCoordinatorSuite extends BioSuite with CompositeViewsFixture
     viewValue
   )
 
-  private def deprecatedView(ref: ViewRef) = DeprecatedViewDef(ref)
-
   // Apply clean up and return the affected view if any
   private def cleanup(newView: CompositeViewDef, cachedViews: List[ActiveViewDef]) = {
     for {
@@ -34,7 +32,7 @@ class CompositeViewsCoordinatorSuite extends BioSuite with CompositeViewsFixture
                       }
       // The destroy action
       destroyed    <- Ref.of[Task, Option[ActiveViewDef]](None)
-      destroy       = (active: ActiveViewDef) =>
+      destroy       = (active: ActiveViewDef, _: CompositeViewDef) =>
                         destroyed.getAndUpdate {
                           case Some(current) =>
                             throw new IllegalArgumentException(s"Destroy has already been called on $current")
@@ -46,33 +44,20 @@ class CompositeViewsCoordinatorSuite extends BioSuite with CompositeViewsFixture
 
   }
 
-  test("Do not clean up for the same view has not changed") {
+  test("Do not trigger clean up if the the view is not running yet") {
     val existingView = activeView(existingViewRef, 1)
-    cleanup(existingView, List(existingView)).assertNone
+    cleanup(existingView, List.empty).assertNone
   }
 
-  test("Do not clean up for a new view") {
+  test("Trigger clean up if the view is running") {
+    val existingView = activeView(existingViewRef, 1)
+    cleanup(existingView, List(existingView)).assertSome(existingView)
+  }
+
+  test("Do not trigger clean up for a new view") {
     val existingView = activeView(existingViewRef, 1)
     val another      = activeView(anotherView, 3)
     cleanup(another, List(existingView)).assertNone
-  }
-
-  test("Do not clean up for a new deprecated view") {
-    val existingView = activeView(existingViewRef, 1)
-    val another      = deprecatedView(anotherView)
-    cleanup(another, List(existingView)).assertNone
-  }
-
-  test("Clean up if the view gets deprecated") {
-    val existingView = activeView(existingViewRef, 1)
-    val deprecated   = deprecatedView(existingViewRef)
-    cleanup(deprecated, List(existingView)).assertSome(existingView)
-  }
-
-  test("Clean up if the view is updated") {
-    val existingView = activeView(existingViewRef, 1)
-    val updatedView  = activeView(existingViewRef, 2)
-    cleanup(updatedView, List(existingView)).assertSome(existingView)
   }
 
 }

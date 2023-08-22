@@ -239,7 +239,8 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
         esConfig: ElasticSearchViewsConfig,
-        ordering: JsonKeyOrdering
+        ordering: JsonKeyOrdering,
+        viewsQuery: ElasticSearchViewsQuery
     ) =>
       new ElasticSearchIndexingRoutes(
         identities,
@@ -247,7 +248,8 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         views.fetchIndexingView(_, _),
         projections,
         projectionErrors,
-        schemeDirectives
+        schemeDirectives,
+        viewsQuery
       )(
         baseUri,
         esConfig.pagination,

@@ -29,6 +29,16 @@ class BlazegraphDsl(implicit as: ActorSystem, materializer: Materializer)
   private def filterNamespaces =
     root.predicate.value.string.exist(_ == "http://www.bigdata.com/rdf#/features/KB/Namespace")
 
+  def includes(namespaces: String*) =
+    allNamespaces.map { all =>
+      all should contain allElementsOf (namespaces)
+    }
+
+  def excludes(namespaces: String*) =
+    allNamespaces.map { all =>
+      all should not contain allElementsOf(namespaces)
+    }
+
   def allNamespaces: Task[List[String]] = {
     blazegraphClient(
       HttpRequest(

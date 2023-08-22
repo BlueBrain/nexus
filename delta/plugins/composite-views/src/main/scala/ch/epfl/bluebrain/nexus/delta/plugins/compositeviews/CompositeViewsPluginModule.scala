@@ -7,7 +7,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.DeltaClient
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.deletion.CompositeViewsDeletionTask
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.{CompositeProjectionLifeCycle, CompositeSpaces, CompositeViewsCoordinator, MetadataPredicates}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.{CompositeProjectionLifeCycle, CompositeSinks, CompositeSpaces, CompositeViewsCoordinator, MetadataPredicates}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.migration.MigrateCompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.projections.{CompositeIndexingDetails, CompositeProjections}
@@ -41,7 +42,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionErrors
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeChain, ReferenceRegistry, Supervisor}
 import distage.ModuleDef
 import izumi.distage.model.definition.Id
-import monix.bio.UIO
+import monix.bio.{Task, UIO}
 import monix.execution.Scheduler
 
 class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
@@ -156,7 +157,16 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         .as(compositeProjections)
   }
 
-  make[CompositeSpaces.Builder].from {
+  make[CompositeSpaces].from {
+    (
+        esClient: ElasticSearchClient,
+        blazeClient: BlazegraphClient @Id("blazegraph-composite-indexing-client"),
+        cfg: CompositeViewsConfig
+    ) =>
+      CompositeSpaces(cfg.prefix, esClient, blazeClient)
+  }
+
+  make[CompositeSinks].from {
     (
         esClient: ElasticSearchClient,
         blazeClient: BlazegraphClient @Id("blazegraph-composite-indexing-client"),
@@ -164,7 +174,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate")
     ) =>
-      CompositeSpaces.Builder(cfg.prefix, esClient, blazeClient, cfg)(
+      CompositeSinks(cfg.prefix, esClient, blazeClient, cfg)(
         baseUri,
         cr
       )
@@ -197,31 +207,37 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         hooks: Set[CompositeProjectionLifeCycle.Hook],
         registry: ReferenceRegistry,
         graphStream: CompositeGraphStream,
-        buildSpaces: CompositeSpaces.Builder,
+        spaces: CompositeSpaces,
+        sinks: CompositeSinks,
         compositeProjections: CompositeProjections
     ) =>
       CompositeProjectionLifeCycle(
         hooks,
         PipeChain.compile(_, registry),
         graphStream,
-        buildSpaces.apply,
+        spaces,
+        sinks,
         compositeProjections
       )
   }
 
+  private def isCompositeMigrationRunning =
+    sys.env.getOrElse("MIGRATE_COMPOSITE_VIEWS", "false").toBooleanOption.getOrElse(false)
   make[CompositeViewsCoordinator].fromEffect {
     (
         compositeViews: CompositeViews,
         supervisor: Supervisor,
         lifecycle: CompositeProjectionLifeCycle,
-        config: CompositeViewsConfig
+        config: CompositeViewsConfig,
+        xas: Transactors
     ) =>
-      CompositeViewsCoordinator(
-        compositeViews,
-        supervisor,
-        lifecycle,
-        config
-      )
+      Task.when(isCompositeMigrationRunning)(new MigrateCompositeViews(xas).run.void) >>
+        CompositeViewsCoordinator(
+          compositeViews,
+          supervisor,
+          lifecycle,
+          config
+        )
   }
 
   many[ProjectDeletionTask].add { (views: CompositeViews) => CompositeViewsDeletionTask(views) }
@@ -294,10 +310,9 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
       new CompositeViewsIndexingRoutes(
         identities,
         aclCheck,
-        views.fetch,
-        views.fetchProjection,
-        views.fetchSource,
-        CompositeIndexingDetails(projections, graphStream),
+        views.fetchIndexingView,
+        views.expand,
+        CompositeIndexingDetails(projections, graphStream, config.prefix),
         projections,
         projectionErrors,
         schemeDirectives
