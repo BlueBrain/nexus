@@ -94,10 +94,10 @@ class IncomingOutgoingBlazegraphSpec extends BaseSpec with EitherValuable {
     "return incoming references" in {
       deltaClient.get[Json](s"/resources/$orgLabel/$projLabel/_/radar/incoming", Radar) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
-        root._total.long.getOption(json).value shouldEqual 2L
+        root._total.long.getOption(json).value shouldEqual 1L
         val refs    = root._results.json.getOption(json).value.as[List[Reference]].rightValue
         val resBase = s"${config.deltaUri}/resources/$orgLabel/$projLabel/_"
-        refs.map(_.`@id`) shouldEqual List(s"$resBase/radar", s"$resBase/hawkeye")
+        refs.map(_.`@id`) shouldEqual List(s"$resBase/hawkeye")
       }
     }
 
