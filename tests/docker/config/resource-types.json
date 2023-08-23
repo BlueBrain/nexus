@@ -55,6 +55,8 @@
   "https://neuroshapes.org/SubCellularModel",
   "https://neuroshapes.org/SubCellularModelScript",
   "https://neuroshapes.org/Subject",
+  "https://bbp.epfl.ch/ontologies/core/bmo/SynapseDensity",
+  "https://bbp.epfl.ch/ontologies/core/bmo/SynapsesPerConnection",
   "https://neuroshapes.org/SynapseRelease",
   "https://neuroshapes.org/SynapticConnectivity",
   "https://neuroshapes.org/Target",
