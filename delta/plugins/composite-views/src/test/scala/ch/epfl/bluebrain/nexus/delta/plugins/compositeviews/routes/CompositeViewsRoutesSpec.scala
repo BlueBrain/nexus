@@ -21,7 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, ResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
@@ -41,6 +41,7 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
     events.read
   )
 
+  private val viewId  = nxv + uuid.toString
   private val esId    = iri"http://example.com/es-projection"
   private val blazeId = iri"http://example.com/blazegraph-projection"
 
@@ -110,12 +111,7 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
       aclCheck.append(AclAddress.Root, caller.subject -> Set(permissions.write, permissions.read)).accepted
       Post("/v1/views/myorg/myproj", viewSource.toEntity) ~> asBob ~> routes ~> check {
         response.status shouldEqual StatusCodes.Created
-        response.asJson shouldEqual jsonContentOf(
-          "routes/responses/view-metadata.json",
-          "uuid"       -> uuid,
-          "rev"        -> 1,
-          "deprecated" -> false
-        )
+        response.asJson shouldEqual viewMetadata(1, false)
       }
     }
 
@@ -136,12 +132,7 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
     "update a view" in {
       Put(s"/v1/views/myorg/myproj/$uuid?rev=1", viewSourceUpdated.toEntity) ~> asBob ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual jsonContentOf(
-          "routes/responses/view-metadata.json",
-          "uuid"       -> uuid,
-          "rev"        -> 2,
-          "deprecated" -> false
-        )
+        response.asJson shouldEqual viewMetadata(2, false)
       }
     }
 
@@ -156,12 +147,7 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
       val payload = json"""{"tag": "mytag", "rev": 1}"""
       Post(s"/v1/views/myorg/myproj/$uuid/tags?rev=2", payload.toEntity) ~> asBob ~> routes ~> check {
         status shouldEqual StatusCodes.Created
-        response.asJson shouldEqual jsonContentOf(
-          "routes/responses/view-metadata.json",
-          "uuid"       -> uuid,
-          "rev"        -> 3,
-          "deprecated" -> false
-        )
+        response.asJson shouldEqual viewMetadata(3, false)
       }
     }
 
@@ -175,15 +161,7 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
     "fetch a view" in {
       Get(s"/v1/views/myorg/myproj/$uuid") ~> asBob ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
-        response.asJson should equalIgnoreArrayOrder(
-          jsonContentOf(
-            "routes/responses/view.json",
-            "uuid"            -> uuid,
-            "deprecated"      -> false,
-            "rev"             -> 3,
-            "rebuildInterval" -> "2 minutes"
-          )
-        )
+        response.asJson should equalIgnoreArrayOrder(view(3, false, "2 minutes"))
       }
     }
 
@@ -198,13 +176,8 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
         Get(endpoint) ~> asBob ~> routes ~> check {
           response.status shouldEqual StatusCodes.OK
           response.asJson should equalIgnoreArrayOrder(
-            jsonContentOf(
-              "routes/responses/view.json",
-              "uuid"            -> uuid,
-              "deprecated"      -> false,
-              "rev"             -> 1,
-              "rebuildInterval" -> "1 minute"
-            ).mapObject(_.remove("resourceTag"))
+            view(1, false, "1 minute")
+              .mapObject(_.remove("resourceTag"))
           )
         }
       }
@@ -298,12 +271,7 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
     "deprecate a view" in {
       Delete(s"/v1/views/myorg/myproj/$uuid?rev=3") ~> asBob ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual jsonContentOf(
-          "routes/responses/view-metadata.json",
-          "uuid"       -> uuid,
-          "rev"        -> 4,
-          "deprecated" -> true
-        )
+        response.asJson shouldEqual viewMetadata(4, true)
       }
     }
 
@@ -327,7 +295,7 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
             response.status shouldEqual StatusCodes.BadRequest
             response.asJson shouldEqual jsonContentOf(
               "routes/errors/view-deprecated.json",
-              "id" -> nxv.base / uuid.toString
+              "id" -> viewId
             )
           }
         }
@@ -347,7 +315,7 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
           response.status shouldEqual StatusCodes.BadRequest
           response.asJson shouldEqual jsonContentOf(
             "routes/errors/view-deprecated.json",
-            "id" -> nxv.base / uuid.toString
+            "id" -> viewId
           )
         }
       }
@@ -362,4 +330,23 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
       }
     }
   }
+
+  private def viewMetadata(rev: Int, deprecated: Boolean) =
+    jsonContentOf(
+      "routes/responses/view-metadata.json",
+      "uuid"       -> uuid,
+      "rev"        -> rev,
+      "deprecated" -> deprecated,
+      "self"       -> ResourceUris("views", projectRef, viewId).accessUri
+    )
+
+  private def view(rev: Int, deprecated: Boolean, rebuildInterval: String) =
+    jsonContentOf(
+      "routes/responses/view.json",
+      "uuid"            -> uuid,
+      "deprecated"      -> deprecated,
+      "rev"             -> rev,
+      "rebuildInterval" -> rebuildInterval,
+      "self"            -> ResourceUris("views", projectRef, viewId).accessUri
+    )
 }

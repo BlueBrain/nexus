@@ -61,7 +61,7 @@ object File {
     ResourceShift.apply[FileState, File](
       Files.entityType,
       (ref, project) => files.fetch(IdSegmentRef(ref), project),
-      (context, state) => state.toResource(context.apiMappings, context.base),
+      state => state.toResource,
       value => JsonLdContent(value, value.value.asJson, None)
     )
 

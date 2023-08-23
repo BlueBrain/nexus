@@ -2,9 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 
 import cats.effect.Clock
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
-import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageCommand._
@@ -24,13 +24,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef.{Latest, Revision, T
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, EntityType, ProjectRef, ResourceRef}
-import ch.epfl.bluebrain.nexus.delta.sourcing.{Scope, ScopedEntityDefinition, ScopedEventLog, StateMachine, Transactors}
+import ch.epfl.bluebrain.nexus.delta.sourcing._
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import io.circe.Json
@@ -67,7 +67,7 @@ final class Storages private (
     for {
       pc                   <- fetchContext.onCreate(projectRef)
       (iri, storageFields) <- sourceDecoder(projectRef, pc, source)
-      res                  <- eval(CreateStorage(iri, projectRef, storageFields, source, caller.subject), pc)
+      res                  <- eval(CreateStorage(iri, projectRef, storageFields, source, caller.subject))
       _                    <- unsetPreviousDefaultIfRequired(projectRef, res)
     } yield res
   }.span("createStorage")
@@ -91,7 +91,7 @@ final class Storages private (
       pc            <- fetchContext.onCreate(projectRef)
       iri           <- expandIri(id, pc)
       storageFields <- sourceDecoder(projectRef, pc, iri, source)
-      res           <- eval(CreateStorage(iri, projectRef, storageFields, source, caller.subject), pc)
+      res           <- eval(CreateStorage(iri, projectRef, storageFields, source, caller.subject))
       _             <- unsetPreviousDefaultIfRequired(projectRef, res)
     } yield res
   }.span("createStorage")
@@ -115,7 +115,7 @@ final class Storages private (
       pc    <- fetchContext.onCreate(projectRef)
       iri   <- expandIri(id, pc)
       source = storageFields.toJson(iri)
-      res   <- eval(CreateStorage(iri, projectRef, storageFields, source, caller.subject), pc)
+      res   <- eval(CreateStorage(iri, projectRef, storageFields, source, caller.subject))
       _     <- unsetPreviousDefaultIfRequired(projectRef, res)
     } yield res
   }.span("createStorage")
@@ -151,7 +151,7 @@ final class Storages private (
       pc            <- fetchContext.onModify(projectRef)
       iri           <- expandIri(id, pc)
       storageFields <- sourceDecoder(projectRef, pc, iri, source)
-      res           <- eval(UpdateStorage(iri, projectRef, storageFields, source, rev, caller.subject), pc)
+      res           <- eval(UpdateStorage(iri, projectRef, storageFields, source, rev, caller.subject))
       _             <- IO.when(unsetPreviousDefault)(unsetPreviousDefaultIfRequired(projectRef, res))
     } yield res
   }.span("updateStorage")
@@ -178,7 +178,7 @@ final class Storages private (
       pc    <- fetchContext.onModify(projectRef)
       iri   <- expandIri(id, pc)
       source = storageFields.toJson(iri)
-      res   <- eval(UpdateStorage(iri, projectRef, storageFields, source, rev, caller.subject), pc)
+      res   <- eval(UpdateStorage(iri, projectRef, storageFields, source, rev, caller.subject))
       _     <- unsetPreviousDefaultIfRequired(projectRef, res)
     } yield res
   }.span("updateStorage")
@@ -207,7 +207,7 @@ final class Storages private (
     for {
       pc  <- fetchContext.onModify(projectRef)
       iri <- expandIri(id, pc)
-      res <- eval(TagStorage(iri, projectRef, tagRev, tag, rev, subject), pc)
+      res <- eval(TagStorage(iri, projectRef, tagRev, tag, rev, subject))
     } yield res
   }.span("tagStorage")
 
@@ -229,24 +229,9 @@ final class Storages private (
     for {
       pc  <- fetchContext.onModify(projectRef)
       iri <- expandIri(id, pc)
-      res <- eval(DeprecateStorage(iri, projectRef, rev, subject), pc)
+      res <- eval(DeprecateStorage(iri, projectRef, rev, subject))
     } yield res
   }.span("deprecateStorage")
-
-  /**
-    * Deprecate a view without applying preliminary checks on the project status
-    *
-    * @param id
-    *   the storage identifier to expand as the id of the storage
-    * @param project
-    *   the project where the storage belongs
-    * @param rev
-    *   the current revision of the storage
-    */
-  private[storages] def internalDeprecate(id: Iri, project: ProjectRef, rev: Int)(implicit
-      subject: Subject
-  ): IO[StorageRejection, Unit] =
-    eval(DeprecateStorage(id, project, rev, subject)).void
 
   /**
     * Fetch the storage using the ''resourceRef''
@@ -282,13 +267,11 @@ final class Storages private (
                    case Tag(_, tag)      =>
                      log.stateOr(project, iri, tag, notFound, TagNotFound(tag))
                  }
-    } yield state.toResource(pc.apiMappings, pc.base)
+    } yield state.toResource
   }.span("fetchStorage")
 
-  private def fetchDefaults(project: ProjectRef): IO[StorageFetchRejection, Stream[Task, StorageResource]] =
-    fetchContext.onRead(project).map { pc =>
-      log.currentStates(Scope.Project(project), _.toResource(pc.apiMappings, pc.base)).filter(_.value.default)
-    }
+  private def fetchDefaults(project: ProjectRef): Stream[Task, StorageResource] =
+    log.currentStates(Scope.Project(project), _.toResource).filter(_.value.default)
 
   /**
     * Fetches the default storage for a project.
@@ -298,8 +281,7 @@ final class Storages private (
     */
   def fetchDefault(project: ProjectRef): IO[StorageRejection, StorageResource] = {
     for {
-      defaults   <- fetchDefaults(project)
-      defaultOpt <- defaults.reduce(updatedByDesc.min(_, _)).head.compile.last.hideErrors
+      defaultOpt <- fetchDefaults(project).reduce(updatedByDesc.min(_, _)).head.compile.last.hideErrors
       default    <- IO.fromOption(defaultOpt, DefaultStorageNotFound(project))
     } yield default
   }.span("fetchDefaultStorage")
@@ -316,31 +298,27 @@ final class Storages private (
       project: ProjectRef,
       current: StorageResource
   ) =
-    IO.when(current.value.default)(
-      fetchDefaults(project).map(_.filter(_.id != current.id)).flatMap { resources =>
-        resources
-          .evalTap { storage =>
-            val source =
-              storage.value.source.replace("default" -> true, false).replace("default" -> "true", false)
-            val io     = update(storage.id, project, storage.rev, source, unsetPreviousDefault = false)(
-              serviceAccount.caller
-            )
-            logFailureAndContinue(io)
-          }
-          .compile
-          .drain
-          .hideErrors >> UIO.unit
-      }
-    )
+    IO.when(current.value.default) {
+      fetchDefaults(project)
+        .filter(_.id != current.id)
+        .evalTap { storage =>
+          val source =
+            storage.value.source.replace("default" -> true, false).replace("default" -> "true", false)
+          val io     = update(storage.id, project, storage.rev, source, unsetPreviousDefault = false)(
+            serviceAccount.caller
+          )
+          logFailureAndContinue(io)
+        }
+        .compile
+        .drain
+        .hideErrors >> UIO.unit
+    }
 
   private def logFailureAndContinue[A](io: IO[StorageRejection, A]): UIO[Unit] =
     io.mapError(err => logger.warn(err.reason)).attempt >> UIO.unit
 
-  private def eval(cmd: StorageCommand) =
-    log.evaluate(cmd.project, cmd.id, cmd)
-
-  private def eval(cmd: StorageCommand, pc: ProjectContext): IO[StorageRejection, StorageResource] =
-    eval(cmd).map(_._2.toResource(pc.apiMappings, pc.base))
+  private def eval(cmd: StorageCommand): IO[StorageRejection, StorageResource] =
+    log.evaluate(cmd.project, cmd.id, cmd).map(_._2.toResource)
 }
 
 object Storages {

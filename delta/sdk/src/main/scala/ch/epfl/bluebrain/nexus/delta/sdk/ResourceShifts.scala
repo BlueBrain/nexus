@@ -3,11 +3,10 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
-import ch.epfl.bluebrain.nexus.delta.sourcing.{EntityCheck, Transactors}
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
+import ch.epfl.bluebrain.nexus.delta.sourcing.{EntityCheck, Transactors}
 import com.typesafe.scalalogging.Logger
 import io.circe.Json
 import monix.bio.{IO, Task, UIO}
@@ -25,7 +24,7 @@ trait ResourceShifts {
   /**
     * Return a function to decode a json to a [[GraphResource]] according to its [[EntityType]]
     */
-  def decodeGraphResource(fetchContext: ProjectRef => UIO[ProjectContext]): (EntityType, Json) => Task[GraphResource]
+  def decodeGraphResource: (EntityType, Json) => Task[GraphResource]
 
 }
 
@@ -55,17 +54,16 @@ object ResourceShifts {
         resource   <- shift.flatTraverse(_.fetch(reference, project))
       } yield resource
 
-    override def decodeGraphResource(
-        fetchContext: ProjectRef => UIO[ProjectContext]
-    ): (EntityType, Json) => Task[GraphResource] = { (entityType: EntityType, json: Json) =>
-      {
-        for {
-          shift  <- findShift(entityType)
-          result <- shift.toGraphResource(json, fetchContext)
-        } yield result
-      }.tapError { err =>
-        UIO.delay(logger.error(s"Entity of type '$entityType' could not be decoded as a graph resource", err))
-      }
+    override def decodeGraphResource: (EntityType, Json) => Task[GraphResource] = {
+      (entityType: EntityType, json: Json) =>
+        {
+          for {
+            shift  <- findShift(entityType)
+            result <- shift.toGraphResource(json)
+          } yield result
+        }.tapError { err =>
+          UIO.delay(logger.error(s"Entity of type '$entityType' could not be decoded as a graph resource", err))
+        }
     }
   }
 }

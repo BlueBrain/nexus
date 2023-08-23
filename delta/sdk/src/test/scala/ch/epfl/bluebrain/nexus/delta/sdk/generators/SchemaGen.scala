@@ -2,13 +2,11 @@ package ch.epfl.bluebrain.nexus.delta.sdk.generators
 
 import cats.data.NonEmptyList
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.SchemaResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectBase}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.{Schema, SchemaState}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
@@ -59,9 +57,7 @@ object SchemaGen extends IOValues with EitherValuable {
       schema: Schema,
       rev: Int = 1,
       subject: Subject = Anonymous,
-      deprecated: Boolean = false,
-      am: ApiMappings = ApiMappings.empty,
-      base: Iri = nxv.base
+      deprecated: Boolean = false
   ): SchemaResource =
     SchemaState(
       schema.id,
@@ -76,6 +72,6 @@ object SchemaGen extends IOValues with EitherValuable {
       subject,
       Instant.EPOCH,
       subject
-    ).toResource(am, ProjectBase.unsafe(base))
+    ).toResource
 
 }

@@ -4,7 +4,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.sdk.ResolverResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceUris, Tags}
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectBase}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.Resolver.{CrossProjectResolver, InProjectResolver}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverValue.{CrossProjectValue, InProjectValue}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
@@ -83,10 +82,10 @@ final case class ResolverState(
     }
   }
 
-  def toResource(mappings: ApiMappings, base: ProjectBase): ResolverResource =
+  def toResource: ResolverResource =
     ResourceF(
       id = id,
-      uris = ResourceUris.resolver(project, id)(mappings, base),
+      uris = ResourceUris.resolver(project, id),
       rev = rev,
       types = value.tpe.types,
       deprecated = deprecated,

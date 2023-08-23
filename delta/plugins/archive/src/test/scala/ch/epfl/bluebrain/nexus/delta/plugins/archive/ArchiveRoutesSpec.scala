@@ -34,7 +34,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
@@ -161,23 +161,22 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with TryValue
 
   private def archiveMetadata(
       id: Iri,
-      ref: ProjectRef,
+      project: ProjectRef,
       rev: Int = 1,
       deprecated: Boolean = false,
       createdBy: Subject = subject,
       updatedBy: Subject = subject,
-      expiresInSeconds: Long = 18000L,
-      label: Option[String] = None
+      expiresInSeconds: Long = 18000L
   ): Json =
     jsonContentOf(
       "responses/archive-metadata-response.json",
-      "project"          -> ref,
+      "project"          -> project,
       "id"               -> id,
       "rev"              -> rev,
       "deprecated"       -> deprecated,
       "createdBy"        -> createdBy.asIri,
       "updatedBy"        -> updatedBy.asIri,
-      "label"            -> label.fold(lastSegment(id))(identity),
+      "self"             -> ResourceUris.ephemeral("archives", project, id).accessUri,
       "expiresInSeconds" -> expiresInSeconds.toString
     )
 
@@ -250,7 +249,7 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with TryValue
       val encodedId = encode(id.toString).replaceAll("%3A", ":")
       Put(s"/v1/archives/$projectRef/$encodedId", archive.toEntity) ~> asSubject ~> acceptMeta ~> routes ~> check {
         status shouldEqual StatusCodes.Created
-        response.asJson shouldEqual archiveMetadata(id, project.ref, label = Some(encodedId))
+        response.asJson shouldEqual archiveMetadata(id, project.ref)
       }
     }
 
@@ -263,7 +262,7 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with TryValue
         archiveWithFileSelf.toEntity
       ) ~> asSubject ~> acceptMeta ~> routes ~> check {
         status shouldEqual StatusCodes.Created
-        response.asJson shouldEqual archiveMetadata(id, project.ref, label = Some(encodedId))
+        response.asJson shouldEqual archiveMetadata(id, project.ref)
       }
     }
 
@@ -309,8 +308,7 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with TryValue
             file.value.attributes,
             storageRef,
             createdBy = subject,
-            updatedBy = subject,
-            label = Some(encodedFileId.replaceAll("%3A", ":"))
+            updatedBy = subject
           )
           val actualMetadata   = result.entryAsJson(s"${project.ref}/compacted/${encode(fileId.toString)}.json")
           actualMetadata shouldEqual expectedMetadata
@@ -341,8 +339,7 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with TryValue
           file.value.attributes,
           storageRef,
           createdBy = subject,
-          updatedBy = subject,
-          label = Some(encodedFileId.replaceAll("%3A", ":"))
+          updatedBy = subject
         )
         val actualMetadata   = result.entryAsJson(s"${project.ref}/compacted/${encode(fileId.toString)}.json")
         actualMetadata shouldEqual expectedMetadata

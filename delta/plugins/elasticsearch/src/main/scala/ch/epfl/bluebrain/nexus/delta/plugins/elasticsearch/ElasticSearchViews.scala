@@ -12,8 +12,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchVi
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewType.{AggregateElasticSearch, ElasticSearch}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.IndexingElasticSearchViewValue.nextIndexingRev
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
@@ -23,7 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing._
@@ -88,7 +88,7 @@ final class ElasticSearchViews private (
     for {
       pc  <- fetchContext.onCreate(project)
       iri <- expandIri(id, pc)
-      res <- eval(CreateElasticSearchView(iri, project, value, value.toJson(iri), subject), pc)
+      res <- eval(CreateElasticSearchView(iri, project, value, value.toJson(iri), subject))
     } yield res
   }.span("createElasticSearchView")
 
@@ -110,7 +110,7 @@ final class ElasticSearchViews private (
     for {
       pc           <- fetchContext.onCreate(project)
       (iri, value) <- sourceDecoder(project, pc, source)
-      res          <- eval(CreateElasticSearchView(iri, project, value, source, caller.subject), pc)
+      res          <- eval(CreateElasticSearchView(iri, project, value, source, caller.subject))
     } yield res
   }.span("createElasticSearchView")
 
@@ -134,7 +134,7 @@ final class ElasticSearchViews private (
       pc    <- fetchContext.onCreate(project)
       iri   <- expandIri(id, pc)
       value <- sourceDecoder(project, pc, iri, source)
-      res   <- eval(CreateElasticSearchView(iri, project, value, source, caller.subject), pc)
+      res   <- eval(CreateElasticSearchView(iri, project, value, source, caller.subject))
     } yield res
   }.span("createElasticSearchView")
 
@@ -161,7 +161,7 @@ final class ElasticSearchViews private (
     for {
       pc  <- fetchContext.onModify(project)
       iri <- expandIri(id, pc)
-      res <- eval(UpdateElasticSearchView(iri, project, rev, value, value.toJson(iri), subject), pc)
+      res <- eval(UpdateElasticSearchView(iri, project, rev, value, value.toJson(iri), subject))
     } yield res
   }.span("updateElasticSearchView")
 
@@ -189,7 +189,7 @@ final class ElasticSearchViews private (
       pc    <- fetchContext.onModify(project)
       iri   <- expandIri(id, pc)
       value <- sourceDecoder(project, pc, iri, source)
-      res   <- eval(UpdateElasticSearchView(iri, project, rev, value, source, caller.subject), pc)
+      res   <- eval(UpdateElasticSearchView(iri, project, rev, value, source, caller.subject))
     } yield res
   }.span("updateElasticSearchView")
 
@@ -219,7 +219,7 @@ final class ElasticSearchViews private (
     for {
       pc  <- fetchContext.onModify(project)
       iri <- expandIri(id, pc)
-      res <- eval(TagElasticSearchView(iri, project, tagRev, tag, rev, subject), pc)
+      res <- eval(TagElasticSearchView(iri, project, tagRev, tag, rev, subject))
     } yield res
   }.span("tagElasticSearchView")
 
@@ -244,7 +244,7 @@ final class ElasticSearchViews private (
     for {
       pc  <- fetchContext.onModify(project)
       iri <- expandIri(id, pc)
-      res <- eval(DeprecateElasticSearchView(iri, project, rev, subject), pc)
+      res <- eval(DeprecateElasticSearchView(iri, project, rev, subject))
     } yield res
   }.span("deprecateElasticSearchView")
 
@@ -274,14 +274,14 @@ final class ElasticSearchViews private (
     *   the view parent project
     */
   def fetch(id: IdSegmentRef, project: ProjectRef): IO[ElasticSearchViewRejection, ViewResource] =
-    fetchState(id, project).map { case (pc, state) =>
-      state.toResource(pc.apiMappings, pc.base, defaultElasticsearchMapping, defaultElasticsearchSettings)
+    fetchState(id, project).map { state =>
+      state.toResource(defaultElasticsearchMapping, defaultElasticsearchSettings)
     }
 
   def fetchState(
       id: IdSegmentRef,
       project: ProjectRef
-  ): IO[ElasticSearchViewRejection, (ProjectContext, ElasticSearchViewState)] = {
+  ): IO[ElasticSearchViewRejection, ElasticSearchViewState] = {
     for {
       pc      <- fetchContext.onRead(project)
       iri     <- expandIri(id.value, pc)
@@ -293,7 +293,7 @@ final class ElasticSearchViews private (
                    case Tag(_, tag)      =>
                      log.stateOr(project, iri, tag, notFound, TagNotFound(tag))
                  }
-    } yield (pc, state)
+    } yield state
   }.span("fetchElasticSearchView")
 
   /**
@@ -309,7 +309,7 @@ final class ElasticSearchViews private (
       project: ProjectRef
   ): IO[ElasticSearchViewRejection, ActiveViewDef] =
     fetchState(id, project)
-      .flatMap { case (_, state) =>
+      .flatMap { state =>
         IndexingViewDef(state, defaultElasticsearchMapping, defaultElasticsearchSettings, prefix) match {
           case Some(viewDef) =>
             viewDef match {
@@ -350,14 +350,10 @@ final class ElasticSearchViews private (
       IndexingViewDef(v, defaultElasticsearchMapping, defaultElasticsearchSettings, prefix)
     }
 
-  private def eval(cmd: ElasticSearchViewCommand) =
-    log.evaluate(cmd.project, cmd.id, cmd)
-
-  private def eval(
-      cmd: ElasticSearchViewCommand,
-      pc: ProjectContext
-  ): IO[ElasticSearchViewRejection, ViewResource] =
-    eval(cmd).map(_._2.toResource(pc.apiMappings, pc.base, defaultElasticsearchMapping, defaultElasticsearchSettings))
+  private def eval(cmd: ElasticSearchViewCommand): IO[ElasticSearchViewRejection, ViewResource] =
+    log
+      .evaluate(cmd.project, cmd.id, cmd)
+      .map(_._2.toResource(defaultElasticsearchMapping, defaultElasticsearchSettings))
 }
 
 object ElasticSearchViews {

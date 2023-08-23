@@ -81,7 +81,7 @@ class CompositeViewsSpec
         tags: Tags = Tags.empty,
         source: Json
     ): ViewResource = CompositeViewsGen.resourceFor(
-      project,
+      projectRef,
       id,
       uuid,
       value,

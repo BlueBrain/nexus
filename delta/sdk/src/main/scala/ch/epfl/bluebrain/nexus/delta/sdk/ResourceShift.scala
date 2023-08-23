@@ -3,16 +3,15 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
-import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
@@ -54,7 +53,7 @@ abstract class ResourceShift[State <: ScopedState, A, M](
   implicit private val valueJsonLdEncoder: JsonLdEncoder[A]                   = valueEncoder
   implicit private val resourceFJsonLdEncoder: JsonLdEncoder[ResourceF[Unit]] = ResourceF.defaultResourceFAJsonLdEncoder
 
-  protected def toResourceF(context: ProjectContext, state: State): ResourceF[A]
+  protected def toResourceF(state: State): ResourceF[A]
 
   /**
     * Fetch the resource from its reference
@@ -70,13 +69,12 @@ abstract class ResourceShift[State <: ScopedState, A, M](
   /**
     * Retrieves a [[GraphResource]] from the json payload stored in database.
     */
-  def toGraphResource(json: Json, fetchContext: ProjectRef => UIO[ProjectContext])(implicit
+  def toGraphResource(json: Json)(implicit
       cr: RemoteContextResolution
   ): Task[GraphResource] =
     for {
       state   <- Task.fromEither(serializer.codec.decodeJson(json))
-      context <- fetchContext(state.project)
-      resource = toResourceF(context, state)
+      resource = toResourceF(state)
       graph   <- toGraphResource(state.project, resource)
     } yield graph
 
@@ -145,7 +143,7 @@ object ResourceShift {
   def withMetadata[State <: ScopedState, A, M](
       entityType: EntityType,
       fetchResource: (ResourceRef, ProjectRef) => IO[_, ResourceF[A]],
-      stateToResource: (ProjectContext, State) => ResourceF[A],
+      stateToResource: State => ResourceF[A],
       asContent: ResourceF[A] => JsonLdContent[A, M]
   )(implicit
       serializer: Serializer[_, State],
@@ -160,8 +158,7 @@ object ResourceShift {
       Some(metadataEncoder)
     ) {
 
-      override protected def toResourceF(context: ProjectContext, state: State): ResourceF[A] =
-        stateToResource(context, state)
+      override protected def toResourceF(state: State): ResourceF[A] = stateToResource(state)
 
       override protected def resourceToContent(value: ResourceF[A]): JsonLdContent[A, M] = asContent(value)
     }
@@ -184,7 +181,7 @@ object ResourceShift {
   def apply[State <: ScopedState, B](
       entityType: EntityType,
       fetchResource: (ResourceRef, ProjectRef) => IO[_, ResourceF[B]],
-      stateToResource: (ProjectContext, State) => ResourceF[B],
+      stateToResource: State => ResourceF[B],
       asContent: ResourceF[B] => JsonLdContent[B, Nothing]
   )(implicit
       serializer: Serializer[_, State],
@@ -197,8 +194,8 @@ object ResourceShift {
       valueEncoder,
       None
     ) {
-      override protected def toResourceF(context: ProjectContext, state: State): ResourceF[B] =
-        stateToResource(context, state)
+      override protected def toResourceF(state: State): ResourceF[B] =
+        stateToResource(state)
 
       override protected def resourceToContent(value: ResourceF[B]): JsonLdContent[B, Nothing] = asContent(value)
     }

@@ -178,7 +178,7 @@ object Storage {
     ResourceShift.withMetadata[StorageState, Storage, Metadata](
       Storages.entityType,
       (ref, project) => storages.fetch(IdSegmentRef(ref), project),
-      (context, state) => state.toResource(context.apiMappings, context.base),
+      state => state.toResource,
       value => JsonLdContent(value, value.value.source, Some(value.value.metadata))
     )
 

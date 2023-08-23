@@ -6,7 +6,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.sdk.SchemaResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceUris, Tags}
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectBase}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
@@ -74,10 +73,10 @@ final case class SchemaState(
     */
   def types: Set[Iri] = Set(nxv.Schema)
 
-  def toResource(mappings: ApiMappings, base: ProjectBase): SchemaResource =
+  def toResource: SchemaResource =
     ResourceF(
       id = id,
-      uris = ResourceUris.schema(project, id)(mappings, base),
+      uris = ResourceUris.schema(project, id),
       rev = rev,
       types = types,
       schema = schema,
@@ -94,9 +93,9 @@ object SchemaState {
 
   @nowarn("cat=unused")
   implicit val serializer: Serializer[Iri, SchemaState] = {
-    import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
     import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.CompactedJsonLd.Database._
     import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd.Database._
+    import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
     implicit val configuration: Configuration       = Serializer.circeConfiguration
     implicit val codec: Codec.AsObject[SchemaState] = deriveConfiguredCodec[SchemaState]
     Serializer.dropNullsInjectType()

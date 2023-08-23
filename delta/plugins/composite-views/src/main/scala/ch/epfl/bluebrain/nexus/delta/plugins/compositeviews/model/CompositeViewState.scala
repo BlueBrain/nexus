@@ -5,7 +5,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceUris, Tags}
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectBase}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
@@ -80,10 +79,10 @@ final case class CompositeViewState(
   /**
     * Converts the state into a resource representation.
     */
-  def toResource(mappings: ApiMappings, base: ProjectBase): ViewResource =
+  def toResource: ViewResource =
     ResourceF(
       id = id,
-      uris = ResourceUris("views", project, id)(mappings, base),
+      uris = ResourceUris("views", project, id),
       rev = rev,
       types = Set(nxv.View, compositeViewType),
       deprecated = deprecated,

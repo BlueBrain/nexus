@@ -4,8 +4,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceUris, Tags}
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.Project
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.Json
 
 import java.time.Instant
@@ -14,7 +14,7 @@ import java.util.UUID
 object CompositeViewsGen {
 
   def resourceFor(
-      project: Project,
+      project: ProjectRef,
       id: Iri,
       uuid: UUID,
       value: CompositeViewValue,
@@ -29,7 +29,7 @@ object CompositeViewsGen {
   ): ViewResource = {
     ResourceF(
       id,
-      ResourceUris("views", project.ref, id)(project.apiMappings, project.base),
+      ResourceUris("views", project, id),
       rev,
       Set(nxv.View, compositeViewType),
       deprecated,
@@ -40,7 +40,7 @@ object CompositeViewsGen {
       schema,
       CompositeView(
         id,
-        project.ref,
+        project,
         value.sources,
         value.projections,
         value.rebuildStrategy,

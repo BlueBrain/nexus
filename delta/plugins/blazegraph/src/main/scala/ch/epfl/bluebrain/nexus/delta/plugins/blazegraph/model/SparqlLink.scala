@@ -5,10 +5,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF, ResourceUris}
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectBase}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import io.circe.syntax.EncoderOps
 import io.circe.{Encoder, Json, JsonObject}
 
@@ -60,11 +58,8 @@ object SparqlLink {
     private def resourceUrisFor(
         project: ProjectRef,
         schemaProject: ProjectRef,
-        id: Iri,
-        schema: ResourceRef,
-        mappings: ApiMappings,
-        projectBase: ProjectBase
-    ): ResourceUris = ResourceUris.resource(project, schemaProject, id, schema)(mappings, projectBase)
+        id: Iri
+    ): ResourceUris = ResourceUris.resource(project, schemaProject, id)
 
     /**
       * Attempts to create a [[SparqlResourceLink]] from the given bindings
@@ -72,11 +67,7 @@ object SparqlLink {
       * @param bindings
       *   the sparql result bindings
       */
-    def apply(
-        bindings: Map[String, Binding],
-        mappings: ApiMappings,
-        projectBase: ProjectBase
-    )(implicit base: BaseUri): Option[SparqlLink] =
+    def apply(bindings: Map[String, Binding])(implicit base: BaseUri): Option[SparqlLink] =
       for {
         link         <- SparqlExternalLink(bindings)
         project      <-
@@ -97,7 +88,7 @@ object SparqlLink {
                           .flatMap(Iri.absolute(_).toOption)
                           .flatMap(projectRefFromId)
                           .getOrElse(project)
-        resourceUris  = resourceUrisFor(project, schemaProject, link.id, schemaRef, mappings, projectBase)
+        resourceUris  = resourceUrisFor(project, schemaProject, link.id)
       } yield SparqlResourceLink(
         ResourceF(
           link.id,

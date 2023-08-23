@@ -68,7 +68,7 @@ object Resource {
     ResourceShift.apply[ResourceState, Resource](
       Resources.entityType,
       (ref, project) => resources.fetch(IdSegmentRef(ref), project, None),
-      (context, state) => state.toResource(context.apiMappings, context.base),
+      state => state.toResource,
       value => JsonLdContent(value, value.value.source, None)
     )
 }

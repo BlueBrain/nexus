@@ -129,7 +129,7 @@ class ElasticSearchViewsSpec
         value,
         source,
         tags
-      ).toResource(project.apiMappings, project.base, defaultEsMapping, defaultEsSettings)
+      ).toResource(defaultEsMapping, defaultEsSettings)
 
     val viewId          = iri"http://localhost/indexing"
     val aggregateViewId = iri"http://localhost/${genString()}"

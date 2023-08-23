@@ -92,7 +92,7 @@ final class Files(
       _                     <- test(CreateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, caller.subject))
       (storageRef, storage) <- fetchActiveStorage(storageId, projectRef, pc)
       attributes            <- extractFileAttributes(iri, entity, storage)
-      res                   <- eval(CreateFile(iri, projectRef, storageRef, storage.tpe, attributes, caller.subject), pc)
+      res                   <- eval(CreateFile(iri, projectRef, storageRef, storage.tpe, attributes, caller.subject))
     } yield res
   }.span("createFile")
 
@@ -120,7 +120,7 @@ final class Files(
       _                     <- test(CreateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, caller.subject))
       (storageRef, storage) <- fetchActiveStorage(storageId, projectRef, pc)
       attributes            <- extractFileAttributes(iri, entity, storage)
-      res                   <- eval(CreateFile(iri, projectRef, storageRef, storage.tpe, attributes, caller.subject), pc)
+      res                   <- eval(CreateFile(iri, projectRef, storageRef, storage.tpe, attributes, caller.subject))
     } yield res
   }.span("createFile")
 
@@ -210,7 +210,7 @@ final class Files(
       _                     <- test(UpdateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, rev, caller.subject))
       (storageRef, storage) <- fetchActiveStorage(storageId, projectRef, pc)
       attributes            <- extractFileAttributes(iri, entity, storage)
-      res                   <- eval(UpdateFile(iri, projectRef, storageRef, storage.tpe, attributes, rev, caller.subject), pc)
+      res                   <- eval(UpdateFile(iri, projectRef, storageRef, storage.tpe, attributes, rev, caller.subject))
     } yield res
   }.span("updateFile")
 
@@ -249,7 +249,7 @@ final class Files(
       resolvedFilename      <- IO.fromOption(filename.orElse(path.lastSegment), InvalidFileLink(iri))
       description           <- FileDescription(resolvedFilename, mediaType)
       attributes            <- LinkFile(storage).apply(path, description).mapError(LinkRejection(iri, storage.id, _))
-      res                   <- eval(UpdateFile(iri, projectRef, storageRef, storage.tpe, attributes, rev, caller.subject), pc)
+      res                   <- eval(UpdateFile(iri, projectRef, storageRef, storage.tpe, attributes, rev, caller.subject))
     } yield res
   }.span("updateLink")
 
@@ -277,7 +277,7 @@ final class Files(
     for {
       pc  <- fetchContext.onModify(projectRef)
       iri <- expandIri(id, pc)
-      res <- eval(TagFile(iri, projectRef, tagRev, tag, rev, subject), pc)
+      res <- eval(TagFile(iri, projectRef, tagRev, tag, rev, subject))
     } yield res
   }.span("tagFile")
 
@@ -302,7 +302,7 @@ final class Files(
     for {
       pc  <- fetchContext.onModify(projectRef)
       iri <- expandIri(id, pc)
-      res <- eval(DeleteFileTag(iri, projectRef, tag, rev, subject), pc)
+      res <- eval(DeleteFileTag(iri, projectRef, tag, rev, subject))
     } yield res
   }.span("deleteFileTag")
 
@@ -324,7 +324,7 @@ final class Files(
     for {
       pc  <- fetchContext.onModify(projectRef)
       iri <- expandIri(id, pc)
-      res <- eval(DeprecateFile(iri, projectRef, rev, subject), pc)
+      res <- eval(DeprecateFile(iri, projectRef, rev, subject))
     } yield res
   }.span("deprecateFile")
 
@@ -371,7 +371,7 @@ final class Files(
                    case Tag(_, tag)      =>
                      log.stateOr(project, iri, tag, notFound, TagNotFound(tag))
                  }
-    } yield state.toResource(pc.apiMappings, pc.base)
+    } yield state.toResource
   }.span("fetchFile")
 
   private def createLink(
@@ -389,11 +389,11 @@ final class Files(
       resolvedFilename      <- IO.fromOption(filename.orElse(path.lastSegment), InvalidFileLink(iri))
       description           <- FileDescription(resolvedFilename, mediaType)
       attributes            <- LinkFile(storage).apply(path, description).mapError(LinkRejection(iri, storage.id, _))
-      res                   <- eval(CreateFile(iri, ref, storageRef, storage.tpe, attributes, caller.subject), pc)
+      res                   <- eval(CreateFile(iri, ref, storageRef, storage.tpe, attributes, caller.subject))
     } yield res
 
-  private def eval(cmd: FileCommand, pc: ProjectContext): IO[FileRejection, FileResource] =
-    log.evaluate(cmd.project, cmd.id, cmd).map(_._2.toResource(pc.apiMappings, pc.base))
+  private def eval(cmd: FileCommand): IO[FileRejection, FileResource] =
+    log.evaluate(cmd.project, cmd.id, cmd).map(_._2.toResource)
 
   private def test(cmd: FileCommand) = log.dryRun(cmd.project, cmd.id, cmd)
 

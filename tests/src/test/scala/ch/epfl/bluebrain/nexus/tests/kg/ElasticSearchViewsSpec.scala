@@ -96,6 +96,7 @@ class ElasticSearchViewsSpec extends BaseSpec with EitherValuable with CirceEq {
     }
 
     "get the created elasticsearch views" in {
+      val id = "https://dev.nexus.test.com/simplified-resource/cell-view"
       projects.parTraverse { project =>
         deltaClient.get[Json](s"/views/$project/test-resource:cell-view", ScoobyDoo) { (json, response) =>
           response.status shouldEqual StatusCodes.OK
@@ -103,8 +104,8 @@ class ElasticSearchViewsSpec extends BaseSpec with EitherValuable with CirceEq {
             "/kg/views/elasticsearch/indexing-response.json",
             replacements(
               ScoobyDoo,
-              "id"             -> "https://dev.nexus.test.com/simplified-resource/cell-view",
-              "self"           -> s"${config.deltaUri}/views/$project/test-resource:cell-view",
+              "id"             -> id,
+              "self"           -> viewSelf(project, id),
               "project-parent" -> s"${config.deltaUri}/projects/$project",
               "project"        -> project
             ): _*
@@ -126,6 +127,7 @@ class ElasticSearchViewsSpec extends BaseSpec with EitherValuable with CirceEq {
     }
 
     "get the created AggregateElasticSearchView" in {
+      val id = "https://dev.nexus.test.com/simplified-resource/agg-cell-view"
       deltaClient.get[Json](s"/views/$fullId2/test-resource:agg-cell-view", ScoobyDoo) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
 
@@ -133,8 +135,8 @@ class ElasticSearchViewsSpec extends BaseSpec with EitherValuable with CirceEq {
           "/kg/views/elasticsearch/aggregate-response.json",
           replacements(
             ScoobyDoo,
-            "id"             -> "https://dev.nexus.test.com/simplified-resource/agg-cell-view",
-            "resources"      -> s"${config.deltaUri}/views/$fullId2/test-resource:agg-cell-view",
+            "id"             -> id,
+            "self"           -> viewSelf(fullId2, id),
             "project-parent" -> s"${config.deltaUri}/projects/$fullId2",
             "project1"       -> fullId,
             "project2"       -> fullId2

@@ -164,7 +164,7 @@ object Project {
     ResourceShift.withMetadata[ProjectState, Project, Metadata](
       Projects.entityType,
       (_, ref) => projects.fetch(ref),
-      (_, state) => state.toResource(defaultMappings),
+      state => state.toResource(defaultMappings),
       value => JsonLdContent(value, value.value.asJson, Some(value.value.metadata))
     )
 

@@ -2,9 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchViewState, ElasticSearchViewValue, ViewResource}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectBase}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.{Json, JsonObject}
@@ -54,9 +52,7 @@ object ElasticSearchViewGen {
       deprecated: Boolean = false,
       tags: Tags = Tags.empty,
       createdBy: Subject = Anonymous,
-      updatedBy: Subject = Anonymous,
-      am: ApiMappings = ApiMappings.empty,
-      base: Iri = nxv.base
+      updatedBy: Subject = Anonymous
   ): ViewResource =
     stateFor(
       id,
@@ -70,5 +66,5 @@ object ElasticSearchViewGen {
       tags,
       createdBy,
       updatedBy
-    ).toResource(am, ProjectBase.unsafe(base), JsonObject.empty, JsonObject.empty)
+    ).toResource(JsonObject.empty, JsonObject.empty)
 }

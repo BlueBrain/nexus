@@ -3,7 +3,7 @@
     "https://bluebrain.github.io/nexus/contexts/files.json",
     "https://bluebrain.github.io/nexus/contexts/metadata.json"
   ],
-  "@id": "{{deltaUri}}/resources/{{projId}}/_/attachment2",
+  "@id": "{{id}}",
   "@type": "File",
   "_storage": {
     "@id": "https://bluebrain.github.io/nexus/vocabulary/{{storageId}}",
@@ -18,9 +18,9 @@
   "_filename": "attachment2",
   "_mediaType": "text/plain; charset=UTF-8",
   "_origin" : "Client",
-  "_incoming": "{{deltaUri}}/files/{{projId}}/attachment2/incoming",
-  "_outgoing": "{{deltaUri}}/files/{{projId}}/attachment2/outgoing",
-  "_self": "{{deltaUri}}/files/{{projId}}/attachment2",
+  "_incoming": "{{self}}/incoming",
+  "_outgoing": "{{self}}/outgoing",
+  "_self": "{{self}}",
   "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/files.json",
   "_project": "{{project}}",
   "_rev": 1,

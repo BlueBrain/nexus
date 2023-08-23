@@ -1,19 +1,18 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.generators
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.DataResource
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectBase}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{Resource, ResourceState}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.testkit.IOValues
 import io.circe.Json
 
@@ -76,9 +75,7 @@ object ResourceGen extends IOValues {
       tags: Tags = Tags.empty,
       rev: Int = 1,
       subject: Subject = Anonymous,
-      deprecated: Boolean = false,
-      am: ApiMappings = ApiMappings.empty,
-      base: Iri = nxv.base
+      deprecated: Boolean = false
   )(implicit resolution: RemoteContextResolution): DataResource = {
     val expanded  = ExpandedJsonLd(source).accepted.replaceId(id)
     val compacted = expanded.toCompacted(source.topContextValueOrEmpty).accepted
@@ -99,7 +96,7 @@ object ResourceGen extends IOValues {
       subject,
       Instant.EPOCH,
       subject
-    ).toResource(am, ProjectBase.unsafe(base))
+    ).toResource
   }
 
   def resourceFor(
@@ -107,9 +104,7 @@ object ResourceGen extends IOValues {
       types: Set[Iri] = Set.empty,
       rev: Int = 1,
       subject: Subject = Anonymous,
-      deprecated: Boolean = false,
-      am: ApiMappings = ApiMappings.empty,
-      base: Iri = nxv.base
+      deprecated: Boolean = false
   ): DataResource =
     ResourceState(
       resource.id,
@@ -127,7 +122,7 @@ object ResourceGen extends IOValues {
       subject,
       Instant.EPOCH,
       subject
-    ).toResource(am, ProjectBase.unsafe(base))
+    ).toResource
 
   def jsonLdContent(id: Iri, project: ProjectRef, source: Json)(implicit resolution: RemoteContextResolution) = {
     val resourceF = sourceToResourceF(id, project, source)
