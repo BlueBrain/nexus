@@ -1,3 +1,9 @@
+@@@ index
+
+* @ref:[Composite sink](composite-sink.md)
+
+@@@
+
 # CompositeView
 
 This view is composed by multiple `sources` and `projections`.
@@ -231,6 +237,9 @@ where...
   execute against the intermediate Sparql space for each target resource.
 - `{permission}`: String - the permission necessary to query this projection. Defaults to `views/query`. 
 
+## Batching queries to the intermediate space
+
+The queries that projections perform to the intermediate Sparql space can be either executed per individual resource, or in batches containing multiple resources. To learn more about it, please refer to the @ref:[Composite Sink page](composite-sink.md).
 
 ## Payload
 

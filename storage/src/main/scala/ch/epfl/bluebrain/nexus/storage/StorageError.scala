@@ -56,11 +56,11 @@ object StorageError {
     * @param name
     *   the storage bucket name
     * @param path
-    *   the relative path to the file
+    *   the path to the file
     */
   final case class PathNotFound(name: String, path: Path)
       extends StorageError(
-        s"The provided location inside the bucket '$name' with the relative path '$path' does not exist."
+        s"The provided location inside the bucket '$name' with the path '$path' does not exist."
       )
 
   /**
@@ -69,11 +69,11 @@ object StorageError {
     * @param name
     *   the storage bucket name
     * @param path
-    *   the relative path to the file
+    *   the path to the file
     */
   final case class PathInvalid(name: String, path: Path)
       extends StorageError(
-        s"The provided location inside the bucket '$name' with the relative path '$path' is invalid."
+        s"The provided location inside the bucket '$name' with the path '$path' is invalid."
       )
 
   /**

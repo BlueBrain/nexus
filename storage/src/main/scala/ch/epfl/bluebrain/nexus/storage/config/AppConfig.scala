@@ -86,6 +86,7 @@ object AppConfig {
     */
   final case class StorageConfig(
       rootVolume: Path,
+      extraPrefixes: List[Path],
       protectedDirectory: Path,
       fixerEnabled: Boolean,
       fixerCommand: Vector[String]

@@ -40,18 +40,18 @@ trait Storages[F[_], Source] {
     *
     * @param name
     *   the storage bucket name
-    * @param relativePath
-    *   the relative path location
+    * @param path
+    *   the path location
     */
-  def pathExists(name: String, relativePath: Uri.Path): PathExistence
+  def pathExists(name: String, path: Uri.Path): PathExistence
 
   /**
     * Creates a file with the provided ''metadata'' and ''source'' on the provided ''filePath''.
     *
     * @param name
     *   the storage bucket name
-    * @param relativePath
-    *   the relative path location
+    * @param path
+    *   the path location
     * @param source
     *   the file content
     * @return
@@ -59,27 +59,27 @@ trait Storages[F[_], Source] {
     */
   def createFile(
       name: String,
-      relativePath: Uri.Path,
+      path: Uri.Path,
       source: Source
   )(implicit bucketEv: BucketExists, pathEv: PathDoesNotExist): F[FileAttributes]
 
   /**
-    * Moves a path from the provided ''sourceRelativePath'' to ''destRelativePath'' inside the nexus folder.
+    * Moves a path from the provided ''sourcePath'' to ''destPath'' inside the nexus folder.
     *
     * @param name
     *   the storage bucket name
-    * @param sourceRelativePath
-    *   the source relative path location
-    * @param destRelativePath
-    *   the destination relative path location inside the nexus folder
+    * @param sourcePath
+    *   the source path location
+    * @param destPath
+    *   the destination path location inside the nexus folder
     * @return
     *   Left(rejection) or Right(fileAttributes). The file attributes contain the metadata (bytes and location) wrapped
     *   in an F effect type
     */
   def moveFile(
       name: String,
-      sourceRelativePath: Uri.Path,
-      destRelativePath: Uri.Path
+      sourcePath: Uri.Path,
+      destPath: Uri.Path
   )(implicit bucketEv: BucketExists): F[RejOrAttributes]
 
   /**
@@ -87,15 +87,15 @@ trait Storages[F[_], Source] {
     *
     * @param name
     *   the storage bucket name
-    * @param relativePath
-    *   the relative path to the file location
+    * @param path
+    *   the path to the file location
     * @return
     *   Left(rejection), Right(source, Some(filename)) when the path is a file and Right(source, None) when the path is
     *   a directory
     */
   def getFile(
       name: String,
-      relativePath: Uri.Path
+      path: Uri.Path
   )(implicit bucketEv: BucketExists, pathEv: PathExists): RejOr[(Source, Option[String])]
 
   /**
@@ -103,12 +103,12 @@ trait Storages[F[_], Source] {
     *
     * @param name
     *   the storage bucket name
-    * @param relativePath
-    *   the relative path to the file location
+    * @param path
+    *   the path to the file location
     */
   def getAttributes(
       name: String,
-      relativePath: Uri.Path
+      path: Uri.Path
   )(implicit bucketEv: BucketExists, pathEv: PathExists): F[FileAttributes]
 
 }
@@ -164,8 +164,11 @@ object Storages {
       if (protectedDir) path.resolve(config.protectedDirectory).normalize() else path
     }
 
-    private def filePath(name: String, relativePath: Uri.Path, protectedDir: Boolean = true): Path =
-      basePath(name, protectedDir).resolve(Paths.get(decode(relativePath))).normalize()
+    private def filePath(name: String, path: Uri.Path, protectedDir: Boolean = true): Path = {
+      val filePath = Paths.get(decode(path))
+      if (filePath.isAbsolute) filePath.normalize()
+      else basePath(name, protectedDir).resolve(filePath).normalize()
+    }
 
     def exists(name: String): BucketExistence = {
       val path = basePath(name)
@@ -174,18 +177,18 @@ object Storages {
       else BucketDoesNotExist
     }
 
-    def pathExists(name: String, relativeFilePath: Uri.Path): PathExistence = {
-      val path = filePath(name, relativeFilePath)
-      if (Files.exists(path) && Files.isReadable(path) && descendantOf(path, basePath(name))) PathExists
+    def pathExists(name: String, path: Uri.Path): PathExistence = {
+      val absPath = filePath(name, path)
+      if (Files.exists(absPath) && Files.isReadable(absPath) && descendantOf(absPath, basePath(name))) PathExists
       else PathDoesNotExist
     }
 
     def createFile(
         name: String,
-        relativeFilePath: Uri.Path,
+        path: Uri.Path,
         source: AkkaSource
     )(implicit bucketEv: BucketExists, pathEv: PathDoesNotExist): F[FileAttributes] = {
-      val absFilePath = filePath(name, relativeFilePath)
+      val absFilePath = filePath(name, path)
       if (descendantOf(absFilePath, basePath(name)))
         F.fromTry(Try(Files.createDirectories(absFilePath.getParent))) >>
           F.fromTry(Try(MessageDigest.getInstance(digestConfig.algorithm))).flatMap { msgDigest =>
@@ -196,7 +199,7 @@ object Storages {
                   case (digest, io) if absFilePath.toFile.exists() =>
                     Future(FileAttributes(absFilePath.toAkkaUri, io.count, digest, detectMediaType(absFilePath)))
                   case _                                           =>
-                    Future.failed(InternalError(s"I/O error writing file to path '$relativeFilePath'"))
+                    Future.failed(InternalError(s"I/O error writing file to path '$path'"))
                 }
               }
               .run()
@@ -204,19 +207,19 @@ object Storages {
               .to[F]
           }
       else
-        F.raiseError(PathInvalid(name, relativeFilePath))
+        F.raiseError(PathInvalid(name, path))
     }
 
     def moveFile(
         name: String,
-        sourceRelativePath: Uri.Path,
-        destRelativePath: Uri.Path
+        sourcePath: Uri.Path,
+        destPath: Uri.Path
     )(implicit bucketEv: BucketExists): F[RejOrAttributes] = {
 
       val bucketPath          = basePath(name, protectedDir = false)
       val bucketProtectedPath = basePath(name)
-      val absSourcePath       = filePath(name, sourceRelativePath, protectedDir = false)
-      val absDestPath         = filePath(name, destRelativePath)
+      val absSourcePath       = filePath(name, sourcePath, protectedDir = false)
+      val absDestPath         = filePath(name, destPath)
 
       def fixPermissions(path: Path): F[Either[PermissionsFixingFailed, Unit]] =
         if (config.fixerEnabled) {
@@ -254,43 +257,49 @@ object Storages {
           .runWith(Sink.last)
           .to[F]
 
+      def allowedPrefix(absSourcePath: Path) =
+        absSourcePath.startsWith(bucketPath) ||
+          config.extraPrefixes.exists(absSourcePath.startsWith)
+
       fixPermissions(absSourcePath).flatMap { fixPermsResult =>
         if (!Files.exists(absSourcePath))
-          F.pure(Left(PathNotFound(name, sourceRelativePath)))
-        else if (!descendantOf(absSourcePath, bucketPath) || descendantOf(absSourcePath, bucketProtectedPath))
-          F.pure(Left(PathNotFound(name, sourceRelativePath)))
+          F.pure(Left(PathNotFound(name, sourcePath)))
+        else if (descendantOf(absSourcePath, bucketProtectedPath))
+          F.pure(Left(PathNotFound(name, sourcePath)))
+        else if (!allowedPrefix(absSourcePath))
+          F.raiseError(PathInvalid(name, sourcePath))
         else if (!descendantOf(absDestPath, bucketProtectedPath))
-          F.raiseError(PathInvalid(name, destRelativePath))
+          F.raiseError(PathInvalid(name, destPath))
         else if (Files.exists(absDestPath))
-          F.pure(Left(PathAlreadyExists(name, destRelativePath)))
+          F.pure(Left(PathAlreadyExists(name, destPath)))
         else if (Files.isSymbolicLink(absSourcePath) || containsHardLink(absSourcePath))
-          F.pure(Left(PathContainsLinks(name, sourceRelativePath)))
+          F.pure(Left(PathContainsLinks(name, sourcePath)))
         else if (Files.isRegularFile(absSourcePath))
           failOrComputeSize(fixPermsResult, isDir = false)
         else if (Files.isDirectory(absSourcePath))
           dirContainsLink(absSourcePath).flatMap {
-            case true  => F.pure(Left(PathContainsLinks(name, sourceRelativePath)))
+            case true  => F.pure(Left(PathContainsLinks(name, sourcePath)))
             case false => failOrComputeSize(fixPermsResult, isDir = true)
           }
-        else F.pure(Left(PathNotFound(name, sourceRelativePath)))
+        else F.pure(Left(PathNotFound(name, sourcePath)))
       }
     }
 
     def getFile(
         name: String,
-        relativePath: Uri.Path
+        path: Uri.Path
     )(implicit bucketEv: BucketExists, pathEv: PathExists): RejOr[(AkkaSource, Option[String])] = {
-      val absPath = filePath(name, relativePath)
+      val absPath = filePath(name, path)
       if (Files.isRegularFile(absPath)) Right(fileSource(absPath) -> Some(absPath.getFileName.toString))
       else if (Files.isDirectory(absPath)) Right(folderSource(absPath) -> None)
-      else Left(PathNotFound(name, relativePath))
+      else Left(PathNotFound(name, path))
     }
 
     def getAttributes(
         name: String,
-        relativePath: Uri.Path
+        path: Uri.Path
     )(implicit bucketEv: BucketExists, pathEv: PathExists): F[FileAttributes] =
-      cache.get(filePath(name, relativePath))
+      cache.get(filePath(name, path))
 
     private def containsHardLink(absPath: Path): Boolean =
       if (Files.isDirectory(absPath)) false

@@ -16,12 +16,12 @@ import scala.annotation.tailrec
 object StorageDirectives {
 
   /**
-    * Extracts the relative path from the unmatched segments
+    * Extracts the path from the unmatched segments
     *
     * @param name
     *   the storage bucket name
     */
-  def extractRelativePath(name: String): Directive1[Path] =
+  def extractPath(name: String): Directive1[Path] =
     extractUnmatchedPath.flatMap(p => validatePath(name, p).tmap(_ => relativize(p)))
 
   /**
@@ -67,19 +67,19 @@ object StorageDirectives {
     *
     * @param name
     *   the storage bucket name
-    * @param relativePath
-    *   the relative path location
+    * @param path
+    *   the path location
     * @param storages
     *   the storages bundle api
     * @return
     *   PathExists when the path exists inside the bucket, rejection otherwise
     */
-  def pathExists[F[_]](name: String, relativePath: Uri.Path)(implicit
+  def pathExists[F[_]](name: String, path: Uri.Path)(implicit
       storages: Storages[F, _]
   ): Directive1[PathExists] =
-    storages.pathExists(name, relativePath) match {
+    storages.pathExists(name, path) match {
       case exists: PathExists => provide(exists)
-      case _                  => reject(PathNotFound(name, relativePath))
+      case _                  => reject(PathNotFound(name, path))
     }
 
   /**
@@ -87,26 +87,26 @@ object StorageDirectives {
     *
     * @param name
     *   the storage bucket name
-    * @param relativePath
-    *   the relative path location
+    * @param path
+    *   the path location
     * @param storages
     *   the storages bundle api
     * @return
     *   PathDoesNotExist when the path does not exist inside the bucket, rejection otherwise
     */
-  def pathNotExists[F[_]](name: String, relativePath: Uri.Path)(implicit
+  def pathNotExists[F[_]](name: String, path: Uri.Path)(implicit
       storages: Storages[F, _]
   ): Directive1[PathDoesNotExist] =
-    storages.pathExists(name, relativePath) match {
+    storages.pathExists(name, path) match {
       case notExists: PathDoesNotExist => provide(notExists)
-      case _                           => reject(PathAlreadyExists(name, relativePath))
+      case _                           => reject(PathAlreadyExists(name, path))
     }
 
   /**
     * Extracts the relative file path from the unmatched segments
     */
   def extractRelativeFilePath(name: String): Directive1[Path] =
-    extractRelativePath(name).flatMap {
+    extractPath(name).flatMap {
       case path if path.reverse.startsWithSegment => provide(path)
       case path                                   => failWith(PathInvalid(name, path))
     }
