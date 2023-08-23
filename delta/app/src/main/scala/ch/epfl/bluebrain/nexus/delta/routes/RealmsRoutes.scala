@@ -32,6 +32,7 @@ import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.execution.Scheduler
 
 import scala.annotation.nowarn
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 
 class RealmsRoutes(identities: Identities, realms: Realms, aclCheck: AclCheck)(implicit
     baseUri: BaseUri,
@@ -61,8 +62,11 @@ class RealmsRoutes(identities: Identities, realms: Realms, aclCheck: AclCheck)(i
                   authorizeFor(AclAddress.Root, realmsPermissions.read).apply {
                     implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[RealmResource]] =
                       searchResultsJsonLdEncoder(Realm.context, pagination, uri)
-
-                    emit(realms.list(pagination, params, order).widen[SearchResults[RealmResource]])
+                    val result                                                                    = realms
+                      .list(pagination, params, order)
+                      .toBIO[RealmRejection]
+                      .widen[SearchResults[RealmResource]]
+                    emit(result)
                   }
                 }
             },
@@ -76,17 +80,20 @@ class RealmsRoutes(identities: Identities, realms: Realms, aclCheck: AclCheck)(i
                         case Some(rev) =>
                           // Update a realm
                           entity(as[RealmInput]) { case RealmInput(name, openIdConfig, logo, acceptedAudiences) =>
-                            emit(
-                              realms.update(id, rev, name, openIdConfig, logo, acceptedAudiences).mapValue(_.metadata)
-                            )
+                            val result = realms
+                              .update(id, rev, name, openIdConfig, logo, acceptedAudiences)
+                              .toBIO[RealmRejection]
+                              .mapValue(_.metadata)
+                            emit(result)
                           }
                         case None      =>
                           // Create a realm
                           entity(as[RealmInput]) { case RealmInput(name, openIdConfig, logo, acceptedAudiences) =>
-                            emit(
-                              StatusCodes.Created,
-                              realms.create(id, name, openIdConfig, logo, acceptedAudiences).mapValue(_.metadata)
-                            )
+                            val result = realms
+                              .create(id, name, openIdConfig, logo, acceptedAudiences)
+                              .toBIO[RealmRejection]
+                              .mapValue(_.metadata)
+                            emit(StatusCodes.Created, result)
                           }
                       }
                     }
@@ -96,16 +103,18 @@ class RealmsRoutes(identities: Identities, realms: Realms, aclCheck: AclCheck)(i
                     authorizeFor(AclAddress.Root, realmsPermissions.read).apply {
                       parameter("rev".as[Int].?) {
                         case Some(rev) => // Fetch realm at specific revision
-                          emit(realms.fetchAt(id, rev).leftWiden[RealmRejection])
+                          emit(realms.fetchAt(id, rev).toBIO[RealmRejection])
                         case None      => // Fetch realm
-                          emit(realms.fetch(id).leftWiden[RealmRejection])
+                          emit(realms.fetch(id).toBIO[RealmRejection])
                       }
                     }
                   },
                   // Deprecate realm
                   delete {
                     authorizeFor(AclAddress.Root, realmsPermissions.write).apply {
-                      parameter("rev".as[Int]) { rev => emit(realms.deprecate(id, rev).mapValue(_.metadata)) }
+                      parameter("rev".as[Int]) { rev =>
+                        emit(realms.deprecate(id, rev).toBIO[RealmRejection].mapValue(_.metadata))
+                      }
                     }
                   }
                 )

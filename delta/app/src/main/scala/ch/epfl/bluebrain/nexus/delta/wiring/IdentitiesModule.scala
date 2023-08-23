@@ -34,18 +34,20 @@ object IdentitiesModule extends ModuleDef {
 
   make[Identities].fromEffect { (realms: Realms, hc: HttpClient @Id("realm"), config: CacheConfig) =>
     val findActiveRealm: String => UIO[Option[Realm]] = { (issuer: String) =>
-      realms
-        .list(
-          FromPagination(0, 1000),
-          RealmSearchParams(
-            issuer = Some(issuer),
-            deprecated = Some(false)
-          ),
-          ResourceF.defaultSort[Realm]
-        )
-        .map { results =>
-          results.results.map(entry => entry.source.value).headOption
-        }
+      IO.from(
+        realms
+          .list(
+            FromPagination(0, 1000),
+            RealmSearchParams(
+              issuer = Some(issuer),
+              deprecated = Some(false)
+            ),
+            ResourceF.defaultSort[Realm]
+          )
+          .map { results =>
+            results.results.map(entry => entry.source.value).headOption
+          }
+      ).hideErrors
     }
     val getUserInfo: (Uri, OAuth2BearerToken) => IO[HttpClientError, Json] = { (uri: Uri, token: OAuth2BearerToken) =>
       hc.toJson(HttpRequest(uri = uri, headers = List(Authorization(token))))

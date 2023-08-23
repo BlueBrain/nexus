@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.kernel.utils
 
-import cats.effect.Clock
+import cats.effect.{Clock, IO}
 import cats.effect.concurrent.Ref
 import monix.bio.{Task, UIO}
 
@@ -14,6 +14,9 @@ trait IOUtils {
     * Creates an Instant deferring its evaluation to the to ''clock'' scheduler
     */
   def instant(implicit clock: Clock[UIO]): UIO[Instant] =
+    clock.realTime(TimeUnit.MILLISECONDS).map(Instant.ofEpochMilli)
+
+  def catsInstant(implicit clock: Clock[IO]): IO[Instant] =
     clock.realTime(TimeUnit.MILLISECONDS).map(Instant.ofEpochMilli)
 }
 
