@@ -1,0 +1,30 @@
+{
+  "@context": "https://bbp.neuroshapes.org",
+  "@id": "https://bbp.epfl.ch/data/unassessed-trace",
+  "@type": [
+    "Trace",
+    "Dataset",
+    "Entity",
+    "ExperimentalTrace"
+  ],
+  "annotation": {
+    "@type": [
+      "QualityAnnotation",
+      "Annotation"
+    ],
+    "hasBody": {
+      "@id": "https://neuroshapes.org/Unassessed",
+      "@type": [
+        "DataMaturity",
+        "AnnotationBody"
+      ],
+      "label": "Unassessed"
+    },
+    "motivatedBy": {
+      "@id": "quality:Assessment",
+      "@type": "Motivation"
+    },
+    "name": "Data maturity annotation",
+    "note": "NWB dataset contains incomplete minimal metadata (e.g. brain region or species information is missing)."
+  }
+}

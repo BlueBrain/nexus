@@ -38,6 +38,7 @@ CONSTRUCT {
                            ?sType                 :identifier  ?sType        ;
                                                   :label       ?sTypeLabel   ;
                                                   :idLabel     ?sTypeIdLabel .
+  ?alias  :curated         ?curated               .
 
   ## Atlas
   ?alias  :coordinatesInBrainAtlas  ?coordinates     .
@@ -266,6 +267,17 @@ CONSTRUCT {
         ?undefined
       ) AS ?sTypeIdLabel) .
   } .
+
+  OPTIONAL {
+    ?id nsg:annotation / nsg:hasBody ?curatedAnnotation .
+    BIND(
+      IF(
+         ?curatedAnnotation = <https://neuroshapes.org/Curated>,
+         true,
+         IF(?curatedAnnotation = <https://neuroshapes.org/Unassessed>, false, ?undefined)
+      ) AS ?curated
+    )
+  }
 
   # Atlas
   OPTIONAL {
