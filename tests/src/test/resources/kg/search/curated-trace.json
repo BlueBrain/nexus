@@ -1,0 +1,30 @@
+{
+  "@context": "https://bbp.neuroshapes.org",
+  "@id": "https://bbp.epfl.ch/data/curated-trace",
+  "@type": [
+    "Dataset",
+    "Trace",
+    "Entity",
+    "ExperimentalTrace"
+  ],
+  "annotation": {
+    "@type": [
+      "QualityAnnotation",
+      "Annotation"
+    ],
+    "hasBody": {
+      "@id": "https://neuroshapes.org/Curated",
+      "@type": [
+        "DataMaturity",
+        "AnnotationBody"
+      ],
+      "label": "Curated"
+    },
+    "motivatedBy": {
+      "@id": "https://neuroshapes.org/qualityAssessment",
+      "@type": "Motivation"
+    },
+    "name": "Data maturity annotation",
+    "note": "NWB dataset contains complete minimal metadata."
+  }
+}
