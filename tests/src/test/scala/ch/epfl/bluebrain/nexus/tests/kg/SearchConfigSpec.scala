@@ -346,19 +346,17 @@ class SearchConfigSpec extends BaseSpec {
 
     "have curated field true if curated" in {
       val query    = queryField(curatedTraceId, "curated")
-      val expected = json"""{ "curated": true }"""
 
       assertOneSource(query) { json =>
-        json should equalIgnoreArrayOrder(expected)
+        json shouldBe json"""{ "curated": true }"""
       }
     }
 
     "have curated field false if unassessed" in {
       val query    = queryField(unassessedTraceId, "curated")
-      val expected = json"""{ "curated": false }"""
 
       assertOneSource(query) { json =>
-        json should equalIgnoreArrayOrder(expected)
+        json shouldBe json"""{ "curated": false }"""
       }
     }
 
