@@ -155,6 +155,7 @@ BlueBrain/nexus
   <li><a href="../../docs/releases/index.html" class="page">Releases</a>
   <ul>
     <li><a href="../../docs/releases/v1.9-release-notes.html" class="page">v1.9 Release Notes</a></li>
+    <li><a href="../../docs/releases/v1.8-to-v1.9-migration.html" class="page">v1.8 To v1.9 Migration</a></li>
     <li><a href="../../docs/releases/v1.8-release-notes.html" class="page">v1.8 Release Notes</a></li>
     <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html" class="active page">v1.7 To v1.8 Migration</a></li>
     <li><a href="../../docs/releases/v1.7-release-notes.html" class="page">v1.7 Release Notes</a></li>
@@ -455,7 +456,7 @@ CREATE TABLE IF NOT EXISTS public.ignored_events(
 );
 </code></pre>
 <h3><a href="#create-the-postgresql-tables" name="create-the-postgresql-tables" class="anchor"><span class="anchor-link"></span></a>Create the PostgreSQL tables</h3>
-<p>Run the commands from the <a href="https://github.com/BlueBrain/nexus/blob/master/delta/sourcing-psql/src/main/resources/scripts/schema.ddl" title="Delta 1.8.x schema.ddl file">Delta 1.8.x schema.ddl file</a> to create the tables necessary for Delta operations.</p>
+<p>Run the commands from the <a href="https://github.com/BlueBrain/nexus/tree/master/delta/sourcing-psql/src/main/resources/scripts/postgres/init" title="Delta 1.8.x schema scripts">Delta 1.8.x schema scripts</a> to create the tables necessary for Delta operations.</p>
 <h2><a href="#elasticsearch-and-blazegraph-indices" name="elasticsearch-and-blazegraph-indices" class="anchor"><span class="anchor-link"></span></a>Elasticsearch and Blazegraph indices</h2>
 <p>For the migration, there are two ways to make sure that the new Delta 1.8 indices do not overlap the ones from Delta 1.7 (for both Elasticsearch and Blazegraph):</p>
 <ol>
@@ -472,7 +473,7 @@ CREATE TABLE IF NOT EXISTS public.ignored_events(
 <h3><a href="#configure-delta-in-migration-mode" name="configure-delta-in-migration-mode" class="anchor"><span class="anchor-link"></span></a>Configure Delta in migration mode</h3>
 <p>This section defines the mandatory configuration to run Delta in migration mode.</p>
 <h4><a href="#configuration-file" name="configuration-file" class="anchor"><span class="anchor-link"></span></a>Configuration file</h4>
-<p>A <a href="https://github.com/BlueBrain/nexus/blob/master/delta/migration/scripts/config/migration.conf" title="migration configuration file">migration configuration file</a> needs to be made available at a path accessible by Delta 1.8, which will be references by an <a href="v1.7-to-v1.8-migration.html#environment-variables">environment variable</a>. Important fields are:</p>
+<p>A <a href="https://github.com/BlueBrain/nexus/blob/v1.8.x/delta/migration/scripts/config/migration.conf" title="migration configuration file">migration configuration file</a> needs to be made available at a path accessible by Delta 1.8, which will be references by an <a href="v1.7-to-v1.8-migration.html#environment-variables">environment variable</a>. Important fields are:</p>
 <ul>
   <li><code>migration.batch.max-elements</code>: maximum number of events to push to PostgreSQL at once</li>
   <li><code>migration.replay.max-buffer-size</code>: maximum number of events to read from Cassandra at once</li>

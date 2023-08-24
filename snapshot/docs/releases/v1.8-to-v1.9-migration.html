@@ -20,7 +20,7 @@
 
 <meta name="description" content="docs">
 <link rel="shortcut icon" href="../.././assets/img/favicon-32x32.png">
-<title>v1.5 To v1.6 Migration · Blue Brain Nexus</title>
+<title>v1.8 To v1.9 Migration · Blue Brain Nexus</title>
 <link rel="stylesheet" href="../../assets/stylesheets/application.451f80e5.css">
 <link rel="stylesheet" href="../../assets/stylesheets/application-palette.22915126.css">
 <meta name="theme-color" content="#03a9f4" />
@@ -61,7 +61,7 @@ data-md-color-accent="cyan"
 Blue Brain Nexus
 </span>
 <span class="md-header-nav__topic">
-v1.5 To v1.6 Migration
+v1.8 To v1.9 Migration
 </span>
 </div>
 </div>
@@ -155,13 +155,13 @@ BlueBrain/nexus
   <li><a href="../../docs/releases/index.html" class="page">Releases</a>
   <ul>
     <li><a href="../../docs/releases/v1.9-release-notes.html" class="page">v1.9 Release Notes</a></li>
-    <li><a href="../../docs/releases/v1.8-to-v1.9-migration.html" class="page">v1.8 To v1.9 Migration</a></li>
+    <li><a href="../../docs/releases/v1.8-to-v1.9-migration.html" class="active page">v1.8 To v1.9 Migration</a></li>
     <li><a href="../../docs/releases/v1.8-release-notes.html" class="page">v1.8 Release Notes</a></li>
     <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html" class="page">v1.7 To v1.8 Migration</a></li>
     <li><a href="../../docs/releases/v1.7-release-notes.html" class="page">v1.7 Release Notes</a></li>
     <li><a href="../../docs/releases/v1.6-to-v1.7-migration.html" class="page">v1.6 To v1.7 Migration</a></li>
     <li><a href="../../docs/releases/v1.6-release-notes.html" class="page">v1.6 Release Notes</a></li>
-    <li><a href="../../docs/releases/v1.5-to-v1.6-migration.html" class="active page">v1.5 To v1.6 Migration</a></li>
+    <li><a href="../../docs/releases/v1.5-to-v1.6-migration.html" class="page">v1.5 To v1.6 Migration</a></li>
     <li><a href="../../docs/releases/v1.5-release-notes.html" class="page">v1.5 Release Notes</a></li>
     <li><a href="../../docs/releases/v1.4-to-v1.5-migration.html" class="page">v1.4 To v1.5 Migration</a></li>
     <li><a href="../../docs/releases/older-releases.html" class="page">Older releases</a></li>
@@ -235,9 +235,10 @@ BlueBrain/nexus
 <nav class="md-nav md-nav--secondary">
 <label class="md-nav__title" for="__toc">Table of contents</label>
 <ul>
-  <li><a href="../../docs/releases/v1.5-to-v1.6-migration.html#v1-5-to-v1-6-migration" class="header">v1.5 To v1.6 Migration</a>
+  <li><a href="../../docs/releases/v1.8-to-v1.9-migration.html#v1-8-to-v1-9-migration" class="header">v1.8 To v1.9 Migration</a>
   <ul>
-    <li><a href="../../docs/releases/v1.5-to-v1.6-migration.html#delete-the-project-statistics-row-in-the-projections-progress-table" class="header">Delete the project statistics row in the projections_progress table</a></li>
+    <li><a href="../../docs/releases/v1.8-to-v1.9-migration.html#self-incoming-and-outgoing-links" class="header">self, incoming and outgoing links</a></li>
+    <li><a href="../../docs/releases/v1.8-to-v1.9-migration.html#composite-views" class="header">Composite views</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -259,9 +260,10 @@ BlueBrain/nexus
 <nav class="md-nav md-nav--secondary">
 <label class="md-nav__title" for="__toc">Table of contents</label>
 <ul>
-  <li><a href="../../docs/releases/v1.5-to-v1.6-migration.html#v1-5-to-v1-6-migration" class="header">v1.5 To v1.6 Migration</a>
+  <li><a href="../../docs/releases/v1.8-to-v1.9-migration.html#v1-8-to-v1-9-migration" class="header">v1.8 To v1.9 Migration</a>
   <ul>
-    <li><a href="../../docs/releases/v1.5-to-v1.6-migration.html#delete-the-project-statistics-row-in-the-projections-progress-table" class="header">Delete the project statistics row in the projections_progress table</a></li>
+    <li><a href="../../docs/releases/v1.8-to-v1.9-migration.html#self-incoming-and-outgoing-links" class="header">self, incoming and outgoing links</a></li>
+    <li><a href="../../docs/releases/v1.8-to-v1.9-migration.html#composite-views" class="header">Composite views</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -279,16 +281,34 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 </p>
 </div>
 <div class="md-content__searchable">
-<h1><a href="#v1-5-to-v1-6-migration" name="v1-5-to-v1-6-migration" class="anchor"><span class="anchor-link"></span></a>v1.5 To v1.6 Migration</h1>
-<p>The v1.6 release of Delta includes a change on how project statistics are computed which requires to run a query against the Cassandra primary store.</p>
-<h2><a href="#delete-the-project-statistics-row-in-the-projections-progress-table" name="delete-the-project-statistics-row-in-the-projections-progress-table" class="anchor"><span class="anchor-link"></span></a>Delete the project statistics row in the projections_progress table</h2>
-<p>This command has to be run after stopping Delta 1.5 and before starting Delta 1.6</p>
-<pre><code>    DELETE FROM {delta_1_5}.projections_progress where projection_id = &#39;ProjectsCounts&#39;;
+<h1><a href="#v1-8-to-v1-9-migration" name="v1-8-to-v1-9-migration" class="anchor"><span class="anchor-link"></span></a>v1.8 To v1.9 Migration</h1>
+<h2><a href="#self-incoming-and-outgoing-links" name="self-incoming-and-outgoing-links" class="anchor"><span class="anchor-link"></span></a>self, incoming and outgoing links</h2><div class="callout note warning"><div class="callout-title">Reindexing</div>
+<p>Reindexing can consume a lot of CPU/memory if many views are indexing in parallel, please proceed by restarting only a subset of them at a time so as to not overload the system.</p></div>
+<p>As those links are not shortened anymore (<a href="v1.9-release-notes.html#self-incoming-and-outgoing-links">see here</a>), we encourage Nexus deployments moving to 1.9 to reindex your different views containing metadata.</p>
+<p>This operation can be performing by deleting the offset for the different views by using the different endpoints:</p>
+<ul>
+  <li><a href="../delta/api/views/elasticsearch-view-api.html#restart-indexing">Elasticsearch views</a></li>
+  <li><a href="../delta/api/views/sparql-view-api.html#restart-indexing">Blazegraph views</a></li>
+  <li><a href="../delta/api/views/composite-view-api.html#restart-indexing">Composite views</a></li>
+</ul>
+<p>Nexus Fusion also allows to restart the indexing for the different views.</p>
+<h2><a href="#composite-views" name="composite-views" class="anchor"><span class="anchor-link"></span></a>Composite views</h2>
+<p>The introduction of <a href="v1.9-release-notes.html#partial-reindexing">partial reindexing</a> for composite views required a model change of composite views.</p>
+<p>If your Nexus deployment relies on composite views or search, the following environment variable need to be set when launching Delta v1.9 for the first time:</p>
+<ul>
+  <li><code>MIGRATE_COMPOSITE_VIEWS</code>: true</li>
+</ul>
+<p>The following logs should appear in Delta:</p>
+<pre><code>2023-08-24 07:38:24 INFO  c.e.b.n.d.p.c.m.MigrateCompositeViews - Starting composite views migration
+2023-08-24 07:38:28 INFO  c.e.b.n.d.p.c.m.MigrateCompositeViews - &#39;500&#39; composite views events have been migrated
+2023-08-24 07:38:28 INFO  c.e.b.n.d.p.c.m.MigrateCompositeViews - &#39;31&#39; composite views states have been migrated
+2023-08-24 07:38:28 INFO  c.e.b.n.d.p.c.m.MigrateCompositeViews - &#39;62&#39; composite views states have been migrated
+2023-08-24 07:38:34 INFO  c.e.b.n.d.p.c.m.MigrateCompositeViews - Composite views migration is now complete with (500,62) events/states updated
 </code></pre>
-<p>Note that as project statistics will be recomputed according to all events in the system, it may take some time for the statistics computation to reach back to the most recent events.</p>
+<p>After this completes, the environment variable can be removed and Delta restarted.</p>
 </div>
 <div>
-<a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/releases/v1.5-to-v1.6-migration.md" title="Edit this page" class="md-source-file md-edit">
+<a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/releases/v1.8-to-v1.9-migration.md" title="Edit this page" class="md-source-file md-edit">
 Edit this page
 </a>
 </div>
@@ -304,7 +324,7 @@ Snapshot
 <footer class="md-footer">
 <div class="md-footer-nav">
 <nav class="md-footer-nav__inner md-grid">
-<a href="../../docs/releases/v1.6-release-notes.html" title="v1.6 Release Notes" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+<a href="../../docs/releases/v1.9-release-notes.html" title="v1.9 Release Notes" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
 <div class="md-flex__cell md-flex__cell--shrink">
 <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
 </div>
@@ -313,17 +333,17 @@ Snapshot
 <span class="md-footer-nav__direction">
 Previous
 </span>
-v1.6 Release Notes
+v1.9 Release Notes
 </span>
 </div>
 </a>
-<a href="../../docs/releases/v1.5-release-notes.html" title="v1.5 Release Notes" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../docs/releases/v1.8-release-notes.html" title="v1.8 Release Notes" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-v1.5 Release Notes
+v1.8 Release Notes
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">

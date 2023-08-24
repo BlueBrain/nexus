@@ -155,6 +155,7 @@ BlueBrain/nexus
   <li><a href="../../../../docs/releases/index.html" class="page">Releases</a>
   <ul>
     <li><a href="../../../../docs/releases/v1.9-release-notes.html" class="page">v1.9 Release Notes</a></li>
+    <li><a href="../../../../docs/releases/v1.8-to-v1.9-migration.html" class="page">v1.8 To v1.9 Migration</a></li>
     <li><a href="../../../../docs/releases/v1.8-release-notes.html" class="page">v1.8 Release Notes</a></li>
     <li><a href="../../../../docs/releases/v1.7-to-v1.8-migration.html" class="page">v1.7 To v1.8 Migration</a></li>
     <li><a href="../../../../docs/releases/v1.7-release-notes.html" class="page">v1.7 Release Notes</a></li>
@@ -253,6 +254,7 @@ BlueBrain/nexus
     <li><a href="../../../../docs/delta/api/views/elasticsearch-view-api.html#fetch" class="header">Fetch</a></li>
     <li><a href="../../../../docs/delta/api/views/elasticsearch-view-api.html#fetch-original-payload" class="header">Fetch original payload</a></li>
     <li><a href="../../../../docs/delta/api/views/elasticsearch-view-api.html#search" class="header">Search</a></li>
+    <li><a href="../../../../docs/delta/api/views/elasticsearch-view-api.html#fetch-elasticsearch-mapping" class="header">Fetch Elasticsearch mapping</a></li>
     <li><a href="../../../../docs/delta/api/views/elasticsearch-view-api.html#fetch-tags" class="header">Fetch tags</a></li>
     <li><a href="../../../../docs/delta/api/views/elasticsearch-view-api.html#fetch-statistics" class="header">Fetch statistics</a></li>
     <li><a href="../../../../docs/delta/api/views/elasticsearch-view-api.html#fetch-indexing" class="header">Fetch indexing</a></li>
@@ -297,6 +299,7 @@ BlueBrain/nexus
     <li><a href="../../../../docs/delta/api/views/elasticsearch-view-api.html#fetch" class="header">Fetch</a></li>
     <li><a href="../../../../docs/delta/api/views/elasticsearch-view-api.html#fetch-original-payload" class="header">Fetch original payload</a></li>
     <li><a href="../../../../docs/delta/api/views/elasticsearch-view-api.html#search" class="header">Search</a></li>
+    <li><a href="../../../../docs/delta/api/views/elasticsearch-view-api.html#fetch-elasticsearch-mapping" class="header">Fetch Elasticsearch mapping</a></li>
     <li><a href="../../../../docs/delta/api/views/elasticsearch-view-api.html#fetch-tags" class="header">Fetch tags</a></li>
     <li><a href="../../../../docs/delta/api/views/elasticsearch-view-api.html#fetch-statistics" class="header">Fetch statistics</a></li>
     <li><a href="../../../../docs/delta/api/views/elasticsearch-view-api.html#fetch-indexing" class="header">Fetch indexing</a></li>
@@ -1091,6 +1094,37 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
     &quot;skipped&quot;: 0,
     &quot;successful&quot;: 1,
     &quot;total&quot;: 1
+  }
+}</code></pre></dd>
+</dl>
+<h2><a href="#fetch-elasticsearch-mapping" name="fetch-elasticsearch-mapping" class="anchor"><span class="anchor-link"></span></a>Fetch Elasticsearch mapping</h2>
+<pre><code>GET /v1/views/{org_label}/{project_label}/{view_id}/_mapping
+</code></pre>
+<p>Retrieves the view&rsquo;s <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-get-mapping.html" title="ElasticSearch mapping" target="_blank" rel="noopener noreferrer">ElasticSearch mapping</a>.</p>
+<p><strong>Example</strong></p>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/views/elasticsearch/fetch-mapping.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl &quot;http://localhost:8080/v1/views/myorg/myproj/myview/_mapping&quot;</code></pre></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/views/elasticsearch/fetch-mapping.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
+  &quot;delta_f488d131-5f29-4721-979e-277a0850fed2_1&quot;: {
+    &quot;mappings&quot;: {
+      &quot;properties&quot;: {
+        &quot;title&quot;: {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;fields&quot;: {
+            &quot;keyword&quot;: {
+              &quot;type&quot;: &quot;keyword&quot;
+            }
+          }
+        },
+        &quot;description&quot;: {
+          &quot;type&quot;: &quot;text&quot;
+        }
+      }
+    }
   }
 }</code></pre></dd>
 </dl>

@@ -20,7 +20,7 @@
 
 <meta name="description" content="docs">
 <link rel="shortcut icon" href="../../../.././assets/img/favicon-32x32.png">
-<title>Elasticsearch Pipes · Blue Brain Nexus</title>
+<title>Composite Sinks · Blue Brain Nexus</title>
 <link rel="stylesheet" href="../../../../assets/stylesheets/application.451f80e5.css">
 <link rel="stylesheet" href="../../../../assets/stylesheets/application-palette.22915126.css">
 <meta name="theme-color" content="#03a9f4" />
@@ -61,7 +61,7 @@ data-md-color-accent="cyan"
 Blue Brain Nexus
 </span>
 <span class="md-header-nav__topic">
-Elasticsearch Pipes
+Composite Sinks
 </span>
 </div>
 </div>
@@ -207,7 +207,7 @@ BlueBrain/nexus
       <li><a href="../../../../docs/delta/api/views/index.html" class="page">Views</a>
       <ul>
         <li><a href="../../../../docs/delta/api/views/elasticsearch-view-api.html" class="page">ElasticSearchView</a></li>
-        <li><a href="../../../../docs/delta/api/views/pipes.html" class="active page">Elasticsearch Pipes</a></li>
+        <li><a href="../../../../docs/delta/api/views/pipes.html" class="page">Elasticsearch Pipes</a></li>
         <li><a href="../../../../docs/delta/api/views/aggregated-es-view-api.html" class="page">AggregateElasticSearchView</a></li>
         <li><a href="../../../../docs/delta/api/views/sparql-view-api.html" class="page">SparqlView</a></li>
         <li><a href="../../../../docs/delta/api/views/aggregated-sparql-view-api.html" class="page">AggregateSparqlView</a></li>
@@ -235,20 +235,18 @@ BlueBrain/nexus
 <nav class="md-nav md-nav--secondary">
 <label class="md-nav__title" for="__toc">Table of contents</label>
 <ul>
-  <li><a href="../../../../docs/delta/api/views/pipes.html#elasticsearch-pipes" class="header">Elasticsearch Pipes</a>
+  <li><a href="../../../../docs/delta/api/views/composite-sink.html#composite-sinks" class="header">Composite Sinks</a>
   <ul>
-    <li><a href="../../../../docs/delta/api/views/pipes.html#core-pipes" class="header">Core pipes</a>
+    <li><a href="../../../../docs/delta/api/views/composite-sink.html#single-composite-sink" class="header">Single Composite Sink</a></li>
+    <li><a href="../../../../docs/delta/api/views/composite-sink.html#batch-composite-sink" class="header">Batch Composite Sink</a>
     <ul>
-      <li><a href="../../../../docs/delta/api/views/pipes.html#filter-deprecated" class="header">Filter deprecated</a></li>
-      <li><a href="../../../../docs/delta/api/views/pipes.html#filter-by-type" class="header">Filter by type</a></li>
-      <li><a href="../../../../docs/delta/api/views/pipes.html#filter-by-schema" class="header">Filter by schema</a></li>
-      <li><a href="../../../../docs/delta/api/views/pipes.html#discard-metadata" class="header">Discard metadata</a></li>
-      <li><a href="../../../../docs/delta/api/views/pipes.html#source-as-text" class="header">Source as text</a></li>
-      <li><a href="../../../../docs/delta/api/views/pipes.html#data-construct-query" class="header">Data construct query</a></li>
-      <li><a href="../../../../docs/delta/api/views/pipes.html#select-predicates" class="header">Select predicates</a></li>
-      <li><a href="../../../../docs/delta/api/views/pipes.html#default-label-predicates" class="header">Default label predicates</a></li>
+      <li><a href="../../../../docs/delta/api/views/composite-sink.html#configuring-the-batch-composite-sink" class="header">Configuring the Batch Composite Sink</a></li>
+      <li><a href="../../../../docs/delta/api/views/composite-sink.html#how-to-write-a-sparql-construct-query-for-the-batch-composite-sink" class="header">How to write a SPARQL construct query for the Batch Composite Sink</a></li>
+      <li><a href="../../../../docs/delta/api/views/composite-sink.html#example" class="header">Example</a>
+      <ul>
+        <li><a href="../../../../docs/delta/api/views/composite-sink.html#summary" class="header">Summary</a></li>
+      </ul></li>
     </ul></li>
-    <li><a href="../../../../docs/delta/api/views/pipes.html#add-custom-pipes-through-plugins" class="header">Add custom pipes through plugins</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -270,20 +268,18 @@ BlueBrain/nexus
 <nav class="md-nav md-nav--secondary">
 <label class="md-nav__title" for="__toc">Table of contents</label>
 <ul>
-  <li><a href="../../../../docs/delta/api/views/pipes.html#elasticsearch-pipes" class="header">Elasticsearch Pipes</a>
+  <li><a href="../../../../docs/delta/api/views/composite-sink.html#composite-sinks" class="header">Composite Sinks</a>
   <ul>
-    <li><a href="../../../../docs/delta/api/views/pipes.html#core-pipes" class="header">Core pipes</a>
+    <li><a href="../../../../docs/delta/api/views/composite-sink.html#single-composite-sink" class="header">Single Composite Sink</a></li>
+    <li><a href="../../../../docs/delta/api/views/composite-sink.html#batch-composite-sink" class="header">Batch Composite Sink</a>
     <ul>
-      <li><a href="../../../../docs/delta/api/views/pipes.html#filter-deprecated" class="header">Filter deprecated</a></li>
-      <li><a href="../../../../docs/delta/api/views/pipes.html#filter-by-type" class="header">Filter by type</a></li>
-      <li><a href="../../../../docs/delta/api/views/pipes.html#filter-by-schema" class="header">Filter by schema</a></li>
-      <li><a href="../../../../docs/delta/api/views/pipes.html#discard-metadata" class="header">Discard metadata</a></li>
-      <li><a href="../../../../docs/delta/api/views/pipes.html#source-as-text" class="header">Source as text</a></li>
-      <li><a href="../../../../docs/delta/api/views/pipes.html#data-construct-query" class="header">Data construct query</a></li>
-      <li><a href="../../../../docs/delta/api/views/pipes.html#select-predicates" class="header">Select predicates</a></li>
-      <li><a href="../../../../docs/delta/api/views/pipes.html#default-label-predicates" class="header">Default label predicates</a></li>
+      <li><a href="../../../../docs/delta/api/views/composite-sink.html#configuring-the-batch-composite-sink" class="header">Configuring the Batch Composite Sink</a></li>
+      <li><a href="../../../../docs/delta/api/views/composite-sink.html#how-to-write-a-sparql-construct-query-for-the-batch-composite-sink" class="header">How to write a SPARQL construct query for the Batch Composite Sink</a></li>
+      <li><a href="../../../../docs/delta/api/views/composite-sink.html#example" class="header">Example</a>
+      <ul>
+        <li><a href="../../../../docs/delta/api/views/composite-sink.html#summary" class="header">Summary</a></li>
+      </ul></li>
     </ul></li>
-    <li><a href="../../../../docs/delta/api/views/pipes.html#add-custom-pipes-through-plugins" class="header">Add custom pipes through plugins</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -301,228 +297,118 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 </p>
 </div>
 <div class="md-content__searchable">
-<h1><a href="#elasticsearch-pipes" name="elasticsearch-pipes" class="anchor"><span class="anchor-link"></span></a>Elasticsearch Pipes</h1>
-<p>Pipes are the processing units of a pipeline for an Elasticsearch view.</p>
-<p>See <a href="elasticsearch-view-api.html#processing-pipeline">here</a> to get more details on how pipes are applied and how the indexing process to Elasticsearch works. </p>
-<h2><a href="#core-pipes" name="core-pipes" class="anchor"><span class="anchor-link"></span></a>Core pipes</h2>
-<p>These pipes are provided by default by Delta.</p>
-<h3><a href="#filter-deprecated" name="filter-deprecated" class="anchor"><span class="anchor-link"></span></a>Filter deprecated</h3>
+<h1><a href="#composite-sinks" name="composite-sinks" class="anchor"><span class="anchor-link"></span></a>Composite Sinks</h1>
+<p>A Composite Sink handles the following steps of composite view indexing</p>
 <ul>
-  <li>Allows excluding deprecated resources from being indexed</li>
-  <li>No config is needed</li>
+  <li>Querying for the graphs of resources in the Blazegraph common namespace of the view</li>
+  <li>Converting the obtained graphs into a format that can be pushed to a target sink</li>
+  <li>Finally, pushing the resources to the target sink</li>
 </ul>
-<pre class="prettyprint"><code class="language-json">{
-  &quot;name&quot; : &quot;filterDeprecated&quot;
-}
-</code></pre>
-<h3><a href="#filter-by-type" name="filter-by-type" class="anchor"><span class="anchor-link"></span></a>Filter by type</h3>
+<p>These steps can be implemented in different ways. In Nexus Delta, there are two kinds of Composite Sink that can be selected via configuration.</p>
+<ol>
+  <li><a href="composite-sink.html#single-composite-sink">Single Composite Sink</a></li>
+  <li><a href="composite-sink.html#batch-composite-sink">Batch Composite Sink</a></li>
+</ol>
+<h2><a href="#single-composite-sink" name="single-composite-sink" class="anchor"><span class="anchor-link"></span></a>Single Composite Sink</h2>
+<p>By default, Nexus Delta will use the Single Composite Sink. This sink performs one query to the Blazegraph common namespace for each resource in the project. The queries are done in chronological order (by the <code>updatedAt</code> time of the resources).</p>
+<p>We recommend reading through the <a href="../../../getting-started/running-nexus/search-configuration.html#example-use-case">search configuration example use case</a> and the <a href="composite-view-api.html">Composite View API reference</a> to learn more about Composite Views.</p>
+<h2><a href="#batch-composite-sink" name="batch-composite-sink" class="anchor"><span class="anchor-link"></span></a>Batch Composite Sink</h2>
+<p>Starting with Delta 1.9, it is possible to configure Nexus Delta to use a Batch Composite Sink. This implementation of the Composite Sink can query the Blazegraph common namespace for multiple resource IDs at the same time.</p><div class="callout note warning"><div class="callout-title">Note</div>
+<p>We recommend to start using Composite Views with the default <a href="composite-sink.html#single-composite-sink">Single Composite Sink</a>. Once you have a good understanding of it, the Batch Composite Sink can be used to enhance the performance of your deployment.</p></div>
+<h3><a href="#configuring-the-batch-composite-sink" name="configuring-the-batch-composite-sink" class="anchor"><span class="anchor-link"></span></a>Configuring the Batch Composite Sink</h3>
+<p>In order to enable the Batch Composite Sink, configure the following Nexus Delta property:</p>
+<p><code>plugins.composite-views.sink-config = batch</code></p>
+<p>Furthermore, you can configure the maximum size of a batch and the maximum interval using:</p>
+<p><code>plugins.composite-views.{projection-plugin}-batch.max-elements = {max-elements}</code></p>
+<p><code>plugins.composite-views.{projection-plugin}-batch.max-interval = {max-interval}</code></p>
+<p>where:</p>
 <ul>
-  <li>Allow excluding resources which don&rsquo;t have one of the provided types</li>
+  <li><code>{projection-plugin}</code> is either <code>elasticsearch</code> or <code>blazegraph</code>. The batching options of a Composite Sink can be set separately for each target type.</li>
+  <li><code>{max-elements}</code> is the maximum number of elements to batch at once (defaults to <code>10</code>)</li>
+  <li><code>{max-interval}</code> is the maximum interval of time to wait for <code>{max-elements}</code> elements</li>
 </ul>
-<pre class="prettyprint"><code class="language-json">{
-  &quot;name&quot; : &quot;filterByType&quot;,
-  &quot;config&quot; : {
-    &quot;types&quot; : [
-      &quot;https://bluebrain.github.io/nexus/types/Type1&quot;,
-      &quot;https://bluebrain.github.io/nexus/types/Type2&quot;
-    ]
-  }
-}
-</code></pre>
-<h3><a href="#filter-by-schema" name="filter-by-schema" class="anchor"><span class="anchor-link"></span></a>Filter by schema</h3>
-<ul>
-  <li>Allow excluding resources which haven&rsquo;t been validated by one of the provided schemas</li>
-</ul>
-<pre class="prettyprint"><code class="language-json">{
-  &quot;name&quot; : &quot;filterBySchema&quot;,
-  &quot;config&quot; : {
-    &quot;types&quot; : [
-      &quot;https://bluebrain.github.io/nexus/schemas/Schema1&quot;,
-      &quot;https://bluebrain.github.io/nexus/schemas/Schema2&quot;
-    ]
-  }
-}
-</code></pre>
-<h3><a href="#discard-metadata" name="discard-metadata" class="anchor"><span class="anchor-link"></span></a>Discard metadata</h3>
-<ul>
-  <li>Prevents all Nexus metadata from being indexed</li>
-  <li>No configuration is needed</li>
-</ul>
-<pre class="prettyprint"><code class="language-json">{
-  &quot;name&quot; : &quot;discardMetadata&quot;
-}
-</code></pre>
-<h3><a href="#source-as-text" name="source-as-text" class="anchor"><span class="anchor-link"></span></a>Source as text</h3>
-<ul>
-  <li>The original payload of the resource will be stored in the ElasticSearch document as a single  escaped string value under the key <code>_original_source</code>.</li>
-  <li>No configuration is needed</li>
-</ul>
-<pre class="prettyprint"><code class="language-json">{
-  &quot;name&quot; : &quot;sourceAsText&quot;
-}
-</code></pre>
-<h3><a href="#data-construct-query" name="data-construct-query" class="anchor"><span class="anchor-link"></span></a>Data construct query</h3>
-<ul>
-  <li>The data graph of the resource will be transformed according to the provided SPARQL construct query</li>
-  <li>The resource metadata is not modified by this pipe</li>
-</ul>
-<pre class="prettyprint"><code class="language-json">{
-  &quot;name&quot; : &quot;dataConstructQuery&quot;,
-  &quot;config&quot;: {
-    &quot;query&quot;: &quot;{constructQuery}&quot;
-  }
-}
-</code></pre>
-<h3><a href="#select-predicates" name="select-predicates" class="anchor"><span class="anchor-link"></span></a>Select predicates</h3>
-<ul>
-  <li>Only the defined predicates in the data graph of the resource will be kept in the resource</li>
-  <li>The resource metadata is not modified by this type</li>
-</ul>
-<pre class="prettyprint"><code class="language-json">{
-  &quot;name&quot; : &quot;selectPredicates&quot;,
-  &quot;config&quot;: {
-    &quot;predicates&quot;: [
-      &quot;rdfs:label&quot;,
-      &quot;schema:name&quot;
-    ]
-  }
-}
-</code></pre>
-<h3><a href="#default-label-predicates" name="default-label-predicates" class="anchor"><span class="anchor-link"></span></a>Default label predicates</h3>
-<ul>
-  <li>Only default labels defined as <code>skos:prefLabel</code>, <code>rdf:tpe</code>, <code>rdfs:label</code>, <code>schema:name</code> will be kept in the data graph of the resource</li>
-  <li>No configuration is needed</li>
-</ul>
-<pre class="prettyprint"><code class="language-json">{
-  &quot;name&quot; : &quot;defaultLabelPredicates&quot;
-}
-</code></pre>
-<h2><a href="#add-custom-pipes-through-plugins" name="add-custom-pipes-through-plugins" class="anchor"><span class="anchor-link"></span></a>Add custom pipes through plugins</h2><div class="callout note warning"><div class="callout-title">Note</div>
-<p>The pipe name must be a unique identifier in Delta.</p>
-<p>Please also note that removing pipes or modifying configuration for a pipe will prevent existing views relying on them to index resources as the pipeline will be broken. They will have to be updated with a valid pipeline so that indexing can be restarted. </p></div>
-<p>Besides these core pipes, it is possible to define custom pipes through plugins.</p>
-<p>Please visit:</p>
-<ul>
-  <li><a href="https://github.com/BlueBrain/nexus/blob/master/delta/sourcing-psql/src/main/scala/ch/epfl/bluebrain/nexus/delta/sourcing/stream/Elem.scala" title="Elem source" target="_blank" rel="noopener noreferrer">Elem source</a> for documentation about this class.</li>
-  <li><a href="https://github.com/BlueBrain/nexus/blob/master/delta/sourcing-psql/src/main/scala/ch/epfl/bluebrain/nexus/delta/sourcing/state/GraphResource.scala" title="GraphResource source" target="_blank" rel="noopener noreferrer">GraphResource source</a> for documentation about this class.</li>
-</ul>
-<p>Please visit <a href="../../plugins/index.html">Plugins</a> to learn about how to create/package/deploy a plugin.</p>
-<p>Inside this plugin, you can then define additional pipes:</p>
-<pre class="prettyprint"><code class="language-scala">import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.semiauto.deriveDefaultJsonLdDecoder
-import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Pipe
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.MyPipes.MyOtherCustomPipe.MyConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, PipeDef, PipeRef}
-import io.circe.syntax.EncoderOps
-import io.circe.{Json, JsonObject}
-import monix.bio.Task
-import shapeless.Typeable
-
-object MyPipes {
-
-  // A first pipe which does not need any config
-  // The function to implement needs to return a `Task[Elem[Out]]`
-  final class MyCustomPipe extends Pipe {
-    override type In = GraphResource
-    override type Out = GraphResource
-
-    override def ref: PipeRef = MyCustomPipe.ref
-
-    override def inType: Typeable[GraphResource] = Typeable[GraphResource]
-
-    override def outType: Typeable[GraphResource] = Typeable[GraphResource]
-
-    override def apply(element: SuccessElem[GraphResource]): Task[Elem[GraphResource]] =
-      element.evalMap(Task.delay(???))
-
-  }
-
-  object MyCustomPipe extends PipeDef {
-    override type PipeType = MyCustomPipe
-    override type Config = Unit
-
-    override def configType: Typeable[Config] = Typeable[Unit]
-
-    override def configDecoder: JsonLdDecoder[Config] = JsonLdDecoder[Unit]
-
-    override def ref: PipeRef = PipeRef.unsafe(&quot;myCustomPipe&quot;)
-
-    override def withConfig(config: Unit): MyCustomPipe = new MyCustomPipe
-
-    /**
-      * Returns the pipe ref and its empty config
-      */
-    def apply(): (PipeRef, ExpandedJsonLd) = ref -&gt; ExpandedJsonLd.empty
-  }
-
-  // A second pipe relying on a config
-  class MyOtherCustomPipe(config: MyConfig) extends Pipe {
-    override type In = GraphResource
-    override type Out = GraphResource
-
-    override def ref: PipeRef = MyOtherCustomPipe.ref
-
-    override def inType: Typeable[GraphResource] = Typeable[GraphResource]
-
-    override def outType: Typeable[GraphResource] = Typeable[GraphResource]
-
-    override def apply(element: SuccessElem[GraphResource]): Task[Elem[GraphResource]] =
-      element.evalMap(Task.delay(???))
-
-  }
-
-  object MyOtherCustomPipe extends PipeDef {
-    override type PipeType = MyOtherCustomPipe
-    override type Config = MyConfig
-
-    override def configType: Typeable[Config] = Typeable[MyConfig]
-
-    override def configDecoder: JsonLdDecoder[Config] = JsonLdDecoder[Config]
-
-    override def ref: PipeRef = PipeRef.unsafe(&quot;myOtherCustomType&quot;)
-
-    override def withConfig(config: MyConfig): MyOtherCustomPipe = new MyOtherCustomPipe(config)
-
-    final case class MyConfig(types: Set[Iri]) {
-      def toJsonLd: ExpandedJsonLd = ExpandedJsonLd(
-        Seq(
-          ExpandedJsonLd.unsafe(
-            nxv + ref.toString,
-            JsonObject(
-              (nxv + &quot;types&quot;).toString -&gt; Json.arr(types.toList.map(iri =&gt; Json.obj(&quot;@id&quot; -&gt; iri.asJson)): _*)
-            )
-          )
-        )
-      )
-    }
-
-    object MyConfig {
-      implicit val myConfigJsonLdDecoder: JsonLdDecoder[MyConfig] = deriveDefaultJsonLdDecoder
-    }
-
-    def apply(types: Set[Iri]): (PipeRef, ExpandedJsonLd) = ref -&gt; MyConfig(types).toJsonLd
-  }
-}
-</code></pre>
-<p>And then declare them in the distage module definition of the plugin to make them available:</p>
-<pre class="prettyprint"><code class="language-scala">import izumi.distage.model.definition.ModuleDef
-object MyPluginModule extends ModuleDef {
-
-  many[PipeDef].addSetValue(
-   Set(pipe1, pipe2)
-  )
+<h3><a href="#how-to-write-a-sparql-construct-query-for-the-batch-composite-sink" name="how-to-write-a-sparql-construct-query-for-the-batch-composite-sink" class="anchor"><span class="anchor-link"></span></a>How to write a SPARQL construct query for the Batch Composite Sink</h3>
+<p>In order to use the Batch Composite Sink successfully, it is necessary to rework some aspects of a regular SPARQL construct query. We explain the changes through an example.</p>
+<h3><a href="#example" name="example" class="anchor"><span class="anchor-link"></span></a>Example</h3>
+<p>Suppose we are in a situation where Composite Views are using the Single Composite Sink and have the following query:</p>
+<pre><code>PREFIX schema: &lt;http://schema.org/&gt;
+PREFIX nxv: &lt;https://bluebrain.github.io/nexus/vocabulary/&gt;
+CONSTRUCT {
+  ?id     nxv:name   ?name   ;
+          nxv:age    ?age    .
+          nxv:parent ?parent .
+} WHERE {
+  BIND({resource_id} AS ?id) .
+  ?id schema:name ?name .
   
+  OPTIONAL { ?id schema:age ?age }
+  OPTIONAL { ?id schema:parent ?parent . }
 }
 </code></pre>
-<p>The source code for the core pipes is available <a href="https://github.com/BlueBrain/nexus/tree/master/delta/sourcing-psql/src/main/scala/ch/epfl/bluebrain/nexus/delta/sourcing/stream/pipes" title="here">here</a> and the associated unit tests <a href="https://github.com/BlueBrain/nexus/tree/master/delta/sourcing-psql/src/test/scala/ch/epfl/bluebrain/nexus/delta/sourcing/stream/pipes" title="here">here</a>.</p>
+<p>Using the default Single Composite Sink, Nexus Delta will query the resources Alice and Bob individually and obtain the following n-triples from Blazegraph:</p>
+<pre><code>&lt;http://people.com/Alice&gt; &lt;http://schema.org/name&gt; &lt;Alice&gt;
+&lt;http://people.com/Alice&gt; &lt;http://schema.org/parent&gt; &lt;http://people.com/Bob&gt;
+</code></pre>
+<pre><code>&lt;http://people.com/Bob&gt; &lt;http://schema.org/name&gt; &lt;Bob&gt;
+&lt;http://people.com/Bob&gt; &lt;http://schema.org/age&gt; &lt;42&gt;
+</code></pre>
+<p>In particular, note that when looking at the graph of Alice, we do not know the age of Bob.</p>
+<p>The first change to introduce in order to make this query work with batches of resources is to replace the <code>BIND({resource_id} AS ?id) .</code> with <code>VALUES ?id { {resources_id} }</code>. Nexus Delta will use this template to replace <code>{resource_id}</code> with multiple resource in case it receives a batch of more than one element. The query is now:</p>
+<pre><code>PREFIX schema: &lt;http://schema.org/&gt;
+PREFIX nxv: &lt;https://bluebrain.github.io/nexus/vocabulary/&gt;
+CONSTRUCT {
+  ?id     nxv:name   ?name   ;
+          nxv:age    ?age    .
+          nxv:parent ?parent .
+} WHERE {
+  VALUES ?id { {resource_id} } .
+  ?id schema:name ?name .
+  
+  OPTIONAL { ?id schema:age ?age }
+  OPTIONAL { ?id schema:parent ?parent . }
+}
+</code></pre>
+<p>With the Batch Composite Sink enabled, if Alice and Bob are batched together, this query will result in the following triples:</p>
+<pre><code>&lt;http://people.com/Alice&gt; &lt;http://schema.org/name&gt; &lt;Alice&gt;
+&lt;http://people.com/Alice&gt; &lt;http://schema.org/parent&gt; &lt;http://people.com/Bob&gt;
+&lt;http://people.com/Bob&gt; &lt;http://schema.org/name&gt; &lt;Bob&gt;
+&lt;http://people.com/Bob&gt; &lt;http://schema.org/age&gt; &lt;42&gt;
+</code></pre>
+<p>Note how the results are the merged result of the individual queries. While we were able to query several resources simultaneously, we are now facing a framing problem. If we try to frame <code>http://people.com/Alice</code>, its graph now contains more information than before; it will now include the age of Bob, something that we did not request.</p>
+<p>In order to solve this problem, we will introduce aliasing for the root resource IDs. The query will now become:</p>
+<pre><code>PREFIX schema: &lt;http://schema.org/&gt;
+PREFIX nxv: &lt;https://bluebrain.github.io/nexus/vocabulary/&gt;
+CONSTRUCT {
+  ?alias  nxv:name   ?name   ;
+          nxv:age    ?age    .
+          nxv:parent ?parent .
+} WHERE {
+  VALUES ?id { {resource_id} } .
+  BIND(IRI(CONCAT(STR(?id), &#39;/alias&#39;)) AS ?alias) .
+  
+  ?id schema:name ?name .
+  
+  OPTIONAL { ?id schema:age ?age }
+  OPTIONAL { ?id schema:parent ?parent }
+}
+</code></pre>
+<p>With this query, a batch query for both Alice and Bob will now yield:</p>
+<pre><code>&lt;http://people.com/Alice/alias&gt; &lt;http://schema.org/name&gt; &lt;Alice&gt;
+&lt;http://people.com/Alice/alias&gt; &lt;http://schema.org/parent&gt; &lt;http://people.com/Bob&gt;
+&lt;http://people.com/Bob/alias&gt; &lt;http://schema.org/name&gt; &lt;Bob&gt;
+&lt;http://people.com/Bob/alias&gt; &lt;http://schema.org/age&gt; &lt;42&gt;
+</code></pre>
+<p>You can see that the root node of Bob&rsquo;s graph is now <code>http://people.com/Bob/alias</code>, while Alice&rsquo;s parent is <code>http://people.com/Bob</code>. This distinction ensures that we cannot get Bob&rsquo;s age by looking at Alice&rsquo;s graph, thus reproducing the behavior that we had with the Single Composite Sink.</p>
+<p>Nexus Delta takes care of framing these results so that the framed documents will be the same as with the Single Composite Sink, and will not contain any <code>alias</code> keyword. For example, for the resource <code>http://people.com/Alice</code>, Nexus Delta will obtain its graph by looking at the <code>http://people.com/Alice/alias</code> root node, and use the resulting graph (removing the <code>/alias</code> part) for JSON-LD framing.</p>
+<h4><a href="#summary" name="summary" class="anchor"><span class="anchor-link"></span></a>Summary</h4>
+<p>To use the Batch Composite Sink the following changes are necessary:</p>
+<ul>
+  <li><code>BIND({resource_id} AS ?id)</code> must become <code>VALUES ?id { {resource_id} }</code> to allow for batches of resources to be  queried from Blazegraph.</li>
+  <li><code>BIND(IRI(CONCAT(STR(?id), &#39;/alias&#39;)) AS ?alias)</code> needs to be added, and the relevant (<code>?id</code>) &ldquo;root nodes&rdquo; replaced  by <code>?alias</code> in the <code>CONSTRUCT</code> part of the query. This is done in order to avoid any clashes between the graphs of  several resources. Do note that in case  you have several &ldquo;root nodes&rdquo; in the <code>CONSTRUCT</code> part of your construct query, you might need several aliases.</li>
+</ul>
 </div>
 <div>
-<a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/views/pipes.md" title="Edit this page" class="md-source-file md-edit">
+<a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/views/composite-sink.md" title="Edit this page" class="md-source-file md-edit">
 Edit this page
 </a>
 </div>
@@ -538,7 +424,7 @@ Snapshot
 <footer class="md-footer">
 <div class="md-footer-nav">
 <nav class="md-footer-nav__inner md-grid">
-<a href="../../../../docs/delta/api/views/elasticsearch-view-api.html" title="ElasticSearchView" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+<a href="../../../../docs/delta/api/views/composite-view-api.html" title="CompositeView" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
 <div class="md-flex__cell md-flex__cell--shrink">
 <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
 </div>
@@ -547,17 +433,17 @@ Snapshot
 <span class="md-footer-nav__direction">
 Previous
 </span>
-ElasticSearchView
+CompositeView
 </span>
 </div>
 </a>
-<a href="../../../../docs/delta/api/views/aggregated-es-view-api.html" title="AggregateElasticSearchView" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../../../docs/delta/api/storages-api.html" title="Storages" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-AggregateElasticSearchView
+Storages
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">

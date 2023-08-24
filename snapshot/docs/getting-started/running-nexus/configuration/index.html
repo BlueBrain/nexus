@@ -155,6 +155,7 @@ BlueBrain/nexus
   <li><a href="../../../../docs/releases/index.html" class="page">Releases</a>
   <ul>
     <li><a href="../../../../docs/releases/v1.9-release-notes.html" class="page">v1.9 Release Notes</a></li>
+    <li><a href="../../../../docs/releases/v1.8-to-v1.9-migration.html" class="page">v1.8 To v1.9 Migration</a></li>
     <li><a href="../../../../docs/releases/v1.8-release-notes.html" class="page">v1.8 Release Notes</a></li>
     <li><a href="../../../../docs/releases/v1.7-to-v1.8-migration.html" class="page">v1.7 To v1.8 Migration</a></li>
     <li><a href="../../../../docs/releases/v1.7-release-notes.html" class="page">v1.7 Release Notes</a></li>
@@ -345,7 +346,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <p><a href="https://github.com/BlueBrain/nexus/blob/master/delta/app/src/main/resources/app.conf#L23" title="The `database` section" target="_blank" rel="noopener noreferrer">The <code>database</code> section</a> of the configuration defines the postgres specific configuration. As Nexus Delta uses three separate pools (&lsquo;read&rsquo;, &lsquo;write&rsquo;, &lsquo;streaming&rsquo;), it is recommended to set the host, port, database name, username, and password via the <code>app.defaults.database</code> field, as it will apply to all pools. It is however possible to accommodate more advanced setups by configuring each pool separately by changing its respective <code>app.database.{read|write|streaming}</code> fields. </p>
 <p>The pool size can be set using the <code>app.defaults.database.access.pool-size</code> setting for all pools, or individually for each pool (<code>app.database.{read|write|streaming}.access.pool-size</code>).</p><div class="callout note warning"><div class="callout-title">Note</div>
 <p>A default Postgres deployment will limit the number of connections to 100, unless configured otherwise. See the <a href="https://www.postgresql.org/docs/current/runtime-config-connection.html" title="Postgres Connection and Authentication documentation" target="_blank" rel="noopener noreferrer">Postgres Connection and Authentication documentation</a>.</p></div>
-<p>Before running Nexus Delta, the <a href="https://github.com/BlueBrain/nexus/blob/master/delta/sourcing-psql/src/main/resources/scripts/schema.ddl" title="expected tables" target="_blank" rel="noopener noreferrer">expected tables</a> should be created.</p>
+<p>Before running Nexus Delta, the <a href="https://github.com/BlueBrain/nexus/tree/master/delta/sourcing-psql/src/main/resources/scripts/postgres/init" title="init scripts" target="_blank" rel="noopener noreferrer">init scripts</a> should be run in the lexicographical order.</p>
 <p>It is possible to let Nexus Delta automatically create them using the following configuration parameters: <code>app.database.tables-autocreate=true</code>.</p><div class="callout note warning"><div class="callout-title">Note</div>
 <p>Auto creation of tables is included as a development convenience and should be avoided in production.</p></div>
 <h1><a href="#rdf-parser" name="rdf-parser" class="anchor"><span class="anchor-link"></span></a>RDF parser</h1>

@@ -155,6 +155,7 @@ BlueBrain/nexus
   <li><a href="../../docs/releases/index.html" class="page">Releases</a>
   <ul>
     <li><a href="../../docs/releases/v1.9-release-notes.html" class="active page">v1.9 Release Notes</a></li>
+    <li><a href="../../docs/releases/v1.8-to-v1.9-migration.html" class="page">v1.8 To v1.9 Migration</a></li>
     <li><a href="../../docs/releases/v1.8-release-notes.html" class="page">v1.8 Release Notes</a></li>
     <li><a href="../../docs/releases/v1.7-to-v1.8-migration.html" class="page">v1.7 To v1.8 Migration</a></li>
     <li><a href="../../docs/releases/v1.7-release-notes.html" class="page">v1.7 Release Notes</a></li>
@@ -240,13 +241,21 @@ BlueBrain/nexus
     <ul>
       <li><a href="../../docs/releases/v1.9-release-notes.html#resources" class="header">Resources</a>
       <ul>
+        <li><a href="../../docs/releases/v1.9-release-notes.html#self-incoming-and-outgoing-links" class="header">self, incoming and outgoing links</a></li>
         <li><a href="../../docs/releases/v1.9-release-notes.html#multi-fetch" class="header">Multi fetch</a></li>
         <li><a href="../../docs/releases/v1.9-release-notes.html#payload-validation" class="header">Payload validation</a></li>
         <li><a href="../../docs/releases/v1.9-release-notes.html#aggregations" class="header">Aggregations</a></li>
       </ul></li>
       <li><a href="../../docs/releases/v1.9-release-notes.html#views" class="header">Views</a></li>
+      <li><a href="../../docs/releases/v1.9-release-notes.html#composite-views" class="header">Composite views</a>
+      <ul>
+        <li><a href="../../docs/releases/v1.9-release-notes.html#batching-queries-to-the-intermediate-space" class="header">Batching queries to the intermediate space</a></li>
+        <li><a href="../../docs/releases/v1.9-release-notes.html#partial-reindexing" class="header">Partial reindexing</a></li>
+      </ul></li>
+      <li><a href="../../docs/releases/v1.9-release-notes.html#elasticsearch-views" class="header">Elasticsearch Views</a></li>
       <li><a href="../../docs/releases/v1.9-release-notes.html#archives" class="header">Archives</a></li>
       <li><a href="../../docs/releases/v1.9-release-notes.html#storages" class="header">Storages</a></li>
+      <li><a href="../../docs/releases/v1.9-release-notes.html#graph-analytics" class="header">Graph Analytics</a></li>
     </ul></li>
     <li><a href="../../docs/releases/v1.9-release-notes.html#nexus-fusion" class="header">Nexus Fusion</a></li>
     <li><a href="../../docs/releases/v1.9-release-notes.html#nexus-forge" class="header">Nexus forge</a></li>
@@ -277,13 +286,21 @@ BlueBrain/nexus
     <ul>
       <li><a href="../../docs/releases/v1.9-release-notes.html#resources" class="header">Resources</a>
       <ul>
+        <li><a href="../../docs/releases/v1.9-release-notes.html#self-incoming-and-outgoing-links" class="header">self, incoming and outgoing links</a></li>
         <li><a href="../../docs/releases/v1.9-release-notes.html#multi-fetch" class="header">Multi fetch</a></li>
         <li><a href="../../docs/releases/v1.9-release-notes.html#payload-validation" class="header">Payload validation</a></li>
         <li><a href="../../docs/releases/v1.9-release-notes.html#aggregations" class="header">Aggregations</a></li>
       </ul></li>
       <li><a href="../../docs/releases/v1.9-release-notes.html#views" class="header">Views</a></li>
+      <li><a href="../../docs/releases/v1.9-release-notes.html#composite-views" class="header">Composite views</a>
+      <ul>
+        <li><a href="../../docs/releases/v1.9-release-notes.html#batching-queries-to-the-intermediate-space" class="header">Batching queries to the intermediate space</a></li>
+        <li><a href="../../docs/releases/v1.9-release-notes.html#partial-reindexing" class="header">Partial reindexing</a></li>
+      </ul></li>
+      <li><a href="../../docs/releases/v1.9-release-notes.html#elasticsearch-views" class="header">Elasticsearch Views</a></li>
       <li><a href="../../docs/releases/v1.9-release-notes.html#archives" class="header">Archives</a></li>
       <li><a href="../../docs/releases/v1.9-release-notes.html#storages" class="header">Storages</a></li>
+      <li><a href="../../docs/releases/v1.9-release-notes.html#graph-analytics" class="header">Graph Analytics</a></li>
     </ul></li>
     <li><a href="../../docs/releases/v1.9-release-notes.html#nexus-fusion" class="header">Nexus Fusion</a></li>
     <li><a href="../../docs/releases/v1.9-release-notes.html#nexus-forge" class="header">Nexus forge</a></li>
@@ -306,9 +323,18 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <div class="md-content__searchable">
 <h1><a href="#v1-9-release-notes" name="v1-9-release-notes" class="anchor"><span class="anchor-link"></span></a>v1.9 Release Notes</h1>
 <p>TODO add link to full changes on github</p>
-<p>TODO add potential migration page</p>
+<p>If you are currently using Nexus Delta from 1.8.x, please visit the <a href="v1.8-to-v1.9-migration.html">migration instructions</a> for the necessary steps to successfully upgrade.</p>
 <h2><a href="#nexus-delta" name="nexus-delta" class="anchor"><span class="anchor-link"></span></a>Nexus Delta</h2>
 <h3><a href="#resources" name="resources" class="anchor"><span class="anchor-link"></span></a>Resources</h3>
+<h4><a href="#self-incoming-and-outgoing-links" name="self-incoming-and-outgoing-links" class="anchor"><span class="anchor-link"></span></a>self, incoming and outgoing links</h4>
+<p>Those three links are returned in the response of operations related to the different resources. Until 1.9, they were curied/shortened according to the base and the API mappings defined in the project configuration.</p>
+<p>This caused consistency problems as whenever the base or the API mapping were changing, those shortened links were not valid anymore:</p>
+<ul>
+  <li>All data in views displaying metadata (which include those links) had to be indexed again ;</li>
+  <li>The change had also to be propagated to other external systems ;</li>
+  <li>The resources including download links to files had to be patched</li>
+</ul>
+<p>Therefore since 1.9, <code>_self</code>, <code>_incoming</code> and <code>outgoing</code> links are not shortened anymore allowing them to remain stable in time even if the project configuration changes.</p>
 <h4><a href="#multi-fetch" name="multi-fetch" class="anchor"><span class="anchor-link"></span></a>Multi fetch</h4>
 <p>Multiple resources can now be retrieved within a single call with the multi-fetch operation.</p>
 <p><a href="../delta/api/multi-fetch.html">More information</a></p>
@@ -321,6 +347,19 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <h3><a href="#views" name="views" class="anchor"><span class="anchor-link"></span></a>Views</h3>
 <p>Indexing errors can now be listed and filtered for a given view.</p>
 <p><a href="../delta/api/views/index.html#listing-indexing-failures">More information</a></p>
+<h3><a href="#composite-views" name="composite-views" class="anchor"><span class="anchor-link"></span></a>Composite views</h3>
+<p>To enhance performance of indexing of composite views, Nexus Delta introduces the following features.</p>
+<h4><a href="#batching-queries-to-the-intermediate-space" name="batching-queries-to-the-intermediate-space" class="anchor"><span class="anchor-link"></span></a>Batching queries to the intermediate space</h4>
+<p>Construct queries to the intermediate space can now be batched.</p>
+<p><a href="../delta/api/views/composite-view-api.html#batching-queries-to-the-intermediate-space">More information</a></p>
+<h4><a href="#partial-reindexing" name="partial-reindexing" class="anchor"><span class="anchor-link"></span></a>Partial reindexing</h4>
+<p>When a composite view is updated, a diff is performed and only the necessary spaces are reindexed.</p>
+<p>For example, if a source is added/updated/removed, all the spaces (intermediate space and projection spaces) get reindexed. However if a projection is added/updated/removed, now only the space related to this projection is reindexed which reduces the number of operations and consequently speed up the indexing.</p>
+<p>Preserving the intermediate space also reduces the fragmentation of the Blazegraph journal.</p>
+<p><a href="../delta/api/views/composite-view-api.html#batching-queries-to-the-intermediate-space">More information</a></p>
+<h3><a href="#elasticsearch-views" name="elasticsearch-views" class="anchor"><span class="anchor-link"></span></a>Elasticsearch Views</h3>
+<p>The Elasticsearch mapping of an Elasticsearch View can be retrieved.</p>
+<p><a href="../delta/api/views/elasticsearch-view-api.html#fetch-elasticsearch-mapping">More information</a></p>
 <h3><a href="#archives" name="archives" class="anchor"><span class="anchor-link"></span></a>Archives</h3>
 <p>Resources can be added to an archive using a <code>_self</code>.</p>
 <p><a href="../delta/api/archives-api.html#payload">More information</a></p>
@@ -331,6 +370,9 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   <li>For remote storages, this means <code>credentials</code>.</li>
 </ul>
 <p>These should instead be defined in the Delta configuration.</p>
+<h3><a href="#graph-analytics" name="graph-analytics" class="anchor"><span class="anchor-link"></span></a>Graph Analytics</h3>
+<p>The Elasticsearch views behind Graph Analytics can now be queried using the <code>_search</code> endpoint.</p>
+<p><a href="../delta/api/graph-analytics-api.html">More information</a></p>
 <h2><a href="#nexus-fusion" name="nexus-fusion" class="anchor"><span class="anchor-link"></span></a>Nexus Fusion</h2>
 <p>TODO</p>
 <h2><a href="#nexus-forge" name="nexus-forge" class="anchor"><span class="anchor-link"></span></a>Nexus forge</h2>
@@ -366,13 +408,13 @@ Releases
 </span>
 </div>
 </a>
-<a href="../../docs/releases/v1.8-release-notes.html" title="v1.8 Release Notes" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../docs/releases/v1.8-to-v1.9-migration.html" title="v1.8 To v1.9 Migration" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-v1.8 Release Notes
+v1.8 To v1.9 Migration
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">

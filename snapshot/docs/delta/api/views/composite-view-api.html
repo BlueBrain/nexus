@@ -155,6 +155,7 @@ BlueBrain/nexus
   <li><a href="../../../../docs/releases/index.html" class="page">Releases</a>
   <ul>
     <li><a href="../../../../docs/releases/v1.9-release-notes.html" class="page">v1.9 Release Notes</a></li>
+    <li><a href="../../../../docs/releases/v1.8-to-v1.9-migration.html" class="page">v1.8 To v1.9 Migration</a></li>
     <li><a href="../../../../docs/releases/v1.8-release-notes.html" class="page">v1.8 Release Notes</a></li>
     <li><a href="../../../../docs/releases/v1.7-to-v1.8-migration.html" class="page">v1.7 To v1.8 Migration</a></li>
     <li><a href="../../../../docs/releases/v1.7-release-notes.html" class="page">v1.7 Release Notes</a></li>
@@ -249,6 +250,7 @@ BlueBrain/nexus
       <li><a href="../../../../docs/delta/api/views/composite-view-api.html#elasticsearchprojection" class="header">ElasticSearchProjection</a></li>
       <li><a href="../../../../docs/delta/api/views/composite-view-api.html#sparqlprojection" class="header">SparqlProjection</a></li>
     </ul></li>
+    <li><a href="../../../../docs/delta/api/views/composite-view-api.html#batching-queries-to-the-intermediate-space" class="header">Batching queries to the intermediate space</a></li>
     <li><a href="../../../../docs/delta/api/views/composite-view-api.html#payload" class="header">Payload</a>
     <ul>
       <li><a href="../../../../docs/delta/api/views/composite-view-api.html#example" class="header">Example</a></li>
@@ -308,6 +310,7 @@ BlueBrain/nexus
       <li><a href="../../../../docs/delta/api/views/composite-view-api.html#elasticsearchprojection" class="header">ElasticSearchProjection</a></li>
       <li><a href="../../../../docs/delta/api/views/composite-view-api.html#sparqlprojection" class="header">SparqlProjection</a></li>
     </ul></li>
+    <li><a href="../../../../docs/delta/api/views/composite-view-api.html#batching-queries-to-the-intermediate-space" class="header">Batching queries to the intermediate space</a></li>
     <li><a href="../../../../docs/delta/api/views/composite-view-api.html#payload" class="header">Payload</a>
     <ul>
       <li><a href="../../../../docs/delta/api/views/composite-view-api.html#example" class="header">Example</a></li>
@@ -529,6 +532,8 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   <li><code>{query}</code>: <a href="https://www.w3.org/TR/rdf-sparql-query/#construct" title="Sparql Construct Query" target="_blank" rel="noopener noreferrer">Sparql Construct Query</a> - Defines the Sparql query to  execute against the intermediate Sparql space for each target resource.</li>
   <li><code>{permission}</code>: String - the permission necessary to query this projection. Defaults to <code>views/query</code>.</li>
 </ul>
+<h2><a href="#batching-queries-to-the-intermediate-space" name="batching-queries-to-the-intermediate-space" class="anchor"><span class="anchor-link"></span></a>Batching queries to the intermediate space</h2>
+<p>The queries that projections perform to the intermediate Sparql space can be either executed per individual resource, or in batches containing multiple resources. To learn more about it, please refer to the <a href="composite-sink.html">Composite Sink page</a>.</p>
 <h2><a href="#payload" name="payload" class="anchor"><span class="anchor-link"></span></a>Payload</h2>
 <pre class="prettyprint"><code class="language-json">{
   &quot;@id&quot;: &quot;{someid}&quot;,
@@ -2473,13 +2478,13 @@ AggregateSparqlView
 </span>
 </div>
 </a>
-<a href="../../../../docs/delta/api/storages-api.html" title="Storages" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../../../docs/delta/api/views/composite-sink.html" title="Composite Sinks" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-Storages
+Composite Sinks
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">
