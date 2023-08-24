@@ -7,14 +7,14 @@
   "_total": 3,
   "_results": [
     {
-      "@id": "https://bluebrain.github.io/nexus/vocabulary/defaultElasticSearchIndex",
+      "@id": "{{defaultElasticSearchView}}",
       "@type": [
         "ElasticSearchView",
         "View"
       ],
-      "_incoming": "{{deltaUri}}/views/{{project-label}}/documents/incoming",
-      "_outgoing": "{{deltaUri}}/views/{{project-label}}/documents/outgoing",
-      "_self": "{{deltaUri}}/views/{{project-label}}/documents",
+      "_incoming": "{{defaultElasticSearchViewSelf}}/incoming",
+      "_outgoing": "{{defaultElasticSearchViewSelf}}/outgoing",
+      "_self": "{{defaultElasticSearchViewSelf}}",
       "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/views.json",
       "_project": "{{project}}",
       "_rev": 1,
@@ -25,14 +25,14 @@
       "name" : "Default Elasticsearch view"
     },
     {
-      "@id": "https://bluebrain.github.io/nexus/vocabulary/defaultSparqlIndex",
+      "@id": "{{defaultSparqlView}}",
       "@type": [
         "View",
         "SparqlView"
       ],
-      "_incoming": "{{deltaUri}}/views/{{project-label}}/graph/incoming",
-      "_outgoing": "{{deltaUri}}/views/{{project-label}}/graph/outgoing",
-      "_self": "{{deltaUri}}/views/{{project-label}}/graph",
+      "_incoming": "{{defaultSparqlViewSelf}}/incoming",
+      "_outgoing": "{{defaultSparqlViewSelf}}/outgoing",
+      "_self": "{{defaultSparqlViewSelf}}",
       "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/views.json",
       "_project": "{{project}}",
       "_rev": 1,
@@ -43,7 +43,7 @@
       "name" : "Default Sparql view"
     },
     {
-      "@id": "https://bluebrain.github.io/nexus/vocabulary/searchView",
+      "@id": "{{searchView}}",
       "@type": [
         "View",
         "CompositeView"
@@ -51,11 +51,11 @@
       "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/views.json",
       "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
       "_deprecated": false,
-      "_incoming": "{{deltaUri}}/views/{{project-label}}/nxv:searchView/incoming",
-      "_outgoing": "{{deltaUri}}/views/{{project-label}}/nxv:searchView/outgoing",
+      "_incoming": "{{searchViewSelf}}/incoming",
+      "_outgoing": "{{searchViewSelf}}/outgoing",
+      "_self": "{{searchViewSelf}}",
       "_project": "{{project}}",
       "_rev": 1,
-      "_self": "{{deltaUri}}/views/{{project-label}}/nxv:searchView",
       "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
     }
   ]

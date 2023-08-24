@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.stream
 
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceShifts
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef, Tag}
@@ -67,14 +66,13 @@ object GraphResourceStream {
     * Create a graph resource stream
     */
   def apply(
-      fetchContext: ProjectRef => UIO[ProjectContext],
       qc: QueryConfig,
       xas: Transactors,
       shifts: ResourceShifts
   ): GraphResourceStream = new GraphResourceStream {
 
     override def continuous(project: ProjectRef, tag: Tag, start: Offset): ElemStream[GraphResource] =
-      StreamingQuery.elems(project, tag, start, qc, xas, shifts.decodeGraphResource(fetchContext))
+      StreamingQuery.elems(project, tag, start, qc, xas, shifts.decodeGraphResource)
 
     override def currents(project: ProjectRef, tag: Tag, start: Offset): ElemStream[GraphResource] =
       StreamingQuery.elems(
@@ -83,7 +81,7 @@ object GraphResourceStream {
         start,
         qc.copy(refreshStrategy = RefreshStrategy.Stop),
         xas,
-        shifts.decodeGraphResource(fetchContext)
+        shifts.decodeGraphResource
       )
 
     override def remaining(project: ProjectRef, tag: Tag, start: Offset): UIO[Option[RemainingElems]] =

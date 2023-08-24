@@ -98,9 +98,8 @@ trait BlazegraphViewRoutesFixtures
             ResourceUris.resource(
               projectRef,
               projectRef,
-              iri"http://example.com/id1",
-              ResourceRef(iri"http://example.com/someSchema")
-            )(project.apiMappings, project.base),
+              iri"http://example.com/id1"
+            ),
             1,
             Set(iri"http://example.com/type1", iri"http://example.com/type2"),
             false,

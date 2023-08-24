@@ -86,8 +86,7 @@ final case class ResourceF[A](
     * @return
     *   the [[Iri]] resulting from resolving the self against the ''base''
     */
-  def self(implicit base: BaseUri): Iri =
-    uris.accessUriShortForm.toIri
+  def self(implicit base: BaseUri): Iri = uris.accessUri.toIri
 }
 
 object ResourceF {
@@ -138,26 +137,26 @@ object ResourceF {
   implicit private def resourceUrisEncoder(implicit base: BaseUri): Encoder.AsObject[ResourceUris] =
     Encoder.AsObject.instance {
       case uris: RootResourceUris               =>
-        JsonObject("_self" -> uris.accessUriShortForm.asJson)
+        JsonObject("_self" -> uris.accessUri.asJson)
       case uris: ResourceInProjectUris          =>
         JsonObject(
-          "_self"     -> uris.accessUriShortForm.asJson,
+          "_self"     -> uris.accessUri.asJson,
           "_project"  -> uris.project.asJson,
-          "_incoming" -> uris.incomingShortForm.asJson,
-          "_outgoing" -> uris.outgoingShortForm.asJson
+          "_incoming" -> uris.incoming.asJson,
+          "_outgoing" -> uris.outgoing.asJson
         )
       case uris: EphemeralResourceInProjectUris =>
         JsonObject(
-          "_self"    -> uris.accessUriShortForm.asJson,
+          "_self"    -> uris.accessUri.asJson,
           "_project" -> uris.project.asJson
         )
       case uris: ResourceInProjectAndSchemaUris =>
         JsonObject(
-          "_self"          -> uris.accessUriShortForm.asJson,
+          "_self"          -> uris.accessUri.asJson,
           "_project"       -> uris.project.asJson,
           "_schemaProject" -> uris.schemaProject.asJson,
-          "_incoming"      -> uris.incomingShortForm.asJson,
-          "_outgoing"      -> uris.outgoingShortForm.asJson
+          "_incoming"      -> uris.incoming.asJson,
+          "_outgoing"      -> uris.outgoing.asJson
         )
     }
 

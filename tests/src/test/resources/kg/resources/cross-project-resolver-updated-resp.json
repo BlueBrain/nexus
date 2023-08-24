@@ -26,9 +26,9 @@
     }
   ],
   "priority": 20,
-  "_incoming": "{{resources}}/test-resolver/incoming",
-  "_outgoing": "{{resources}}/test-resolver/outgoing",
-  "_self": "{{resources}}/test-resolver",
+  "_incoming": "{{self}}/incoming",
+  "_outgoing": "{{self}}/outgoing",
+  "_self": "{{self}}",
   "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/resolvers.json",
   "_project": "{{project-parent}}",
   "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",

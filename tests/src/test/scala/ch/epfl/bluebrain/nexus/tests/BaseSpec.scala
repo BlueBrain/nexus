@@ -236,6 +236,26 @@ trait BaseSpec
   private[tests] def expectOk[A] = expect(StatusCodes.OK)
 
   private[tests] def tag(name: String, rev: Int) = json"""{"tag": "$name", "rev": $rev}"""
+
+  private[tests] def resourceSelf(project: String, id: String): String = {
+    val uri = Uri(s"${config.deltaUri}/resources/$project/_")
+    uri.copy(path = uri.path / id).toString
+  }
+
+  private[tests] def resolverSelf(project: String, id: String): String = {
+    val uri = Uri(s"${config.deltaUri}/resolvers/$project")
+    uri.copy(path = uri.path / id).toString
+  }
+
+  private[tests] def viewSelf(project: String, id: String): String = {
+    val uri = Uri(s"${config.deltaUri}/views/$project")
+    uri.copy(path = uri.path / id).toString
+  }
+
+  private[tests] def storageSelf(project: String, id: String): String = {
+    val uri = Uri(s"${config.deltaUri}/storages/$project")
+    uri.copy(path = uri.path / id).toString
+  }
 }
 
 object BaseSpec {

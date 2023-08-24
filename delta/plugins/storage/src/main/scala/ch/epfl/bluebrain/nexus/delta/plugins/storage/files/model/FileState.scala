@@ -4,7 +4,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{nxvFile, schemas, Fi
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceUris, Tags}
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectBase}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.instances._
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
@@ -76,10 +75,10 @@ final case class FileState(
 
   private def file: File = File(id, project, storage, storageType, attributes, tags)
 
-  def toResource(mappings: ApiMappings, base: ProjectBase): FileResource =
+  def toResource: FileResource =
     ResourceF(
       id = id,
-      uris = ResourceUris("files", project, id)(mappings, base),
+      uris = ResourceUris("files", project, id),
       rev = rev,
       types = types,
       deprecated = deprecated,

@@ -12,12 +12,9 @@
       "_constrainedBy": "https://dev.nexus.test.com/test-schema",
       "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
       "_deprecated": false,
-      "_incoming": "{{deltaUri}}/resources/{{org1}}/{{proj1}}/test-schema/resource11_with_schema/incoming",
-      "_outgoing": "{{deltaUri}}/resources/{{org1}}/{{proj1}}/test-schema/resource11_with_schema/outgoing",
       "_project": "{{deltaUri}}/projects/{{org1}}/{{proj1}}",
       "_rev": 1,
       "_schemaProject": "{{deltaUri}}/projects/{{org1}}/{{proj1}}",
-      "_self": "{{deltaUri}}/resources/{{org1}}/{{proj1}}/test-schema/resource11_with_schema",
       "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
     },
     {
@@ -26,12 +23,9 @@
       "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/unconstrained.json",
       "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
       "_deprecated": false,
-      "_incoming": "{{deltaUri}}/resources/{{org2}}/{{proj3}}/_/resource21/incoming",
-      "_outgoing": "{{deltaUri}}/resources/{{org2}}/{{proj3}}/_/resource21/outgoing",
       "_project": "{{deltaUri}}/projects/{{org2}}/{{proj3}}",
       "_rev": 2,
       "_schemaProject": "{{deltaUri}}/projects/{{org2}}/{{proj3}}",
-      "_self": "{{deltaUri}}/resources/{{org2}}/{{proj3}}/_/resource21",
       "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
     },
     {
@@ -40,12 +34,9 @@
       "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/unconstrained.json",
       "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
       "_deprecated": true,
-      "_incoming": "{{deltaUri}}/resources/{{org1}}/{{proj2}}/_/resource12/incoming",
-      "_outgoing": "{{deltaUri}}/resources/{{org1}}/{{proj2}}/_/resource12/outgoing",
       "_project": "{{deltaUri}}/projects/{{org1}}/{{proj2}}",
       "_rev": 2,
       "_schemaProject": "{{deltaUri}}/projects/{{org1}}/{{proj2}}",
-      "_self": "{{deltaUri}}/resources/{{org1}}/{{proj2}}/_/resource12",
       "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
     },
     {
@@ -54,12 +45,9 @@
       "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/unconstrained.json",
       "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
       "_deprecated": false,
-      "_incoming": "{{deltaUri}}/resources/{{org1}}/{{proj1}}/_/resource11/incoming",
-      "_outgoing": "{{deltaUri}}/resources/{{org1}}/{{proj1}}/_/resource11/outgoing",
       "_project": "{{deltaUri}}/projects/{{org1}}/{{proj1}}",
       "_rev": 2,
       "_schemaProject": "{{deltaUri}}/projects/{{org1}}/{{proj1}}",
-      "_self": "{{deltaUri}}/resources/{{org1}}/{{proj1}}/_/resource11",
       "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
     }
   ]

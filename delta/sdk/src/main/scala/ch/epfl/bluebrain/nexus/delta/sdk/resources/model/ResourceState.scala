@@ -4,7 +4,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.sdk.DataResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceUris, Tags}
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectBase}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
@@ -68,10 +67,10 @@ final case class ResourceState(
     updatedBy: Subject
 ) extends ScopedState {
 
-  def toResource(mappings: ApiMappings, base: ProjectBase): DataResource =
+  def toResource: DataResource =
     ResourceF(
       id = id,
-      uris = ResourceUris.resource(project, schemaProject, id, schema)(mappings, base),
+      uris = ResourceUris.resource(project, schemaProject, id),
       rev = rev,
       types = types,
       schema = schema,

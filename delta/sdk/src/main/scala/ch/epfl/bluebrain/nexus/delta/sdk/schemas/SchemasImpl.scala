@@ -13,7 +13,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSour
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas.{entityType, expandIri}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.SchemasImpl.SchemasLog
@@ -44,7 +43,7 @@ final class SchemasImpl private (
       projectContext             <- fetchContext.onCreate(projectRef)
       (iri, compacted, expanded) <- sourceParser(projectRef, projectContext, source)
       expandedResolved           <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
-      res                        <- eval(CreateSchema(iri, projectRef, source, compacted, expandedResolved, caller.subject), projectContext)
+      res                        <- eval(CreateSchema(iri, projectRef, source, compacted, expandedResolved, caller.subject))
     } yield res
   }.span("createSchema")
 
@@ -58,7 +57,7 @@ final class SchemasImpl private (
       iri                   <- expandIri(id, pc)
       (compacted, expanded) <- sourceParser(projectRef, pc, iri, source)
       expandedResolved      <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
-      res                   <- eval(CreateSchema(iri, projectRef, source, compacted, expandedResolved, caller.subject), pc)
+      res                   <- eval(CreateSchema(iri, projectRef, source, compacted, expandedResolved, caller.subject))
     } yield res
   }.span("createSchema")
 
@@ -74,7 +73,7 @@ final class SchemasImpl private (
       (compacted, expanded) <- sourceParser(projectRef, pc, iri, source)
       expandedResolved      <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
       res                   <-
-        eval(UpdateSchema(iri, projectRef, source, compacted, expandedResolved, rev, caller.subject), pc)
+        eval(UpdateSchema(iri, projectRef, source, compacted, expandedResolved, rev, caller.subject))
     } yield res
   }.span("updateSchema")
 
@@ -89,7 +88,7 @@ final class SchemasImpl private (
       (compacted, expanded) <- sourceParser(projectRef, pc, iri, schema.source)
       expandedResolved      <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
       res                   <-
-        eval(RefreshSchema(iri, projectRef, compacted, expandedResolved, schema.rev, caller.subject), pc)
+        eval(RefreshSchema(iri, projectRef, compacted, expandedResolved, schema.rev, caller.subject))
     } yield res
   }.span("refreshSchema")
 
@@ -103,7 +102,7 @@ final class SchemasImpl private (
     for {
       pc  <- fetchContext.onModify(projectRef)
       iri <- expandIri(id, pc)
-      res <- eval(TagSchema(iri, projectRef, tagRev, tag, rev, caller), pc)
+      res <- eval(TagSchema(iri, projectRef, tagRev, tag, rev, caller))
     } yield res
   }.span("tagSchema")
 
@@ -116,7 +115,7 @@ final class SchemasImpl private (
     (for {
       pc  <- fetchContext.onModify(projectRef)
       iri <- expandIri(id, pc)
-      res <- eval(DeleteSchemaTag(iri, projectRef, tag, rev, caller), pc)
+      res <- eval(DeleteSchemaTag(iri, projectRef, tag, rev, caller))
     } yield res).span("deleteSchemaTag")
 
   override def deprecate(
@@ -127,7 +126,7 @@ final class SchemasImpl private (
     (for {
       pc  <- fetchContext.onModify(projectRef)
       iri <- expandIri(id, pc)
-      res <- eval(DeprecateSchema(iri, projectRef, rev, caller), pc)
+      res <- eval(DeprecateSchema(iri, projectRef, rev, caller))
     } yield res).span("deprecateSchema")
 
   override def fetch(id: IdSegmentRef, projectRef: ProjectRef): IO[SchemaFetchRejection, SchemaResource] = {
@@ -141,11 +140,11 @@ final class SchemasImpl private (
                  case Tag(_, tag)      =>
                    log.stateOr(projectRef, iri, tag, SchemaNotFound(iri, projectRef), TagNotFound(tag))
                }
-    } yield state.toResource(pc.apiMappings, pc.base)
+    } yield state.toResource
   }.span("fetchSchema")
 
-  private def eval(cmd: SchemaCommand, pc: ProjectContext): IO[SchemaRejection, SchemaResource] =
-    log.evaluate(cmd.project, cmd.id, cmd).map(_._2.toResource(pc.apiMappings, pc.base))
+  private def eval(cmd: SchemaCommand): IO[SchemaRejection, SchemaResource] =
+    log.evaluate(cmd.project, cmd.id, cmd).map(_._2.toResource)
 }
 
 object SchemasImpl {

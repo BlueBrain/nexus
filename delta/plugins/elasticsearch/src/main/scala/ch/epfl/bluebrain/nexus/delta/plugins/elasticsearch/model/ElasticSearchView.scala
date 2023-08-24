@@ -279,7 +279,7 @@ object ElasticSearchView {
     ResourceShift.withMetadata[ElasticSearchViewState, ElasticSearchView, Metadata](
       ElasticSearchViews.entityType,
       (ref, project) => views.fetch(IdSegmentRef(ref), project),
-      (context, state) => state.toResource(context.apiMappings, context.base, defaultMapping, defaultSettings),
+      state => state.toResource(defaultMapping, defaultSettings),
       value => JsonLdContent(value, value.value.source, Some(value.value.metadata))
     )
 }

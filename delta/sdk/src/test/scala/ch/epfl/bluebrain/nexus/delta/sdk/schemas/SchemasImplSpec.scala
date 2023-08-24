@@ -100,21 +100,21 @@ class SchemasImplSpec
 
       "succeed with the id present on the payload" in {
         schemas.create(projectRef, source).accepted shouldEqual
-          SchemaGen.resourceFor(schema, subject = subject, am = am, base = projBase)
+          SchemaGen.resourceFor(schema, subject = subject)
       }
 
       "succeed with the id present on the payload and passed" in {
         val source = schemaSourceWithId(mySchema2)
         val schema = SchemaGen.schema(mySchema2, project.ref, source)
         schemas.create("myschema2", projectRef, source).accepted shouldEqual
-          SchemaGen.resourceFor(schema, subject = subject, am = am, base = projBase)
+          SchemaGen.resourceFor(schema, subject = subject)
       }
 
       "succeed with the passed id" in {
         val source = schemaSourceWithId(mySchema3)
         val schema = SchemaGen.schema(mySchema3, project.ref, source).copy(source = sourceNoId)
         schemas.create(mySchema3, projectRef, sourceNoId).accepted shouldEqual
-          SchemaGen.resourceFor(schema, subject = subject, am = am, base = projBase)
+          SchemaGen.resourceFor(schema, subject = subject)
       }
 
       "reject with different ids on the payload and passed" in {
@@ -148,7 +148,7 @@ class SchemasImplSpec
 
       "succeed" in {
         schemas.update(mySchema, projectRef, 1, sourceUpdated).accepted shouldEqual
-          SchemaGen.resourceFor(schemaUpdated, rev = 2, subject = subject, am = am, base = projBase)
+          SchemaGen.resourceFor(schemaUpdated, rev = 2, subject = subject)
       }
 
       "reject if it doesn't exists" in {
@@ -186,12 +186,12 @@ class SchemasImplSpec
 
       "create the schema for subsequent tests" in {
         schemas.create(projectRef, schemaSourceWithId(mySchema4)).accepted shouldEqual
-          SchemaGen.resourceFor(schema4, subject = subject, am = am, base = projBase)
+          SchemaGen.resourceFor(schema4, subject = subject)
       }
 
       "succeed" in {
         schemas.refresh(mySchema4, projectRef).accepted shouldEqual
-          SchemaGen.resourceFor(schema4, rev = 2, subject = subject, am = am, base = projBase)
+          SchemaGen.resourceFor(schema4, rev = 2, subject = subject)
       }
 
       "reject if it doesn't exists" in {
@@ -219,7 +219,7 @@ class SchemasImplSpec
         val schema = SchemaGen.schema(mySchema2, project.ref, schemaSourceWithId(mySchema2), tags = Tags(tag -> 1))
 
         schemas.tag(mySchema2, projectRef, tag, 1, 1).accepted shouldEqual
-          SchemaGen.resourceFor(schema, subject = subject, rev = 2, am = am, base = projBase)
+          SchemaGen.resourceFor(schema, subject = subject, rev = 2)
       }
 
       "reject if it doesn't exists" in {
@@ -240,8 +240,6 @@ class SchemasImplSpec
             schema,
             subject = subject,
             rev = 3,
-            am = am,
-            base = projBase,
             deprecated = true
           )
       }
@@ -266,7 +264,7 @@ class SchemasImplSpec
 
       "succeed" in {
         schemas.deprecate(mySchema, projectRef, 2).accepted shouldEqual
-          SchemaGen.resourceFor(schemaUpdated, subject = subject, rev = 3, deprecated = true, am = am, base = projBase)
+          SchemaGen.resourceFor(schemaUpdated, subject = subject, rev = 3, deprecated = true)
       }
 
       "reject if it doesn't exists" in {
@@ -298,17 +296,17 @@ class SchemasImplSpec
 
       "succeed" in {
         schemas.fetch(mySchema, projectRef).accepted shouldEqual
-          SchemaGen.resourceFor(schemaUpdated, rev = 3, deprecated = true, subject = subject, am = am, base = projBase)
+          SchemaGen.resourceFor(schemaUpdated, rev = 3, deprecated = true, subject = subject)
       }
 
       "succeed by tag" in {
         schemas.fetch(IdSegmentRef(mySchema2, tag), projectRef).accepted shouldEqual
-          SchemaGen.resourceFor(schema2, subject = subject, am = am, base = projBase)
+          SchemaGen.resourceFor(schema2, subject = subject)
       }
 
       "succeed by rev" in {
         schemas.fetch(IdSegmentRef(mySchema2, 1), projectRef).accepted shouldEqual
-          SchemaGen.resourceFor(schema2, subject = subject, am = am, base = projBase)
+          SchemaGen.resourceFor(schema2, subject = subject)
       }
 
       "reject if tag does not exist" in {
@@ -340,7 +338,7 @@ class SchemasImplSpec
         val sourceWithId = schemaSourceWithId(mySchema2)
         val schema       = SchemaGen.schema(mySchema2, project.ref, sourceWithId)
         schemas.deleteTag(mySchema2, projectRef, tag, 2).accepted shouldEqual
-          SchemaGen.resourceFor(schema, subject = subject, rev = 3, am = am, base = projBase)
+          SchemaGen.resourceFor(schema, subject = subject, rev = 3)
       }
       "reject if the schema doesn't exist" in {
         schemas.deleteTag(nxv + "other", projectRef, tag, 1).rejectedWith[SchemaNotFound]

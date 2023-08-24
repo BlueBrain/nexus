@@ -17,6 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceUris
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{events, resources, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
@@ -264,7 +265,11 @@ class SchemasRoutesSpec extends BaseRouteSpec {
       forAll(endpoints) { endpoint =>
         Get(endpoint) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
-          response.asJson shouldEqual jsonContentOf("schemas/schema-updated-response.json", "id" -> "nxv:myid")
+          response.asJson shouldEqual jsonContentOf(
+            "schemas/schema-updated-response.json",
+            "id"   -> "nxv:myid",
+            "self" -> ResourceUris.schema(projectRef, myId).accessUri
+          )
         }
       }
     }
@@ -285,7 +290,11 @@ class SchemasRoutesSpec extends BaseRouteSpec {
         forAll(List("rev=1", "tag=mytag")) { param =>
           Get(s"$endpoint?$param") ~> routes ~> check {
             status shouldEqual StatusCodes.OK
-            response.asJson shouldEqual jsonContentOf("schemas/schema-created-response.json", "id" -> "nxv:myid2")
+            response.asJson shouldEqual jsonContentOf(
+              "schemas/schema-created-response.json",
+              "id"   -> "nxv:myid2",
+              "self" -> ResourceUris.schema(projectRef, myId2).accessUri
+            )
           }
         }
       }
@@ -388,7 +397,7 @@ class SchemasRoutesSpec extends BaseRouteSpec {
   }
 
   private def schemaMetadata(
-      ref: ProjectRef,
+      project: ProjectRef,
       id: Iri,
       rev: Int = 1,
       deprecated: Boolean = false,
@@ -397,12 +406,12 @@ class SchemasRoutesSpec extends BaseRouteSpec {
   ): Json =
     jsonContentOf(
       "schemas/schema-route-metadata-response.json",
-      "project"    -> ref,
+      "project"    -> project,
       "id"         -> id,
       "rev"        -> rev,
       "deprecated" -> deprecated,
       "createdBy"  -> createdBy.asIri,
       "updatedBy"  -> updatedBy.asIri,
-      "label"      -> lastSegment(id)
+      "self"       -> ResourceUris.schema(project, id).accessUri
     )
 }

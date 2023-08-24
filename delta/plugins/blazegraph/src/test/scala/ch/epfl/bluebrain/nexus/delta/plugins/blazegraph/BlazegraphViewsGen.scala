@@ -2,9 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphViewState, BlazegraphViewValue, ViewResource}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectBase}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.Json
@@ -25,9 +23,7 @@ object BlazegraphViewsGen {
       deprecated: Boolean = false,
       tags: Tags = Tags.empty,
       createdBy: Subject = Anonymous,
-      updatedBy: Subject = Anonymous,
-      am: ApiMappings = ApiMappings.empty,
-      base: Iri = nxv.base
+      updatedBy: Subject = Anonymous
   ): ViewResource =
     BlazegraphViewState(
       id,
@@ -43,6 +39,5 @@ object BlazegraphViewsGen {
       createdBy,
       Instant.EPOCH,
       updatedBy
-    )
-      .toResource(am, ProjectBase.unsafe(base))
+    ).toResource
 }

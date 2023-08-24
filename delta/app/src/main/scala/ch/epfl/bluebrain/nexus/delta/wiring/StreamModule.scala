@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.wiring
 
 import cats.effect.{Clock, Sync}
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceShifts
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.ProjectContextCache
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{ProjectionConfig, QueryConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionErrors, Projections}
@@ -20,12 +19,11 @@ object StreamModule extends ModuleDef {
 
   make[GraphResourceStream].from {
     (
-        contextCache: ProjectContextCache,
         qc: QueryConfig,
         xas: Transactors,
         shifts: ResourceShifts
     ) =>
-      GraphResourceStream(contextCache.fetchContext, qc, xas, shifts)
+      GraphResourceStream(qc, xas, shifts)
   }
 
   many[PipeDef].add(DiscardMetadata)

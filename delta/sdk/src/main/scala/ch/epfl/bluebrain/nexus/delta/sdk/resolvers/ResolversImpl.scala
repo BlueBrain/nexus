@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.resolvers
 
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
+import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
@@ -11,13 +12,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceResolvingDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef.{Latest, Revision, Tag}
-import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, IdSegmentRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.Resolvers.{entityType, expandIri}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolversImpl.ResolversLog
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverCommand.{CreateResolver, DeprecateResolver, TagResolver, UpdateResolver}
@@ -28,7 +27,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, ProjectRef}
 import doobie.implicits._
 import io.circe.Json
-import monix.bio.{IO, Task, UIO}
+import monix.bio.{IO, UIO}
 
 final class ResolversImpl private (
     log: ResolversLog,
@@ -45,7 +44,7 @@ final class ResolversImpl private (
     for {
       pc                   <- fetchContext.onCreate(projectRef)
       (iri, resolverValue) <- sourceDecoder(projectRef, pc, source)
-      res                  <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller), pc)
+      res                  <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller))
     } yield res
   }.span("createResolver")
 
@@ -58,7 +57,7 @@ final class ResolversImpl private (
       pc            <- fetchContext.onCreate(projectRef)
       iri           <- expandIri(id, pc)
       resolverValue <- sourceDecoder(projectRef, pc, iri, source)
-      res           <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller), pc)
+      res           <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller))
     } yield res
   }.span("createResolver")
 
@@ -71,7 +70,7 @@ final class ResolversImpl private (
       pc    <- fetchContext.onCreate(projectRef)
       iri   <- expandIri(id, pc)
       source = ResolverValue.generateSource(iri, resolverValue)
-      res   <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller), pc)
+      res   <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller))
     } yield res
   }.span("createResolver")
 
@@ -85,7 +84,7 @@ final class ResolversImpl private (
       pc            <- fetchContext.onModify(projectRef)
       iri           <- expandIri(id, pc)
       resolverValue <- sourceDecoder(projectRef, pc, iri, source)
-      res           <- eval(UpdateResolver(iri, projectRef, resolverValue, source, rev, caller), pc)
+      res           <- eval(UpdateResolver(iri, projectRef, resolverValue, source, rev, caller))
     } yield res
   }.span("updateResolver")
 
@@ -101,7 +100,7 @@ final class ResolversImpl private (
       pc    <- fetchContext.onModify(projectRef)
       iri   <- expandIri(id, pc)
       source = ResolverValue.generateSource(iri, resolverValue)
-      res   <- eval(UpdateResolver(iri, projectRef, resolverValue, source, rev, caller), pc)
+      res   <- eval(UpdateResolver(iri, projectRef, resolverValue, source, rev, caller))
     } yield res
   }.span("updateResolver")
 
@@ -117,7 +116,7 @@ final class ResolversImpl private (
     for {
       pc  <- fetchContext.onModify(projectRef)
       iri <- expandIri(id, pc)
-      res <- eval(TagResolver(iri, projectRef, tagRev, tag, rev, subject), pc)
+      res <- eval(TagResolver(iri, projectRef, tagRev, tag, rev, subject))
     } yield res
   }.span("tagResolver")
 
@@ -129,7 +128,7 @@ final class ResolversImpl private (
     for {
       pc  <- fetchContext.onModify(projectRef)
       iri <- expandIri(id, pc)
-      res <- eval(DeprecateResolver(iri, projectRef, rev, subject), pc)
+      res <- eval(DeprecateResolver(iri, projectRef, rev, subject))
     } yield res
   }.span("deprecateResolver")
 
@@ -145,7 +144,7 @@ final class ResolversImpl private (
                    case Tag(_, tag)      =>
                      log.stateOr(projectRef, iri, tag, notFound, TagNotFound(tag))
                  }
-    } yield state.toResource(pc.apiMappings, pc.base)
+    } yield state.toResource
   }.span("fetchResolver")
 
   def list(
@@ -155,24 +154,14 @@ final class ResolversImpl private (
   ): UIO[UnscoredSearchResults[ResolverResource]] = {
     val scope = params.project.fold[Scope](Scope.Root)(ref => Scope.Project(ref))
     SearchResults(
-      log.currentStates(scope, identity(_)).evalMapFilter[Task, ResolverResource] { state =>
-        fetchContext.cacheOnReads
-          .onRead(state.project)
-          .redeemWith(
-            _ => UIO.none,
-            pc => {
-              val res = state.toResource(pc.apiMappings, pc.base)
-              params.matches(res).map(Option.when(_)(res))
-            }
-          )
-      },
+      log.currentStates(scope, _.toResource).evalFilter(params.matches),
       pagination,
       ordering
     ).span("listResolvers")
   }
 
-  private def eval(cmd: ResolverCommand, pc: ProjectContext): IO[ResolverRejection, ResolverResource] =
-    log.evaluate(cmd.project, cmd.id, cmd).map(_._2.toResource(pc.apiMappings, pc.base))
+  private def eval(cmd: ResolverCommand): IO[ResolverRejection, ResolverResource] =
+    log.evaluate(cmd.project, cmd.id, cmd).map(_._2.toResource)
 }
 
 object ResolversImpl {

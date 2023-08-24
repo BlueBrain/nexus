@@ -197,7 +197,7 @@ object BlazegraphView {
     ResourceShift.withMetadata[BlazegraphViewState, BlazegraphView, Metadata](
       BlazegraphViews.entityType,
       (ref, project) => views.fetch(IdSegmentRef(ref), project),
-      (context, state) => state.toResource(context.apiMappings, context.base),
+      state => state.toResource,
       value => JsonLdContent(value, value.value.source, Some(value.value.metadata))
     )
 }

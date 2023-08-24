@@ -111,12 +111,10 @@ class ArchivesSpec
       resource.rev shouldEqual 1L
 
       val id        = resource.id
-      val uuid      = id.toString.substring(id.toString.lastIndexOf('/') + 1)
       val encodedId = URLEncoder.encode(id.toString, StandardCharsets.UTF_8)
       resource.uris shouldEqual EphemeralResourceInProjectUris(
         project.ref,
-        s"archives/${project.ref}/$encodedId",
-        s"archives/${project.ref}/$uuid"
+        s"archives/${project.ref}/$encodedId"
       )
     }
 
@@ -196,12 +194,10 @@ class ArchivesSpec
       val resource = archives.create(project.ref, value).accepted
 
       val id        = resource.id
-      val uuid      = id.toString.substring(id.toString.lastIndexOf('/') + 1)
       val encodedId = URLEncoder.encode(id.toString, StandardCharsets.UTF_8)
       resource.uris shouldEqual EphemeralResourceInProjectUris(
         project.ref,
-        s"archives/${project.ref}/$encodedId",
-        s"archives/${project.ref}/$uuid"
+        s"archives/${project.ref}/$encodedId"
       )
 
       resource.id shouldEqual id
@@ -237,13 +233,11 @@ class ArchivesSpec
       archives.create(id, project.ref, value).accepted
 
       val resource  = archives.fetch(id, project.ref).accepted
-      val uuid      = id.toString.substring(id.toString.lastIndexOf('/') + 1)
       val encodedId = URLEncoder.encode(id.toString, StandardCharsets.UTF_8)
       resource.id shouldEqual id
       resource.uris shouldEqual EphemeralResourceInProjectUris(
         project.ref,
-        s"archives/${project.ref}/$encodedId",
-        s"archives/${project.ref}/$uuid"
+        s"archives/${project.ref}/$encodedId"
       )
       resource.createdBy shouldEqual bob
       resource.updatedBy shouldEqual bob

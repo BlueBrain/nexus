@@ -7,14 +7,14 @@
   "_total": 1,
   "_results": [
     {
-      "@id": "https://bluebrain.github.io/nexus/vocabulary/defaultInProject",
+      "@id": "{{id}}",
       "@type": [
         "Resolver",
         "InProject"
       ],
-      "_incoming": "{{deltaUri}}/resolvers/{{project-label}}/defaultResolver/incoming",
-      "_outgoing": "{{deltaUri}}/resolvers/{{project-label}}/defaultResolver/outgoing",
-      "_self": "{{deltaUri}}/resolvers/{{project-label}}/defaultResolver",
+      "_incoming": "{{self}}/incoming",
+      "_outgoing": "{{self}}/outgoing",
+      "_self": "{{self}}",
       "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/resolvers.json",
       "_project": "{{project}}",
       "name" : "Default resolver",

@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
+import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.ioContentOf
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.{Aux, SparqlResultsJson}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client._
@@ -15,13 +16,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress.{Project => Proje
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
-import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectBase}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.View.{AggregateView, IndexingView}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.{ViewRef, ViewsStore}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
@@ -109,7 +108,7 @@ object BlazegraphViewsQuery {
                                      BlazegraphViews.entityType,
                                      BlazegraphViewState.serializer,
                                      defaultViewId,
-                                     views.fetchState(_, _).map(_._2),
+                                     views.fetchState,
                                      view =>
                                        IO.raiseWhen(view.deprecated)(ViewIsDeprecated(view.id)).as {
                                          view.value match {
@@ -146,7 +145,7 @@ object BlazegraphViewsQuery {
           iri      <- expandIri(id, p)
           q         = SparqlQuery(replace(incomingQuery, iri, pagination))
           bindings <- query(IriSegment(defaultViewId), projectRef, q, SparqlResultsJson)
-          links     = toSparqlLinks(bindings.value, p.apiMappings, p.base)
+          links     = toSparqlLinks(bindings.value)
         } yield links
 
       override def outgoing(
@@ -161,7 +160,7 @@ object BlazegraphViewsQuery {
           queryTemplate = if (includeExternalLinks) outgoingWithExternalQuery else outgoingScopedQuery
           q             = SparqlQuery(replace(queryTemplate, iri, pagination))
           bindings     <- query(IriSegment(defaultViewId), projectRef, q, SparqlResultsJson)
-          links         = toSparqlLinks(bindings.value, p.apiMappings, p.base)
+          links         = toSparqlLinks(bindings.value)
         } yield links
 
       override def query[R <: SparqlQueryResponse](
@@ -192,14 +191,14 @@ object BlazegraphViewsQuery {
                      )
         } yield qr
 
-      private def toSparqlLinks(sparqlResults: SparqlResults, mappings: ApiMappings, projectBase: ProjectBase)(implicit
+      private def toSparqlLinks(sparqlResults: SparqlResults)(implicit
           base: BaseUri
       ): SearchResults[SparqlLink] = {
         val (count, results) =
           sparqlResults.results.bindings
             .foldLeft((0L, List.empty[SparqlLink])) { case ((total, acc), bindings) =>
               val newTotal = bindings.get("total").flatMap(v => v.value.toLongOption).getOrElse(total)
-              val res      = (SparqlResourceLink(bindings, mappings, projectBase) orElse SparqlExternalLink(bindings))
+              val res      = (SparqlResourceLink(bindings) orElse SparqlExternalLink(bindings))
                 .map(_ :: acc)
                 .getOrElse(acc)
               (newTotal, res)

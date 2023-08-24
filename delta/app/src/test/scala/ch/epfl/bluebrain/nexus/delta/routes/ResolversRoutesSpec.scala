@@ -7,7 +7,6 @@ import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas}
-import ch.epfl.bluebrain.nexus.delta.sdk.{Defaults, IndexingAction}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
@@ -16,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceUris
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
@@ -23,10 +23,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers._
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverType.{CrossProject, InProject}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{ResolverRejection, ResolverType, ResourceResolutionReport}
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.Resource
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
+import ch.epfl.bluebrain.nexus.delta.sdk.{Defaults, IndexingAction}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
@@ -45,13 +45,12 @@ class ResolversRoutesSpec extends BaseRouteSpec {
   private val asAlice = addCredentials(OAuth2BearerToken(alice.subject))
   private val asBob   = addCredentials(OAuth2BearerToken(bob.subject))
 
-  private val org                = Label.unsafe("org")
-  private val defaultApiMappings = Resources.mappings
-  private val am                 = ApiMappings("nxv" -> nxv.base, "Person" -> schema.Person, "resolver" -> schemas.resolvers)
-  private val projBase           = nxv.base
-  private val project            =
+  private val org      = Label.unsafe("org")
+  private val am       = ApiMappings("nxv" -> nxv.base, "Person" -> schema.Person, "resolver" -> schemas.resolvers)
+  private val projBase = nxv.base
+  private val project  =
     ProjectGen.project("org", "project", uuid = uuid, orgUuid = uuid, base = projBase, mappings = am)
-  private val project2           =
+  private val project2 =
     ProjectGen.project("org", "project2", uuid = uuid, orgUuid = uuid, base = projBase, mappings = am)
 
   private val identities = IdentitiesDummy(
@@ -67,7 +66,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
   private val resourceId = nxv + "resource"
   private val resource   =
     ResourceGen.resource(resourceId, project.ref, jsonContentOf("resources/resource.json", "id" -> resourceId))
-  private val resourceFR = ResourceGen.resourceFor(resource, types = Set(nxv + "Custom"), am = defaultApiMappings)
+  private val resourceFR = ResourceGen.resourceFor(resource, types = Set(nxv + "Custom"))
 
   private val schemaId       = nxv + "schemaId"
   private val schemaResource = SchemaGen.schema(
@@ -724,13 +723,23 @@ class ResolversRoutesSpec extends BaseRouteSpec {
     val idSchemaEncoded        = UrlUtils.encode(schemaId.toString)
     val unknownResourceEncoded = UrlUtils.encode((nxv + "xxx").toString)
 
+    val resourceResolved = jsonContentOf(
+      "resolvers/resource-resolved.json",
+      "self" -> ResourceUris.resource(project.ref, project.ref, resourceId).accessUri
+    )
+
+    val schemaResolved = jsonContentOf(
+      "resolvers/schema-resolved.json",
+      "self" -> ResourceUris.schema(project.ref, schemaId).accessUri
+    )
+
     "resolve the resources/schemas" should {
       "succeed as a resource for the given id" in {
         // First we resolve with a in-project resolver, the second one with a cross-project resolver
         forAll(List(project, project2)) { p =>
           Get(s"/v1/resolvers/${p.ref}/_/$idResourceEncoded") ~> asAlice ~> routes ~> check {
             response.status shouldEqual StatusCodes.OK
-            response.asJson shouldEqual jsonContentOf("resolvers/resource-resolved.json")
+            response.asJson shouldEqual resourceResolved
           }
         }
       }
@@ -747,7 +756,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
           case (p, resolver) =>
             Get(s"/v1/resolvers/${p.ref}/$resolver/$idResourceEncoded") ~> asAlice ~> routes ~> check {
               response.status shouldEqual StatusCodes.OK
-              response.asJson shouldEqual jsonContentOf("resolvers/resource-resolved.json")
+              response.asJson shouldEqual resourceResolved
             }
         }
       }
@@ -766,7 +775,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
         forAll(List(project, project2)) { p =>
           Get(s"/v1/resolvers/${p.ref}/_/$idSchemaEncoded?rev=5") ~> asAlice ~> routes ~> check {
             response.status shouldEqual StatusCodes.OK
-            response.asJson shouldEqual jsonContentOf("resolvers/schema-resolved.json")
+            response.asJson shouldEqual schemaResolved
           }
         }
       }
@@ -783,7 +792,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
           case (p, resolver) =>
             Get(s"/v1/resolvers/${p.ref}/$resolver/$idSchemaEncoded?rev=5") ~> asAlice ~> routes ~> check {
               response.status shouldEqual StatusCodes.OK
-              response.asJson shouldEqual jsonContentOf("resolvers/schema-resolved.json")
+              response.asJson shouldEqual schemaResolved
             }
         }
       }
@@ -849,6 +858,6 @@ class ResolversRoutesSpec extends BaseRouteSpec {
       "createdBy"  -> createdBy.asIri,
       "updatedBy"  -> updatedBy.asIri,
       "type"       -> resolverType,
-      "label"      -> lastSegment(id)
+      "self"       -> ResourceUris.resolver(projectRef, id).accessUri
     )
 }

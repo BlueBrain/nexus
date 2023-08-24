@@ -169,7 +169,7 @@
       {
         "object": {
           "type": "uri",
-          "value": "{{deltaUri}}/files/{{project}}/attachment.json"
+          "value": "{{self}}"
         },
         "predicate": {
           "type": "uri",
@@ -183,7 +183,7 @@
       {
         "object": {
           "type": "uri",
-          "value": "{{deltaUri}}/files/{{project}}/attachment.json/incoming"
+          "value": "{{self}}/incoming"
         },
         "predicate": {
           "type": "uri",
@@ -197,7 +197,7 @@
       {
         "object": {
           "type": "uri",
-          "value": "{{deltaUri}}/files/{{project}}/attachment.json/outgoing"
+          "value": "{{self}}/outgoing"
         },
         "predicate": {
           "type": "uri",

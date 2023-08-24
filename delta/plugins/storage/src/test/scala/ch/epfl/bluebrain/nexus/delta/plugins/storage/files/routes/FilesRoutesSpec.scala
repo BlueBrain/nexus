@@ -4,18 +4,20 @@ import akka.actor.typed
 import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
 import akka.http.scaladsl.model.MediaRanges._
 import akka.http.scaladsl.model.MediaTypes.`text/html`
-import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept, Location, OAuth2BearerToken}
+import akka.http.scaladsl.model.headers.{Accept, Location, OAuth2BearerToken}
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutesSpec.fileMetadata
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{permissions, FileFixtures, Files, FilesConfig}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts => fileContexts, permissions, FileFixtures, Files, FilesConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{StorageRejection, StorageStatEntry, StorageType}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{permissions => storagesPermissions, StorageFixtures, Storages, StoragesConfig, StoragesStatistics}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{contexts => storageContexts, permissions => storagesPermissions, StorageFixtures, Storages, StoragesConfig, StoragesStatistics}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes.`application/ld+json`
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
@@ -24,7 +26,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{Caller, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
@@ -36,16 +38,27 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, Resource
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
 import monix.bio.IO
-import monix.execution.Scheduler
 import org.scalatest._
 
-@DoNotDiscover
 class FilesRoutesSpec extends BaseRouteSpec with CancelAfterFailure with StorageFixtures with FileFixtures {
 
-  implicit private val sc: Scheduler                   = Scheduler.global
   import akka.actor.typed.scaladsl.adapter._
   implicit val typedSystem: typed.ActorSystem[Nothing] = system.toTyped
-  implicit val httpClient: HttpClient                  = HttpClient()(httpClientConfig, system, sc)
+  implicit val httpClient: HttpClient                  = HttpClient()(httpClientConfig, system, s)
+
+  // TODO: sort out how we handle this in tests
+  implicit override def rcr: RemoteContextResolution = {
+    implicit val cl: ClassLoader = getClass.getClassLoader
+    RemoteContextResolution.fixed(
+      storageContexts.storages         -> ContextValue.fromFile("/contexts/storages.json").accepted,
+      storageContexts.storagesMetadata -> ContextValue.fromFile("/contexts/storages-metadata.json").accepted,
+      fileContexts.files               -> ContextValue.fromFile("/contexts/files.json").accepted,
+      Vocabulary.contexts.metadata     -> ContextValue.fromFile("contexts/metadata.json").accepted,
+      Vocabulary.contexts.error        -> ContextValue.fromFile("contexts/error.json").accepted,
+      Vocabulary.contexts.tags         -> ContextValue.fromFile("contexts/tags.json").accepted,
+      Vocabulary.contexts.search       -> ContextValue.fromFile("contexts/search.json").accepted
+    )
+  }
 
   implicit private val caller: Caller =
     Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
@@ -83,7 +96,7 @@ class FilesRoutesSpec extends BaseRouteSpec with CancelAfterFailure with Storage
     IO.pure(allowedPerms.toSet),
     (_, _) => IO.unit,
     xas,
-    StoragesConfig(eventLogConfig, pagination, config),
+    StoragesConfig(eventLogConfig, pagination, stCfg),
     ServiceAccount(User("nexus-sa", Label.unsafe("sa")))
   ).accepted
   lazy val files: Files       = Files(
@@ -143,7 +156,7 @@ class FilesRoutesSpec extends BaseRouteSpec with CancelAfterFailure with Storage
       Put("/v1/files/org/proj/file1", payload.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual
-          jsonContentOf("files/errors/unsupported-operation.json", "id" -> file1, "storages" -> dId)
+          jsonContentOf("files/errors/unsupported-operation.json", "id" -> file1, "storageId" -> dId)
       }
     }
 
@@ -216,7 +229,7 @@ class FilesRoutesSpec extends BaseRouteSpec with CancelAfterFailure with Storage
       Put("/v1/files/org/proj/file1?rev=3", payload.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual
-          jsonContentOf("files/errors/unsupported-operation.json", "id" -> file1, "storages" -> dId)
+          jsonContentOf("files/errors/unsupported-operation.json", "id" -> file1, "storageId" -> dId)
       }
     }
 
@@ -436,15 +449,6 @@ class FilesRoutesSpec extends BaseRouteSpec with CancelAfterFailure with Storage
       }
     }
 
-    "fail to get the events stream without events/read permission" in {
-      forAll(List("/v1/files/events", "/v1/files/myorg/events", "/v1/files/org/proj/events")) { endpoint =>
-        Get(endpoint) ~> `Last-Event-ID`("2") ~> routes ~> check {
-          response.status shouldEqual StatusCodes.Forbidden
-          response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
-        }
-      }
-    }
-
     "redirect to fusion for the latest version if the Accept header is set to text/html" in {
       Get("/v1/files/org/project/file1") ~> Accept(`text/html`) ~> routes ~> check {
         response.status shouldEqual StatusCodes.SeeOther
@@ -457,7 +461,7 @@ class FilesRoutesSpec extends BaseRouteSpec with CancelAfterFailure with Storage
 object FilesRoutesSpec extends TestHelpers with RouteFixtures {
 
   def fileMetadata(
-      ref: ProjectRef,
+      project: ProjectRef,
       id: Iri,
       attributes: FileAttributes,
       storage: ResourceRef.Revision,
@@ -465,12 +469,11 @@ object FilesRoutesSpec extends TestHelpers with RouteFixtures {
       rev: Int = 1,
       deprecated: Boolean = false,
       createdBy: Subject = Anonymous,
-      updatedBy: Subject = Anonymous,
-      label: Option[String] = None
+      updatedBy: Subject = Anonymous
   )(implicit baseUri: BaseUri): Json =
     jsonContentOf(
       "files/file-route-metadata-response.json",
-      "project"     -> ref,
+      "project"     -> project,
       "id"          -> id,
       "rev"         -> rev,
       "storage"     -> storage.iri,
@@ -487,7 +490,7 @@ object FilesRoutesSpec extends TestHelpers with RouteFixtures {
       "createdBy"   -> createdBy.asIri,
       "updatedBy"   -> updatedBy.asIri,
       "type"        -> storageType,
-      "label"       -> label.fold(lastSegment(id))(identity)
+      "self"        -> ResourceUris("files", project, id).accessUri
     )
 
 }
