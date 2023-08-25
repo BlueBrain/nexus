@@ -1,9 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
-import akka.http.scaladsl.model.{StatusCodes, Uri}
+import akka.http.scaladsl.model.{StatusCode, StatusCodes, Uri}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive1, Route}
 import cats.data.NonEmptySet
+import cats.effect.IO
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
@@ -50,6 +51,13 @@ class RealmsRoutes(identities: Identities, realms: Realms, aclCheck: AclCheck)(i
       RealmSearchParams(None, deprecated, rev, createdBy, updatedBy)
     }
 
+  private def emitCE(io: IO[RealmResource]): Route = emit(io.toBIO[RealmRejection])
+
+  private def emitMetadata(statusCode: StatusCode, io: IO[RealmResource]): Route =
+    emit(statusCode, io.toBIO[RealmRejection].mapValue(_.metadata))
+
+  private def emitMetadata(io: IO[RealmResource]): Route = emitMetadata(StatusCodes.OK, io)
+
   def routes: Route =
     baseUriPrefix(baseUri.prefix) {
       pathPrefix("realms") {
@@ -80,20 +88,15 @@ class RealmsRoutes(identities: Identities, realms: Realms, aclCheck: AclCheck)(i
                         case Some(rev) =>
                           // Update a realm
                           entity(as[RealmInput]) { case RealmInput(name, openIdConfig, logo, acceptedAudiences) =>
-                            val result = realms
-                              .update(id, rev, name, openIdConfig, logo, acceptedAudiences)
-                              .toBIO[RealmRejection]
-                              .mapValue(_.metadata)
-                            emit(result)
+                            emitMetadata(realms.update(id, rev, name, openIdConfig, logo, acceptedAudiences))
                           }
                         case None      =>
                           // Create a realm
                           entity(as[RealmInput]) { case RealmInput(name, openIdConfig, logo, acceptedAudiences) =>
-                            val result = realms
-                              .create(id, name, openIdConfig, logo, acceptedAudiences)
-                              .toBIO[RealmRejection]
-                              .mapValue(_.metadata)
-                            emit(StatusCodes.Created, result)
+                            emitMetadata(
+                              StatusCodes.Created,
+                              realms.create(id, name, openIdConfig, logo, acceptedAudiences)
+                            )
                           }
                       }
                     }
@@ -103,9 +106,9 @@ class RealmsRoutes(identities: Identities, realms: Realms, aclCheck: AclCheck)(i
                     authorizeFor(AclAddress.Root, realmsPermissions.read).apply {
                       parameter("rev".as[Int].?) {
                         case Some(rev) => // Fetch realm at specific revision
-                          emit(realms.fetchAt(id, rev).toBIO[RealmRejection])
+                          emitCE(realms.fetchAt(id, rev))
                         case None      => // Fetch realm
-                          emit(realms.fetch(id).toBIO[RealmRejection])
+                          emitCE(realms.fetch(id))
                       }
                     }
                   },
@@ -113,7 +116,7 @@ class RealmsRoutes(identities: Identities, realms: Realms, aclCheck: AclCheck)(i
                   delete {
                     authorizeFor(AclAddress.Root, realmsPermissions.write).apply {
                       parameter("rev".as[Int]) { rev =>
-                        emit(realms.deprecate(id, rev).toBIO[RealmRejection].mapValue(_.metadata))
+                        emitMetadata(realms.deprecate(id, rev))
                       }
                     }
                   }
