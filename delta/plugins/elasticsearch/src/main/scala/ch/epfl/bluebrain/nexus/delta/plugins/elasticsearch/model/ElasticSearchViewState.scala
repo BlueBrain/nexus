@@ -5,6 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchVi
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceUris, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.IndexingRev
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
@@ -55,7 +56,7 @@ final case class ElasticSearchViewState(
     source: Json,
     tags: Tags,
     rev: Int,
-    indexingRev: Int,
+    indexingRev: IndexingRev,
     deprecated: Boolean,
     createdAt: Instant,
     createdBy: Subject,
@@ -94,8 +95,7 @@ final case class ElasticSearchViewState(
         context = context,
         permission = permission,
         tags = tags,
-        source = source,
-        indexingRev = indexingRev
+        source = source
       )
     case AggregateElasticSearchViewValue(name, description, views) =>
       AggregateElasticSearchView(

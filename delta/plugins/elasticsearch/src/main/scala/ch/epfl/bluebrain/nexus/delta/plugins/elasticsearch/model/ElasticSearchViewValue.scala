@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 
+import cats.syntax.all._
 import cats.data.{NonEmptyChain, NonEmptySet}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.IndexingElasticSearchViewValue
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.IndexingElasticSearchViewValue.defaultPipeline
@@ -8,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.views.{PipeStep, ViewRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, PipeStep, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{DefaultLabelPredicates, DiscardMetadata, FilterDeprecated}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeChain, PipeRef}
@@ -135,12 +136,17 @@ object ElasticSearchViewValue {
       *   the next indexing revision based on the differences between the given views
       */
     def nextIndexingRev(
-        view1: IndexingElasticSearchViewValue,
-        view2: IndexingElasticSearchViewValue,
-        currentRev: Int
-    ): Int =
-      if (!view1.hasSameIndexingFields(view2)) currentRev + 1
-      else currentRev
+        view1: ElasticSearchViewValue,
+        view2: ElasticSearchViewValue,
+        currentIndexingRev: IndexingRev,
+        newEventRev: Int
+    ): IndexingRev =
+      (view1.asIndexingValue, view2.asIndexingValue)
+        .mapN { case (v1, v2) =>
+          if (!v1.hasSameIndexingFields(v2)) IndexingRev(newEventRev)
+          else currentIndexingRev
+        }
+        .getOrElse(currentIndexingRev)
   }
 
   /**
