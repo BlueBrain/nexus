@@ -18,9 +18,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.realms.{RealmsConfig, RealmsImpl}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.testkit.ce.{IOFixedClock, IOFromMap}
 import io.circe.Json
 
-class RealmsRoutesSpec extends BaseRouteSpec {
+class RealmsRoutesSpec extends BaseRouteSpec with IOFromMap with IOFixedClock {
 
   val (github, gitlab)         = (Label.unsafe("github"), Label.unsafe("gitlab"))
   val (githubName, gitlabName) = (Name.unsafe("github-name"), Name.unsafe("gitlab-name"))
@@ -34,7 +35,7 @@ class RealmsRoutesSpec extends BaseRouteSpec {
 
   private lazy val realms = RealmsImpl(
     config,
-    ioFromMap(
+    ceFromMap(
       Map(githubOpenId -> githubWk, gitlabOpenId -> gitlabWk),
       (uri: Uri) => UnsuccessfulOpenIdConfigResponse(uri)
     ),

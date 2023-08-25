@@ -22,7 +22,7 @@ class RealmsEvaluateSuite extends CatsEffectSuite with IOFromMap with IOFixedClo
   private val name: Name           = Name.unsafe(s"$issuer-name")
   private val (wellKnownUri, wk)   = WellKnownGen.create(issuer)
   private val (wellKnown2Uri, wk2) = WellKnownGen.create("myrealm2")
-  private val wkResolution         = ioFromMap(
+  private val wkResolution         = ceFromMap(
     Map(wellKnownUri -> wk, wellKnown2Uri -> wk2),
     (uri: Uri) => UnsuccessfulOpenIdConfigResponse(uri)
   )

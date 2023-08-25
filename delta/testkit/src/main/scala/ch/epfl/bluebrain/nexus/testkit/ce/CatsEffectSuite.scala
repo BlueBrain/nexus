@@ -6,6 +6,8 @@ import ch.epfl.bluebrain.nexus.testkit.bio.{CollectionAssertions, EitherAssertio
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
+import monix.bio.{IO => BIO}
+import monix.execution.Scheduler
 
 abstract class CatsEffectSuite
     extends NexusSuite
@@ -13,19 +15,39 @@ abstract class CatsEffectSuite
     with StreamAssertions
     with CollectionAssertions
     with EitherAssertions {
-
-  implicit protected val classLoader: ClassLoader       = getClass.getClassLoader
-  implicit protected val contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
-  implicit protected val timer: Timer[IO]               = IO.timer(ExecutionContext.global)
-
   protected val ioTimeout: FiniteDuration = 45.seconds
 
   override def munitValueTransforms: List[ValueTransform] =
-    super.munitValueTransforms ++ List(munitIOTransform)
+    super.munitValueTransforms ++ List(munitIOTransform, munitBIOTransform)
 
-  private val munitIOTransform: ValueTransform =
+  private val munitIOTransform: ValueTransform = {
+    implicit val contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
+    implicit val timer: Timer[IO]               = IO.timer(ExecutionContext.global)
+
     new ValueTransform(
       "IO",
-      { case io: IO[_] => io.timeout(ioTimeout).unsafeToFuture() }
+      { case io: IO[_] =>
+        io.timeout(ioTimeout).unsafeToFuture()
+      }
     )
+  }
+
+  private val munitBIOTransform: ValueTransform = {
+    implicit val scheduler: Scheduler = Scheduler.global
+    new ValueTransform(
+      "BIO",
+      { case io: BIO[_, _] =>
+        io.timeout(ioTimeout)
+          .mapError {
+            case t: Throwable => t
+            case other        =>
+              fail(
+                s"""Error caught of type '${other.getClass.getName}', expected a successful response
+                   |Error value: $other""".stripMargin
+              )
+          }
+          .runToFuture
+      }
+    )
+  }
 }

@@ -10,7 +10,7 @@ trait IOFromMap {
     * @param values
     *   (key/value) giving the expected result for the given parameter
     */
-  final def ioFromMap[A, B](values: (A, B)*): A => IO[Option[B]] =
+  final def ceFromMap[A, B](values: (A, B)*): A => IO[Option[B]] =
     (a: A) => IO.pure(values.toMap.get(a))
 
   /**
@@ -21,7 +21,7 @@ trait IOFromMap {
     * @param ifAbsent
     *   which error to return if the parameter can't be found
     */
-  final def ioFromMap[A, B, C <: Throwable](map: Map[A, B], ifAbsent: A => C): A => IO[B] =
+  final def ceFromMap[A, B, C <: Throwable](map: Map[A, B], ifAbsent: A => C): A => IO[B] =
     (a: A) => IO.fromOption(map.get(a))(ifAbsent(a))
 
 }

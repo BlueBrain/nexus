@@ -4,6 +4,8 @@ import munit.FunSuite
 
 class NexusSuite extends FunSuite {
 
+  implicit protected val classLoader: ClassLoader = getClass.getClassLoader
+
   protected def group(name: String)(thunk: => Unit): Unit = {
     val countBefore     = munitTestsBuffer.size
     val _               = thunk
