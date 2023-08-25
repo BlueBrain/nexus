@@ -1,8 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
+import akka.http.scaladsl.model.StatusCode
 import akka.http.scaladsl.model.StatusCodes.{Created, OK}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
+import cats.effect.IO
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas.shacl
@@ -27,6 +29,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.{Schema, SchemaRejection}
 import io.circe.{Json, Printer}
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.execution.Scheduler
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 
 /**
   * The schemas routes
@@ -64,6 +67,17 @@ final class SchemasRoutes(
   implicit private def resourceFAJsonLdEncoder[A: JsonLdEncoder]: JsonLdEncoder[ResourceF[A]] =
     ResourceF.resourceFAJsonLdEncoder(ContextValue(contexts.schemasMetadata))
 
+  private def triggerIndexing(io: IO[SchemaResource], indexingMode: IndexingMode) =
+    io.toBIO[SchemaRejection].tapEval { schema => index(schema.value.project, schema, indexingMode) }.map(_.void)
+
+  private def emitIndex(status: StatusCode, io: IO[SchemaResource], indexingMode: IndexingMode): Route =
+    emit(status, triggerIndexing(io, indexingMode))
+
+  private def emitIndex(io: IO[SchemaResource], indexingMode: IndexingMode): Route = emitIndex(OK, io, indexingMode)
+
+  private def emitIndexRejectOnNotFound(io: IO[SchemaResource], indexingMode: IndexingMode): Route =
+    emit(triggerIndexing(io, indexingMode).rejectOn[SchemaNotFound])
+
   def routes: Route =
     (baseUriPrefix(baseUri.prefix) & replaceUri("schemas", shacl)) {
       pathPrefix("schemas") {
@@ -74,7 +88,7 @@ final class SchemasRoutes(
               (post & pathEndOrSingleSlash & noParameter("rev") & entity(as[Json]) & indexingMode) { (source, mode) =>
                 operationName(s"$prefixSegment/schemas/{org}/{project}") {
                   authorizeFor(ref, Write).apply {
-                    emit(Created, schemas.create(ref, source).tapEval(index(ref, _, mode)).map(_.void))
+                    emitIndex(Created, schemas.create(ref, source), mode)
                   }
                 }
               },
@@ -89,26 +103,17 @@ final class SchemasRoutes(
                             (parameter("rev".as[Int].?) & pathEndOrSingleSlash & entity(as[Json])) {
                               case (None, source)      =>
                                 // Create a schema with id segment
-                                emit(
-                                  Created,
-                                  schemas.create(id, ref, source).tapEval(index(ref, _, mode)).map(_.void)
-                                )
+                                emitIndex(Created, schemas.create(id, ref, source), mode)
                               case (Some(rev), source) =>
                                 // Update a schema
-                                emit(schemas.update(id, ref, rev, source).tapEval(index(ref, _, mode)).map(_.void))
+                                emitIndex(schemas.update(id, ref, rev, source), mode)
                             }
                           }
                         },
                         // Deprecate a schema
                         (delete & parameter("rev".as[Int])) { rev =>
                           authorizeFor(ref, Write).apply {
-                            emit(
-                              schemas
-                                .deprecate(id, ref, rev)
-                                .tapEval(index(ref, _, mode))
-                                .map(_.void)
-                                .rejectOn[SchemaNotFound]
-                            )
+                            emitIndexRejectOnNotFound(schemas.deprecate(id, ref, rev), mode)
                           }
                         },
                         // Fetch a schema
@@ -117,7 +122,7 @@ final class SchemasRoutes(
                             ref,
                             id,
                             authorizeFor(ref, Read).apply {
-                              emit(schemas.fetch(id, ref).leftWiden[SchemaRejection].rejectOn[SchemaNotFound])
+                              emit(schemas.fetch(id, ref).toBIO[SchemaRejection].rejectOn[SchemaNotFound])
                             }
                           )
                         }
@@ -129,7 +134,7 @@ final class SchemasRoutes(
                       authorizeFor(ref, Write).apply {
                         emit(
                           OK,
-                          schemas.refresh(id, ref).tapEval(index(ref, _, mode)).map(_.void)
+                          schemas.refresh(id, ref).toBIO[SchemaRejection].tapEval(index(ref, _, mode)).map(_.void)
                         )
                       }
                     }
@@ -140,7 +145,7 @@ final class SchemasRoutes(
                       authorizeFor(ref, Read).apply {
                         implicit val source: Printer = sourcePrinter
                         val sourceIO                 = schemas.fetch(id, ref).map(_.value.source)
-                        emit(sourceIO.leftWiden[SchemaRejection].rejectOn[SchemaNotFound])
+                        emit(sourceIO.toBIO[SchemaRejection].rejectOn[SchemaNotFound])
                       }
                     }
                   },
@@ -150,7 +155,7 @@ final class SchemasRoutes(
                         // Fetch a schema tags
                         (get & idSegmentRef(id) & pathEndOrSingleSlash & authorizeFor(ref, Read)) { id =>
                           val tagsIO = schemas.fetch(id, ref).map(_.value.tags)
-                          emit(tagsIO.leftWiden[SchemaRejection].rejectOn[SchemaNotFound])
+                          emit(tagsIO.toBIO[SchemaRejection].rejectOn[SchemaNotFound])
                         },
                         // Tag a schema
                         (post & parameter("rev".as[Int]) & pathEndOrSingleSlash) { rev =>
@@ -158,7 +163,11 @@ final class SchemasRoutes(
                             entity(as[Tag]) { case Tag(tagRev, tag) =>
                               emit(
                                 Created,
-                                schemas.tag(id, ref, tag, tagRev, rev).tapEval(index(ref, _, mode)).map(_.void)
+                                schemas
+                                  .tag(id, ref, tag, tagRev, rev)
+                                  .toBIO[SchemaRejection]
+                                  .tapEval(index(ref, _, mode))
+                                  .map(_.void)
                               )
                             }
                           }
@@ -168,13 +177,7 @@ final class SchemasRoutes(
                           ref,
                           Write
                         )) { (tag, rev) =>
-                          emit(
-                            schemas
-                              .deleteTag(id, ref, tag, rev)
-                              .tapEval(index(ref, _, mode))
-                              .map(_.void)
-                              .rejectOn[SchemaNotFound]
-                          )
+                          emitIndexRejectOnNotFound(schemas.deleteTag(id, ref, tag, rev), mode)
                         }
                       )
                     }
