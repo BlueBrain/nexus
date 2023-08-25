@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchIndexingActionSuite.{IdAcc, emptyAcc}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchIndexingActionSuite.{emptyAcc, IdAcc}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.IndexingViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.IndexingViewDef.{ActiveViewDef, DeprecatedViewDef}

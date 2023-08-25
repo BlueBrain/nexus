@@ -70,19 +70,19 @@ class ElasticSearchViewsSpec
     val settings = json"""{ "analysis": { } }""".asObject.value
 
     def currentStateFor(
-                         id: Iri,
-                         project: Project,
-                         uuid: UUID,
-                         rev: Int,
-                         indexingRev: IndexingRev,
-                         deprecated: Boolean,
-                         createdAt: Instant,
-                         createdBy: Subject,
-                         updatedAt: Instant,
-                         updatedBy: Subject,
-                         value: ElasticSearchViewValue,
-                         source: Json,
-                         tags: Tags
+        id: Iri,
+        project: Project,
+        uuid: UUID,
+        rev: Int,
+        indexingRev: IndexingRev,
+        deprecated: Boolean,
+        createdAt: Instant,
+        createdBy: Subject,
+        updatedAt: Instant,
+        updatedBy: Subject,
+        value: ElasticSearchViewValue,
+        source: Json,
+        tags: Tags
     ): ElasticSearchViewState =
       ElasticSearchViewState(
         id = id,

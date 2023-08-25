@@ -49,19 +49,19 @@ import scala.annotation.nowarn
   *   the subject that last updated the view
   */
 final case class ElasticSearchViewState(
-                                         id: Iri,
-                                         project: ProjectRef,
-                                         uuid: UUID,
-                                         value: ElasticSearchViewValue,
-                                         source: Json,
-                                         tags: Tags,
-                                         rev: Int,
-                                         indexingRev: IndexingRev,
-                                         deprecated: Boolean,
-                                         createdAt: Instant,
-                                         createdBy: Subject,
-                                         updatedAt: Instant,
-                                         updatedBy: Subject
+    id: Iri,
+    project: ProjectRef,
+    uuid: UUID,
+    value: ElasticSearchViewValue,
+    source: Json,
+    tags: Tags,
+    rev: Int,
+    indexingRev: IndexingRev,
+    deprecated: Boolean,
+    createdAt: Instant,
+    createdBy: Subject,
+    updatedAt: Instant,
+    updatedBy: Subject
 ) extends ScopedState {
 
   override def schema: ResourceRef = model.schema

@@ -21,7 +21,7 @@ class ElasticSearchViewValueSuite extends FunSuite {
       IndexingElasticSearchViewValue(Some("name"), Some("description")),
       viewValue.copy(permission = permissions.read)
     )
-    val expected =  IndexingRev.init
+    val expected   = IndexingRev.init
     viewValues.foreach(v => assertEquals(nextIndexingRev(v, viewValue, IndexingRev.init, 2), expected))
   }
 
@@ -33,7 +33,7 @@ class ElasticSearchViewValueSuite extends FunSuite {
       viewValue.copy(settings = Some(JsonObject.empty)),
       viewValue.copy(context = Some(ContextObject.apply(JsonObject.empty)))
     )
-    val expected =  IndexingRev(2)
+    val expected   = IndexingRev(2)
     viewValues.foreach(v => assertEquals(nextIndexingRev(v, viewValue, IndexingRev.init, 2), expected))
   }
 

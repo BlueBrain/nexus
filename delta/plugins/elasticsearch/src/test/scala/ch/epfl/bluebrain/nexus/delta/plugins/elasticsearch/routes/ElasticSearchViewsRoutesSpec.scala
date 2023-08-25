@@ -369,14 +369,14 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures {
   ): Json =
     jsonContentOf(
       "/routes/elasticsearch-view-write-response.json",
-      "project"     -> projectRef,
-      "id"          -> id,
-      "rev"         -> rev,
-      "uuid"        -> uuid,
-      "deprecated"  -> deprecated,
-      "createdBy"   -> createdBy.asIri,
-      "updatedBy"   -> updatedBy.asIri,
-      "self"        -> ResourceUris("views", projectRef, id).accessUri
+      "project"    -> projectRef,
+      "id"         -> id,
+      "rev"        -> rev,
+      "uuid"       -> uuid,
+      "deprecated" -> deprecated,
+      "createdBy"  -> createdBy.asIri,
+      "updatedBy"  -> updatedBy.asIri,
+      "self"       -> ResourceUris("views", projectRef, id).accessUri
     )
 
   private def elasticSearchView(

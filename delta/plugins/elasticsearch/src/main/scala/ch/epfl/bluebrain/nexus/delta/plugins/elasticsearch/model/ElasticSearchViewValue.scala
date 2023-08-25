@@ -135,15 +135,18 @@ object ElasticSearchViewValue {
       * @return
       *   the next indexing revision based on the differences between the given views
       */
-    def nextIndexingRev(view1: ElasticSearchViewValue,
-                        view2: ElasticSearchViewValue,
-                        currentIndexingRev: IndexingRev,
-                        newEventRev: Int
+    def nextIndexingRev(
+        view1: ElasticSearchViewValue,
+        view2: ElasticSearchViewValue,
+        currentIndexingRev: IndexingRev,
+        newEventRev: Int
     ): IndexingRev =
-      (view1.asIndexingValue, view2.asIndexingValue).mapN { case (v1, v2) =>
-        if (!v1.hasSameIndexingFields(v2)) IndexingRev(newEventRev)
-        else currentIndexingRev
-      }.getOrElse(currentIndexingRev)
+      (view1.asIndexingValue, view2.asIndexingValue)
+        .mapN { case (v1, v2) =>
+          if (!v1.hasSameIndexingFields(v2)) IndexingRev(newEventRev)
+          else currentIndexingRev
+        }
+        .getOrElse(currentIndexingRev)
   }
 
   /**

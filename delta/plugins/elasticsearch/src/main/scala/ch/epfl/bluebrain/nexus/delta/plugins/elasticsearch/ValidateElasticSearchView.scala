@@ -4,7 +4,7 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{InvalidElasticSearchIndexPayload, InvalidPipeline, InvalidViewReferences, PermissionIsNotDefined, TooManyViewReferences, WrappedElasticSearchClientError}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchViewRejection, ElasticSearchViewValue, defaultElasticsearchMapping, defaultElasticsearchSettings}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultElasticsearchMapping, defaultElasticsearchSettings, ElasticSearchViewRejection, ElasticSearchViewValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.HttpResult
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
@@ -82,7 +82,11 @@ object ValidateElasticSearchView {
                              }
       } yield ()
 
-    override def apply(uuid: UUID, indexingRev: IndexingRev, value: ElasticSearchViewValue): IO[ElasticSearchViewRejection, Unit] =
+    override def apply(
+        uuid: UUID,
+        indexingRev: IndexingRev,
+        value: ElasticSearchViewValue
+    ): IO[ElasticSearchViewRejection, Unit] =
       value match {
         case v: AggregateElasticSearchViewValue =>
           validateAggregate(v.views)

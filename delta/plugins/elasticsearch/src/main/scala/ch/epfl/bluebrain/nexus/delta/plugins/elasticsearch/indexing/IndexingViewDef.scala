@@ -4,7 +4,7 @@ import cats.data.NonEmptyChain
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchViewState, contexts}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, ElasticSearchViewState}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
@@ -40,16 +40,16 @@ object IndexingViewDef {
     * Active view eligible to be run as a projection by the supervisor
     */
   final case class ActiveViewDef(
-                                  ref: ViewRef,
-                                  projection: String,
-                                  resourceTag: Option[UserTag],
-                                  pipeChain: Option[PipeChain],
-                                  index: IndexLabel,
-                                  mapping: JsonObject,
-                                  settings: JsonObject,
-                                  context: Option[ContextObject],
-                                  indexingRev: IndexingRev,
-                                  rev: Int
+      ref: ViewRef,
+      projection: String,
+      resourceTag: Option[UserTag],
+      pipeChain: Option[PipeChain],
+      index: IndexLabel,
+      mapping: JsonObject,
+      settings: JsonObject,
+      context: Option[ContextObject],
+      indexingRev: IndexingRev,
+      rev: Int
   ) extends IndexingViewDef {
 
     def projectionMetadata: ProjectionMetadata =
