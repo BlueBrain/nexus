@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchIndexingActionSuite.{emptyAcc, IdAcc}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchIndexingActionSuite.{IdAcc, emptyAcc}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.IndexingViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.IndexingViewDef.{ActiveViewDef, DeprecatedViewDef}
@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
+import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestState
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestState.PullRequestActive
@@ -33,7 +33,7 @@ class ElasticSearchIndexingActionSuite extends BioSuite with CirceLiteral with F
 
   private val instant = Instant.EPOCH
 
-  private val indexingRev = 1
+  private val indexingRev = IndexingRev.init
   private val rev         = 2
 
   private val project = ProjectRef.unsafe("org", "proj")

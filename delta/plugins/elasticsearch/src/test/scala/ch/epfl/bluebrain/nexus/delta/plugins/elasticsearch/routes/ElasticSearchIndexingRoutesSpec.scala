@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, 
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.IndexingViewDef.ActiveViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{InvalidResourceId, ViewNotFound}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{permissions => esPermissions, ElasticSearchViewRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchViewRejection, permissions => esPermissions}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.ElasticSearchIndexingRoutes.FetchIndexingView
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -18,7 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.{IriSegment, StringSegm
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, FetchContextDummy}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
+import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
@@ -61,7 +61,7 @@ class ElasticSearchIndexingRoutesSpec extends ElasticSearchViewsRoutesFixtures {
     JsonObject.empty,
     JsonObject.empty,
     None,
-    1,
+    IndexingRev.init,
     1
   )
   private val progress     = ProjectionProgress(Offset.at(15L), Instant.EPOCH, 9000L, 400L, 30L)

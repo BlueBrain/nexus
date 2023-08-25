@@ -4,12 +4,12 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{InvalidElasticSearchIndexPayload, InvalidPipeline, InvalidViewReferences, PermissionIsNotDefined, TooManyViewReferences, WrappedElasticSearchClientError}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultElasticsearchMapping, defaultElasticsearchSettings, ElasticSearchViewRejection, ElasticSearchViewValue}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchViewRejection, ElasticSearchViewValue, defaultElasticsearchMapping, defaultElasticsearchSettings}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.HttpResult
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.views.ValidateAggregate
+import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, ValidateAggregate}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeChain, ProjectionErr}
 import io.circe.JsonObject
@@ -22,12 +22,12 @@ import java.util.UUID
   */
 trait ValidateElasticSearchView {
 
-  def apply(uuid: UUID, rev: Int, v: ElasticSearchViewValue): IO[ElasticSearchViewRejection, Unit]
+  def apply(uuid: UUID, indexingRev: IndexingRev, v: ElasticSearchViewValue): IO[ElasticSearchViewRejection, Unit]
 }
 
 object ValidateElasticSearchView {
 
-  val always: ValidateElasticSearchView = (_: UUID, _: Int, _: ElasticSearchViewValue) => IO.unit
+  val always: ValidateElasticSearchView = (_: UUID, _: IndexingRev, _: ElasticSearchViewValue) => IO.unit
 
   def apply(
       validatePipeChain: PipeChain => Either[ProjectionErr, Unit],
@@ -63,7 +63,7 @@ object ValidateElasticSearchView {
       xas
     )
 
-    private def validateIndexing(uuid: UUID, rev: Int, value: IndexingElasticSearchViewValue) =
+    private def validateIndexing(uuid: UUID, indexingRev: IndexingRev, value: IndexingElasticSearchViewValue) =
       for {
         defaultMapping  <- defaultElasticsearchMapping
         defaultSettings <- defaultElasticsearchSettings
@@ -72,7 +72,7 @@ object ValidateElasticSearchView {
                            }
         _               <- IO.fromEither(value.pipeChain.traverse(validatePipeChain)).mapError(InvalidPipeline)
         _               <- createIndex(
-                             IndexLabel.fromView(prefix, uuid, rev),
+                             IndexLabel.fromView(prefix, uuid, indexingRev),
                              value.mapping.orElse(Some(defaultMapping)),
                              value.settings.orElse(Some(defaultSettings))
                            )
@@ -82,12 +82,12 @@ object ValidateElasticSearchView {
                              }
       } yield ()
 
-    override def apply(uuid: UUID, rev: Int, value: ElasticSearchViewValue): IO[ElasticSearchViewRejection, Unit] =
+    override def apply(uuid: UUID, indexingRev: IndexingRev, value: ElasticSearchViewValue): IO[ElasticSearchViewRejection, Unit] =
       value match {
         case v: AggregateElasticSearchViewValue =>
           validateAggregate(v.views)
         case v: IndexingElasticSearchViewValue  =>
-          validateIndexing(uuid, rev, v)
+          validateIndexing(uuid, indexingRev, v)
       }
 
   }

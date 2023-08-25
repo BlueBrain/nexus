@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, Project}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.views.{PipeStep, ViewRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, PipeStep, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EntityDependencyStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityDependency.DependsOn
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Group, Subject, User}
@@ -70,19 +70,19 @@ class ElasticSearchViewsSpec
     val settings = json"""{ "analysis": { } }""".asObject.value
 
     def currentStateFor(
-        id: Iri,
-        project: Project,
-        uuid: UUID,
-        rev: Int,
-        indexingRev: Int,
-        deprecated: Boolean,
-        createdAt: Instant,
-        createdBy: Subject,
-        updatedAt: Instant,
-        updatedBy: Subject,
-        value: ElasticSearchViewValue,
-        source: Json,
-        tags: Tags
+                         id: Iri,
+                         project: Project,
+                         uuid: UUID,
+                         rev: Int,
+                         indexingRev: IndexingRev,
+                         deprecated: Boolean,
+                         createdAt: Instant,
+                         createdBy: Subject,
+                         updatedAt: Instant,
+                         updatedBy: Subject,
+                         value: ElasticSearchViewValue,
+                         source: Json,
+                         tags: Tags
     ): ElasticSearchViewState =
       ElasticSearchViewState(
         id = id,
@@ -105,7 +105,7 @@ class ElasticSearchViewsSpec
         project: Project = project,
         uuid: UUID = uuid,
         rev: Int = 1,
-        indexingRev: Int = 1,
+        indexingRev: IndexingRev = IndexingRev.init,
         deprecated: Boolean = false,
         createdAt: Instant = Instant.EPOCH,
         createdBy: Subject = alice.subject,

@@ -24,7 +24,6 @@
   "resourceTypes": [],
   "sourceAsText": false,
   "_uuid": "f85d862a-9ec0-4b9a-8aed-2938d7ca9981",
-  "_indexingRev": 1,
   "mapping": {
     "properties": {
       "@type": {
