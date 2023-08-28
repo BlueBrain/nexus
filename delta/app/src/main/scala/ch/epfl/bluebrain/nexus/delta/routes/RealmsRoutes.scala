@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
+import ch.epfl.bluebrain.nexus.delta.sdk.ce.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.RealmSearchParams
@@ -50,10 +50,10 @@ class RealmsRoutes(identities: Identities, realms: Realms, aclCheck: AclCheck)(i
       RealmSearchParams(None, deprecated, rev, createdBy, updatedBy)
     }
 
-  private def emitFetch(io: IO[RealmResource]): Route = emitCE(io.attemptNarrow[RealmRejection])
+  private def emitFetch(io: IO[RealmResource]): Route = emit(io.attemptNarrow[RealmRejection])
 
   private def emitMetadata(statusCode: StatusCode, io: IO[RealmResource]): Route =
-    emitCE(statusCode, io.map(_.map(_.metadata)).attemptNarrow[RealmRejection])
+    emit(statusCode, io.map(_.map(_.metadata)).attemptNarrow[RealmRejection])
 
   private def emitMetadata(io: IO[RealmResource]): Route = emitMetadata(StatusCodes.OK, io)
 
@@ -72,7 +72,7 @@ class RealmsRoutes(identities: Identities, realms: Realms, aclCheck: AclCheck)(i
                     val result                                                                    = realms
                       .list(pagination, params, order)
                       .widen[SearchResults[RealmResource]]
-                    emitCE(result)
+                    emit(result)
                   }
                 }
             },

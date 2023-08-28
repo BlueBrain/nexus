@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.JsonLdValue
 import ch.epfl.bluebrain.nexus.delta.sdk.ce.CatsResponseToJsonLd.{RejOrFailOrComplete, UseLeft, UseRight}
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.{emitCE, jsonLdFormatOrReject, mediaTypes, requestMediaType, unacceptedMediaTypeRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.ce.DeltaDirectives.{emit, jsonLdFormatOrReject, mediaTypes, requestMediaType, unacceptedMediaTypeRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.Response.{Complete, Reject}
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{FileResponse, Response}
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
@@ -116,11 +116,11 @@ object CatsResponseToJsonLd extends FileBytesInstances {
         }
 
         onSuccess(flattened.unsafeToFuture()) {
-          case Left(complete: Complete[E]) => emitCE(complete)
-          case Left(reject: Reject[E])     => emitCE(reject)
+          case Left(complete: Complete[E]) => emit(complete)
+          case Left(reject: Reject[E])     => emit(reject)
           case Right(Left(c))              =>
             implicit val valueEncoder = c.value.encoder
-            emitCE(c.value.value)
+            emit(c.value.value)
 
           case Right(Right((metadata, content))) =>
             headerValueByType(Accept) { accept =>

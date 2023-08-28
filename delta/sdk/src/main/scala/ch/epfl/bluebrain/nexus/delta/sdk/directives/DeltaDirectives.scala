@@ -9,7 +9,6 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.ce.CatsResponseToJsonLd
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.Response.{Complete, Reject}
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
@@ -67,18 +66,6 @@ trait DeltaDirectives extends UriDirectives {
     */
   def emit(status: StatusCode, response: ResponseToJsonLd): Route =
     response(Some(status))
-
-  /**
-    * Completes the current Route with the provided conversion to Json-LD
-    */
-  def emitCE(status: StatusCode, response: CatsResponseToJsonLd): Route =
-    response(Some(status))
-
-  /**
-    * Completes the current Route with the provided conversion to Json-LD
-    */
-  def emitCE(response: CatsResponseToJsonLd): Route =
-    response(None)
 
   /**
     * Completes the current Route with the provided redirection and conversion to Json-LD in case of an error.
