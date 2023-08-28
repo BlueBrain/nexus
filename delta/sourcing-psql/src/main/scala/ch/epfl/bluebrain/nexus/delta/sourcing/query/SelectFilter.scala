@@ -4,7 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag
 
 /**
-  * Contains the information that
+  * Contains the information that can be used for filtering when streaming states
   * @param types
   *   types that a view is indexing
   * @param tag
@@ -21,6 +21,7 @@ object SelectFilter {
   val latest: SelectFilter = SelectFilter(Set.empty, Tag.Latest)
 
   /** All types with specified tag if it exists, otherwise latest */
-  val tagOrLatest: Option[Tag] => SelectFilter = tag => SelectFilter(Set.empty, tag.getOrElse(Tag.Latest))
+  val tagOrLatest: Option[Tag] => SelectFilter =
+    tag => SelectFilter(Set.empty, tag.getOrElse(Tag.Latest))
 
 }
