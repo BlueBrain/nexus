@@ -126,10 +126,9 @@ object ElasticSearchView {
       context: Option[ContextObject],
       permission: Permission,
       tags: Tags,
-      source: Json,
-      indexingRev: Int
+      source: Json
   ) extends ElasticSearchView {
-    override def metadata: Metadata = Metadata(Some(uuid), Some(indexingRev))
+    override def metadata: Metadata = Metadata(Some(uuid))
 
     override def tpe: ElasticSearchViewType = ElasticSearchViewType.ElasticSearch
   }
@@ -157,7 +156,7 @@ object ElasticSearchView {
       tags: Tags,
       source: Json
   ) extends ElasticSearchView {
-    override def metadata: Metadata         = Metadata(None, None)
+    override def metadata: Metadata         = Metadata(None)
     override def tpe: ElasticSearchViewType = ElasticSearchViewType.AggregateElasticSearch
   }
 
@@ -169,7 +168,7 @@ object ElasticSearchView {
     * @param indexingRev
     *   the optionally available indexing revision
     */
-  final case class Metadata(uuid: Option[UUID], indexingRev: Option[Int])
+  final case class Metadata(uuid: Option[UUID])
 
   val context: ContextValue = ContextValue(contexts.elasticsearch)
 
@@ -265,7 +264,6 @@ object ElasticSearchView {
     Encoder.encodeJsonObject.contramapObject(meta =>
       JsonObject.empty
         .addIfExists("_uuid", meta.uuid)
-        .addIfExists("_indexingRev", meta.indexingRev)
     )
 
   implicit val elasticSearchMetadataJsonLdEncoder: JsonLdEncoder[Metadata] =

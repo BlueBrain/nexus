@@ -131,6 +131,9 @@
       "properties": {
         "value": { "type": "double" }
       }
+    },
+    "curated": {
+      "type": "boolean"
     }
   }
 }

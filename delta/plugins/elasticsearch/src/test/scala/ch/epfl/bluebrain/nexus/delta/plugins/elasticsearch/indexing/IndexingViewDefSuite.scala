@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObje
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
-import ch.epfl.bluebrain.nexus.delta.sdk.views.{PipeStep, ViewRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, PipeStep, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
@@ -78,7 +78,7 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
   private val aggregate = AggregateElasticSearchViewValue(NonEmptySet.of(viewRef))
   private val sink      = CacheSink.states[Json]
 
-  private val indexingRev = 1
+  private val indexingRev = IndexingRev.init
   private val rev         = 2
 
   private def state(v: ElasticSearchViewValue) = ElasticSearchViewState(
@@ -103,7 +103,7 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
       Some(
         ActiveViewDef(
           viewRef,
-          s"elasticsearch-$projectRef-$id-$indexingRev",
+          s"elasticsearch-$projectRef-$id-${indexingRev.value}",
           indexingCustom.resourceTag,
           indexingCustom.pipeChain,
           indexingCustom.selectFilter,
@@ -124,7 +124,7 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
       Some(
         ActiveViewDef(
           viewRef,
-          s"elasticsearch-$projectRef-$id-$indexingRev",
+          s"elasticsearch-$projectRef-$id-${indexingRev.value}",
           indexingDefault.resourceTag,
           indexingDefault.pipeChain,
           indexingDefault.selectFilter,

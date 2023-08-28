@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
+import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
@@ -62,7 +62,7 @@ class ElasticSearchViewSTMSpec
     // format: on
 
     val invalidView: ValidateElasticSearchView =
-      (_: UUID, _: Int, _: ElasticSearchViewValue) => IO.raiseError(InvalidElasticSearchIndexPayload(None))
+      (_: UUID, _: IndexingRev, _: ElasticSearchViewValue) => IO.raiseError(InvalidElasticSearchIndexPayload(None))
 
     def current(
         id: Iri = id,
@@ -72,7 +72,7 @@ class ElasticSearchViewSTMSpec
         source: Json = source,
         tags: Tags = Tags.empty,
         rev: Int = 1,
-        indexingRev: Int = 1,
+        indexingRev: IndexingRev = IndexingRev.init,
         deprecated: Boolean = false,
         createdAt: Instant = epoch,
         createdBy: Subject = Anonymous,
@@ -248,7 +248,7 @@ class ElasticSearchViewSTMSpec
           value = indexingValueWithUserTag,
           source = source2,
           rev = 2,
-          indexingRev = 2,
+          indexingRev = IndexingRev(2),
           updatedAt = epochPlus10,
           updatedBy = subject
         )

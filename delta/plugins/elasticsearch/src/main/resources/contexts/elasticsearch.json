@@ -18,8 +18,7 @@
       "viewId": {
         "@type": "@id"
       },
-      "_uuid": "https://bluebrain.github.io/nexus/vocabulary/uuid",
-      "_indexingRev": "https://bluebrain.github.io/nexus/vocabulary/indexingRev"
+      "_uuid": "https://bluebrain.github.io/nexus/vocabulary/uuid"
     },
     "https://bluebrain.github.io/nexus/contexts/pipeline.json"
   ],

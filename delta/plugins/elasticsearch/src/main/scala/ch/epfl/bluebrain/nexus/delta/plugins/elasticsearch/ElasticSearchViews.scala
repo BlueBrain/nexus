@@ -25,6 +25,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.views.IndexingRev
 import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
@@ -384,12 +385,12 @@ object ElasticSearchViews {
   def projectionName(state: ElasticSearchViewState): String =
     projectionName(state.project, state.id, state.indexingRev)
 
-  def projectionName(project: ProjectRef, id: Iri, indexingRev: Int): String = {
-    s"elasticsearch-$project-$id-$indexingRev"
+  def projectionName(project: ProjectRef, id: Iri, indexingRev: IndexingRev): String = {
+    s"elasticsearch-$project-$id-${indexingRev.value}"
   }
 
-  def index(uuid: UUID, rev: Int, prefix: String): IndexLabel =
-    IndexLabel.fromView(prefix, uuid, rev)
+  def index(uuid: UUID, indexingRev: IndexingRev, prefix: String): IndexLabel =
+    IndexLabel.fromView(prefix, uuid, indexingRev)
 
   def apply(
       fetchContext: FetchContext[ElasticSearchViewRejection],
@@ -424,15 +425,11 @@ object ElasticSearchViews {
     // format: off
     def created(e: ElasticSearchViewCreated): Option[ElasticSearchViewState] =
       Option.when(state.isEmpty) {
-        ElasticSearchViewState(e.id, e.project, e.uuid, e.value, e.source, Tags.empty, e.rev, e.rev, deprecated = false,  e.instant, e.subject, e.instant, e.subject)
+        ElasticSearchViewState(e.id, e.project, e.uuid, e.value, e.source, Tags.empty, e.rev, IndexingRev.init, deprecated = false,  e.instant, e.subject, e.instant, e.subject)
       }
       
     def updated(e: ElasticSearchViewUpdated): Option[ElasticSearchViewState] = state.map { s =>
-      val newIndexingRev =
-        (e.value.asIndexingValue, s.value.asIndexingValue, Option(s.indexingRev))
-          .mapN(nextIndexingRev)
-          .getOrElse(s.indexingRev)
-
+      val newIndexingRev = nextIndexingRev(s.value, e.value, s.indexingRev, e.rev)
       s.copy(rev = e.rev, indexingRev = newIndexingRev, value = e.value, source = e.source, updatedAt = e.instant, updatedBy = e.subject)
     }
     // format: on
@@ -465,7 +462,7 @@ object ElasticSearchViews {
         for {
           t <- IOUtils.instant
           u <- uuidF()
-          _ <- validate(u, 1, c.value)
+          _ <- validate(u, IndexingRev.init, c.value)
         } yield ElasticSearchViewCreated(c.id, c.project, u, c.value, c.source, 1, t, c.subject)
       case Some(_) => IO.raiseError(ResourceAlreadyExists(c.id, c.project))
     }
@@ -480,8 +477,9 @@ object ElasticSearchViews {
       case Some(s) if c.value.tpe != s.value.tpe =>
         IO.raiseError(DifferentElasticSearchViewType(s.id.toString, c.value.tpe, s.value.tpe))
       case Some(s)                               =>
+        val newIndexingRev = nextIndexingRev(s.value, c.value, s.indexingRev, c.rev)
         for {
-          _ <- validate(s.uuid, s.rev + 1, c.value)
+          _ <- validate(s.uuid, newIndexingRev, c.value)
           t <- IOUtils.instant
         } yield ElasticSearchViewUpdated(c.id, c.project, s.uuid, c.value, c.source, s.rev + 1, t, c.subject)
     }

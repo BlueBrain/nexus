@@ -22,6 +22,8 @@ class SearchConfigSpec extends BaseSpec {
   private val neuronMorphologyId   = "https://bbp.epfl.ch/data/neuron-morphology"
   private val neuronDensityId      = "https://bbp.epfl.ch/data/neuron-density"
   private val traceId              = "https://bbp.epfl.ch/data/trace"
+  private val curatedTraceId       = "https://bbp.epfl.ch/data/curated-trace"
+  private val unassessedTraceId    = "https://bbp.epfl.ch/data/unassessed-trace"
   private val layerThicknessId     = "https://bbp.epfl.ch/data/layer-thickness"
   private val boutonDensityId      = "https://bbp.epfl.ch/data/bouton-density"
   private val simulationCampaignId = "https://bbp.epfl.ch/data/simulation-campaign"
@@ -31,6 +33,8 @@ class SearchConfigSpec extends BaseSpec {
   private val mainResources  = List(
     "/kg/search/patched-cell.json",
     "/kg/search/trace.json",
+    "/kg/search/curated-trace.json",
+    "/kg/search/unassessed-trace.json",
     "/kg/search/neuron-morphology.json",
     "/kg/search/neuron-density.json",
     "/kg/search/layer-thickness.json",
@@ -332,6 +336,27 @@ class SearchConfigSpec extends BaseSpec {
 
       assertOneSource(query) { json =>
         json should equalIgnoreArrayOrder(expected)
+      }
+    }
+
+    "have no curated field if there is no curated/unassessed annotation" in {
+      val query = queryField(traceId, "curated")
+      assertEmpty(query)
+    }
+
+    "have curated field true if curated" in {
+      val query = queryField(curatedTraceId, "curated")
+
+      assertOneSource(query) { json =>
+        json shouldBe json"""{ "curated": true }"""
+      }
+    }
+
+    "have curated field false if unassessed" in {
+      val query = queryField(unassessedTraceId, "curated")
+
+      assertOneSource(query) { json =>
+        json shouldBe json"""{ "curated": false }"""
       }
     }
 
@@ -698,5 +723,8 @@ class SearchConfigSpec extends BaseSpec {
         assertion(actual)
       }
     }
+
+  private def assertEmpty(query: Json): Task[Assertion] =
+    assertOneSource(query)(j => assert(j == json"""{ }"""))
 
 }
