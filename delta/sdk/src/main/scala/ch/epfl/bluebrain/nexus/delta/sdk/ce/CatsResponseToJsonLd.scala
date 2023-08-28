@@ -39,7 +39,7 @@ object CatsResponseToJsonLd extends FileBytesInstances {
     Either[Either[Reject[E], Complete[JsonLdValue]], Complete[JsonLdValue]]
 
   def apply[E](
-      uio: IO[RejOrFailOrComplete[E]]
+      io: IO[RejOrFailOrComplete[E]]
   )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering): CatsResponseToJsonLd =
     new CatsResponseToJsonLd {
 
@@ -49,10 +49,10 @@ object CatsResponseToJsonLd extends FileBytesInstances {
 
       override def apply(statusOverride: Option[StatusCode]): Route = {
 
-        val uioFinal = uio.map(_.map(value => value.copy(status = statusOverride.getOrElse(value.status))))
+        val ioFinal = io.map(_.map(value => value.copy(status = statusOverride.getOrElse(value.status))))
 
         def marshaller[R: ToEntityMarshaller](handle: JsonLdValue => IO[R]): Route = {
-          val ioRoute = uioFinal.flatMap {
+          val ioRoute = ioFinal.flatMap {
             case Left(Left(rej))                               => IO.pure(reject(rej))
             case Left(Right(Complete(status, headers, value))) => handle(value).map(complete(status, headers, _))
             case Right(Complete(status, headers, value))       => handle(value).map(complete(status, headers, _))
@@ -162,23 +162,23 @@ sealed trait ValueInstances extends LowPriorityValueInstances {
   )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering): CatsResponseToJsonLd =
     CatsResponseToJsonLd(io.map(_.leftMap(Complete(_))))
 
-  implicit def uioValueWithReject[E: JsonLdEncoder](
+  implicit def ioValueWithReject[E: JsonLdEncoder](
       io: IO[Reject[E]]
   )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering): CatsResponseToJsonLd =
     CatsResponseToJsonLd(io.map[UseLeft[E]](Left(_)))
 
-  implicit def uioValue[A: JsonLdEncoder](
+  implicit def ioValue[A: JsonLdEncoder](
       io: IO[A]
   )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering): CatsResponseToJsonLd =
     CatsResponseToJsonLd(io.map[UseRight[A]](v => Right(Complete(OK, Seq.empty, v))))
 
-  implicit def ioValueWithReject[E: JsonLdEncoder, A: JsonLdEncoder](
+  implicit def ioEitherValueOrReject[E: JsonLdEncoder, A: JsonLdEncoder](
       io: IO[Either[Response[E], A]]
   )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering): CatsResponseToJsonLd = {
     CatsResponseToJsonLd(io.map(_.map(Complete(OK, Seq.empty, _))))
   }
 
-  implicit def ioValue[E: JsonLdEncoder: HttpResponseFields, A: JsonLdEncoder](
+  implicit def ioValueOrError[E: JsonLdEncoder: HttpResponseFields, A: JsonLdEncoder](
       io: IO[Either[E, A]]
   )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering): CatsResponseToJsonLd =
     CatsResponseToJsonLd(io.map(_.leftMap(Complete(_)).map(Complete(OK, Seq.empty, _))))

@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.kernel.effect.migration
 
 import cats.effect.IO
-import monix.bio.{IO => BIO}
+import monix.bio.{IO => BIO, UIO}
 import monix.execution.Scheduler.Implicits.global
 
 import scala.reflect.ClassTag
@@ -20,4 +20,6 @@ final class CatsIOToBioOps[A](private val io: IO[A]) extends AnyVal {
       case E(e)  => monix.bio.IO.raiseError(e)
       case other => BIO.terminate(other)
     }
+
+  def toUIO: UIO[A] = BIO.from(io).hideErrors
 }

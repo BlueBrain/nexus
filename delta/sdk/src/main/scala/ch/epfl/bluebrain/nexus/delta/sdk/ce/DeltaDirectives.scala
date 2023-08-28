@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.directives
+package ch.epfl.bluebrain.nexus.delta.sdk.ce
 
 import akka.http.scaladsl.model.MediaTypes.{`application/json`, `text/html`}
 import akka.http.scaladsl.model.StatusCodes.{Redirection, SeeOther}
@@ -7,10 +7,12 @@ import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept}
 import akka.http.scaladsl.server.ContentNegotiator.Alternative
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
+import cats.effect.IO
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.ce.CatsResponseToJsonLd
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.Response.{Complete, Reject}
+import ch.epfl.bluebrain.nexus.delta.sdk.directives._
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
@@ -20,8 +22,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.utils.HeadersUtils
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import io.circe.Encoder
-import monix.bio.{IO, UIO}
-import monix.execution.Scheduler
+
+import scala.reflect.ClassTag
 
 object DeltaDirectives extends DeltaDirectives
 
@@ -52,32 +54,15 @@ trait DeltaDirectives extends UriDirectives {
     response(Some(status))
 
   /**
-    * Completes the current Route with the provided conversion to SSEs
-    */
-  def emit(response: ResponseToSse): Route = response()
-
-  /**
     * Completes the current Route with the provided conversion to Json-LD
     */
-  def emit(response: ResponseToJsonLd): Route =
-    response(None)
-
-  /**
-    * Completes the current Route with the provided status code and conversion to Json-LD
-    */
-  def emit(status: StatusCode, response: ResponseToJsonLd): Route =
+  def emit(status: StatusCode, response: CatsResponseToJsonLd): Route =
     response(Some(status))
 
   /**
     * Completes the current Route with the provided conversion to Json-LD
     */
-  def emitCE(status: StatusCode, response: CatsResponseToJsonLd): Route =
-    response(Some(status))
-
-  /**
-    * Completes the current Route with the provided conversion to Json-LD
-    */
-  def emitCE(response: CatsResponseToJsonLd): Route =
+  def emit(response: CatsResponseToJsonLd): Route =
     response(None)
 
   /**
@@ -101,15 +86,17 @@ trait DeltaDirectives extends UriDirectives {
     response(Some(status))
 
   /**
-    * Helper method to convert the error channel of the IO to a [[CustomAkkaRejection]] whenever the passed ''filter''
-    * is true. If the [[PartialFunction]] does not apply, the error channel is left untouched.
+    * Helper method to convert the error channel of the IO to a akka rejection whenever the passed ''filter'' is true.
+    * If the [[PartialFunction]] does not apply, the error channel is left untouched.
     */
-  def rejectOn[E: JsonLdEncoder: HttpResponseFields: Encoder, A](
-      io: IO[E, A]
-  )(filter: PartialFunction[E, Boolean]): IO[Response[E], A] =
-    io.mapError {
-      case err @ filter(true) => Reject(err)
-      case err                => Complete(err)
+  def rejectOn[E <: Throwable: ClassTag: JsonLdEncoder: HttpResponseFields: Encoder, A](
+      io: IO[Either[E, A]]
+  )(filter: PartialFunction[E, Boolean]): IO[Either[Response[E], A]] =
+    io.map {
+      _.leftMap {
+        case err @ filter(true) => Reject(err)
+        case err                => Complete(err)
+      }
     }
 
   def unacceptedMediaTypeRejection(values: Seq[MediaType]): UnacceptedResponseContentTypeRejection =
@@ -128,11 +115,10 @@ trait DeltaDirectives extends UriDirectives {
     * enabled
     */
   def emitOrFusionRedirect(projectRef: ProjectRef, id: IdSegmentRef, emitDelta: Route)(implicit
-      config: FusionConfig,
-      s: Scheduler
+      config: FusionConfig
   ): Route =
     emitOrFusionRedirect(
-      UIO.pure {
+      IO.pure {
         val resourceBase =
           config.base / projectRef.organization.value / projectRef.project.value / "resources" / id.value.asString
         id match {
@@ -148,19 +134,16 @@ trait DeltaDirectives extends UriDirectives {
     * If the `Accept` header is set to `text/html`, redirect to the matching project page in fusion if the feature is
     * enabled
     */
-  def emitOrFusionRedirect(projectRef: ProjectRef, emitDelta: Route)(implicit
-      config: FusionConfig,
-      s: Scheduler
-  ): Route =
+  def emitOrFusionRedirect(projectRef: ProjectRef, emitDelta: Route)(implicit config: FusionConfig): Route =
     emitOrFusionRedirect(
-      UIO.pure(config.base / "admin" / projectRef.organization.value / projectRef.project.value),
+      IO.pure(config.base / "admin" / projectRef.organization.value / projectRef.project.value),
       emitDelta
     )
 
-  private def emitOrFusionRedirect(fusionUri: UIO[Uri], emitDelta: Route)(implicit config: FusionConfig, s: Scheduler) =
+  private def emitOrFusionRedirect(fusionUri: IO[Uri], emitDelta: Route)(implicit config: FusionConfig) =
     extractRequest { req =>
       if (config.enableRedirects && req.header[Accept].exists(_.mediaRanges.contains(fusionRange))) {
-        emitRedirect(SeeOther, ResponseToRedirect.uioRedirect(fusionUri))
+        emitRedirect(SeeOther, fusionUri)
       } else
         emitDelta
     }

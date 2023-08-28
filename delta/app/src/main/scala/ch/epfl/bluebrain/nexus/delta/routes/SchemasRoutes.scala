@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
+import ch.epfl.bluebrain.nexus.delta.sdk.ce.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
@@ -68,7 +68,9 @@ final class SchemasRoutes(
     ResourceF.resourceFAJsonLdEncoder(ContextValue(contexts.schemasMetadata))
 
   private def triggerIndexing(io: IO[SchemaResource], indexingMode: IndexingMode) =
-    io.toBIO[SchemaRejection].tapEval { schema => index(schema.value.project, schema, indexingMode) }.map(_.void)
+    io.flatTap { schema => index(schema.value.project, schema, indexingMode) }
+      .map(_.void)
+      .attemptNarrow[SchemaRejection]
 
   private def emitIndex(status: StatusCode, io: IO[SchemaResource], indexingMode: IndexingMode): Route =
     emit(status, triggerIndexing(io, indexingMode))
@@ -122,7 +124,7 @@ final class SchemasRoutes(
                             ref,
                             id,
                             authorizeFor(ref, Read).apply {
-                              emit(schemas.fetch(id, ref).toBIO[SchemaRejection].rejectOn[SchemaNotFound])
+                              emit(schemas.fetch(id, ref).attemptNarrow[SchemaRejection].rejectOn[SchemaNotFound])
                             }
                           )
                         }
@@ -132,10 +134,7 @@ final class SchemasRoutes(
                   (pathPrefix("refresh") & put & pathEndOrSingleSlash) {
                     operationName(s"$prefixSegment/schemas/{org}/{project}/{id}/refresh") {
                       authorizeFor(ref, Write).apply {
-                        emit(
-                          OK,
-                          schemas.refresh(id, ref).toBIO[SchemaRejection].tapEval(index(ref, _, mode)).map(_.void)
-                        )
+                        emitIndex(schemas.refresh(id, ref), mode)
                       }
                     }
                   },
@@ -145,7 +144,7 @@ final class SchemasRoutes(
                       authorizeFor(ref, Read).apply {
                         implicit val source: Printer = sourcePrinter
                         val sourceIO                 = schemas.fetch(id, ref).map(_.value.source)
-                        emit(sourceIO.toBIO[SchemaRejection].rejectOn[SchemaNotFound])
+                        emit(sourceIO.attemptNarrow[SchemaRejection].rejectOn[SchemaNotFound])
                       }
                     }
                   },
@@ -155,7 +154,7 @@ final class SchemasRoutes(
                         // Fetch a schema tags
                         (get & idSegmentRef(id) & pathEndOrSingleSlash & authorizeFor(ref, Read)) { id =>
                           val tagsIO = schemas.fetch(id, ref).map(_.value.tags)
-                          emit(tagsIO.toBIO[SchemaRejection].rejectOn[SchemaNotFound])
+                          emit(tagsIO.attemptNarrow[SchemaRejection].rejectOn[SchemaNotFound])
                         },
                         // Tag a schema
                         (post & parameter("rev".as[Int]) & pathEndOrSingleSlash) { rev =>
@@ -165,8 +164,7 @@ final class SchemasRoutes(
                                 Created,
                                 schemas
                                   .tag(id, ref, tag, tagRev, rev)
-                                  .toBIO[SchemaRejection]
-                                  .tapEval(index(ref, _, mode))
+                                  .flatTap(index(ref, _, mode))
                                   .map(_.void)
                               )
                             }
