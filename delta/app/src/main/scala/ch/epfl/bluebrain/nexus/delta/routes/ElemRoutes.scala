@@ -19,6 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseElemStream
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, Tag}
+import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.RemainingElems
 import io.circe.syntax.EncoderOps
 import io.circe.{Encoder, JsonObject}
@@ -56,12 +57,12 @@ class ElemRoutes(
                 concat(
                   (get & pathPrefix("continuous") & parameter("tag".as[UserTag].?)) { tag =>
                     operationName(s"$prefixSegment/$project/elems/continuous") {
-                      emit(sseElemStream.continuous(project, tag.getOrElse(Tag.latest), offset))
+                      emit(sseElemStream.continuous(project, SelectFilter.tagOrLatest(tag), offset))
                     }
                   },
                   (get & pathPrefix("currents") & parameter("tag".as[UserTag].?)) { tag =>
                     operationName(s"$prefixSegment/$project/elems/currents") {
-                      emit(sseElemStream.currents(project, tag.getOrElse(Tag.latest), offset))
+                      emit(sseElemStream.currents(project, SelectFilter.tagOrLatest(tag), offset))
                     }
                   },
                   (get & pathPrefix("remaining") & parameter("tag".as[UserTag].?)) { tag =>

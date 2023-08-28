@@ -16,6 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionErr.CouldNotFindPipeErr
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{NoopSink, PipeChain, PipeRef}
@@ -43,6 +44,7 @@ class ElasticSearchIndexingActionSuite extends BioSuite with CirceLiteral with F
     projection = id1.toString,
     None,
     None,
+    SelectFilter.latest,
     index = IndexLabel.unsafe("view1"),
     mapping = jobj"""{"properties": { }}""",
     settings = jobj"""{"analysis": { }}""",
@@ -57,6 +59,7 @@ class ElasticSearchIndexingActionSuite extends BioSuite with CirceLiteral with F
     projection = id2.toString,
     Some(UserTag.unsafe("tag")),
     None,
+    SelectFilter.tag(UserTag.unsafe("tag")),
     index = IndexLabel.unsafe("view2"),
     mapping = jobj"""{"properties": { }}""",
     settings = jobj"""{"analysis": { }}""",
@@ -72,6 +75,7 @@ class ElasticSearchIndexingActionSuite extends BioSuite with CirceLiteral with F
     projection = id3.toString,
     None,
     Some(PipeChain(PipeRef.unsafe("xxx") -> ExpandedJsonLd.empty)),
+    SelectFilter.latest,
     index = IndexLabel.unsafe("view3"),
     mapping = jobj"""{"properties": { }}""",
     settings = jobj"""{"analysis": { }}""",

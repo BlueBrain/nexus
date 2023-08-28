@@ -16,6 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, Tag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.RemainingElems
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import fs2.Stream
@@ -45,10 +46,12 @@ class ElemRoutesSpec extends BaseRouteSpec with CirceLiteral {
 
     private val stream = Stream.emits(List(elem1, elem2, elem3)).covary[Task]
 
-    override def continuous(project: ProjectRef, tag: Tag, start: Offset): ServerSentEventStream = stream
+    override def continuous(project: ProjectRef, selectFilter: SelectFilter, start: Offset): ServerSentEventStream =
+      stream
 
-    override def currents(project: ProjectRef, tag: Tag, start: Offset): ServerSentEventStream        = stream
-    override def remaining(project: ProjectRef, tag: Tag, start: Offset): UIO[Option[RemainingElems]] =
+    override def currents(project: ProjectRef, selectFilter: SelectFilter, start: Offset): ServerSentEventStream =
+      stream
+    override def remaining(project: ProjectRef, tag: Tag, start: Offset): UIO[Option[RemainingElems]]            =
       UIO.some(RemainingElems(999L, Instant.EPOCH))
   }
 

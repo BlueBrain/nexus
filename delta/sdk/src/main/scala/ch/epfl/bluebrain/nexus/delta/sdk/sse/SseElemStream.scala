@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, Tag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.query.{RefreshStrategy, StreamingQuery}
+import ch.epfl.bluebrain.nexus.delta.sourcing.query.{RefreshStrategy, SelectFilter, StreamingQuery}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, RemainingElems}
 import io.circe.syntax.EncoderOps
@@ -23,7 +23,7 @@ trait SseElemStream {
     * @param start
     *   the offset to start with
     */
-  def continuous(project: ProjectRef, tag: Tag, start: Offset): ServerSentEventStream
+  def continuous(project: ProjectRef, selectFilter: SelectFilter, start: Offset): ServerSentEventStream
 
   /**
     * Allows to generate a [[ServerSentEvent]] stream for the given project for the given tag
@@ -37,7 +37,7 @@ trait SseElemStream {
     * @param start
     *   the offset to start with
     */
-  def currents(project: ProjectRef, tag: Tag, start: Offset): ServerSentEventStream
+  def currents(project: ProjectRef, selectFilter: SelectFilter, start: Offset): ServerSentEventStream
 
   /**
     * Get information about the remaining elements to stream
@@ -58,15 +58,15 @@ object SseElemStream {
     */
   def apply(qc: QueryConfig, xas: Transactors): SseElemStream = new SseElemStream {
 
-    override def continuous(project: ProjectRef, tag: Tag, start: Offset): ServerSentEventStream =
-      StreamingQuery.elems(project, tag, start, qc, xas).map(toServerSentEvent)
+    override def continuous(project: ProjectRef, selectFilter: SelectFilter, start: Offset): ServerSentEventStream =
+      StreamingQuery.elems(project, start, selectFilter, qc, xas).map(toServerSentEvent)
 
-    override def currents(project: ProjectRef, tag: Tag, start: Offset): ServerSentEventStream =
+    override def currents(project: ProjectRef, selectFilter: SelectFilter, start: Offset): ServerSentEventStream =
       StreamingQuery
         .elems(
           project,
-          tag,
           start,
+          selectFilter,
           qc.copy(refreshStrategy = RefreshStrategy.Stop),
           xas
         )

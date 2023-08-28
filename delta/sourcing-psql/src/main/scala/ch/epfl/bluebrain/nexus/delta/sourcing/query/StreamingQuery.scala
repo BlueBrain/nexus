@@ -63,8 +63,6 @@ object StreamingQuery {
     *
     * @param project
     *   the project of the states / tombstones
-    * @param tag
-    *   the tag to follow
     * @param start
     *   the offset to start with
     * @param cfg
@@ -74,13 +72,14 @@ object StreamingQuery {
     */
   def elems(
       project: ProjectRef,
-      tag: Tag,
       start: Offset,
+      selectFilter: SelectFilter,
       cfg: QueryConfig,
       xas: Transactors
   ): Stream[Task, Elem[Unit]] = {
     def query(offset: Offset): Query0[Elem[Unit]] = {
-      val where = Fragments.whereAndOpt(Scope(project).asFragment, Some(fr"tag = $tag"), offset.asFragment)
+      val where =
+        Fragments.whereAndOpt(Scope(project).asFragment, Some(fr"tag = ${selectFilter.tag}"), offset.asFragment)
       sql"""((SELECT 'newState', type, id, org, project, instant, ordering, rev
            |FROM public.scoped_states
            |$where
@@ -116,8 +115,6 @@ object StreamingQuery {
     *
     * @param project
     *   the project of the states / tombstones
-    * @param tag
-    *   the tag to follow
     * @param start
     *   the offset to start with
     * @param cfg
@@ -129,14 +126,15 @@ object StreamingQuery {
     */
   def elems[A](
       project: ProjectRef,
-      tag: Tag,
       start: Offset,
+      selectFilter: SelectFilter,
       cfg: QueryConfig,
       xas: Transactors,
       decodeValue: (EntityType, Json) => Task[A]
   ): Stream[Task, Elem[A]] = {
     def query(offset: Offset): Query0[Elem[Json]] = {
-      val where = Fragments.whereAndOpt(Scope(project).asFragment, Some(fr"tag = $tag"), offset.asFragment)
+      val where =
+        Fragments.whereAndOpt(Scope(project).asFragment, Some(fr"tag = ${selectFilter.tag}"), offset.asFragment)
       sql"""((SELECT 'newState', type, id, org, project, value, instant, ordering, rev
            |FROM public.scoped_states
            |$where

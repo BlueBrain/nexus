@@ -109,13 +109,13 @@ class StreamingQuerySuite extends BioSuite with Doobie.Fixture {
   }
 
   /** Returns streams that returns elems of Iri and elem of unit */
-  private def stream(project: ProjectRef, tag: Tag, start: Offset) = (
-    StreamingQuery.elems[Iri](project, tag, start, qc, xas, decodeValue),
-    StreamingQuery.elems(project, tag, start, qc, xas)
+  private def stream(project: ProjectRef, start: Offset, selectFilter: SelectFilter) = (
+    StreamingQuery.elems[Iri](project, start, selectFilter, qc, xas, decodeValue),
+    StreamingQuery.elems(project, start, selectFilter, qc, xas)
   )
 
   test("Running a stream on latest states on project 1 from the beginning") {
-    val (iri, void) = stream(project1, Tag.Latest, Offset.start)
+    val (iri, void) = stream(project1, Offset.start, SelectFilter.latest)
 
     val expected = List(
       SuccessElem(PullRequest.entityType, id1, Some(project1), Instant.EPOCH, Offset.at(1L), id1, rev),
@@ -131,7 +131,7 @@ class StreamingQuerySuite extends BioSuite with Doobie.Fixture {
   }
 
   test("Running a stream on latest states on project 1 from offset 3") {
-    val (iri, void) = stream(project1, Tag.Latest, Offset.at(3L))
+    val (iri, void) = stream(project1, Offset.at(3L), SelectFilter.latest)
 
     val expected = List(
       SuccessElem(PullRequest.entityType, id3, Some(project1), Instant.EPOCH, Offset.at(7L), id3, rev),
@@ -144,7 +144,7 @@ class StreamingQuerySuite extends BioSuite with Doobie.Fixture {
   }
 
   test(s"Running a stream on states with tag '${customTag.value}' on project 1 from the beginning") {
-    val (iri, void) = stream(project1, customTag, Offset.start)
+    val (iri, void) = stream(project1, Offset.start, SelectFilter.tag(customTag))
 
     val expected = List(
       SuccessElem(PullRequest.entityType, id1, Some(project1), Instant.EPOCH, Offset.at(6L), id1, rev),
@@ -161,7 +161,7 @@ class StreamingQuerySuite extends BioSuite with Doobie.Fixture {
   }
 
   test(s"Running a stream on states with tag '${customTag.value}' on project 1 from offset 11") {
-    val (iri, void) = stream(project1, customTag, Offset.at(11L))
+    val (iri, void) = stream(project1, Offset.at(11L), SelectFilter.tag(customTag))
     val expected    = List(
       SuccessElem(PullRequest.entityType, id2, Some(project1), Instant.EPOCH, Offset.at(12L), id2, rev),
       DroppedElem(PullRequest.entityType, id1, Some(project1), Instant.EPOCH, Offset.at(14L), -1),
@@ -184,7 +184,7 @@ class StreamingQuerySuite extends BioSuite with Doobie.Fixture {
         }
       }
 
-    val result = StreamingQuery.elems[Iri](project1, Tag.Latest, Offset.start, qc, xas, incompleteDecode)
+    val result = StreamingQuery.elems[Iri](project1, Offset.start, SelectFilter.latest, qc, xas, incompleteDecode)
     result.compile.toList.assert(
       List(
         SuccessElem(PullRequest.entityType, id1, Some(project1), Instant.EPOCH, Offset.at(1L), id1, rev),
