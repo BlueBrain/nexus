@@ -1,35 +1,14 @@
 package ch.epfl.bluebrain.nexus.testkit.ce
 
-import cats.effect.IO
+import cats.effect.{IO, Sync}
 import cats.syntax.eq._
+import munit.{Assertions, FailException, Location}
 
 import scala.reflect.ClassTag
 import scala.util.control.NonFatal
-import cats.effect.SyncIO
-import cats.effect.Sync
-import munit.{Assertions, FailException, Location}
 
 trait CatsEffectAssertions { self: Assertions =>
 
-  /**
-    * Asserts that an `IO` returns an expected value.
-    *
-    * The "returns" value (second argument) must have the same type or be a subtype of the one "contained" inside the
-    * `IO` (first argument). For example:
-    * {{{
-    *   assertIO(IO(Option(1)), returns = Some(1)) // OK
-    *   assertIO(IO(Some(1)), returns = Option(1)) // Error: Option[Int] is not a subtype of Some[Int]
-    * }}}
-    *
-    * The "clue" value can be used to give extra information about the failure in case the assertion fails.
-    *
-    * @param obtained
-    *   the IO under testing
-    * @param returns
-    *   the expected value
-    * @param clue
-    *   a value that will be printed in case the assertions fails
-    */
   def assertIO[A, B](
       obtained: IO[A],
       returns: B,
@@ -37,190 +16,28 @@ trait CatsEffectAssertions { self: Assertions =>
   )(implicit loc: Location, ev: B <:< A): IO[Unit] =
     obtained.flatMap(a => IO(assertEquals(a, returns, clue)))
 
-  /**
-    * Asserts that an `IO[Unit]` returns the Unit value.
-    *
-    * For example:
-    * {{{
-    *   assertIO_(IO.unit)
-    * }}}
-    *
-    * The "clue" value can be used to give extra information about the failure in case the assertion fails.
-    *
-    * @param obtained
-    *   the IO under testing
-    * @param clue
-    *   a value that will be printed in case the assertions fails
-    */
   protected def assertIO_(
       obtained: IO[Unit],
       clue: => Any = "value is not ()"
   )(implicit loc: Location): IO[Unit] =
     obtained.flatMap(a => IO(assertEquals(a, (), clue)))
 
-  /**
-    * Asserts that an `IO[Boolean]` returns true.
-    *
-    * For example:
-    * {{{
-    *   assertIOBoolean(IO(true))
-    * }}}
-    *
-    * The "clue" value can be used to give extra information about the failure in case the assertion fails.
-    *
-    * @param obtained
-    *   the IO[Boolean] under testing
-    * @param clue
-    *   a value that will be printed in case the assertions fails
-    */
   protected def assertIOBoolean(
       obtained: IO[Boolean],
       clue: => Any = "values are not the same"
   )(implicit loc: Location): IO[Unit] =
     assertIO(obtained, true, clue)
 
-  /**
-    * Intercepts a `Throwable` being thrown inside the provided `IO`.
-    *
-    * @example
-    * {{{
-    *   val io = IO.raiseError[Unit](MyException("BOOM!"))
-    *
-    *   interceptIO[MyException](io)
-    * }}}
-    *
-    * or
-    *
-    * {{{
-    *   interceptIO[MyException] {
-    *       IO.raiseError[Unit](MyException("BOOM!"))
-    *   }
-    * }}}
-    */
   def interceptIO[T <: Throwable](io: IO[Any])(implicit T: ClassTag[T], loc: Location): IO[T] =
     io.attempt.flatMap[T](runInterceptMessage[IO, T](None))
 
-  /**
-    * Intercepts a `Throwable` with a certain message being thrown inside the provided `IO`.
-    *
-    * @example
-    * {{{
-    *   val io = IO.raiseError[Unit](MyException("BOOM!"))
-    *
-    *   interceptIO[MyException]("BOOM!")(io)
-    * }}}
-    *
-    * or
-    *
-    * {{{
-    *   interceptIO[MyException] {
-    *       IO.raiseError[Unit](MyException("BOOM!"))
-    *   }
-    * }}}
-    */
   def interceptMessageIO[T <: Throwable](
       expectedExceptionMessage: String
   )(io: IO[Any])(implicit T: ClassTag[T], loc: Location): IO[T] =
     io.attempt.flatMap[T](runInterceptMessage[IO, T](Some(expectedExceptionMessage)))
 
-  /**
-    * Intercepts a `Throwable` with a certain value being thrown inside the provided `IO`.
-    */
   def interceptErrorIO[T <: Throwable](expectedError: T)(io: IO[Any])(implicit T: ClassTag[T], loc: Location): IO[T] =
     io.attempt.flatMap[T](runInterceptValue[IO, T](expectedError))
-
-  /**
-    * Asserts that a `SyncIO` returns an expected value.
-    *
-    * The "returns" value (second argument) must have the same type or be a subtype of the one "contained" inside the
-    * `SyncIO` (first argument). For example:
-    * {{{
-    *   assertSyncIO(SyncIO(Option(1)), returns = Some(1)) // OK
-    *   assertSyncIO(SyncIO(Some(1)), returns = Option(1)) // Error: Option[Int] is not a subtype of Some[Int]
-    * }}}
-    *
-    * The "clue" value can be used to give extra information about the failure in case the assertion fails.
-    *
-    * @param obtained
-    *   the SyncIO under testing
-    * @param returns
-    *   the expected value
-    * @param clue
-    *   a value that will be printed in case the assertions fails
-    */
-  def assertSyncIO[A, B](
-      obtained: SyncIO[A],
-      returns: B,
-      clue: => Any = "values are not the same"
-  )(implicit loc: Location, ev: B <:< A): SyncIO[Unit] =
-    obtained.flatMap(a => SyncIO(assertEquals(a, returns, clue)))
-
-  /**
-    * Asserts that a `SyncIO[Unit]` returns the Unit value.
-    *
-    * For example:
-    * {{{
-    *   assertSyncIO_(SyncIO.unit) // OK
-    * }}}
-    *
-    * The "clue" value can be used to give extra information about the failure in case the assertion fails.
-    *
-    * @param obtained
-    *   the SyncIO under testing
-    * @param clue
-    *   a value that will be printed in case the assertions fails
-    */
-  protected def assertSyncIO_(
-      obtained: SyncIO[Unit],
-      clue: => Any = "value is not ()"
-  )(implicit loc: Location): SyncIO[Unit] =
-    obtained.flatMap(a => SyncIO(assertEquals(a, (), clue)))
-
-  /**
-    * Intercepts a `Throwable` being thrown inside the provided `SyncIO`.
-    *
-    * @example
-    * {{{
-    *   val io = SyncIO.raiseError[Unit](MyException("BOOM!"))
-    *
-    *   interceptSyncIO[MyException](io)
-    * }}}
-    *
-    * or
-    *
-    * {{{
-    *   interceptSyncIO[MyException] {
-    *       SyncIO.raiseError[Unit](MyException("BOOM!"))
-    *   }
-    * }}}
-    */
-  def interceptSyncIO[T <: Throwable](
-      io: SyncIO[Any]
-  )(implicit T: ClassTag[T], loc: Location): SyncIO[T] =
-    io.attempt.flatMap[T](runInterceptMessage[SyncIO, T](None))
-
-  /**
-    * Intercepts a `Throwable` with a certain message being thrown inside the provided `SyncIO`.
-    *
-    * @example
-    * {{{
-    *   val io = SyncIO.raiseError[Unit](MyException("BOOM!"))
-    *
-    *   interceptSyncIO[MyException]("BOOM!")(io)
-    * }}}
-    *
-    * or
-    *
-    * {{{
-    *   interceptSyncIO[MyException] {
-    *       SyncIO.raiseError[Unit](MyException("BOOM!"))
-    *   }
-    * }}}
-    */
-  def interceptMessageSyncIO[T <: Throwable](
-      expectedExceptionMessage: String
-  )(io: SyncIO[Any])(implicit T: ClassTag[T], loc: Location): SyncIO[T] =
-    io.attempt.flatMap[T](runInterceptMessage[SyncIO, T](Some(expectedExceptionMessage)))
 
   /**
     * Copied from `munit.Assertions` and adapted to return `IO[T]` instead of `T`.
@@ -396,75 +213,6 @@ trait CatsEffectAssertions { self: Assertions =>
       */
     def assert(implicit loc: Location): IO[Unit] =
       assertIOBoolean(io, "value is not true")
-  }
-
-  implicit class MUnitCatsAssertionsForSyncIOOps[A](io: SyncIO[A]) {
-
-    /**
-      * Asserts that this effect returns an expected value.
-      *
-      * The "expected" value (second argument) must have the same type or be a subtype of the one "contained" inside the
-      * effect. For example:
-      * {{{
-      *   SyncIO(Option(1)).assertEquals(Some(1)) // OK
-      *   SyncIO(Some(1)).assertEquals(Option(1)) // Error: Option[Int] is not a subtype of Some[Int]
-      * }}}
-      *
-      * The "clue" value can be used to give extra information about the failure in case the assertion fails.
-      *
-      * @param expected
-      *   the expected value
-      * @param clue
-      *   a value that will be printed in case the assertions fails
-      */
-    def assertEquals[B](
-        expected: B,
-        clue: => Any = "values are not the same"
-    )(implicit loc: Location, ev: B <:< A): SyncIO[Unit] =
-      assertSyncIO(io, expected, clue)
-
-    /**
-      * Intercepts a `Throwable` being thrown inside this effect.
-      *
-      * @example
-      * {{{
-      *   val io = SyncIO.raiseError[Unit](MyException("BOOM!"))
-      *
-      *   io.intercept[MyException]
-      * }}}
-      */
-    def intercept[T <: Throwable](implicit T: ClassTag[T], loc: Location): SyncIO[T] =
-      interceptSyncIO[T](io)
-
-    /**
-      * Intercepts a `Throwable` with a certain message being thrown inside this effect.
-      *
-      * @example
-      * {{{
-      *   val io = SyncIO.raiseError[Unit](MyException("BOOM!"))
-      *
-      *   io.intercept[MyException]("BOOM!")
-      * }}}
-      */
-    def interceptMessage[T <: Throwable](
-        expectedExceptionMessage: String
-    )(implicit T: ClassTag[T], loc: Location): SyncIO[T] =
-      interceptMessageSyncIO[T](expectedExceptionMessage)(io)
-
-  }
-
-  implicit class MUnitCatsAssertionsForSyncIOUnitOps(io: SyncIO[Unit]) {
-
-    /**
-      * Asserts that this effect returns the Unit value.
-      *
-      * For example:
-      * {{{
-      *   SyncIO.unit.assert // OK
-      * }}}
-      */
-    def assert(implicit loc: Location): SyncIO[Unit] =
-      assertSyncIO_(io)
   }
 }
 
