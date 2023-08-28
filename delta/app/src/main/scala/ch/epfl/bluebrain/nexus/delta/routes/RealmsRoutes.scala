@@ -33,7 +33,6 @@ import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.execution.Scheduler
 
 import scala.annotation.nowarn
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 
 class RealmsRoutes(identities: Identities, realms: Realms, aclCheck: AclCheck)(implicit
     baseUri: BaseUri,
@@ -51,10 +50,10 @@ class RealmsRoutes(identities: Identities, realms: Realms, aclCheck: AclCheck)(i
       RealmSearchParams(None, deprecated, rev, createdBy, updatedBy)
     }
 
-  private def emitCE(io: IO[RealmResource]): Route = emit(io.toBIO[RealmRejection])
+  private def emitFetch(io: IO[RealmResource]): Route = emitCE(io.attemptNarrow[RealmRejection])
 
   private def emitMetadata(statusCode: StatusCode, io: IO[RealmResource]): Route =
-    emit(statusCode, io.toBIO[RealmRejection].mapValue(_.metadata))
+    emitCE(statusCode, io.map(_.map(_.metadata)).attemptNarrow[RealmRejection])
 
   private def emitMetadata(io: IO[RealmResource]): Route = emitMetadata(StatusCodes.OK, io)
 
@@ -72,9 +71,8 @@ class RealmsRoutes(identities: Identities, realms: Realms, aclCheck: AclCheck)(i
                       searchResultsJsonLdEncoder(Realm.context, pagination, uri)
                     val result                                                                    = realms
                       .list(pagination, params, order)
-                      .toBIO[RealmRejection]
                       .widen[SearchResults[RealmResource]]
-                    emit(result)
+                    emitCE(result)
                   }
                 }
             },
@@ -106,9 +104,9 @@ class RealmsRoutes(identities: Identities, realms: Realms, aclCheck: AclCheck)(i
                     authorizeFor(AclAddress.Root, realmsPermissions.read).apply {
                       parameter("rev".as[Int].?) {
                         case Some(rev) => // Fetch realm at specific revision
-                          emitCE(realms.fetchAt(id, rev))
+                          emitFetch(realms.fetchAt(id, rev))
                         case None      => // Fetch realm
-                          emitCE(realms.fetch(id))
+                          emitFetch(realms.fetch(id))
                       }
                     }
                   },
