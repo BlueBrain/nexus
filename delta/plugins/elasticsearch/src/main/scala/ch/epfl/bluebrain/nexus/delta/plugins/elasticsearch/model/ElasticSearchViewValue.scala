@@ -45,6 +45,7 @@ sealed trait ElasticSearchViewValue extends Product with Serializable {
   def tpe: ElasticSearchViewType
 
   def toJson(iri: Iri): Json = {
+    import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.Source._
     this.asJsonObject.add(keywords.id, iri.asJson).asJson.deepDropNullValues
   }
 
