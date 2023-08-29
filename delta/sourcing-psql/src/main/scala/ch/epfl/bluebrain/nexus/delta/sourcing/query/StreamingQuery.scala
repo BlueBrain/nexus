@@ -34,8 +34,8 @@ object StreamingQuery {
     * Get information about the remaining elements to stream
     * @param project
     *   the project of the states / tombstones
-    * @param tag
-    *   the tag to follow
+    * @param selectFilter
+    *   what to filter for
     * @param xas
     *   the transactors
     */
@@ -69,6 +69,8 @@ object StreamingQuery {
     *   the project of the states / tombstones
     * @param start
     *   the offset to start with
+    * @param selectFilter
+    *   what to filter for
     * @param cfg
     *   the query config
     * @param xas
@@ -119,6 +121,8 @@ object StreamingQuery {
     *   the project of the states / tombstones
     * @param start
     *   the offset to start with
+    * @param selectFilter
+    *   what to filter for
     * @param cfg
     *   the query config
     * @param xas

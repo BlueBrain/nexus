@@ -17,6 +17,8 @@ trait GraphResourceStream {
     * Allows to generate a non-terminating [[GraphResource]] stream for the given project for the given tag
     * @param project
     *   the project to stream from
+    * @param selectFilter
+    *   what to filter for
     * @param start
     *   the offset to start with
     */
@@ -29,6 +31,8 @@ trait GraphResourceStream {
     *
     * @param project
     *   the project to stream from
+    * @param selectFilter
+    *   what to filter for
     * @param start
     *   the offset to start with
     */
@@ -38,8 +42,8 @@ trait GraphResourceStream {
     * Get information about the remaining elements to stream
     * @param project
     *   the project to stream from
-    * @param tag
-    *   the tag to retain
+    * @param selectFilter
+    *   what to filter for
     * @param start
     *   the offset to start with
     */

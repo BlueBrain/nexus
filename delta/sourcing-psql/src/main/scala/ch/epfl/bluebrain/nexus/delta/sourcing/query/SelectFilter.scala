@@ -12,8 +12,11 @@ import doobie.util.fragment.Fragment
   *   tag that a view is indexing
   */
 case class SelectFilter(types: Set[Iri], tag: Tag) {
+
+  /** The types as a postgres array */
   def typeSqlArray: Fragment =
     Fragment.const(s"ARRAY[${types.map(t => s"'$t'").mkString(",")}]")
+
 }
 
 object SelectFilter {

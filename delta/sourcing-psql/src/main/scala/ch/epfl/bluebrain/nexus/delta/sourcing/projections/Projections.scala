@@ -82,8 +82,8 @@ trait Projections {
     *
     * @param project
     *   the project for which the counts are collected
-    * @param tag
-    *   the tag the projection is working on
+    * @param selectFilter
+    *   what to filter for
     * @param projectionId
     *   the projection id for which the statistics are computed
     */

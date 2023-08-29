@@ -43,8 +43,8 @@ trait SseElemStream {
     * Get information about the remaining elements to stream
     * @param project
     *   the project to stream from
-    * @param tag
-    *   the tag to retain
+    * @param selectFilter
+    *   what to filter for
     * @param start
     *   the offset to start with
     */
