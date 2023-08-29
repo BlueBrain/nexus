@@ -66,8 +66,8 @@ class StreamingQuerySuite extends BioSuite with Doobie.Fixture {
 
   private val prState11 = PullRequestActive(id1, project1, rev, Instant.EPOCH, Anonymous, Instant.EPOCH, alice)
   private val prState12 = PullRequestActive(id2, project1, rev, Instant.EPOCH, Anonymous, Instant.EPOCH, alice)
-  private val prState13 = PullRequestActive(id3, project1, rev, Instant.EPOCH, Anonymous, Instant.EPOCH, alice)
-  private val prState14 = PullRequestActive(id4, project1, rev, Instant.EPOCH, Anonymous, Instant.EPOCH, alice)
+  private val prState13 = PullRequestActive(id3, project1, rev, Instant.EPOCH, Anonymous, Instant.EPOCH, alice, Set(nxv + "Fix"))
+  private val prState14 = PullRequestActive(id4, project1, rev, Instant.EPOCH, Anonymous, Instant.EPOCH, alice, Set(nxv + "Feature"))
   private val prState21 = PullRequestActive(id1, project2, rev, Instant.EPOCH, Anonymous, Instant.EPOCH, alice)
   private val prState34 = PullRequestActive(id4, project3, rev, Instant.EPOCH, Anonymous, Instant.EPOCH, alice)
 
@@ -136,6 +136,18 @@ class StreamingQuerySuite extends BioSuite with Doobie.Fixture {
     val expected = List(
       SuccessElem(PullRequest.entityType, id3, Some(project1), Instant.EPOCH, Offset.at(7L), id3, rev),
       SuccessElem(Release.entityType, release12.id, Some(project1), Instant.EPOCH, Offset.at(8L), release12.id, rev),
+      SuccessElem(PullRequest.entityType, id4, Some(project1), Instant.EPOCH, Offset.at(15L), id4, rev)
+    )
+
+    iri.compile.toList.assert(expected)
+    void.compile.toList.assert(expected.map(_.void))
+  }
+
+  test("Running a stream on latest states on project 1 from the beginning, filtering for types") {
+    val (iri, void) = stream(project1, Offset.start, SelectFilter(Set(nxv + "Fix", nxv + "Feature"), Tag.Latest))
+
+    val expected = List(
+      SuccessElem(PullRequest.entityType, id3, Some(project1), Instant.EPOCH, Offset.at(7L), id3, rev),
       SuccessElem(PullRequest.entityType, id4, Some(project1), Instant.EPOCH, Offset.at(15L), id4, rev)
     )
 
