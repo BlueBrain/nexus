@@ -76,6 +76,7 @@ services:
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.9.1
     environment:
+      ES_JAVA_OPTS: "-Xmx2G"
       discovery.type: "single-node"
       bootstrap.memory_lock: "true"
       xpack.security.enabled: "true"
@@ -88,6 +89,10 @@ services:
       retries: 3
     ports:
       - 9200:9200
+    deploy:
+      resources:
+        limits:
+          memory: 4G
 
   blazegraph:
     image: bluebrain/blazegraph-nexus:2.1.6-RC
