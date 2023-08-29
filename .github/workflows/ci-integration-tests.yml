@@ -26,7 +26,7 @@ jobs:
             app/Docker/publishLocal \
             storage/Docker/publishLocal
       - name: Start services
-        run: docker-compose -f tests/docker/docker-compose.yml up -d && sleep 70
+        run: docker-compose -f tests/docker/docker-compose.yml up -d
       - name: Waiting for Delta to start
         run: |
           URL="http://localhost:8080/v1/version"
