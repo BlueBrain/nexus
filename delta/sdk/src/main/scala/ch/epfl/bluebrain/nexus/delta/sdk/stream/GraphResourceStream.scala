@@ -56,7 +56,11 @@ object GraphResourceStream {
       Stream.never[Task]
     override def currents(project: ProjectRef, selectFilter: SelectFilter, start: Offset): ElemStream[GraphResource]   =
       Stream.empty
-    override def remaining(project: ProjectRef, selectFilter: SelectFilter, start: Offset): UIO[Option[RemainingElems]]                  = UIO.none
+    override def remaining(
+        project: ProjectRef,
+        selectFilter: SelectFilter,
+        start: Offset
+    ): UIO[Option[RemainingElems]]                                                                                     = UIO.none
   }
 
   /**
@@ -81,7 +85,11 @@ object GraphResourceStream {
         shifts.decodeGraphResource
       )
 
-    override def remaining(project: ProjectRef, selectFilter: SelectFilter, start: Offset): UIO[Option[RemainingElems]] =
+    override def remaining(
+        project: ProjectRef,
+        selectFilter: SelectFilter,
+        start: Offset
+    ): UIO[Option[RemainingElems]] =
       StreamingQuery.remaining(project, selectFilter, start, xas)
   }
 
@@ -97,7 +105,11 @@ object GraphResourceStream {
       ): ElemStream[GraphResource]                                                                                     = stream
       override def currents(project: ProjectRef, selectFilter: SelectFilter, start: Offset): ElemStream[GraphResource] =
         stream
-      override def remaining(project: ProjectRef, selectFilter: SelectFilter, start: Offset): UIO[Option[RemainingElems]]                = UIO.none
+      override def remaining(
+          project: ProjectRef,
+          selectFilter: SelectFilter,
+          start: Offset
+      ): UIO[Option[RemainingElems]]                                                                                   = UIO.none
     }
 
 }

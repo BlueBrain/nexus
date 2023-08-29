@@ -121,7 +121,11 @@ object Projections {
           projectionRestartStore.deleteExpired(now.minusMillis(restartTtl.toMillis))
         }
 
-      override def statistics(project: ProjectRef, selectFilter: SelectFilter, projectionId: String): UIO[ProgressStatistics] =
+      override def statistics(
+          project: ProjectRef,
+          selectFilter: SelectFilter,
+          projectionId: String
+      ): UIO[ProgressStatistics] =
         for {
           current   <- progress(projectionId)
           remaining <-

@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
-import akka.http.scaladsl.model.headers.{OAuth2BearerToken, `Last-Event-ID`}
+import akka.http.scaladsl.model.headers.{`Last-Event-ID`, OAuth2BearerToken}
 import akka.http.scaladsl.model.sse.ServerSentEvent
 import akka.http.scaladsl.model.{MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.Route
@@ -51,7 +51,11 @@ class ElemRoutesSpec extends BaseRouteSpec with CirceLiteral {
 
     override def currents(project: ProjectRef, selectFilter: SelectFilter, start: Offset): ServerSentEventStream =
       stream
-    override def remaining(project: ProjectRef, selectFilter: SelectFilter, start: Offset): UIO[Option[RemainingElems]]            =
+    override def remaining(
+        project: ProjectRef,
+        selectFilter: SelectFilter,
+        start: Offset
+    ): UIO[Option[RemainingElems]]                                                                               =
       UIO.some(RemainingElems(999L, Instant.EPOCH))
   }
 

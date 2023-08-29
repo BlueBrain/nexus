@@ -72,7 +72,11 @@ object SseElemStream {
         )
         .map(toServerSentEvent)
 
-    override def remaining(project: ProjectRef, selectFilter: SelectFilter, start: Offset): UIO[Option[RemainingElems]] =
+    override def remaining(
+        project: ProjectRef,
+        selectFilter: SelectFilter,
+        start: Offset
+    ): UIO[Option[RemainingElems]] =
       StreamingQuery.remaining(project, selectFilter, start, xas)
   }
 

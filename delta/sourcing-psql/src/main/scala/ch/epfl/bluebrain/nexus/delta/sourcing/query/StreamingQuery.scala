@@ -39,7 +39,12 @@ object StreamingQuery {
     * @param xas
     *   the transactors
     */
-  def remaining(project: ProjectRef, selectFilter: SelectFilter, start: Offset, xas: Transactors): UIO[Option[RemainingElems]] = {
+  def remaining(
+      project: ProjectRef,
+      selectFilter: SelectFilter,
+      start: Offset,
+      xas: Transactors
+  ): UIO[Option[RemainingElems]] = {
     sql"""SELECT count(ordering), max(instant)
          |FROM public.scoped_states
          |${stateFilter(project, start, selectFilter)}
