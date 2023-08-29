@@ -26,6 +26,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.FailedElemLogRow.FailedElemD
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{FailedElemLogRow, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionErrors, Projections}
+import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
 import io.circe.Encoder
 import io.circe.generic.semiauto.deriveEncoder
 import io.circe.syntax._
@@ -69,7 +70,9 @@ class BlazegraphViewsIndexingRoutes(
                 authorizeFor(ref, permissions.read).apply {
                   emit(
                     fetch(id, ref)
-                      .flatMap(v => projections.statistics(ref, v.resourceTag, v.projection))
+                      .flatMap(v =>
+                        projections.statistics(ref, SelectFilter.tagOrLatest(v.resourceTag), v.projection)
+                      ) // TODO: Fix when introducing BG selectFilter
                       .rejectOn[ViewNotFound]
                   )
                 }

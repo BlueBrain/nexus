@@ -17,8 +17,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseElemStream
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, Tag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.RemainingElems
 import io.circe.syntax.EncoderOps
@@ -68,7 +68,7 @@ class ElemRoutes(
                   (get & pathPrefix("remaining") & parameter("tag".as[UserTag].?)) { tag =>
                     operationName(s"$prefixSegment/$project/elems/remaining") {
                       emit(
-                        sseElemStream.remaining(project, tag.getOrElse(Tag.latest), offset).map { r =>
+                        sseElemStream.remaining(project, SelectFilter.tagOrLatest(tag), offset).map { r =>
                           r.getOrElse(RemainingElems(0L, Instant.EPOCH))
                         }
                       )

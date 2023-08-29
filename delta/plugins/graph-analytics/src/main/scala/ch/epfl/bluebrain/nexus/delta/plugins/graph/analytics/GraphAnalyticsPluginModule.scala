@@ -17,6 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, Projects}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projections
+import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Supervisor
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.execution.Scheduler
@@ -71,7 +72,7 @@ class GraphAnalyticsPluginModule(priority: Int) extends ModuleDef {
         identities,
         aclCheck,
         graphAnalytics,
-        project => projections.statistics(project, None, GraphAnalytics.projectionName(project)),
+        project => projections.statistics(project, SelectFilter.latest, GraphAnalytics.projectionName(project)),
         schemeDirectives,
         viewsQuery
       )(

@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.sse.ServerSentEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling.defaultPrinter
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, Tag}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.{RefreshStrategy, SelectFilter, StreamingQuery}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
@@ -48,7 +48,7 @@ trait SseElemStream {
     * @param start
     *   the offset to start with
     */
-  def remaining(project: ProjectRef, tag: Tag, start: Offset): UIO[Option[RemainingElems]]
+  def remaining(project: ProjectRef, selectFilter: SelectFilter, start: Offset): UIO[Option[RemainingElems]]
 }
 
 object SseElemStream {
@@ -72,8 +72,8 @@ object SseElemStream {
         )
         .map(toServerSentEvent)
 
-    override def remaining(project: ProjectRef, tag: Tag, start: Offset): UIO[Option[RemainingElems]] =
-      StreamingQuery.remaining(project, tag, start, xas)
+    override def remaining(project: ProjectRef, selectFilter: SelectFilter, start: Offset): UIO[Option[RemainingElems]] =
+      StreamingQuery.remaining(project, selectFilter, start, xas)
   }
 
   private[sse] def toServerSentEvent(elem: Elem[Unit]): ServerSentEvent = {

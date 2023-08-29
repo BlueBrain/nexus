@@ -4,10 +4,10 @@ import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef, Tag}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.model.ProjectionRestart
-import ch.epfl.bluebrain.nexus.delta.sourcing.query.StreamingQuery
+import ch.epfl.bluebrain.nexus.delta.sourcing.query.{SelectFilter, StreamingQuery}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{ProjectionMetadata, ProjectionProgress, ProjectionStore}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{ProgressStatistics, Transactors}
 import monix.bio.UIO
@@ -87,7 +87,7 @@ trait Projections {
     * @param projectionId
     *   the projection id for which the statistics are computed
     */
-  def statistics(project: ProjectRef, tag: Option[Tag], projectionId: String): UIO[ProgressStatistics]
+  def statistics(project: ProjectRef, selectFilter: SelectFilter, projectionId: String): UIO[ProgressStatistics]
 }
 
 object Projections {
@@ -121,11 +121,11 @@ object Projections {
           projectionRestartStore.deleteExpired(now.minusMillis(restartTtl.toMillis))
         }
 
-      override def statistics(project: ProjectRef, tag: Option[Tag], projectionId: String): UIO[ProgressStatistics] =
+      override def statistics(project: ProjectRef, selectFilter: SelectFilter, projectionId: String): UIO[ProgressStatistics] =
         for {
           current   <- progress(projectionId)
           remaining <-
-            StreamingQuery.remaining(project, tag.getOrElse(Tag.latest), current.fold(Offset.start)(_.offset), xas)
+            StreamingQuery.remaining(project, selectFilter, current.fold(Offset.start)(_.offset), xas)
         } yield ProgressStatistics(current, remaining)
     }
 }

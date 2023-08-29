@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.{CrossProjectSource, ProjectSource, RemoteProjectSource}
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemPipe, ProjectRef, Tag}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemPipe, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
@@ -75,8 +75,8 @@ object CompositeGraphStream {
 
     override def remaining(source: CompositeViewSource, project: ProjectRef): Offset => UIO[Option[RemainingElems]] =
       source match {
-        case p: ProjectSource       => local.remaining(project, p.resourceTag.getOrElse(Tag.Latest), _)
-        case c: CrossProjectSource  => local.remaining(c.project, c.resourceTag.getOrElse(Tag.Latest), _)
+        case p: ProjectSource       => local.remaining(project, SelectFilter.tagOrLatest(p.resourceTag), _)
+        case c: CrossProjectSource  => local.remaining(c.project, SelectFilter.tagOrLatest(c.resourceTag), _)
         case r: RemoteProjectSource => remote.remaining(r, _).map(Some(_))
       }
   }

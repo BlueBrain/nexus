@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.stream
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceShifts
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef, Tag}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.{RefreshStrategy, SelectFilter, StreamingQuery}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
@@ -43,7 +43,7 @@ trait GraphResourceStream {
     * @param start
     *   the offset to start with
     */
-  def remaining(project: ProjectRef, tag: Tag, start: Offset): UIO[Option[RemainingElems]]
+  def remaining(project: ProjectRef, selectFilter: SelectFilter, start: Offset): UIO[Option[RemainingElems]]
 }
 
 object GraphResourceStream {
@@ -56,7 +56,7 @@ object GraphResourceStream {
       Stream.never[Task]
     override def currents(project: ProjectRef, selectFilter: SelectFilter, start: Offset): ElemStream[GraphResource]   =
       Stream.empty
-    override def remaining(project: ProjectRef, tag: Tag, start: Offset): UIO[Option[RemainingElems]]                  = UIO.none
+    override def remaining(project: ProjectRef, selectFilter: SelectFilter, start: Offset): UIO[Option[RemainingElems]]                  = UIO.none
   }
 
   /**
@@ -81,8 +81,8 @@ object GraphResourceStream {
         shifts.decodeGraphResource
       )
 
-    override def remaining(project: ProjectRef, tag: Tag, start: Offset): UIO[Option[RemainingElems]] =
-      StreamingQuery.remaining(project, tag, start, xas)
+    override def remaining(project: ProjectRef, selectFilter: SelectFilter, start: Offset): UIO[Option[RemainingElems]] =
+      StreamingQuery.remaining(project, selectFilter, start, xas)
   }
 
   /**
@@ -97,7 +97,7 @@ object GraphResourceStream {
       ): ElemStream[GraphResource]                                                                                     = stream
       override def currents(project: ProjectRef, selectFilter: SelectFilter, start: Offset): ElemStream[GraphResource] =
         stream
-      override def remaining(project: ProjectRef, tag: Tag, start: Offset): UIO[Option[RemainingElems]]                = UIO.none
+      override def remaining(project: ProjectRef, selectFilter: SelectFilter, start: Offset): UIO[Option[RemainingElems]]                = UIO.none
     }
 
 }

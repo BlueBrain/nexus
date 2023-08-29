@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Scope, Transactors}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef, Tag}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, RemainingElems}
@@ -39,11 +39,10 @@ object StreamingQuery {
     * @param xas
     *   the transactors
     */
-  def remaining(project: ProjectRef, tag: Tag, start: Offset, xas: Transactors): UIO[Option[RemainingElems]] = {
-    val where = Fragments.whereAndOpt(Scope(project).asFragment, Some(fr"tag = $tag"), start.asFragment)
+  def remaining(project: ProjectRef, selectFilter: SelectFilter, start: Offset, xas: Transactors): UIO[Option[RemainingElems]] = {
     sql"""SELECT count(ordering), max(instant)
          |FROM public.scoped_states
-         |$where
+         |${stateFilter(project, start, selectFilter)}
          |""".stripMargin
       .query[(Long, Option[Instant])]
       .map { case (count, maxInstant) =>

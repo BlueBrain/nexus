@@ -227,7 +227,7 @@ class StreamingQuerySuite extends BioSuite with Doobie.Fixture {
 
   test("Get the remaining elems for project 1 on latest from the beginning") {
     StreamingQuery
-      .remaining(project1, Tag.Latest, Offset.start, xas)
+      .remaining(project1, SelectFilter.latest, Offset.start, xas)
       .assertSome(
         RemainingElems(6L, Instant.EPOCH)
       )
@@ -235,22 +235,22 @@ class StreamingQuerySuite extends BioSuite with Doobie.Fixture {
 
   test("Get the remaining elems for project 1 on latest from offset 6") {
     StreamingQuery
-      .remaining(project1, Tag.Latest, Offset.at(6L), xas)
+      .remaining(project1, SelectFilter.latest, Offset.at(6L), xas)
       .assertSome(
         RemainingElems(3L, Instant.EPOCH)
       )
   }
 
-  test(s"Get the remaining elems for project 1 on tag ${customTag} from the beginning") {
+  test(s"Get the remaining elems for project 1 on tag $customTag from the beginning") {
     StreamingQuery
-      .remaining(project1, customTag, Offset.at(6L), xas)
+      .remaining(project1, SelectFilter.tag(customTag), Offset.at(6L), xas)
       .assertSome(
         RemainingElems(4L, Instant.EPOCH)
       )
   }
 
   test(s"Get no remaining for an unknown project") {
-    StreamingQuery.remaining(ProjectRef.unsafe("xxx", "xxx"), Tag.Latest, Offset.at(6L), xas).assertNone
+    StreamingQuery.remaining(ProjectRef.unsafe("xxx", "xxx"), SelectFilter.latest, Offset.at(6L), xas).assertNone
   }
 
   test("Should only keep the last elem when elems with the same id appear several times") {
