@@ -98,8 +98,8 @@ object BlazegraphViewValue {
         includeDeprecated == that.includeDeprecated
 
     /**
-     * Creates a [[SelectFilter]] for this view
-     */
+      * Creates a [[SelectFilter]] for this view
+      */
     def selectFilter: SelectFilter =
       SelectFilter(resourceTypes, resourceTag.getOrElse(Latest))
   }

@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.query
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag
-import doobie.util.fragment.Fragment
 
 /**
   * Contains the information that can be used for filtering when streaming states
