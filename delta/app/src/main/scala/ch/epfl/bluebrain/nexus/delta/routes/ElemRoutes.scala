@@ -18,7 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseElemStream
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.{Latest, UserTag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.RemainingElems
 import io.circe.syntax.EncoderOps
@@ -57,18 +57,18 @@ class ElemRoutes(
                 concat(
                   (get & pathPrefix("continuous") & parameter("tag".as[UserTag].?)) { tag =>
                     operationName(s"$prefixSegment/$project/elems/continuous") {
-                      emit(sseElemStream.continuous(project, SelectFilter.tagOrLatest(tag), offset))
+                      emit(sseElemStream.continuous(project, SelectFilter.tag(tag.getOrElse(Latest)), offset))
                     }
                   },
                   (get & pathPrefix("currents") & parameter("tag".as[UserTag].?)) { tag =>
                     operationName(s"$prefixSegment/$project/elems/currents") {
-                      emit(sseElemStream.currents(project, SelectFilter.tagOrLatest(tag), offset))
+                      emit(sseElemStream.currents(project, SelectFilter.tag(tag.getOrElse(Latest)), offset))
                     }
                   },
                   (get & pathPrefix("remaining") & parameter("tag".as[UserTag].?)) { tag =>
                     operationName(s"$prefixSegment/$project/elems/remaining") {
                       emit(
-                        sseElemStream.remaining(project, SelectFilter.tagOrLatest(tag), offset).map { r =>
+                        sseElemStream.remaining(project, SelectFilter.tag(tag.getOrElse(Latest)), offset).map { r =>
                           r.getOrElse(RemainingElems(0L, Instant.EPOCH))
                         }
                       )
