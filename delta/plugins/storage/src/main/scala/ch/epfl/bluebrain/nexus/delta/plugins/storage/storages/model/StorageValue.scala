@@ -246,11 +246,8 @@ object StorageValue {
       */
     def authToken(config: StorageTypeConfig): Option[AuthToken] =
       config.remoteDisk
-        .flatMap { cfg =>
-          if (endpoint == cfg.defaultEndpoint) cfg.defaultCredentials else None
-        }
+        .flatMap(_.defaultCredentials)
         .map(secret => AuthToken(secret.value))
-
   }
 
   object RemoteDiskStorageValue {
