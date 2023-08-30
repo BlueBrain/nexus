@@ -291,10 +291,10 @@ class ElasticSearchViewsSpec extends BaseSpec with EitherValuable with CirceEq {
         response.status shouldEqual StatusCodes.OK
         val expected = jsonContentOf(
           "/kg/views/statistics.json",
-          "total"     -> "14",
-          "processed" -> "14",
+          "total"     -> "5",
+          "processed" -> "5",
           "evaluated" -> "5",
-          "discarded" -> "9",
+          "discarded" -> "0",
           "remaining" -> "0"
         )
         filterNestedKeys("lastEventDateTime", "lastProcessedEventDateTime")(json) shouldEqual expected
