@@ -11,7 +11,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.semiauto.deriveDefaultJs
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.{Latest, UserTag}
+import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.PipeChain
 import io.circe.{Encoder, Json}
 
@@ -53,6 +54,13 @@ sealed trait CompositeViewSource extends Product with Serializable {
     *   are indexed with the corresponding revision
     */
   def resourceTag: Option[UserTag]
+
+  /**
+    * @return
+    *   the [[SelectFilter]] for the given view; used to filter the data that is indexed
+    */
+  def selectFilter: SelectFilter =
+    SelectFilter(resourceTypes, resourceTag.getOrElse(Latest))
 
   /**
     * @return
