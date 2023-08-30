@@ -81,7 +81,7 @@ class IndexingViewDefSuite extends BioSuite {
         ActiveViewDef(
           viewRef,
           s"blazegraph-$projectRef-$id-$indexingRev",
-          indexing.resourceTag,
+          indexing.selectFilter,
           indexing.pipeChain,
           namespace,
           indexingRev,
@@ -109,7 +109,7 @@ class IndexingViewDefSuite extends BioSuite {
     val v = ActiveViewDef(
       viewRef,
       s"blazegraph-$projectRef-$id-1",
-      indexing.resourceTag,
+      indexing.selectFilter,
       Some(PipeChain(PipeRef.unsafe("xxx") -> ExpandedJsonLd.empty)),
       namespace,
       indexingRev,
@@ -138,7 +138,7 @@ class IndexingViewDefSuite extends BioSuite {
     val v = ActiveViewDef(
       viewRef,
       s"blazegraph-$projectRef-$id-1",
-      indexing.resourceTag,
+      indexing.selectFilter,
       Some(PipeChain(FilterDeprecated())),
       namespace,
       indexingRev,

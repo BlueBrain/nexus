@@ -16,6 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionErr.CouldNotFindPipeErr
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{NoopSink, PipeChain, PipeRef}
@@ -38,7 +39,7 @@ class BlazegraphIndexingActionSuite extends BioSuite with Fixtures {
   private val view1   = ActiveViewDef(
     ViewRef(project, id1),
     projection = id1.toString,
-    None,
+    SelectFilter.latest,
     None,
     namespace = "view1",
     indexingRev,
@@ -49,7 +50,7 @@ class BlazegraphIndexingActionSuite extends BioSuite with Fixtures {
   private val view2 = ActiveViewDef(
     ViewRef(project, id2),
     projection = id2.toString,
-    Some(UserTag.unsafe("tag")),
+    SelectFilter.tag(UserTag.unsafe("tag")),
     None,
     namespace = "view2",
     indexingRev,
@@ -61,7 +62,7 @@ class BlazegraphIndexingActionSuite extends BioSuite with Fixtures {
   private val view3       = ActiveViewDef(
     ViewRef(project, id3),
     projection = id3.toString,
-    None,
+    SelectFilter.latest,
     Some(PipeChain(PipeRef.unsafe("xxx") -> ExpandedJsonLd.empty)),
     namespace = "view3",
     indexingRev,

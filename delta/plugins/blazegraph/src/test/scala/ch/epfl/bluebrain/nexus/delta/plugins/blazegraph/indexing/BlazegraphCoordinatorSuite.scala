@@ -10,6 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionErr.CouldNotFindPipeErr
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.SupervisorSetup.unapply
@@ -39,7 +40,7 @@ class BlazegraphCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
   private val view1                                    = ActiveViewDef(
     ViewRef(project, id1),
     projection = id1.toString,
-    None,
+    SelectFilter.latest,
     None,
     namespace = "view1",
     indexingRev,
@@ -50,7 +51,7 @@ class BlazegraphCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
   private val view2 = ActiveViewDef(
     ViewRef(project, id2),
     projection = id2.toString,
-    None,
+    SelectFilter.latest,
     None,
     namespace = "view2",
     indexingRev,
@@ -62,7 +63,7 @@ class BlazegraphCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
   private val view3       = ActiveViewDef(
     ViewRef(project, id3),
     projection = id3.toString,
-    None,
+    SelectFilter.latest,
     Some(PipeChain(PipeRef.unsafe("xxx") -> ExpandedJsonLd.empty)),
     namespace = "view3",
     indexingRev,
@@ -75,7 +76,7 @@ class BlazegraphCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
   private val updatedView2    = ActiveViewDef(
     ViewRef(project, id2),
     projection = id2.toString + "_2",
-    None,
+    SelectFilter.latest,
     None,
     namespace = "view2_2",
     indexingRev,

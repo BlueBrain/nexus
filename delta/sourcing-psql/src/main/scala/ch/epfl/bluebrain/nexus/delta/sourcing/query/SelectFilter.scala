@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.query
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag
-import doobie.util.fragment.Fragment
 
 /**
   * Contains the information that can be used for filtering when streaming states
@@ -11,13 +10,7 @@ import doobie.util.fragment.Fragment
   * @param tag
   *   tag that a view is indexing
   */
-case class SelectFilter(types: Set[Iri], tag: Tag) {
-
-  /** The types as a postgres array */
-  def typeSqlArray: Fragment =
-    Fragment.const(s"ARRAY[${types.map(t => s"'$t'").mkString(",")}]")
-
-}
+case class SelectFilter(types: Set[Iri], tag: Tag)
 
 object SelectFilter {
 
