@@ -7,7 +7,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewStat
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ElemStream
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
@@ -35,7 +34,7 @@ object IndexingViewDef {
   final case class ActiveViewDef(
       ref: ViewRef,
       projection: String,
-      resourceTag: Option[UserTag],
+      selectFilter: SelectFilter,
       pipeChain: Option[PipeChain],
       namespace: String,
       indexingRev: Int,
@@ -68,7 +67,7 @@ object IndexingViewDef {
         ActiveViewDef(
           ViewRef(state.project, state.id),
           BlazegraphViews.projectionName(state),
-          indexing.resourceTag,
+          indexing.selectFilter,
           indexing.pipeChain,
           BlazegraphViews.namespace(state.uuid, state.indexingRev, prefix),
           state.indexingRev,
@@ -93,7 +92,7 @@ object IndexingViewDef {
     compile(
       v,
       compilePipeChain,
-      graphStream.continuous(v.ref.project, SelectFilter.tagOrLatest(v.resourceTag), _),
+      graphStream.continuous(v.ref.project, v.selectFilter, _),
       sink
     )
 

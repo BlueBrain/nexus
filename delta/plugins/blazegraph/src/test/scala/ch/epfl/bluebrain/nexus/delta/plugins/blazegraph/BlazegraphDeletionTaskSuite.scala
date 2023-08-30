@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
 import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
 import fs2.Stream
 import monix.bio.Task
@@ -26,7 +27,7 @@ class BlazegraphDeletionTaskSuite extends BioSuite {
   private def activeView(ref: ViewRef) = ActiveViewDef(
     ref,
     projection = ref.viewId.toString,
-    None,
+    SelectFilter.latest,
     None,
     namespace = "view2",
     indexingRev,
