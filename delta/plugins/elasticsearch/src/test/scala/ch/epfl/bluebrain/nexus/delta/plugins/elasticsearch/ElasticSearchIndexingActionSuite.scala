@@ -43,7 +43,6 @@ class ElasticSearchIndexingActionSuite extends BioSuite with CirceLiteral with F
     ViewRef(project, id1),
     projection = id1.toString,
     None,
-    None,
     SelectFilter.latest,
     index = IndexLabel.unsafe("view1"),
     mapping = jobj"""{"properties": { }}""",
@@ -57,7 +56,6 @@ class ElasticSearchIndexingActionSuite extends BioSuite with CirceLiteral with F
   private val view2 = ActiveViewDef(
     ViewRef(project, id2),
     projection = id2.toString,
-    Some(UserTag.unsafe("tag")),
     None,
     SelectFilter.tag(UserTag.unsafe("tag")),
     index = IndexLabel.unsafe("view2"),
@@ -73,7 +71,6 @@ class ElasticSearchIndexingActionSuite extends BioSuite with CirceLiteral with F
   private val view3       = ActiveViewDef(
     ViewRef(project, id3),
     projection = id3.toString,
-    None,
     Some(PipeChain(PipeRef.unsafe("xxx") -> ExpandedJsonLd.empty)),
     SelectFilter.latest,
     index = IndexLabel.unsafe("view3"),

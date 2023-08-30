@@ -57,7 +57,6 @@ class ElasticSearchIndexingRoutesSpec extends ElasticSearchViewsRoutesFixtures {
     ViewRef(projectRef, myId),
     "projection",
     None,
-    None,
     SelectFilter.latest,
     IndexLabel.unsafe("index"),
     JsonObject.empty,

@@ -43,7 +43,6 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
     ViewRef(project, id1),
     projection = id1.toString,
     None,
-    None,
     SelectFilter.latest,
     index = IndexLabel.unsafe("view1"),
     mapping = jobj"""{"properties": { }}""",
@@ -57,7 +56,6 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
   private val view2 = ActiveViewDef(
     ViewRef(project, id2),
     projection = id2.toString,
-    None,
     None,
     SelectFilter.latest,
     index = IndexLabel.unsafe("view2"),
@@ -73,7 +71,6 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
   private val view3       = ActiveViewDef(
     ViewRef(project, id3),
     projection = id3.toString,
-    None,
     Some(PipeChain(PipeRef.unsafe("xxx") -> ExpandedJsonLd.empty)),
     SelectFilter.latest,
     index = IndexLabel.unsafe("view3"),
@@ -90,7 +87,6 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
   private val updatedView2    = ActiveViewDef(
     ViewRef(project, id2),
     projection = id2.toString + "_2",
-    None,
     None,
     SelectFilter.latest,
     index = IndexLabel.unsafe("view2_2"),

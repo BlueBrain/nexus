@@ -10,7 +10,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
 import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ElemStream
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
@@ -43,7 +42,6 @@ object IndexingViewDef {
   final case class ActiveViewDef(
       ref: ViewRef,
       projection: String,
-      resourceTag: Option[UserTag],
       pipeChain: Option[PipeChain],
       selectFilter: SelectFilter,
       index: IndexLabel,
@@ -83,7 +81,6 @@ object IndexingViewDef {
         ActiveViewDef(
           ViewRef(state.project, state.id),
           ElasticSearchViews.projectionName(state),
-          indexing.resourceTag,
           indexing.pipeChain,
           indexing.selectFilter,
           ElasticSearchViews.index(state.uuid, state.indexingRev, prefix),

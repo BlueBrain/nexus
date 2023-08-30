@@ -30,7 +30,6 @@ class ElasticSearchDeletionTaskSuite extends BioSuite with CirceLiteral {
     ref,
     projection = ref.viewId.toString,
     None,
-    None,
     SelectFilter.latest,
     index = IndexLabel.unsafe("view1"),
     mapping = jobj"""{"properties": { }}""",

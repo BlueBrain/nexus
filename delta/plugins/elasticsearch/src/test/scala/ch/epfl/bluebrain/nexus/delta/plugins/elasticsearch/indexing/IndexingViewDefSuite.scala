@@ -104,7 +104,6 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
         ActiveViewDef(
           viewRef,
           s"elasticsearch-$projectRef-$id-${indexingRev.value}",
-          indexingCustom.resourceTag,
           indexingCustom.pipeChain,
           indexingCustom.selectFilter,
           IndexLabel.fromView("prefix", uuid, indexingRev),
@@ -125,7 +124,6 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
         ActiveViewDef(
           viewRef,
           s"elasticsearch-$projectRef-$id-${indexingRev.value}",
-          indexingDefault.resourceTag,
           indexingDefault.pipeChain,
           indexingDefault.selectFilter,
           IndexLabel.fromView("prefix", uuid, indexingRev),
@@ -161,7 +159,6 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
     val v = ActiveViewDef(
       viewRef,
       s"elasticsearch-$projectRef-$id-$indexingRev",
-      indexingDefault.resourceTag,
       Some(PipeChain(PipeRef.unsafe("xxx") -> ExpandedJsonLd.empty)),
       indexingDefault.selectFilter,
       IndexLabel.fromView("prefix", uuid, indexingRev),
@@ -194,7 +191,6 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
     val v = ActiveViewDef(
       viewRef,
       s"elasticsearch-$projectRef-$id-$indexingRev",
-      indexingDefault.resourceTag,
       Some(PipeChain(FilterDeprecated())),
       indexingDefault.selectFilter,
       IndexLabel.fromView("prefix", uuid, indexingRev),
