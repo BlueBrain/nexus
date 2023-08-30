@@ -5,6 +5,7 @@ import akka.http.scaladsl.model.BodyPartEntity
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig.remoteStorageAuthToken
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.RemoteDiskStorage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.SaveFile
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.SaveFile.intermediateFolders
@@ -20,7 +21,7 @@ class RemoteDiskStorageSaveFile(storage: RemoteDiskStorage)(implicit
     httpClient: HttpClient,
     as: ActorSystem
 ) extends SaveFile {
-  implicit private val cred: Option[AuthToken] = storage.value.authToken(config)
+  implicit private val cred: Option[AuthToken] = remoteStorageAuthToken(config)
   private val client: RemoteDiskStorageClient  = new RemoteDiskStorageClient(storage.value.endpoint)
 
   override def apply(
