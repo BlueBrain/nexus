@@ -13,6 +13,7 @@ import com.typesafe.scalalogging.Logger
 import doobie.Fragments
 import doobie.implicits._
 import doobie.postgres.implicits._
+import doobie.util.fragment.Fragment
 import doobie.util.query.Query0
 import fs2.{Chunk, Stream}
 import io.circe.Json
@@ -275,7 +276,7 @@ object StreamingQuery {
   }
 
   private def stateFilter(projectRef: ProjectRef, offset: Offset, selectFilter: SelectFilter) = {
-    val typeFragment = Option.when(selectFilter.types.nonEmpty)(fr"value -> 'types' ??| ${selectFilter.typeSqlArray}")
+    val typeFragment = Option.when(selectFilter.types.nonEmpty)(fr"value -> 'types' ??| ${typesSqlArray(selectFilter)}")
     Fragments.whereAndOpt(
       Scope(projectRef).asFragment,
       offset.asFragment,
@@ -285,7 +286,7 @@ object StreamingQuery {
   }
 
   private def tombstoneFilter(projectRef: ProjectRef, offset: Offset, selectFilter: SelectFilter) = {
-    val typeFragment  = Option.when(selectFilter.types.nonEmpty)(fr"cause -> 'types' ??| ${selectFilter.typeSqlArray}")
+    val typeFragment  = Option.when(selectFilter.types.nonEmpty)(fr"cause -> 'types' ??| ${typesSqlArray(selectFilter)}")
     val causeFragment = Fragments.orOpt(Some(fr"cause->>'deleted' = 'true'"), typeFragment)
     Fragments.whereAndOpt(
       Scope(projectRef).asFragment,
@@ -294,5 +295,8 @@ object StreamingQuery {
       Some(causeFragment)
     )
   }
+
+  private def typesSqlArray(selectFilter: SelectFilter): Fragment =
+    Fragment.const(s"ARRAY[${selectFilter.types.map(t => s"'$t'").mkString(",")}]")
 
 }
