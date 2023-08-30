@@ -64,27 +64,25 @@ final class SchemasRoutes(
 
   implicit private def resourceFAJsonLdEncoder[A: JsonLdEncoder]: JsonLdEncoder[ResourceF[A]] =
     ResourceF.resourceFAJsonLdEncoder(ContextValue(contexts.schemasMetadata))
-  private def emitFetch(io: IO[SchemaResource]): Route                                        = emit(
-    io.attemptNarrow[SchemaRejection].rejectOn[SchemaNotFound]
-  )
+
+  private def emitFetch(io: IO[SchemaResource]): Route =
+    emit(io.attemptNarrow[SchemaRejection].rejectOn[SchemaNotFound])
 
   private def emitMetadata(statusCode: StatusCode, io: IO[SchemaResource]): Route =
     emit(statusCode, io.map(_.void).attemptNarrow[SchemaRejection])
 
   private def emitMetadata(io: IO[SchemaResource]): Route = emitMetadata(StatusCodes.OK, io)
 
-  private def emitMetadataOrReject(io: IO[SchemaResource]): Route = emit(
-    io.map(_.void).attemptNarrow[SchemaRejection].rejectOn[SchemaNotFound]
-  )
+  private def emitMetadataOrReject(io: IO[SchemaResource]): Route =
+    emit(io.map(_.void).attemptNarrow[SchemaRejection].rejectOn[SchemaNotFound])
 
   private def emitSource(io: IO[SchemaResource]): Route = {
     implicit val source: Printer = sourcePrinter
     emit(io.map(_.value.source).attemptNarrow[SchemaRejection].rejectOn[SchemaNotFound])
   }
 
-  private def emitTags(io: IO[SchemaResource]): Route = emit(
-    io.map(_.value.tags).attemptNarrow[SchemaRejection].rejectOn[SchemaNotFound]
-  )
+  private def emitTags(io: IO[SchemaResource]): Route =
+    emit(io.map(_.value.tags).attemptNarrow[SchemaRejection].rejectOn[SchemaNotFound])
 
   def routes: Route =
     (baseUriPrefix(baseUri.prefix) & replaceUri("schemas", shacl)) {
