@@ -50,7 +50,7 @@ class S3StorageAccessSpec(docker: MinioDocker)
   "An S3Storage access operations" should {
     val iri = iri"http://localhost/s3"
 
-    val access = new S3StorageAccess()
+    val access = new S3StorageAccess(config)
 
     "succeed verifying the bucket" in eventually {
       access(iri, storage).accepted
