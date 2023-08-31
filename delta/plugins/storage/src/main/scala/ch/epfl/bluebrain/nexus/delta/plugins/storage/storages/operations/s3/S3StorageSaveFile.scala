@@ -19,7 +19,7 @@ import monix.bio.IO
 
 import scala.concurrent.Future
 
-final class S3StorageSaveFile(storage: S3Storage)(implicit config: StorageTypeConfig, as: ActorSystem)
+final class S3StorageSaveFile(storage: S3Storage, config: StorageTypeConfig)(implicit as: ActorSystem)
     extends SaveFile {
   import as.dispatcher
   private val fileAlreadyExistException = new IllegalArgumentException("Collision, file already exist")

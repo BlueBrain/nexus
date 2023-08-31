@@ -18,7 +18,7 @@ import java.net.URLDecoder
 import java.nio.charset.StandardCharsets.UTF_8
 import scala.concurrent.Future
 
-class S3StorageLinkFile(storage: S3Storage)(implicit config: StorageTypeConfig, as: ActorSystem) extends LinkFile {
+class S3StorageLinkFile(storage: S3Storage, config: StorageTypeConfig)(implicit as: ActorSystem) extends LinkFile {
 
   import as.dispatcher
 

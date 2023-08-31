@@ -1,25 +1,18 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote
 
-import akka.actor.ActorSystem
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotAccessible
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.RemoteDiskStorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageAccess
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import monix.bio.IO
 
-class RemoteDiskStorageAccess(implicit
-    httpClient: HttpClient,
-    as: ActorSystem,
-    authProvider: RemoteStorageAuthTokenProvider
-) extends StorageAccess {
+class RemoteDiskStorageAccess(client: RemoteDiskStorageClient) extends StorageAccess {
   override type Storage = RemoteDiskStorageValue
 
   override def apply(id: Iri, storage: RemoteDiskStorageValue): IO[StorageNotAccessible, Unit] = {
-    val client: RemoteDiskStorageClient = new RemoteDiskStorageClient(storage.endpoint)
     client
-      .exists(storage.folder)
+      .exists(storage.folder)(storage.endpoint)
       .mapError(err =>
         StorageNotAccessible(
           id,

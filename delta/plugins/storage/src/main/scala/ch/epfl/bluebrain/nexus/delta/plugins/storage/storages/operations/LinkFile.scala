@@ -6,8 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.MoveFileRejection
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteStorageAuthTokenProvider
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import monix.bio.IO
 
 trait LinkFile {
@@ -28,16 +27,13 @@ object LinkFile {
   /**
     * Construct a [[LinkFile]] from the given ''storage''.
     */
-  def apply(storage: Storage)(implicit
-      config: StorageTypeConfig,
-      authProvider: RemoteStorageAuthTokenProvider,
-      as: ActorSystem,
-      client: HttpClient
+  def apply(storage: Storage, config: StorageTypeConfig, client: RemoteDiskStorageClient)(implicit
+      as: ActorSystem
   ): LinkFile =
     storage match {
       case storage: Storage.DiskStorage       => unsupported(storage.tpe)
-      case storage: Storage.S3Storage         => storage.linkFile
-      case storage: Storage.RemoteDiskStorage => storage.linkFile
+      case storage: Storage.S3Storage         => storage.linkFile(config)
+      case storage: Storage.RemoteDiskStorage => storage.linkFile(client)
     }
 
   private def unsupported(storageType: StorageType): LinkFile =

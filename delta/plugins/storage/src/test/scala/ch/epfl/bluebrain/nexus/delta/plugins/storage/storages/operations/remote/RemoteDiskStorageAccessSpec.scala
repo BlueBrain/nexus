@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotAccessible
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.RemoteDiskStorageValue
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions._
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig}
@@ -33,12 +34,13 @@ class RemoteDiskStorageAccessSpec(docker: RemoteStorageDocker)
     with BeforeAndAfterAll
     with ConfigFixtures {
 
-  implicit private val sc: Scheduler                                = Scheduler.global
-  implicit private val httpConfig: HttpClientConfig                 = httpClientConfig
-  implicit private val httpClient: HttpClient                       = HttpClient()
-  implicit private val authProvider: RemoteStorageAuthTokenProvider = RemoteStorageAuthTokenProvider.test
+  implicit private val sc: Scheduler                       = Scheduler.global
+  implicit private val httpConfig: HttpClientConfig        = httpClientConfig
+  private val httpClient: HttpClient                       = HttpClient()
+  private val authProvider: RemoteStorageAuthTokenProvider = RemoteStorageAuthTokenProvider.test
+  private val remoteDiskStorageClient                      = new RemoteDiskStorageClient(httpClient, authProvider)
 
-  private val access = new RemoteDiskStorageAccess
+  private val access = new RemoteDiskStorageAccess(remoteDiskStorageClient)
 
   private var storageValue: RemoteDiskStorageValue = _
 

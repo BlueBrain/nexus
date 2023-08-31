@@ -15,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{StorageRejection, StorageStatEntry}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteStorageAuthTokenProvider
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageFixtures, Storages, StoragesConfig, StoragesStatistics}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
@@ -69,6 +70,7 @@ class FilesSpec(docker: RemoteStorageDocker)
     implicit val httpClient: HttpClient                       = HttpClient()(httpClientConfig, system, sc)
     implicit val caller: Caller                               = Caller(bob, Set(bob, Group("mygroup", realm), Authenticated(realm)))
     implicit val authProvider: RemoteStorageAuthTokenProvider = RemoteStorageAuthTokenProvider.test
+    val remoteDiskStorageClient                               = new RemoteDiskStorageClient(httpClient, authProvider)
 
     val tag        = UserTag.unsafe("tag")
     val otherRead  = Permission.unsafe("other/read")
@@ -119,7 +121,8 @@ class FilesSpec(docker: RemoteStorageDocker)
       storageStatistics,
       xas,
       cfg,
-      FilesConfig(eventLogConfig)
+      FilesConfig(eventLogConfig),
+      remoteDiskStorageClient
     )
 
     "creating a file" should {

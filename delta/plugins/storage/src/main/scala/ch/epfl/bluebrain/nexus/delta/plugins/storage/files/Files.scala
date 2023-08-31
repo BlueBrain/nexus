@@ -22,14 +22,13 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.Sto
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageIsDeprecated
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, Storage, StorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteStorageAuthTokenProvider
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.{FetchAttributes, FetchFile, LinkFile, SaveFile}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{Storages, StoragesStatistics}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.FileResponse
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
@@ -46,9 +45,9 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{CompiledProjection, ExecutionStrategy, ProjectionMetadata, Supervisor}
 import com.typesafe.scalalogging.Logger
+import fs2.Stream
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
-import fs2.Stream
 
 import java.util.UUID
 
@@ -61,11 +60,10 @@ final class Files(
     aclCheck: AclCheck,
     fetchContext: FetchContext[FileRejection],
     storages: Storages,
-    storagesStatistics: StoragesStatistics
+    storagesStatistics: StoragesStatistics,
+    remoteDiskStorageClient: RemoteDiskStorageClient,
+    config: StorageTypeConfig
 )(implicit
-    config: StorageTypeConfig,
-    remoteStorageAuthTokenProvider: RemoteStorageAuthTokenProvider,
-    client: HttpClient,
     uuidF: UUIDF,
     system: ClassicActorSystem
 ) {
@@ -255,7 +253,9 @@ final class Files(
       (storageRef, storage) <- fetchActiveStorage(storageId, projectRef, pc)
       resolvedFilename      <- IO.fromOption(filename.orElse(path.lastSegment), InvalidFileLink(iri))
       description           <- FileDescription(resolvedFilename, mediaType)
-      attributes            <- LinkFile(storage).apply(path, description).mapError(LinkRejection(iri, storage.id, _))
+      attributes            <- LinkFile(storage, config, remoteDiskStorageClient)
+                                 .apply(path, description)
+                                 .mapError(LinkRejection(iri, storage.id, _))
       res                   <- eval(UpdateFile(iri, projectRef, storageRef, storage.tpe, attributes, rev, caller.subject))
     } yield res
   }.span("updateLink")
@@ -350,7 +350,7 @@ final class Files(
       storage   <- storages.fetch(file.value.storage, project)
       permission = storage.value.storageValue.readPermission
       _         <- aclCheck.authorizeForOr(project, permission)(AuthorizationFailed(project, permission))
-      s          = FetchFile(storage.value)
+      s          = FetchFile(storage.value, remoteDiskStorageClient, config)
                      .apply(attributes)
                      .mapError(FetchRejection(file.id, storage.id, _))
                      .leftWiden[FileRejection]
@@ -395,7 +395,9 @@ final class Files(
       (storageRef, storage) <- fetchActiveStorage(storageId, ref, pc)
       resolvedFilename      <- IO.fromOption(filename.orElse(path.lastSegment), InvalidFileLink(iri))
       description           <- FileDescription(resolvedFilename, mediaType)
-      attributes            <- LinkFile(storage).apply(path, description).mapError(LinkRejection(iri, storage.id, _))
+      attributes            <- LinkFile(storage, config, remoteDiskStorageClient)
+                                 .apply(path, description)
+                                 .mapError(LinkRejection(iri, storage.id, _))
       res                   <- eval(CreateFile(iri, ref, storageRef, storage.tpe, attributes, caller.subject))
     } yield res
 
@@ -435,7 +437,9 @@ final class Files(
                                    )
                                }
       (description, source) <- formDataExtractor(iri, entity, storage.storageValue.maxFileSize, storageAvailableSpace)
-      attributes            <- SaveFile(storage).apply(description, source).mapError(SaveRejection(iri, storage.id, _))
+      attributes            <- SaveFile(storage, config, remoteDiskStorageClient)
+                                 .apply(description, source)
+                                 .mapError(SaveRejection(iri, storage.id, _))
     } yield attributes
 
   private def expandStorageIri(segment: IdSegment, pc: ProjectContext): IO[WrappedStorageRejection, Iri] =
@@ -525,7 +529,9 @@ final class Files(
     for {
       _        <- IO.raiseWhen(f.attributes.digest.computed)(DigestAlreadyComputed(f.id))
       newAttr  <-
-        FetchAttributes(storage).apply(attr).mapError(FetchAttributesRejection(f.id, storage.id, _))
+        FetchAttributes(storage, remoteDiskStorageClient)
+          .apply(attr)
+          .mapError(FetchAttributesRejection(f.id, storage.id, _))
       _        <- IO.raiseWhen(!newAttr.digest.computed)(DigestNotComputed(f.id))
       mediaType = attr.mediaType orElse Some(newAttr.mediaType)
       command   = UpdateFileAttributes(f.id, f.project, mediaType, newAttr.bytes, newAttr.digest, f.rev, f.updatedBy)
@@ -704,24 +710,24 @@ object Files {
       storagesStatistics: StoragesStatistics,
       xas: Transactors,
       storageTypeConfig: StorageTypeConfig,
-      config: FilesConfig
+      config: FilesConfig,
+      remoteDiskStorageClient: RemoteDiskStorageClient
   )(implicit
       clock: Clock[UIO],
-      client: HttpClient,
       uuidF: UUIDF,
       scheduler: Scheduler,
-      as: ActorSystem[Nothing],
-      remoteStorageAuthTokenProvider: RemoteStorageAuthTokenProvider
+      as: ActorSystem[Nothing]
   ): Files = {
-    implicit val classicAs: ClassicActorSystem  = as.classicSystem
-    implicit val sTypeConfig: StorageTypeConfig = storageTypeConfig
+    implicit val classicAs: ClassicActorSystem = as.classicSystem
     new Files(
       FormDataExtractor.apply,
       ScopedEventLog(definition, config.eventLog, xas),
       aclCheck,
       fetchContext,
       storages,
-      storagesStatistics
+      storagesStatistics,
+      remoteDiskStorageClient,
+      storageTypeConfig
     )
   }
 

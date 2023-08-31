@@ -32,10 +32,8 @@ import scala.concurrent.duration._
 /**
   * The client to communicate with the remote storage service
   */
-final class RemoteDiskStorageClient(baseUri: BaseUri)(implicit
-    client: HttpClient,
-    as: ActorSystem,
-    getAuthToken: RemoteStorageAuthTokenProvider
+final class RemoteDiskStorageClient(client: HttpClient, getAuthToken: RemoteStorageAuthTokenProvider)(implicit
+    as: ActorSystem
 ) {
   import as.dispatcher
 
@@ -44,7 +42,7 @@ final class RemoteDiskStorageClient(baseUri: BaseUri)(implicit
   /**
     * Fetches the service description information (name and version)
     */
-  def serviceDescription: UIO[ServiceDescription] =
+  def serviceDescription(implicit baseUri: BaseUri): UIO[ServiceDescription] =
     client
       .fromJsonTo[ResolvedServiceDescription](Get(baseUri.base))
       .timeout(3.seconds)
@@ -59,7 +57,7 @@ final class RemoteDiskStorageClient(baseUri: BaseUri)(implicit
     * @param bucket
     *   the storage bucket name
     */
-  def exists(bucket: Label): IO[HttpClientError, Unit] = {
+  def exists(bucket: Label)(implicit baseUri: BaseUri): IO[HttpClientError, Unit] = {
     getAuthToken().flatMap { authToken =>
       val endpoint = baseUri.endpoint / "buckets" / bucket.value
       val req      = Head(endpoint).withCredentials(authToken)
@@ -83,7 +81,7 @@ final class RemoteDiskStorageClient(baseUri: BaseUri)(implicit
       bucket: Label,
       relativePath: Path,
       entity: BodyPartEntity
-  ): IO[SaveFileRejection, RemoteDiskStorageFileAttributes] = {
+  )(implicit baseUri: BaseUri): IO[SaveFileRejection, RemoteDiskStorageFileAttributes] = {
     getAuthToken().flatMap { authToken =>
       val endpoint      = baseUri.endpoint / "buckets" / bucket.value / "files" / relativePath
       val filename      = relativePath.lastSegment.getOrElse("filename")
@@ -107,7 +105,7 @@ final class RemoteDiskStorageClient(baseUri: BaseUri)(implicit
     * @param relativePath
     *   the relative path to the file location
     */
-  def getFile(bucket: Label, relativePath: Path): IO[FetchFileRejection, AkkaSource] = {
+  def getFile(bucket: Label, relativePath: Path)(implicit baseUri: BaseUri): IO[FetchFileRejection, AkkaSource] = {
     getAuthToken().flatMap { authToken =>
       val endpoint = baseUri.endpoint / "buckets" / bucket.value / "files" / relativePath
       client.toDataBytes(Get(endpoint).withCredentials(authToken)).mapError {
@@ -130,7 +128,7 @@ final class RemoteDiskStorageClient(baseUri: BaseUri)(implicit
   def getAttributes(
       bucket: Label,
       relativePath: Path
-  ): IO[FetchFileRejection, RemoteDiskStorageFileAttributes] = {
+  )(implicit baseUri: BaseUri): IO[FetchFileRejection, RemoteDiskStorageFileAttributes] = {
     getAuthToken().flatMap { authToken =>
       val endpoint = baseUri.endpoint / "buckets" / bucket.value / "attributes" / relativePath
       client.fromJsonTo[RemoteDiskStorageFileAttributes](Get(endpoint).withCredentials(authToken)).mapError {
@@ -157,7 +155,7 @@ final class RemoteDiskStorageClient(baseUri: BaseUri)(implicit
       bucket: Label,
       sourceRelativePath: Path,
       destRelativePath: Path
-  ): IO[MoveFileRejection, RemoteDiskStorageFileAttributes] = {
+  )(implicit baseUri: BaseUri): IO[MoveFileRejection, RemoteDiskStorageFileAttributes] = {
     getAuthToken().flatMap { authToken =>
       val endpoint = baseUri.endpoint / "buckets" / bucket.value / "files" / destRelativePath
       val payload  = Json.obj("source" -> sourceRelativePath.toString.asJson)
