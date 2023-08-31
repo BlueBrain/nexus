@@ -87,6 +87,34 @@ class SearchConfigSpec extends BaseSpec {
       }
     }
 
+    "have the correct name from schema:name" in {
+      val query = queryField(neuronMorphologyId, "name")
+      assertOneSource(query) { json =>
+        json shouldEqual json"""{ "name": "sm080522a1-5_idA" }"""
+      }
+    }
+
+    "have the correct name from rdfs:label" in {
+      val query = queryField(neuronDensityId, "name")
+      assertOneSource(query) { json =>
+        json shouldEqual json"""{ "name": "Neuron density: CA1" }"""
+      }
+    }
+
+    "have the correct name from skos:prefLabel" in {
+      val query = queryField(traceId, "name")
+      assertOneSource(query) { json =>
+        json shouldEqual json"""{ "name": "S1J_L6_IPC_cADpyr_2" }"""
+      }
+    }
+
+    "have the correct description" in {
+      val query = queryField(neuronMorphologyId, "description")
+      assertOneSource(query) { json =>
+        json shouldEqual json"""{ "description": "This is a resource description." }"""
+      }
+    }
+
     "have the correct project property" in {
       val query    = queryField(neuronMorphologyId, "project")
       val expected =
