@@ -152,6 +152,14 @@ class SearchConfigSpec extends BaseSpec {
       }
     }
 
+    "have the correct self property" in {
+      val query        = queryField(neuronMorphologyId, "_self")
+      val expectedSelf = s"http://delta:8080/v1/resources/$orgId/$projId1/_/${neuronMorphologyId.replace("/", "%2F")}"
+      assertOneSource(query) { json =>
+        json shouldEqual json"""{ "_self": "$expectedSelf" }"""
+      }
+    }
+
     "have the correct project property" in {
       val query    = queryField(neuronMorphologyId, "project")
       val expected =
@@ -632,7 +640,6 @@ class SearchConfigSpec extends BaseSpec {
       }
     }
 
-    "have the correct metadata property" in { pending }
     "have the correct detailed circuit property" in { pending }
     "have the correct simulation campaign config property" in { pending }
     "have the correct sType property" in {
