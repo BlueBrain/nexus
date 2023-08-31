@@ -34,7 +34,7 @@ object SaveFile {
   /**
     * Construct a [[SaveFile]] from the given ''storage''.
     */
-  def apply(storage: Storage, config: StorageTypeConfig, client: RemoteDiskStorageClient)(implicit
+  def apply(storage: Storage, client: RemoteDiskStorageClient, config: StorageTypeConfig)(implicit
       as: ActorSystem
   ): SaveFile =
     storage match {

@@ -253,7 +253,7 @@ final class Files(
       (storageRef, storage) <- fetchActiveStorage(storageId, projectRef, pc)
       resolvedFilename      <- IO.fromOption(filename.orElse(path.lastSegment), InvalidFileLink(iri))
       description           <- FileDescription(resolvedFilename, mediaType)
-      attributes            <- LinkFile(storage, config, remoteDiskStorageClient)
+      attributes            <- LinkFile(storage, remoteDiskStorageClient, config)
                                  .apply(path, description)
                                  .mapError(LinkRejection(iri, storage.id, _))
       res                   <- eval(UpdateFile(iri, projectRef, storageRef, storage.tpe, attributes, rev, caller.subject))
@@ -395,7 +395,7 @@ final class Files(
       (storageRef, storage) <- fetchActiveStorage(storageId, ref, pc)
       resolvedFilename      <- IO.fromOption(filename.orElse(path.lastSegment), InvalidFileLink(iri))
       description           <- FileDescription(resolvedFilename, mediaType)
-      attributes            <- LinkFile(storage, config, remoteDiskStorageClient)
+      attributes            <- LinkFile(storage, remoteDiskStorageClient, config)
                                  .apply(path, description)
                                  .mapError(LinkRejection(iri, storage.id, _))
       res                   <- eval(CreateFile(iri, ref, storageRef, storage.tpe, attributes, caller.subject))
@@ -437,7 +437,7 @@ final class Files(
                                    )
                                }
       (description, source) <- formDataExtractor(iri, entity, storage.storageValue.maxFileSize, storageAvailableSpace)
-      attributes            <- SaveFile(storage, config, remoteDiskStorageClient)
+      attributes            <- SaveFile(storage, remoteDiskStorageClient, config)
                                  .apply(description, source)
                                  .mapError(SaveRejection(iri, storage.id, _))
     } yield attributes
