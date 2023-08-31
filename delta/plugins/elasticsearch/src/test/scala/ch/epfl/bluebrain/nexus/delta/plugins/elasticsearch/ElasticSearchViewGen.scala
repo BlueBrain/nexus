@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchViewState, ElasticSearchViewValue, ViewResource}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
+import ch.epfl.bluebrain.nexus.delta.sdk.views.IndexingRev
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.{Json, JsonObject}
@@ -19,7 +20,7 @@ object ElasticSearchViewGen {
       uuid: UUID = UUID.randomUUID(),
       source: Json = Json.obj(),
       rev: Int = 1,
-      indexingRev: Int = 1,
+      indexingRev: IndexingRev = IndexingRev.init,
       deprecated: Boolean = false,
       tags: Tags = Tags.empty,
       createdBy: Subject = Anonymous,
@@ -48,7 +49,7 @@ object ElasticSearchViewGen {
       uuid: UUID = UUID.randomUUID(),
       source: Json = Json.obj(),
       rev: Int = 1,
-      indexingRev: Int = 1,
+      indexingRev: IndexingRev = IndexingRev.init,
       deprecated: Boolean = false,
       tags: Tags = Tags.empty,
       createdBy: Subject = Anonymous,

@@ -5,6 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.error.FormatError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLdCursor
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
+import ch.epfl.bluebrain.nexus.delta.sdk.views.IndexingRev
 import io.circe.{Decoder, Encoder}
 
 import java.util.UUID
@@ -79,8 +80,8 @@ object IndexLabel {
     * @param indexingRev
     *   the view's indexing revision
     */
-  final def fromView(prefix: String, uuid: UUID, indexingRev: Int): IndexLabel =
-    new IndexLabel(s"${prefix}_${uuid}_$indexingRev")
+  final def fromView(prefix: String, uuid: UUID, indexingRev: IndexingRev): IndexLabel =
+    new IndexLabel(s"${prefix}_${uuid}_${indexingRev.value}")
 
   implicit val indexLabelJsonLdDecoder: JsonLdDecoder[IndexLabel] =
     (cursor: ExpandedJsonLdCursor) =>

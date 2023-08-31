@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote
 
 import akka.actor.ActorSystem
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig.remoteStorageAuthToken
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotAccessible
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.RemoteDiskStorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageAccess
@@ -16,7 +17,7 @@ class RemoteDiskStorageAccess(implicit config: StorageTypeConfig, httpClient: Ht
   override type Storage = RemoteDiskStorageValue
 
   override def apply(id: Iri, storage: RemoteDiskStorageValue): IO[StorageNotAccessible, Unit] = {
-    implicit val cred: Option[AuthToken] = storage.authToken(config)
+    implicit val cred: Option[AuthToken] = remoteStorageAuthToken(config)
     val client: RemoteDiskStorageClient  = new RemoteDiskStorageClient(storage.endpoint)
     client
       .exists(storage.folder)

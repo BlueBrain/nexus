@@ -26,18 +26,13 @@ jobs:
             app/Docker/publishLocal \
             storage/Docker/publishLocal
       - name: Start services
-        run: docker-compose -f tests/docker/docker-compose.yml up -d && sleep 70
-      - name: Test
+        run: docker-compose -f tests/docker/docker-compose.yml up -d
+      - name: Waiting for Delta to start
         run: |
           URL="http://localhost:8080/v1/version"
-          RESPONSE_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$URL")
-          if [ $RESPONSE_CODE -eq 200 ]; then
-            sbt -Dsbt.color=always -Dsbt.supershell=false "project tests" test
-          else
-            RED='\033[0;31m'; NC='\033[0m'
-            echo "${RED}Aborting:${NC} The Delta /v1/version returned HTTP $RESPONSE_CODE."
-            exit 1
-          fi
+          curl --connect-timeout 3 --max-time 5 --retry 30 --retry-all-errors --retry-delay 3 --retry-max-time 90 $URL
+      - name: Test
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project tests" test
       - name: Stop & clean Docker
         if: ${{ always() }}
         run: docker-compose -f tests/docker/docker-compose.yml down --rmi "local" --volumes

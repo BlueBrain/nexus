@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObje
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
-import ch.epfl.bluebrain.nexus.delta.sdk.views.{PipeStep, ViewRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, PipeStep, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
@@ -78,7 +78,7 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
   private val aggregate = AggregateElasticSearchViewValue(NonEmptySet.of(viewRef))
   private val sink      = CacheSink.states[Json]
 
-  private val indexingRev = 1
+  private val indexingRev = IndexingRev.init
   private val rev         = 2
 
   private def state(v: ElasticSearchViewValue) = ElasticSearchViewState(
@@ -103,9 +103,9 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
       Some(
         ActiveViewDef(
           viewRef,
-          s"elasticsearch-$projectRef-$id-$indexingRev",
-          indexingCustom.resourceTag,
+          s"elasticsearch-$projectRef-$id-${indexingRev.value}",
           indexingCustom.pipeChain,
+          indexingCustom.selectFilter,
           IndexLabel.fromView("prefix", uuid, indexingRev),
           customMapping,
           customSettings,
@@ -123,9 +123,9 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
       Some(
         ActiveViewDef(
           viewRef,
-          s"elasticsearch-$projectRef-$id-$indexingRev",
-          indexingDefault.resourceTag,
+          s"elasticsearch-$projectRef-$id-${indexingRev.value}",
           indexingDefault.pipeChain,
+          indexingDefault.selectFilter,
           IndexLabel.fromView("prefix", uuid, indexingRev),
           defaultMapping,
           defaultSettings,
@@ -159,8 +159,8 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
     val v = ActiveViewDef(
       viewRef,
       s"elasticsearch-$projectRef-$id-$indexingRev",
-      indexingDefault.resourceTag,
       Some(PipeChain(PipeRef.unsafe("xxx") -> ExpandedJsonLd.empty)),
+      indexingDefault.selectFilter,
       IndexLabel.fromView("prefix", uuid, indexingRev),
       defaultMapping,
       defaultSettings,
@@ -191,8 +191,8 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
     val v = ActiveViewDef(
       viewRef,
       s"elasticsearch-$projectRef-$id-$indexingRev",
-      indexingDefault.resourceTag,
       Some(PipeChain(FilterDeprecated())),
+      indexingDefault.selectFilter,
       IndexLabel.fromView("prefix", uuid, indexingRev),
       defaultMapping,
       defaultSettings,

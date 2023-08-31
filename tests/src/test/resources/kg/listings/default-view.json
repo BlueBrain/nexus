@@ -18,7 +18,6 @@
       "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/views.json",
       "_project": "{{project}}",
       "_rev": 1,
-      "_indexingRev" : 1,
       "_deprecated": false,
       "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
       "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",

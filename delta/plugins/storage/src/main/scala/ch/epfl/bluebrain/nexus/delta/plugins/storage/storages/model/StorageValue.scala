@@ -6,8 +6,6 @@ import akka.stream.alpakka.s3.{ApiVersion, MemoryBufferType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.AuthToken
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
@@ -18,6 +16,7 @@ import io.circe.{Codec, Decoder, Encoder}
 import software.amazon.awssdk.auth.credentials.{AnonymousCredentialsProvider, AwsBasicCredentials, StaticCredentialsProvider}
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.regions.providers.AwsRegionProvider
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 
 import java.io.File
 import java.nio.file.Path
@@ -240,17 +239,6 @@ object StorageValue {
 
     override val tpe: StorageType       = StorageType.RemoteDiskStorage
     override val capacity: Option[Long] = None
-
-    /**
-      * Construct the auth token to query the remote storage
-      */
-    def authToken(config: StorageTypeConfig): Option[AuthToken] =
-      config.remoteDisk
-        .flatMap { cfg =>
-          if (endpoint == cfg.defaultEndpoint) cfg.defaultCredentials else None
-        }
-        .map(secret => AuthToken(secret.value))
-
   }
 
   object RemoteDiskStorageValue {

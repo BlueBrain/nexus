@@ -258,8 +258,6 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures with
           myId,
           includeDeprecated = false,
           rev = 4,
-          // indexing rev stays one as the update concerned non-indexing fields
-          indexingRev = 1,
           deprecated = true
         )
       }
@@ -366,29 +364,26 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures with
   private def elasticSearchViewMetadata(
       id: Iri,
       rev: Int = 1,
-      indexingRev: Int = 1,
       deprecated: Boolean = false,
       createdBy: Subject = Anonymous,
       updatedBy: Subject = Anonymous
   ): Json =
     jsonContentOf(
       "/routes/elasticsearch-view-write-response.json",
-      "project"     -> projectRef,
-      "id"          -> id,
-      "rev"         -> rev,
-      "indexingRev" -> indexingRev,
-      "uuid"        -> uuid,
-      "deprecated"  -> deprecated,
-      "createdBy"   -> createdBy.asIri,
-      "updatedBy"   -> updatedBy.asIri,
-      "self"        -> ResourceUris("views", projectRef, id).accessUri
+      "project"    -> projectRef,
+      "id"         -> id,
+      "rev"        -> rev,
+      "uuid"       -> uuid,
+      "deprecated" -> deprecated,
+      "createdBy"  -> createdBy.asIri,
+      "updatedBy"  -> updatedBy.asIri,
+      "self"       -> ResourceUris("views", projectRef, id).accessUri
     )
 
   private def elasticSearchView(
       id: Iri,
       includeDeprecated: Boolean = false,
       rev: Int = 1,
-      indexingRev: Int = 1,
       deprecated: Boolean = false,
       createdBy: Subject = Anonymous,
       updatedBy: Subject = Anonymous
@@ -399,7 +394,6 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures with
       "id"                -> id,
       "rev"               -> rev,
       "uuid"              -> uuid,
-      "indexingRev"       -> indexingRev,
       "deprecated"        -> deprecated,
       "createdBy"         -> createdBy.asIri,
       "updatedBy"         -> updatedBy.asIri,

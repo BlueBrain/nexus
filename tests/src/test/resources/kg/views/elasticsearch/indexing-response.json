@@ -14,7 +14,6 @@
   "_outgoing" : "{{self}}/outgoing",
   "_project" : "{{deltaUri}}/projects/{{project}}",
   "_rev" : 1,
-  "_indexingRev": 1,
   "_self" : "{{self}}",
   "_createdBy" : "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
   "_updatedBy" : "{{deltaUri}}/realms/{{realm}}/users/{{user}}",

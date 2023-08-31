@@ -18,11 +18,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.{IriSegment, StringSegm
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, FetchContextDummy}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
+import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionErrors, Projections}
+import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.FailedElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeChain, ProjectionProgress}
 import ch.epfl.bluebrain.nexus.testkit.bio.IOFromMap
@@ -57,12 +58,12 @@ class ElasticSearchIndexingRoutesSpec extends ElasticSearchViewsRoutesFixtures w
     ViewRef(projectRef, myId),
     "projection",
     None,
-    None,
+    SelectFilter.latest,
     IndexLabel.unsafe("index"),
     JsonObject.empty,
     JsonObject.empty,
     None,
-    1,
+    IndexingRev.init,
     1
   )
   private val progress     = ProjectionProgress(Offset.at(15L), Instant.EPOCH, 9000L, 400L, 30L)

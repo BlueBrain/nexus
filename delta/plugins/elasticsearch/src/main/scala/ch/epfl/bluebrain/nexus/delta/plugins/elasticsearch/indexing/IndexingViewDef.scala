@@ -8,10 +8,10 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, Elas
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
-import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, Tag}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, ViewRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ElemStream
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
@@ -42,13 +42,13 @@ object IndexingViewDef {
   final case class ActiveViewDef(
       ref: ViewRef,
       projection: String,
-      resourceTag: Option[UserTag],
       pipeChain: Option[PipeChain],
+      selectFilter: SelectFilter,
       index: IndexLabel,
       mapping: JsonObject,
       settings: JsonObject,
       context: Option[ContextObject],
-      indexingRev: Int,
+      indexingRev: IndexingRev,
       rev: Int
   ) extends IndexingViewDef {
 
@@ -81,8 +81,8 @@ object IndexingViewDef {
         ActiveViewDef(
           ViewRef(state.project, state.id),
           ElasticSearchViews.projectionName(state),
-          indexing.resourceTag,
           indexing.pipeChain,
+          indexing.selectFilter,
           ElasticSearchViews.index(state.uuid, state.indexingRev, prefix),
           indexing.mapping.getOrElse(defaultMapping),
           indexing.settings.getOrElse(defaultSettings),
@@ -107,7 +107,7 @@ object IndexingViewDef {
       graphStream: GraphResourceStream,
       sink: Sink
   )(implicit cr: RemoteContextResolution): Task[CompiledProjection] =
-    compile(v, compilePipeChain, graphStream.continuous(v.ref.project, v.resourceTag.getOrElse(Tag.latest), _), sink)
+    compile(v, compilePipeChain, graphStream.continuous(v.ref.project, v.selectFilter, _), sink)
 
   private def compile(
       v: ActiveViewDef,
