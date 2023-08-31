@@ -4,8 +4,9 @@ import akka.http.scaladsl.model.Uri
 import cats.data.NonEmptySet
 import cats.effect.{Clock, IO}
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.RealmResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.RealmSearchParams
@@ -20,7 +21,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{GlobalEntityDefinition, StateMachine}
 import monix.bio.{IO => BIO}
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 
 /**
   * Operations pertaining to managing realms.
@@ -167,7 +167,7 @@ object Realms {
     // format: off
     def create(c: CreateRealm) =
       state.fold {
-        openIdExists(c.label, c.openIdConfig) >> (wellKnown(c.openIdConfig), IOUtils.catsInstant).mapN {
+        openIdExists(c.label, c.openIdConfig) >> (wellKnown(c.openIdConfig), IOInstant.get).mapN {
           case (wk, instant) =>
             RealmCreated(c.label, c.name, c.openIdConfig, c.logo, c.acceptedAudiences, wk, instant, c.subject)
         }
@@ -176,7 +176,7 @@ object Realms {
     def update(c: UpdateRealm)       =
       IO.fromOption(state)(RealmNotFound(c.label)).flatMap {
         case s if s.rev != c.rev => IO.raiseError(IncorrectRev(c.rev, s.rev))
-        case s => openIdExists(c.label, c.openIdConfig) >> (wellKnown(c.openIdConfig), IOUtils.catsInstant).mapN {
+        case s => openIdExists(c.label, c.openIdConfig) >> (wellKnown(c.openIdConfig), IOInstant.get).mapN {
           case (wk, instant) =>
             RealmUpdated(c.label, s.rev + 1, c.name, c.openIdConfig, c.logo, c.acceptedAudiences, wk, instant, c.subject)
         }
@@ -187,7 +187,7 @@ object Realms {
       IO.fromOption(state)(RealmNotFound(c.label)).flatMap {
         case s if s.rev != c.rev => IO.raiseError(IncorrectRev(c.rev, s.rev))
         case s if s.deprecated   => IO.raiseError(RealmAlreadyDeprecated(c.label))
-        case s                   => IOUtils.catsInstant.map(RealmDeprecated(c.label, s.rev + 1, _, c.subject))
+        case s                   => IOInstant.get.map(RealmDeprecated(c.label, s.rev + 1, _, c.subject))
       }
 
     cmd match {

@@ -38,7 +38,7 @@ class WellKnownResolverSuite extends CatsEffectSuite with IOFromMap with CirceLi
 
   private def resolveWellKnown(openIdConfig: Json, jwks: Json) =
     WellKnownResolver(
-      ceFromMap(
+      ioFromMap(
         Map(
           openIdUri -> openIdConfig,
           jwksUri   -> jwks

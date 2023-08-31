@@ -7,6 +7,10 @@ import munit.{Assertions, FailException, Location}
 import scala.reflect.ClassTag
 import scala.util.control.NonFatal
 
+/**
+  * Adapted from: from
+  * https://github.com/typelevel/munit-cats-effect/blob/main/core/src/main/scala/munit/CatsEffectAssertions.scala
+  */
 trait CatsEffectAssertions { self: Assertions =>
 
   def assertIO[A, B](

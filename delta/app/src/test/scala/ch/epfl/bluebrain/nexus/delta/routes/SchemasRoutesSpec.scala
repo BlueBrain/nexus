@@ -28,13 +28,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.schemas.{SchemaImports, SchemasConfig, 
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.testkit.bio.IOFromMap
 import ch.epfl.bluebrain.nexus.testkit.ce.IOFixedClock
 import io.circe.Json
 import monix.bio.IO
 
 import java.util.UUID
 
-class SchemasRoutesSpec extends BaseRouteSpec with IOFixedClock {
+class SchemasRoutesSpec extends BaseRouteSpec with IOFixedClock with IOFromMap {
 
   private val uuid                  = UUID.randomUUID()
   implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)

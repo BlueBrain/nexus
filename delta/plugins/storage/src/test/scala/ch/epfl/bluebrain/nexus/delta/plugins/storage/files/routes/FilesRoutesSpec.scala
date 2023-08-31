@@ -36,11 +36,17 @@ import ch.epfl.bluebrain.nexus.delta.sdk.utils.{BaseRouteSpec, RouteFixtures}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.testkit._
+import ch.epfl.bluebrain.nexus.testkit.bio.IOFromMap
 import io.circe.Json
 import monix.bio.IO
 import org.scalatest._
 
-class FilesRoutesSpec extends BaseRouteSpec with CancelAfterFailure with StorageFixtures with FileFixtures {
+class FilesRoutesSpec
+    extends BaseRouteSpec
+    with CancelAfterFailure
+    with StorageFixtures
+    with FileFixtures
+    with IOFromMap {
 
   import akka.actor.typed.scaladsl.adapter._
   implicit val typedSystem: typed.ActorSystem[Nothing] = system.toTyped

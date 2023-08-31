@@ -15,10 +15,16 @@ trait IOUtils {
     */
   def instant(implicit clock: Clock[UIO]): UIO[Instant] =
     clock.realTime(TimeUnit.MILLISECONDS).map(Instant.ofEpochMilli)
+}
 
-  def catsInstant(implicit clock: Clock[IO]): IO[Instant] =
+object IOUtils extends IOUtils
+
+trait IOInstant {
+  def get(implicit clock: Clock[IO]): IO[Instant] =
     clock.realTime(TimeUnit.MILLISECONDS).map(Instant.ofEpochMilli)
 }
+
+object IOInstant extends IOInstant
 
 trait UUIDF {
 
@@ -69,5 +75,3 @@ object UUIDF {
               }
     } yield uuidF).hideErrors
 }
-
-object IOUtils extends IOUtils

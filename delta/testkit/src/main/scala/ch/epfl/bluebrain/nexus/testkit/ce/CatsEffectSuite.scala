@@ -9,6 +9,10 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import monix.bio.{IO => BIO}
 import monix.execution.Scheduler
 
+/**
+  * Adapted from:
+  * https://github.com/typelevel/munit-cats-effect/blob/main/core/src/main/scala/munit/CatsEffectSuite.scala
+  */
 abstract class CatsEffectSuite
     extends NexusSuite
     with CatsEffectAssertions

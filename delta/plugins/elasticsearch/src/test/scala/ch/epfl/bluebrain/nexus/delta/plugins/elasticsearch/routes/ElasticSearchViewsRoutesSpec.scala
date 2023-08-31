@@ -21,10 +21,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, FetchContextDum
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.PipeChain
+import ch.epfl.bluebrain.nexus.testkit.bio.IOFromMap
 import io.circe.Json
 import monix.bio.{IO, UIO}
 
-class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures {
+class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures with IOFromMap {
 
   implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
 

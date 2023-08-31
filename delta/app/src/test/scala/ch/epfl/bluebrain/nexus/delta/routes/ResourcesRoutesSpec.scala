@@ -30,12 +30,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
+import ch.epfl.bluebrain.nexus.testkit.bio.IOFromMap
 import io.circe.{Json, Printer}
 import monix.bio.{IO, UIO}
 
 import java.util.UUID
 
-class ResourcesRoutesSpec extends BaseRouteSpec {
+class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap {
 
   private val uuid = UUID.randomUUID()
 

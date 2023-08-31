@@ -22,6 +22,7 @@ import io.circe.Json
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 
 /**
   * Identities module wiring config.
@@ -34,20 +35,10 @@ object IdentitiesModule extends ModuleDef {
 
   make[Identities].fromEffect { (realms: Realms, hc: HttpClient @Id("realm"), config: CacheConfig) =>
     val findActiveRealm: String => UIO[Option[Realm]] = { (issuer: String) =>
-      IO.from(
-        realms
-          .list(
-            FromPagination(0, 1000),
-            RealmSearchParams(
-              issuer = Some(issuer),
-              deprecated = Some(false)
-            ),
-            ResourceF.defaultSort[Realm]
-          )
-          .map { results =>
-            results.results.map(entry => entry.source.value).headOption
-          }
-      ).hideErrors
+      val pagination = FromPagination(0, 1000)
+      val params     = RealmSearchParams(issuer = Some(issuer), deprecated = Some(false))
+      val sort       = ResourceF.defaultSort[Realm]
+      realms.list(pagination, params, sort).map { _.results.map(entry => entry.source.value).headOption }.toUIO
     }
     val getUserInfo: (Uri, OAuth2BearerToken) => IO[HttpClientError, Json] = { (uri: Uri, token: OAuth2BearerToken) =>
       hc.toJson(HttpRequest(uri = uri, headers = List(Authorization(token))))

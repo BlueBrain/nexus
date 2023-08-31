@@ -35,7 +35,7 @@ class RealmsRoutesSpec extends BaseRouteSpec with IOFromMap with IOFixedClock {
 
   private lazy val realms = RealmsImpl(
     config,
-    ceFromMap(
+    ioFromMap(
       Map(githubOpenId -> githubWk, gitlabOpenId -> gitlabWk),
       (uri: Uri) => UnsuccessfulOpenIdConfigResponse(uri)
     ),
