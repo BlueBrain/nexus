@@ -145,7 +145,7 @@ object DeltaClient {
         }
     }
 
-    private def typeQuery(types: Set[Iri]) =
+    private def typeQuery(types: Set[Iri])               =
       if (types.isEmpty) Query.Empty
       else Query(types.map(t => "type" -> t.toString).toList: _*)
 
