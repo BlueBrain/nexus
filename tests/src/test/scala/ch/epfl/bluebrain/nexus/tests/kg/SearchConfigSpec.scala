@@ -145,6 +145,13 @@ class SearchConfigSpec extends BaseSpec {
       }
     }
 
+    "have the correct deprecated property" in {
+      val query = queryField(neuronMorphologyId, "deprecated")
+      assertOneSource(query) { json =>
+        json shouldEqual json"""{ "deprecated": false }"""
+      }
+    }
+
     "have the correct project property" in {
       val query    = queryField(neuronMorphologyId, "project")
       val expected =
