@@ -54,30 +54,32 @@ class ElemRoutes(
           pathPrefix("elems") {
             resolveProjectRef { project =>
               authorizeFor(project, events.read).apply {
-                concat(
-                  (get & pathPrefix("continuous") & parameter("tag".as[UserTag].?)) { tag =>
-                    operationName(s"$prefixSegment/$project/elems/continuous") {
-                      emit(sseElemStream.continuous(project, SelectFilter.tag(tag.getOrElse(Latest)), offset))
+                (parameter("tag".as[UserTag].?) & types(project)) { (tag, types) =>
+                  concat(
+                    (get & pathPrefix("continuous")) {
+                      operationName(s"$prefixSegment/$project/elems/continuous") {
+                        emit(sseElemStream.continuous(project, SelectFilter(types, tag.getOrElse(Latest)), offset))
+                      }
+                    },
+                    (get & pathPrefix("currents")) {
+                      operationName(s"$prefixSegment/$project/elems/currents") {
+                        emit(sseElemStream.currents(project, SelectFilter(types, tag.getOrElse(Latest)), offset))
+                      }
+                    },
+                    (get & pathPrefix("remaining")) {
+                      operationName(s"$prefixSegment/$project/elems/remaining") {
+                        emit(
+                          sseElemStream.remaining(project, SelectFilter(types, tag.getOrElse(Latest)), offset).map {
+                            r => r.getOrElse(RemainingElems(0L, Instant.EPOCH))
+                          }
+                        )
+                      }
+                    },
+                    head {
+                      complete(OK)
                     }
-                  },
-                  (get & pathPrefix("currents") & parameter("tag".as[UserTag].?)) { tag =>
-                    operationName(s"$prefixSegment/$project/elems/currents") {
-                      emit(sseElemStream.currents(project, SelectFilter.tag(tag.getOrElse(Latest)), offset))
-                    }
-                  },
-                  (get & pathPrefix("remaining") & parameter("tag".as[UserTag].?)) { tag =>
-                    operationName(s"$prefixSegment/$project/elems/remaining") {
-                      emit(
-                        sseElemStream.remaining(project, SelectFilter.tag(tag.getOrElse(Latest)), offset).map { r =>
-                          r.getOrElse(RemainingElems(0L, Instant.EPOCH))
-                        }
-                      )
-                    }
-                  },
-                  head {
-                    complete(OK)
-                  }
-                )
+                  )
+                }
               }
             }
           }

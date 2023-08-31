@@ -145,8 +145,14 @@ object DeltaClient {
         }
     }
 
+    private def typeQuery(types: Set[Iri]) =
+      if (types.isEmpty) Query.Empty
+      else Query(types.map(t => "type" -> t.toString).toList: _*)
+
     private def elemAddress(source: RemoteProjectSource) =
-      source.endpoint / "elems" / source.project.organization.value / source.project.project.value
+      (source.endpoint / "elems" / source.project.organization.value / source.project.project.value)
+        .withQuery(Query("tag" -> source.selectFilter.tag.toString))
+        .withQuery(typeQuery(source.selectFilter.types))
 
     override def resourceAsNQuads(source: RemoteProjectSource, id: Iri): HttpResult[Option[NQuads]] = {
       implicit val cred: Option[AuthToken] = token(source)
