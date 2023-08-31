@@ -8,6 +8,8 @@ import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Organizations, Resour
 import io.circe.Json
 import monix.bio.Task
 import org.scalatest.Assertion
+
+import java.time.Instant
 import concurrent.duration._
 
 class SearchConfigSpec extends BaseSpec {
@@ -87,31 +89,45 @@ class SearchConfigSpec extends BaseSpec {
       }
     }
 
-    "have the correct name from schema:name" in {
+    "have the correct name property from schema:name" in {
       val query = queryField(neuronMorphologyId, "name")
       assertOneSource(query) { json =>
         json shouldEqual json"""{ "name": "sm080522a1-5_idA" }"""
       }
     }
 
-    "have the correct name from rdfs:label" in {
+    "have the correct name property from rdfs:label" in {
       val query = queryField(neuronDensityId, "name")
       assertOneSource(query) { json =>
         json shouldEqual json"""{ "name": "Neuron density: CA1" }"""
       }
     }
 
-    "have the correct name from skos:prefLabel" in {
+    "have the correct name property from skos:prefLabel" in {
       val query = queryField(traceId, "name")
       assertOneSource(query) { json =>
         json shouldEqual json"""{ "name": "S1J_L6_IPC_cADpyr_2" }"""
       }
     }
 
-    "have the correct description" in {
+    "have the correct description property" in {
       val query = queryField(neuronMorphologyId, "description")
       assertOneSource(query) { json =>
         json shouldEqual json"""{ "description": "This is a resource description." }"""
+      }
+    }
+
+    "have the correct createdAt property" in {
+      val query = queryField(neuronMorphologyId, "createdAt")
+      assertOneSource(query) { json =>
+        assert(isInstant(json, "createdAt"))
+      }
+    }
+
+    "have the correct updatedAt property" in {
+      val query = queryField(neuronMorphologyId, "updatedAt")
+      assertOneSource(query) { json =>
+        assert(isInstant(json, "updatedAt"))
       }
     }
 
@@ -754,5 +770,9 @@ class SearchConfigSpec extends BaseSpec {
 
   private def assertEmpty(query: Json): Task[Assertion] =
     assertOneSource(query)(j => assert(j == json"""{ }"""))
+
+  /** Check that a given field in the json can be parsed as [[Instant]] */
+  private def isInstant(json: Json, field: String) =
+    json.hcursor.downField(field).as[Instant].isRight
 
 }
