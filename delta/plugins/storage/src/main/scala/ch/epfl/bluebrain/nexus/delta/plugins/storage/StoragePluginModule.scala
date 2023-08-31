@@ -224,9 +224,9 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
 
   make[RemoteDiskStorageClient].from {
     (
-      client: HttpClient @Id("storage"),
-      as: ActorSystem[Nothing],
-      authTokenProvider: AuthTokenProvider
+        client: HttpClient @Id("storage"),
+        as: ActorSystem[Nothing],
+        authTokenProvider: AuthTokenProvider
     ) => new RemoteDiskStorageClient(client, authTokenProvider)(as.classicSystem)
   }
 

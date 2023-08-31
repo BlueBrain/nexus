@@ -66,11 +66,11 @@ class FilesSpec(docker: RemoteStorageDocker)
   private val alice = User("Alice", realm)
 
   "The Files operations bundle" when {
-    implicit val typedSystem: typed.ActorSystem[Nothing]      = system.toTyped
-    implicit val httpClient: HttpClient                       = HttpClient()(httpClientConfig, system, sc)
-    implicit val caller: Caller                               = Caller(bob, Set(bob, Group("mygroup", realm), Authenticated(realm)))
-    implicit val authTokenProvider: AuthTokenProvider = AuthTokenProvider.test
-    val remoteDiskStorageClient                               = new RemoteDiskStorageClient(httpClient, authTokenProvider)
+    implicit val typedSystem: typed.ActorSystem[Nothing] = system.toTyped
+    implicit val httpClient: HttpClient                  = HttpClient()(httpClientConfig, system, sc)
+    implicit val caller: Caller                          = Caller(bob, Set(bob, Group("mygroup", realm), Authenticated(realm)))
+    implicit val authTokenProvider: AuthTokenProvider    = AuthTokenProvider.test
+    val remoteDiskStorageClient                          = new RemoteDiskStorageClient(httpClient, authTokenProvider)
 
     val tag        = UserTag.unsafe("tag")
     val otherRead  = Permission.unsafe("other/read")

@@ -33,7 +33,7 @@ import scala.concurrent.duration._
   * The client to communicate with the remote storage service
   */
 final class RemoteDiskStorageClient(client: HttpClient, getAuthToken: AuthTokenProvider)(implicit
-                                                                                         as: ActorSystem
+    as: ActorSystem
 ) {
   import as.dispatcher
 

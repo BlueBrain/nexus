@@ -5,8 +5,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.AuthToken
 import monix.bio.UIO
 
 /**
- * Provides an auth token for the service account, for use when comunicating with remote storage
- */
+  * Provides an auth token for the service account, for use when comunicating with remote storage
+  */
 trait AuthTokenProvider {
   def apply(): UIO[Option[AuthToken]]
 }

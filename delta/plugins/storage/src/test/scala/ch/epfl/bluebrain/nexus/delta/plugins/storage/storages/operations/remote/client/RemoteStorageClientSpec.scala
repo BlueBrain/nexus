@@ -41,10 +41,10 @@ class RemoteStorageClientSpec(docker: RemoteStorageDocker)
 
   implicit val ec: ExecutionContext = system.dispatcher
 
-  private var client: RemoteDiskStorageClient              = _
-  private var baseUri: BaseUri                             = _
+  private var client: RemoteDiskStorageClient      = _
+  private var baseUri: BaseUri                     = _
   private val authTokenProvider: AuthTokenProvider = AuthTokenProvider.test(None)
-  private val bucket: Label                                = Label.unsafe(BucketName)
+  private val bucket: Label                        = Label.unsafe(BucketName)
 
   override protected def beforeAll(): Unit = {
     super.beforeAll()
