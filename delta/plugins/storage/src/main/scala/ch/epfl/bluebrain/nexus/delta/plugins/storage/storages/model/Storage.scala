@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.Sto
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.Metadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.{DiskStorageFetchFile, DiskStorageSaveFile}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.{RemoteDiskStorageFetchFile, RemoteDiskStorageLinkFile, RemoteDiskStorageSaveFile, RemoteStorageFetchAttributes}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{S3StorageFetchFile, S3StorageLinkFile, S3StorageSaveFile}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.{FetchAttributes, FetchFile, LinkFile, SaveFile}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{contexts, Storages}
@@ -129,17 +129,21 @@ object Storage {
     override val default: Boolean           = value.default
     override val storageValue: StorageValue = value
 
-    def fetchFile(implicit config: StorageTypeConfig, client: HttpClient, as: ActorSystem): FetchFile =
+    def fetchFile(implicit
+        authProvider: RemoteStorageAuthTokenProvider,
+        client: HttpClient,
+        as: ActorSystem
+    ): FetchFile =
       new RemoteDiskStorageFetchFile(value)
 
-    def saveFile(implicit config: StorageTypeConfig, client: HttpClient, as: ActorSystem): SaveFile =
+    def saveFile(implicit authProvider: RemoteStorageAuthTokenProvider, client: HttpClient, as: ActorSystem): SaveFile =
       new RemoteDiskStorageSaveFile(this)
 
-    def linkFile(implicit config: StorageTypeConfig, client: HttpClient, as: ActorSystem): LinkFile =
+    def linkFile(implicit authProvider: RemoteStorageAuthTokenProvider, client: HttpClient, as: ActorSystem): LinkFile =
       new RemoteDiskStorageLinkFile(this)
 
     def fetchComputedAttributes(implicit
-        config: StorageTypeConfig,
+        authProvider: RemoteStorageAuthTokenProvider,
         client: HttpClient,
         as: ActorSystem
     ): FetchAttributes =

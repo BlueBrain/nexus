@@ -22,6 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.Sto
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageIsDeprecated
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, Storage, StorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteStorageAuthTokenProvider
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.{FetchAttributes, FetchFile, LinkFile, SaveFile}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{Storages, StoragesStatistics}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -61,7 +62,13 @@ final class Files(
     fetchContext: FetchContext[FileRejection],
     storages: Storages,
     storagesStatistics: StoragesStatistics
-)(implicit config: StorageTypeConfig, client: HttpClient, uuidF: UUIDF, system: ClassicActorSystem) {
+)(implicit
+    config: StorageTypeConfig,
+    remoteStorageAuthTokenProvider: RemoteStorageAuthTokenProvider,
+    client: HttpClient,
+    uuidF: UUIDF,
+    system: ClassicActorSystem
+) {
 
   implicit private val kamonComponent: KamonMetricComponent = KamonMetricComponent(entityType.value)
 
@@ -703,7 +710,8 @@ object Files {
       client: HttpClient,
       uuidF: UUIDF,
       scheduler: Scheduler,
-      as: ActorSystem[Nothing]
+      as: ActorSystem[Nothing],
+      remoteStorageAuthTokenProvider: RemoteStorageAuthTokenProvider
   ): Files = {
     implicit val classicAs: ClassicActorSystem  = as.classicSystem
     implicit val sTypeConfig: StorageTypeConfig = storageTypeConfig

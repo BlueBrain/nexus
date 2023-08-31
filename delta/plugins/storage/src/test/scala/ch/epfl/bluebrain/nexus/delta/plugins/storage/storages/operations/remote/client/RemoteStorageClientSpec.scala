@@ -8,11 +8,11 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.{Compute
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.{FetchFileRejection, MoveFileRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteStorageAuthTokenProvider
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.model.RemoteDiskStorageFileAttributes
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig}
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.AuthToken
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Name}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
@@ -41,8 +41,9 @@ class RemoteStorageClientSpec(docker: RemoteStorageDocker)
 
   implicit val ec: ExecutionContext = system.dispatcher
 
-  private var client: RemoteDiskStorageClient = _
-  private val bucket: Label                   = Label.unsafe(BucketName)
+  private var client: RemoteDiskStorageClient                       = _
+  implicit private val authProvider: RemoteStorageAuthTokenProvider = RemoteStorageAuthTokenProvider.test(None)
+  private val bucket: Label                                         = Label.unsafe(BucketName)
 
   override protected def beforeAll(): Unit = {
     super.beforeAll()
@@ -53,10 +54,9 @@ class RemoteStorageClientSpec(docker: RemoteStorageDocker)
 
   "A RemoteStorage client" should {
 
-    implicit val cred: Option[AuthToken] = None
-    val content                          = RemoteStorageDocker.Content
-    val entity                           = HttpEntity(content)
-    val attributes                       = RemoteDiskStorageFileAttributes(
+    val content    = RemoteStorageDocker.Content
+    val entity     = HttpEntity(content)
+    val attributes = RemoteDiskStorageFileAttributes(
       location = s"file:///app/$BucketName/nexus/my/file.txt",
       bytes = 12,
       digest = ComputedDigest(DigestAlgorithm.default, RemoteStorageDocker.Digest),

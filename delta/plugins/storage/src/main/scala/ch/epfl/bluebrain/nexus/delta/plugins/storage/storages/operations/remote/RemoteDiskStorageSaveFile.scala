@@ -4,8 +4,6 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.BodyPartEntity
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig.remoteStorageAuthToken
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.RemoteDiskStorage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.SaveFile
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.SaveFile.intermediateFolders
@@ -13,16 +11,14 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.model.RemoteDiskStorageFileAttributes
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.AuthToken
 import monix.bio.IO
 
 class RemoteDiskStorageSaveFile(storage: RemoteDiskStorage)(implicit
-    config: StorageTypeConfig,
+    authProvider: RemoteStorageAuthTokenProvider,
     httpClient: HttpClient,
     as: ActorSystem
 ) extends SaveFile {
-  implicit private val cred: Option[AuthToken] = remoteStorageAuthToken(config)
-  private val client: RemoteDiskStorageClient  = new RemoteDiskStorageClient(storage.value.endpoint)
+  private val client: RemoteDiskStorageClient = new RemoteDiskStorageClient(storage.value.endpoint)
 
   override def apply(
       description: FileDescription,

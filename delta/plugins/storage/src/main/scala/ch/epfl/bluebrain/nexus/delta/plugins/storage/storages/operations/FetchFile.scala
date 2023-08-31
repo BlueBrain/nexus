@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteStorageAuthTokenProvider
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import monix.bio.IO
@@ -34,7 +35,12 @@ object FetchFile {
   /**
     * Construct a [[FetchFile]] from the given ''storage''.
     */
-  def apply(storage: Storage)(implicit config: StorageTypeConfig, as: ActorSystem, client: HttpClient): FetchFile =
+  def apply(storage: Storage)(implicit
+      config: StorageTypeConfig,
+      as: ActorSystem,
+      client: HttpClient,
+      authProvider: RemoteStorageAuthTokenProvider
+  ): FetchFile =
     storage match {
       case storage: Storage.DiskStorage       => storage.fetchFile
       case storage: Storage.S3Storage         => storage.fetchFile

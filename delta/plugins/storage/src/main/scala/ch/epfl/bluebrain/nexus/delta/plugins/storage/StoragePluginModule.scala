@@ -15,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.Sto
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.contexts.{storages => storageCtxId, storagesMetadata => storageMetaCtxId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageAccess
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteStorageAuthTokenProvider
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.routes.StoragesRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.schemas.{storage => storagesSchemaId}
@@ -66,6 +67,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
       (
           fetchContext: FetchContext[ContextRejection],
           contextResolution: ResolverContextResolution,
+          remoteStorageAuthTokenProvider: RemoteStorageAuthTokenProvider,
           permissions: Permissions,
           xas: Transactors,
           cfg: StoragePluginConfig,
@@ -79,6 +81,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         implicit val classicAs: actor.ActorSystem         = as.classicSystem
         implicit val storageTypeConfig: StorageTypeConfig = cfg.storages.storageTypeConfig
         implicit val c: HttpClient                        = client
+        implicit val a: RemoteStorageAuthTokenProvider    = remoteStorageAuthTokenProvider
         Storages(
           fetchContext.mapRejection(StorageRejection.ProjectContextRejection),
           contextResolution,
@@ -146,6 +149,10 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
 
   many[ResourceShift[_, _, _]].ref[Storage.Shift]
 
+  make[RemoteStorageAuthTokenProvider].from { (cfg: StorageTypeConfig) =>
+    RemoteStorageAuthTokenProvider(cfg)
+  }
+
   make[Files]
     .fromEffect {
       (
@@ -161,6 +168,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           clock: Clock[UIO],
           uuidF: UUIDF,
           as: ActorSystem[Nothing],
+          authProvider: RemoteStorageAuthTokenProvider,
           scheduler: Scheduler
       ) =>
         Task
@@ -178,7 +186,8 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
               client,
               uuidF,
               scheduler,
-              as
+              as,
+              authProvider
             )
           )
           .tapEval { files =>
@@ -219,9 +228,14 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
   many[ResourceShift[_, _, _]].ref[File.Shift]
 
   many[ServiceDependency].addSet {
-    (cfg: StorageTypeConfig, client: HttpClient @Id("storage"), as: ActorSystem[Nothing]) =>
+    (
+        cfg: StorageTypeConfig,
+        client: HttpClient @Id("storage"),
+        as: ActorSystem[Nothing],
+        remoteStorageAuthTokenProvider: RemoteStorageAuthTokenProvider
+    ) =>
       val remoteStorageClient = cfg.remoteDisk.map { r =>
-        new RemoteDiskStorageClient(r.defaultEndpoint)(client, as.classicSystem)
+        new RemoteDiskStorageClient(r.defaultEndpoint)(client, as.classicSystem, remoteStorageAuthTokenProvider)
       }
       remoteStorageClient.fold(Set.empty[RemoteStorageServiceDependency])(client =>
         Set(new RemoteStorageServiceDependency(client))
