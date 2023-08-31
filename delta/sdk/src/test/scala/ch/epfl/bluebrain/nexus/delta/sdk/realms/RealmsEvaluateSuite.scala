@@ -35,96 +35,89 @@ class RealmsEvaluateSuite extends CatsEffectSuite with IOFromMap with IOFixedClo
   private def openIdAlreadyExists(uri: Uri) =
     (_: Label, _: Uri) => IO.raiseError(RealmOpenIdConfigAlreadyExists(label, uri))
 
-  group("Evaluate a create command") {
-    val command = CreateRealm(label, name, wellKnownUri, None, None, subject)
+  private val createCommand = CreateRealm(label, name, wellKnownUri, None, None, subject)
 
-    test("Return the created event") {
-      evaluate(wkResolution, newOpenId)(None, command)
-        .assertEquals(
-          RealmCreated(label, name, wellKnownUri, None, None, wk, epoch, subject)
-        )
-    }
-
-    test("Fail as openId is already used") {
-      evaluate(wkResolution, openIdAlreadyExists(wellKnownUri))(None, command)
-        .intercept(RealmOpenIdConfigAlreadyExists(label, wellKnownUri))
-    }
-
-    test("Fail as realm already exists") {
-      evaluate(wkResolution, newOpenId)(Some(current), command)
-        .intercept[RealmAlreadyExists]
-    }
+  test("Evaluating a create command returns the created event") {
+    evaluate(wkResolution, newOpenId)(None, createCommand)
+      .assertEquals(
+        RealmCreated(label, name, wellKnownUri, None, None, wk, epoch, subject)
+      )
   }
 
-  group("Evaluate an update command") {
-    val command = UpdateRealm(label, 1, name, wellKnown2Uri, None, None, subject)
-    test("Return the updated event") {
-      evaluate(wkResolution, newOpenId)(Some(current), command).assertEquals(
-        RealmUpdated(label, 2, name, wellKnown2Uri, None, None, wk2, epoch, subject)
-      )
-    }
-
-    test("Update a realm name") {
-      val newName     = Name.unsafe("updatedName")
-      val updatedName = command.copy(name = newName)
-      evaluate(wkResolution, newOpenId)(Some(current), updatedName).assertEquals(
-        RealmUpdated(label, 2, newName, wellKnown2Uri, None, None, wk2, epoch, subject)
-      )
-    }
-
-    test("Fail as the given openId is already used") {
-      evaluate(wkResolution, openIdAlreadyExists(wellKnown2Uri))(
-        Some(current),
-        command
-      ).intercept(RealmOpenIdConfigAlreadyExists(label, wellKnown2Uri))
-    }
+  test("Evaluating a create command fails as openId is already used") {
+    evaluate(wkResolution, openIdAlreadyExists(wellKnownUri))(None, createCommand)
+      .intercept(RealmOpenIdConfigAlreadyExists(label, wellKnownUri))
   }
 
-  group("Deprecating a realm") {
+  test("Evaluating a create command fails as the realm already exists") {
+    evaluate(wkResolution, newOpenId)(Some(current), createCommand)
+      .intercept[RealmAlreadyExists]
+  }
 
-    test("Return the deprecated event") {
-      evaluate(wkResolution, newOpenId)(Some(current), DeprecateRealm(label, 1, subject)).assertEquals(
-        RealmDeprecated(label, 2, epoch, subject)
-      )
-    }
+  private val updateCommand = UpdateRealm(label, 1, name, wellKnown2Uri, None, None, subject)
 
-    test("Reject with RealmAlreadyDeprecated") {
-      evaluate(wkResolution, newOpenId)(
-        Some(current.copy(deprecated = true)),
-        DeprecateRealm(label, 1, subject)
-      ).intercept[RealmAlreadyDeprecated]
-    }
+  test("Evaluating an update command returns the updated event") {
+    evaluate(wkResolution, newOpenId)(Some(current), updateCommand).assertEquals(
+      RealmUpdated(label, 2, name, wellKnown2Uri, None, None, wk2, epoch, subject)
+    )
+  }
+
+  test("Evaluating an update command modifies the realm name") {
+    val newName     = Name.unsafe("updatedName")
+    val updatedName = updateCommand.copy(name = newName)
+    evaluate(wkResolution, newOpenId)(Some(current), updatedName).assertEquals(
+      RealmUpdated(label, 2, newName, wellKnown2Uri, None, None, wk2, epoch, subject)
+    )
+  }
+
+  test("Evaluating an update command fails as the given openId is already used") {
+    evaluate(wkResolution, openIdAlreadyExists(wellKnown2Uri))(
+      Some(current),
+      updateCommand
+    ).intercept(RealmOpenIdConfigAlreadyExists(label, wellKnown2Uri))
+  }
+
+  /**
+    * Evaluate a deprecate command
+    */
+  private val deprecateCommand = DeprecateRealm(label, 1, subject)
+
+  test("Evaluating a deprecate command returns the deprecated event") {
+    evaluate(wkResolution, newOpenId)(Some(current), deprecateCommand).assertEquals(
+      RealmDeprecated(label, 2, epoch, subject)
+    )
+  }
+
+  test("Evaluating a deprecate command fails with RealmAlreadyDeprecated") {
+    val deprecatedState = Some(current.copy(deprecated = true))
+    evaluate(wkResolution, newOpenId)(deprecatedState, deprecateCommand).intercept[RealmAlreadyDeprecated]
   }
 
   List(
     None -> UpdateRealm(label, 1, name, wellKnownUri, None, None, subject),
     None -> DeprecateRealm(label, 1, subject)
   ).foreach { case (state, cmd) =>
-    test(s"for a ${cmd.getClass.getSimpleName} command when the state does not exist") {
+    test(s"Evaluating a ${cmd.getClass.getSimpleName} command fails when the state does not exist") {
       evaluate(wkResolution, (_, _) => IO.unit)(state, cmd).intercept[RealmNotFound]
     }
   }
 
-  group("Fail with an incorrect rev") {
-    List(
-      current -> UpdateRealm(label, 2, name, wellKnownUri, None, None, subject),
-      current -> DeprecateRealm(label, 2, subject)
-    ).foreach { case (state, cmd) =>
-      test(s"for a ${cmd.getClass.getSimpleName} command with a wrong rev") {
-        evaluate(wkResolution, (_, _) => IO.unit)(Some(state), cmd).intercept[IncorrectRev]
-      }
+  List(
+    current -> UpdateRealm(label, 2, name, wellKnownUri, None, None, subject),
+    current -> DeprecateRealm(label, 2, subject)
+  ).foreach { case (state, cmd) =>
+    test(s"Evaluating a ${cmd.getClass.getSimpleName} command fails with a wrong rev") {
+      evaluate(wkResolution, (_, _) => IO.unit)(Some(state), cmd).intercept[IncorrectRev]
     }
   }
 
-  group("Fail with a wellKnown resolution error") {
-    val wellKnownWrongUri: Uri = "https://localhost/auth/realms/myrealmwrong"
-    List(
-      None          -> CreateRealm(label, name, wellKnownWrongUri, None, None, subject),
-      Some(current) -> UpdateRealm(label, 1, name, wellKnownWrongUri, None, None, subject)
-    ).foreach { case (state, cmd) =>
-      test(s"for ${cmd.getClass.getSimpleName} command with a invalid uri") {
-        evaluate(wkResolution, newOpenId)(state, cmd).intercept[UnsuccessfulOpenIdConfigResponse]
-      }
+  val wellKnownWrongUri: Uri = "https://localhost/auth/realms/myrealmwrong"
+  List(
+    None          -> CreateRealm(label, name, wellKnownWrongUri, None, None, subject),
+    Some(current) -> UpdateRealm(label, 1, name, wellKnownWrongUri, None, None, subject)
+  ).foreach { case (state, cmd) =>
+    test(s"Evaluating a  ${cmd.getClass.getSimpleName} command fails with a invalid uri") {
+      evaluate(wkResolution, newOpenId)(state, cmd).intercept[UnsuccessfulOpenIdConfigResponse]
     }
   }
 

@@ -91,246 +91,231 @@ class SchemasImplSuite
     source deepMerge json"""{"@id": "$id"}"""
   }
 
-  group("Creating a schema") {
-
-    test("Succeed with the id present in the payload") {
-      val expected = SchemaGen.resourceFor(schema, subject = subject)
-      schemas.create(projectRef, source).assertEquals(expected)
-    }
-
-    test("Succeed with the id present on the payload and passed") {
-      val source   = schemaSourceWithId(mySchema2)
-      val schema   = SchemaGen.schema(mySchema2, project.ref, source)
-      val expected = SchemaGen.resourceFor(schema, subject = subject)
-      schemas.create("myschema2", projectRef, source).assertEquals(expected)
-    }
-
-    test("Succeed with the passed id") {
-      val source   = schemaSourceWithId(mySchema3)
-      val schema   = SchemaGen.schema(mySchema3, project.ref, source).copy(source = sourceNoId)
-      val expected = SchemaGen.resourceFor(schema, subject = subject)
-      schemas.create(mySchema3, projectRef, sourceNoId).assertEquals(expected)
-    }
-
-    test("Fail with different ids on the payload and passed") {
-      val otherId = nxv + "other"
-      schemas.create(otherId, projectRef, source).intercept(UnexpectedSchemaId(id = otherId, payloadId = mySchema))
-    }
-
-    test("Fail if it already exists") {
-      schemas.create(mySchema, projectRef, source).intercept(ResourceAlreadyExists(mySchema, projectRef))
-    }
-
-    test("Fail if it does not validate against the SHACL schema") {
-      val otherId     = nxv + "other"
-      val wrongSource = sourceNoId.replace("minCount" -> 1, "wrong")
-      schemas.create(otherId, projectRef, wrongSource).intercept[InvalidSchema]
-    }
-
-    test("Fail if project does not exist") {
-      val projectRef = ProjectRef(org, Label.unsafe("other"))
-      schemas.create(projectRef, sourceNoId).intercept[ProjectContextRejection]
-    }
-
-    test("Fail if project is deprecated") {
-      schemas.update(mySchema, projectDeprecated.ref, 2, source).intercept[ProjectContextRejection]
-    }
+  test("Creating a schema Succeeds with the id present in the payload") {
+    val expected = SchemaGen.resourceFor(schema, subject = subject)
+    schemas.create(projectRef, source).assertEquals(expected)
   }
 
-  group("Updating a schema") {
-    test("Succeed") {
-      val expected = SchemaGen.resourceFor(schemaUpdated, rev = 2, subject = subject)
-      schemas.update(mySchema, projectRef, 1, sourceUpdated).assertEquals(expected)
-    }
-
-    test("Fail if the schema does not exist") {
-      schemas.update(nxv + "other", projectRef, 1, json"""{"a": "b"}""").intercept[SchemaNotFound]
-    }
-
-    test("Fail if the revision passed is incorrect") {
-      schemas.update(mySchema, projectRef, 3, json"""{"a": "b"}""").intercept(IncorrectRev(provided = 3, expected = 2))
-    }
-
-    test("Fail if deprecated") {
-      for {
-        _ <- schemas.deprecate(mySchema3, projectRef, 1)
-        _ <- schemas.update(mySchema3, projectRef, 2, json"""{"a": "b"}""").intercept[SchemaIsDeprecated]
-      } yield ()
-    }
-
-    test("Fail if it does not validate against its schema") {
-      val wrongSource = sourceNoId.replace("minCount" -> 1, "wrong")
-      schemas.update(mySchema, projectRef, 2, wrongSource).intercept[InvalidSchema]
-    }
-
-    test("Fail if project does not exist") {
-      val projectRef = ProjectRef(org, Label.unsafe("other"))
-      schemas.update(mySchema, projectRef, 2, source).intercept[ProjectContextRejection]
-    }
-
-    test("reject if project is deprecated") {
-      schemas.update(mySchema, projectDeprecated.ref, 2, source).intercept[ProjectContextRejection]
-    }
+  test("Creating a schema succeeds with the id present on the payload and passed") {
+    val source   = schemaSourceWithId(mySchema2)
+    val schema   = SchemaGen.schema(mySchema2, project.ref, source)
+    val expected = SchemaGen.resourceFor(schema, subject = subject)
+    schemas.create("myschema2", projectRef, source).assertEquals(expected)
   }
 
-  group("Refreshing a schema") {
-    val schema4 = SchemaGen.schema(mySchema4, project.ref, schemaSourceWithId(mySchema4))
-
-    test("Create the schema for subsequent tests") {
-      val expected = SchemaGen.resourceFor(schema4, subject = subject)
-      schemas.create(projectRef, schemaSourceWithId(mySchema4)).assertEquals(expected)
-    }
-
-    test("succeed") {
-      val expected = SchemaGen.resourceFor(schema4, rev = 2, subject = subject)
-      schemas.refresh(mySchema4, projectRef).assertEquals(expected)
-    }
-
-    test("Fail if it does not exist") {
-      schemas.refresh(nxv + "other", projectRef).intercept[SchemaNotFound]
-    }
-
-    test("Fail if deprecated") {
-      schemas.refresh(mySchema3, projectRef).intercept[SchemaIsDeprecated]
-    }
-
-    test("Fail if project does not exist") {
-      val projectRef = ProjectRef(org, Label.unsafe("other"))
-      schemas.refresh(mySchema4, projectRef).intercept[ProjectContextRejection]
-    }
-
-    test("Fail if project is deprecated") {
-      schemas.refresh(mySchema4, projectDeprecated.ref).intercept[ProjectContextRejection]
-    }
+  test("Creating a schema succeeds  with the passed id") {
+    val source   = schemaSourceWithId(mySchema3)
+    val schema   = SchemaGen.schema(mySchema3, project.ref, source).copy(source = sourceNoId)
+    val expected = SchemaGen.resourceFor(schema, subject = subject)
+    schemas.create(mySchema3, projectRef, sourceNoId).assertEquals(expected)
   }
 
-  group("Tagging a schema") {
-    test("Succeed") {
-      val schema   = SchemaGen.schema(mySchema2, project.ref, schemaSourceWithId(mySchema2), tags = Tags(tag -> 1))
-      val expected = SchemaGen.resourceFor(schema, subject = subject, rev = 2)
-      schemas.tag(mySchema2, projectRef, tag, 1, 1).assertEquals(expected)
-    }
-
-    test("Succeed if deprecated") {
-      val schema   = SchemaGen
-        .schema(mySchema3, project.ref, schemaSourceWithId(mySchema3), Tags(tag -> 2))
-        .copy(source = sourceNoId)
-      val expected = SchemaGen.resourceFor(schema, subject = subject, rev = 3, deprecated = true)
-      schemas.tag(mySchema3, projectRef, tag, 2, 2).assertEquals(expected)
-    }
-
-    test("Fail if it doesn't exist") {
-      schemas.tag(nxv + "other", projectRef, tag, 1, 1).intercept[SchemaNotFound]
-    }
-
-    test("Fail if the revision passed is incorrect") {
-      schemas.tag(mySchema, projectRef, tag, 1, 3).intercept(IncorrectRev(provided = 3, expected = 2))
-    }
-
-    test("Fail if the tag revision is not found") {
-      schemas.tag(mySchema, projectRef, tag, 6, 2).intercept(RevisionNotFound(provided = 6, current = 2))
-    }
-
-    test("Fail if project does not exist") {
-      val projectRef = ProjectRef(org, Label.unsafe("other"))
-      schemas.tag(mySchema, projectRef, tag, 2, 1).intercept[ProjectContextRejection]
-    }
-
-    test("Fail if project is deprecated") {
-      schemas.tag(mySchema, projectDeprecated.ref, tag, 2, 2).intercept[ProjectContextRejection]
-    }
+  test("Creating a schema fails with different ids on the payload and passed") {
+    val otherId = nxv + "other"
+    schemas.create(otherId, projectRef, source).intercept(UnexpectedSchemaId(id = otherId, payloadId = mySchema))
   }
 
-  group("Deprecating a schema") {
-    test("succeed") {
-      val expected = SchemaGen.resourceFor(schemaUpdated, subject = subject, rev = 3, deprecated = true)
-      schemas.deprecate(mySchema, projectRef, 2).assertEquals(expected)
-    }
-
-    test("Fail if it doesn't exists") {
-      schemas.deprecate(nxv + "other", projectRef, 1).intercept[SchemaNotFound]
-    }
-
-    test("Fail if the revision passed is incorrect") {
-      schemas.deprecate(mySchema, projectRef, 5).intercept(IncorrectRev(provided = 5, expected = 3))
-    }
-
-    test("Fail if deprecated") {
-      schemas.deprecate(mySchema, projectRef, 3).intercept[SchemaIsDeprecated]
-    }
-
-    test("Fail if project does not exist") {
-      val projectRef = ProjectRef(org, Label.unsafe("other"))
-
-      schemas.deprecate(mySchema, projectRef, 1).intercept[ProjectContextRejection]
-    }
-
-    test("Fail if project is deprecated") {
-      schemas.deprecate(mySchema, projectDeprecated.ref, 1).intercept[ProjectContextRejection]
-    }
+  test("Creating a schema fails if it already exists") {
+    schemas.create(mySchema, projectRef, source).intercept(ResourceAlreadyExists(mySchema, projectRef))
   }
 
-  group("Fetching a schema") {
-    val schema2 = SchemaGen.schema(mySchema2, project.ref, schemaSourceWithId(mySchema2))
-
-    test("Succeed") {
-      val expected = SchemaGen.resourceFor(schemaUpdated, rev = 3, deprecated = true, subject = subject)
-      schemas.fetch(mySchema, projectRef).assertEquals(expected)
-    }
-
-    test("Succeed by tag") {
-      val expected = SchemaGen.resourceFor(schema2, subject = subject)
-      schemas.fetch(IdSegmentRef(mySchema2, tag), projectRef).assertEquals(expected)
-    }
-
-    test("Succeed by rev") {
-      val expected = SchemaGen.resourceFor(schema2, subject = subject)
-      schemas.fetch(IdSegmentRef(mySchema2, 1), projectRef).assertEquals(expected)
-    }
-
-    test("Fail if tag does not exist") {
-      val otherTag = UserTag.unsafe("other")
-      schemas.fetch(IdSegmentRef(mySchema, otherTag), projectRef).intercept(TagNotFound(otherTag))
-    }
-
-    test("Fail if revision does not exist") {
-      schemas.fetch(IdSegmentRef(mySchema, 5), projectRef).intercept(RevisionNotFound(provided = 5, current = 3))
-    }
-
-    test("Fail fetching if schema does not exist") {
-      val mySchema = nxv + "notFound"
-      for {
-        _ <- schemas.fetch(mySchema, projectRef).intercept[SchemaNotFound]
-        _ <- schemas.fetch(IdSegmentRef(mySchema, tag), projectRef).intercept[SchemaNotFound]
-        _ <- schemas.fetch(IdSegmentRef(mySchema, 2), projectRef).intercept[SchemaNotFound]
-      } yield ()
-    }
-
-    test("Fail if project does not exist") {
-      val projectRef = ProjectRef(org, Label.unsafe("other"))
-      schemas.fetch(mySchema, projectRef).intercept[ProjectContextRejection]
-    }
+  test("Creating a schema fails if it does not validate against the SHACL schema") {
+    val otherId     = nxv + "other"
+    val wrongSource = sourceNoId.replace("minCount" -> 1, "wrong")
+    schemas.create(otherId, projectRef, wrongSource).intercept[InvalidSchema]
   }
 
-  group("Deleting a schema tag") {
-    test("succeed") {
-      val sourceWithId = schemaSourceWithId(mySchema2)
-      val schema       = SchemaGen.schema(mySchema2, project.ref, sourceWithId)
-      val expected     = SchemaGen.resourceFor(schema, subject = subject, rev = 3)
-      schemas.deleteTag(mySchema2, projectRef, tag, 2).assertEquals(expected)
-    }
+  test("Creating a schema fails if project does not exist") {
+    val projectRef = ProjectRef(org, Label.unsafe("other"))
+    schemas.create(projectRef, sourceNoId).intercept[ProjectContextRejection]
+  }
 
-    test("reject if the schema doesn't exist") {
-      schemas.deleteTag(nxv + "other", projectRef, tag, 1).intercept[SchemaNotFound]
-    }
+  test("Creating a schema fails if project is deprecated") {
+    schemas.update(mySchema, projectDeprecated.ref, 2, source).intercept[ProjectContextRejection]
+  }
 
-    test("reject if the revision passed is incorrect") {
-      schemas.deleteTag(mySchema2, projectRef, tag, 2).intercept(IncorrectRev(provided = 2, expected = 3))
-    }
+  test("Updating a schema succeeds") {
+    val expected = SchemaGen.resourceFor(schemaUpdated, rev = 2, subject = subject)
+    schemas.update(mySchema, projectRef, 1, sourceUpdated).assertEquals(expected)
+  }
 
-    test("reject if the tag doesn't exist") {
-      schemas.deleteTag(mySchema2, projectRef, tag, 3).intercept[TagNotFound]
-    }
+  test("Updating a schema fails if the schema does not exist") {
+    schemas.update(nxv + "other", projectRef, 1, json"""{"a": "b"}""").intercept[SchemaNotFound]
+  }
+
+  test("Updating a schema fails if the revision passed is incorrect") {
+    schemas.update(mySchema, projectRef, 3, json"""{"a": "b"}""").intercept(IncorrectRev(provided = 3, expected = 2))
+  }
+
+  test("Updating a schema fails if deprecated") {
+    for {
+      _ <- schemas.deprecate(mySchema3, projectRef, 1)
+      _ <- schemas.update(mySchema3, projectRef, 2, json"""{"a": "b"}""").intercept[SchemaIsDeprecated]
+    } yield ()
+  }
+
+  test("Updating a schema fails if it does not validate against its schema") {
+    val wrongSource = sourceNoId.replace("minCount" -> 1, "wrong")
+    schemas.update(mySchema, projectRef, 2, wrongSource).intercept[InvalidSchema]
+  }
+
+  test("Updating a schema fails if project does not exist") {
+    val projectRef = ProjectRef(org, Label.unsafe("other"))
+    schemas.update(mySchema, projectRef, 2, source).intercept[ProjectContextRejection]
+  }
+
+  test("Updating a schema fails if project is deprecated") {
+    schemas.update(mySchema, projectDeprecated.ref, 2, source).intercept[ProjectContextRejection]
+  }
+
+  private val schema4 = SchemaGen.schema(mySchema4, project.ref, schemaSourceWithId(mySchema4))
+
+  test("Creates the schema for subsequent tests") {
+    val expected = SchemaGen.resourceFor(schema4, subject = subject)
+    schemas.create(projectRef, schemaSourceWithId(mySchema4)).assertEquals(expected)
+  }
+
+  test("Refreshing a schema succeeds") {
+    val expected = SchemaGen.resourceFor(schema4, rev = 2, subject = subject)
+    schemas.refresh(mySchema4, projectRef).assertEquals(expected)
+  }
+
+  test("Refreshing a schema fails if it does not exist") {
+    schemas.refresh(nxv + "other", projectRef).intercept[SchemaNotFound]
+  }
+
+  test("Refreshing a schema fails if deprecated") {
+    schemas.refresh(mySchema3, projectRef).intercept[SchemaIsDeprecated]
+  }
+
+  test("Refreshing a schema fails if project does not exist") {
+    val projectRef = ProjectRef(org, Label.unsafe("other"))
+    schemas.refresh(mySchema4, projectRef).intercept[ProjectContextRejection]
+  }
+
+  test("Refreshing a schema fails if project is deprecated") {
+    schemas.refresh(mySchema4, projectDeprecated.ref).intercept[ProjectContextRejection]
+  }
+
+  test("Tagging a schema succeeds") {
+    val schema   = SchemaGen.schema(mySchema2, project.ref, schemaSourceWithId(mySchema2), tags = Tags(tag -> 1))
+    val expected = SchemaGen.resourceFor(schema, subject = subject, rev = 2)
+    schemas.tag(mySchema2, projectRef, tag, 1, 1).assertEquals(expected)
+  }
+
+  test("Tagging a schema succeeds if deprecated") {
+    val schema   = SchemaGen
+      .schema(mySchema3, project.ref, schemaSourceWithId(mySchema3), Tags(tag -> 2))
+      .copy(source = sourceNoId)
+    val expected = SchemaGen.resourceFor(schema, subject = subject, rev = 3, deprecated = true)
+    schemas.tag(mySchema3, projectRef, tag, 2, 2).assertEquals(expected)
+  }
+
+  test("Tagging a schema fails if it doesn't exist") {
+    schemas.tag(nxv + "other", projectRef, tag, 1, 1).intercept[SchemaNotFound]
+  }
+
+  test("Tagging a schema fails  if the revision passed is incorrect") {
+    schemas.tag(mySchema, projectRef, tag, 1, 3).intercept(IncorrectRev(provided = 3, expected = 2))
+  }
+
+  test("Tagging a schema fails  if the tag revision is not found") {
+    schemas.tag(mySchema, projectRef, tag, 6, 2).intercept(RevisionNotFound(provided = 6, current = 2))
+  }
+
+  test("Tagging a schema fails  if project does not exist") {
+    val projectRef = ProjectRef(org, Label.unsafe("other"))
+    schemas.tag(mySchema, projectRef, tag, 2, 1).intercept[ProjectContextRejection]
+  }
+
+  test("Tagging a schema fails  if project is deprecated") {
+    schemas.tag(mySchema, projectDeprecated.ref, tag, 2, 2).intercept[ProjectContextRejection]
+  }
+
+  test("Deprecating a schema succeeds") {
+    val expected = SchemaGen.resourceFor(schemaUpdated, subject = subject, rev = 3, deprecated = true)
+    schemas.deprecate(mySchema, projectRef, 2).assertEquals(expected)
+  }
+
+  test("Deprecating a schema fails if it doesn't exists") {
+    schemas.deprecate(nxv + "other", projectRef, 1).intercept[SchemaNotFound]
+  }
+
+  test("Deprecating a schema fails if the revision passed is incorrect") {
+    schemas.deprecate(mySchema, projectRef, 5).intercept(IncorrectRev(provided = 5, expected = 3))
+  }
+
+  test("Deprecating a schema fails if deprecated") {
+    schemas.deprecate(mySchema, projectRef, 3).intercept[SchemaIsDeprecated]
+  }
+
+  test("Deprecating a schema fails if project does not exist") {
+    val projectRef = ProjectRef(org, Label.unsafe("other"))
+
+    schemas.deprecate(mySchema, projectRef, 1).intercept[ProjectContextRejection]
+  }
+
+  test("Deprecating a schema fails if project is deprecated") {
+    schemas.deprecate(mySchema, projectDeprecated.ref, 1).intercept[ProjectContextRejection]
+  }
+
+  private val schema2 = SchemaGen.schema(mySchema2, project.ref, schemaSourceWithId(mySchema2))
+
+  test("Fetching a schema succeeds") {
+    val expected = SchemaGen.resourceFor(schemaUpdated, rev = 3, deprecated = true, subject = subject)
+    schemas.fetch(mySchema, projectRef).assertEquals(expected)
+  }
+
+  test("Fetching a schema succeeds by tag") {
+    val expected = SchemaGen.resourceFor(schema2, subject = subject)
+    schemas.fetch(IdSegmentRef(mySchema2, tag), projectRef).assertEquals(expected)
+  }
+
+  test("Fetching a schema succeeds by rev") {
+    val expected = SchemaGen.resourceFor(schema2, subject = subject)
+    schemas.fetch(IdSegmentRef(mySchema2, 1), projectRef).assertEquals(expected)
+  }
+
+  test("Fetching a schema fails if tag does not exist") {
+    val otherTag = UserTag.unsafe("other")
+    schemas.fetch(IdSegmentRef(mySchema, otherTag), projectRef).intercept(TagNotFound(otherTag))
+  }
+
+  test("Fetching a schema fails if revision does not exist") {
+    schemas.fetch(IdSegmentRef(mySchema, 5), projectRef).intercept(RevisionNotFound(provided = 5, current = 3))
+  }
+
+  test("Fetching a schema fails if schema does not exist") {
+    val mySchema = nxv + "notFound"
+    for {
+      _ <- schemas.fetch(mySchema, projectRef).intercept[SchemaNotFound]
+      _ <- schemas.fetch(IdSegmentRef(mySchema, tag), projectRef).intercept[SchemaNotFound]
+      _ <- schemas.fetch(IdSegmentRef(mySchema, 2), projectRef).intercept[SchemaNotFound]
+    } yield ()
+  }
+
+  test("Fetching a schema fails  if project does not exist") {
+    val projectRef = ProjectRef(org, Label.unsafe("other"))
+    schemas.fetch(mySchema, projectRef).intercept[ProjectContextRejection]
+  }
+
+  test("Deleting a schema tag succeeds") {
+    val sourceWithId = schemaSourceWithId(mySchema2)
+    val schema       = SchemaGen.schema(mySchema2, project.ref, sourceWithId)
+    val expected     = SchemaGen.resourceFor(schema, subject = subject, rev = 3)
+    schemas.deleteTag(mySchema2, projectRef, tag, 2).assertEquals(expected)
+  }
+
+  test("Deleting a schema tag fails if the schema doesn't exist") {
+    schemas.deleteTag(nxv + "other", projectRef, tag, 1).intercept[SchemaNotFound]
+  }
+
+  test("Deleting a schema tag fails if the revision passed is incorrect") {
+    schemas.deleteTag(mySchema2, projectRef, tag, 2).intercept(IncorrectRev(provided = 2, expected = 3))
+  }
+
+  test("Deleting a schema tag fails if the tag doesn't exist") {
+    schemas.deleteTag(mySchema2, projectRef, tag, 3).intercept[TagNotFound]
   }
 
 }
