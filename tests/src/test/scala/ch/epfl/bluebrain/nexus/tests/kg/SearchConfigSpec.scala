@@ -30,6 +30,7 @@ class SearchConfigSpec extends BaseSpec {
   private val boutonDensityId      = "https://bbp.epfl.ch/data/bouton-density"
   private val simulationCampaignId = "https://bbp.epfl.ch/data/simulation-campaign"
   private val simulationId         = "https://bbp.epfl.ch/data/simulation"
+  private val detailedCircuitId    = "https://bbp.epfl.ch/data/detailed-circuit"
 
   // the resources that should appear in the search index
   private val mainResources  = List(
@@ -41,6 +42,7 @@ class SearchConfigSpec extends BaseSpec {
     "/kg/search/neuron-density.json",
     "/kg/search/layer-thickness.json",
     "/kg/search/bouton-density.json",
+    "/kg/search/detailed-circuit.json",
     "/kg/search/data/simulations/simulation-campaign-configuration.json",
     "/kg/search/data/simulations/simulation-campaign-execution.json",
     "/kg/search/data/simulations/simulation-campaign.json",
@@ -640,9 +642,34 @@ class SearchConfigSpec extends BaseSpec {
       }
     }
 
-    "have the correct detailed circuit property" in { pending }
+    "have the correct detailed circuit config path" in {
+      val query = queryField(detailedCircuitId, "circuitConfigPath")
+      assertOneSource(query) { json =>
+        json shouldEqual json"""{ "circuitConfigPath": "file:///gpfs/bbp.cscs.ch/project/proj123/config.json" }"""
+      }
+    }
+
+    "have the correct detailed circuit type " in {
+      val query = queryField(detailedCircuitId, "circuitType")
+      assertOneSource(query) { json =>
+        json shouldEqual json"""{ "circuitType": "circuit type" }"""
+      }
+    }
+
+    "have the correct detailed circuit base" in {
+      val query = queryField(detailedCircuitId, "circuitBase")
+      assertOneSource(query) { json =>
+        json shouldEqual json"""{ "circuitBase": "file:///gpfs/bbp.cscs.ch/project/proj123/base" }"""
+      }
+    }
+
+    "have the correct detailed circuit brain region" in {
+      // TODO: check whether this is still used
+      pending
+    }
+
     "have the correct sType property" in {
-      // there are no resources with this field yet
+      // TODO: there are no resources with this field yet
       pending
     }
 
