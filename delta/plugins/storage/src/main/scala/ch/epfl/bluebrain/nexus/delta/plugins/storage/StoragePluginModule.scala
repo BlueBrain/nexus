@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.Sto
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.contexts.{storages => storageCtxId, storagesMetadata => storageMetaCtxId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageAccess
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteStorageAuthTokenProvider
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.AuthTokenProvider
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.routes.StoragesRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.schemas.{storage => storagesSchemaId}
@@ -146,8 +146,8 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
 
   many[ResourceShift[_, _, _]].ref[Storage.Shift]
 
-  make[RemoteStorageAuthTokenProvider].from { (cfg: StorageTypeConfig) =>
-    RemoteStorageAuthTokenProvider(cfg)
+  make[AuthTokenProvider].from { (cfg: StorageTypeConfig) =>
+    AuthTokenProvider(cfg)
   }
 
   make[Files]
@@ -224,10 +224,10 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
 
   make[RemoteDiskStorageClient].from {
     (
-        client: HttpClient @Id("storage"),
-        as: ActorSystem[Nothing],
-        remoteStorageAuthTokenProvider: RemoteStorageAuthTokenProvider
-    ) => new RemoteDiskStorageClient(client, remoteStorageAuthTokenProvider)(as.classicSystem)
+      client: HttpClient @Id("storage"),
+      as: ActorSystem[Nothing],
+      authTokenProvider: AuthTokenProvider
+    ) => new RemoteDiskStorageClient(client, authTokenProvider)(as.classicSystem)
   }
 
   many[ServiceDependency].addSet {

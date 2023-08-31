@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutesSpec.fileMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts => fileContexts, permissions, FileFixtures, Files, FilesConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{StorageRejection, StorageStatEntry, StorageType}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteStorageAuthTokenProvider
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.AuthTokenProvider
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{contexts => storageContexts, permissions => storagesPermissions, StorageFixtures, Storages, StoragesConfig, StoragesStatistics}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -47,8 +47,8 @@ class FilesRoutesSpec extends BaseRouteSpec with CancelAfterFailure with Storage
   import akka.actor.typed.scaladsl.adapter._
   implicit val typedSystem: typed.ActorSystem[Nothing] = system.toTyped
   val httpClient: HttpClient                           = HttpClient()(httpClientConfig, system, s)
-  val authProvider: RemoteStorageAuthTokenProvider     = RemoteStorageAuthTokenProvider.test
-  val remoteDiskStorageClient                          = new RemoteDiskStorageClient(httpClient, authProvider)
+  val authTokenProvider: AuthTokenProvider     = AuthTokenProvider.test
+  val remoteDiskStorageClient                          = new RemoteDiskStorageClient(httpClient, authTokenProvider)
 
   // TODO: sort out how we handle this in tests
   implicit override def rcr: RemoteContextResolution = {

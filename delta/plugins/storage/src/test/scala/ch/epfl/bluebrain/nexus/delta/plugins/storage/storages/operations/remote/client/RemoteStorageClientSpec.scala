@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.{Compute
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.{FetchFileRejection, MoveFileRejection}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteStorageAuthTokenProvider
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.AuthTokenProvider
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.model.RemoteDiskStorageFileAttributes
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
@@ -43,7 +43,7 @@ class RemoteStorageClientSpec(docker: RemoteStorageDocker)
 
   private var client: RemoteDiskStorageClient              = _
   private var baseUri: BaseUri                             = _
-  private val authProvider: RemoteStorageAuthTokenProvider = RemoteStorageAuthTokenProvider.test(None)
+  private val authTokenProvider: AuthTokenProvider = AuthTokenProvider.test(None)
   private val bucket: Label                                = Label.unsafe(BucketName)
 
   override protected def beforeAll(): Unit = {
@@ -51,7 +51,7 @@ class RemoteStorageClientSpec(docker: RemoteStorageDocker)
     val httpConfig: HttpClientConfig    = httpClientConfig
     implicit val httpClient: HttpClient = HttpClient()(httpConfig, system, Scheduler.global)
 
-    client = new RemoteDiskStorageClient(httpClient, authProvider)
+    client = new RemoteDiskStorageClient(httpClient, authTokenProvider)
     baseUri = BaseUri(docker.hostConfig.endpoint).rightValue
   }
 

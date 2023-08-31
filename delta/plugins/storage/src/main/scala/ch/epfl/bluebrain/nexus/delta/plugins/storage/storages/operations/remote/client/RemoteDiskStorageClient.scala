@@ -10,7 +10,7 @@ import akka.http.scaladsl.model.Uri.Path
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection.UnexpectedFetchError
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.MoveFileRejection.UnexpectedMoveError
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.{FetchFileRejection, MoveFileRejection, SaveFileRejection}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteStorageAuthTokenProvider
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.AuthTokenProvider
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.model.RemoteDiskStorageFileAttributes
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
@@ -32,8 +32,8 @@ import scala.concurrent.duration._
 /**
   * The client to communicate with the remote storage service
   */
-final class RemoteDiskStorageClient(client: HttpClient, getAuthToken: RemoteStorageAuthTokenProvider)(implicit
-    as: ActorSystem
+final class RemoteDiskStorageClient(client: HttpClient, getAuthToken: AuthTokenProvider)(implicit
+                                                                                         as: ActorSystem
 ) {
   import as.dispatcher
 

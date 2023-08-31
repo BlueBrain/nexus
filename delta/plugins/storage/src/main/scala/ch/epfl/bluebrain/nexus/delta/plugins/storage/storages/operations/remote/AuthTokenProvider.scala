@@ -4,20 +4,20 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.Sto
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.AuthToken
 import monix.bio.UIO
 
-trait RemoteStorageAuthTokenProvider {
+trait AuthTokenProvider {
   def apply(): UIO[Option[AuthToken]]
 }
 
-object RemoteStorageAuthTokenProvider {
-  def apply(config: StorageTypeConfig): RemoteStorageAuthTokenProvider = new RemoteStorageAuthTokenProvider {
+object AuthTokenProvider {
+  def apply(config: StorageTypeConfig): AuthTokenProvider = new AuthTokenProvider {
     override def apply(): UIO[Option[AuthToken]] =
       UIO.pure(config.remoteDisk.flatMap(_.defaultCredentials).map(secret => AuthToken(secret.value)))
   }
-  def test(fixed: Option[AuthToken]): RemoteStorageAuthTokenProvider   = new RemoteStorageAuthTokenProvider {
+  def test(fixed: Option[AuthToken]): AuthTokenProvider   = new AuthTokenProvider {
     override def apply(): UIO[Option[AuthToken]] = UIO.pure(fixed)
   }
 
-  def test(implicit config: StorageTypeConfig): RemoteStorageAuthTokenProvider = {
+  def test(implicit config: StorageTypeConfig): AuthTokenProvider = {
     test(config.remoteDisk.flatMap(_.defaultCredentials).map(secret => AuthToken(secret.value)))
   }
 }

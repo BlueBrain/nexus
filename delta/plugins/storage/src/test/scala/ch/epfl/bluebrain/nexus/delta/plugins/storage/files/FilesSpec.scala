@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejec
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.{RemoteDiskStorage => RemoteStorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{StorageRejection, StorageStatEntry}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteStorageAuthTokenProvider
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.AuthTokenProvider
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageFixtures, Storages, StoragesConfig, StoragesStatistics}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -69,8 +69,8 @@ class FilesSpec(docker: RemoteStorageDocker)
     implicit val typedSystem: typed.ActorSystem[Nothing]      = system.toTyped
     implicit val httpClient: HttpClient                       = HttpClient()(httpClientConfig, system, sc)
     implicit val caller: Caller                               = Caller(bob, Set(bob, Group("mygroup", realm), Authenticated(realm)))
-    implicit val authProvider: RemoteStorageAuthTokenProvider = RemoteStorageAuthTokenProvider.test
-    val remoteDiskStorageClient                               = new RemoteDiskStorageClient(httpClient, authProvider)
+    implicit val authTokenProvider: AuthTokenProvider = AuthTokenProvider.test
+    val remoteDiskStorageClient                               = new RemoteDiskStorageClient(httpClient, authTokenProvider)
 
     val tag        = UserTag.unsafe("tag")
     val otherRead  = Permission.unsafe("other/read")

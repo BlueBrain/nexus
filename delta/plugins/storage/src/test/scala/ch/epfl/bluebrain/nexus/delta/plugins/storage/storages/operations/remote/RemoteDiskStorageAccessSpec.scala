@@ -37,8 +37,8 @@ class RemoteDiskStorageAccessSpec(docker: RemoteStorageDocker)
   implicit private val sc: Scheduler                       = Scheduler.global
   implicit private val httpConfig: HttpClientConfig        = httpClientConfig
   private val httpClient: HttpClient                       = HttpClient()
-  private val authProvider: RemoteStorageAuthTokenProvider = RemoteStorageAuthTokenProvider.test
-  private val remoteDiskStorageClient                      = new RemoteDiskStorageClient(httpClient, authProvider)
+  private val authTokenProvider: AuthTokenProvider = AuthTokenProvider.test
+  private val remoteDiskStorageClient                      = new RemoteDiskStorageClient(httpClient, authTokenProvider)
 
   private val access = new RemoteDiskStorageAccess(remoteDiskStorageClient)
 
