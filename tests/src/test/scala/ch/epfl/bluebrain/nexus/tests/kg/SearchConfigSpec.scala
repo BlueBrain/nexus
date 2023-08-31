@@ -131,6 +131,20 @@ class SearchConfigSpec extends BaseSpec {
       }
     }
 
+    "have the correct createdBy property" in {
+      val query = queryField(neuronMorphologyId, "createdBy")
+      assertOneSource(query) { json =>
+        json shouldEqual json"""{ "createdBy": "http://delta:8080/v1/realms/${Rick.realm.name}/users/${Rick.name}" }"""
+      }
+    }
+
+    "have the correct updatedBy property" in {
+      val query = queryField(neuronMorphologyId, "updatedBy")
+      assertOneSource(query) { json =>
+        json shouldEqual json"""{ "updatedBy": "http://delta:8080/v1/realms/${Rick.realm.name}/users/${Rick.name}" }"""
+      }
+    }
+
     "have the correct project property" in {
       val query    = queryField(neuronMorphologyId, "project")
       val expected =
