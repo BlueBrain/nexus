@@ -641,7 +641,6 @@ class SearchConfigSpec extends BaseSpec {
     }
 
     "have the correct detailed circuit property" in { pending }
-    "have the correct simulation campaign config property" in { pending }
     "have the correct sType property" in {
       // there are no resources with this field yet
       pending
