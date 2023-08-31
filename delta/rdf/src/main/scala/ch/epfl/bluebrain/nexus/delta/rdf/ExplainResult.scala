@@ -4,6 +4,13 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContext
 import monix.bio.IO
 
+/**
+  * Gives additional information besides the result of the Json-Ld operation
+  * @param remoteContexts
+  *   the remote contexts that have been resolved
+  * @param value
+  *   the result of the operation
+  */
 final case class ExplainResult[A](remoteContexts: Map[Iri, RemoteContext], value: A) {
 
   def as[B](newValue: B): ExplainResult[B] =
