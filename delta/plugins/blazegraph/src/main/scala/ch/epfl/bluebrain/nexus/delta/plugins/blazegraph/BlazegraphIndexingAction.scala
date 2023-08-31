@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef, Tag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
@@ -36,7 +36,7 @@ final class BlazegraphIndexingAction(
 
   private def compile(view: IndexingViewDef, elem: Elem[GraphResource]): Task[Option[CompiledProjection]] = view match {
     // Synchronous indexing only applies to views that index the latest version
-    case active: ActiveViewDef if active.resourceTag.isEmpty =>
+    case active: ActiveViewDef if active.selectFilter.tag == Tag.Latest =>
       IndexingViewDef
         .compile(
           active,
@@ -45,8 +45,8 @@ final class BlazegraphIndexingAction(
           sink(active)
         )
         .map(Some(_))
-    case _: ActiveViewDef                                    => UIO.none
-    case _: DeprecatedViewDef                                => UIO.none
+    case _: ActiveViewDef                                               => UIO.none
+    case _: DeprecatedViewDef                                           => UIO.none
   }
 
   def projections(project: ProjectRef, elem: Elem[GraphResource])(implicit

@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.{CrossProjectSource, ProjectSource, RemoteProjectSource}
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemPipe, ProjectRef, Tag}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemPipe, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{RemainingElems, Source}
@@ -55,9 +55,9 @@ object CompositeGraphStream {
     override def main(source: CompositeViewSource, project: ProjectRef): Source = {
       source match {
         case p: ProjectSource       =>
-          Source(local.continuous(project, p.resourceTag.getOrElse(Tag.Latest), _).through(drainSource))
+          Source(local.continuous(project, p.selectFilter, _).through(drainSource))
         case c: CrossProjectSource  =>
-          Source(local.continuous(c.project, c.resourceTag.getOrElse(Tag.Latest), _).through(drainSource))
+          Source(local.continuous(c.project, c.selectFilter, _).through(drainSource))
         case r: RemoteProjectSource => remote.main(r)
       }
     }
@@ -65,17 +65,17 @@ object CompositeGraphStream {
     override def rebuild(source: CompositeViewSource, project: ProjectRef): Source = {
       source match {
         case p: ProjectSource       =>
-          Source(local.currents(project, p.resourceTag.getOrElse(Tag.Latest), _).through(drainSource))
+          Source(local.currents(project, p.selectFilter, _).through(drainSource))
         case c: CrossProjectSource  =>
-          Source(local.currents(c.project, c.resourceTag.getOrElse(Tag.Latest), _).through(drainSource))
+          Source(local.currents(c.project, c.selectFilter, _).through(drainSource))
         case r: RemoteProjectSource => remote.rebuild(r)
       }
     }
 
     override def remaining(source: CompositeViewSource, project: ProjectRef): Offset => UIO[Option[RemainingElems]] =
       source match {
-        case p: ProjectSource       => local.remaining(project, p.resourceTag.getOrElse(Tag.Latest), _)
-        case c: CrossProjectSource  => local.remaining(c.project, c.resourceTag.getOrElse(Tag.Latest), _)
+        case p: ProjectSource       => local.remaining(project, p.selectFilter, _)
+        case c: CrossProjectSource  => local.remaining(c.project, c.selectFilter, _)
         case r: RemoteProjectSource => remote.remaining(r, _).map(Some(_))
       }
   }

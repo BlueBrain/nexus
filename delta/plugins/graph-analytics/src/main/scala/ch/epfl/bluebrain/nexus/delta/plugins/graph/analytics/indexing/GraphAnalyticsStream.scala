@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, EntityType, ProjectRef, Tag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.query.StreamingQuery
+import ch.epfl.bluebrain.nexus.delta.sourcing.query.{SelectFilter, StreamingQuery}
 import doobie._
 import doobie.implicits._
 import io.circe.Json
@@ -104,7 +104,7 @@ object GraphAnalyticsStream {
         case _                    => Task.pure(Noop)
       }
 
-    StreamingQuery.elems(project, Tag.latest, start, qc, xas, decode)
+    StreamingQuery.elems(project, start, SelectFilter.latest, qc, xas, decode)
   }
   // $COVERAGE-ON$
 }

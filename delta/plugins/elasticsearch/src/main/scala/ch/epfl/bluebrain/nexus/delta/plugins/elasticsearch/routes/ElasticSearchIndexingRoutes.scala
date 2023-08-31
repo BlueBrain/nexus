@@ -88,7 +88,7 @@ final class ElasticSearchIndexingRoutes(
                   authorizeFor(ref, Read).apply {
                     emit(
                       fetch(id, ref)
-                        .flatMap(v => projections.statistics(ref, v.resourceTag, v.projection))
+                        .flatMap(v => projections.statistics(ref, v.selectFilter, v.projection))
                         .rejectOn[ViewNotFound]
                     )
                   }

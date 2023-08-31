@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Scope, Transactors}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef, Tag}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, RemainingElems}
@@ -13,6 +13,7 @@ import com.typesafe.scalalogging.Logger
 import doobie.Fragments
 import doobie.implicits._
 import doobie.postgres.implicits._
+import doobie.util.fragment.Fragment
 import doobie.util.query.Query0
 import fs2.{Chunk, Stream}
 import io.circe.Json
@@ -34,16 +35,20 @@ object StreamingQuery {
     * Get information about the remaining elements to stream
     * @param project
     *   the project of the states / tombstones
-    * @param tag
-    *   the tag to follow
+    * @param selectFilter
+    *   what to filter for
     * @param xas
     *   the transactors
     */
-  def remaining(project: ProjectRef, tag: Tag, start: Offset, xas: Transactors): UIO[Option[RemainingElems]] = {
-    val where = Fragments.whereAndOpt(Scope(project).asFragment, Some(fr"tag = $tag"), start.asFragment)
+  def remaining(
+      project: ProjectRef,
+      selectFilter: SelectFilter,
+      start: Offset,
+      xas: Transactors
+  ): UIO[Option[RemainingElems]] = {
     sql"""SELECT count(ordering), max(instant)
          |FROM public.scoped_states
-         |$where
+         |${stateFilter(project, start, selectFilter)}
          |""".stripMargin
       .query[(Long, Option[Instant])]
       .map { case (count, maxInstant) =>
@@ -63,10 +68,10 @@ object StreamingQuery {
     *
     * @param project
     *   the project of the states / tombstones
-    * @param tag
-    *   the tag to follow
     * @param start
     *   the offset to start with
+    * @param selectFilter
+    *   what to filter for
     * @param cfg
     *   the query config
     * @param xas
@@ -74,22 +79,21 @@ object StreamingQuery {
     */
   def elems(
       project: ProjectRef,
-      tag: Tag,
       start: Offset,
+      selectFilter: SelectFilter,
       cfg: QueryConfig,
       xas: Transactors
   ): Stream[Task, Elem[Unit]] = {
     def query(offset: Offset): Query0[Elem[Unit]] = {
-      val where = Fragments.whereAndOpt(Scope(project).asFragment, Some(fr"tag = $tag"), offset.asFragment)
       sql"""((SELECT 'newState', type, id, org, project, instant, ordering, rev
            |FROM public.scoped_states
-           |$where
+           |${stateFilter(project, offset, selectFilter)}
            |ORDER BY ordering
            |LIMIT ${cfg.batchSize})
            |UNION ALL
            |(SELECT 'tombstone', type, id, org, project, instant, ordering, -1
            |FROM public.scoped_tombstones
-           |$where and cause->>'deleted' = 'true'
+           |${tombstoneFilter(project, offset, selectFilter)}
            |ORDER BY ordering
            |LIMIT ${cfg.batchSize})
            |ORDER BY ordering)
@@ -116,10 +120,10 @@ object StreamingQuery {
     *
     * @param project
     *   the project of the states / tombstones
-    * @param tag
-    *   the tag to follow
     * @param start
     *   the offset to start with
+    * @param selectFilter
+    *   what to filter for
     * @param cfg
     *   the query config
     * @param xas
@@ -129,23 +133,22 @@ object StreamingQuery {
     */
   def elems[A](
       project: ProjectRef,
-      tag: Tag,
       start: Offset,
+      selectFilter: SelectFilter,
       cfg: QueryConfig,
       xas: Transactors,
       decodeValue: (EntityType, Json) => Task[A]
   ): Stream[Task, Elem[A]] = {
     def query(offset: Offset): Query0[Elem[Json]] = {
-      val where = Fragments.whereAndOpt(Scope(project).asFragment, Some(fr"tag = $tag"), offset.asFragment)
       sql"""((SELECT 'newState', type, id, org, project, value, instant, ordering, rev
            |FROM public.scoped_states
-           |$where
+           |${stateFilter(project, offset, selectFilter)}
            |ORDER BY ordering
            |LIMIT ${cfg.batchSize})
            |UNION ALL
            |(SELECT 'tombstone', type, id, org, project, null, instant, ordering, -1
            |FROM public.scoped_tombstones
-           |$where and cause->>'deleted' = 'true'
+           |${tombstoneFilter(project, offset, selectFilter)}
            |ORDER BY ordering
            |LIMIT ${cfg.batchSize})
            |ORDER BY ordering)
@@ -271,5 +274,29 @@ object StreamingQuery {
         logger.debug("Reached the end of the single evaluation of query '{}'.", query.sql)
       )
   }
+
+  private def stateFilter(projectRef: ProjectRef, offset: Offset, selectFilter: SelectFilter) = {
+    val typeFragment = Option.when(selectFilter.types.nonEmpty)(fr"value -> 'types' ??| ${typesSqlArray(selectFilter)}")
+    Fragments.whereAndOpt(
+      Scope(projectRef).asFragment,
+      offset.asFragment,
+      selectFilter.tag.asFragment,
+      typeFragment
+    )
+  }
+
+  private def tombstoneFilter(projectRef: ProjectRef, offset: Offset, selectFilter: SelectFilter) = {
+    val typeFragment  = Option.when(selectFilter.types.nonEmpty)(fr"cause -> 'types' ??| ${typesSqlArray(selectFilter)}")
+    val causeFragment = Fragments.orOpt(Some(fr"cause->>'deleted' = 'true'"), typeFragment)
+    Fragments.whereAndOpt(
+      Scope(projectRef).asFragment,
+      offset.asFragment,
+      selectFilter.tag.asFragment,
+      Some(causeFragment)
+    )
+  }
+
+  private def typesSqlArray(selectFilter: SelectFilter): Fragment =
+    Fragment.const(s"ARRAY[${selectFilter.types.map(t => s"'$t'").mkString(",")}]")
 
 }
