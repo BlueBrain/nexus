@@ -96,14 +96,12 @@ class RealmsEvaluateSuite extends CatsEffectSuite with IOFromMap with IOFixedClo
     }
   }
 
-  group("Fail with realm not found") {
-    List(
-      None -> UpdateRealm(label, 1, name, wellKnownUri, None, None, subject),
-      None -> DeprecateRealm(label, 1, subject)
-    ).foreach { case (state, cmd) =>
-      test(s"for a ${cmd.getClass.getSimpleName} command when the state does not exist") {
-        evaluate(wkResolution, (_, _) => IO.unit)(state, cmd).intercept[RealmNotFound]
-      }
+  List(
+    None -> UpdateRealm(label, 1, name, wellKnownUri, None, None, subject),
+    None -> DeprecateRealm(label, 1, subject)
+  ).foreach { case (state, cmd) =>
+    test(s"for a ${cmd.getClass.getSimpleName} command when the state does not exist") {
+      evaluate(wkResolution, (_, _) => IO.unit)(state, cmd).intercept[RealmNotFound]
     }
   }
 

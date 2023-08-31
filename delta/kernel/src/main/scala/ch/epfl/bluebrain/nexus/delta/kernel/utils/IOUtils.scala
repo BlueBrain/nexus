@@ -20,7 +20,7 @@ trait IOUtils {
 object IOUtils extends IOUtils
 
 trait IOInstant {
-  def get(implicit clock: Clock[IO]): IO[Instant] =
+  def now(implicit clock: Clock[IO]): IO[Instant] =
     clock.realTime(TimeUnit.MILLISECONDS).map(Instant.ofEpochMilli)
 }
 

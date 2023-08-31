@@ -167,7 +167,7 @@ object Realms {
     // format: off
     def create(c: CreateRealm) =
       state.fold {
-        openIdExists(c.label, c.openIdConfig) >> (wellKnown(c.openIdConfig), IOInstant.get).mapN {
+        openIdExists(c.label, c.openIdConfig) >> (wellKnown(c.openIdConfig), IOInstant.now).mapN {
           case (wk, instant) =>
             RealmCreated(c.label, c.name, c.openIdConfig, c.logo, c.acceptedAudiences, wk, instant, c.subject)
         }
@@ -176,7 +176,7 @@ object Realms {
     def update(c: UpdateRealm)       =
       IO.fromOption(state)(RealmNotFound(c.label)).flatMap {
         case s if s.rev != c.rev => IO.raiseError(IncorrectRev(c.rev, s.rev))
-        case s => openIdExists(c.label, c.openIdConfig) >> (wellKnown(c.openIdConfig), IOInstant.get).mapN {
+        case s => openIdExists(c.label, c.openIdConfig) >> (wellKnown(c.openIdConfig), IOInstant.now).mapN {
           case (wk, instant) =>
             RealmUpdated(c.label, s.rev + 1, c.name, c.openIdConfig, c.logo, c.acceptedAudiences, wk, instant, c.subject)
         }
@@ -187,7 +187,7 @@ object Realms {
       IO.fromOption(state)(RealmNotFound(c.label)).flatMap {
         case s if s.rev != c.rev => IO.raiseError(IncorrectRev(c.rev, s.rev))
         case s if s.deprecated   => IO.raiseError(RealmAlreadyDeprecated(c.label))
-        case s                   => IOInstant.get.map(RealmDeprecated(c.label, s.rev + 1, _, c.subject))
+        case s                   => IOInstant.now.map(RealmDeprecated(c.label, s.rev + 1, _, c.subject))
       }
 
     cmd match {
