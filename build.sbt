@@ -929,12 +929,7 @@ lazy val compilation = {
 lazy val testing = Seq(
   Test / fork            := true,
   concurrentRestrictions := Seq(Tags.limit(Tags.ForkedTestGroup, 2)),
-  Test / javaOptions    ++= Seq(
-    "-Xmx6G",
-    "-Xss16m",
-    "-XX: MaxMetaspaceSize=2G",
-    "-XX:-UseGCOverheadLimit"
-  )
+  Test / javaOptions    ++= Seq("-Xmx6G", "-Xss16m")
 )
 
 lazy val coverage = Seq(
