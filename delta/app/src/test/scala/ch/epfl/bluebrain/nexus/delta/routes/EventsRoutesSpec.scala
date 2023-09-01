@@ -21,12 +21,13 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset.{At, Start}
+import ch.epfl.bluebrain.nexus.testkit.bio.IOFromMap
 import fs2.Stream
 import monix.bio.IO
 
 import java.util.UUID
 
-class EventsRoutesSpec extends BaseRouteSpec {
+class EventsRoutesSpec extends BaseRouteSpec with IOFromMap {
 
   private val uuid = UUID.randomUUID()
 

@@ -91,21 +91,21 @@ class S3StorageSaveAndFetchFileSpec(docker: MinioDocker)
 
     "save a file to a bucket" in {
       val description = FileDescription(uuid, filename, Some(`text/plain(UTF-8)`))
-      storage.saveFile.apply(description, entity).accepted shouldEqual attributes
+      storage.saveFile(config).apply(description, entity).accepted shouldEqual attributes
     }
 
     "fetch a file from a bucket" in {
-      val sourceFetched = storage.fetchFile.apply(attributes).accepted
+      val sourceFetched = storage.fetchFile(config).apply(attributes).accepted
       consume(sourceFetched) shouldEqual content
     }
 
     "fail fetching a file that does not exist" in {
-      storage.fetchFile.apply(attributes.copy(path = Uri.Path("other.txt"))).rejectedWith[FileNotFound]
+      storage.fetchFile(config).apply(attributes.copy(path = Uri.Path("other.txt"))).rejectedWith[FileNotFound]
     }
 
     "fail attempting to save the same file again" in {
       val description = FileDescription(uuid, "myfile.txt", Some(`text/plain(UTF-8)`))
-      storage.saveFile.apply(description, entity).rejectedWith[ResourceAlreadyExists]
+      storage.saveFile(config).apply(description, entity).rejectedWith[ResourceAlreadyExists]
     }
   }
 }

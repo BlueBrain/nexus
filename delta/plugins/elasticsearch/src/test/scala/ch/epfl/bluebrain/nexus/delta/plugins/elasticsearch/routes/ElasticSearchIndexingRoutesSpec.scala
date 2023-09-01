@@ -26,13 +26,14 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionErrors, Pro
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.FailedElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeChain, ProjectionProgress}
+import ch.epfl.bluebrain.nexus.testkit.bio.IOFromMap
 import io.circe.JsonObject
 import monix.bio.{IO, UIO}
 
 import java.time.Instant
 import scala.concurrent.duration._
 
-class ElasticSearchIndexingRoutesSpec extends ElasticSearchViewsRoutesFixtures {
+class ElasticSearchIndexingRoutesSpec extends ElasticSearchViewsRoutesFixtures with IOFromMap {
 
   implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
 

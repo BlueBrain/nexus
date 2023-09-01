@@ -15,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.Sto
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.contexts.{storages => storageCtxId, storagesMetadata => storageMetaCtxId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageAccess
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.AuthTokenProvider
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.routes.StoragesRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.schemas.{storage => storagesSchemaId}
@@ -66,24 +67,23 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
       (
           fetchContext: FetchContext[ContextRejection],
           contextResolution: ResolverContextResolution,
+          remoteDiskStorageClient: RemoteDiskStorageClient,
           permissions: Permissions,
           xas: Transactors,
           cfg: StoragePluginConfig,
           serviceAccount: ServiceAccount,
           api: JsonLdApi,
-          client: HttpClient @Id("storage"),
           clock: Clock[UIO],
           uuidF: UUIDF,
           as: ActorSystem[Nothing]
       ) =>
         implicit val classicAs: actor.ActorSystem         = as.classicSystem
         implicit val storageTypeConfig: StorageTypeConfig = cfg.storages.storageTypeConfig
-        implicit val c: HttpClient                        = client
         Storages(
           fetchContext.mapRejection(StorageRejection.ProjectContextRejection),
           contextResolution,
           permissions.fetchPermissionSet,
-          StorageAccess.apply(_, _),
+          StorageAccess.apply(_, _, remoteDiskStorageClient, storageTypeConfig),
           xas,
           cfg.storages,
           serviceAccount
@@ -146,12 +146,15 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
 
   many[ResourceShift[_, _, _]].ref[Storage.Shift]
 
+  make[AuthTokenProvider].from { (cfg: StorageTypeConfig) =>
+    AuthTokenProvider(cfg)
+  }
+
   make[Files]
     .fromEffect {
       (
           cfg: StoragePluginConfig,
           storageTypeConfig: StorageTypeConfig,
-          client: HttpClient @Id("storage"),
           aclCheck: AclCheck,
           fetchContext: FetchContext[ContextRejection],
           storages: Storages,
@@ -161,6 +164,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           clock: Clock[UIO],
           uuidF: UUIDF,
           as: ActorSystem[Nothing],
+          remoteDiskStorageClient: RemoteDiskStorageClient,
           scheduler: Scheduler
       ) =>
         Task
@@ -172,10 +176,10 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
               storagesStatistics,
               xas,
               storageTypeConfig,
-              cfg.files
+              cfg.files,
+              remoteDiskStorageClient
             )(
               clock,
-              client,
               uuidF,
               scheduler,
               as
@@ -218,14 +222,23 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
 
   many[ResourceShift[_, _, _]].ref[File.Shift]
 
+  make[RemoteDiskStorageClient].from {
+    (
+        client: HttpClient @Id("storage"),
+        as: ActorSystem[Nothing],
+        authTokenProvider: AuthTokenProvider
+    ) => new RemoteDiskStorageClient(client, authTokenProvider)(as.classicSystem)
+  }
+
   many[ServiceDependency].addSet {
-    (cfg: StorageTypeConfig, client: HttpClient @Id("storage"), as: ActorSystem[Nothing]) =>
-      val remoteStorageClient = cfg.remoteDisk.map { r =>
-        new RemoteDiskStorageClient(r.defaultEndpoint)(client, as.classicSystem)
-      }
-      remoteStorageClient.fold(Set.empty[RemoteStorageServiceDependency])(client =>
-        Set(new RemoteStorageServiceDependency(client))
-      )
+    (
+        cfg: StorageTypeConfig,
+        remoteStorageClient: RemoteDiskStorageClient
+    ) =>
+      cfg.remoteDisk
+        .map(_.defaultEndpoint)
+        .map(endpoint => Set(new RemoteStorageServiceDependency(remoteStorageClient, endpoint)))
+        .getOrElse(Set.empty[RemoteStorageServiceDependency])
   }
 
   make[StorageScopeInitialization].from {

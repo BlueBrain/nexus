@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.kernel
 
+import cats.effect.IO
 import monix.bio.{Task, UIO}
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 import org.typelevel.log4cats.{Logger => Log4CatsLogger, LoggerName}
@@ -13,6 +14,11 @@ import scala.reflect.{classTag, ClassTag}
 trait Logger extends Log4CatsLogger[UIO]
 
 object Logger {
+
+  def cats[A: ClassTag]: Log4CatsLogger[IO] = {
+    implicit val loggerName: LoggerName = LoggerName(classTag[A].runtimeClass.getName.stripSuffix("$"))
+    Slf4jLogger.getLogger[IO]
+  }
   def apply[A: ClassTag]: Logger = new Logger {
     implicit private val loggerName: LoggerName = LoggerName(classTag[A].runtimeClass.getName.stripSuffix("$"))
     private val logger: Log4CatsLogger[Task]    = Slf4jLogger.getLogger[Task]

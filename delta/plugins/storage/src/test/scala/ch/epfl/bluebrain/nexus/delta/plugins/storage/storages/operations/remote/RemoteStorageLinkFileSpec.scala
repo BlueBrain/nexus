@@ -13,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.Remo
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.RemoteDiskStorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.MoveFileRejection.FileNotFound
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions.{read, write}
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig}
@@ -45,7 +46,9 @@ class RemoteStorageLinkFileSpec(docker: RemoteStorageDocker)
   implicit private val sc: Scheduler                = Scheduler.global
   implicit val ec: ExecutionContext                 = system.dispatcher
   implicit private val httpConfig: HttpClientConfig = httpClientConfig
-  implicit private val httpClient: HttpClient       = HttpClient()
+  private val httpClient: HttpClient                = HttpClient()
+  private val authTokenProvider: AuthTokenProvider  = AuthTokenProvider.test
+  private val remoteDiskStorageClient               = new RemoteDiskStorageClient(httpClient, authTokenProvider)
 
   private val iri      = iri"http://localhost/remote"
   private val uuid     = UUID.fromString("8049ba90-7cc6-4de5-93a1-802c04200dcc")
@@ -83,12 +86,15 @@ class RemoteStorageLinkFileSpec(docker: RemoteStorageDocker)
     val description = FileDescription(uuid, filename, Some(`text/plain(UTF-8)`))
 
     "succeed" in {
-      storage.linkFile.apply(Uri.Path("my/file-2.txt"), description).accepted shouldEqual
+      storage.linkFile(remoteDiskStorageClient).apply(Uri.Path("my/file-2.txt"), description).accepted shouldEqual
         attributes
     }
 
     "fail linking a file that does not exist" in {
-      storage.linkFile.apply(Uri.Path("my/file-40.txt"), description).rejectedWith[FileNotFound]
+      storage
+        .linkFile(remoteDiskStorageClient)
+        .apply(Uri.Path("my/file-40.txt"), description)
+        .rejectedWith[FileNotFound]
     }
   }
 }
