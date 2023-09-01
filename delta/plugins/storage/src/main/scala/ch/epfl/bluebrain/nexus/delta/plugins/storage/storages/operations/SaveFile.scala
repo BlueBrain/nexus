@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, Storage}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.SaveFileRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import monix.bio.IO
 
@@ -34,11 +34,13 @@ object SaveFile {
   /**
     * Construct a [[SaveFile]] from the given ''storage''.
     */
-  def apply(storage: Storage)(implicit config: StorageTypeConfig, as: ActorSystem, client: HttpClient): SaveFile =
+  def apply(storage: Storage, client: RemoteDiskStorageClient, config: StorageTypeConfig)(implicit
+      as: ActorSystem
+  ): SaveFile =
     storage match {
       case storage: Storage.DiskStorage       => storage.saveFile
-      case storage: Storage.S3Storage         => storage.saveFile
-      case storage: Storage.RemoteDiskStorage => storage.saveFile
+      case storage: Storage.S3Storage         => storage.saveFile(config)
+      case storage: Storage.RemoteDiskStorage => storage.saveFile(client)
     }
 
   /**

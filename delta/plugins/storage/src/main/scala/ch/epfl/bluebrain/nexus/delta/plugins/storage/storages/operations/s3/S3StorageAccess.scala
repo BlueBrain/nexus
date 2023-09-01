@@ -14,7 +14,7 @@ import monix.bio.IO
 
 import java.util.NoSuchElementException
 
-final class S3StorageAccess(implicit config: StorageTypeConfig, as: ActorSystem) extends StorageAccess {
+final class S3StorageAccess(config: StorageTypeConfig)(implicit as: ActorSystem) extends StorageAccess {
   override type Storage = S3StorageValue
 
   override def apply(id: Iri, storage: S3StorageValue): IO[StorageNotAccessible, Unit] = {

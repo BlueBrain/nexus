@@ -17,10 +17,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, FetchContextDummy}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.testkit.bio.IOFromMap
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
 
-class ElasticSearchQueryRoutesSpec extends ElasticSearchViewsRoutesFixtures {
+class ElasticSearchQueryRoutesSpec extends ElasticSearchViewsRoutesFixtures with IOFromMap {
 
   private val myId2        = nxv + "myid2"
   private val myId2Encoded = UrlUtils.encode(myId2.toString)

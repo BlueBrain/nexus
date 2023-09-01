@@ -20,8 +20,4 @@ object SelectFilter {
   /** All types with latest tag */
   val latest: SelectFilter = SelectFilter(Set.empty, Tag.Latest)
 
-  /** All types with specified tag if it exists, otherwise latest */
-  val tagOrLatest: Option[Tag] => SelectFilter =
-    tag => SelectFilter(Set.empty, tag.getOrElse(Tag.Latest))
-
 }

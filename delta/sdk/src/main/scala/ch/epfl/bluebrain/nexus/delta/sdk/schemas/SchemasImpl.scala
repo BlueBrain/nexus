@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.schemas
 
-import cats.effect.Clock
+import cats.effect.{Clock, IO}
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -17,14 +18,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas.{entityType, expandIri}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.SchemasImpl.SchemasLog
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaCommand._
-import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaRejection.{ProjectContextRejection, RevisionNotFound, SchemaFetchRejection, SchemaNotFound, TagNotFound}
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaRejection.{ProjectContextRejection, RevisionNotFound, SchemaNotFound, TagNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.{SchemaCommand, SchemaEvent, SchemaRejection, SchemaState}
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.Json
-import monix.bio.{IO, UIO}
 
 final class SchemasImpl private (
     log: SchemasLog,
@@ -38,10 +38,12 @@ final class SchemasImpl private (
   override def create(
       projectRef: ProjectRef,
       source: Json
-  )(implicit caller: Caller): IO[SchemaRejection, SchemaResource] = {
+  )(implicit caller: Caller): IO[SchemaResource] = {
     for {
       projectContext             <- fetchContext.onCreate(projectRef)
-      (iri, compacted, expanded) <- sourceParser(projectRef, projectContext, source)
+      (iri, compacted, expanded) <- sourceParser(projectRef, projectContext, source).map { j =>
+                                      (j.iri, j.compacted, j.expanded)
+                                    }
       expandedResolved           <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
       res                        <- eval(CreateSchema(iri, projectRef, source, compacted, expandedResolved, caller.subject))
     } yield res
@@ -51,13 +53,13 @@ final class SchemasImpl private (
       id: IdSegment,
       projectRef: ProjectRef,
       source: Json
-  )(implicit caller: Caller): IO[SchemaRejection, SchemaResource] = {
+  )(implicit caller: Caller): IO[SchemaResource] = {
     for {
-      pc                    <- fetchContext.onCreate(projectRef)
-      iri                   <- expandIri(id, pc)
-      (compacted, expanded) <- sourceParser(projectRef, pc, iri, source)
-      expandedResolved      <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
-      res                   <- eval(CreateSchema(iri, projectRef, source, compacted, expandedResolved, caller.subject))
+      pc               <- fetchContext.onCreate(projectRef)
+      iri              <- expandIri(id, pc)
+      jsonLd           <- sourceParser(projectRef, pc, iri, source)
+      expandedResolved <- schemaImports.resolve(iri, projectRef, jsonLd.expanded.addType(nxv.Schema))
+      res              <- eval(CreateSchema(iri, projectRef, source, jsonLd.compacted, expandedResolved, caller.subject))
     } yield res
   }.span("createSchema")
 
@@ -66,11 +68,11 @@ final class SchemasImpl private (
       projectRef: ProjectRef,
       rev: Int,
       source: Json
-  )(implicit caller: Caller): IO[SchemaRejection, SchemaResource] = {
+  )(implicit caller: Caller): IO[SchemaResource] = {
     for {
       pc                    <- fetchContext.onModify(projectRef)
       iri                   <- expandIri(id, pc)
-      (compacted, expanded) <- sourceParser(projectRef, pc, iri, source)
+      (compacted, expanded) <- sourceParser(projectRef, pc, iri, source).map { j => (j.compacted, j.expanded) }
       expandedResolved      <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
       res                   <-
         eval(UpdateSchema(iri, projectRef, source, compacted, expandedResolved, rev, caller.subject))
@@ -80,12 +82,12 @@ final class SchemasImpl private (
   override def refresh(
       id: IdSegment,
       projectRef: ProjectRef
-  )(implicit caller: Caller): IO[SchemaRejection, SchemaResource] = {
+  )(implicit caller: Caller): IO[SchemaResource] = {
     for {
       pc                    <- fetchContext.onModify(projectRef)
       iri                   <- expandIri(id, pc)
       schema                <- log.stateOr(projectRef, iri, SchemaNotFound(iri, projectRef))
-      (compacted, expanded) <- sourceParser(projectRef, pc, iri, schema.source)
+      (compacted, expanded) <- sourceParser(projectRef, pc, iri, schema.source).map { j => (j.compacted, j.expanded) }
       expandedResolved      <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
       res                   <-
         eval(RefreshSchema(iri, projectRef, compacted, expandedResolved, schema.rev, caller.subject))
@@ -98,7 +100,7 @@ final class SchemasImpl private (
       tag: UserTag,
       tagRev: Int,
       rev: Int
-  )(implicit caller: Subject): IO[SchemaRejection, SchemaResource] = {
+  )(implicit caller: Subject): IO[SchemaResource] = {
     for {
       pc  <- fetchContext.onModify(projectRef)
       iri <- expandIri(id, pc)
@@ -111,7 +113,7 @@ final class SchemasImpl private (
       projectRef: ProjectRef,
       tag: UserTag,
       rev: Int
-  )(implicit caller: Subject): IO[SchemaRejection, SchemaResource] =
+  )(implicit caller: Subject): IO[SchemaResource] =
     (for {
       pc  <- fetchContext.onModify(projectRef)
       iri <- expandIri(id, pc)
@@ -122,14 +124,14 @@ final class SchemasImpl private (
       id: IdSegment,
       projectRef: ProjectRef,
       rev: Int
-  )(implicit caller: Subject): IO[SchemaRejection, SchemaResource] =
+  )(implicit caller: Subject): IO[SchemaResource] =
     (for {
       pc  <- fetchContext.onModify(projectRef)
       iri <- expandIri(id, pc)
       res <- eval(DeprecateSchema(iri, projectRef, rev, caller))
     } yield res).span("deprecateSchema")
 
-  override def fetch(id: IdSegmentRef, projectRef: ProjectRef): IO[SchemaFetchRejection, SchemaResource] = {
+  override def fetch(id: IdSegmentRef, projectRef: ProjectRef): IO[SchemaResource] = {
     for {
       pc    <- fetchContext.onRead(projectRef)
       iri   <- expandIri(id.value, pc)
@@ -143,7 +145,7 @@ final class SchemasImpl private (
     } yield state.toResource
   }.span("fetchSchema")
 
-  private def eval(cmd: SchemaCommand): IO[SchemaRejection, SchemaResource] =
+  private def eval(cmd: SchemaCommand) =
     log.evaluate(cmd.project, cmd.id, cmd).map(_._2.toResource)
 }
 
@@ -161,7 +163,7 @@ object SchemasImpl {
       contextResolution: ResolverContextResolution,
       config: SchemasConfig,
       xas: Transactors
-  )(implicit api: JsonLdApi, clock: Clock[UIO], uuidF: UUIDF): Schemas = {
+  )(implicit api: JsonLdApi, clock: Clock[IO], uuidF: UUIDF): Schemas = {
     val parser =
       new JsonLdSourceResolvingParser[SchemaRejection](
         List(contexts.shacl, contexts.schemasMetadata),

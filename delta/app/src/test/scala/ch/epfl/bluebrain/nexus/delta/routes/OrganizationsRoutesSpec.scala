@@ -18,11 +18,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.OwnerPermissionsScopeInitializ
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.testkit.bio.IOFromMap
 import io.circe.Json
 
 import java.util.UUID
 
-class OrganizationsRoutesSpec extends BaseRouteSpec {
+class OrganizationsRoutesSpec extends BaseRouteSpec with IOFromMap {
 
   private val fixedUuid             = UUID.randomUUID()
   implicit private val uuidF: UUIDF = UUIDF.fixed(fixedUuid)
