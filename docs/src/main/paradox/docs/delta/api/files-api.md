@@ -26,8 +26,8 @@ When using the endpoints described on this page, the responses will contain glob
 - `_mediaType`: @link:[MIME](https://en.wikipedia.org/wiki/MIME){ open=new } specifying the type of the file
 - `_origin`: whether the file attributes resulted from an action taken by a client or the Nexus Storage Service
 - `_storage`: `@id`, `@type`, and revision of the @ref:[Storage](storages-api.md) used for the file
-- `_project`: identifier of the file's project
 - `_uuid`: @link:[UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier){ open=new } of the file
+- `_project`: address of the file's project
 - `_incoming`: address to query to obtain the @ref:[list of incoming links](resources-api.md#list-incoming-links)
 - `_outgoing`: address to query to obtain the @ref:[list of outgoing links](resources-api.md#list-outgoing-links)
 
