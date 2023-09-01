@@ -8,8 +8,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.DecodingFailure
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{JsonLdDecoder, JsonLdDecoderError}
-import ch.epfl.bluebrain.nexus.delta.rdf.{IriOrBNode, RdfError}
+import ch.epfl.bluebrain.nexus.delta.rdf.{ExplainResult, IriOrBNode, RdfError}
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import io.circe.syntax._
 import io.circe.{Decoder, Encoder, Json, JsonObject}
@@ -30,6 +31,8 @@ final case class ExpandedJsonLd private (rootId: IriOrBNode, obj: JsonObject) ex
   lazy val cursor: ExpandedJsonLdCursor = ExpandedJsonLdCursor(self)
 
   override def isEmpty: Boolean = obj.isEmpty
+
+  def getTypes: Either[DecodingFailure, Set[Iri]] = cursor.getTypes
 
   /**
     * Converts the current document to a [[CompactedJsonLd]]
@@ -182,19 +185,27 @@ object ExpandedJsonLd {
       resolution: RemoteContextResolution,
       opts: JsonLdOptions
   ): IO[RdfError, ExpandedJsonLd] =
-    api.expand(input).flatMap {
-      case Seq()       =>
+    explain(input).map(_.value)
+
+  def explain(input: Json)(implicit
+      api: JsonLdApi,
+      resolution: RemoteContextResolution,
+      opts: JsonLdOptions
+  ): IO[RdfError, ExplainResult[ExpandedJsonLd]] =
+    api.explainExpand(input).flatMap {
+      case explain if explain.value.isEmpty =>
         // try to add a predicate and value in order for the expanded jsonld to at least detect the @id
         for {
-          expandedSeq <- api.expand(input deepMerge Json.obj(fakeKey -> "fake".asJson))
-          result      <- IO.fromEither(expanded(expandedSeq))
-        } yield result.copy(obj = JsonObject.empty)
-      case expandedSeq =>
-        expandedWithGraphSupport(expandedSeq).map {
-          case (result, isGraph) if isGraph => ExpandedJsonLd(bNode, result.obj.remove(keywords.id))
-          case (result, _)                  => result
+          fallback <- api.explainExpand(input deepMerge Json.obj(fakeKey -> "fake".asJson))
+          result   <- fallback.evalMap { value => IO.fromEither(expanded(value).map(_.copy(obj = JsonObject.empty))) }
+        } yield result
+      case explain                          =>
+        explain.evalMap { value =>
+          expandedWithGraphSupport(value).map {
+            case (result, isGraph) if isGraph => ExpandedJsonLd(bNode, result.obj.remove(keywords.id))
+            case (result, _)                  => result
+          }
         }
-
     }
 
   /**

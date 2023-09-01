@@ -19,6 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.Json
 import monix.bio.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 
 /**
   * A schema representation
@@ -92,7 +93,7 @@ object Schema {
   def shift(schemas: Schemas)(implicit baseUri: BaseUri): Shift =
     ResourceShift.apply[SchemaState, Schema](
       Schemas.entityType,
-      (ref, project) => schemas.fetch(IdSegmentRef(ref), project),
+      (ref, project) => schemas.fetch(IdSegmentRef(ref), project).toBIO[SchemaRejection],
       state => state.toResource,
       value => JsonLdContent(value, value.value.source, None)
     )

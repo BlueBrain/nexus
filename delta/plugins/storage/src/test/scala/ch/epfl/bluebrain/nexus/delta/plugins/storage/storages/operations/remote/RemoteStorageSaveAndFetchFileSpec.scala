@@ -14,6 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection.FileNotFound
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.SaveFileRejection.ResourceAlreadyExists
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions.{read, write}
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig}
@@ -49,7 +50,9 @@ class RemoteStorageSaveAndFetchFileSpec(docker: RemoteStorageDocker)
   implicit private val sc: Scheduler                = Scheduler.global
   implicit val ec: ExecutionContext                 = system.dispatcher
   implicit private val httpConfig: HttpClientConfig = httpClientConfig
-  implicit private val httpClient: HttpClient       = HttpClient()
+  private val httpClient: HttpClient                = HttpClient()
+  private val authTokenProvider: AuthTokenProvider  = AuthTokenProvider.test
+  private val remoteDiskStorageClient               = new RemoteDiskStorageClient(httpClient, authTokenProvider)
 
   private val iri      = iri"http://localhost/remote"
   private val uuid     = UUID.fromString("8049ba90-7cc6-4de5-93a1-802c04200dcc")
@@ -90,28 +93,31 @@ class RemoteStorageSaveAndFetchFileSpec(docker: RemoteStorageDocker)
 
     "save a file to a folder" in {
       val description = FileDescription(uuid, filename, Some(`text/plain(UTF-8)`))
-      storage.saveFile.apply(description, entity).accepted shouldEqual attributes
+      storage.saveFile(remoteDiskStorageClient).apply(description, entity).accepted shouldEqual attributes
     }
 
     "fetch a file from a folder" in {
-      val sourceFetched = storage.fetchFile.apply(attributes).accepted
+      val sourceFetched = storage.fetchFile(remoteDiskStorageClient).apply(attributes).accepted
       consume(sourceFetched) shouldEqual content
     }
 
     "fetch a file attributes" in eventually {
-      val computedAttributes = storage.fetchComputedAttributes.apply(attributes).accepted
+      val computedAttributes = storage.fetchComputedAttributes(remoteDiskStorageClient).apply(attributes).accepted
       computedAttributes.digest shouldEqual attributes.digest
       computedAttributes.bytes shouldEqual attributes.bytes
       computedAttributes.mediaType shouldEqual attributes.mediaType.value
     }
 
     "fail fetching a file that does not exist" in {
-      storage.fetchFile.apply(attributes.copy(path = Uri.Path("other.txt"))).rejectedWith[FileNotFound]
+      storage
+        .fetchFile(remoteDiskStorageClient)
+        .apply(attributes.copy(path = Uri.Path("other.txt")))
+        .rejectedWith[FileNotFound]
     }
 
     "fail attempting to save the same file again" in {
       val description = FileDescription(uuid, "myfile.txt", Some(`text/plain(UTF-8)`))
-      storage.saveFile.apply(description, entity).rejectedWith[ResourceAlreadyExists]
+      storage.saveFile(remoteDiskStorageClient).apply(description, entity).rejectedWith[ResourceAlreadyExists]
     }
   }
 }

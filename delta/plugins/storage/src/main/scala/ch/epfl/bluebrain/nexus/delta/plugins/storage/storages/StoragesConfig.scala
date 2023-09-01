@@ -5,7 +5,6 @@ import cats.implicits.toBifunctorOps
 import ch.epfl.bluebrain.nexus.delta.kernel.{RetryStrategyConfig, Secret}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePath, DigestAlgorithm, StorageType}
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.AuthToken
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
@@ -72,15 +71,6 @@ object StoragesConfig {
   }
 
   object StorageTypeConfig {
-
-    /**
-      * Construct the auth token to query the remote storage
-      */
-    def remoteStorageAuthToken(config: StorageTypeConfig): Option[AuthToken] = {
-      config.remoteDisk
-        .flatMap(_.defaultCredentials)
-        .map(secret => AuthToken(secret.value))
-    }
 
     final case class WrongAllowedKeys(defaultVolume: AbsolutePath) extends FailureReason {
       val description: String = s"'allowed-volumes' must contain at least '$defaultVolume' (default-volume)"
