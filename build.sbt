@@ -928,7 +928,7 @@ lazy val compilation = {
 
 lazy val testing = Seq(
   Test / fork            := true,
-  concurrentRestrictions := Seq(Tags.limit(Tags.ForkedTestGroup, 2)),
+  concurrentRestrictions := Seq(Tags.limit(Tags.ForkedTestGroup, 1)),
   Test / javaOptions    ++= Seq("-Xmx6G", "-Xss16m")
 )
 
