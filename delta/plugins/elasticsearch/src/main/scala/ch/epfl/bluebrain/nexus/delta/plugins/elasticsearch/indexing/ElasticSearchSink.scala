@@ -1,5 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing
 
+import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
+import ch.epfl.bluebrain.nexus.delta.kernel.syntax.kamonSyntax
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.BulkResponse.{MixedOutcomes, Success}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.{BulkResponse, Refresh}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchBulk, ElasticSearchClient, IndexLabel}
@@ -42,6 +45,9 @@ final class ElasticSearchSink private (
 
   override def inType: Typeable[Json] = Typeable[Json]
 
+  implicit private val kamonComponent: KamonMetricComponent =
+    KamonMetricComponent(ElasticSearchViews.entityType.value)
+
   override def apply(elements: Chunk[Elem[Json]]): Task[Chunk[Elem[Unit]]] = {
     val bulk = elements.foldLeft(Vector.empty[ElasticSearchBulk]) {
       case (acc, successElem @ Elem.SuccessElem(_, _, _, _, _, json, _)) =>
@@ -61,7 +67,7 @@ final class ElasticSearchSink private (
     } else {
       Task.pure(elements.map(_.void))
     }
-  }
+  }.span("elasticSearchSink")
 }
 
 object ElasticSearchSink {
