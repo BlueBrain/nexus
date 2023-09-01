@@ -12,6 +12,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutesSpec.fileMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts => fileContexts, permissions, FileFixtures, Files, FilesConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{StorageRejection, StorageStatEntry, StorageType}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.AuthTokenProvider
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{contexts => storageContexts, permissions => storagesPermissions, StorageFixtures, Storages, StoragesConfig, StoragesStatistics}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes.`application/ld+json`
@@ -50,7 +52,9 @@ class FilesRoutesSpec
 
   import akka.actor.typed.scaladsl.adapter._
   implicit val typedSystem: typed.ActorSystem[Nothing] = system.toTyped
-  implicit val httpClient: HttpClient                  = HttpClient()(httpClientConfig, system, s)
+  val httpClient: HttpClient                           = HttpClient()(httpClientConfig, system, s)
+  val authTokenProvider: AuthTokenProvider             = AuthTokenProvider.test
+  val remoteDiskStorageClient                          = new RemoteDiskStorageClient(httpClient, authTokenProvider)
 
   // TODO: sort out how we handle this in tests
   implicit override def rcr: RemoteContextResolution = {
@@ -112,7 +116,8 @@ class FilesRoutesSpec
     storagesStatistics,
     xas,
     config,
-    FilesConfig(eventLogConfig)
+    FilesConfig(eventLogConfig),
+    remoteDiskStorageClient
   )
   private val groupDirectives =
     DeltaSchemeDirectives(fetchContext, ioFromMap(uuid -> projectRef.organization), ioFromMap(uuid -> projectRef))
