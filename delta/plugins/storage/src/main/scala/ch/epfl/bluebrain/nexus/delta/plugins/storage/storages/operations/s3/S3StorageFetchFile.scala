@@ -18,7 +18,7 @@ import monix.bio.IO
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets.UTF_8
 
-final class S3StorageFetchFile(value: S3StorageValue)(implicit config: StorageTypeConfig, as: ActorSystem)
+final class S3StorageFetchFile(value: S3StorageValue, config: StorageTypeConfig)(implicit as: ActorSystem)
     extends FetchFile {
 
   private val s3Attributes = S3Attributes.settings(value.alpakkaSettings(config))
