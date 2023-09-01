@@ -203,7 +203,7 @@ lazy val docs = project
 lazy val kernel = project
   .in(file("delta/kernel"))
   .settings(name := "delta-kernel", moduleName := "delta-kernel")
-  .settings(shared, compilation, coverage, release, assertJavaVersion)
+  .settings(shared, compilation, testing, coverage, release, assertJavaVersion)
   .settings(
     libraryDependencies  ++= Seq(
       caffeine,
@@ -226,7 +226,7 @@ lazy val testkit = project
   .dependsOn(kernel)
   .in(file("delta/testkit"))
   .settings(name := "delta-testkit", moduleName := "delta-testkit")
-  .settings(shared, compilation, coverage, release, assertJavaVersion)
+  .settings(shared, compilation, testing, coverage, release, assertJavaVersion)
   .settings(
     coverageMinimumStmtTotal := 0,
     libraryDependencies     ++= Seq(
@@ -253,7 +253,7 @@ lazy val sourcingPsql = project
     name       := "delta-sourcing-psql",
     moduleName := "delta-sourcing-psql"
   )
-  .settings(shared, compilation, assertJavaVersion, coverage, release)
+  .settings(shared, compilation, assertJavaVersion, testing, coverage, release)
   .settings(
     libraryDependencies ++= Seq(
       catsCore,
@@ -269,14 +269,13 @@ lazy val sourcingPsql = project
       catsEffectLaws % Test,
       logback        % Test
     ) ++ doobie,
-    Test / fork          := true,
     addCompilerPlugin(kindProjector)
   )
 
 lazy val rdf = project
   .in(file("delta/rdf"))
   .dependsOn(kernel, testkit % "test->compile")
-  .settings(shared, compilation, assertJavaVersion, coverage, release)
+  .settings(shared, compilation, assertJavaVersion, testing, coverage, release)
   .settings(
     name       := "delta-rdf",
     moduleName := "delta-rdf"
@@ -299,7 +298,6 @@ lazy val rdf = project
       logback     % Test,
       scalaTest   % Test
     ),
-    Test / fork          := true,
     addCompilerPlugin(betterMonadicFor)
   )
 
@@ -310,7 +308,7 @@ lazy val sdk = project
     moduleName := "delta-sdk"
   )
   .dependsOn(kernel, sourcingPsql % "compile->compile;test->test", rdf % "compile->compile;test->test", testkit % "test->compile")
-  .settings(shared, compilation, assertJavaVersion, coverage, release)
+  .settings(shared, compilation, assertJavaVersion, testing, coverage, release)
   .settings(
     coverageFailOnMinimum := false,
     libraryDependencies  ++= Seq(
@@ -340,7 +338,7 @@ lazy val app = project
     moduleName := "delta-app"
   )
   .enablePlugins(UniversalPlugin, JavaAppPackaging, JavaAgent, DockerPlugin, BuildInfoPlugin)
-  .settings(shared, compilation, servicePackaging, assertJavaVersion, kamonSettings, coverage, release)
+  .settings(shared, compilation, servicePackaging, assertJavaVersion, kamonSettings, testing, coverage, release)
   .dependsOn(sdk % "compile->compile;test->test", testkit % "test->compile")
   .settings(Test / compile := (Test / compile).dependsOn(testPlugin / assembly).value)
   .settings(
@@ -383,7 +381,6 @@ lazy val app = project
         )
       )
     },
-    Test / fork           := true,
     Test / test           := {
       val _ = copyPlugins.value
       (Test / test).value
@@ -423,19 +420,18 @@ lazy val app = project
 lazy val testPlugin = project
   .in(file("delta/plugins/test-plugin"))
   .dependsOn(sdk % Provided, testkit % Provided)
-  .settings(shared, compilation, noPublish)
+  .settings(shared, compilation, noPublish, testing)
   .settings(
     name                          := "delta-test-plugin",
     moduleName                    := "delta-test-plugin",
     assembly / assemblyOutputPath := target.value / "delta-test-plugin.jar",
-    assembly / assemblyOption     := (assembly / assemblyOption).value.withIncludeScala(false),
-    Test / fork                   := true
+    assembly / assemblyOption     := (assembly / assemblyOption).value.withIncludeScala(false)
   )
 
 lazy val elasticsearchPlugin = project
   .in(file("delta/plugins/elasticsearch"))
   .enablePlugins(BuildInfoPlugin)
-  .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
+  .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, testing, coverage, release)
   .dependsOn(
     sdk % "provided;test->test"
   )
@@ -456,14 +452,13 @@ lazy val elasticsearchPlugin = project
     addCompilerPlugin(betterMonadicFor),
     assembly / assemblyOption  := (assembly / assemblyOption).value.withIncludeScala(false),
     assembly / test            := {},
-    addArtifact(Artifact("delta-elasticsearch-plugin", "plugin"), assembly),
-    Test / fork                := true
+    addArtifact(Artifact("delta-elasticsearch-plugin", "plugin"), assembly)
   )
 
 lazy val blazegraphPlugin = project
   .in(file("delta/plugins/blazegraph"))
   .enablePlugins(BuildInfoPlugin)
-  .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
+  .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, testing, coverage, release)
   .dependsOn(
     sdk % "provided;test->test"
   )
@@ -482,14 +477,13 @@ lazy val blazegraphPlugin = project
     assembly / assemblyJarName := "blazegraph.jar",
     assembly / assemblyOption  := (assembly / assemblyOption).value.withIncludeScala(false),
     assembly / test            := {},
-    addArtifact(Artifact("delta-blazegraph-plugin", "plugin"), assembly),
-    Test / fork                := true
+    addArtifact(Artifact("delta-blazegraph-plugin", "plugin"), assembly)
   )
 
 lazy val compositeViewsPlugin = project
   .in(file("delta/plugins/composite-views"))
   .enablePlugins(BuildInfoPlugin)
-  .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
+  .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, testing, coverage, release)
   .dependsOn(
     sdk                 % "provided;test->test",
     elasticsearchPlugin % "provided;test->test",
@@ -515,14 +509,13 @@ lazy val compositeViewsPlugin = project
     assembly / assemblyJarName := "composite-views.jar",
     assembly / assemblyOption  := (assembly / assemblyOption).value.withIncludeScala(false),
     assembly / test            := {},
-    addArtifact(Artifact("delta-composite-views-plugin", "plugin"), assembly),
-    Test / fork                := true
+    addArtifact(Artifact("delta-composite-views-plugin", "plugin"), assembly)
   )
 
 lazy val searchPlugin = project
   .in(file("delta/plugins/search"))
   .enablePlugins(BuildInfoPlugin)
-  .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
+  .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, testing, coverage, release)
   .dependsOn(
     sdk                  % "provided;test->test",
     blazegraphPlugin     % "provided;test->compile;test->test",
@@ -545,14 +538,13 @@ lazy val searchPlugin = project
     assembly / assemblyJarName := "search.jar",
     assembly / assemblyOption  := (assembly / assemblyOption).value.withIncludeScala(false),
     assembly / test            := {},
-    addArtifact(Artifact("delta-search-plugin", "plugin"), assembly),
-    Test / fork                := true
+    addArtifact(Artifact("delta-search-plugin", "plugin"), assembly)
   )
 
 lazy val storagePlugin = project
   .enablePlugins(BuildInfoPlugin)
   .in(file("delta/plugins/storage"))
-  .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
+  .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, testing, coverage, release)
   .dependsOn(
     sdk                 % "provided;test->test",
     elasticsearchPlugin % "provided;test->compile;test->test",
@@ -582,14 +574,13 @@ lazy val storagePlugin = project
     assembly / assemblyJarName := "storage.jar",
     assembly / assemblyOption  := (assembly / assemblyOption).value.withIncludeScala(false),
     assembly / test            := {},
-    addArtifact(Artifact("delta-storage-plugin", "plugin"), assembly),
-    Test / fork                := true
+    addArtifact(Artifact("delta-storage-plugin", "plugin"), assembly)
   )
 
 lazy val archivePlugin = project
   .in(file("delta/plugins/archive"))
   .enablePlugins(BuildInfoPlugin)
-  .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
+  .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, testing, coverage, release)
   .dependsOn(
     sdk           % Provided,
     storagePlugin % "provided;test->test"
@@ -612,14 +603,13 @@ lazy val archivePlugin = project
     assembly / assemblyJarName := "archive.jar",
     assembly / assemblyOption  := (assembly / assemblyOption).value.withIncludeScala(false),
     assembly / test            := {},
-    addArtifact(Artifact("delta-archive-plugin", "plugin"), assembly),
-    Test / fork                := true
+    addArtifact(Artifact("delta-archive-plugin", "plugin"), assembly)
   )
 
 lazy val projectDeletionPlugin = project
   .in(file("delta/plugins/project-deletion"))
   .enablePlugins(BuildInfoPlugin)
-  .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
+  .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, testing, coverage, release)
   .dependsOn(
     sdk % "provided;test->test"
   )
@@ -637,14 +627,13 @@ lazy val projectDeletionPlugin = project
     assembly / assemblyOption  := (assembly / assemblyOption).value.withIncludeScala(false),
     assembly / test            := {},
     addArtifact(Artifact("delta-project-deletion-plugin", "plugin"), assembly),
-    Test / fork                := true,
     coverageFailOnMinimum      := false
   )
 
 lazy val graphAnalyticsPlugin = project
   .in(file("delta/plugins/graph-analytics"))
   .enablePlugins(BuildInfoPlugin)
-  .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
+  .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, testing, coverage, release)
   .dependsOn(
     sdk                 % Provided,
     storagePlugin       % "provided;test->test",
@@ -666,14 +655,13 @@ lazy val graphAnalyticsPlugin = project
     assembly / assemblyOption  := (assembly / assemblyOption).value.withIncludeScala(false),
     assembly / test            := {},
     addArtifact(Artifact("delta-graph-analytics-plugin", "plugin"), assembly),
-    Test / fork                := true,
     coverageFailOnMinimum      := false
   )
 
 lazy val jiraPlugin = project
   .in(file("delta/plugins/jira"))
   .enablePlugins(BuildInfoPlugin)
-  .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
+  .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, testing, coverage, release)
   .dependsOn(
     sdk % "provided;test->test"
   )
@@ -692,7 +680,6 @@ lazy val jiraPlugin = project
     assembly / assemblyOption  := (assembly / assemblyOption).value.withIncludeScala(false),
     assembly / test            := {},
     addArtifact(Artifact("jira", "plugin"), assembly),
-    Test / fork                := true,
     coverageFailOnMinimum      := false
   )
 
@@ -939,6 +926,11 @@ lazy val compilation = {
   )
 }
 
+lazy val testing = Seq(
+  Test / fork            := true,
+  concurrentRestrictions := Seq(Tags.limit(Tags.ForkedTestGroup, 2))
+)
+
 lazy val coverage = Seq(
   coverageMinimumStmtTotal := 80,
   coverageFailOnMinimum    := true
@@ -1010,10 +1002,9 @@ ThisBuild / githubRepository             := "nexus"
 ThisBuild / sonatypeCredentialHost       := "s01.oss.sonatype.org"
 ThisBuild / sonatypeRepository           := "https://s01.oss.sonatype.org/service/local"
 
-Global / excludeLintKeys        += packageDoc / publishArtifact
-Global / excludeLintKeys        += docs / paradoxRoots
-Global / excludeLintKeys        += docs / Paradox / paradoxNavigationDepth
-Global / concurrentRestrictions += Tags.limit(Tags.Test, 1)
+Global / excludeLintKeys += packageDoc / publishArtifact
+Global / excludeLintKeys += docs / paradoxRoots
+Global / excludeLintKeys += docs / Paradox / paradoxNavigationDepth
 
 addCommandAlias(
   "review",
