@@ -34,6 +34,28 @@ The json payload for create and update operations cannot contain keys beginning 
 
 @@@
 
+## Nexus metadata
+
+When using the endpoints described on this page, the responses can contain the following metadata:
+
+- `_self`: unique address of this resource in the current Nexus Delta deployment
+    - Each resource has an `@id`, which is only unique within a project. The `_self` in contrast to the `@id` will
+      uniquely identifies a resource across all projects in Nexus Delta.
+    - A `GET` request can be performed on a `_self` to obtain the underlying resource
+- `_incoming`: identifier leading to a list of resources which make references to the current resource
+- `_outgoing`: identifier leading to a list of resources which are referred to by the current resource
+- `_project`: unique identifier of the given resource's project
+- `_constrainedBy`: `@id` of the schema used to validate the resource; the schema can only be identified uniquely
+  together with `_schemaProject`. If no schema has been used to validate the resource, it will indicate the
+  unconstrained identifier.
+- `_schemaProject`: unique identifier of the project where the `_constrainedBy` schema is found
+- `_rev`: the revision number of this resource
+- `_deprecated`: boolean - indicates whether or not this resource is deprecated
+- `_createdAt`: datetime at which this resource was first created
+- `_createdBy`: unique identifier of the user that first created this resource
+- `_updatedAt`: datetime at which this resource was last updated
+- `_updatedBy`: unique identifier of the user that last updated this resource
+
 ## Indexing
 
 All the API calls modifying a resource (creation, update, tagging, deprecation) can specify whether the resource should be indexed 
