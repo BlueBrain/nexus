@@ -25,6 +25,6 @@ The following metadata can help to audit an entity.
 - `_rev`: the revision number of the entity
 - `_deprecated`: boolean indicating whether or not the entity is deprecated
 - `_createdAt`: datetime at which the entity was first created
-- `_createdBy`: identifier of the user that first created the entity
+- `_createdBy`: the user that first created the entity
 - `_updatedAt`: datetime at which the entity was last updated
-- `_updatedBy`: identifier of the user that last updated the entity
+- `_updatedBy`: the user that last updated the entity
