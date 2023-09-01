@@ -44,7 +44,9 @@ final class ResourcesImpl private (
     for {
       projectContext             <- fetchContext.onCreate(projectRef)
       schemeRef                  <- expandResourceRef(schema, projectContext)
-      (iri, compacted, expanded) <- sourceParser(projectRef, projectContext, source)
+      (iri, compacted, expanded) <- sourceParser(projectRef, projectContext, source).map { j =>
+                                      (j.iri, j.compacted, j.expanded)
+                                    }
       res                        <- eval(CreateResource(iri, projectRef, schemeRef, source, compacted, expanded, caller))
     } yield res
   }.span("createResource")
@@ -59,7 +61,9 @@ final class ResourcesImpl private (
       projectContext        <- fetchContext.onCreate(projectRef)
       iri                   <- expandIri(id, projectContext)
       schemeRef             <- expandResourceRef(schema, projectContext)
-      (compacted, expanded) <- sourceParser(projectRef, projectContext, iri, source)
+      (compacted, expanded) <- sourceParser(projectRef, projectContext, iri, source).map { j =>
+                                 (j.compacted, j.expanded)
+                               }
       res                   <- eval(CreateResource(iri, projectRef, schemeRef, source, compacted, expanded, caller))
     } yield res
   }.span("createResource")
@@ -75,9 +79,10 @@ final class ResourcesImpl private (
       projectContext        <- fetchContext.onModify(projectRef)
       iri                   <- expandIri(id, projectContext)
       schemeRefOpt          <- expandResourceRef(schemaOpt, projectContext)
-      (compacted, expanded) <- sourceParser(projectRef, projectContext, iri, source)
-      res                   <-
-        eval(UpdateResource(iri, projectRef, schemeRefOpt, source, compacted, expanded, rev, caller))
+      (compacted, expanded) <- sourceParser(projectRef, projectContext, iri, source).map { j =>
+                                 (j.compacted, j.expanded)
+                               }
+      res                   <- eval(UpdateResource(iri, projectRef, schemeRefOpt, source, compacted, expanded, rev, caller))
     } yield res
   }.span("updateResource")
 
@@ -91,7 +96,9 @@ final class ResourcesImpl private (
       iri                   <- expandIri(id, projectContext)
       schemaRefOpt          <- expandResourceRef(schemaOpt, projectContext)
       resource              <- log.stateOr(projectRef, iri, ResourceNotFound(iri, projectRef, schemaRefOpt))
-      (compacted, expanded) <- sourceParser(projectRef, projectContext, iri, resource.source)
+      (compacted, expanded) <- sourceParser(projectRef, projectContext, iri, resource.source).map { j =>
+                                 (j.compacted, j.expanded)
+                               }
       res                   <-
         eval(RefreshResource(iri, projectRef, schemaRefOpt, compacted, expanded, resource.rev, caller))
     } yield res

@@ -41,7 +41,9 @@ final class SchemasImpl private (
   )(implicit caller: Caller): IO[SchemaResource] = {
     for {
       projectContext             <- fetchContext.onCreate(projectRef)
-      (iri, compacted, expanded) <- sourceParser(projectRef, projectContext, source)
+      (iri, compacted, expanded) <- sourceParser(projectRef, projectContext, source).map { j =>
+                                      (j.iri, j.compacted, j.expanded)
+                                    }
       expandedResolved           <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
       res                        <- eval(CreateSchema(iri, projectRef, source, compacted, expandedResolved, caller.subject))
     } yield res
@@ -53,11 +55,11 @@ final class SchemasImpl private (
       source: Json
   )(implicit caller: Caller): IO[SchemaResource] = {
     for {
-      pc                    <- fetchContext.onCreate(projectRef)
-      iri                   <- expandIri(id, pc)
-      (compacted, expanded) <- sourceParser(projectRef, pc, iri, source)
-      expandedResolved      <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
-      res                   <- eval(CreateSchema(iri, projectRef, source, compacted, expandedResolved, caller.subject))
+      pc               <- fetchContext.onCreate(projectRef)
+      iri              <- expandIri(id, pc)
+      jsonLd           <- sourceParser(projectRef, pc, iri, source)
+      expandedResolved <- schemaImports.resolve(iri, projectRef, jsonLd.expanded.addType(nxv.Schema))
+      res              <- eval(CreateSchema(iri, projectRef, source, jsonLd.compacted, expandedResolved, caller.subject))
     } yield res
   }.span("createSchema")
 
@@ -70,7 +72,7 @@ final class SchemasImpl private (
     for {
       pc                    <- fetchContext.onModify(projectRef)
       iri                   <- expandIri(id, pc)
-      (compacted, expanded) <- sourceParser(projectRef, pc, iri, source)
+      (compacted, expanded) <- sourceParser(projectRef, pc, iri, source).map { j => (j.compacted, j.expanded) }
       expandedResolved      <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
       res                   <-
         eval(UpdateSchema(iri, projectRef, source, compacted, expandedResolved, rev, caller.subject))
@@ -85,7 +87,7 @@ final class SchemasImpl private (
       pc                    <- fetchContext.onModify(projectRef)
       iri                   <- expandIri(id, pc)
       schema                <- log.stateOr(projectRef, iri, SchemaNotFound(iri, projectRef))
-      (compacted, expanded) <- sourceParser(projectRef, pc, iri, schema.source)
+      (compacted, expanded) <- sourceParser(projectRef, pc, iri, schema.source).map { j => (j.compacted, j.expanded) }
       expandedResolved      <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
       res                   <-
         eval(RefreshSchema(iri, projectRef, compacted, expandedResolved, schema.rev, caller.subject))

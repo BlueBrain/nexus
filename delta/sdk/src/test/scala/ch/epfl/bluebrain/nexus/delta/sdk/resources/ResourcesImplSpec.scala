@@ -89,7 +89,7 @@ class ResourcesImplSpec
 
   private val resolverContextResolution: ResolverContextResolution = new ResolverContextResolution(
     res,
-    (r, p, _) => resources.fetch(r, p).bimap(_ => ResourceResolutionReport(), _.value)
+    (r, p, _) => resources.fetch(r, p).bimap(_ => ResourceResolutionReport(), identity)
   )
 
   private lazy val resources: Resources = ResourcesImpl(

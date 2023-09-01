@@ -1,20 +1,20 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resolvers
 
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution.Result
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolutionError.RemoteContextNotAccessible
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContext, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution.logger
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution.{logger, NexusContext}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.ResourceResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.Resource
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
-import com.typesafe.scalalogging.Logger
 import io.circe.syntax._
 import monix.bio.IO
 
@@ -29,17 +29,14 @@ import scala.collection.concurrent
   * @param resolveResource
   *   a function to resolve resources
   */
-final class ResolverContextResolution(
-    val rcr: RemoteContextResolution,
-    resolveResource: Resolve[Resource]
-) {
+final class ResolverContextResolution(val rcr: RemoteContextResolution, resolveResource: Resolve[DataResource]) {
 
   def apply(projectRef: ProjectRef)(implicit caller: Caller): RemoteContextResolution =
     new RemoteContextResolution {
       // The instance is living inside the scope of a request so we can cache the resolutions
-      private val cache: concurrent.Map[Iri, ContextValue] = new concurrent.TrieMap
+      private val cache: concurrent.Map[Iri, RemoteContext] = new concurrent.TrieMap
 
-      override def resolve(iri: Iri): Result[ContextValue] = {
+      override def resolve(iri: Iri): Result[RemoteContext] = {
         IO.pure(cache.get(iri)).flatMap {
           case Some(s) => IO.pure(s)
           case None    =>
@@ -54,15 +51,12 @@ final class ResolverContextResolution(
                         s"Resolution via static resolution and via resolvers failed in '$projectRef'",
                         Some(report.asJson)
                       ),
-                    result => result.source.topContextValueOrEmpty
+                    NexusContext.fromResource
                   )
               )
-              .tapEval { ctxValue =>
-                IO.pure(cache.put(iri, ctxValue)) *>
-                  IO.pure(
-                    logger
-                      .debug(s"Iri {} has been resolved for project {} and caller {}", iri, projectRef, caller.subject)
-                  )
+              .tapEval { context =>
+                IO.pure(cache.put(iri, context)) *>
+                  logger.debug(s"Iri $iri has been resolved for project $projectRef and caller $caller.subject")
               }
         }
       }
@@ -72,6 +66,16 @@ final class ResolverContextResolution(
 object ResolverContextResolution {
 
   private val logger: Logger = Logger[ResolverContextResolution]
+
+  /**
+    * A remote context defined in Nexus as a resource
+    */
+  final case class NexusContext(iri: Iri, project: ProjectRef, rev: Int, value: ContextValue) extends RemoteContext
+
+  object NexusContext {
+    def fromResource(resource: DataResource): NexusContext =
+      NexusContext(resource.id, resource.value.project, resource.rev, resource.value.source.topContextValueOrEmpty)
+  }
 
   /**
     * Constructs a [[ResolverContextResolution]] that will only resolve static resources
@@ -92,7 +96,7 @@ object ResolverContextResolution {
     new ResolverContextResolution(
       rcr,
       (resourceRef: ResourceRef, projectRef: ProjectRef, caller: Caller) =>
-        resourceResolution.resolve(resourceRef, projectRef)(caller).map(_.value)
+        resourceResolution.resolve(resourceRef, projectRef)(caller)
     )
 
   /**
