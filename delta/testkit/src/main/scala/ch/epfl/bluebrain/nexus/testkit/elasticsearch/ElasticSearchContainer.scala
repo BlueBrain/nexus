@@ -23,7 +23,6 @@ class ElasticSearchContainer(password: String)
   addExposedPort(9200)
   setWaitStrategy(Wait.forLogMessage(".*(\"message\":\\s?\"started[\\s?|\"].*|] started\n$)", 1))
 
-
   def version: String = Version
 }
 

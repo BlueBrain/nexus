@@ -1052,7 +1052,8 @@ val staticAnalysis =
 addCommandAlias("static-analysis", staticAnalysis)
 
 def unitTestsWithCoverageCommandsForModules(modules: List[String]) = {
-  ";coverage" +
+  ";compile" +
+    modules.map(module => s";$module/coverage").mkString +
     modules.map(module => s";$module/test").mkString +
     modules.map(module => s";$module/coverageReport").mkString
 }
