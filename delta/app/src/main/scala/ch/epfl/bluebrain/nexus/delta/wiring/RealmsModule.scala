@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.wiring
 
 import akka.actor.typed.ActorSystem
 import akka.http.scaladsl.model.{HttpRequest, Uri}
-import cats.effect.Clock
+import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
@@ -19,8 +19,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.realms.{Realms, RealmsImpl}
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import izumi.distage.model.definition.{Id, ModuleDef}
-import monix.bio.UIO
 import monix.execution.Scheduler
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 
 /**
   * Realms module wiring config.
@@ -32,7 +32,7 @@ object RealmsModule extends ModuleDef {
   make[Realms].from {
     (
         cfg: AppConfig,
-        clock: Clock[UIO],
+        clock: Clock[IO],
         hc: HttpClient @Id("realm"),
         xas: Transactors
     ) =>

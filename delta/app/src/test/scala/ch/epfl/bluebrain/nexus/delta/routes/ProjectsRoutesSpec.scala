@@ -23,6 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.provisioning.{AutomaticProvisioningConf
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.testkit.bio.IOFromMap
 import io.circe.Json
 import monix.bio.{IO, UIO}
 
@@ -30,7 +31,7 @@ import java.time.Instant
 import java.util.UUID
 import scala.concurrent.duration._
 
-class ProjectsRoutesSpec extends BaseRouteSpec {
+class ProjectsRoutesSpec extends BaseRouteSpec with IOFromMap {
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(6.seconds, 10.milliseconds)
 

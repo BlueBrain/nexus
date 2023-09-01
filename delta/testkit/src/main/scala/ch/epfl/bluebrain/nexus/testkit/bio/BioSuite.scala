@@ -1,14 +1,13 @@
 package ch.epfl.bluebrain.nexus.testkit.bio
 
-import ch.epfl.bluebrain.nexus.testkit.IOFixedClock
+import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, NexusSuite}
 import monix.bio.IO
 import monix.execution.Scheduler
-import munit.FunSuite
 
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
 abstract class BioSuite
-    extends FunSuite
+    extends NexusSuite
     with BioFixtures
     with BioFunFixtures
     with BioAssertions
@@ -17,8 +16,7 @@ abstract class BioSuite
     with EitherAssertions
     with IOFixedClock {
 
-  implicit protected val scheduler: Scheduler     = Scheduler.global
-  implicit protected val classLoader: ClassLoader = getClass.getClassLoader
+  implicit protected val scheduler: Scheduler = Scheduler.global
 
   protected val ioTimeout: FiniteDuration = 45.seconds
 
