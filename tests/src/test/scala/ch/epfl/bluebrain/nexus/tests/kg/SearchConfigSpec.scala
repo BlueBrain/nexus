@@ -8,6 +8,8 @@ import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Organizations, Resour
 import io.circe.Json
 import monix.bio.Task
 import org.scalatest.Assertion
+
+import java.time.Instant
 import concurrent.duration._
 
 class SearchConfigSpec extends BaseSpec {
@@ -28,6 +30,7 @@ class SearchConfigSpec extends BaseSpec {
   private val boutonDensityId      = "https://bbp.epfl.ch/data/bouton-density"
   private val simulationCampaignId = "https://bbp.epfl.ch/data/simulation-campaign"
   private val simulationId         = "https://bbp.epfl.ch/data/simulation"
+  private val detailedCircuitId    = "https://bbp.epfl.ch/data/detailed-circuit"
 
   // the resources that should appear in the search index
   private val mainResources  = List(
@@ -39,6 +42,7 @@ class SearchConfigSpec extends BaseSpec {
     "/kg/search/neuron-density.json",
     "/kg/search/layer-thickness.json",
     "/kg/search/bouton-density.json",
+    "/kg/search/detailed-circuit.json",
     "/kg/search/data/simulations/simulation-campaign-configuration.json",
     "/kg/search/data/simulations/simulation-campaign-execution.json",
     "/kg/search/data/simulations/simulation-campaign.json",
@@ -84,6 +88,77 @@ class SearchConfigSpec extends BaseSpec {
           val sources = Json.fromValues(body.findAllByKey("_source"))
           sources.asArray.get.size shouldBe mainResources.size
         }
+      }
+    }
+
+    "have the correct name property from schema:name" in {
+      val query = queryField(neuronMorphologyId, "name")
+      assertOneSource(query) { json =>
+        json shouldEqual json"""{ "name": "sm080522a1-5_idA" }"""
+      }
+    }
+
+    "have the correct name property from rdfs:label" in {
+      val query = queryField(neuronDensityId, "name")
+      assertOneSource(query) { json =>
+        json shouldEqual json"""{ "name": "Neuron density: CA1" }"""
+      }
+    }
+
+    "have the correct name property from skos:prefLabel" in {
+      val query = queryField(traceId, "name")
+      assertOneSource(query) { json =>
+        json shouldEqual json"""{ "name": "S1J_L6_IPC_cADpyr_2" }"""
+      }
+    }
+
+    "have the correct description property" in {
+      val query = queryField(neuronMorphologyId, "description")
+      assertOneSource(query) { json =>
+        json shouldEqual json"""{ "description": "This is a resource description." }"""
+      }
+    }
+
+    "have the correct createdAt property" in {
+      val query = queryField(neuronMorphologyId, "createdAt")
+      assertOneSource(query) { json =>
+        assert(isInstant(json, "createdAt"))
+      }
+    }
+
+    "have the correct updatedAt property" in {
+      val query = queryField(neuronMorphologyId, "updatedAt")
+      assertOneSource(query) { json =>
+        assert(isInstant(json, "updatedAt"))
+      }
+    }
+
+    "have the correct createdBy property" in {
+      val query = queryField(neuronMorphologyId, "createdBy")
+      assertOneSource(query) { json =>
+        json shouldEqual json"""{ "createdBy": "http://delta:8080/v1/realms/${Rick.realm.name}/users/${Rick.name}" }"""
+      }
+    }
+
+    "have the correct updatedBy property" in {
+      val query = queryField(neuronMorphologyId, "updatedBy")
+      assertOneSource(query) { json =>
+        json shouldEqual json"""{ "updatedBy": "http://delta:8080/v1/realms/${Rick.realm.name}/users/${Rick.name}" }"""
+      }
+    }
+
+    "have the correct deprecated property" in {
+      val query = queryField(neuronMorphologyId, "deprecated")
+      assertOneSource(query) { json =>
+        json shouldEqual json"""{ "deprecated": false }"""
+      }
+    }
+
+    "have the correct self property" in {
+      val query        = queryField(neuronMorphologyId, "_self")
+      val expectedSelf = s"http://delta:8080/v1/resources/$orgId/$projId1/_/${neuronMorphologyId.replace("/", "%2F")}"
+      assertOneSource(query) { json =>
+        json shouldEqual json"""{ "_self": "$expectedSelf" }"""
       }
     }
 
@@ -567,11 +642,34 @@ class SearchConfigSpec extends BaseSpec {
       }
     }
 
-    "have the correct metadata property" in { pending }
-    "have the correct detailed circuit property" in { pending }
-    "have the correct simulation campaign config property" in { pending }
+    "have the correct detailed circuit config path" in {
+      val query = queryField(detailedCircuitId, "circuitConfigPath")
+      assertOneSource(query) { json =>
+        json shouldEqual json"""{ "circuitConfigPath": "file:///gpfs/bbp.cscs.ch/project/proj123/config.json" }"""
+      }
+    }
+
+    "have the correct detailed circuit type " in {
+      val query = queryField(detailedCircuitId, "circuitType")
+      assertOneSource(query) { json =>
+        json shouldEqual json"""{ "circuitType": "circuit type" }"""
+      }
+    }
+
+    "have the correct detailed circuit base" in {
+      val query = queryField(detailedCircuitId, "circuitBase")
+      assertOneSource(query) { json =>
+        json shouldEqual json"""{ "circuitBase": "file:///gpfs/bbp.cscs.ch/project/proj123/base" }"""
+      }
+    }
+
+    "have the correct detailed circuit brain region" in {
+      // TODO: check whether this is still used
+      pending
+    }
+
     "have the correct sType property" in {
-      // there are no resources with this field yet
+      // TODO: there are no resources with this field yet
       pending
     }
 
@@ -726,5 +824,9 @@ class SearchConfigSpec extends BaseSpec {
 
   private def assertEmpty(query: Json): Task[Assertion] =
     assertOneSource(query)(j => assert(j == json"""{ }"""))
+
+  /** Check that a given field in the json can be parsed as [[Instant]] */
+  private def isInstant(json: Json, field: String) =
+    json.hcursor.downField(field).as[Instant].isRight
 
 }
