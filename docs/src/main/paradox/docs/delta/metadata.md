@@ -10,13 +10,15 @@ Nexus Delta entities fall in two categories:
 
 Upon creation of these entities, Nexus Delta will create metadata fields which are described below.
 
-## Identification
-
 - `_self`: unique address of the entity in Nexus Delta
     - Each entity has an `@id`, which is not necessarily unique. The `_self` in contrast to the `@id` will
       uniquely identify a entity across Nexus Delta.
     - Because `_self` is the Nexus address of the entity, a `GET` request can be performed at the value in order to
-      obtain the underlying entity
+      obtain the underlying entity. Example: from a @ref[resources listing operation](api/resources-api.md#list),
+      the `_self` endpoints listed
+      can be used to fetch the underlying resources
+    - Nexus Delta follows the @link:[HATEOAS](https://en.wikipedia.org/wiki/HATEOAS) architecture, which is reflected in
+      the `_self` address being discoverable in Nexus Delta's different responses.
 
 ## Auditing
 
