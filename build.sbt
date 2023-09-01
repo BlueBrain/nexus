@@ -685,7 +685,7 @@ lazy val jiraPlugin = project
 
 lazy val plugins = project
   .in(file("delta/plugins"))
-  .settings(shared, compilation, noPublish)
+  .settings(shared, compilation, coverage, testing, noPublish)
   .aggregate(
     elasticsearchPlugin,
     blazegraphPlugin,
@@ -1052,8 +1052,7 @@ val staticAnalysis =
 addCommandAlias("static-analysis", staticAnalysis)
 
 def unitTestsWithCoverageCommandsForModules(modules: List[String]) = {
-  ";compile" +
-    modules.map(module => s";$module/coverage").mkString +
+  ";coverage" +
     modules.map(module => s";$module/test").mkString +
     modules.map(module => s";$module/coverageReport").mkString
 }
