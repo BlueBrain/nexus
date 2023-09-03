@@ -7,6 +7,7 @@ import akka.http.scaladsl.model.headers.Authorization
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.MigrateEffectSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.RealmResource
+import ch.epfl.bluebrain.nexus.delta.sdk.error.TokenError.{TokenHttpError, TokenNotFoundInResponse}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.AuthToken
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.Realms
@@ -71,12 +72,12 @@ private class KeycloakAuthTokenProvider(auth: AuthenticateAs, httpClient: HttpCl
           )
           .toEntity
       )
-    ).hideErrors
+    ).hideErrorsWith(TokenHttpError)
   }
 
   private def parseTokenFromResponse(json: Json): UIO[String] = {
     json.hcursor.get[String]("access_token") match {
-      case Left(failure) => IO.terminate(new RuntimeException("no access_token in response: " + failure))
+      case Left(failure) => IO.terminate(TokenNotFoundInResponse(failure))
       case Right(value) => UIO.pure(value)
     }
   }
