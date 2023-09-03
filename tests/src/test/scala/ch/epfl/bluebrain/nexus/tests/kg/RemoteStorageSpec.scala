@@ -16,7 +16,6 @@ import org.scalatest.Assertion
 import scala.annotation.nowarn
 import scala.sys.process._
 
-// Ignore while https://github.com/BlueBrain/nexus/issues/4063 is ongoing
 class RemoteStorageSpec extends StorageSpec {
 
   override def storageName: String = "external"
