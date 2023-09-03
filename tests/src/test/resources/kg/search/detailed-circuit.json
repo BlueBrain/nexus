@@ -1,0 +1,30 @@
+{
+  "@context": "https://bbp.neuroshapes.org",
+  "@id": "https://bbp.epfl.ch/data/detailed-circuit",
+  "@type": "DetailedCircuit",
+  "brainLocation": {
+    "brainRegion": {
+      "@id": "http://purl.obolibrary.org/obo/UBERON_0008933",
+      "label": "primary somatosensory cortex"
+    }
+  },
+  "circuitBase": {
+    "@type": "DataDownload",
+    "url": "file:///gpfs/bbp.cscs.ch/project/proj123/base"
+  },
+  "circuitConfigPath": {
+    "@type": "DataDownload",
+    "url": "file:///gpfs/bbp.cscs.ch/project/proj123/config.json"
+  },
+  "circuitType": "circuit type",
+  "description": "Released 210K SSCx-O1 SONATA circuit from [Isbister et al., 2023] with TC projections (POm, VPM), with EXC-EXC connections within central hex0 column rewired based on 5th-order simplified model of connectivity (using connectome-manipulator v0.0.7.dev1)",
+  "name": "SSCx-HexO1-Release-TC__ConnRewireOrder5Hex0EE",
+  "subject": {
+    "@id": "https://bbp.epfl.ch/neurosciencegraph/data/2ac20641-2a04-4eb8-a8bd-e0eb2a9cf447",
+    "@type": "https://neuroshapes.org/Subject"
+  },
+  "wasGeneratedBy": {
+    "@id": "https://bbp.epfl.ch/neurosciencegraph/data/34802d4e-29be-49a1-8f6a-896cab874343",
+    "@type": "WorkflowExecution"
+  }
+}

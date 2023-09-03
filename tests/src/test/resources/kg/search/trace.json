@@ -113,7 +113,7 @@
     "@id": "https://bbp.epfl.ch/neurosciencegraph/data/licenses/97521f71-605d-4f42-8f1b-c37e742a30bf",
     "@type": "License"
   },
-  "name": "S1J_L6_IPC_cADpyr_2",
+  "prefLabel": "S1J_L6_IPC_cADpyr_2",
   "note": "SSCX Simulation Data",
   "objectOfStudy": {
     "@id": "http://bbp.epfl.ch/neurosciencegraph/taxonomies/objectsofstudy/singlecells",

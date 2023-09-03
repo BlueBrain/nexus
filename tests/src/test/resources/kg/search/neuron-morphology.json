@@ -92,7 +92,7 @@
       ]
     }
   },
-  "description": "This dataset is about an in vitro-filled neuron morphology from layer 2 with m-type L2_IPC. The distribution contains the neuron morphology in ASC and in SWC file format.",
+  "description": "This is a resource description.",
   "distribution": [
     {
       "@id": "https://bbp.epfl.ch/neurosciencegraph/data/b6cb3fbd-73d6-47c7-bf23-3a993b326afa",
@@ -138,6 +138,8 @@
     "@type": "License"
   },
   "name": "sm080522a1-5_idA",
+  "label": "second name",
+  "prefLabel": "third name",
   "objectOfStudy": {
     "@id": "http://bbp.epfl.ch/neurosciencegraph/taxonomies/objectsofstudy/singlecells",
     "@type": "ObjectOfStudy",
