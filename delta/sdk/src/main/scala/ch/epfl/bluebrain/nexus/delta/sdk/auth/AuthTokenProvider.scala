@@ -1,19 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.auth
 
-import akka.http.javadsl.model.headers.HttpCredentials
-import akka.http.scaladsl.model.HttpMethods.POST
-import akka.http.scaladsl.model.{HttpRequest, Uri}
-import akka.http.scaladsl.model.headers.Authorization
-import ch.epfl.bluebrain.nexus.delta.kernel.Secret
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.MigrateEffectSyntax
-import ch.epfl.bluebrain.nexus.delta.sdk.RealmResource
-import ch.epfl.bluebrain.nexus.delta.sdk.error.TokenError.{TokenHttpError, TokenNotFoundInResponse}
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
+import cats.effect.Clock
+import ch.epfl.bluebrain.nexus.delta.kernel.cache.KeyValueStore
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.AuthToken
-import ch.epfl.bluebrain.nexus.delta.sdk.realms.Realms
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import io.circe.Json
-import monix.bio.{IO, UIO}
+import monix.bio.UIO
+
+import java.time.{Duration, Instant}
 
 /**
   * Provides an auth token for the service account, for use when comunicating with remote storage
@@ -23,9 +16,9 @@ trait AuthTokenProvider {
 }
 
 object AuthTokenProvider {
-  def apply(auth: Option[AuthenticateAs], httpClient: HttpClient, realms: Realms): AuthTokenProvider = {
+  def apply(auth: Option[AuthenticateAs], keycloakAuthService: KeycloakAuthService): AuthTokenProvider = {
     auth match {
-      case Some(authAs) => new KeycloakAuthTokenProvider(authAs, httpClient, realms)
+      case Some(authAs) => new CachingKeycloakAuthTokenProvider(authAs, keycloakAuthService)
       case None         => new AnonymousAuthTokenProvider
     }
   }
@@ -36,45 +29,33 @@ private class AnonymousAuthTokenProvider extends AuthTokenProvider {
   override def apply(): UIO[Option[AuthToken]] = UIO.pure(None)
 }
 
-private class KeycloakAuthTokenProvider(auth: AuthenticateAs, httpClient: HttpClient, realms: Realms)
-    extends AuthTokenProvider
-    with MigrateEffectSyntax {
+private class CachingKeycloakAuthTokenProvider(identity: AuthenticateAs, service: KeycloakAuthService)(implicit
+    clock: Clock[UIO]
+) extends AuthTokenProvider {
+  private val cache = KeyValueStore.create[Unit, AccessTokenWithMetadata]()
+
   override def apply(): UIO[Option[AuthToken]] = {
     for {
-      realm       <- realms.fetch(Label.unsafe(auth.realm)).toUIO
-      accessToken <- requestAccessToken(realm, auth.user, auth.password)
-    } yield Some(AuthToken(accessToken))
-  }
-
-  private def requestAccessToken(realm: RealmResource, user: String, password: Secret[String]): UIO[String] = {
-    requestToken(realm.value.tokenEndpoint, user, password)
-      .flatMap(parseTokenFromResponse)
-  }
-
-  private def requestToken(tokenEndpoint: Uri, user: String, password: Secret[String]) = {
-    httpClient
-      .toJson(
-        HttpRequest(
-          method = POST,
-          uri = tokenEndpoint,
-          headers = Authorization(HttpCredentials.createBasicHttpCredentials(user, password.value)) :: Nil,
-          entity = akka.http.scaladsl.model
-            .FormData(
-              Map(
-                "scope"      -> "openid",
-                "grant_type" -> "client_credentials"
-              )
-            )
-            .toEntity
-        )
-      )
-      .hideErrorsWith(TokenHttpError)
-  }
-
-  private def parseTokenFromResponse(json: Json): UIO[String] = {
-    json.hcursor.get[String]("access_token") match {
-      case Left(failure) => IO.terminate(TokenNotFoundInResponse(failure))
-      case Right(value)  => UIO.pure(value)
+      existingValue <- cache.get(())
+      now           <- IOUtils.instant
+      finalValue    <- existingValue match {
+                         case None                                 => fetchValue
+                         case Some(value) if isExpired(value, now) => fetchValue
+                         case Some(value)                          => UIO.pure(value)
+                       }
+    } yield {
+      Some(AuthToken(finalValue.token))
     }
+  }
+
+  private def fetchValue = {
+    cache.getOrElseUpdate((), service.auth(identity))
+  }
+
+  private def isExpired(value: AccessTokenWithMetadata, now: Instant): Boolean = {
+    // minus 10 seconds to account for tranport / processing time
+    val cutoffTime = value.expiresAt.minus(Duration.ofSeconds(10))
+
+    now.isAfter(cutoffTime)
   }
 }

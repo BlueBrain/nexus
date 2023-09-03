@@ -217,6 +217,14 @@ trait KeyValueStore[K, V] {
 
 object KeyValueStore {
 
+  def create[K, V](): KeyValueStore[K, V] = {
+    val cache: Cache[K, V] =
+      Caffeine
+        .newBuilder()
+        .build[K, V]()
+    new LocalCache(cache)
+  }
+
   /**
     * Constructs a local key-value store
     */

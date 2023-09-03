@@ -26,12 +26,20 @@ object TokenError {
   final case class TokenNotFoundInResponse(failure: DecodingFailure)
       extends TokenError(s"Token not found in auth response: ${failure.reason}")
 
+  /**
+    * Signals that the expiry was missing from the authentication response
+    */
+  final case class ExpiryNotFoundInResponse(failure: DecodingFailure)
+      extends TokenError(s"Expiry not found in auth response: ${failure.reason}")
+
   implicit val identityErrorEncoder: Encoder.AsObject[TokenError] = {
     Encoder.AsObject.instance[TokenError] {
-      case TokenHttpError(r)          =>
+      case TokenHttpError(r)           =>
         JsonObject(keywords.tpe := "TokenHttpError", "reason" := r.reason)
-      case TokenNotFoundInResponse(r) =>
+      case TokenNotFoundInResponse(r)  =>
         JsonObject(keywords.tpe -> "TokenNotFoundInResponse".asJson, "reason" := r.message)
+      case ExpiryNotFoundInResponse(r) =>
+        JsonObject(keywords.tpe -> "ExpiryNotFoundInResponse".asJson, "reason" := r.message)
     }
   }
 
