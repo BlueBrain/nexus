@@ -11,13 +11,12 @@ import io.circe.generic.semiauto.deriveDecoder
 import io.circe.{Decoder, Json}
 import monix.bio.Task
 import org.scalactic.source.Position
-import org.scalatest.{Assertion, Ignore}
+import org.scalatest.Assertion
 
 import scala.annotation.nowarn
 import scala.sys.process._
 
 // Ignore while https://github.com/BlueBrain/nexus/issues/4063 is ongoing
-@Ignore
 class RemoteStorageSpec extends StorageSpec {
 
   override def storageName: String = "external"
