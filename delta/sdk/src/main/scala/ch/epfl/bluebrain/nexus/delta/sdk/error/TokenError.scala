@@ -15,9 +15,10 @@ sealed abstract class TokenError(reason: String) extends SDKError {
 object TokenError {
 
   /**
-   * Signals that an HTTP error occurred when fetching the token
-   */
-  final case class TokenHttpError(cause: HttpClientError) extends TokenError(s"HTTP error when requesting token: ${cause.reason}")
+    * Signals that an HTTP error occurred when fetching the token
+    */
+  final case class TokenHttpError(cause: HttpClientError)
+      extends TokenError(s"HTTP error when requesting token: ${cause.reason}")
 
   /**
     * Signals that the token was missing from the authentication response
@@ -27,7 +28,7 @@ object TokenError {
 
   implicit val identityErrorEncoder: Encoder.AsObject[TokenError] = {
     Encoder.AsObject.instance[TokenError] {
-      case TokenHttpError(r) =>
+      case TokenHttpError(r)          =>
         JsonObject(keywords.tpe := "TokenHttpError", "reason" := r.reason)
       case TokenNotFoundInResponse(r) =>
         JsonObject(keywords.tpe -> "TokenNotFoundInResponse".asJson, "reason" := r.message)

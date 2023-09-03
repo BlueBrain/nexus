@@ -38,16 +38,16 @@ object AuthTokenProvider {
   }
 }
 
-
-
 private class AnonymousAuthTokenProvider extends AuthTokenProvider {
   override def apply(): UIO[Option[AuthToken]] = UIO.pure(None)
 }
 
-private class KeycloakAuthTokenProvider(auth: AuthenticateAs, httpClient: HttpClient, realms: Realms) extends AuthTokenProvider with MigrateEffectSyntax {
+private class KeycloakAuthTokenProvider(auth: AuthenticateAs, httpClient: HttpClient, realms: Realms)
+    extends AuthTokenProvider
+    with MigrateEffectSyntax {
   override def apply(): UIO[Option[AuthToken]] = {
     for {
-      realm <- realms.fetch(Label.unsafe(auth.realm)).toUIO
+      realm       <- realms.fetch(Label.unsafe(auth.realm)).toUIO
       accessToken <- requestAccessToken(realm, auth.user, auth.password)
     } yield Some(AuthToken(accessToken))
   }
@@ -58,29 +58,29 @@ private class KeycloakAuthTokenProvider(auth: AuthenticateAs, httpClient: HttpCl
   }
 
   private def requestToken(tokenEndpoint: Uri, user: String, password: Secret[String]) = {
-    httpClient.toJson(
-      HttpRequest(
-        method = POST,
-        uri = tokenEndpoint,
-        headers = Authorization(HttpCredentials.createBasicHttpCredentials(user, password.value)) :: Nil,
-        entity = akka.http.scaladsl.model
-          .FormData(
-            Map(
-              "scope" -> "openid",
-              "grant_type" -> "client_credentials"
+    httpClient
+      .toJson(
+        HttpRequest(
+          method = POST,
+          uri = tokenEndpoint,
+          headers = Authorization(HttpCredentials.createBasicHttpCredentials(user, password.value)) :: Nil,
+          entity = akka.http.scaladsl.model
+            .FormData(
+              Map(
+                "scope"      -> "openid",
+                "grant_type" -> "client_credentials"
+              )
             )
-          )
-          .toEntity
+            .toEntity
+        )
       )
-    ).hideErrorsWith(TokenHttpError)
+      .hideErrorsWith(TokenHttpError)
   }
 
   private def parseTokenFromResponse(json: Json): UIO[String] = {
     json.hcursor.get[String]("access_token") match {
       case Left(failure) => IO.terminate(TokenNotFoundInResponse(failure))
-      case Right(value) => UIO.pure(value)
+      case Right(value)  => UIO.pure(value)
     }
   }
 }
-
-

@@ -33,7 +33,7 @@ object RdfExceptionHandler {
   ): ExceptionHandler =
     ExceptionHandler {
       case err: IdentityError  => discardEntityAndForceEmit(err)
-      case err: TokenError => discardEntityAndForceEmit(err)
+      case err: TokenError     => discardEntityAndForceEmit(err)
       case AuthorizationFailed => discardEntityAndForceEmit(AuthorizationFailed: ServiceError)
       case err: RdfError       => discardEntityAndForceEmit(err)
       case err: Throwable      =>

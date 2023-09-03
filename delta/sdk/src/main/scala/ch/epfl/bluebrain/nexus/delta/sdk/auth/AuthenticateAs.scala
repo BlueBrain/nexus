@@ -4,7 +4,6 @@ import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import pureconfig.ConfigReader
 import pureconfig.generic.semiauto.deriveReader
 
-
 case class AuthenticateAs(user: String, password: Secret[String], realm: String)
 
 object AuthenticateAs {
