@@ -29,13 +29,7 @@ object AuthTokenProvider {
       case None         => new AnonymousAuthTokenProvider
     }
   }
-  def test(fixed: Option[AuthToken]): AuthTokenProvider = new AuthTokenProvider {
-    override def apply(): UIO[Option[AuthToken]] = UIO.pure(fixed)
-  }
-
-  def test: AuthTokenProvider = new AuthTokenProvider {
-    override def apply(): UIO[Option[AuthToken]] = UIO.pure(None)
-  }
+  def anonymousForTest: AuthTokenProvider = new AnonymousAuthTokenProvider
 }
 
 private class AnonymousAuthTokenProvider extends AuthTokenProvider {

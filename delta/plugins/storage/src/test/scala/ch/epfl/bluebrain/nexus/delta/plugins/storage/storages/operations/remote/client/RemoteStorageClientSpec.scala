@@ -43,7 +43,7 @@ class RemoteStorageClientSpec(docker: RemoteStorageDocker)
 
   private var client: RemoteDiskStorageClient      = _
   private var baseUri: BaseUri                     = _
-  private val authTokenProvider: AuthTokenProvider = AuthTokenProvider.test(None)
+  private val authTokenProvider: AuthTokenProvider = AuthTokenProvider.anonymousForTest
   private val bucket: Label                        = Label.unsafe(BucketName)
 
   override protected def beforeAll(): Unit = {

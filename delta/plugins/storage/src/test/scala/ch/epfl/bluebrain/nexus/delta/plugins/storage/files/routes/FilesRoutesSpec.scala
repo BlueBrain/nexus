@@ -53,7 +53,7 @@ class FilesRoutesSpec
   import akka.actor.typed.scaladsl.adapter._
   implicit val typedSystem: typed.ActorSystem[Nothing] = system.toTyped
   val httpClient: HttpClient                           = HttpClient()(httpClientConfig, system, s)
-  val authTokenProvider: AuthTokenProvider             = AuthTokenProvider.test
+  val authTokenProvider: AuthTokenProvider             = AuthTokenProvider.anonymousForTest
   val remoteDiskStorageClient                          = new RemoteDiskStorageClient(httpClient, authTokenProvider)
 
   // TODO: sort out how we handle this in tests

@@ -69,7 +69,7 @@ class FilesSpec(docker: RemoteStorageDocker)
     implicit val typedSystem: typed.ActorSystem[Nothing] = system.toTyped
     implicit val httpClient: HttpClient                  = HttpClient()(httpClientConfig, system, sc)
     implicit val caller: Caller                          = Caller(bob, Set(bob, Group("mygroup", realm), Authenticated(realm)))
-    implicit val authTokenProvider: AuthTokenProvider    = AuthTokenProvider.test
+    implicit val authTokenProvider: AuthTokenProvider    = AuthTokenProvider.anonymousForTest
     val remoteDiskStorageClient                          = new RemoteDiskStorageClient(httpClient, authTokenProvider)
 
     val tag        = UserTag.unsafe("tag")

@@ -48,7 +48,7 @@ class RemoteStorageLinkFileSpec(docker: RemoteStorageDocker)
   implicit val ec: ExecutionContext                 = system.dispatcher
   implicit private val httpConfig: HttpClientConfig = httpClientConfig
   private val httpClient: HttpClient                = HttpClient()
-  private val authTokenProvider: AuthTokenProvider  = AuthTokenProvider.test
+  private val authTokenProvider: AuthTokenProvider  = AuthTokenProvider.anonymousForTest
   private val remoteDiskStorageClient               = new RemoteDiskStorageClient(httpClient, authTokenProvider)
 
   private val iri      = iri"http://localhost/remote"
