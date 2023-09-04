@@ -45,10 +45,10 @@ object RemoteContextRef {
 
   /**
     * A reference to a context registered in a Nexus project
-    * @param id
-    *   the identifier it has been resolved to
+    * @param iri
+    *   the resolved iri
     * @param resource
-    *   the qualified reference to the revisioned Nexus resource
+    *   the qualified reference to the Nexus resource
     */
   final case class ProjectRemoteContextRef(iri: Iri, resource: ResourceContext) extends RemoteContextRef
 
