@@ -2,14 +2,26 @@
   "query": {
     "bool": {
       "must_not": {
-        "term": {
-          "@type": "https://bluebrain.github.io/nexus/vocabulary/CrossProject"
+        "bool": {
+          "should": [
+            {
+              "term": {
+                "@type": "https://bluebrain.github.io/nexus/vocabulary/CrossProject"
+              }
+            }
+          ]
         }
       },
       "filter": [
         {
-          "term": {
-            "@type": "https://bluebrain.github.io/nexus/vocabulary/Resolver"
+          "bool": {
+            "must": [
+              {
+                "term": {
+                  "@type": "https://bluebrain.github.io/nexus/vocabulary/Resolver"
+                }
+              }
+            ]
           }
         },
         {
