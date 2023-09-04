@@ -42,12 +42,10 @@ final class ResourcesImpl private (
       source: Json
   )(implicit caller: Caller): IO[ResourceRejection, DataResource] = {
     for {
-      projectContext             <- fetchContext.onCreate(projectRef)
-      schemeRef                  <- expandResourceRef(schema, projectContext)
-      (iri, compacted, expanded) <- sourceParser(projectRef, projectContext, source).map { j =>
-                                      (j.iri, j.compacted, j.expanded)
-                                    }
-      res                        <- eval(CreateResource(iri, projectRef, schemeRef, source, compacted, expanded, caller))
+      projectContext <- fetchContext.onCreate(projectRef)
+      schemeRef      <- expandResourceRef(schema, projectContext)
+      jsonld         <- sourceParser(projectRef, projectContext, source)
+      res            <- eval(CreateResource(jsonld.iri, projectRef, schemeRef, source, jsonld, caller))
     } yield res
   }.span("createResource")
 
@@ -58,13 +56,11 @@ final class ResourcesImpl private (
       source: Json
   )(implicit caller: Caller): IO[ResourceRejection, DataResource] = {
     for {
-      projectContext        <- fetchContext.onCreate(projectRef)
-      iri                   <- expandIri(id, projectContext)
-      schemeRef             <- expandResourceRef(schema, projectContext)
-      (compacted, expanded) <- sourceParser(projectRef, projectContext, iri, source).map { j =>
-                                 (j.compacted, j.expanded)
-                               }
-      res                   <- eval(CreateResource(iri, projectRef, schemeRef, source, compacted, expanded, caller))
+      projectContext <- fetchContext.onCreate(projectRef)
+      iri            <- expandIri(id, projectContext)
+      schemeRef      <- expandResourceRef(schema, projectContext)
+      jsonld         <- sourceParser(projectRef, projectContext, iri, source)
+      res            <- eval(CreateResource(iri, projectRef, schemeRef, source, jsonld, caller))
     } yield res
   }.span("createResource")
 
@@ -76,13 +72,11 @@ final class ResourcesImpl private (
       source: Json
   )(implicit caller: Caller): IO[ResourceRejection, DataResource] = {
     for {
-      projectContext        <- fetchContext.onModify(projectRef)
-      iri                   <- expandIri(id, projectContext)
-      schemeRefOpt          <- expandResourceRef(schemaOpt, projectContext)
-      (compacted, expanded) <- sourceParser(projectRef, projectContext, iri, source).map { j =>
-                                 (j.compacted, j.expanded)
-                               }
-      res                   <- eval(UpdateResource(iri, projectRef, schemeRefOpt, source, compacted, expanded, rev, caller))
+      projectContext <- fetchContext.onModify(projectRef)
+      iri            <- expandIri(id, projectContext)
+      schemeRefOpt   <- expandResourceRef(schemaOpt, projectContext)
+      jsonld         <- sourceParser(projectRef, projectContext, iri, source)
+      res            <- eval(UpdateResource(iri, projectRef, schemeRefOpt, source, jsonld, rev, caller))
     } yield res
   }.span("updateResource")
 
@@ -92,15 +86,12 @@ final class ResourcesImpl private (
       schemaOpt: Option[IdSegment]
   )(implicit caller: Caller): IO[ResourceRejection, DataResource] = {
     for {
-      projectContext        <- fetchContext.onModify(projectRef)
-      iri                   <- expandIri(id, projectContext)
-      schemaRefOpt          <- expandResourceRef(schemaOpt, projectContext)
-      resource              <- log.stateOr(projectRef, iri, ResourceNotFound(iri, projectRef, schemaRefOpt))
-      (compacted, expanded) <- sourceParser(projectRef, projectContext, iri, resource.source).map { j =>
-                                 (j.compacted, j.expanded)
-                               }
-      res                   <-
-        eval(RefreshResource(iri, projectRef, schemaRefOpt, compacted, expanded, resource.rev, caller))
+      projectContext <- fetchContext.onModify(projectRef)
+      iri            <- expandIri(id, projectContext)
+      schemaRefOpt   <- expandResourceRef(schemaOpt, projectContext)
+      resource       <- log.stateOr(projectRef, iri, ResourceNotFound(iri, projectRef, schemaRefOpt))
+      jsonld         <- sourceParser(projectRef, projectContext, iri, resource.source)
+      res            <- eval(RefreshResource(iri, projectRef, schemaRefOpt, jsonld, resource.rev, caller))
     } yield res
   }.span("refreshResource")
 

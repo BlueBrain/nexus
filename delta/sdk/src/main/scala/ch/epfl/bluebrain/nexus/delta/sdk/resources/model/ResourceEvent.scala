@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.IriEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.model.jsonld.RemoteContextRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
@@ -71,6 +72,8 @@ object ResourceEvent {
     *   the compacted JSON-LD representation of the resource
     * @param expanded
     *   the expanded JSON-LD representation of the resource
+    * @param remoteContexts
+    *   the remote contexts of the resource
     * @param rev
     *   the resource revision
     * @param instant
@@ -87,6 +90,7 @@ object ResourceEvent {
       source: Json,
       compacted: CompactedJsonLd,
       expanded: ExpandedJsonLd,
+      remoteContexts: Set[RemoteContextRef],
       rev: Int,
       instant: Instant,
       subject: Subject
@@ -111,6 +115,8 @@ object ResourceEvent {
     *   the compacted JSON-LD representation of the resource
     * @param expanded
     *   the expanded JSON-LD representation of the resource
+    * @param remoteContexts
+    *   the remote contexts of the resource
     * @param rev
     *   the resource revision
     * @param instant
@@ -127,6 +133,7 @@ object ResourceEvent {
       source: Json,
       compacted: CompactedJsonLd,
       expanded: ExpandedJsonLd,
+      remoteContexts: Set[RemoteContextRef],
       rev: Int,
       instant: Instant,
       subject: Subject
@@ -149,6 +156,8 @@ object ResourceEvent {
     *   the compacted JSON-LD representation of the resource
     * @param expanded
     *   the expanded JSON-LD representation of the resource
+    * @param remoteContexts
+    *   the remote contexts of the resource
     * @param rev
     *   the resource revision
     * @param instant
@@ -164,6 +173,7 @@ object ResourceEvent {
       types: Set[Iri],
       compacted: CompactedJsonLd,
       expanded: ExpandedJsonLd,
+      remoteContexts: Set[RemoteContextRef],
       rev: Int,
       instant: Instant,
       subject: Subject
@@ -258,6 +268,8 @@ object ResourceEvent {
     import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.CompactedJsonLd.Database._
     import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd.Database._
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
+
+    //TODO remove after migration of events
     implicit val configuration: Configuration = Serializer.circeConfiguration
 
     implicit val coder: Codec.AsObject[ResourceEvent] = deriveConfiguredCodec[ResourceEvent]
@@ -324,6 +336,7 @@ object ResourceEvent {
           .encodeObject(event)
           .remove("compacted")
           .remove("expanded")
+          .remove("remoteContexts")
           .add(keywords.context, context.value)
       }
     }

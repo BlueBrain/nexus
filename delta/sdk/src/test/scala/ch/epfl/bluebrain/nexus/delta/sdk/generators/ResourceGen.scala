@@ -7,7 +7,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.DataResource
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdResult
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
+import ch.epfl.bluebrain.nexus.delta.sdk.model.jsonld.RemoteContextRef
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{Resource, ResourceState}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
@@ -27,33 +29,31 @@ object ResourceGen extends IOValues {
       id: Iri,
       project: ProjectRef,
       source: Json,
+      jsonld: JsonLdResult,
       schema: ResourceRef = Latest(schemas.resources),
-      types: Set[Iri] = Set.empty,
       tags: Tags = Tags.empty,
       rev: Int = 1,
       deprecated: Boolean = false,
       subject: Subject = Anonymous
-  )(implicit resolution: RemoteContextResolution): ResourceState = {
-    val expanded  = ExpandedJsonLd(source).accepted.replaceId(id)
-    val compacted = expanded.toCompacted(source.topContextValueOrEmpty).accepted
+  ) =
     ResourceState(
       id,
       project,
       project,
       source,
-      compacted,
-      expanded,
+      jsonld.compacted,
+      jsonld.expanded,
+      RemoteContextRef(jsonld.remoteContexts),
       rev,
       deprecated,
       schema,
-      types,
+      jsonld.types,
       tags,
       Instant.EPOCH,
       subject,
       Instant.EPOCH,
       subject
     )
-  }
 
   def resource(
       id: Iri,
@@ -77,8 +77,10 @@ object ResourceGen extends IOValues {
       subject: Subject = Anonymous,
       deprecated: Boolean = false
   )(implicit resolution: RemoteContextResolution): DataResource = {
-    val expanded  = ExpandedJsonLd(source).accepted.replaceId(id)
-    val compacted = expanded.toCompacted(source.topContextValueOrEmpty).accepted
+    val result         = ExpandedJsonLd.explain(source).accepted
+    val expanded       = result.value.replaceId(id)
+    val compacted      = expanded.toCompacted(source.topContextValueOrEmpty).accepted
+    val remoteContexts = RemoteContextRef(result.remoteContexts)
     Resource(id, project, tags, schema, source, compacted, expanded)
     ResourceState(
       id,
@@ -87,6 +89,7 @@ object ResourceGen extends IOValues {
       source,
       compacted,
       expanded,
+      remoteContexts,
       rev,
       deprecated,
       schema,
@@ -113,6 +116,7 @@ object ResourceGen extends IOValues {
       resource.source,
       resource.compacted,
       resource.expanded,
+      Set.empty,
       rev,
       deprecated,
       resource.schema,
