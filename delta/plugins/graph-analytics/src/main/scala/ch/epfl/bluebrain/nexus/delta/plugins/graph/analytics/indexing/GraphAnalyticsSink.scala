@@ -1,5 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing
 
+import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
+import ch.epfl.bluebrain.nexus.delta.kernel.syntax.kamonSyntax
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchBulk, ElasticSearchClient, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchSink
@@ -34,6 +36,9 @@ final class GraphAnalyticsSink(
     override val maxWindow: FiniteDuration,
     index: IndexLabel
 ) extends Sink {
+
+  implicit private val kamonComponent: KamonMetricComponent =
+    KamonMetricComponent("graph-analytics")
 
   override type In = GraphAnalyticsResult
 
@@ -82,7 +87,7 @@ final class GraphAnalyticsSink(
 
     client.bulk(result.bulk, Refresh.True).map(ElasticSearchSink.markElems(_, elements, documentId)) <*
       client.updateByQuery(relationshipsQuery(result.updates), Set(index.value))
-  }
+  }.span("graphAnalyticsSink")
 }
 
 object GraphAnalyticsSink {

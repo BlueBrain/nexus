@@ -1,6 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
+import ch.epfl.bluebrain.nexus.delta.kernel.syntax.kamonSyntax
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.{BlazegraphSink, GraphResourceToNTriples}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
@@ -102,6 +104,9 @@ final class Batch[SinkFormat](
 )(implicit rcr: RemoteContextResolution)
     extends CompositeSink {
 
+  implicit private val kamonComponent: KamonMetricComponent =
+    KamonMetricComponent("batchCompositeSink")
+
   override type In = GraphResource
 
   override def inType: Typeable[GraphResource] = Typeable[GraphResource]
@@ -125,7 +130,7 @@ final class Batch[SinkFormat](
 
   override def apply(elements: Chunk[Elem[GraphResource]]): Task[Chunk[Elem[Unit]]] =
     for {
-      graph       <- query(elements)
+      graph       <- query(elements).span("batchQueryGraph")
       transformed <- graph match {
                        case Some(fullGraph) =>
                          elements.traverse { elem =>
