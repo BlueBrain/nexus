@@ -43,7 +43,7 @@
         "project": "myorg/myproj",
         "rev": 5
       },
-      "@type": "NexusContextRef"
+      "@type": "ProjectRemoteContextRef"
     }
   ],
   "rev": 2,
