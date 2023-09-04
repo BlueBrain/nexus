@@ -72,6 +72,8 @@ object ResourceEvent {
     *   the compacted JSON-LD representation of the resource
     * @param expanded
     *   the expanded JSON-LD representation of the resource
+    * @param remoteContexts
+    *   the remote contexts of the resource
     * @param rev
     *   the resource revision
     * @param instant
@@ -113,6 +115,8 @@ object ResourceEvent {
     *   the compacted JSON-LD representation of the resource
     * @param expanded
     *   the expanded JSON-LD representation of the resource
+    * @param remoteContexts
+    *   the remote contexts of the resource
     * @param rev
     *   the resource revision
     * @param instant
@@ -152,6 +156,8 @@ object ResourceEvent {
     *   the compacted JSON-LD representation of the resource
     * @param expanded
     *   the expanded JSON-LD representation of the resource
+    * @param remoteContexts
+    *   the remote contexts of the resource
     * @param rev
     *   the resource revision
     * @param instant
