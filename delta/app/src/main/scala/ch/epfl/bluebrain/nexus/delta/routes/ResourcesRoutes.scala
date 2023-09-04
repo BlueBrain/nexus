@@ -5,7 +5,6 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -18,14 +17,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaScheme
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{AnnotatedSource, RdfMarshalling}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources.{read => Read, write => Write}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.NexusSource.DecodingOption
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.{NexusSource, Resources}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{InvalidJsonLdFormat, InvalidSchemaRejection, ResourceNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{Resource, ResourceRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.{NexusSource, Resources}
 import io.circe.{Json, Printer}
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.bio.IO
@@ -292,30 +291,9 @@ object ResourcesRoutes {
       decodingOption: DecodingOption
   ): Route = new ResourcesRoutes(identities, aclCheck, resources, projectsDirectives, index).routes
 
-  implicit private val api: JsonLdApi = JsonLdJavaApi.lenient
-
   def asSourceWithMetadata(
       resource: ResourceF[Resource]
-  )(implicit baseUri: BaseUri, cr: RemoteContextResolution): IO[ResourceRejection, Json] = {
-    metadataJson(resource)
-      .map(mergeOriginalPayloadWithMetadata(resource.value.source, _))
-  }
-
-  private def metadataJson(resource: ResourceF[Resource])(implicit baseUri: BaseUri, cr: RemoteContextResolution) = {
-    implicit val resourceFJsonLdEncoder: JsonLdEncoder[ResourceF[Unit]] = ResourceF.defaultResourceFAJsonLdEncoder
-    resourceFJsonLdEncoder
-      .compact(resource.void)
-      .map(_.json)
-      .mapError(e => InvalidJsonLdFormat(Some(resource.id), e))
-  }
-
-  private def mergeOriginalPayloadWithMetadata(payload: Json, metadata: Json): Json = {
-    getId(payload)
-      .foldLeft(payload.deepMerge(metadata))(setId)
-  }
-
-  private def getId(payload: Json): Option[String]   = payload.hcursor.get[String]("@id").toOption
-  private def setId(payload: Json, id: String): Json =
-    payload.hcursor.downField("@id").set(Json.fromString(id)).top.getOrElse(payload)
+  )(implicit baseUri: BaseUri, cr: RemoteContextResolution): IO[ResourceRejection, Json] =
+    AnnotatedSource(resource, resource.value.source).mapError(e => InvalidJsonLdFormat(Some(resource.id), e))
 
 }

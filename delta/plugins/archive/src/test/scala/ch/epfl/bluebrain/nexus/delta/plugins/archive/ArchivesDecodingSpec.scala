@@ -4,7 +4,7 @@ import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.{FileReference, ResourceReference}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.{DecodingFailed, InvalidJsonLdFormat, UnexpectedArchiveId}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRepresentation.{CompactedJsonLd, Dot, ExpandedJsonLd, NTriples, SourceJson}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRepresentation.{AnnotatedSourceJson, CompactedJsonLd, Dot, ExpandedJsonLd, NTriples, SourceJson}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.AbsolutePath
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
@@ -140,11 +140,12 @@ class ArchivesDecodingSpec
 
       "having a resource reference with specific format" in {
         val map = Map(
-          "compacted" -> CompactedJsonLd,
-          "expanded"  -> ExpandedJsonLd,
-          "n-triples" -> NTriples,
-          "dot"       -> Dot,
-          "source"    -> SourceJson
+          "compacted"        -> CompactedJsonLd,
+          "expanded"         -> ExpandedJsonLd,
+          "n-triples"        -> NTriples,
+          "dot"              -> Dot,
+          "source"           -> SourceJson,
+          "annotated-source" -> AnnotatedSourceJson
         )
         forAll(map.toList) { case (format, expFormat) =>
           val resourceId = iri"http://localhost/${genString()}"

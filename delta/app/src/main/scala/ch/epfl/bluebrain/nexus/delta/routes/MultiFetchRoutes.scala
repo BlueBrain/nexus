@@ -48,7 +48,10 @@ class MultiFetchRoutes(
     }
 
   private def selectPrinter(request: MultiFetchRequest) =
-    if (request.format == ResourceRepresentation.SourceJson)
+    if (
+      request.format == ResourceRepresentation.SourceJson ||
+      request.format == ResourceRepresentation.AnnotatedSourceJson
+    )
       sourcePrinter
     else
       defaultPrinter
