@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resources.model
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdResult
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
@@ -59,10 +59,8 @@ object ResourceCommand {
     *   the schema used to constrain the resource
     * @param source
     *   the representation of the resource as posted by the subject
-    * @param compacted
-    *   the compacted JSON-LD representation of the resource
-    * @param expanded
-    *   the expanded JSON-LD representation of the resource
+    * @param jsonld
+    *   the jsonld representation of the resource
     * @param caller
     *   the subject which created this event
     */
@@ -71,8 +69,7 @@ object ResourceCommand {
       project: ProjectRef,
       schema: ResourceRef,
       source: Json,
-      compacted: CompactedJsonLd,
-      expanded: ExpandedJsonLd,
+      jsonld: JsonLdResult,
       caller: Caller
   ) extends ResourceCommand {
 
@@ -92,10 +89,8 @@ object ResourceCommand {
     *   the optional schema of the resource. A None value ignores the schema from this command
     * @param source
     *   the representation of the resource as posted by the subject
-    * @param compacted
-    *   the compacted JSON-LD representation of the resource
-    * @param expanded
-    *   the expanded JSON-LD representation of the resource
+    * @param jsonld
+    *   the jsonld representation of the resource
     * @param rev
     *   the last known revision of the resource
     * @param caller
@@ -106,8 +101,7 @@ object ResourceCommand {
       project: ProjectRef,
       schemaOpt: Option[ResourceRef],
       source: Json,
-      compacted: CompactedJsonLd,
-      expanded: ExpandedJsonLd,
+      jsonld: JsonLdResult,
       rev: Int,
       caller: Caller
   ) extends ResourceCommand
@@ -124,10 +118,8 @@ object ResourceCommand {
     *   the project where the resource belongs
     * @param schemaOpt
     *   the optional schema of the resource. A None value ignores the schema from this command
-    * @param compacted
-    *   the compacted JSON-LD representation of the resource
-    * @param expanded
-    *   the expanded JSON-LD representation of the resource
+    * @param jsonld
+    *   the jsonld representation of the resource
     * @param rev
     *   the last known revision of the resource
     * @param caller
@@ -137,8 +129,7 @@ object ResourceCommand {
       id: Iri,
       project: ProjectRef,
       schemaOpt: Option[ResourceRef],
-      compacted: CompactedJsonLd,
-      expanded: ExpandedJsonLd,
+      jsonld: JsonLdResult,
       rev: Int,
       caller: Caller
   ) extends ResourceCommand

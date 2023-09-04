@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.{FetchReso
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport.ResolverReport
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{ResolverResolutionRejection, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.NexusSource.DecodingOption
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{BlankResourceId, IncorrectRev, InvalidJsonLdFormat, InvalidResource, InvalidSchemaRejection, ProjectContextRejection, ResourceAlreadyExists, ResourceIsDeprecated, ResourceNotFound, RevisionNotFound, SchemaIsDeprecated, TagNotFound, UnexpectedResourceId, UnexpectedResourceSchema}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{BlankResourceId, IncorrectRev, InvalidJsonLdFormat, InvalidResource, InvalidSchemaRejection, ProjectContextRejection, ReservedResourceId, ResourceAlreadyExists, ResourceIsDeprecated, ResourceNotFound, RevisionNotFound, SchemaIsDeprecated, TagNotFound, UnexpectedResourceId, UnexpectedResourceSchema}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
@@ -225,6 +225,14 @@ class ResourcesImplSpec
           BlankResourceId
       }
 
+      "reject with ReservedResourceId" in {
+        forAll(List(Latest(schemas.resources), Latest(schema1.id))) { schemaRef =>
+          val myId                 = contexts + "some.json"
+          val sourceWithReservedId = source deepMerge json"""{"@id": "$myId"}"""
+          resources.create(myId, projectRef, schemaRef, sourceWithReservedId).rejectedWith[ReservedResourceId]
+        }
+      }
+
       "reject if it already exists" in {
         resources.create(myId, projectRef, schemas.resources, source).rejected shouldEqual
           ResourceAlreadyExists(myId, projectRef)
@@ -285,6 +293,15 @@ class ResourcesImplSpec
         val unknownResource = nxv + "fail"
         val sourceMyIdX     =
           source.addContext(contexts.metadata).addContext(unknownResource) deepMerge json"""{"@id": "$myIdX"}"""
+        resources.create(projectRef, resourceSchema, sourceMyIdX).rejectedWith[InvalidJsonLdFormat]
+      }
+
+      "reject for an incorrect payload" in {
+        val myIdX       = nxv + "myidx"
+        val sourceMyIdX =
+          source.addContext(
+            contexts.metadata
+          ) deepMerge json"""{"other": {"@id": " http://nexus.example.com/myid"}}""" deepMerge json"""{"@id": "$myIdX"}"""
         resources.create(projectRef, resourceSchema, sourceMyIdX).rejectedWith[InvalidJsonLdFormat]
       }
     }

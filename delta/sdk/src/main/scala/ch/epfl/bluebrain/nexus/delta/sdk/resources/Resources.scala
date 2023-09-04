@@ -243,15 +243,15 @@ object Resources {
     // format: off
     def created(e: ResourceCreated): Option[ResourceState] =
       Option.when(state.isEmpty){
-        ResourceState(e.id, e.project, e.schemaProject, e.source, e.compacted, e.expanded, e.rev, deprecated = false, e.schema, e.types, Tags.empty, e.instant, e.subject, e.instant, e.subject)
+        ResourceState(e.id, e.project, e.schemaProject, e.source, e.compacted, e.expanded, e.remoteContexts, e.rev, deprecated = false, e.schema, e.types, Tags.empty, e.instant, e.subject, e.instant, e.subject)
       }
 
     def updated(e: ResourceUpdated): Option[ResourceState] = state.map {
-      _.copy(rev = e.rev, types = e.types, source = e.source, compacted = e.compacted, expanded = e.expanded, updatedAt = e.instant, updatedBy = e.subject)
+      _.copy(rev = e.rev, types = e.types, source = e.source, compacted = e.compacted, expanded = e.expanded, remoteContexts = e.remoteContexts, updatedAt = e.instant, updatedBy = e.subject)
     }
 
     def refreshed(e: ResourceRefreshed): Option[ResourceState] = state.map {
-      _.copy(rev = e.rev, types = e.types, compacted = e.compacted, expanded = e.expanded, updatedAt = e.instant, updatedBy = e.subject)
+      _.copy(rev = e.rev, types = e.types, compacted = e.compacted, expanded = e.expanded, remoteContexts = e.remoteContexts,updatedAt = e.instant, updatedBy = e.subject)
     }
 
     def tagAdded(e: ResourceTagAdded): Option[ResourceState] = state.map { s =>
@@ -279,7 +279,7 @@ object Resources {
 
   @SuppressWarnings(Array("OptionGet"))
   private[delta] def evaluate(
-      resourceValidator: ValidateResource
+      validateResource: ValidateResource
   )(state: Option[ResourceState], cmd: ResourceCommand)(implicit
       clock: Clock[UIO]
   ): IO[ResourceRejection, ResourceEvent] = {
@@ -291,24 +291,25 @@ object Resources {
         id: Iri,
         expanded: ExpandedJsonLd
     ): IO[ResourceRejection, (ResourceRef.Revision, ProjectRef)] = {
-      resourceValidator
+      validateResource
         .apply(projectRef, schemaRef, caller, id, expanded)
         .map(result => (result.schema, result.project))
     }
 
-    def create(c: CreateResource) =
+    def create(c: CreateResource) = {
+      import c.jsonld._
       state match {
         case None =>
           // format: off
           for {
-            (schemaRev, schemaProject) <- validate(c.project, c.schema, c.caller, c.id, c.expanded)
-            types                       = c.expanded.cursor.getTypes.getOrElse(Set.empty)
+            (schemaRev, schemaProject) <- validate(c.project, c.schema, c.caller, c.id, expanded)
             t                          <- IOUtils.instant
-          } yield ResourceCreated(c.id, c.project, schemaRev, schemaProject, types, c.source, c.compacted, c.expanded, 1, t, c.subject)
+          } yield ResourceCreated(c.id, c.project, schemaRev, schemaProject, types, c.source, compacted, expanded, remoteContextRefs, 1, t, c.subject)
           // format: on
 
         case _ => IO.raiseError(ResourceAlreadyExists(c.id, c.project))
       }
+    }
 
     def stateWhereResourceExists(c: ModifyCommand) = {
       state match {
@@ -341,46 +342,27 @@ object Resources {
       }
     }
 
-    def update(c: UpdateResource) = {
+    def update(u: UpdateResource) = {
+      import u.jsonld._
+      // format: off
       for {
-        s                          <- stateWhereResourceIsEditable(c)
-        (schemaRev, schemaProject) <-
-          validate(s.project, c.schemaOpt.getOrElse(ResourceRef.Latest(s.schema.iri)), c.caller, c.id, c.expanded)
-        types                       = c.expanded.cursor.getTypes.getOrElse(Set.empty)
+        s                          <- stateWhereResourceIsEditable(u)
+        schemaRef = u.schemaOpt.getOrElse(ResourceRef.Latest(s.schema.iri))
+        (schemaRev, schemaProject) <- validate(s.project, schemaRef, u.caller, u.id, expanded)
         time                       <- IOUtils.instant
-      } yield ResourceUpdated(
-        c.id,
-        c.project,
-        schemaRev,
-        schemaProject,
-        types,
-        c.source,
-        c.compacted,
-        c.expanded,
-        s.rev + 1,
-        time,
-        c.subject
-      )
+      } yield ResourceUpdated(u.id, u.project, schemaRev, schemaProject, types, u.source, compacted, expanded, remoteContextRefs, s.rev + 1, time, u.subject)
+      // format: on
     }
 
     def refresh(c: RefreshResource) = {
+      import c.jsonld._
+      // format: off
       for {
         s                          <- stateWhereResourceIsEditable(c)
-        (schemaRev, schemaProject) <- validate(s.project, c.schemaOpt.getOrElse(s.schema), c.caller, c.id, c.expanded)
-        types                       = c.expanded.cursor.getTypes.getOrElse(Set.empty)
+        (schemaRev, schemaProject) <- validate(s.project, c.schemaOpt.getOrElse(s.schema), c.caller, c.id, expanded)
         time                       <- IOUtils.instant
-      } yield ResourceRefreshed(
-        c.id,
-        c.project,
-        schemaRev,
-        schemaProject,
-        types,
-        c.compacted,
-        c.expanded,
-        s.rev + 1,
-        time,
-        c.subject
-      )
+      } yield ResourceRefreshed(c.id, c.project, schemaRev, schemaProject, types, compacted, expanded, remoteContextRefs, s.rev + 1, time, c.subject)
+      // format: on
     }
 
     def tag(c: TagResource) = {

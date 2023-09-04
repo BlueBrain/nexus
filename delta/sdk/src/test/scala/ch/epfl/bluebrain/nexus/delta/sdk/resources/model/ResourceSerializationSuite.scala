@@ -1,10 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resources.model
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schema, schemas}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.sdk.SerializationSuite
-import ch.epfl.bluebrain.nexus.delta.sdk.generators.ResourceGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceEvent._
@@ -21,16 +19,11 @@ class ResourceSerializationSuite extends SerializationSuite {
 
   private val sseEncoder = ResourceEvent.sseEncoder
 
-  val instant: Instant       = Instant.EPOCH
-  val realm: Label           = Label.unsafe("myrealm")
-  val subject: Subject       = User("username", realm)
-  val org: Label             = Label.unsafe("myorg")
-  val proj: Label            = Label.unsafe("myproj")
-  val projectRef: ProjectRef = ProjectRef(org, proj)
-  val myId: IriOrBNode.Iri   = nxv + "myId"
+  val instant: Instant = Instant.EPOCH
+  val realm: Label     = Label.unsafe("myrealm")
+  val subject: Subject = User("username", realm)
 
-  val resource: Resource =
-    ResourceGen.resource(myId, projectRef, jsonContentOf("resources/resource.json", "id" -> myId))
+  import ch.epfl.bluebrain.nexus.delta.sdk.resources.ResourceFixture._
 
   private val created    =
     ResourceCreated(
@@ -38,10 +31,11 @@ class ResourceSerializationSuite extends SerializationSuite {
       projectRef,
       Revision(schemas.resources, 1),
       projectRef,
-      Set(schema.Person),
-      resource.source,
-      resource.compacted,
-      resource.expanded,
+      types,
+      source,
+      compacted,
+      expanded,
+      remoteContextRefs,
       1,
       instant,
       subject
@@ -52,10 +46,11 @@ class ResourceSerializationSuite extends SerializationSuite {
       projectRef,
       Revision(schemas.resources, 1),
       projectRef,
-      Set(schema.Person),
-      resource.source,
-      resource.compacted,
-      resource.expanded,
+      types,
+      source,
+      compacted,
+      expanded,
+      remoteContextRefs,
       2,
       instant,
       subject
@@ -65,9 +60,10 @@ class ResourceSerializationSuite extends SerializationSuite {
     projectRef,
     Revision(schemas.resources, 1),
     projectRef,
-    Set(schema.Person),
-    resource.compacted,
-    resource.expanded,
+    types,
+    compacted,
+    expanded,
+    remoteContextRefs,
     2,
     instant,
     subject
@@ -76,7 +72,7 @@ class ResourceSerializationSuite extends SerializationSuite {
     ResourceTagAdded(
       myId,
       projectRef,
-      Set(schema.Person),
+      types,
       1,
       UserTag.unsafe("mytag"),
       3,
@@ -87,7 +83,7 @@ class ResourceSerializationSuite extends SerializationSuite {
     ResourceDeprecated(
       myId,
       projectRef,
-      Set(schema.Person),
+      types,
       4,
       instant,
       subject
@@ -96,7 +92,7 @@ class ResourceSerializationSuite extends SerializationSuite {
     ResourceTagDeleted(
       myId,
       projectRef,
-      Set(schema.Person),
+      types,
       UserTag.unsafe("mytag"),
       5,
       instant,
@@ -148,13 +144,14 @@ class ResourceSerializationSuite extends SerializationSuite {
     myId,
     projectRef,
     projectRef,
-    resource.source,
-    resource.compacted,
-    resource.expanded,
+    source,
+    compacted,
+    expanded,
+    remoteContextRefs,
     rev = 2,
     deprecated = false,
     Revision(schemas.resources, 1),
-    Set(schema.Person),
+    types,
     Tags(UserTag.unsafe("mytag") -> 3),
     createdAt = instant,
     createdBy = subject,

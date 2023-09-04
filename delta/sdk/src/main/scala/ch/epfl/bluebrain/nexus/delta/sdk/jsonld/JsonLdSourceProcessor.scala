@@ -12,6 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.jsonld.RemoteContextRef
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -78,6 +79,11 @@ object JsonLdSourceProcessor {
       * The collection of known types
       */
     def types: Set[Iri] = expanded.getTypes.getOrElse(Set.empty)
+
+    /**
+      * The references for the remote contexts
+      */
+    def remoteContextRefs: Set[RemoteContextRef] = RemoteContextRef(remoteContexts)
   }
 
   /**
