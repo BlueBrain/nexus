@@ -12,41 +12,41 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
 import monix.execution.Scheduler
 
-trait RouteFixtures extends TestHelpers with IOValues {
+trait RouteFixtures {
   implicit private val cl: ClassLoader = getClass.getClassLoader
 
   implicit val api: JsonLdApi = JsonLdJavaApi.strict
 
   implicit def rcr: RemoteContextResolution =
-    RemoteContextResolution.fixed(
-      contexts.acls                  -> ContextValue.fromFile("contexts/acls.json").accepted,
-      contexts.aclsMetadata          -> ContextValue.fromFile("contexts/acls-metadata.json").accepted,
-      contexts.metadata              -> ContextValue.fromFile("contexts/metadata.json").accepted,
-      contexts.error                 -> ContextValue.fromFile("contexts/error.json").accepted,
-      contexts.validation            -> ContextValue.fromFile("contexts/validation.json").accepted,
-      contexts.organizations         -> ContextValue.fromFile("contexts/organizations.json").accepted,
-      contexts.organizationsMetadata -> ContextValue.fromFile("contexts/organizations-metadata.json").accepted,
-      contexts.identities            -> ContextValue.fromFile("contexts/identities.json").accepted,
-      contexts.permissions           -> ContextValue.fromFile("contexts/permissions.json").accepted,
-      contexts.permissionsMetadata   -> ContextValue.fromFile("contexts/permissions-metadata.json").accepted,
-      contexts.projects              -> ContextValue.fromFile("contexts/projects.json").accepted,
-      contexts.projectsMetadata      -> ContextValue.fromFile("contexts/projects-metadata.json").accepted,
-      contexts.realms                -> ContextValue.fromFile("contexts/realms.json").accepted,
-      contexts.realmsMetadata        -> ContextValue.fromFile("contexts/realms-metadata.json").accepted,
-      contexts.resolvers             -> ContextValue.fromFile("contexts/resolvers.json").accepted,
-      contexts.resolversMetadata     -> ContextValue.fromFile("contexts/resolvers-metadata.json").accepted,
-      contexts.search                -> ContextValue.fromFile("contexts/search.json").accepted,
-      contexts.shacl                 -> ContextValue.fromFile("contexts/shacl.json").accepted,
-      contexts.schemasMetadata       -> ContextValue.fromFile("contexts/schemas-metadata.json").accepted,
-      contexts.offset                -> ContextValue.fromFile("contexts/offset.json").accepted,
-      contexts.statistics            -> ContextValue.fromFile("contexts/statistics.json").accepted,
-      contexts.supervision           -> ContextValue.fromFile("contexts/supervision.json").accepted,
-      contexts.tags                  -> ContextValue.fromFile("contexts/tags.json").accepted,
-      contexts.version               -> ContextValue.fromFile("/contexts/version.json").accepted,
-      contexts.quotas                -> ContextValue.fromFile("/contexts/quotas.json").accepted
+    RemoteContextResolution.fixedIO(
+      contexts.acls                  -> ContextValue.fromFile("contexts/acls.json"),
+      contexts.aclsMetadata          -> ContextValue.fromFile("contexts/acls-metadata.json"),
+      contexts.metadata              -> ContextValue.fromFile("contexts/metadata.json"),
+      contexts.error                 -> ContextValue.fromFile("contexts/error.json"),
+      contexts.validation            -> ContextValue.fromFile("contexts/validation.json"),
+      contexts.organizations         -> ContextValue.fromFile("contexts/organizations.json"),
+      contexts.organizationsMetadata -> ContextValue.fromFile("contexts/organizations-metadata.json"),
+      contexts.identities            -> ContextValue.fromFile("contexts/identities.json"),
+      contexts.permissions           -> ContextValue.fromFile("contexts/permissions.json"),
+      contexts.permissionsMetadata   -> ContextValue.fromFile("contexts/permissions-metadata.json"),
+      contexts.projects              -> ContextValue.fromFile("contexts/projects.json"),
+      contexts.projectsMetadata      -> ContextValue.fromFile("contexts/projects-metadata.json"),
+      contexts.realms                -> ContextValue.fromFile("contexts/realms.json"),
+      contexts.realmsMetadata        -> ContextValue.fromFile("contexts/realms-metadata.json"),
+      contexts.remoteContexts        -> ContextValue.fromFile("contexts/remote-contexts.json"),
+      contexts.resolvers             -> ContextValue.fromFile("contexts/resolvers.json"),
+      contexts.resolversMetadata     -> ContextValue.fromFile("contexts/resolvers-metadata.json"),
+      contexts.search                -> ContextValue.fromFile("contexts/search.json"),
+      contexts.shacl                 -> ContextValue.fromFile("contexts/shacl.json"),
+      contexts.schemasMetadata       -> ContextValue.fromFile("contexts/schemas-metadata.json"),
+      contexts.offset                -> ContextValue.fromFile("contexts/offset.json"),
+      contexts.statistics            -> ContextValue.fromFile("contexts/statistics.json"),
+      contexts.supervision           -> ContextValue.fromFile("contexts/supervision.json"),
+      contexts.tags                  -> ContextValue.fromFile("contexts/tags.json"),
+      contexts.version               -> ContextValue.fromFile("/contexts/version.json"),
+      contexts.quotas                -> ContextValue.fromFile("/contexts/quotas.json")
     )
 
   implicit val ordering: JsonKeyOrdering =

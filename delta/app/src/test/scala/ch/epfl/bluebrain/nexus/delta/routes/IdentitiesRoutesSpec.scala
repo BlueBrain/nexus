@@ -11,10 +11,16 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfExceptionHandler
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.{RouteFixtures, RouteHelpers}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group}
-import ch.epfl.bluebrain.nexus.testkit.{CirceEq, IOValues}
+import ch.epfl.bluebrain.nexus.testkit.{CirceEq, IOValues, TestHelpers}
 import org.scalatest.matchers.should.Matchers
 
-class IdentitiesRoutesSpec extends RouteHelpers with Matchers with CirceEq with RouteFixtures with IOValues {
+class IdentitiesRoutesSpec
+    extends RouteHelpers
+    with Matchers
+    with CirceEq
+    with RouteFixtures
+    with IOValues
+    with TestHelpers {
 
   private val caller = Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
 

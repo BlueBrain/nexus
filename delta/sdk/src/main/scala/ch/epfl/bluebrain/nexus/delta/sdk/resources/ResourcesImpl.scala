@@ -157,11 +157,11 @@ final class ResourcesImpl private (
       res            <- eval(DeprecateResource(iri, projectRef, schemeRefOpt, rev, caller))
     } yield res).span("deprecateResource")
 
-  override def fetch(
+  def fetchState(
       id: IdSegmentRef,
       projectRef: ProjectRef,
       schemaOpt: Option[IdSegment]
-  ): IO[ResourceFetchRejection, DataResource] = {
+  ): IO[ResourceFetchRejection, ResourceState] = {
     for {
       pc           <- fetchContext.onRead(projectRef)
       iri          <- expandIri(id.value, pc)
@@ -175,8 +175,14 @@ final class ResourcesImpl private (
                           log.stateOr(projectRef, iri, tag, notFound, TagNotFound(tag))
                       }
       _            <- IO.raiseWhen(schemaRefOpt.exists(_.iri != state.schema.iri))(notFound)
-    } yield state.toResource
+    } yield state
   }.span("fetchResource")
+
+  override def fetch(
+      id: IdSegmentRef,
+      projectRef: ProjectRef,
+      schemaOpt: Option[IdSegment]
+  ): IO[ResourceFetchRejection, DataResource] = fetchState(id, projectRef, schemaOpt).map(_.toResource)
 
   private def eval(cmd: ResourceCommand): IO[ResourceRejection, DataResource] =
     log.evaluate(cmd.project, cmd.id, cmd).map(_._2.toResource)
