@@ -78,7 +78,7 @@ where...
 - `{format}`: String - the format we expect for the resource in the archive.
     * Only allowed for Resource type
     * Optional and defaults to compacted
-    * Accepts the following values: source (to get the original payload), compacted, expanded, n-triples, dot
+    * Accepts the following values: source (to get the original payload), annotated-source (to get the original payload with metadata), compacted, expanded, n-triples, dot
     * Can not be present at the same time as `originalSource` field.
 - `{rev}`: Int - the revision of the resource. This field is optional. It defaults to the latest revision.
 - `{tag}`: String - the tag of the resource. This field is optional. This field cannot be present at the same time as 
