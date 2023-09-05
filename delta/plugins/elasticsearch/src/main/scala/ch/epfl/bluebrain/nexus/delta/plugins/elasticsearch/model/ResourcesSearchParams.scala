@@ -58,7 +58,14 @@ final case class ResourcesSearchParams(
 
 object ResourcesSearchParams {
 
-  sealed trait TypeOperator extends Product with Serializable
+  sealed trait TypeOperator extends Product with Serializable {
+
+    /** Turn `And` into `Or` and vice-versa */
+    def negate: TypeOperator = this match {
+      case TypeOperator.And => TypeOperator.Or
+      case TypeOperator.Or  => TypeOperator.And
+    }
+  }
 
   object TypeOperator {
     case object And extends TypeOperator
