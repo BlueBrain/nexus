@@ -323,24 +323,19 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap {
       }
     }
 
-    "fail fetching a resource without resources/read permission" in {
+    "fail fetching a resource information without resources/read permission" in {
       val endpoints = List(
         "/v1/resources/myorg/myproject/_/myid2",
-        s"/v1/resources/myorg/myproject/myschema/$myId2Encoded"
+        "/v1/resources/myorg/myproject/_/myid2?rev=1",
+        "/v1/resources/myorg/myproject/_/myid2?tag=mytag",
+        s"/v1/resources/myorg/myproject/myschema/$myId2Encoded",
+        "/v1/resources/myorg/myproject/_/myid2/source",
+        "/v1/resources/myorg/myproject/_/myid2/source?annotate=true",
+        "/v1/resources/myorg/myproject/_/myid2/remote-contexts",
+        "/v1/resources/myorg/myproject/_/myid2/tags"
       )
       forAll(endpoints) { endpoint =>
-        forAll(List("", "?rev=1", "?tag=mytag")) { suffix =>
-          Get(s"$endpoint$suffix") ~> routes ~> check {
-            response.status shouldEqual StatusCodes.Forbidden
-            response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
-          }
-        }
-      }
-    }
-
-    "fail fetching a resource original payload without resources/read permission" in {
-      forAll(List("", "?annotate=true")) { suffix =>
-        Get(s"/v1/resources/myorg/myproject/_/myid2/source$suffix") ~> routes ~> check {
+        Get(endpoint) ~> routes ~> check {
           response.status shouldEqual StatusCodes.Forbidden
           response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
         }
@@ -383,14 +378,60 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap {
       }
     }
 
-    "return not found if fetching a resource original payload that does not exist" in {
-      Get("/v1/resources/myorg/myproject/_/wrongid/source") ~> routes ~> check {
-        status shouldEqual StatusCodes.NotFound
-        response.asJson shouldEqual jsonContentOf(
-          "/resources/errors/not-found.json",
-          "id"   -> "https://bluebrain.github.io/nexus/vocabulary/wrongid",
-          "proj" -> "myorg/myproject"
-        )
+    "fetch a resource remote contexts" in {
+      val suffix              = genString()
+      val idWithRemoteContext = nxv + suffix
+      val payload             = jsonContentOf("resources/resource.json", "id" -> idWithRemoteContext).deepMerge(resourceCtx)
+      Post("/v1/resources/myorg/myproject", payload.toEntity) ~> routes ~> check {
+        status shouldEqual StatusCodes.Created
+      }
+
+      val tag        = "mytag"
+      val tagPayload = json"""{"tag": "$tag", "rev": 1}"""
+      Post(s"/v1/resources/myorg/myproject/_/$suffix/tags?rev=1", tagPayload.toEntity) ~> routes ~> check {
+        status shouldEqual StatusCodes.Created
+      }
+
+      val endpoints = List(
+        s"/v1/resources/myorg/myproject/_/$suffix/remote-contexts",
+        s"/v1/resources/myorg/myproject/_/$suffix/remote-contexts?rev=1",
+        s"/v1/resources/myorg/myproject/_/$suffix/remote-contexts?tag=$tag"
+      )
+
+      forAll(endpoints) { endpoint =>
+        Get(endpoint) ~> routes ~> check {
+          status shouldEqual StatusCodes.OK
+          response.asJson shouldEqual
+            json"""{
+                     "@context" : "https://bluebrain.github.io/nexus/contexts/remote-contexts.json",
+                     "remoteContexts" : [
+                       { "@type": "StaticContextRef", "iri": "https://bluebrain.github.io/nexus/contexts/metadata.json" }
+                     ]
+                  }"""
+        }
+      }
+
+    }
+
+    "return not found when a resource does not exist" in {
+      val endpoints = List(
+        "/v1/resources/myorg/myproject/_/wrongid",
+        "/v1/resources/myorg/myproject/_/wrongid?rev=1",
+        "/v1/resources/myorg/myproject/_/wrongid?tag=mytag",
+        "/v1/resources/myorg/myproject/_/wrongid/source",
+        "/v1/resources/myorg/myproject/_/wrongid/source?annotate=true",
+        "/v1/resources/myorg/myproject/_/wrongid/remote-contexts",
+        "/v1/resources/myorg/myproject/_/wrongid/tags"
+      )
+      forAll(endpoints) { endpoint =>
+        Get(endpoint) ~> routes ~> check {
+          status shouldEqual StatusCodes.NotFound
+          response.asJson shouldEqual jsonContentOf(
+            "/resources/errors/not-found.json",
+            "id"   -> "https://bluebrain.github.io/nexus/vocabulary/wrongid",
+            "proj" -> "myorg/myproject"
+          )
+        }
       }
     }
 

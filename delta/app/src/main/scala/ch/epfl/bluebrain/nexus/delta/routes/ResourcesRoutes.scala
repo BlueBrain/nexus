@@ -27,7 +27,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resources.{NexusSource, Resources}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{InvalidJsonLdFormat, InvalidSchemaRejection, ResourceNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{Resource, ResourceRejection}
 import io.circe.{Json, Printer}
-import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.bio.IO
 import monix.execution.Scheduler
 
@@ -62,7 +61,6 @@ final class ResourcesRoutes(
     with CirceUnmarshalling
     with RdfMarshalling {
 
-  import baseUri.prefixSegment
   import schemeDirectives._
 
   private val resourceSchema = schemas.resources
@@ -79,13 +77,11 @@ final class ResourcesRoutes(
               // Create a resource without schema nor id segment
               (post & pathEndOrSingleSlash & noParameter("rev") & entity(as[NexusSource]) & indexingMode) {
                 (source, mode) =>
-                  operationName(s"$prefixSegment/resources/{org}/{project}") {
-                    authorizeFor(ref, Write).apply {
-                      emit(
-                        Created,
-                        resources.create(ref, resourceSchema, source.value).tapEval(index(ref, _, mode)).map(_.void)
-                      )
-                    }
+                  authorizeFor(ref, Write).apply {
+                    emit(
+                      Created,
+                      resources.create(ref, resourceSchema, source.value).tapEval(index(ref, _, mode)).map(_.void)
+                    )
                   }
               },
               (idSegment & indexingMode) { (schema, mode) =>
@@ -93,167 +89,163 @@ final class ResourcesRoutes(
                 concat(
                   // Create a resource with schema but without id segment
                   (post & pathEndOrSingleSlash & noParameter("rev")) {
-                    operationName(s"$prefixSegment/resources/{org}/{project}/{schema}") {
-                      authorizeFor(ref, Write).apply {
-                        entity(as[NexusSource]) { source =>
-                          emit(
-                            Created,
-                            resources
-                              .create(ref, schema, source.value)
-                              .tapEval(index(ref, _, mode))
-                              .map(_.void)
-                              .rejectWhen(wrongJsonOrNotFound)
-                          )
-                        }
+                    authorizeFor(ref, Write).apply {
+                      entity(as[NexusSource]) { source =>
+                        emit(
+                          Created,
+                          resources
+                            .create(ref, schema, source.value)
+                            .tapEval(index(ref, _, mode))
+                            .map(_.void)
+                            .rejectWhen(wrongJsonOrNotFound)
+                        )
                       }
                     }
                   },
                   idSegment { id =>
                     concat(
                       pathEndOrSingleSlash {
-                        operationName(s"$prefixSegment/resources/{org}/{project}/{schema}/{id}") {
-                          concat(
-                            // Create or update a resource
-                            put {
-                              authorizeFor(ref, Write).apply {
-                                (parameter("rev".as[Int].?) & pathEndOrSingleSlash & entity(as[NexusSource])) {
-                                  case (None, source)      =>
-                                    // Create a resource with schema and id segments
-                                    emit(
-                                      Created,
-                                      resources
-                                        .create(id, ref, schema, source.value)
-                                        .tapEval(index(ref, _, mode))
-                                        .map(_.void)
-                                        .rejectWhen(wrongJsonOrNotFound)
-                                    )
-                                  case (Some(rev), source) =>
-                                    // Update a resource
-                                    emit(
-                                      resources
-                                        .update(id, ref, schemaOpt, rev, source.value)
-                                        .tapEval(index(ref, _, mode))
-                                        .map(_.void)
-                                        .rejectWhen(wrongJsonOrNotFound)
-                                    )
-                                }
+                        concat(
+                          // Create or update a resource
+                          put {
+                            authorizeFor(ref, Write).apply {
+                              (parameter("rev".as[Int].?) & pathEndOrSingleSlash & entity(as[NexusSource])) {
+                                case (None, source)      =>
+                                  // Create a resource with schema and id segments
+                                  emit(
+                                    Created,
+                                    resources
+                                      .create(id, ref, schema, source.value)
+                                      .tapEval(index(ref, _, mode))
+                                      .map(_.void)
+                                      .rejectWhen(wrongJsonOrNotFound)
+                                  )
+                                case (Some(rev), source) =>
+                                  // Update a resource
+                                  emit(
+                                    resources
+                                      .update(id, ref, schemaOpt, rev, source.value)
+                                      .tapEval(index(ref, _, mode))
+                                      .map(_.void)
+                                      .rejectWhen(wrongJsonOrNotFound)
+                                  )
                               }
-                            },
-                            // Deprecate a resource
-                            (delete & parameter("rev".as[Int])) { rev =>
-                              authorizeFor(ref, Write).apply {
+                            }
+                          },
+                          // Deprecate a resource
+                          (delete & parameter("rev".as[Int])) { rev =>
+                            authorizeFor(ref, Write).apply {
+                              emit(
+                                resources
+                                  .deprecate(id, ref, schemaOpt, rev)
+                                  .tapEval(index(ref, _, mode))
+                                  .map(_.void)
+                                  .rejectWhen(wrongJsonOrNotFound)
+                              )
+                            }
+                          },
+                          // Fetch a resource
+                          (get & idSegmentRef(id)) { id =>
+                            emitOrFusionRedirect(
+                              ref,
+                              id,
+                              authorizeFor(ref, Read).apply {
                                 emit(
                                   resources
-                                    .deprecate(id, ref, schemaOpt, rev)
+                                    .fetch(id, ref, schemaOpt)
+                                    .leftWiden[ResourceRejection]
+                                    .rejectWhen(wrongJsonOrNotFound)
+                                )
+                              }
+                            )
+                          }
+                        )
+                      },
+                      (pathPrefix("refresh") & put & pathEndOrSingleSlash) {
+                        authorizeFor(ref, Write).apply {
+                          emit(
+                            OK,
+                            resources
+                              .refresh(id, ref, schemaOpt)
+                              .tapEval(index(ref, _, mode))
+                              .map(_.void)
+                              .rejectWhen(wrongJsonOrNotFound)
+                          )
+                        }
+                      },
+                      (pathPrefix("validate") & get & pathEndOrSingleSlash & idSegmentRef(id)) { id =>
+                        authorizeFor(ref, Write).apply {
+                          emit(
+                            resources
+                              .validate(id, ref, schemaOpt)
+                              .leftWiden[ResourceRejection]
+                          )
+                        }
+
+                      },
+                      // Fetch a resource original source
+                      (pathPrefix("source") & get & pathEndOrSingleSlash & idSegmentRef(id)) { id =>
+                        authorizeFor(ref, Read).apply {
+                          parameter("annotate".as[Boolean].withDefault(false)) { annotate =>
+                            implicit val source: Printer = sourcePrinter
+                            if (annotate) {
+                              emit(
+                                resources
+                                  .fetch(id, ref, schemaOpt)
+                                  .flatMap(asSourceWithMetadata)
+                              )
+                            } else {
+                              val sourceIO = resources.fetch(id, ref, schemaOpt).map(_.value.source)
+                              val value    = sourceIO.leftWiden[ResourceRejection]
+                              emit(value.rejectWhen(wrongJsonOrNotFound))
+                            }
+                          }
+                        }
+                      },
+                      // Get remote contexts
+                      pathPrefix("remote-contexts") {
+                        (get & idSegmentRef(id) & pathEndOrSingleSlash & authorizeFor(ref, Read)) { id =>
+                          val remoteContextsIO = resources.fetchState(id, ref, schemaOpt).map(_.remoteContexts)
+                          emit(remoteContextsIO.leftWiden[ResourceRejection])
+                        }
+                      },
+                      // Tag a resource
+                      pathPrefix("tags") {
+                        concat(
+                          // Fetch a resource tags
+                          (get & idSegmentRef(id) & pathEndOrSingleSlash & authorizeFor(ref, Read)) { id =>
+                            val tagsIO = resources.fetch(id, ref, schemaOpt).map(_.value.tags)
+                            emit(tagsIO.leftWiden[ResourceRejection].rejectWhen(wrongJsonOrNotFound))
+                          },
+                          // Tag a resource
+                          (post & parameter("rev".as[Int]) & pathEndOrSingleSlash) { rev =>
+                            authorizeFor(ref, Write).apply {
+                              entity(as[Tag]) { case Tag(tagRev, tag) =>
+                                emit(
+                                  Created,
+                                  resources
+                                    .tag(id, ref, schemaOpt, tag, tagRev, rev)
                                     .tapEval(index(ref, _, mode))
                                     .map(_.void)
                                     .rejectWhen(wrongJsonOrNotFound)
                                 )
                               }
-                            },
-                            // Fetch a resource
-                            (get & idSegmentRef(id)) { id =>
-                              emitOrFusionRedirect(
-                                ref,
-                                id,
-                                authorizeFor(ref, Read).apply {
-                                  emit(
-                                    resources
-                                      .fetch(id, ref, schemaOpt)
-                                      .leftWiden[ResourceRejection]
-                                      .rejectWhen(wrongJsonOrNotFound)
-                                  )
-                                }
-                              )
                             }
-                          )
-                        }
-                      },
-                      (pathPrefix("refresh") & put & pathEndOrSingleSlash) {
-                        operationName(s"$prefixSegment/resources/{org}/{project}/{schema}/{id}/refresh") {
-                          authorizeFor(ref, Write).apply {
+                          },
+                          // Delete a tag
+                          (tagLabel & delete & parameter("rev".as[Int]) & pathEndOrSingleSlash & authorizeFor(
+                            ref,
+                            Write
+                          )) { (tag, rev) =>
                             emit(
-                              OK,
                               resources
-                                .refresh(id, ref, schemaOpt)
+                                .deleteTag(id, ref, schemaOpt, tag, rev)
                                 .tapEval(index(ref, _, mode))
                                 .map(_.void)
-                                .rejectWhen(wrongJsonOrNotFound)
+                                .rejectOn[ResourceNotFound]
                             )
                           }
-                        }
-                      },
-                      (pathPrefix("validate") & get & pathEndOrSingleSlash & idSegmentRef(id)) { id =>
-                        operationName(s"$prefixSegment/resources/{org}/{project}/{schema}/{id}/validate") {
-                          authorizeFor(ref, Write).apply {
-                            emit(
-                              resources
-                                .validate(id, ref, schemaOpt)
-                                .leftWiden[ResourceRejection]
-                            )
-                          }
-                        }
-                      },
-                      // Fetch a resource original source
-                      (pathPrefix("source") & get & pathEndOrSingleSlash & idSegmentRef(id)) { id =>
-                        operationName(s"$prefixSegment/resources/{org}/{project}/{schema}/{id}/source") {
-                          authorizeFor(ref, Read).apply {
-                            parameter("annotate".as[Boolean].withDefault(false)) { annotate =>
-                              implicit val source: Printer = sourcePrinter
-                              if (annotate) {
-                                emit(
-                                  resources
-                                    .fetch(id, ref, schemaOpt)
-                                    .flatMap(asSourceWithMetadata)
-                                )
-                              } else {
-                                val sourceIO = resources.fetch(id, ref, schemaOpt).map(_.value.source)
-                                val value    = sourceIO.leftWiden[ResourceRejection]
-                                emit(value.rejectWhen(wrongJsonOrNotFound))
-                              }
-                            }
-                          }
-                        }
-                      },
-                      // Tag a resource
-                      pathPrefix("tags") {
-                        operationName(s"$prefixSegment/resources/{org}/{project}/{schema}/{id}/tags") {
-                          concat(
-                            // Fetch a resource tags
-                            (get & idSegmentRef(id) & pathEndOrSingleSlash & authorizeFor(ref, Read)) { id =>
-                              val tagsIO = resources.fetch(id, ref, schemaOpt).map(_.value.tags)
-                              emit(tagsIO.leftWiden[ResourceRejection].rejectWhen(wrongJsonOrNotFound))
-                            },
-                            // Tag a resource
-                            (post & parameter("rev".as[Int]) & pathEndOrSingleSlash) { rev =>
-                              authorizeFor(ref, Write).apply {
-                                entity(as[Tag]) { case Tag(tagRev, tag) =>
-                                  emit(
-                                    Created,
-                                    resources
-                                      .tag(id, ref, schemaOpt, tag, tagRev, rev)
-                                      .tapEval(index(ref, _, mode))
-                                      .map(_.void)
-                                      .rejectWhen(wrongJsonOrNotFound)
-                                  )
-                                }
-                              }
-                            },
-                            // Delete a tag
-                            (tagLabel & delete & parameter("rev".as[Int]) & pathEndOrSingleSlash & authorizeFor(
-                              ref,
-                              Write
-                            )) { (tag, rev) =>
-                              emit(
-                                resources
-                                  .deleteTag(id, ref, schemaOpt, tag, rev)
-                                  .tapEval(index(ref, _, mode))
-                                  .map(_.void)
-                                  .rejectOn[ResourceNotFound]
-                              )
-                            }
-                          )
-                        }
+                        )
                       }
                     )
                   }

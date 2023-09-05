@@ -14,13 +14,11 @@ import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Organizations
 import ch.epfl.bluebrain.nexus.tests.{BaseSpec, Optics, SchemaPayload}
 import io.circe.Json
 import io.circe.optics.JsonPath.root
-import monix.bio.Task
 import monix.execution.Scheduler.Implicits.global
 import monocle.Optional
 import org.scalatest.matchers.{HavePropertyMatchResult, HavePropertyMatcher}
 
 import java.net.URLEncoder
-import scala.concurrent.duration._
 
 class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
 
@@ -512,7 +510,6 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
                  (_, response) =>
                    response.status shouldEqual StatusCodes.Created
                }
-        _ <- Task.sleep(100.millis)
         _ <- deltaClient.get[Json](s"/resources/$id1/test-schema", Rick) { (json, response) =>
                response.status shouldEqual StatusCodes.OK
                val received = json.asObject.value("_total").value.asNumber.value.toInt.value
@@ -536,6 +533,30 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
 
     deltaClient.post[Json](s"/resources/$id1/", payload, Rick) { (_, response) =>
       response.status shouldEqual StatusCodes.Created
+    }
+  }
+
+  "fetch remote contexts for the created resource" in {
+    deltaClient.get[Json](s"/resources/$id1/_/myid/remote-contexts", Rick) { (json, response) =>
+      response.status shouldEqual StatusCodes.OK
+      val expected =
+        json"""
+          {
+          "@context": "https://bluebrain.github.io/nexus/contexts/remote-contexts.json",
+          "remoteContexts": [
+            {
+              "@type": "ProjectRemoteContextRef",
+              "iri": "https://dev.nexus.test.com/simplified-resource/mycontext",
+              "resource": {
+                "id": "https://dev.nexus.test.com/simplified-resource/mycontext",
+                "project": "$id1",
+                "rev": 1
+              }
+            }
+          ]
+        }"""
+
+      json shouldEqual expected
     }
   }
 
