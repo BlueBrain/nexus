@@ -89,6 +89,14 @@ class MultiFetchRoutesSpec extends BaseRouteSpec {
       }
     }
 
+    "return expected results as annotated source for a user with limited access" in {
+      val entity = request(ResourceRepresentation.AnnotatedSourceJson).toEntity
+      Get(endpoint, entity) ~> asAlice ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        response.asJson shouldEqual jsonContentOf("multi-fetch/annotated-source-response.json")
+      }
+    }
+
     "return expected results as original payloads for a user with limited access" in {
       val entity = request(ResourceRepresentation.SourceJson).toEntity
       Get(endpoint, entity) ~> asAlice ~> routes ~> check {

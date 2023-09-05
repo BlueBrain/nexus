@@ -36,7 +36,7 @@ GET /v1/multi-fetch/resources
 where...
 
 - `{format}`: String - the format we expect for the resources in the response. 
-Accepts the following values: source (to get the original payload), compacted, expanded, n-triples, dot
+Accepts the following values: source (to get the original payload), annotated-source (to get the original payload with metadata), compacted, expanded, n-triples, dot
 - `{project}`: String - the project (in the format 'myorg/myproject') where the specified resource belongs. This field
   is optional. It defaults to the current project.
 - `{id}`: Iri - the @id value of the resource to be returned. Can contain a tag or a revision.
