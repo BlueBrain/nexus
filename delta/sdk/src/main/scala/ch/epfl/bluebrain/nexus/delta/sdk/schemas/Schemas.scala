@@ -60,6 +60,17 @@ trait Schemas {
   )(implicit caller: Caller): IO[SchemaResource]
 
   /**
+    * Generates the schema where the id is either present on the payload or self generated without persisting it in the
+    * primary store.
+    *
+    * @param projectRef
+    *   the project reference where the schema belongs
+    * @param source
+    *   the schema payload
+    */
+  def createDryRun(projectRef: ProjectRef, source: Json)(implicit caller: Caller): IO[SchemaResource]
+
+  /**
     * Updates an existing schema.
     *
     * @param id
