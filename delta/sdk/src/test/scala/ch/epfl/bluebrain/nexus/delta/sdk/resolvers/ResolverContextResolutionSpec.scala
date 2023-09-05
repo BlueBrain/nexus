@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.ResourceResolutionGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution.NexusContext
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution.ProjectRemoteContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.FetchResource
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.Resource
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
@@ -82,7 +82,7 @@ class ResolverContextResolutionSpec extends AnyWordSpecLike with IOValues with T
     }
 
     "resolve correctly a resource context" in {
-      val expected = NexusContext(resourceId, project, 5, ContextValue(context))
+      val expected = ProjectRemoteContext(resourceId, project, 5, ContextValue(context))
       resolverContextResolution(project).resolve(resourceId).accepted shouldEqual expected
     }
 

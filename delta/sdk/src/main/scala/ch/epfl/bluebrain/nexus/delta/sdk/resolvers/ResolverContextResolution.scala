@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution.{logger, NexusContext}
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution.{logger, ProjectRemoteContext}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.ResourceResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
@@ -51,7 +51,7 @@ final class ResolverContextResolution(val rcr: RemoteContextResolution, resolveR
                         s"Resolution via static resolution and via resolvers failed in '$projectRef'",
                         Some(report.asJson)
                       ),
-                    NexusContext.fromResource
+                    ProjectRemoteContext.fromResource
                   )
               )
               .tapEval { context =>
@@ -70,11 +70,17 @@ object ResolverContextResolution {
   /**
     * A remote context defined in Nexus as a resource
     */
-  final case class NexusContext(iri: Iri, project: ProjectRef, rev: Int, value: ContextValue) extends RemoteContext
+  final case class ProjectRemoteContext(iri: Iri, project: ProjectRef, rev: Int, value: ContextValue)
+      extends RemoteContext
 
-  object NexusContext {
-    def fromResource(resource: DataResource): NexusContext =
-      NexusContext(resource.id, resource.value.project, resource.rev, resource.value.source.topContextValueOrEmpty)
+  object ProjectRemoteContext {
+    def fromResource(resource: DataResource): ProjectRemoteContext =
+      ProjectRemoteContext(
+        resource.id,
+        resource.value.project,
+        resource.rev,
+        resource.value.source.topContextValueOrEmpty
+      )
   }
 
   /**

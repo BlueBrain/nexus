@@ -273,6 +273,34 @@ Request
 Response
 :   @@snip [fetched.json](assets/resources/payload.json)
 
+## Fetch remote contexts
+
+Returns the remote contexts that have been detected during the JSON-LD resolution for this resource.
+
+These contexts can be:
+
+* Static contexts that are statically defined in Nexus
+* Project contexts that have been registered by Nexus, in this case the entry also provides the project this context lives
+and its revision at the time the JSON-LD resolution has been performed
+
+```
+GET /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}/remote-contexts?rev={rev}&tag={tag}
+```
+where ...
+
+- `{rev}`: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.
+- `{tag}`: String - the targeted tag to be fetched. This field is optional.
+
+`{rev}` and `{tag}` fields cannot be simultaneously present.
+
+**Example**
+
+Request
+:   @@snip [fetchTags.sh](assets/resources/remote-contexts.sh)
+
+Response
+:   @@snip [tags.json](assets/remote-contexts.json)
+
 ## Fetch tags
 
 ```
@@ -387,7 +415,8 @@ Examples of ranges:
 - `{rev}`: Number - can be used to filter the resulting resources based on their revision value
 - `{type}`: Iri - can be used to filter the resulting resources based on their `@type` value. This parameter can appear 
   multiple times, filtering further the `@type` value.
-- `{typeOperator}`: String (`and`/`or`) - used to determine how multiple `type` values affect the query, either requiring all to match (`and`) or any to match (`or`); defaults to `or`
+- `{typeOperator}`: String (`and`/`or`) - used to determine how multiple `type` values affect the query, either requiring all to match (`and`) or any to match (`or`); defaults to `or`.
+  See @link:[De Morgan's laws](https://en.wikipedia.org/wiki/De_Morgan%27s_laws) for inference rules.
 - `{createdBy}`: Iri - can be used to filter the resulting resources based on their creator
 - `{createdAt}`: Time range - can be used to filter the resulting resources based on their creation date
 - `{updatedBy}`: Iri - can be used to filter the resulting resources based on the person which performed the last update

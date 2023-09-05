@@ -193,6 +193,23 @@ trait Resources {
   )(implicit caller: Subject): IO[ResourceRejection, DataResource]
 
   /**
+    * Fetches a resource state.
+    *
+    * @param id
+    *   the identifier that will be expanded to the Iri of the resource with its optional rev/tag
+    * @param projectRef
+    *   the project reference where the resource belongs
+    * @param schemaOpt
+    *   the optional identifier that will be expanded to the schema reference of the resource. A None value uses the
+    *   currently available resource schema reference.
+    */
+  def fetchState(
+      id: IdSegmentRef,
+      projectRef: ProjectRef,
+      schemaOpt: Option[IdSegment]
+  ): IO[ResourceFetchRejection, ResourceState]
+
+  /**
     * Fetches a resource.
     *
     * @param id
