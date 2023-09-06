@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.MediaTypes.`text/html`
 import akka.http.scaladsl.model.headers.{Accept, Location, OAuth2BearerToken}
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -25,7 +25,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.FetchResou
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.NexusSource.DecodingOption
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.ProjectContextRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.{Resources, ResourcesConfig, ResourcesImpl, ValidateResource}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.{Resources, ResourcesConfig, ResourcesImpl, ResourcesPractice, ValidateResource}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject}
@@ -38,7 +38,8 @@ import java.util.UUID
 
 class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap {
 
-  private val uuid = UUID.randomUUID()
+  private val uuid                  = UUID.randomUUID()
+  implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
 
   implicit private val caller: Caller =
     Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
@@ -97,16 +98,23 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap {
   )
 
   private def routesWithDecodingOption(implicit decodingOption: DecodingOption) = {
+    val resources = ResourcesImpl(
+      validator,
+      fetchContext,
+      resolverContextResolution,
+      ResourcesConfig(eventLogConfig, decodingOption),
+      xas
+    )
     Route.seal(
       ResourcesRoutes(
         IdentitiesDummy(caller),
         aclCheck,
-        ResourcesImpl(
+        resources,
+        ResourcesPractice(
+          resources.fetch(_, _, None),
           validator,
           fetchContext,
-          resolverContextResolution,
-          ResourcesConfig(eventLogConfig, decodingOption),
-          xas
+          resolverContextResolution
         ),
         DeltaSchemeDirectives(fetchContext, ioFromMap(uuid -> projectRef.organization), ioFromMap(uuid -> projectRef)),
         IndexingAction.noop

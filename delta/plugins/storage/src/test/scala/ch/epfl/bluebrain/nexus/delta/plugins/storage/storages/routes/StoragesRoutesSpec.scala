@@ -45,18 +45,16 @@ class StoragesRoutesSpec extends BaseRouteSpec with TryValues with StorageFixtur
   implicit private val typedSystem: ActorSystem[Nothing] = system.toTyped
 
   // TODO: sort out how we handle this in tests
-  implicit override def rcr: RemoteContextResolution = {
-    implicit val cl: ClassLoader = getClass.getClassLoader
-    RemoteContextResolution.fixed(
-      storageContexts.storages         -> ContextValue.fromFile("/contexts/storages.json").accepted,
-      storageContexts.storagesMetadata -> ContextValue.fromFile("/contexts/storages-metadata.json").accepted,
-      fileContexts.files               -> ContextValue.fromFile("/contexts/files.json").accepted,
-      Vocabulary.contexts.metadata     -> ContextValue.fromFile("contexts/metadata.json").accepted,
-      Vocabulary.contexts.error        -> ContextValue.fromFile("contexts/error.json").accepted,
-      Vocabulary.contexts.tags         -> ContextValue.fromFile("contexts/tags.json").accepted,
-      Vocabulary.contexts.search       -> ContextValue.fromFile("contexts/search.json").accepted
+  implicit override def rcr: RemoteContextResolution =
+    RemoteContextResolution.fixedIO(
+      storageContexts.storages         -> ContextValue.fromFile("/contexts/storages.json"),
+      storageContexts.storagesMetadata -> ContextValue.fromFile("/contexts/storages-metadata.json"),
+      fileContexts.files               -> ContextValue.fromFile("/contexts/files.json"),
+      Vocabulary.contexts.metadata     -> ContextValue.fromFile("contexts/metadata.json"),
+      Vocabulary.contexts.error        -> ContextValue.fromFile("contexts/error.json"),
+      Vocabulary.contexts.tags         -> ContextValue.fromFile("contexts/tags.json"),
+      Vocabulary.contexts.search       -> ContextValue.fromFile("contexts/search.json")
     )
-  }
 
   private val serviceAccount: ServiceAccount = ServiceAccount(User("nexus-sa", Label.unsafe("sa")))
 

@@ -22,7 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.ResourceRe
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.{ResolverContextResolution, Resolvers, ResourceResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{Resource, ResourceEvent}
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.{Resources, ResourcesImpl, ValidateResource}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.{Resources, ResourcesImpl, ResourcesPractice, ValidateResource}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
@@ -36,9 +36,13 @@ import monix.execution.Scheduler
   */
 object ResourcesModule extends ModuleDef {
 
+  make[ValidateResource].from { (resourceResolution: ResourceResolution[Schema], api: JsonLdApi) =>
+    ValidateResource(resourceResolution)(api)
+  }
+
   make[Resources].from {
     (
-        validator: ValidateResource,
+        validate: ValidateResource,
         fetchContext: FetchContext[ContextRejection],
         config: AppConfig,
         resolverContextResolution: ResolverContextResolution,
@@ -48,7 +52,7 @@ object ResourcesModule extends ModuleDef {
         uuidF: UUIDF
     ) =>
       ResourcesImpl(
-        validator,
+        validate,
         fetchContext.mapRejection(ProjectContextRejection),
         resolverContextResolution,
         config.resources,
@@ -58,6 +62,24 @@ object ResourcesModule extends ModuleDef {
         clock,
         uuidF
       )
+  }
+
+  make[ResourcesPractice].from {
+    (
+        resources: Resources,
+        validate: ValidateResource,
+        fetchContext: FetchContext[ContextRejection],
+        contextResolution: ResolverContextResolution,
+        api: JsonLdApi,
+        clock: Clock[UIO],
+        uuidF: UUIDF
+    ) =>
+      ResourcesPractice(
+        resources.fetch(_, _, None),
+        validate,
+        fetchContext.mapRejection(ProjectContextRejection),
+        contextResolution
+      )(api, clock, uuidF)
   }
 
   make[ResolverContextResolution].from {
@@ -74,6 +96,7 @@ object ResourcesModule extends ModuleDef {
         identities: Identities,
         aclCheck: AclCheck,
         resources: Resources,
+        resourcesPractice: ResourcesPractice,
         schemeDirectives: DeltaSchemeDirectives,
         indexingAction: IndexingAction @Id("aggregate"),
         shift: Resource.Shift,
@@ -84,7 +107,14 @@ object ResourcesModule extends ModuleDef {
         fusionConfig: FusionConfig,
         config: AppConfig
     ) =>
-      new ResourcesRoutes(identities, aclCheck, resources, schemeDirectives, indexingAction(_, _, _)(shift, cr))(
+      new ResourcesRoutes(
+        identities,
+        aclCheck,
+        resources,
+        resourcesPractice,
+        schemeDirectives,
+        indexingAction(_, _, _)(shift, cr)
+      )(
         baseUri,
         s,
         cr,
@@ -92,10 +122,6 @@ object ResourcesModule extends ModuleDef {
         fusionConfig,
         config.resources.decodingOption
       )
-  }
-
-  make[ValidateResource].from { (resourceResolution: ResourceResolution[Schema], api: JsonLdApi) =>
-    ValidateResource(resourceResolution)(api)
   }
 
   many[SseEncoder[_]].add { base: BaseUri => ResourceEvent.sseEncoder(base) }

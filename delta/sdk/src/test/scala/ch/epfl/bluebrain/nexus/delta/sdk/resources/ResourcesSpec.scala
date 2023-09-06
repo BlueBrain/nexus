@@ -1,29 +1,24 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resources
 
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContext._
-import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ValidationReport
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ResourceGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdResult
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
 import ch.epfl.bluebrain.nexus.delta.sdk.model.jsonld.RemoteContextRef.StaticContextRef
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources.{evaluate, next}
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.ValidateResource.ValidationResult._
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{IncorrectRev, ResourceIsDeprecated, ResourceNotFound, RevisionNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{ResourceCommand, ResourceEvent, ResourceRejection, ResourceState}
-import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.Fixtures
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
 import io.circe.syntax.{EncoderOps, KeyOps}
@@ -44,6 +39,7 @@ class ResourcesSpec
     with TestHelpers
     with CirceLiteral
     with OptionValues
+    with ValidateResourceFixture
     with Fixtures {
 
   "The Resources state machine" when {
@@ -58,31 +54,8 @@ class ResourcesSpec
 
     val schema1 = nxv + "myschema"
 
-    val always: ValidateResource = new ValidateResource {
-      override def apply(
-          resourceId: Iri,
-          expanded: ExpandedJsonLd,
-          schemaRef: ResourceRef,
-          projectRef: ProjectRef,
-          caller: Caller
-      ): IO[ResourceRejection, ValidateResource.ValidationResult] =
-        IO.pure(
-          Validated(
-            projectRef,
-            ResourceRef.Revision(schemaRef.iri, 1),
-            ValidationReport(conforms = true, 5, Json.obj())
-          )
-        )
-
-      override def apply(
-          resourceId: Iri,
-          expanded: ExpandedJsonLd,
-          schema: ResourceF[Schema]
-      ): IO[ResourceRejection, ValidateResource.ValidationResult] =
-        IO.terminate(new IllegalArgumentException("Should not be called !"))
-    }
-
-    val eval: (Option[ResourceState], ResourceCommand) => IO[ResourceRejection, ResourceEvent] = evaluate(always)
+    val eval: (Option[ResourceState], ResourceCommand) => IO[ResourceRejection, ResourceEvent] =
+      evaluate(alwaysValidate)
 
     "evaluating an incoming command" should {
       "create a new event from a CreateResource command" in {
