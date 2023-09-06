@@ -1,10 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.IdResolutionResponse.{MultipleResults, SingleResult}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.IdResolutionSuite.{asResourceF, searchResults}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ResolutionResponse.{MultipleResults, SingleResult}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultViewId, permissions}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.ElasticSearchQueryError.AuthorizationFailed
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.{DefaultSearchRequest, DefaultViewsQuery, ElasticSearchQueryError}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.{DefaultSearchRequest, DefaultViewsQuery}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.DataResource
@@ -13,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ResourceGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{AggregationResult, SearchResults}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.views.View.IndexingView
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Group, User}
@@ -55,7 +56,7 @@ class IdResolutionSuite extends BioSuite with Fixtures {
   private val iri      = iri"https://bbp.epfl.ch/data/resource"
   private val resource = asResourceF(ResourceRef(iri), project1)
 
-  private def fetchResource: (ResourceRef, ProjectRef) => IO[ElasticSearchQueryError, DataResource] =
+  private def fetchResource: (ResourceRef, ProjectRef) => IO[ResourceRejection, DataResource] =
     (_, _) => IO.pure(resource)
 
   private val res = JsonObject(
