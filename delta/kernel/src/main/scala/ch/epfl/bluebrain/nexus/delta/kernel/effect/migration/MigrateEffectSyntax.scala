@@ -10,7 +10,7 @@ trait MigrateEffectSyntax {
 
   implicit def toCatsIO[E <: Throwable, A](io: BIO[E, A]): IO[A] = io.to[IO]
 
-  implicit def toMonixtBIOOps[A](io: IO[A]): CatsIOToBioOps[A] = new CatsIOToBioOps(io)
+  implicit def toMonixBIOOps[A](io: IO[A]): CatsIOToBioOps[A] = new CatsIOToBioOps(io)
 
 }
 

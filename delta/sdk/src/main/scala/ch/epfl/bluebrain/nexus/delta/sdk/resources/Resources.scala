@@ -11,8 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.ValidateResource.ValidationResult
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{IncorrectRev, InvalidResourceId, ResourceAlreadyExists, ResourceFetchRejection, ResourceIsDeprecated, ResourceNotFound, RevisionNotFound, TagNotFound, UnexpectedResourceSchema}
@@ -105,23 +104,6 @@ trait Resources {
       projectRef: ProjectRef,
       schemaOpt: Option[IdSegment]
   )(implicit caller: Caller): IO[ResourceRejection, DataResource]
-
-  /**
-    * Validates an existing resource.
-    *
-    * @param id
-    *   the identifier that will be expanded to the Iri of the resource
-    * @param projectRef
-    *   the project reference where the resource belongs
-    * @param schemaOpt
-    *   the optional identifier that will be expanded to the schema reference to validate the resource. A None value
-    *   uses the currently available resource schema reference.
-    */
-  def validate(
-      id: IdSegmentRef,
-      projectRef: ProjectRef,
-      schemaOpt: Option[IdSegment]
-  )(implicit caller: Caller): IO[ResourceRejection, ValidationResult]
 
   /**
     * Adds a tag to an existing resource.
@@ -255,6 +237,27 @@ object Resources {
     * The default resource API mappings
     */
   val mappings: ApiMappings = ApiMappings("_" -> schemas.resources, "resource" -> schemas.resources, "nxv" -> nxv.base)
+
+  /**
+    * Expands the segment to a [[ResourceRef]]
+    */
+  def expandResourceRef(segment: IdSegment, context: ProjectContext): IO[InvalidResourceId, ResourceRef] =
+    IO.fromOption(
+      segment.toIri(context.apiMappings, context.base).map(ResourceRef(_)),
+      InvalidResourceId(segment.asString)
+    )
+
+  /**
+    * Expands the segment to a [[ResourceRef]] if defined
+    */
+  def expandResourceRef(
+      segmentOpt: Option[IdSegment],
+      context: ProjectContext
+  ): IO[InvalidResourceId, Option[ResourceRef]] =
+    segmentOpt match {
+      case None         => IO.none
+      case Some(schema) => expandResourceRef(schema, context).map(Some.apply)
+    }
 
   private[delta] def next(state: Option[ResourceState], event: ResourceEvent): Option[ResourceState] = {
     // format: off

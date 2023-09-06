@@ -14,7 +14,7 @@ trait DoobieScalaTestFixture
     with TestHelpers
     with IOValues {
 
-  implicit private val classLoader: ClassLoader = getClass.getClassLoader
+  implicit val classLoader: ClassLoader = getClass.getClassLoader
 
   var xas: Transactors                = _
   private var xasTeardown: Task[Unit] = _
