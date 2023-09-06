@@ -39,7 +39,7 @@ class ResourcesSpec
     with TestHelpers
     with CirceLiteral
     with OptionValues
-      with ValidateResourceFixture
+    with ValidateResourceFixture
     with Fixtures {
 
   "The Resources state machine" when {
@@ -54,7 +54,8 @@ class ResourcesSpec
 
     val schema1 = nxv + "myschema"
 
-    val eval: (Option[ResourceState], ResourceCommand) => IO[ResourceRejection, ResourceEvent] = evaluate(alwaysValidate)
+    val eval: (Option[ResourceState], ResourceCommand) => IO[ResourceRejection, ResourceEvent] =
+      evaluate(alwaysValidate)
 
     "evaluating an incoming command" should {
       "create a new event from a CreateResource command" in {

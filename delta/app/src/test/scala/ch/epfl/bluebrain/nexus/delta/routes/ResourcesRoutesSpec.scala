@@ -38,7 +38,7 @@ import java.util.UUID
 
 class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap {
 
-  private val uuid = UUID.randomUUID()
+  private val uuid                  = UUID.randomUUID()
   implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
 
   implicit private val caller: Caller =

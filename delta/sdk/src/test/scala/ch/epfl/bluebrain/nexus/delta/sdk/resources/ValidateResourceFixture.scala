@@ -15,16 +15,16 @@ import monix.bio.IO
 trait ValidateResourceFixture {
 
   val defaultReport: ValidationReport = ValidationReport(conforms = true, 5, Json.obj())
-  val defaultSchemaRevision = 1
+  val defaultSchemaRevision           = 1
 
   def alwaysValidate: ValidateResource = new ValidateResource {
     override def apply(
-                        resourceId: Iri,
-                        expanded: ExpandedJsonLd,
-                        schemaRef: ResourceRef,
-                        projectRef: ProjectRef,
-                        caller: Caller
-                      ): IO[ResourceRejection, ValidationResult] =
+        resourceId: Iri,
+        expanded: ExpandedJsonLd,
+        schemaRef: ResourceRef,
+        projectRef: ProjectRef,
+        caller: Caller
+    ): IO[ResourceRejection, ValidationResult] =
       IO.pure(
         Validated(
           projectRef,
@@ -34,10 +34,10 @@ trait ValidateResourceFixture {
       )
 
     override def apply(
-                        resourceId: Iri,
-                        expanded: ExpandedJsonLd,
-                        schema: ResourceF[Schema]
-                      ): IO[ResourceRejection, ValidationResult] =
+        resourceId: Iri,
+        expanded: ExpandedJsonLd,
+        schema: ResourceF[Schema]
+    ): IO[ResourceRejection, ValidationResult] =
       IO.pure(
         Validated(
           schema.value.project,
@@ -47,21 +47,20 @@ trait ValidateResourceFixture {
       )
   }
 
-
   def alwaysFail(expected: ResourceRejection): ValidateResource = new ValidateResource {
     override def apply(
-                        resourceId: Iri,
-                        expanded: ExpandedJsonLd,
-                        schemaRef: ResourceRef,
-                        projectRef: ProjectRef,
-                        caller: Caller
-                      ): IO[ResourceRejection, ValidationResult] = IO.raiseError(expected)
+        resourceId: Iri,
+        expanded: ExpandedJsonLd,
+        schemaRef: ResourceRef,
+        projectRef: ProjectRef,
+        caller: Caller
+    ): IO[ResourceRejection, ValidationResult] = IO.raiseError(expected)
 
     override def apply(
-                        resourceId: Iri,
-                        expanded: ExpandedJsonLd,
-                        schema: ResourceF[Schema]
-                      ): IO[ResourceRejection, ValidationResult] = IO.raiseError(expected)
+        resourceId: Iri,
+        expanded: ExpandedJsonLd,
+        schema: ResourceF[Schema]
+    ): IO[ResourceRejection, ValidationResult] = IO.raiseError(expected)
   }
 
 }

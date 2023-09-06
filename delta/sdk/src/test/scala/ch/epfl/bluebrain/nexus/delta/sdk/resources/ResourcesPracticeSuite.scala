@@ -22,17 +22,17 @@ import java.util.UUID
 
 class ResourcesPracticeSuite extends BioSuite with ValidateResourceFixture with TestHelpers with IOFixedClock {
 
-  private val uuid = UUID.randomUUID()
+  private val uuid                  = UUID.randomUUID()
   implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
 
-  implicit private val caller: Caller   = Caller.Anonymous
+  implicit private val caller: Caller = Caller.Anonymous
 
   implicit private val api: JsonLdApi = JsonLdJavaApi.strict
 
   implicit private val res: RemoteContextResolution =
     RemoteContextResolution.fixedIO(
-      contexts.metadata -> ContextValue.fromFile("contexts/metadata.json"),
-      contexts.shacl -> ContextValue.fromFile("contexts/shacl.json"),
+      contexts.metadata        -> ContextValue.fromFile("contexts/metadata.json"),
+      contexts.shacl           -> ContextValue.fromFile("contexts/shacl.json"),
       contexts.schemasMetadata -> ContextValue.fromFile("contexts/schemas-metadata.json")
     )
 
@@ -43,19 +43,19 @@ class ResourcesPracticeSuite extends BioSuite with ValidateResourceFixture with 
     (_, _, _) => fetchResourceFail
   )
 
-  private val am = ApiMappings(Map("nxv" -> nxv.base, "Person" -> schema.Person))
-  private val allApiMappings    = am + Resources.mappings
-  private val projBase = nxv.base
-  private val project           = ProjectGen.project("myorg", "myproject", base = projBase, mappings = am)
-  private val projectRef           = project.ref
-  private val fetchContext = FetchContextDummy(
+  private val am             = ApiMappings(Map("nxv" -> nxv.base, "Person" -> schema.Person))
+  private val allApiMappings = am + Resources.mappings
+  private val projBase       = nxv.base
+  private val project        = ProjectGen.project("myorg", "myproject", base = projBase, mappings = am)
+  private val projectRef     = project.ref
+  private val fetchContext   = FetchContextDummy(
     Map(projectRef -> project.context.copy(apiMappings = allApiMappings)),
     Set.empty,
     ProjectContextRejection
   )
 
-  private val id = nxv + "id"
-  private val source = NexusSource(jsonContentOf("resources/resource.json", "id" -> id))
+  private val id             = nxv + "id"
+  private val source         = NexusSource(jsonContentOf("resources/resource.json", "id" -> id))
   private val resourceSchema = nxv + "schema"
 
   test("Successfully generates a resource") {
@@ -66,7 +66,8 @@ class ResourcesPracticeSuite extends BioSuite with ValidateResourceFixture with 
       resolverContextResolution
     )
 
-    val expectedData = ResourceGen.resource(id, projectRef, source.value, Revision(resourceSchema, defaultSchemaRevision))
+    val expectedData =
+      ResourceGen.resource(id, projectRef, source.value, Revision(resourceSchema, defaultSchemaRevision))
 
     practice.generate(projectRef, resourceSchema, source).map(_.value).assert(expectedData)
   }
@@ -80,18 +81,19 @@ class ResourcesPracticeSuite extends BioSuite with ValidateResourceFixture with 
     )
 
     val anotherSchema = nxv + "anotherSchema"
-    val schemaSource = jsonContentOf("resources/schema.json").addContext(contexts.shacl, contexts.schemasMetadata)
-    val schema      = SchemaGen.resourceFor(
+    val schemaSource  = jsonContentOf("resources/schema.json").addContext(contexts.shacl, contexts.schemasMetadata)
+    val schema        = SchemaGen.resourceFor(
       SchemaGen.schema(anotherSchema, project.ref, schemaSource.removeKeys(keywords.id))
     )
 
-    val expectedData = ResourceGen.resource(id, projectRef, source.value, Revision(anotherSchema, defaultSchemaRevision))
+    val expectedData =
+      ResourceGen.resource(id, projectRef, source.value, Revision(anotherSchema, defaultSchemaRevision))
     practice.generate(projectRef, schema, source).map(_.value).assert(expectedData)
   }
 
   test("Fail when validation raises an error") {
     val expectedError = ReservedResourceId(id)
-    val practice = ResourcesPractice(
+    val practice      = ResourcesPractice(
       (_, _) => fetchResourceFail,
       alwaysFail(expectedError),
       fetchContext,
@@ -101,7 +103,7 @@ class ResourcesPracticeSuite extends BioSuite with ValidateResourceFixture with 
   }
 
   test("Validate a resource against a new schema reference") {
-    val resource = ResourceGen.resourceFor(
+    val resource      = ResourceGen.resourceFor(
       ResourceGen.resource(id, projectRef, source.value, Revision(resourceSchema, 1))
     )
     val anotherSchema = nxv + "anotherSchema"
@@ -134,12 +136,13 @@ class ResourcesPracticeSuite extends BioSuite with ValidateResourceFixture with 
   }
 
   test("Fail to validate a resource against the specified schema") {
-    val resource = ResourceGen.resourceFor(
+    val resource      = ResourceGen.resourceFor(
       ResourceGen.resource(id, projectRef, source.value, Revision(resourceSchema, 1))
     )
     val anotherSchema = nxv + "anotherSchema"
 
-    val expectedError = InvalidResource(id, Revision(anotherSchema, defaultSchemaRevision), defaultReport, resource.value.expanded)
+    val expectedError =
+      InvalidResource(id, Revision(anotherSchema, defaultSchemaRevision), defaultReport, resource.value.expanded)
 
     val practice = ResourcesPractice(
       (_, _) => IO.pure(resource),
@@ -150,9 +153,5 @@ class ResourcesPracticeSuite extends BioSuite with ValidateResourceFixture with 
 
     practice.validate(id, projectRef, Some(anotherSchema)).error(expectedError)
   }
-
-
-
-
 
 }
