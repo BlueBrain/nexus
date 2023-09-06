@@ -93,7 +93,7 @@ class ResourcesImplSpec
   )
 
   private lazy val resources: Resources = ResourcesImpl(
-    new ValidateResourceImpl(resourceResolution),
+    ValidateResource(resourceResolution),
     fetchContext,
     resolverContextResolution,
     config,

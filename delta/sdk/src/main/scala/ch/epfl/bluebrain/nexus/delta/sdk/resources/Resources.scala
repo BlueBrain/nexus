@@ -302,14 +302,14 @@ object Resources {
   ): IO[ResourceRejection, ResourceEvent] = {
 
     def validate(
-        projectRef: ProjectRef,
-        schemaRef: ResourceRef,
-        caller: Caller,
         id: Iri,
-        expanded: ExpandedJsonLd
+        expanded: ExpandedJsonLd,
+        schemaRef: ResourceRef,
+        projectRef: ProjectRef,
+        caller: Caller
     ): IO[ResourceRejection, (ResourceRef.Revision, ProjectRef)] = {
       validateResource
-        .apply(projectRef, schemaRef, caller, id, expanded)
+        .apply(id, expanded, schemaRef, projectRef, caller)
         .map(result => (result.schema, result.project))
     }
 
@@ -319,7 +319,7 @@ object Resources {
         case None =>
           // format: off
           for {
-            (schemaRev, schemaProject) <- validate(c.project, c.schema, c.caller, c.id, expanded)
+            (schemaRev, schemaProject) <- validate(c.id, expanded, c.schema, c.project, c.caller)
             t                          <- IOUtils.instant
           } yield ResourceCreated(c.id, c.project, schemaRev, schemaProject, types, c.source, compacted, expanded, remoteContextRefs, 1, t, c.subject)
           // format: on
@@ -365,7 +365,7 @@ object Resources {
       for {
         s                          <- stateWhereResourceIsEditable(u)
         schemaRef = u.schemaOpt.getOrElse(ResourceRef.Latest(s.schema.iri))
-        (schemaRev, schemaProject) <- validate(s.project, schemaRef, u.caller, u.id, expanded)
+        (schemaRev, schemaProject) <- validate(u.id, expanded, schemaRef, s.project, u.caller)
         time                       <- IOUtils.instant
       } yield ResourceUpdated(u.id, u.project, schemaRev, schemaProject, types, u.source, compacted, expanded, remoteContextRefs, s.rev + 1, time, u.subject)
       // format: on
@@ -376,7 +376,7 @@ object Resources {
       // format: off
       for {
         s                          <- stateWhereResourceIsEditable(c)
-        (schemaRev, schemaProject) <- validate(s.project, c.schemaOpt.getOrElse(s.schema), c.caller, c.id, expanded)
+        (schemaRev, schemaProject) <- validate(c.id, expanded, c.schemaOpt.getOrElse(s.schema), s.project, c.caller)
         time                       <- IOUtils.instant
       } yield ResourceRefreshed(c.id, c.project, schemaRev, schemaProject, types, compacted, expanded, remoteContextRefs, s.rev + 1, time, c.subject)
       // format: on

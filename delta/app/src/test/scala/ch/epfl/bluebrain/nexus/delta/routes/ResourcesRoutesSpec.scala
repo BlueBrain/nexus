@@ -25,7 +25,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.FetchResou
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.NexusSource.DecodingOption
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.ProjectContextRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.{Resources, ResourcesConfig, ResourcesImpl, ValidateResource, ValidateResourceImpl}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.{Resources, ResourcesConfig, ResourcesImpl, ValidateResource}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject}
@@ -86,10 +86,12 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap {
     case (ref, _) if ref.iri == schema1.id => UIO.some(SchemaGen.resourceFor(schema1))
     case _                                 => UIO.none
   }
-  private val validator: ValidateResource                                     =
-    new ValidateResourceImpl(ResourceResolutionGen.singleInProject(projectRef, fetchSchema))
-  private val fetchContext                                                    = FetchContextDummy(List(project.value), ProjectContextRejection)
-  private val resolverContextResolution: ResolverContextResolution            = new ResolverContextResolution(
+
+  private val validator: ValidateResource                          = ValidateResource(
+    ResourceResolutionGen.singleInProject(projectRef, fetchSchema)
+  )
+  private val fetchContext                                         = FetchContextDummy(List(project.value), ProjectContextRejection)
+  private val resolverContextResolution: ResolverContextResolution = new ResolverContextResolution(
     rcr,
     (_, _, _) => IO.raiseError(ResourceResolutionReport())
   )

@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.ResourceGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdResult
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.jsonld.RemoteContextRef.StaticContextRef
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources.{evaluate, next}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.ValidateResource.ValidationResult._
@@ -18,6 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{IncorrectRev, ResourceIsDeprecated, ResourceNotFound, RevisionNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{ResourceCommand, ResourceEvent, ResourceRejection, ResourceState}
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.Fixtures
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision}
@@ -57,8 +58,14 @@ class ResourcesSpec
 
     val schema1 = nxv + "myschema"
 
-    val always: ValidateResource =
-      (projectRef: ProjectRef, schemaRef: ResourceRef, _: Caller, _: Iri, _: ExpandedJsonLd) =>
+    val always: ValidateResource = new ValidateResource {
+      override def apply(
+          resourceId: Iri,
+          expanded: ExpandedJsonLd,
+          schemaRef: ResourceRef,
+          projectRef: ProjectRef,
+          caller: Caller
+      ): IO[ResourceRejection, ValidateResource.ValidationResult] =
         IO.pure(
           Validated(
             projectRef,
@@ -66,6 +73,14 @@ class ResourcesSpec
             ValidationReport(conforms = true, 5, Json.obj())
           )
         )
+
+      override def apply(
+          resourceId: Iri,
+          expanded: ExpandedJsonLd,
+          schema: ResourceF[Schema]
+      ): IO[ResourceRejection, ValidateResource.ValidationResult] =
+        IO.terminate(new IllegalArgumentException("Should not be called !"))
+    }
 
     val eval: (Option[ResourceState], ResourceCommand) => IO[ResourceRejection, ResourceEvent] = evaluate(always)
 

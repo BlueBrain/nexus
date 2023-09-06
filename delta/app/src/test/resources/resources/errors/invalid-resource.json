@@ -4,7 +4,7 @@
     "https://bluebrain.github.io/nexus/contexts/error.json"
   ],
   "@type": "InvalidResource",
-  "reason": "Resource 'https://bluebrain.github.io/nexus/vocabulary/wrong' failed to validate against the constraints defined in schema 'https://bluebrain.github.io/nexus/vocabulary/myschema'",
+  "reason": "Resource 'https://bluebrain.github.io/nexus/vocabulary/wrong' failed to validate against the constraints defined in schema 'https://bluebrain.github.io/nexus/vocabulary/myschema?rev=1'",
   "details": {
     "@type": "sh:ValidationReport",
     "conforms": false,

@@ -111,7 +111,7 @@ final class ResourcesImpl private (
                           case Tag(_, tag)      =>
                             log.stateOr(projectRef, resourceRef, tag, notFound, TagNotFound(tag))
                         }
-      report         <- validateResource(projectRef, schemaRefOpt.getOrElse(state.schema), caller, state.id, state.expanded)
+      report         <- validateResource(state.id, state.expanded, schemaRefOpt.getOrElse(state.schema), projectRef, caller)
     } yield report
   }
 
