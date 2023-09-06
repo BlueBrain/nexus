@@ -28,16 +28,6 @@ sealed trait SearchResults[A] extends Product with Serializable {
   def token: Option[String]
   def results: Seq[ResultEntry[A]]
   def sources: Seq[A] = results.map(_.source)
-
-  /**
-    * Constructs a new [[SearchResults]] with the provided ''results''
-    *
-    * @param res
-    *   the provided collection of results
-    * @tparam B
-    *   the generic type of the newly created [[SearchResults]]
-    */
-  def copyWith[B](res: Seq[ResultEntry[B]]): SearchResults[B]
 }
 
 object SearchResults {
@@ -61,11 +51,7 @@ object SearchResults {
       maxScore: Float,
       results: Seq[ResultEntry[A]],
       token: Option[String] = None
-  ) extends SearchResults[A] {
-
-    override def copyWith[B](res: Seq[ResultEntry[B]]): SearchResults[B] =
-      ScoredSearchResults[B](res.length.toLong, maxScore, res)
-  }
+  ) extends SearchResults[A]
 
   /**
     * A collection of query results including pagination.
@@ -78,12 +64,7 @@ object SearchResults {
     *   the optional token used to generate the next link
     */
   final case class UnscoredSearchResults[A](total: Long, results: Seq[ResultEntry[A]], token: Option[String] = None)
-      extends SearchResults[A] {
-
-    override def copyWith[B](res: Seq[ResultEntry[B]]): SearchResults[B] =
-      UnscoredSearchResults[B](res.length.toLong, res)
-
-  }
+      extends SearchResults[A]
 
   implicit final def scoredSearchResultsFunctor(implicit F: Functor[ResultEntry]): Functor[ScoredSearchResults] =
     new Functor[ScoredSearchResults] {
