@@ -2,26 +2,26 @@ package ch.epfl.bluebrain.nexus.delta.sdk.auth
 
 import akka.http.javadsl.model.headers.HttpCredentials
 import akka.http.scaladsl.model.HttpMethods.POST
-import akka.http.scaladsl.model.{HttpRequest, Uri}
 import akka.http.scaladsl.model.headers.Authorization
+import akka.http.scaladsl.model.{HttpRequest, Uri}
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.toMonixtBIOOps
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.MigrateEffectSyntax
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.error.TokenError.{ExpiryNotFoundInResponse, TokenHttpError, TokenNotFoundInResponse}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.Realms
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import io.circe.Json
 import monix.bio.{IO, UIO}
 
 import java.time.{Duration, Instant}
 
-class KeycloakAuthService(httpClient: HttpClient, realms: Realms)(implicit clock: Clock[UIO]) {
+class KeycloakAuthService(httpClient: HttpClient, realms: Realms)(implicit clock: Clock[UIO])
+    extends MigrateEffectSyntax {
 
   def auth(auth: AuthenticateAs): UIO[AccessTokenWithMetadata] = {
     for {
-      realm                  <- realms.fetch(Label.unsafe(auth.realm)).toUIO
+      realm                  <- realms.fetch(auth.realm).toUIO
       response               <- requestToken(realm.value.tokenEndpoint, auth.user, auth.password)
       (token, validDuration) <- parseResponse(response)
       now                    <- IOUtils.instant
