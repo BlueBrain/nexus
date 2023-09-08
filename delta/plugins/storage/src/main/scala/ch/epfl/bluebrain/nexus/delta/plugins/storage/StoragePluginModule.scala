@@ -147,7 +147,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
 
   many[ResourceShift[_, _, _]].ref[Storage.Shift]
 
-  make[KeycloakAuthService].from { (httpClient: HttpClient @Id("storage"), realms: Realms, clock: Clock[UIO]) =>
+  make[KeycloakAuthService].from { (httpClient: HttpClient @Id("realm"), realms: Realms, clock: Clock[UIO]) =>
     new KeycloakAuthService(httpClient, realms)(clock)
   }
 
