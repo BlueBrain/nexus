@@ -5,7 +5,7 @@ import cats.implicits.toBifunctorOps
 import ch.epfl.bluebrain.nexus.delta.kernel.{RetryStrategyConfig, Secret}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePath, DigestAlgorithm, StorageType}
-import ch.epfl.bluebrain.nexus.delta.sdk.auth.AuthenticateAs
+import ch.epfl.bluebrain.nexus.delta.sdk.auth.Credentials
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
@@ -199,7 +199,7 @@ object StoragesConfig {
   final case class RemoteDiskStorageConfig(
       digestAlgorithm: DigestAlgorithm,
       defaultEndpoint: BaseUri,
-      authentication: Option[AuthenticateAs],
+      authentication: Option[Credentials],
       defaultReadPermission: Permission,
       defaultWritePermission: Permission,
       showLocation: Boolean,

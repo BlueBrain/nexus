@@ -16,7 +16,7 @@ trait AuthTokenProvider {
 }
 
 object AuthTokenProvider {
-  def apply(auth: Option[AuthenticateAs], keycloakAuthService: KeycloakAuthService): AuthTokenProvider = {
+  def apply(auth: Option[Credentials], keycloakAuthService: KeycloakAuthService): AuthTokenProvider = {
     auth match {
       case Some(authAs) => new CachingKeycloakAuthTokenProvider(authAs, keycloakAuthService)
       case None         => new AnonymousAuthTokenProvider
@@ -29,7 +29,7 @@ private class AnonymousAuthTokenProvider extends AuthTokenProvider {
   override def apply(): UIO[Option[AuthToken]] = UIO.pure(None)
 }
 
-private class CachingKeycloakAuthTokenProvider(identity: AuthenticateAs, service: KeycloakAuthService)(implicit
+private class CachingKeycloakAuthTokenProvider(identity: Credentials, service: KeycloakAuthService)(implicit
     clock: Clock[UIO]
 ) extends AuthTokenProvider {
   private val cache = KeyValueStore.create[Unit, AccessTokenWithMetadata]()

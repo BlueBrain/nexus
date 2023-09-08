@@ -19,7 +19,7 @@ import java.time.{Duration, Instant}
 class KeycloakAuthService(httpClient: HttpClient, realms: Realms)(implicit clock: Clock[UIO])
     extends MigrateEffectSyntax {
 
-  def auth(auth: AuthenticateAs): UIO[AccessTokenWithMetadata] = {
+  def auth(auth: Credentials): UIO[AccessTokenWithMetadata] = {
     for {
       realm                  <- realms.fetch(auth.realm).toUIO
       response               <- requestToken(realm.value.tokenEndpoint, auth.user, auth.password)

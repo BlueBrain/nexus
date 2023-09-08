@@ -8,12 +8,12 @@ import pureconfig.generic.semiauto.deriveReader
 
 import scala.annotation.nowarn
 
-case class AuthenticateAs(user: String, password: Secret[String], realm: Label)
+case class Credentials(user: String, password: Secret[String], realm: Label)
 
-object AuthenticateAs {
+object Credentials {
   @nowarn("cat=unused")
   implicit private val labelConfigReader: ConfigReader[Label] = ConfigReader.fromString(str =>
     Label(str).left.map(e => CannotConvert(str, classOf[Label].getSimpleName, e.getMessage))
   )
-  implicit val configReader: ConfigReader[AuthenticateAs]     = deriveReader[AuthenticateAs]
+  implicit val configReader: ConfigReader[Credentials]        = deriveReader[Credentials]
 }
