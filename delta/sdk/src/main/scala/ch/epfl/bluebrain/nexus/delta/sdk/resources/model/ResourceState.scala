@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.resources.model
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.sdk.DataResource
+import ch.epfl.bluebrain.nexus.delta.sdk.model.jsonld.RemoteContextRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceUris, Tags}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
@@ -30,6 +31,8 @@ import scala.annotation.nowarn
   *   the compacted JSON-LD representation of the resource
   * @param expanded
   *   the expanded JSON-LD representation of the resource
+  * @param remoteContexts
+  *   the remote contexts of the resource
   * @param rev
   *   the organization revision
   * @param deprecated
@@ -56,6 +59,7 @@ final case class ResourceState(
     source: Json,
     compacted: CompactedJsonLd,
     expanded: ExpandedJsonLd,
+    remoteContexts: Set[RemoteContextRef],
     rev: Int,
     deprecated: Boolean,
     schema: ResourceRef,

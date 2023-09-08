@@ -21,6 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.Response.Complete
 import ch.epfl.bluebrain.nexus.delta.sdk.error.SDKError
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.AnnotatedSource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceRepresentation}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.StreamConverter
@@ -253,12 +254,16 @@ object ArchiveDownload {
       ): IO[RdfError, ByteString] = {
         implicit val encoder: JsonLdEncoder[A] = value.encoder
         repr match {
-          case SourceJson      => UIO.pure(ByteString(prettyPrintSource(value.source)))
-          case CompactedJsonLd => value.resource.toCompactedJsonLd.map(v => ByteString(prettyPrint(v.json)))
-          case ExpandedJsonLd  => value.resource.toExpandedJsonLd.map(v => ByteString(prettyPrint(v.json)))
-          case NTriples        => value.resource.toNTriples.map(v => ByteString(v.value))
-          case NQuads          => value.resource.toNQuads.map(v => ByteString(v.value))
-          case Dot             => value.resource.toDot.map(v => ByteString(v.value))
+          case SourceJson          => UIO.pure(ByteString(prettyPrintSource(value.source)))
+          case AnnotatedSourceJson =>
+            AnnotatedSource(value.resource, value.source).map { json =>
+              ByteString(prettyPrintSource(json))
+            }
+          case CompactedJsonLd     => value.resource.toCompactedJsonLd.map(v => ByteString(prettyPrint(v.json)))
+          case ExpandedJsonLd      => value.resource.toExpandedJsonLd.map(v => ByteString(prettyPrint(v.json)))
+          case NTriples            => value.resource.toNTriples.map(v => ByteString(v.value))
+          case NQuads              => value.resource.toNQuads.map(v => ByteString(v.value))
+          case Dot                 => value.resource.toDot.map(v => ByteString(v.value))
         }
       }
 

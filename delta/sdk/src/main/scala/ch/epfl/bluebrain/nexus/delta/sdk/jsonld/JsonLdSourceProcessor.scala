@@ -12,6 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.jsonld.RemoteContextRef
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -78,6 +79,11 @@ object JsonLdSourceProcessor {
       * The collection of known types
       */
     def types: Set[Iri] = expanded.getTypes.getOrElse(Set.empty)
+
+    /**
+      * The references for the remote contexts
+      */
+    def remoteContextRefs: Set[RemoteContextRef] = RemoteContextRef(remoteContexts)
   }
 
   /**
@@ -202,6 +208,32 @@ object JsonLdSourceProcessor {
       underlying(context, iri, source)
     }
 
+    /**
+      * Converts the passed ''source'' to JsonLD compacted and expanded. The @id value is extracted from the payload if
+      * exists and compared to the passed ''iri'' if defined. If they aren't equal an [[UnexpectedId]] rejection is
+      * issued.
+      *
+      * When no @id is present, one is generated using the base on the project suffixed with a randomly generated UUID.
+      *
+      * @param ref
+      *   the project reference
+      * @param context
+      *   the project context to generate the @context when no @context is provided on the source
+      * @param source
+      *   the Json payload
+      * @return
+      *   a tuple with the compacted Json-LD and the expanded Json-LD
+      */
+    def apply(ref: ProjectRef, context: ProjectContext, iriOpt: Option[Iri], source: Json)(implicit
+        caller: Caller
+    ): IO[R, JsonLdResult] =
+      iriOpt
+        .map { iri =>
+          apply(ref, context, iri, source)
+        }
+        .getOrElse {
+          apply(ref, context, source)
+        }
   }
 
   object JsonLdSourceResolvingParser {

@@ -57,7 +57,7 @@ final case class QueryBuilder private[client] (private val query: JsonObject) {
       Nil
     } else {
       typeOperator match {
-        case TypeOperator.And => terms
+        case TypeOperator.And => List(and(terms: _*))
         case TypeOperator.Or  => List(or(terms: _*))
       }
     }
@@ -81,14 +81,17 @@ final case class QueryBuilder private[client] (private val query: JsonObject) {
           range(nxv.createdAt.prefix, params.createdAt) ++
           params.updatedBy.map(term(nxv.updatedBy.prefix, _)) ++
           range(nxv.updatedAt.prefix, params.updatedAt),
-        mustNotTerms = typesTerms(params.typeOperator, excludeTypes),
+        mustNotTerms = typesTerms(params.typeOperator.negate, excludeTypes),
         withScore = params.q.isDefined
       )
     )
   }
 
-  private def or(terms: JsonObject*) =
+  private def or(terms: JsonObject*)  =
     JsonObject("bool" -> Json.obj("should" -> terms.asJson))
+
+  private def and(terms: JsonObject*) =
+    JsonObject("bool" -> Json.obj("must" -> terms.asJson))
 
   /**
     * Add indices filter to the query body

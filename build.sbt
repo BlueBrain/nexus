@@ -970,8 +970,7 @@ lazy val servicePackaging = {
   import com.typesafe.sbt.packager.docker.{DockerChmodType, DockerVersion}
   import com.typesafe.sbt.packager.universal.UniversalPlugin.autoImport.Universal
   Seq(
-    Universal / mappings  += (WaitForIt.download(target.value) -> "bin/wait-for-it.sh"),
-    // docker publishing settings
+    // Docker publishing settings
     Docker / maintainer   := "Nexus Team <noreply@epfl.ch>",
     Docker / version      := {
       if (isSnapshot.value) "latest"

@@ -30,6 +30,15 @@ object ResourceRepresentation {
   }
 
   /**
+    * Source representation of a resource.
+    */
+  final case object AnnotatedSourceJson extends ResourceRepresentation {
+    override def extension: String = ".json"
+
+    override val toString: String = "annotated-source"
+  }
+
+  /**
     * Compacted JsonLD representation of a resource.
     */
   final case object CompactedJsonLd extends ResourceRepresentation {
@@ -73,13 +82,14 @@ object ResourceRepresentation {
 
   private def parse(value: String) =
     value match {
-      case SourceJson.toString      => Right(SourceJson)
-      case CompactedJsonLd.toString => Right(CompactedJsonLd)
-      case ExpandedJsonLd.toString  => Right(ExpandedJsonLd)
-      case NTriples.toString        => Right(NTriples)
-      case NQuads.toString          => Right(NQuads)
-      case Dot.toString             => Right(Dot)
-      case other                    => Left(s"$other is not a valid representation")
+      case SourceJson.toString          => Right(SourceJson)
+      case AnnotatedSourceJson.toString => Right(AnnotatedSourceJson)
+      case CompactedJsonLd.toString     => Right(CompactedJsonLd)
+      case ExpandedJsonLd.toString      => Right(ExpandedJsonLd)
+      case NTriples.toString            => Right(NTriples)
+      case NQuads.toString              => Right(NQuads)
+      case Dot.toString                 => Right(Dot)
+      case other                        => Left(s"$other is not a valid representation")
     }
 
   implicit final val resourceRepresentationJsonLdDecoder: JsonLdDecoder[ResourceRepresentation] =

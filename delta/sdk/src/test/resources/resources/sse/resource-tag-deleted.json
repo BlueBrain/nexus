@@ -8,6 +8,6 @@
   "_rev": 5,
   "_subject": "http://localhost/v1/realms/myrealm/users/username",
   "_types": [
-    "http://schema.org/Person"
+    "https://neuroshapes.org/Morphology"
   ]
 }

@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.schemas
 
 import cats.effect.{Clock, IO}
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
@@ -38,30 +39,28 @@ final class SchemasImpl private (
   override def create(
       projectRef: ProjectRef,
       source: Json
-  )(implicit caller: Caller): IO[SchemaResource] = {
-    for {
-      projectContext             <- fetchContext.onCreate(projectRef)
-      (iri, compacted, expanded) <- sourceParser(projectRef, projectContext, source).map { j =>
-                                      (j.iri, j.compacted, j.expanded)
-                                    }
-      expandedResolved           <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
-      res                        <- eval(CreateSchema(iri, projectRef, source, compacted, expandedResolved, caller.subject))
-    } yield res
-  }.span("createSchema")
+  )(implicit caller: Caller): IO[SchemaResource] =
+    createCommand(None, projectRef, source).flatMap(eval).span("createSchema")
 
   override def create(
       id: IdSegment,
       projectRef: ProjectRef,
       source: Json
-  )(implicit caller: Caller): IO[SchemaResource] = {
+  )(implicit caller: Caller): IO[SchemaResource] =
+    createCommand(Some(id), projectRef, source).flatMap(eval).span("createSchema")
+
+  override def createDryRun(projectRef: ProjectRef, source: Json)(implicit caller: Caller): IO[SchemaResource] =
+    createCommand(None, projectRef, source).flatMap(dryRun)
+
+  private def createCommand(id: Option[IdSegment], projectRef: ProjectRef, source: Json)(implicit
+      caller: Caller
+  ): IO[CreateSchema] =
     for {
       pc               <- fetchContext.onCreate(projectRef)
-      iri              <- expandIri(id, pc)
+      iri              <- id.traverse(expandIri(_, pc))
       jsonLd           <- sourceParser(projectRef, pc, iri, source)
-      expandedResolved <- schemaImports.resolve(iri, projectRef, jsonLd.expanded.addType(nxv.Schema))
-      res              <- eval(CreateSchema(iri, projectRef, source, jsonLd.compacted, expandedResolved, caller.subject))
-    } yield res
-  }.span("createSchema")
+      expandedResolved <- schemaImports.resolve(jsonLd.iri, projectRef, jsonLd.expanded.addType(nxv.Schema))
+    } yield CreateSchema(jsonLd.iri, projectRef, source, jsonLd.compacted, expandedResolved, caller.subject)
 
   override def update(
       id: IdSegment,
@@ -147,6 +146,9 @@ final class SchemasImpl private (
 
   private def eval(cmd: SchemaCommand) =
     log.evaluate(cmd.project, cmd.id, cmd).map(_._2.toResource)
+
+  private def dryRun(cmd: SchemaCommand) =
+    log.dryRun(cmd.project, cmd.id, cmd).map(_._2.toResource)
 }
 
 object SchemasImpl {

@@ -8,7 +8,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.jsonLdEncoderSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRepresentation.{CompactedJsonLd, Dot, ExpandedJsonLd, NQuads, NTriples, SourceJson}
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.AnnotatedSource
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRepresentation.{AnnotatedSourceJson, CompactedJsonLd, Dot, ExpandedJsonLd, NQuads, NTriples, SourceJson}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceRepresentation}
 import ch.epfl.bluebrain.nexus.delta.sdk.multifetch.model.MultiFetchResponse.Result
 import ch.epfl.bluebrain.nexus.delta.sdk.multifetch.model.MultiFetchResponse.Result.itemEncoder
@@ -87,26 +88,33 @@ object MultiFetchResponse {
           "project" -> item.project.asJson
         )
 
-        def valueToJson[A](value: JsonLdContent[A, _]): IO[RdfError, Json] = {
-          implicit val encoder: JsonLdEncoder[A] = value.encoder
-          toJson(value.resource, value.source)
+        def valueToJson[A](content: JsonLdContent[A, _]): IO[RdfError, Json] = {
+          implicit val encoder: JsonLdEncoder[A] = content.encoder
+          val value                              = content.resource
+          val source                             = content.source
+          repr match {
+            case SourceJson          => UIO.pure(source.asJson)
+            case AnnotatedSourceJson => AnnotatedSource(value, source)
+            case CompactedJsonLd     => value.toCompactedJsonLd.map { v => v.json }
+            case ExpandedJsonLd      => value.toExpandedJsonLd.map { v => v.json }
+            case NTriples            => value.toNTriples.map { v => v.value.asJson }
+            case NQuads              => value.toNQuads.map { v => v.value.asJson }
+            case Dot                 => value.toDot.map { v => v.value.asJson }
+          }
         }
 
-        def toJson[C, S](value: C, source: S)(implicit
-            valueJsonLdEncoder: JsonLdEncoder[C],
-            sourceEncoder: Encoder[S]
-        ): IO[RdfError, Json] =
+        def onError(error: Error): IO[RdfError, Json] =
           repr match {
-            case SourceJson      => UIO.pure(source.asJson)
-            case CompactedJsonLd => value.toCompactedJsonLd.map { v => v.json }
-            case ExpandedJsonLd  => value.toExpandedJsonLd.map { v => v.json }
-            case NTriples        => value.toNTriples.map { v => v.value.asJson }
-            case NQuads          => value.toNQuads.map { v => v.value.asJson }
-            case Dot             => value.toDot.map { v => v.value.asJson }
+            case SourceJson | AnnotatedSourceJson => UIO.pure(error.asJson)
+            case CompactedJsonLd                  => error.toCompactedJsonLd.map { v => v.json }
+            case ExpandedJsonLd                   => error.toExpandedJsonLd.map { v => v.json }
+            case NTriples                         => error.toNTriples.map { v => v.value.asJson }
+            case NQuads                           => error.toNQuads.map { v => v.value.asJson }
+            case Dot                              => error.toDot.map { v => v.value.asJson }
           }
 
         val result = item match {
-          case e: Error               => toJson(e, e).map { e => JsonObject("error" -> e) }
+          case e: Error               => onError(e).map { e => JsonObject("error" -> e) }
           case Success(_, _, content) => valueToJson(content).map { r => JsonObject("value" -> r) }
         }
 
