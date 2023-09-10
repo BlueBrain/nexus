@@ -31,11 +31,18 @@ private class AnonymousAuthTokenProvider extends AuthTokenProvider {
   override def apply(): UIO[Option[AuthToken]] = UIO.pure(None)
 }
 
+/**
+  * Uses a fixed (probably long-living) auth token. Should be removed when we are confident with the credentials method
+  */
 private class FixedAuthTokenProvider(authToken: AuthToken) extends AuthTokenProvider {
   override def apply(): UIO[Option[AuthToken]] = UIO.pure(Some(authToken))
 }
 
-private class CachingKeycloakAuthTokenProvider(identity: Credentials, service: KeycloakAuthService)(implicit
+/**
+  * Uses the supplied credentials to get an auth token from keycloak. This token is cached until near-expiry to speed up
+  * operations
+  */
+private class CachingKeycloakAuthTokenProvider(credentials: Credentials, service: KeycloakAuthService)(implicit
     clock: Clock[UIO]
 ) extends AuthTokenProvider {
   private val cache = KeyValueStore.create[Unit, AccessTokenWithMetadata]()
@@ -55,7 +62,7 @@ private class CachingKeycloakAuthTokenProvider(identity: Credentials, service: K
   }
 
   private def fetchValue = {
-    cache.getOrElseUpdate((), service.auth(identity))
+    cache.getOrElseUpdate((), service.auth(credentials))
   }
 
   private def isExpired(value: AccessTokenWithMetadata, now: Instant): Boolean = {
