@@ -19,8 +19,9 @@ trait AuthTokenProvider {
 object AuthTokenProvider {
   def apply(auth: Option[AuthMethod], keycloakAuthService: KeycloakAuthService): AuthTokenProvider = {
     auth match {
-      case Some(credentials: Credentials) => new CachingKeycloakAuthTokenProvider(credentials, keycloakAuthService)
-      case Some(Anonymous) | None         => new AnonymousAuthTokenProvider
+      case Some(credentials: Credentials)    => new CachingKeycloakAuthTokenProvider(credentials, keycloakAuthService)
+      case Some(AuthMethod.AuthToken(token)) => new FixedAuthTokenProvider(AuthToken(token))
+      case Some(Anonymous) | None            => new AnonymousAuthTokenProvider
     }
   }
   def anonymousForTest: AuthTokenProvider = new AnonymousAuthTokenProvider
@@ -28,6 +29,10 @@ object AuthTokenProvider {
 
 private class AnonymousAuthTokenProvider extends AuthTokenProvider {
   override def apply(): UIO[Option[AuthToken]] = UIO.pure(None)
+}
+
+private class FixedAuthTokenProvider(authToken: AuthToken) extends AuthTokenProvider {
+  override def apply(): UIO[Option[AuthToken]] = UIO.pure(Some(authToken))
 }
 
 private class CachingKeycloakAuthTokenProvider(identity: Credentials, service: KeycloakAuthService)(implicit
