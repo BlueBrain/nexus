@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.auth
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils
+import ch.epfl.bluebrain.nexus.delta.sdk.auth.AuthMethod.{Anonymous, Credentials}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.AuthToken
 import monix.bio.UIO
 
@@ -16,10 +17,10 @@ trait AuthTokenProvider {
 }
 
 object AuthTokenProvider {
-  def apply(auth: Option[Credentials], keycloakAuthService: KeycloakAuthService): AuthTokenProvider = {
+  def apply(auth: Option[AuthMethod], keycloakAuthService: KeycloakAuthService): AuthTokenProvider = {
     auth match {
-      case Some(authAs) => new CachingKeycloakAuthTokenProvider(authAs, keycloakAuthService)
-      case None         => new AnonymousAuthTokenProvider
+      case Some(credentials: Credentials) => new CachingKeycloakAuthTokenProvider(credentials, keycloakAuthService)
+      case Some(Anonymous) | None         => new AnonymousAuthTokenProvider
     }
   }
   def anonymousForTest: AuthTokenProvider = new AnonymousAuthTokenProvider

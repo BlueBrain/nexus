@@ -8,6 +8,7 @@ import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.MigrateEffectSyntax
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils
+import ch.epfl.bluebrain.nexus.delta.sdk.auth.AuthMethod.Credentials
 import ch.epfl.bluebrain.nexus.delta.sdk.error.TokenError.{ExpiryNotFoundInResponse, TokenHttpError, TokenNotFoundInResponse}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.Realms
