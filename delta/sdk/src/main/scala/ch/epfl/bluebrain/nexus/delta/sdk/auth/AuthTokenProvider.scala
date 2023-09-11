@@ -1,7 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.auth
 
 import cats.effect.Clock
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.KeyValueStore
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.MigrateEffectSyntax
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.auth.Credentials.{Anonymous, ClientCredentials}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.AuthToken
@@ -20,7 +22,7 @@ object AuthTokenProvider {
   def apply(credentials: Credentials, keycloakAuthService: OpenIdAuthService): AuthTokenProvider = {
     credentials match {
       case clientCredentials: ClientCredentials =>
-        new CachingKeycloakAuthTokenProvider(clientCredentials, keycloakAuthService)
+        new CachingOpenIdAuthTokenProvider(clientCredentials, keycloakAuthService)
       case Credentials.JWTToken(jwtToken)       => new FixedAuthTokenProvider(AuthToken(jwtToken))
       case Anonymous                            => new AnonymousAuthTokenProvider
     }
@@ -43,18 +45,25 @@ private class FixedAuthTokenProvider(authToken: AuthToken) extends AuthTokenProv
   * Uses the supplied credentials to get an auth token from keycloak. This token is cached until near-expiry to speed up
   * operations
   */
-private class CachingKeycloakAuthTokenProvider(credentials: ClientCredentials, service: OpenIdAuthService)(implicit
+private class CachingOpenIdAuthTokenProvider(credentials: ClientCredentials, service: OpenIdAuthService)(implicit
     clock: Clock[UIO]
-) extends AuthTokenProvider {
-  private val cache = KeyValueStore.create[Unit, AccessTokenWithMetadata]()
+) extends AuthTokenProvider
+    with MigrateEffectSyntax {
+
+  private val logger = Logger.cats[CachingOpenIdAuthTokenProvider]
+  private val cache  = KeyValueStore.create[Unit, AccessTokenWithMetadata]()
 
   override def apply(): UIO[Option[AuthToken]] = {
     for {
       existingValue <- cache.get(())
       now           <- IOUtils.instant
       finalValue    <- existingValue match {
-                         case None                                 => fetchValue
-                         case Some(value) if isExpired(value, now) => fetchValue
+                         case None                                 =>
+                           logger.debug("fetching auth token, no initial value").toUIO >>
+                             fetchValue
+                         case Some(value) if isExpired(value, now) =>
+                           logger.debug("fetching new auth token, current value near expiry").toUIO >>
+                             fetchValue
                          case Some(value)                          => UIO.pure(value)
                        }
     } yield {
