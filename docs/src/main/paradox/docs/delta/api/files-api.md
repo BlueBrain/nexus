@@ -14,6 +14,24 @@ Please visit @ref:[Authentication & authorization](authentication.md) section to
 
 @@@
 
+## Nexus metadata
+
+When using the endpoints described on this page, the responses will contain global metadata described on the
+@ref:[Nexus Metadata](../metadata.md) page. In addition, the following files specific metadata can be present
+
+- `_bytes`: size of the file in bytes
+- `_digest`: algorithm and checksum used for file integrity
+- `_filename`: name of the file
+- `_location`: path where the file is stored on the underlying storage
+- `_mediaType`: @link:[MIME](https://en.wikipedia.org/wiki/MIME){ open=new } specifying the type of the file
+- `_origin`: whether the file attributes resulted from an action taken by a client or the Nexus Storage Service
+- `_storage`: `@id`, `@type`, and revision of the @ref:[Storage](storages-api.md) used for the file
+- `_uuid`: @link:[UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier){ open=new } of the file
+- `_project`: address of the file's project
+- `_incoming`: address to query to obtain the @ref:[list of incoming links](resources-api.md#list-incoming-links)
+- `_outgoing`: address to query to obtain the @ref:[list of outgoing links](resources-api.md#list-outgoing-links)
+
+
 ## Indexing
 
 All the API calls modifying a file (creation, update, tagging, deprecation) can specify whether the file should be indexed
