@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.auth
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils
-import ch.epfl.bluebrain.nexus.delta.sdk.auth.AuthMethod.{Anonymous, Credentials}
+import ch.epfl.bluebrain.nexus.delta.sdk.auth.Credentials.{Anonymous, ClientCredentials}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.AuthToken
 import monix.bio.UIO
 
@@ -17,11 +17,12 @@ trait AuthTokenProvider {
 }
 
 object AuthTokenProvider {
-  def apply(auth: AuthMethod, keycloakAuthService: KeycloakAuthService): AuthTokenProvider = {
-    auth match {
-      case credentials: Credentials    => new CachingKeycloakAuthTokenProvider(credentials, keycloakAuthService)
-      case AuthMethod.AuthToken(token) => new FixedAuthTokenProvider(AuthToken(token))
-      case Anonymous                   => new AnonymousAuthTokenProvider
+  def apply(credentials: Credentials, keycloakAuthService: KeycloakAuthService): AuthTokenProvider = {
+    credentials match {
+      case clientCredentials: ClientCredentials =>
+        new CachingKeycloakAuthTokenProvider(clientCredentials, keycloakAuthService)
+      case Credentials.JWTToken(jwtToken)       => new FixedAuthTokenProvider(AuthToken(jwtToken))
+      case Anonymous                            => new AnonymousAuthTokenProvider
     }
   }
   def anonymousForTest: AuthTokenProvider = new AnonymousAuthTokenProvider
@@ -42,7 +43,7 @@ private class FixedAuthTokenProvider(authToken: AuthToken) extends AuthTokenProv
   * Uses the supplied credentials to get an auth token from keycloak. This token is cached until near-expiry to speed up
   * operations
   */
-private class CachingKeycloakAuthTokenProvider(credentials: Credentials, service: KeycloakAuthService)(implicit
+private class CachingKeycloakAuthTokenProvider(credentials: ClientCredentials, service: KeycloakAuthService)(implicit
     clock: Clock[UIO]
 ) extends AuthTokenProvider {
   private val cache = KeyValueStore.create[Unit, AccessTokenWithMetadata]()

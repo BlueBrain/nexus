@@ -8,7 +8,7 @@ import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.MigrateEffectSyntax
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils
-import ch.epfl.bluebrain.nexus.delta.sdk.auth.AuthMethod.Credentials
+import ch.epfl.bluebrain.nexus.delta.sdk.auth.Credentials.ClientCredentials
 import ch.epfl.bluebrain.nexus.delta.sdk.error.TokenError.{ExpiryNotFoundInResponse, TokenHttpError, TokenNotFoundInResponse}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.Realms
@@ -20,7 +20,7 @@ import java.time.{Duration, Instant}
 class KeycloakAuthService(httpClient: HttpClient, realms: Realms)(implicit clock: Clock[UIO])
     extends MigrateEffectSyntax {
 
-  def auth(credentials: Credentials): UIO[AccessTokenWithMetadata] = {
+  def auth(credentials: ClientCredentials): UIO[AccessTokenWithMetadata] = {
     for {
       realm                  <- realms.fetch(credentials.realm).toUIO
       response               <- requestToken(realm.value.tokenEndpoint, credentials.user, credentials.password)
