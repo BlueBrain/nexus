@@ -17,11 +17,11 @@ trait AuthTokenProvider {
 }
 
 object AuthTokenProvider {
-  def apply(auth: Option[AuthMethod], keycloakAuthService: KeycloakAuthService): AuthTokenProvider = {
+  def apply(auth: AuthMethod, keycloakAuthService: KeycloakAuthService): AuthTokenProvider = {
     auth match {
-      case Some(credentials: Credentials)    => new CachingKeycloakAuthTokenProvider(credentials, keycloakAuthService)
-      case Some(AuthMethod.AuthToken(token)) => new FixedAuthTokenProvider(AuthToken(token))
-      case Some(Anonymous) | None            => new AnonymousAuthTokenProvider
+      case credentials: Credentials    => new CachingKeycloakAuthTokenProvider(credentials, keycloakAuthService)
+      case AuthMethod.AuthToken(token) => new FixedAuthTokenProvider(AuthToken(token))
+      case Anonymous                   => new AnonymousAuthTokenProvider
     }
   }
   def anonymousForTest: AuthTokenProvider = new AnonymousAuthTokenProvider

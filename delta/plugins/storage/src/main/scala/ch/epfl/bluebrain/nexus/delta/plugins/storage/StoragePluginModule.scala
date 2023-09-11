@@ -24,7 +24,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
-import ch.epfl.bluebrain.nexus.delta.sdk.auth.{AuthTokenProvider, KeycloakAuthService}
+import ch.epfl.bluebrain.nexus.delta.sdk.auth.{AuthMethod, AuthTokenProvider, KeycloakAuthService}
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.ProjectDeletionTask
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
@@ -152,7 +152,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
   }
 
   make[AuthTokenProvider].from { (cfg: StorageTypeConfig, keycloakAuthService: KeycloakAuthService) =>
-    AuthTokenProvider(cfg.remoteDisk.flatMap(_.authentication), keycloakAuthService)
+    AuthTokenProvider(cfg.remoteDisk.map(_.authentication).getOrElse(AuthMethod.Anonymous), keycloakAuthService)
   }
 
   make[Files]

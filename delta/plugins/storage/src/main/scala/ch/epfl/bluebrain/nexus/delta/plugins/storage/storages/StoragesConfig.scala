@@ -199,7 +199,7 @@ object StoragesConfig {
   final case class RemoteDiskStorageConfig(
       digestAlgorithm: DigestAlgorithm,
       defaultEndpoint: BaseUri,
-      authentication: Option[AuthMethod],
+      authentication: AuthMethod,
       defaultReadPermission: Permission,
       defaultWritePermission: Permission,
       showLocation: Boolean,
