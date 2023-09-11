@@ -138,9 +138,7 @@ object ElasticSearchViewsQuery {
   ): ElasticSearchViewsQuery =
     new ElasticSearchViewsQueryImpl(
       ViewsStore[ElasticSearchViewRejection, ElasticSearchViewState](
-        ElasticSearchViews.entityType,
         ElasticSearchViewState.serializer,
-        defaultViewId,
         views.fetchState(_, _),
         view =>
           IO.raiseWhen(view.deprecated)(ViewIsDeprecated(view.id)).as {
