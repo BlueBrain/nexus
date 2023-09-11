@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.MigrateEffectSyntax
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.auth.Credentials.ClientCredentials
-import ch.epfl.bluebrain.nexus.delta.sdk.error.TokenError.{ExpiryNotFoundInResponse, TokenHttpError, TokenNotFoundInResponse}
+import ch.epfl.bluebrain.nexus.delta.sdk.error.AuthTokenError.{AuthTokenHttpError, AuthTokenNotFoundInResponse, ExpiryNotFoundInResponse}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.Realms
 import io.circe.Json
@@ -48,13 +48,13 @@ class KeycloakAuthService(httpClient: HttpClient, realms: Realms)(implicit clock
             .toEntity
         )
       )
-      .hideErrorsWith(TokenHttpError)
+      .hideErrorsWith(AuthTokenHttpError)
   }
 
   private def parseResponse(json: Json): UIO[(String, Duration)] = {
     for {
       token  <- json.hcursor.get[String]("access_token") match {
-                  case Left(failure) => IO.terminate(TokenNotFoundInResponse(failure))
+                  case Left(failure) => IO.terminate(AuthTokenNotFoundInResponse(failure))
                   case Right(value)  => UIO.pure(value)
                 }
       expiry <- json.hcursor.get[Long]("expires_in") match {

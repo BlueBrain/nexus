@@ -8,41 +8,41 @@ import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
 import io.circe.syntax.{EncoderOps, KeyOps}
 import io.circe.{DecodingFailure, Encoder, JsonObject}
 
-sealed abstract class TokenError(reason: String) extends SDKError {
+sealed abstract class AuthTokenError(reason: String) extends SDKError {
   override def getMessage: String = reason
 }
 
-object TokenError {
+object AuthTokenError {
 
   /**
     * Signals that an HTTP error occurred when fetching the token
     */
-  final case class TokenHttpError(cause: HttpClientError)
-      extends TokenError(s"HTTP error when requesting token: ${cause.reason}")
+  final case class AuthTokenHttpError(cause: HttpClientError)
+      extends AuthTokenError(s"HTTP error when requesting auth token: ${cause.reason}")
 
   /**
     * Signals that the token was missing from the authentication response
     */
-  final case class TokenNotFoundInResponse(failure: DecodingFailure)
-      extends TokenError(s"Token not found in auth response: ${failure.reason}")
+  final case class AuthTokenNotFoundInResponse(failure: DecodingFailure)
+      extends AuthTokenError(s"Auth token not found in auth response: ${failure.reason}")
 
   /**
     * Signals that the expiry was missing from the authentication response
     */
   final case class ExpiryNotFoundInResponse(failure: DecodingFailure)
-      extends TokenError(s"Expiry not found in auth response: ${failure.reason}")
+      extends AuthTokenError(s"Expiry not found in auth response: ${failure.reason}")
 
-  implicit val identityErrorEncoder: Encoder.AsObject[TokenError] = {
-    Encoder.AsObject.instance[TokenError] {
-      case TokenHttpError(r)           =>
-        JsonObject(keywords.tpe := "TokenHttpError", "reason" := r.reason)
-      case TokenNotFoundInResponse(r)  =>
-        JsonObject(keywords.tpe -> "TokenNotFoundInResponse".asJson, "reason" := r.message)
-      case ExpiryNotFoundInResponse(r) =>
+  implicit val identityErrorEncoder: Encoder.AsObject[AuthTokenError] = {
+    Encoder.AsObject.instance[AuthTokenError] {
+      case AuthTokenHttpError(r)          =>
+        JsonObject(keywords.tpe := "AuthTokenHttpError", "reason" := r.reason)
+      case AuthTokenNotFoundInResponse(r) =>
+        JsonObject(keywords.tpe -> "AuthTokenNotFoundInResponse".asJson, "reason" := r.message)
+      case ExpiryNotFoundInResponse(r)    =>
         JsonObject(keywords.tpe -> "ExpiryNotFoundInResponse".asJson, "reason" := r.message)
     }
   }
 
-  implicit val identityErrorJsonLdEncoder: JsonLdEncoder[TokenError] =
+  implicit val identityErrorJsonLdEncoder: JsonLdEncoder[AuthTokenError] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.error))
 }
