@@ -19,13 +19,14 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.RemainingElems
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
+import ch.epfl.bluebrain.nexus.testkit.bio.IOFromMap
 import fs2.Stream
 import monix.bio.{Task, UIO}
 
 import java.time.Instant
 import java.util.UUID
 
-class ElemRoutesSpec extends BaseRouteSpec with CirceLiteral {
+class ElemRoutesSpec extends BaseRouteSpec with CirceLiteral with IOFromMap {
 
   private val aclCheck = AclSimpleCheck().accepted
 

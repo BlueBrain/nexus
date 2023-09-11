@@ -12,6 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{AuthToken, Caller}
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.Realm
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.testkit.bio.IOFromMap
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, IOValues, TestHelpers}
 import com.nimbusds.jose.crypto.RSASSASigner
 import com.nimbusds.jose.jwk.RSAKey
@@ -34,6 +35,7 @@ class IdentitiesImplSpec
     with Matchers
     with CirceLiteral
     with TestHelpers
+    with IOFromMap
     with IOValues
     with EitherValuable {
 

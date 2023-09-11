@@ -8,7 +8,7 @@ import akka.http.scaladsl.model.headers.Location
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import akka.stream.{Materializer, SystemMaterializer}
 import cats.data.NonEmptyList
-import cats.effect.{Clock, Resource, Sync}
+import cats.effect.{Clock, IO, Resource, Sync}
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
@@ -77,22 +77,24 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
 
   make[RemoteContextResolution].named("aggregate").fromEffect { (otherCtxResolutions: Set[RemoteContextResolution]) =>
     for {
-      errorCtx      <- ContextValue.fromFile("contexts/error.json")
-      metadataCtx   <- ContextValue.fromFile("contexts/metadata.json")
-      searchCtx     <- ContextValue.fromFile("contexts/search.json")
-      pipelineCtx   <- ContextValue.fromFile("contexts/pipeline.json")
-      tagsCtx       <- ContextValue.fromFile("contexts/tags.json")
-      versionCtx    <- ContextValue.fromFile("contexts/version.json")
-      validationCtx <- ContextValue.fromFile("contexts/validation.json")
+      errorCtx          <- ContextValue.fromFile("contexts/error.json")
+      metadataCtx       <- ContextValue.fromFile("contexts/metadata.json")
+      searchCtx         <- ContextValue.fromFile("contexts/search.json")
+      pipelineCtx       <- ContextValue.fromFile("contexts/pipeline.json")
+      remoteContextsCtx <- ContextValue.fromFile("contexts/remote-contexts.json")
+      tagsCtx           <- ContextValue.fromFile("contexts/tags.json")
+      versionCtx        <- ContextValue.fromFile("contexts/version.json")
+      validationCtx     <- ContextValue.fromFile("contexts/validation.json")
     } yield RemoteContextResolution
       .fixed(
-        contexts.error      -> errorCtx,
-        contexts.metadata   -> metadataCtx,
-        contexts.search     -> searchCtx,
-        contexts.pipeline   -> pipelineCtx,
-        contexts.tags       -> tagsCtx,
-        contexts.version    -> versionCtx,
-        contexts.validation -> validationCtx
+        contexts.error          -> errorCtx,
+        contexts.metadata       -> metadataCtx,
+        contexts.search         -> searchCtx,
+        contexts.pipeline       -> pipelineCtx,
+        contexts.remoteContexts -> remoteContextsCtx,
+        contexts.tags           -> tagsCtx,
+        contexts.version        -> versionCtx,
+        contexts.validation     -> validationCtx
       )
       .merge(otherCtxResolutions.toSeq: _*)
   }
@@ -100,6 +102,7 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
   make[JsonLdApi].fromValue(new JsonLdJavaApi(appCfg.jsonLdApi))
 
   make[Clock[UIO]].from(Clock[UIO])
+  make[Clock[IO]].from(Clock.create[IO])
   make[UUIDF].from(UUIDF.random)
   make[Scheduler].from(Scheduler.global)
   make[JsonKeyOrdering].from(

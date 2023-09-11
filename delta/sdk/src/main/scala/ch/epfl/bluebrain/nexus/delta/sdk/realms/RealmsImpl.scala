@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.realms
 
 import akka.http.scaladsl.model.Uri
 import cats.data.NonEmptySet
-import cats.effect.Clock
+import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.sdk.RealmResource
@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import monix.bio.{IO, UIO}
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 
 final class RealmsImpl private (log: RealmsLog) extends Realms {
 
@@ -29,7 +29,7 @@ final class RealmsImpl private (log: RealmsLog) extends Realms {
       openIdConfig: Uri,
       logo: Option[Uri],
       acceptedAudiences: Option[NonEmptySet[String]]
-  )(implicit caller: Subject): IO[RealmRejection, RealmResource] = {
+  )(implicit caller: Subject): IO[RealmResource] = {
     val command = CreateRealm(label, name, openIdConfig, logo, acceptedAudiences, caller)
     eval(command).span("createRealm")
   }
@@ -41,24 +41,24 @@ final class RealmsImpl private (log: RealmsLog) extends Realms {
       openIdConfig: Uri,
       logo: Option[Uri],
       acceptedAudiences: Option[NonEmptySet[String]]
-  )(implicit caller: Subject): IO[RealmRejection, RealmResource] = {
+  )(implicit caller: Subject): IO[RealmResource] = {
     val command = UpdateRealm(label, rev, name, openIdConfig, logo, acceptedAudiences, caller)
     eval(command).span("updateRealm")
   }
 
-  override def deprecate(label: Label, rev: Int)(implicit caller: Subject): IO[RealmRejection, RealmResource] =
+  override def deprecate(label: Label, rev: Int)(implicit caller: Subject): IO[RealmResource] =
     eval(DeprecateRealm(label, rev, caller)).span("deprecateRealm")
 
-  private def eval(cmd: RealmCommand): IO[RealmRejection, RealmResource] =
+  private def eval(cmd: RealmCommand): IO[RealmResource] =
     log.evaluate(cmd.label, cmd).map(_._2.toResource)
 
-  override def fetch(label: Label): IO[RealmNotFound, RealmResource] =
+  override def fetch(label: Label): IO[RealmResource] =
     log
       .stateOr(label, RealmNotFound(label))
       .map(_.toResource)
       .span("fetchRealm")
 
-  override def fetchAt(label: Label, rev: Int): IO[RealmRejection.NotFound, RealmResource] =
+  override def fetchAt(label: Label, rev: Int): IO[RealmResource] =
     log
       .stateOr(label, rev, RealmNotFound(label), RevisionNotFound)
       .map(_.toResource)
@@ -68,7 +68,7 @@ final class RealmsImpl private (log: RealmsLog) extends Realms {
       pagination: Pagination.FromPagination,
       params: SearchParams.RealmSearchParams,
       ordering: Ordering[RealmResource]
-  ): UIO[SearchResults.UnscoredSearchResults[RealmResource]] =
+  ): IO[SearchResults.UnscoredSearchResults[RealmResource]] =
     SearchResults(
       log.currentStates(_.toResource).evalFilter(params.matches),
       pagination,
@@ -90,8 +90,8 @@ object RealmsImpl {
     * @param xas
     *   the doobie transactors
     */
-  final def apply(config: RealmsConfig, resolveWellKnown: Uri => IO[RealmRejection, WellKnown], xas: Transactors)(
-      implicit clock: Clock[UIO]
+  final def apply(config: RealmsConfig, resolveWellKnown: Uri => IO[WellKnown], xas: Transactors)(implicit
+      clock: Clock[IO]
   ): Realms = new RealmsImpl(
     GlobalEventLog(Realms.definition(resolveWellKnown, OpenIdExists(xas)), config.eventLog, xas)
   )

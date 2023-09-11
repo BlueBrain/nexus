@@ -4,7 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen, ResourceResolutionGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.{FetchReso
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport.ResolverReport
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{ResolverResolutionRejection, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.NexusSource.DecodingOption
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{BlankResourceId, IncorrectRev, InvalidJsonLdFormat, InvalidResource, InvalidSchemaRejection, ProjectContextRejection, ResourceAlreadyExists, ResourceIsDeprecated, ResourceNotFound, RevisionNotFound, SchemaIsDeprecated, TagNotFound, UnexpectedResourceId, UnexpectedResourceSchema}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{BlankResourceId, IncorrectRev, InvalidJsonLdFormat, InvalidResource, InvalidSchemaRejection, ProjectContextRejection, ReservedResourceId, ResourceAlreadyExists, ResourceIsDeprecated, ResourceNotFound, RevisionNotFound, SchemaIsDeprecated, TagNotFound, UnexpectedResourceId, UnexpectedResourceSchema}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
@@ -51,10 +51,10 @@ class ResourcesImplSpec
   implicit private val api: JsonLdApi = JsonLdJavaApi.strict
 
   implicit private def res: RemoteContextResolution =
-    RemoteContextResolution.fixed(
-      contexts.metadata        -> jsonContentOf("contexts/metadata.json").topContextValueOrEmpty,
-      contexts.shacl           -> jsonContentOf("contexts/shacl.json").topContextValueOrEmpty,
-      contexts.schemasMetadata -> jsonContentOf("contexts/schemas-metadata.json").topContextValueOrEmpty
+    RemoteContextResolution.fixedIO(
+      contexts.metadata        -> ContextValue.fromFile("contexts/metadata.json"),
+      contexts.shacl           -> ContextValue.fromFile("contexts/shacl.json"),
+      contexts.schemasMetadata -> ContextValue.fromFile("contexts/schemas-metadata.json")
     )
 
   private val org               = Label.unsafe("myorg")
@@ -89,11 +89,11 @@ class ResourcesImplSpec
 
   private val resolverContextResolution: ResolverContextResolution = new ResolverContextResolution(
     res,
-    (r, p, _) => resources.fetch(r, p).bimap(_ => ResourceResolutionReport(), _.value)
+    (r, p, _) => resources.fetch(r, p).bimap(_ => ResourceResolutionReport(), identity)
   )
 
   private lazy val resources: Resources = ResourcesImpl(
-    new ValidateResourceImpl(resourceResolution),
+    ValidateResource(resourceResolution),
     fetchContext,
     resolverContextResolution,
     config,
@@ -133,8 +133,6 @@ class ResourcesImplSpec
           )
         }
       }
-      //ResourceF(https://bluebrain.github.io/nexus/vocabulary/myid,ResourceInProjectAndSchemaUris(myorg/myproject,myorg/myproject,resources/myorg/myproject/https:%2F%2Fbluebrain.github.io%2Fnexus%2Fschemas%2Funconstrained.json%3Frev=1/https:%2F%2Fbluebrain.github.io%2Fnexus%2Fvocabulary%2Fmyid,resources/myorg/myproject/https:%2F%2Fbluebrain.github.io%2Fnexus%2Fschemas%2Funconstrained.json/myid),1,Set(https://bluebrain.github.io/nexus/vocabulary/Custom),false,1970-01-01T00:00:00Z,User(user,realm),1970-01-01T00:00:00Z,User(user,realm),https://bluebrain.github.io/nexus/schemas/unconstrained.json?rev=1,Resource(https://bluebrain.github.io/nexus/vocabulary/myid,myorg/myproject,Tags(Map())
-      //ResourceF(https://bluebrain.github.io/nexus/vocabulary/myid,ResourceInProjectAndSchemaUris(myorg/myproject,myorg/myproject,resources/myorg/myproject/https:%2F%2Fbluebrain.github.io%2Fnexus%2Fschemas%2Funconstrained.json%3Frev=1/https:%2F%2Fbluebrain.github.io%2Fnexus%2Fvocabulary%2Fmyid,resources/myorg/myproject/_/myid),1,Set(https://bluebrain.github.io/nexus/vocabulary/Custom),false,1970-01-01T00:00:00Z,User(user,realm),1970-01-01T00:00:00Z,User(user,realm),https://bluebrain.github.io/nexus/schemas/unconstrained.json?rev=1,Resource(https://bluebrain.github.io/nexus/vocabulary/myid,myorg/myproject,Tags(Map())
 
       "succeed with the id present on the payload and passed" in {
         val list =
@@ -225,6 +223,14 @@ class ResourcesImplSpec
           BlankResourceId
       }
 
+      "reject with ReservedResourceId" in {
+        forAll(List(Latest(schemas.resources), Latest(schema1.id))) { schemaRef =>
+          val myId                 = contexts + "some.json"
+          val sourceWithReservedId = source deepMerge json"""{"@id": "$myId"}"""
+          resources.create(myId, projectRef, schemaRef, sourceWithReservedId).rejectedWith[ReservedResourceId]
+        }
+      }
+
       "reject if it already exists" in {
         resources.create(myId, projectRef, schemas.resources, source).rejected shouldEqual
           ResourceAlreadyExists(myId, projectRef)
@@ -285,6 +291,15 @@ class ResourcesImplSpec
         val unknownResource = nxv + "fail"
         val sourceMyIdX     =
           source.addContext(contexts.metadata).addContext(unknownResource) deepMerge json"""{"@id": "$myIdX"}"""
+        resources.create(projectRef, resourceSchema, sourceMyIdX).rejectedWith[InvalidJsonLdFormat]
+      }
+
+      "reject for an incorrect payload" in {
+        val myIdX       = nxv + "myidx"
+        val sourceMyIdX =
+          source.addContext(
+            contexts.metadata
+          ) deepMerge json"""{"other": {"@id": " http://nexus.example.com/myid"}}""" deepMerge json"""{"@id": "$myIdX"}"""
         resources.create(projectRef, resourceSchema, sourceMyIdX).rejectedWith[InvalidJsonLdFormat]
       }
     }
@@ -467,23 +482,6 @@ class ResourcesImplSpec
 
       "reject if project is deprecated" in {
         resources.tag(myId, projectDeprecated.ref, None, tag, 2, 1).rejectedWith[ProjectContextRejection]
-      }
-    }
-
-    "validating a resource" should {
-      "succeed when the resource is valid" in {
-        resources.validate(myId, projectRef, Some(schema1.id)).accepted
-      }
-
-      "succeed when the resource is valid against its own schema" in {
-        resources.validate(myId, projectRef, None).accepted
-      }
-
-      "fail when the resource is invalid against the specified schema" in {
-        val otherId     = nxv + "validation-resource"
-        val wrongSource = source deepMerge json"""{"@id": "$otherId", "number": "wrong"}"""
-        resources.create(otherId, projectRef, schemas.resources, wrongSource).accepted
-        resources.validate(otherId, projectRef, Some(schema1.id)).rejectedWith[InvalidResource]
       }
     }
 

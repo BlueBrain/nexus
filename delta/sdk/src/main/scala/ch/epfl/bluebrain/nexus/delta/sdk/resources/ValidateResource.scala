@@ -1,128 +1,130 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resources
 
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.rdf.shacl.{ShaclEngine, ValidationReport}
+import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclEngine
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.ResourceResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.ValidateResource.ValidationResult
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.ValidateResource.ValidationResult.{NoValidation, Validated}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{InvalidJsonLdFormat, InvalidResource, InvalidSchemaRejection, ReservedResourceId, ResourceShaclEngineRejection, SchemaIsDeprecated}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
-import io.circe.syntax.{EncoderOps, KeyOps}
-import io.circe.{Encoder, JsonObject}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.ValidationResult._
 import monix.bio.IO
 
-object ValidateResource {
-  sealed trait ValidationResult {
-    def schema: ResourceRef.Revision
-    def project: ProjectRef
-  }
-
-  object ValidationResult {
-    implicit val resourceRejectionEncoder: Encoder.AsObject[ValidationResult] =
-      Encoder.AsObject.instance[ValidationResult] { r =>
-        val tpe = ClassUtils.simpleName(r)
-        val obj = JsonObject(
-          keywords.tpe := tpe,
-          "schema"     := r.schema,
-          "project"    := r.project
-        )
-        r match {
-          case NoValidation(_)         => obj
-          case Validated(_, _, report) =>
-            obj
-              .add("report", report.asJson)
-              .add("@context", "https://bluebrain.github.io/nexus/contexts/shacl-20170720.json".asJson)
-        }
-      }
-
-    implicit val resourceRejectionJsonLdEncoder: JsonLdEncoder[ValidationResult] =
-      JsonLdEncoder.computeFromCirce(ContextValue(contexts.validation))
-    final case class NoValidation(project: ProjectRef) extends ValidationResult {
-      override def schema: ResourceRef.Revision = ResourceRef.Revision(schemas.resources, 1)
-    }
-
-    case class Validated(project: ProjectRef, schema: ResourceRef.Revision, report: ValidationReport)
-        extends ValidationResult
-  }
-}
-
+/**
+  * Allows to validate the resource:
+  *   - Validate it against the provided schema
+  *   - Checking if the provided resource id is not reserved
+  */
 trait ValidateResource {
+
+  /**
+    * Validate against a schema reference
+    * @param resourceId
+    *   the id of the resource
+    * @param expanded
+    *   its expanded JSON-LD representation
+    * @param schemaRef
+    *   the reference of the schema
+    * @param projectRef
+    *   the project of the resource where to resolve the reference of the schema
+    * @param caller
+    *   the caller
+    */
   def apply(
-      projectRef: ProjectRef,
-      schemaRef: ResourceRef,
-      caller: Caller,
       resourceId: Iri,
-      expanded: ExpandedJsonLd
+      expanded: ExpandedJsonLd,
+      schemaRef: ResourceRef,
+      projectRef: ProjectRef,
+      caller: Caller
+  ): IO[ResourceRejection, ValidationResult]
+
+  /**
+    * Validate against a schema
+    * @param resourceId
+    *   the id of the resource
+    * @param expanded
+    *   its expanded JSON-LD representation
+    * @param schema
+    *   the schema to validate against
+    */
+  def apply(
+      resourceId: Iri,
+      expanded: ExpandedJsonLd,
+      schema: ResourceF[Schema]
   ): IO[ResourceRejection, ValidationResult]
 }
 
-final class ValidateResourceImpl(resourceResolution: ResourceResolution[Schema])(implicit
-    jsonLdApi: JsonLdApi
-) extends ValidateResource {
-  private def toGraph(id: Iri, expanded: ExpandedJsonLd): IO[ResourceRejection, Graph] =
-    IO.fromEither(expanded.toGraph).mapError(err => InvalidJsonLdFormat(Some(id), err))
+object ValidateResource {
 
-  override def apply(
-      projectRef: ProjectRef,
-      schemaRef: ResourceRef,
-      caller: Caller,
-      resourceId: Iri,
-      expanded: ExpandedJsonLd
-  ): IO[ResourceRejection, ValidationResult] =
-    if (isUnconstrained(schemaRef))
-      assertNotReservedId(resourceId) >>
-        toGraph(resourceId, expanded) >>
-        IO.pure(NoValidation(projectRef))
-    else
-      for {
-        _      <- assertNotReservedId(resourceId)
-        graph  <- toGraph(resourceId, expanded)
-        schema <- resolveSchema(resourceResolution, projectRef, schemaRef, caller)
-        report <- shaclValidate(schemaRef, resourceId, schema, graph)
-        _      <- IO.raiseWhen(!report.isValid())(InvalidResource(resourceId, schemaRef, report, expanded))
-      } yield Validated(schema.value.project, ResourceRef.Revision(schema.id, schema.rev), report)
+  def apply(resourceResolution: ResourceResolution[Schema])(implicit jsonLdApi: JsonLdApi): ValidateResource =
+    new ValidateResource {
+      override def apply(
+          resourceId: Iri,
+          expanded: ExpandedJsonLd,
+          schemaRef: ResourceRef,
+          projectRef: ProjectRef,
+          caller: Caller
+      ): IO[ResourceRejection, ValidationResult] =
+        if (isUnconstrained(schemaRef))
+          assertNotReservedId(resourceId) >>
+            toGraph(resourceId, expanded) >>
+            IO.pure(NoValidation(projectRef))
+        else
+          for {
+            schema <- resolveSchema(resourceResolution, projectRef, schemaRef, caller)
+            result <- apply(resourceId, expanded, schema)
+          } yield result
 
-  private def shaclValidate(schemaRef: ResourceRef, resourceId: Iri, schema: ResourceF[Schema], graph: Graph)(implicit
-      jsonLdApi: JsonLdApi
-  ) = {
-    ShaclEngine(graph ++ schema.value.ontologies, schema.value.shapes, reportDetails = true, validateShapes = false)
-      .mapError(ResourceShaclEngineRejection(resourceId, schemaRef, _))
-  }
+      def apply(
+          resourceId: Iri,
+          expanded: ExpandedJsonLd,
+          schema: ResourceF[Schema]
+      ): IO[ResourceRejection, ValidationResult] =
+        for {
+          _        <- assertNotReservedId(resourceId)
+          graph    <- toGraph(resourceId, expanded)
+          schemaRef = ResourceRef.Revision(schema.id, schema.rev)
+          report   <- shaclValidate(resourceId, graph, schemaRef, schema)
+          _        <- IO.raiseWhen(!report.isValid())(InvalidResource(resourceId, schemaRef, report, expanded))
+        } yield Validated(schema.value.project, ResourceRef.Revision(schema.id, schema.rev), report)
 
-  private def assertNotDeprecated(schema: ResourceF[Schema]) = {
-    IO.raiseWhen(schema.deprecated)(SchemaIsDeprecated(schema.value.id))
-  }
+      private def toGraph(id: Iri, expanded: ExpandedJsonLd): IO[ResourceRejection, Graph] =
+        IO.fromEither(expanded.toGraph).mapError(err => InvalidJsonLdFormat(Some(id), err))
 
-  private def assertNotReservedId(resourceId: Iri) = {
-    IO.raiseWhen(resourceId.startsWith(contexts.base))(ReservedResourceId(resourceId))
-  }
+      private def shaclValidate(resourceId: Iri, graph: Graph, schemaRef: ResourceRef, schema: ResourceF[Schema]) = {
+        ShaclEngine(graph ++ schema.value.ontologies, schema.value.shapes, reportDetails = true, validateShapes = false)
+          .mapError(ResourceShaclEngineRejection(resourceId, schemaRef, _))
+      }
 
-  private def isUnconstrained(schemaRef: ResourceRef) = {
-    schemaRef == Latest(schemas.resources) || schemaRef == ResourceRef.Revision(schemas.resources, 1)
-  }
+      private def assertNotDeprecated(schema: ResourceF[Schema]) = {
+        IO.raiseWhen(schema.deprecated)(SchemaIsDeprecated(schema.value.id))
+      }
 
-  private def resolveSchema(
-      resourceResolution: ResourceResolution[Schema],
-      projectRef: ProjectRef,
-      schemaRef: ResourceRef,
-      caller: Caller
-  ) = {
-    resourceResolution
-      .resolve(schemaRef, projectRef)(caller)
-      .mapError(InvalidSchemaRejection(schemaRef, projectRef, _))
-      .tapEval(schema => assertNotDeprecated(schema))
-  }
+      private def assertNotReservedId(resourceId: Iri) = {
+        IO.raiseWhen(resourceId.startsWith(contexts.base))(ReservedResourceId(resourceId))
+      }
+
+      private def isUnconstrained(schemaRef: ResourceRef) = {
+        schemaRef == Latest(schemas.resources) || schemaRef == ResourceRef.Revision(schemas.resources, 1)
+      }
+
+      private def resolveSchema(
+          resourceResolution: ResourceResolution[Schema],
+          projectRef: ProjectRef,
+          schemaRef: ResourceRef,
+          caller: Caller
+      ) = {
+        resourceResolution
+          .resolve(schemaRef, projectRef)(caller)
+          .mapError(InvalidSchemaRejection(schemaRef, projectRef, _))
+          .tapEval(schema => assertNotDeprecated(schema))
+      }
+    }
 }

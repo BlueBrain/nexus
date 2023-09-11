@@ -1,5 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing
 
+import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
+import ch.epfl.bluebrain.nexus.delta.kernel.syntax.kamonSyntax
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{BlazegraphClient, SparqlWriteQuery}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphSink.{logger, BlazegraphBulk}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -42,6 +45,9 @@ final class BlazegraphSink(
 
   private val endpoint: Iri = base.endpoint.toIri
 
+  implicit private val kamonComponent: KamonMetricComponent =
+    KamonMetricComponent(BlazegraphViews.entityType.value)
+
   override def apply(elements: Chunk[Elem[NTriples]]): Task[Chunk[Elem[Unit]]] = {
     val bulk = elements.foldLeft(BlazegraphBulk.empty(endpoint)) {
       case (acc, Elem.SuccessElem(_, id, _, _, _, triples, _)) =>
@@ -63,7 +69,7 @@ final class BlazegraphSink(
         )
     else
       UIO.pure(markInvalidIdsAsFailed(elements, bulk.invalidIds))
-  }
+  }.span("blazegraphSink")
 
   private def markInvalidIdsAsFailed(elements: Chunk[Elem[NTriples]], invalidIds: Set[Iri]) =
     elements.map { e =>

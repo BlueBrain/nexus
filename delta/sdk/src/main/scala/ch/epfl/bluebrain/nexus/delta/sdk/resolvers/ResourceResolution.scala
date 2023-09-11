@@ -10,9 +10,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{Resolver, ResolverReje
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.Resource
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas
-import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.{Schema, SchemaRejection}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, ProjectRef, ResourceRef}
 import monix.bio.{IO, UIO}
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 
 object ResourceResolution {
 
@@ -83,7 +84,8 @@ object ResourceResolution {
     apply(
       aclCheck,
       resolvers,
-      (ref: ResourceRef, project: ProjectRef) => schemas.fetch(ref, project).redeem(_ => None, Some(_)),
+      (ref: ResourceRef, project: ProjectRef) =>
+        schemas.fetch(ref, project).toBIO[SchemaRejection].redeem(_ => None, Some(_)),
       Permissions.schemas.read
     )
 

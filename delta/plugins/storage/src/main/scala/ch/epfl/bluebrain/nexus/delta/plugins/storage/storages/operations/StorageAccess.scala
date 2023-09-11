@@ -7,9 +7,9 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.DiskStorageAccess
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteDiskStorageAccess
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.S3StorageAccess
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import monix.bio.IO
 
 private[operations] trait StorageAccess {
@@ -30,11 +30,15 @@ object StorageAccess {
 
   final private[storage] def apply(
       id: Iri,
-      storage: StorageValue
-  )(implicit config: StorageTypeConfig, client: HttpClient, as: ActorSystem): IO[StorageNotAccessible, Unit] =
+      storage: StorageValue,
+      client: RemoteDiskStorageClient,
+      config: StorageTypeConfig
+  )(implicit
+      as: ActorSystem
+  ): IO[StorageNotAccessible, Unit] =
     storage match {
       case storage: DiskStorageValue       => DiskStorageAccess(id, storage)
-      case storage: S3StorageValue         => new S3StorageAccess().apply(id, storage)
-      case storage: RemoteDiskStorageValue => new RemoteDiskStorageAccess().apply(id, storage)
+      case storage: S3StorageValue         => new S3StorageAccess(config).apply(id, storage)
+      case storage: RemoteDiskStorageValue => new RemoteDiskStorageAccess(client).apply(id, storage)
     }
 }

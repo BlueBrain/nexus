@@ -230,6 +230,7 @@ object Vocabulary {
     val quotas                = contexts + "quotas.json"
     val realms                = contexts + "realms.json"
     val realmsMetadata        = contexts + "realms-metadata.json"
+    val remoteContexts        = contexts + "remote-contexts.json"
     val resolvers             = contexts + "resolvers.json"
     val resolversMetadata     = contexts + "resolvers-metadata.json"
     val search                = contexts + "search.json"

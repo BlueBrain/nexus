@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
+import ch.epfl.bluebrain.nexus.delta.rdf.{ExplainResult, RdfError}
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.{ConversionError, RemoteContextCircularDependency, RemoteContextError, UnexpectedJsonLd, UnexpectedJsonLdContext}
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdJavaApi.{ioTryOrRdfError, tryOrRdfError}
@@ -45,12 +45,18 @@ final class JsonLdJavaApi(config: JsonLdApiConfig) extends JsonLdApi {
   override private[rdf] def expand(
       input: Json
   )(implicit opts: JsonLdOptions, rcr: RemoteContextResolution): IO[RdfError, Seq[JsonObject]] =
+    explainExpand(input).map(_.value)
+
+  override private[rdf] def explainExpand(
+      input: Json
+  )(implicit opts: JsonLdOptions, rcr: RemoteContextResolution): IO[RdfError, ExplainResult[Seq[JsonObject]]] =
     for {
       obj            <- ioTryOrRdfError(JsonUtils.fromString(input.noSpaces), "building input")
-      options        <- documentLoader(input).map(toOpts)
+      remoteContexts <- remoteContexts(input)
+      options         = toOpts(documentLoader(remoteContexts))
       expanded       <- ioTryOrRdfError(JsonUtils.toString(JsonLdProcessor.expand(obj, options)), "expanding")
       expandedSeqObj <- IO.fromEither(toSeqJsonObjectOrErr(expanded))
-    } yield expandedSeqObj
+    } yield ExplainResult(remoteContexts, expandedSeqObj)
 
   override private[rdf] def frame(
       input: Json,
@@ -108,14 +114,22 @@ final class JsonLdJavaApi(config: JsonLdApiConfig) extends JsonLdApi {
       aliases = (ctx.getPrefixes(false).asScala.toMap -- pm.keySet).map { case (k, v) => k -> iri"$v" }
     } yield JsonLdContext(value, getIri(ctx, keywords.base), getIri(ctx, keywords.vocab), aliases, pm)
 
-  private def documentLoader(jsons: Json*)(implicit rcr: RemoteContextResolution): IO[RdfError, DocumentLoader] =
+  private def remoteContexts(
+      jsons: Json*
+  )(implicit rcr: RemoteContextResolution): IO[RemoteContextError, Map[Iri, RemoteContext]] =
     IO.parTraverseUnordered(jsons)(rcr(_))
       .bimap(
         RemoteContextError,
-        _.foldLeft(Map.empty[Iri, ContextValue])(_ ++ _).foldLeft(new DocumentLoader()) { case (dl, (iri, ctx)) =>
-          dl.addInjectedDoc(iri.toString, ctx.contextObj.asJson.noSpaces)
-        }
+        _.foldLeft(Map.empty[Iri, RemoteContext])(_ ++ _)
       )
+
+  private def documentLoader(remoteContexts: Map[Iri, RemoteContext]): DocumentLoader =
+    remoteContexts.foldLeft(new DocumentLoader()) { case (dl, (iri, ctx)) =>
+      dl.addInjectedDoc(iri.toString, ctx.value.contextObj.asJson.noSpaces)
+    }
+
+  private def documentLoader(jsons: Json*)(implicit rcr: RemoteContextResolution): IO[RdfError, DocumentLoader] =
+    remoteContexts(jsons: _*).map(documentLoader)
 
   private def toOpts(dl: DocumentLoader = new DocumentLoader)(implicit options: JsonLdOptions): JsonLdJavaOptions = {
     val opts = new JsonLdJavaOptions()

@@ -12,7 +12,7 @@
       "label": "CA1 field of hippocampus"
     }
   },
-  "name": "Neuron density: CA1",
+  "label": "Neuron density: CA1",
   "note": "Validation data",
   "series": [
     {

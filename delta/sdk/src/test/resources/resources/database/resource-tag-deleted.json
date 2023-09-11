@@ -2,7 +2,7 @@
   "id": "https://bluebrain.github.io/nexus/vocabulary/myId",
   "project": "myorg/myproj",
   "types": [
-    "http://schema.org/Person"
+    "https://neuroshapes.org/Morphology"
   ],
   "tag": "mytag",
   "rev": 5,

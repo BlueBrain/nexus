@@ -1,15 +1,16 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.postgres
 
-import cats.syntax.all._
 import cats.effect.Resource
-import ch.epfl.bluebrain.nexus.delta.sourcing.{Execute, Transactors}
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.{Execute, Transactors}
+import ch.epfl.bluebrain.nexus.testkit.NexusSuite
+import ch.epfl.bluebrain.nexus.testkit.bio.ResourceFixture
 import ch.epfl.bluebrain.nexus.testkit.bio.ResourceFixture.TaskFixture
-import ch.epfl.bluebrain.nexus.testkit.bio.{BioSuite, ResourceFixture}
 import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresContainer
+import doobie.implicits._
 import doobie.postgres.sqlstate
 import monix.bio.{IO, Task, UIO}
-import doobie.implicits._
 import munit.Location
 import org.postgresql.util.PSQLException
 
@@ -41,7 +42,7 @@ object Doobie {
   )(implicit cl: ClassLoader): TaskFixture[Transactors] =
     ResourceFixture.suiteLocal(name, resource(user, pass))
 
-  trait Fixture { self: BioSuite =>
+  trait Fixture { self: NexusSuite =>
     val doobie: ResourceFixture.TaskFixture[Transactors] = Doobie.suiteLocalFixture("doobie")
 
     /**

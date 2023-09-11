@@ -11,8 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.ValidateResource.ValidationResult
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{IncorrectRev, InvalidResourceId, ResourceAlreadyExists, ResourceFetchRejection, ResourceIsDeprecated, ResourceNotFound, RevisionNotFound, TagNotFound, UnexpectedResourceSchema}
@@ -107,23 +106,6 @@ trait Resources {
   )(implicit caller: Caller): IO[ResourceRejection, DataResource]
 
   /**
-    * Validates an existing resource.
-    *
-    * @param id
-    *   the identifier that will be expanded to the Iri of the resource
-    * @param projectRef
-    *   the project reference where the resource belongs
-    * @param schemaOpt
-    *   the optional identifier that will be expanded to the schema reference to validate the resource. A None value
-    *   uses the currently available resource schema reference.
-    */
-  def validate(
-      id: IdSegmentRef,
-      projectRef: ProjectRef,
-      schemaOpt: Option[IdSegment]
-  )(implicit caller: Caller): IO[ResourceRejection, ValidationResult]
-
-  /**
     * Adds a tag to an existing resource.
     *
     * @param id
@@ -193,6 +175,23 @@ trait Resources {
   )(implicit caller: Subject): IO[ResourceRejection, DataResource]
 
   /**
+    * Fetches a resource state.
+    *
+    * @param id
+    *   the identifier that will be expanded to the Iri of the resource with its optional rev/tag
+    * @param projectRef
+    *   the project reference where the resource belongs
+    * @param schemaOpt
+    *   the optional identifier that will be expanded to the schema reference of the resource. A None value uses the
+    *   currently available resource schema reference.
+    */
+  def fetchState(
+      id: IdSegmentRef,
+      projectRef: ProjectRef,
+      schemaOpt: Option[IdSegment]
+  ): IO[ResourceFetchRejection, ResourceState]
+
+  /**
     * Fetches a resource.
     *
     * @param id
@@ -239,19 +238,40 @@ object Resources {
     */
   val mappings: ApiMappings = ApiMappings("_" -> schemas.resources, "resource" -> schemas.resources, "nxv" -> nxv.base)
 
+  /**
+    * Expands the segment to a [[ResourceRef]]
+    */
+  def expandResourceRef(segment: IdSegment, context: ProjectContext): IO[InvalidResourceId, ResourceRef] =
+    IO.fromOption(
+      segment.toIri(context.apiMappings, context.base).map(ResourceRef(_)),
+      InvalidResourceId(segment.asString)
+    )
+
+  /**
+    * Expands the segment to a [[ResourceRef]] if defined
+    */
+  def expandResourceRef(
+      segmentOpt: Option[IdSegment],
+      context: ProjectContext
+  ): IO[InvalidResourceId, Option[ResourceRef]] =
+    segmentOpt match {
+      case None         => IO.none
+      case Some(schema) => expandResourceRef(schema, context).map(Some.apply)
+    }
+
   private[delta] def next(state: Option[ResourceState], event: ResourceEvent): Option[ResourceState] = {
     // format: off
     def created(e: ResourceCreated): Option[ResourceState] =
       Option.when(state.isEmpty){
-        ResourceState(e.id, e.project, e.schemaProject, e.source, e.compacted, e.expanded, e.rev, deprecated = false, e.schema, e.types, Tags.empty, e.instant, e.subject, e.instant, e.subject)
+        ResourceState(e.id, e.project, e.schemaProject, e.source, e.compacted, e.expanded, e.remoteContexts, e.rev, deprecated = false, e.schema, e.types, Tags.empty, e.instant, e.subject, e.instant, e.subject)
       }
 
     def updated(e: ResourceUpdated): Option[ResourceState] = state.map {
-      _.copy(rev = e.rev, types = e.types, source = e.source, compacted = e.compacted, expanded = e.expanded, updatedAt = e.instant, updatedBy = e.subject)
+      _.copy(rev = e.rev, types = e.types, source = e.source, compacted = e.compacted, expanded = e.expanded, remoteContexts = e.remoteContexts, updatedAt = e.instant, updatedBy = e.subject)
     }
 
     def refreshed(e: ResourceRefreshed): Option[ResourceState] = state.map {
-      _.copy(rev = e.rev, types = e.types, compacted = e.compacted, expanded = e.expanded, updatedAt = e.instant, updatedBy = e.subject)
+      _.copy(rev = e.rev, types = e.types, compacted = e.compacted, expanded = e.expanded, remoteContexts = e.remoteContexts,updatedAt = e.instant, updatedBy = e.subject)
     }
 
     def tagAdded(e: ResourceTagAdded): Option[ResourceState] = state.map { s =>
@@ -279,36 +299,37 @@ object Resources {
 
   @SuppressWarnings(Array("OptionGet"))
   private[delta] def evaluate(
-      resourceValidator: ValidateResource
+      validateResource: ValidateResource
   )(state: Option[ResourceState], cmd: ResourceCommand)(implicit
       clock: Clock[UIO]
   ): IO[ResourceRejection, ResourceEvent] = {
 
     def validate(
-        projectRef: ProjectRef,
-        schemaRef: ResourceRef,
-        caller: Caller,
         id: Iri,
-        expanded: ExpandedJsonLd
+        expanded: ExpandedJsonLd,
+        schemaRef: ResourceRef,
+        projectRef: ProjectRef,
+        caller: Caller
     ): IO[ResourceRejection, (ResourceRef.Revision, ProjectRef)] = {
-      resourceValidator
-        .apply(projectRef, schemaRef, caller, id, expanded)
+      validateResource
+        .apply(id, expanded, schemaRef, projectRef, caller)
         .map(result => (result.schema, result.project))
     }
 
-    def create(c: CreateResource) =
+    def create(c: CreateResource) = {
+      import c.jsonld._
       state match {
         case None =>
           // format: off
           for {
-            (schemaRev, schemaProject) <- validate(c.project, c.schema, c.caller, c.id, c.expanded)
-            types                       = c.expanded.cursor.getTypes.getOrElse(Set.empty)
+            (schemaRev, schemaProject) <- validate(c.id, expanded, c.schema, c.project, c.caller)
             t                          <- IOUtils.instant
-          } yield ResourceCreated(c.id, c.project, schemaRev, schemaProject, types, c.source, c.compacted, c.expanded, 1, t, c.subject)
+          } yield ResourceCreated(c.id, c.project, schemaRev, schemaProject, types, c.source, compacted, expanded, remoteContextRefs, 1, t, c.subject)
           // format: on
 
         case _ => IO.raiseError(ResourceAlreadyExists(c.id, c.project))
       }
+    }
 
     def stateWhereResourceExists(c: ModifyCommand) = {
       state match {
@@ -341,46 +362,27 @@ object Resources {
       }
     }
 
-    def update(c: UpdateResource) = {
+    def update(u: UpdateResource) = {
+      import u.jsonld._
+      // format: off
       for {
-        s                          <- stateWhereResourceIsEditable(c)
-        (schemaRev, schemaProject) <-
-          validate(s.project, c.schemaOpt.getOrElse(ResourceRef.Latest(s.schema.iri)), c.caller, c.id, c.expanded)
-        types                       = c.expanded.cursor.getTypes.getOrElse(Set.empty)
+        s                          <- stateWhereResourceIsEditable(u)
+        schemaRef = u.schemaOpt.getOrElse(ResourceRef.Latest(s.schema.iri))
+        (schemaRev, schemaProject) <- validate(u.id, expanded, schemaRef, s.project, u.caller)
         time                       <- IOUtils.instant
-      } yield ResourceUpdated(
-        c.id,
-        c.project,
-        schemaRev,
-        schemaProject,
-        types,
-        c.source,
-        c.compacted,
-        c.expanded,
-        s.rev + 1,
-        time,
-        c.subject
-      )
+      } yield ResourceUpdated(u.id, u.project, schemaRev, schemaProject, types, u.source, compacted, expanded, remoteContextRefs, s.rev + 1, time, u.subject)
+      // format: on
     }
 
     def refresh(c: RefreshResource) = {
+      import c.jsonld._
+      // format: off
       for {
         s                          <- stateWhereResourceIsEditable(c)
-        (schemaRev, schemaProject) <- validate(s.project, c.schemaOpt.getOrElse(s.schema), c.caller, c.id, c.expanded)
-        types                       = c.expanded.cursor.getTypes.getOrElse(Set.empty)
+        (schemaRev, schemaProject) <- validate(c.id, expanded, c.schemaOpt.getOrElse(s.schema), s.project, c.caller)
         time                       <- IOUtils.instant
-      } yield ResourceRefreshed(
-        c.id,
-        c.project,
-        schemaRev,
-        schemaProject,
-        types,
-        c.compacted,
-        c.expanded,
-        s.rev + 1,
-        time,
-        c.subject
-      )
+      } yield ResourceRefreshed(c.id, c.project, schemaRev, schemaProject, types, compacted, expanded, remoteContextRefs, s.rev + 1, time, c.subject)
+      // format: on
     }
 
     def tag(c: TagResource) = {

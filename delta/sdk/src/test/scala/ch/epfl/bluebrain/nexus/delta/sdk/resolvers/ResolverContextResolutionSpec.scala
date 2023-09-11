@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.resolvers
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContext.StaticContext
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolutionError.RemoteContextNotAccessible
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
@@ -10,6 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.ResourceResolutionGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution.ProjectRemoteContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.FetchResource
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.Resource
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
@@ -75,13 +77,13 @@ class ResolverContextResolutionSpec extends AnyWordSpecLike with IOValues with T
   "Resolving contexts" should {
 
     "resolve correctly static contexts" in {
-      resolverContextResolution(project).resolve(contexts.metadata).accepted shouldEqual metadataContext
+      val expected = StaticContext(contexts.metadata, metadataContext)
+      resolverContextResolution(project).resolve(contexts.metadata).accepted shouldEqual expected
     }
 
     "resolve correctly a resource context" in {
-      resolverContextResolution(project)
-        .resolve(resourceId)
-        .accepted shouldEqual ContextValue(context)
+      val expected = ProjectRemoteContext(resourceId, project, 5, ContextValue(context))
+      resolverContextResolution(project).resolve(resourceId).accepted shouldEqual expected
     }
 
     "fail is applying for an unknown resource" in {

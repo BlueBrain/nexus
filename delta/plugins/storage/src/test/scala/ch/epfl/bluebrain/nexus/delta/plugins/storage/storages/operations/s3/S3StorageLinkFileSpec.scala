@@ -89,14 +89,14 @@ class S3StorageLinkFileSpec(docker: MinioDocker)
     val description = FileDescription(uuid, filename, Some(`text/plain(UTF-8)`))
 
     "succeed" in {
-      storage.saveFile.apply(description, entity).accepted shouldEqual attributes
+      storage.saveFile(config).apply(description, entity).accepted shouldEqual attributes
 
       val linkAttributes = attributes.copy(origin = FileAttributesOrigin.Storage)
-      storage.linkFile.apply(attributes.path, description).accepted shouldEqual linkAttributes
+      storage.linkFile(config).apply(attributes.path, description).accepted shouldEqual linkAttributes
     }
 
     "fail linking a file that does not exist" in {
-      storage.linkFile.apply(Uri.Path("my/file-40.txt"), description).rejectedWith[FileNotFound]
+      storage.linkFile(config).apply(Uri.Path("my/file-40.txt"), description).rejectedWith[FileNotFound]
     }
 
   }
