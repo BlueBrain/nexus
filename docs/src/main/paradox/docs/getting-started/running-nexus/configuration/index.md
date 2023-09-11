@@ -129,7 +129,7 @@ Nexus Delta supports 3 types of storages: 'disk', 'amazon' (s3 compatible) and '
 
 - For disk storages the most relevant configuration flag is `plugins.storage.storages.disk.default-volume`, which defines the default location in the Nexus Delta filesystem where the files using that storage are going to be saved.
 - For S3 compatible storages the most relevant configuration flags are the ones related to the S3 settings: `plugins.storage.storages.amazon.default-endpoint`, `plugins.storage.storages.amazon.default-access-key` and `plugins.storage.storages.amazon.default-secret-key`.
-- For remote disk storages the most relevant configuration flags are `plugins.storage.storages.remote-disk.default-endpoint` (the endpoint where the remote storage service is running) and `plugins.storage.storages.remote-disk.authentiction` (the method to authenticate to the remote storage service).
+- For remote disk storages the most relevant configuration flags are `plugins.storage.storages.remote-disk.default-endpoint` (the endpoint where the remote storage service is running) and `plugins.storage.storages.remote-disk.credentials` (the method to authenticate to the remote storage service).
 
 ### Archive plugin configuration
 

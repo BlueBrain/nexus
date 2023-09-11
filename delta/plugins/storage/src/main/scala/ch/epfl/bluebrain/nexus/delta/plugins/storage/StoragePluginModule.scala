@@ -151,8 +151,8 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
     new OpenIdAuthService(httpClient, realms)(clock)
   }
 
-  make[AuthTokenProvider].from { (cfg: StorageTypeConfig, keycloakAuthService: OpenIdAuthService) =>
-    AuthTokenProvider(cfg.remoteDisk.map(_.credentials).getOrElse(Credentials.Anonymous), keycloakAuthService)
+  make[AuthTokenProvider].from { (cfg: StorageTypeConfig, authService: OpenIdAuthService) =>
+    AuthTokenProvider(cfg.remoteDisk.map(_.credentials).getOrElse(Credentials.Anonymous), authService)
   }
 
   make[Files]

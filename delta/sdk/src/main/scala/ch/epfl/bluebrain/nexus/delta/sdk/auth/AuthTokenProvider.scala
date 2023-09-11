@@ -19,10 +19,10 @@ trait AuthTokenProvider {
 }
 
 object AuthTokenProvider {
-  def apply(credentials: Credentials, keycloakAuthService: OpenIdAuthService): AuthTokenProvider = {
+  def apply(credentials: Credentials, authService: OpenIdAuthService): AuthTokenProvider = {
     credentials match {
       case clientCredentials: ClientCredentials =>
-        new CachingOpenIdAuthTokenProvider(clientCredentials, keycloakAuthService)
+        new CachingOpenIdAuthTokenProvider(clientCredentials, authService)
       case Credentials.JWTToken(jwtToken)       => new FixedAuthTokenProvider(AuthToken(jwtToken))
       case Anonymous                            => new AnonymousAuthTokenProvider
     }
@@ -59,10 +59,10 @@ private class CachingOpenIdAuthTokenProvider(credentials: ClientCredentials, ser
       now           <- IOUtils.instant
       finalValue    <- existingValue match {
                          case None                                 =>
-                           logger.debug("fetching auth token, no initial value").toUIO >>
+                           logger.info("Fetching auth token, no initial value.").toUIO >>
                              fetchValue
                          case Some(value) if isExpired(value, now) =>
-                           logger.debug("fetching new auth token, current value near expiry").toUIO >>
+                           logger.info("Fetching new auth token, current value near expiry.").toUIO >>
                              fetchValue
                          case Some(value)                          => UIO.pure(value)
                        }
