@@ -42,8 +42,8 @@ private class FixedAuthTokenProvider(authToken: AuthToken) extends AuthTokenProv
 }
 
 /**
-  * Uses the supplied credentials to get an auth token from keycloak. This token is cached until near-expiry to speed up
-  * operations
+  * Uses the supplied credentials to get an auth token from an open id service. This token is cached until near-expiry
+  * to speed up operations
   */
 private class CachingOpenIdAuthTokenProvider(credentials: ClientCredentials, service: OpenIdAuthService)(implicit
     clock: Clock[UIO]
