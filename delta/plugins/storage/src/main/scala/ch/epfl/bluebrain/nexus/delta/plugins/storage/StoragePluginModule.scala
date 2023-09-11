@@ -24,7 +24,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
-import ch.epfl.bluebrain.nexus.delta.sdk.auth.{AuthTokenProvider, Credentials, KeycloakAuthService}
+import ch.epfl.bluebrain.nexus.delta.sdk.auth.{AuthTokenProvider, Credentials, OpenIdAuthService}
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.ProjectDeletionTask
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
@@ -147,11 +147,11 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
 
   many[ResourceShift[_, _, _]].ref[Storage.Shift]
 
-  make[KeycloakAuthService].from { (httpClient: HttpClient @Id("realm"), realms: Realms, clock: Clock[UIO]) =>
-    new KeycloakAuthService(httpClient, realms)(clock)
+  make[OpenIdAuthService].from { (httpClient: HttpClient @Id("realm"), realms: Realms, clock: Clock[UIO]) =>
+    new OpenIdAuthService(httpClient, realms)(clock)
   }
 
-  make[AuthTokenProvider].from { (cfg: StorageTypeConfig, keycloakAuthService: KeycloakAuthService) =>
+  make[AuthTokenProvider].from { (cfg: StorageTypeConfig, keycloakAuthService: OpenIdAuthService) =>
     AuthTokenProvider(cfg.remoteDisk.map(_.credentials).getOrElse(Credentials.Anonymous), keycloakAuthService)
   }
 

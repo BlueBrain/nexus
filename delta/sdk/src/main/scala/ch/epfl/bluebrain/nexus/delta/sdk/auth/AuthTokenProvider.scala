@@ -17,7 +17,7 @@ trait AuthTokenProvider {
 }
 
 object AuthTokenProvider {
-  def apply(credentials: Credentials, keycloakAuthService: KeycloakAuthService): AuthTokenProvider = {
+  def apply(credentials: Credentials, keycloakAuthService: OpenIdAuthService): AuthTokenProvider = {
     credentials match {
       case clientCredentials: ClientCredentials =>
         new CachingKeycloakAuthTokenProvider(clientCredentials, keycloakAuthService)
@@ -43,7 +43,7 @@ private class FixedAuthTokenProvider(authToken: AuthToken) extends AuthTokenProv
   * Uses the supplied credentials to get an auth token from keycloak. This token is cached until near-expiry to speed up
   * operations
   */
-private class CachingKeycloakAuthTokenProvider(credentials: ClientCredentials, service: KeycloakAuthService)(implicit
+private class CachingKeycloakAuthTokenProvider(credentials: ClientCredentials, service: OpenIdAuthService)(implicit
     clock: Clock[UIO]
 ) extends AuthTokenProvider {
   private val cache = KeyValueStore.create[Unit, AccessTokenWithMetadata]()

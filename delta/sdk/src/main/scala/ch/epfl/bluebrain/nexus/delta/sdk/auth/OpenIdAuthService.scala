@@ -17,7 +17,7 @@ import monix.bio.{IO, UIO}
 
 import java.time.{Duration, Instant}
 
-class KeycloakAuthService(httpClient: HttpClient, realms: Realms)(implicit clock: Clock[UIO])
+class OpenIdAuthService(httpClient: HttpClient, realms: Realms)(implicit clock: Clock[UIO])
     extends MigrateEffectSyntax {
 
   def auth(credentials: ClientCredentials): UIO[AccessTokenWithMetadata] = {
