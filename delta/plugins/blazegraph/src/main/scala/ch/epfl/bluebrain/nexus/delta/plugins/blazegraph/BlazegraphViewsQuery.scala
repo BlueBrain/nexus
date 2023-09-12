@@ -105,9 +105,7 @@ object BlazegraphViewsQuery {
       outgoingWithExternalQuery <- ioContentOf("blazegraph/outgoing_include_external.txt")
       outgoingScopedQuery       <- ioContentOf("blazegraph/outgoing_scoped.txt")
       viewsStore                 = ViewsStore[BlazegraphViewRejection, BlazegraphViewState](
-                                     BlazegraphViews.entityType,
                                      BlazegraphViewState.serializer,
-                                     defaultViewId,
                                      views.fetchState,
                                      view =>
                                        IO.raiseWhen(view.deprecated)(ViewIsDeprecated(view.id)).as {
