@@ -9,9 +9,11 @@ import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.MigrateEffectSyntax
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.auth.Credentials.ClientCredentials
-import ch.epfl.bluebrain.nexus.delta.sdk.error.AuthTokenError.{AuthTokenHttpError, AuthTokenNotFoundInResponse, ExpiryNotFoundInResponse}
+import ch.epfl.bluebrain.nexus.delta.sdk.error.AuthTokenError.{AuthTokenHttpError, AuthTokenNotFoundInResponse, ExpiryNotFoundInResponse, RealmIsDeprecated}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.Realms
+import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.Realm
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import io.circe.Json
 import monix.bio.{IO, UIO}
 
@@ -22,13 +24,20 @@ class OpenIdAuthService(httpClient: HttpClient, realms: Realms)(implicit clock: 
 
   def auth(credentials: ClientCredentials): UIO[AccessTokenWithMetadata] = {
     for {
-      realm                  <- realms.fetch(credentials.realm).toUIO
-      response               <- requestToken(realm.value.tokenEndpoint, credentials.user, credentials.password)
+      realm                  <- findRealm(credentials.realm)
+      response               <- requestToken(realm.tokenEndpoint, credentials.user, credentials.password)
       (token, validDuration) <- parseResponse(response)
       now                    <- IOUtils.instant
     } yield {
       AccessTokenWithMetadata(token, now.plus(validDuration))
     }
+  }
+
+  private def findRealm(id: Label): UIO[Realm] = {
+    for {
+      realm <- realms.fetch(id).toUIO
+      _     <- UIO.when(realm.deprecated)(UIO.terminate(RealmIsDeprecated(realm.value)))
+    } yield realm.value
   }
 
   private def requestToken(tokenEndpoint: Uri, user: String, password: Secret[String]): UIO[Json] = {
