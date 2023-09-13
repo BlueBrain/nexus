@@ -20,12 +20,15 @@ trait AuthTokenProvider {
 }
 
 object AuthTokenProvider {
-  def apply(credentials: Credentials, authService: OpenIdAuthService): AuthTokenProvider = {
+  def apply(credentials: Credentials, authService: OpenIdAuthService): UIO[AuthTokenProvider] = {
     credentials match {
       case clientCredentials: ClientCredentials =>
-        new CachingOpenIdAuthTokenProvider(clientCredentials, authService)
-      case Credentials.JWTToken(jwtToken)       => new FixedAuthTokenProvider(AuthToken(jwtToken))
-      case Anonymous                            => new AnonymousAuthTokenProvider
+        KeyValueStore[Unit, ParsedToken]().map(cache =>
+          new CachingOpenIdAuthTokenProvider(clientCredentials, authService, cache)
+        )
+
+      case Credentials.JWTToken(jwtToken) => UIO.delay(new FixedAuthTokenProvider(AuthToken(jwtToken)))
+      case Anonymous                      => UIO.delay(new AnonymousAuthTokenProvider)
     }
   }
   def anonymousForTest: AuthTokenProvider = new AnonymousAuthTokenProvider
@@ -46,13 +49,16 @@ private class FixedAuthTokenProvider(authToken: AuthToken) extends AuthTokenProv
   * Uses the supplied credentials to get an auth token from an open id service. This token is cached until near-expiry
   * to speed up operations
   */
-private class CachingOpenIdAuthTokenProvider(credentials: ClientCredentials, service: OpenIdAuthService)(implicit
+private class CachingOpenIdAuthTokenProvider(
+    credentials: ClientCredentials,
+    service: OpenIdAuthService,
+    cache: KeyValueStore[Unit, ParsedToken]
+)(implicit
     clock: Clock[UIO]
 ) extends AuthTokenProvider
     with MigrateEffectSyntax {
 
   private val logger = Logger.cats[CachingOpenIdAuthTokenProvider]
-  private val cache  = KeyValueStore.create[Unit, ParsedToken]()
 
   override def apply(): UIO[Option[AuthToken]] = {
     for {
