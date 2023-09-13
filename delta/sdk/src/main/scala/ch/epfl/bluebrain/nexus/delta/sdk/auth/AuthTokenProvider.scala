@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.MigrateEffectSyntax
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.auth.Credentials.{Anonymous, ClientCredentials}
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.ParsedToken
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.AuthToken
 import monix.bio.UIO
 
@@ -51,7 +52,7 @@ private class CachingOpenIdAuthTokenProvider(credentials: ClientCredentials, ser
     with MigrateEffectSyntax {
 
   private val logger = Logger.cats[CachingOpenIdAuthTokenProvider]
-  private val cache  = KeyValueStore.create[Unit, AccessTokenWithMetadata]()
+  private val cache  = KeyValueStore.create[Unit, ParsedToken]()
 
   override def apply(): UIO[Option[AuthToken]] = {
     for {
@@ -67,7 +68,7 @@ private class CachingOpenIdAuthTokenProvider(credentials: ClientCredentials, ser
                          case Some(value)                          => UIO.pure(value)
                        }
     } yield {
-      Some(AuthToken(finalValue.token))
+      Some(AuthToken(finalValue.rawToken))
     }
   }
 
@@ -75,9 +76,9 @@ private class CachingOpenIdAuthTokenProvider(credentials: ClientCredentials, ser
     cache.getOrElseUpdate((), service.auth(credentials))
   }
 
-  private def isExpired(value: AccessTokenWithMetadata, now: Instant): Boolean = {
+  private def isExpired(value: ParsedToken, now: Instant): Boolean = {
     // minus 10 seconds to account for tranport / processing time
-    val cutoffTime = value.expiresAt.minus(Duration.ofSeconds(10))
+    val cutoffTime = value.expirationTime.minus(Duration.ofSeconds(10))
 
     now.isAfter(cutoffTime)
   }

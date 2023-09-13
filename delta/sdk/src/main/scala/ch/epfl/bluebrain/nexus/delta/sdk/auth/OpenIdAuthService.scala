@@ -4,32 +4,28 @@ import akka.http.javadsl.model.headers.HttpCredentials
 import akka.http.scaladsl.model.HttpMethods.POST
 import akka.http.scaladsl.model.headers.Authorization
 import akka.http.scaladsl.model.{HttpRequest, Uri}
-import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.MigrateEffectSyntax
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.auth.Credentials.ClientCredentials
-import ch.epfl.bluebrain.nexus.delta.sdk.error.AuthTokenError.{AuthTokenHttpError, AuthTokenNotFoundInResponse, ExpiryNotFoundInResponse, RealmIsDeprecated}
+import ch.epfl.bluebrain.nexus.delta.sdk.error.AuthTokenError.{AuthTokenHttpError, AuthTokenNotFoundInResponse, RealmIsDeprecated}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.ParsedToken
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.AuthToken
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.Realms
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.Realm
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import io.circe.Json
 import monix.bio.{IO, UIO}
 
-import java.time.{Duration, Instant}
+class OpenIdAuthService(httpClient: HttpClient, realms: Realms) extends MigrateEffectSyntax {
 
-class OpenIdAuthService(httpClient: HttpClient, realms: Realms)(implicit clock: Clock[UIO])
-    extends MigrateEffectSyntax {
-
-  def auth(credentials: ClientCredentials): UIO[AccessTokenWithMetadata] = {
+  def auth(credentials: ClientCredentials): UIO[ParsedToken] = {
     for {
-      realm                  <- findRealm(credentials.realm)
-      response               <- requestToken(realm.tokenEndpoint, credentials.user, credentials.password)
-      (token, validDuration) <- parseResponse(response)
-      now                    <- IOUtils.instant
+      realm       <- findRealm(credentials.realm)
+      response    <- requestToken(realm.tokenEndpoint, credentials.user, credentials.password)
+      parsedToken <- parseResponse(response)
     } yield {
-      AccessTokenWithMetadata(token, now.plus(validDuration))
+      parsedToken
     }
   }
 
@@ -60,20 +56,15 @@ class OpenIdAuthService(httpClient: HttpClient, realms: Realms)(implicit clock: 
       .hideErrorsWith(AuthTokenHttpError)
   }
 
-  private def parseResponse(json: Json): UIO[(String, Duration)] = {
+  private def parseResponse(json: Json): UIO[ParsedToken] = {
     for {
-      token  <- json.hcursor.get[String]("access_token") match {
-                  case Left(failure) => IO.terminate(AuthTokenNotFoundInResponse(failure))
-                  case Right(value)  => UIO.pure(value)
-                }
-      expiry <- json.hcursor.get[Long]("expires_in") match {
-                  case Left(failure) => IO.terminate(ExpiryNotFoundInResponse(failure))
-                  case Right(value)  => UIO.pure(value)
-                }
+      rawToken    <- json.hcursor.get[String]("access_token") match {
+                       case Left(failure) => IO.terminate(AuthTokenNotFoundInResponse(failure))
+                       case Right(value)  => UIO.pure(value)
+                     }
+      parsedToken <- IO.fromEither(ParsedToken.fromToken(AuthToken(rawToken))).hideErrors
     } yield {
-      (token, Duration.ofSeconds(expiry))
+      parsedToken
     }
   }
 }
-
-case class AccessTokenWithMetadata(token: String, expiresAt: Instant)

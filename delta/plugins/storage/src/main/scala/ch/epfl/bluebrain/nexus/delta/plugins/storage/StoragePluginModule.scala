@@ -147,8 +147,8 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
 
   many[ResourceShift[_, _, _]].ref[Storage.Shift]
 
-  make[OpenIdAuthService].from { (httpClient: HttpClient @Id("realm"), realms: Realms, clock: Clock[UIO]) =>
-    new OpenIdAuthService(httpClient, realms)(clock)
+  make[OpenIdAuthService].from { (httpClient: HttpClient @Id("realm"), realms: Realms) =>
+    new OpenIdAuthService(httpClient, realms)
   }
 
   make[AuthTokenProvider].from { (cfg: StorageTypeConfig, authService: OpenIdAuthService) =>
