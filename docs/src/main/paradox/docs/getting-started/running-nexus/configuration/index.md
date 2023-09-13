@@ -131,6 +131,35 @@ Nexus Delta supports 3 types of storages: 'disk', 'amazon' (s3 compatible) and '
 - For S3 compatible storages the most relevant configuration flags are the ones related to the S3 settings: `plugins.storage.storages.amazon.default-endpoint`, `plugins.storage.storages.amazon.default-access-key` and `plugins.storage.storages.amazon.default-secret-key`.
 - For remote disk storages the most relevant configuration flags are `plugins.storage.storages.remote-disk.default-endpoint` (the endpoint where the remote storage service is running) and `plugins.storage.storages.remote-disk.credentials` (the method to authenticate to the remote storage service).
 
+#### Remote storage configuration
+
+Authentication for remote storage can be specified in three different ways. The value of `plugins.storage.storages.remote-disk.credentials` can be:
+
+##### Recommended: client credentials (OpenId authentication)
+```hocon
+{
+  type: "client-credentials"
+  user: "username"
+  password: "password"
+  realm: "internal"
+}
+```
+This configuration tells Delta to log into the `internal` realm (which should have already been defined) with the `user` and `password` credentials, which will give Delta an access token to use when making requests to remote storage
+
+##### Anonymous
+```hocon
+{
+  type: "anonymous"
+}
+```
+##### Long-living auth token (legacy)
+```hocon
+{
+  type: "jwt-token"
+  token: "long-living-auth-token"
+}
+```
+
 ### Archive plugin configuration
 
 The archive plugin configuration can be found @link:[here](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/plugins/archive/src/main/resources/archive.conf){ open=new }.
