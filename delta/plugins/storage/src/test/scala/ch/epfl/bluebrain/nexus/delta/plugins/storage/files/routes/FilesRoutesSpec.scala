@@ -22,7 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sdk.auth.AuthTokenProvider
+import ch.epfl.bluebrain.nexus.delta.sdk.auth.{AuthTokenProvider, Credentials}
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
@@ -54,7 +54,7 @@ class FilesRoutesSpec
   implicit val typedSystem: typed.ActorSystem[Nothing] = system.toTyped
   val httpClient: HttpClient                           = HttpClient()(httpClientConfig, system, s)
   val authTokenProvider: AuthTokenProvider             = AuthTokenProvider.anonymousForTest
-  val remoteDiskStorageClient                          = new RemoteDiskStorageClient(httpClient, authTokenProvider)
+  val remoteDiskStorageClient                          = new RemoteDiskStorageClient(httpClient, authTokenProvider, Credentials.Anonymous)
 
   // TODO: sort out how we handle this in tests
   implicit override def rcr: RemoteContextResolution =

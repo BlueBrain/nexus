@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions.{read, write}
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
-import ch.epfl.bluebrain.nexus.delta.sdk.auth.AuthTokenProvider
+import ch.epfl.bluebrain.nexus.delta.sdk.auth.{AuthTokenProvider, Credentials}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -53,7 +53,8 @@ class RemoteStorageSaveAndFetchFileSpec(docker: RemoteStorageDocker)
   implicit private val httpConfig: HttpClientConfig = httpClientConfig
   private val httpClient: HttpClient                = HttpClient()
   private val authTokenProvider: AuthTokenProvider  = AuthTokenProvider.anonymousForTest
-  private val remoteDiskStorageClient               = new RemoteDiskStorageClient(httpClient, authTokenProvider)
+  private val remoteDiskStorageClient               =
+    new RemoteDiskStorageClient(httpClient, authTokenProvider, Credentials.Anonymous)
 
   private val iri      = iri"http://localhost/remote"
   private val uuid     = UUID.fromString("8049ba90-7cc6-4de5-93a1-802c04200dcc")

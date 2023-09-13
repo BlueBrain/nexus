@@ -151,8 +151,8 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
     new OpenIdAuthService(httpClient, realms)
   }
 
-  make[AuthTokenProvider].fromEffect { (cfg: StorageTypeConfig, authService: OpenIdAuthService) =>
-    AuthTokenProvider(cfg.remoteDisk.map(_.credentials).getOrElse(Credentials.Anonymous), authService)
+  make[AuthTokenProvider].fromEffect { (authService: OpenIdAuthService) =>
+    AuthTokenProvider(authService)
   }
 
   make[Files]
@@ -231,8 +231,14 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
     (
         client: HttpClient @Id("storage"),
         as: ActorSystem[Nothing],
-        authTokenProvider: AuthTokenProvider
-    ) => new RemoteDiskStorageClient(client, authTokenProvider)(as.classicSystem)
+        authTokenProvider: AuthTokenProvider,
+        cfg: StorageTypeConfig
+    ) =>
+      new RemoteDiskStorageClient(
+        client,
+        authTokenProvider,
+        cfg.remoteDisk.map(_.credentials).getOrElse(Credentials.Anonymous)
+      )(as.classicSystem)
   }
 
   many[ServiceDependency].addSet {

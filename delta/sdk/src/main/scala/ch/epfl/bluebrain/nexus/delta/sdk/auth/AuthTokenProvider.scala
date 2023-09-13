@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.MigrateEffectSyntax
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils
-import ch.epfl.bluebrain.nexus.delta.sdk.auth.Credentials.{Anonymous, ClientCredentials}
+import ch.epfl.bluebrain.nexus.delta.sdk.auth.Credentials.ClientCredentials
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.ParsedToken
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.AuthToken
 import monix.bio.UIO
@@ -16,33 +16,18 @@ import java.time.{Duration, Instant}
   * Provides an auth token for the service account, for use when comunicating with remote storage
   */
 trait AuthTokenProvider {
-  def apply(): UIO[Option[AuthToken]]
+  def apply(credentials: Credentials): UIO[Option[AuthToken]]
 }
 
 object AuthTokenProvider {
-  def apply(credentials: Credentials, authService: OpenIdAuthService): UIO[AuthTokenProvider] = {
-    credentials match {
-      case clientCredentials: ClientCredentials =>
-        KeyValueStore[Unit, ParsedToken]().map(cache =>
-          new CachingOpenIdAuthTokenProvider(clientCredentials, authService, cache)
-        )
-
-      case Credentials.JWTToken(jwtToken) => UIO.delay(new FixedAuthTokenProvider(AuthToken(jwtToken)))
-      case Anonymous                      => UIO.delay(new AnonymousAuthTokenProvider)
-    }
+  def apply(authService: OpenIdAuthService): UIO[AuthTokenProvider] = {
+    KeyValueStore[ClientCredentials, ParsedToken]().map(cache => new CachingOpenIdAuthTokenProvider(authService, cache))
   }
   def anonymousForTest: AuthTokenProvider = new AnonymousAuthTokenProvider
 }
 
 private class AnonymousAuthTokenProvider extends AuthTokenProvider {
-  override def apply(): UIO[Option[AuthToken]] = UIO.pure(None)
-}
-
-/**
-  * Uses a fixed (probably long-living) auth token. Should be removed when we are confident with the credentials method
-  */
-private class FixedAuthTokenProvider(authToken: AuthToken) extends AuthTokenProvider {
-  override def apply(): UIO[Option[AuthToken]] = UIO.pure(Some(authToken))
+  override def apply(credentials: Credentials): UIO[Option[AuthToken]] = UIO.pure(None)
 }
 
 /**
@@ -50,9 +35,8 @@ private class FixedAuthTokenProvider(authToken: AuthToken) extends AuthTokenProv
   * to speed up operations
   */
 private class CachingOpenIdAuthTokenProvider(
-    credentials: ClientCredentials,
     service: OpenIdAuthService,
-    cache: KeyValueStore[Unit, ParsedToken]
+    cache: KeyValueStore[ClientCredentials, ParsedToken]
 )(implicit
     clock: Clock[UIO]
 ) extends AuthTokenProvider
@@ -60,17 +44,26 @@ private class CachingOpenIdAuthTokenProvider(
 
   private val logger = Logger.cats[CachingOpenIdAuthTokenProvider]
 
-  override def apply(): UIO[Option[AuthToken]] = {
+  override def apply(credentials: Credentials): UIO[Option[AuthToken]] = {
+
+    credentials match {
+      case Credentials.Anonymous          => UIO.pure(None)
+      case Credentials.JWTToken(token)    => UIO.pure(Some(AuthToken(token)))
+      case credentials: ClientCredentials => clientCredentialsFlow(credentials)
+    }
+  }
+
+  private def clientCredentialsFlow(credentials: ClientCredentials) = {
     for {
-      existingValue <- cache.get(())
+      existingValue <- cache.get(credentials)
       now           <- IOUtils.instant
       finalValue    <- existingValue match {
                          case None                                 =>
                            logger.info("Fetching auth token, no initial value.").toUIO >>
-                             fetchValue
+                             fetchValue(credentials)
                          case Some(value) if isExpired(value, now) =>
                            logger.info("Fetching new auth token, current value near expiry.").toUIO >>
-                             fetchValue
+                             fetchValue(credentials)
                          case Some(value)                          => UIO.pure(value)
                        }
     } yield {
@@ -78,8 +71,8 @@ private class CachingOpenIdAuthTokenProvider(
     }
   }
 
-  private def fetchValue = {
-    cache.getOrElseUpdate((), service.auth(credentials))
+  private def fetchValue(credentials: ClientCredentials) = {
+    cache.getOrElseUpdate(credentials, service.auth(credentials))
   }
 
   private def isExpired(value: ParsedToken, now: Instant): Boolean = {
