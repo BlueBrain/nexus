@@ -64,6 +64,8 @@ While there's no formal specification for this service, you can check out or dep
 @link:[Nexus remote storage service](https://github.com/BlueBrain/nexus/tree/$git.branch$/storage){ open=new }.
 
 In order to be able to use this storage, the configuration flag `plugins.storage.storages.remote-disk.enabled` should be set to `true`.
+@ref:[More information about configuration](../../getting-started/running-nexus/configuration/index.md#remote-storage-configuration)
+
 
 ```json
 {

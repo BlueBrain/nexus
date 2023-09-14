@@ -32,7 +32,7 @@ object IdentityError {
     * @param rejection
     *   the specific reason why the token is invalid
     */
-  final case class InvalidToken(rejection: TokenRejection) extends IdentityError(rejection.reason)
+  final case class InvalidToken(rejection: TokenRejection) extends IdentityError(rejection.getMessage)
 
   implicit val identityErrorEncoder: Encoder.AsObject[IdentityError] =
     Encoder.AsObject.instance[IdentityError] {
