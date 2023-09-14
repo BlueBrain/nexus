@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.error.SDKError
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
@@ -17,7 +18,9 @@ import io.circe.{Encoder, JsonObject}
   * @param reason
   *   a descriptive message for reasons why a token is rejected by the system
   */
-sealed abstract class TokenRejection(val reason: String) extends Product with Serializable
+sealed abstract class TokenRejection(reason: String) extends SDKError with Product with Serializable {
+  override def getMessage: String = reason
+}
 
 object TokenRejection {
 
@@ -62,7 +65,7 @@ object TokenRejection {
   implicit val tokenRejectionEncoder: Encoder.AsObject[TokenRejection] =
     Encoder.AsObject.instance { r =>
       val tpe  = ClassUtils.simpleName(r)
-      val json = JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
+      val json = JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.getMessage.asJson)
       r match {
         case InvalidAccessToken(_, _, error) => json.add("details", error.asJson)
         case _                               => json
