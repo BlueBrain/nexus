@@ -18,13 +18,13 @@ import io.circe.Json
 import monix.bio.{IO, UIO}
 
 /**
- * Exchanges client credentials for an auth token with a remote OpenId service, as defined in the specified realm
- */
+  * Exchanges client credentials for an auth token with a remote OpenId service, as defined in the specified realm
+  */
 class OpenIdAuthService(httpClient: HttpClient, realms: Realms) extends MigrateEffectSyntax {
 
   /**
-   * Exchanges client credentials for an auth token with a remote OpenId service, as defined in the specified realm
-   */
+    * Exchanges client credentials for an auth token with a remote OpenId service, as defined in the specified realm
+    */
   def auth(credentials: ClientCredentials): UIO[ParsedToken] = {
     for {
       realm       <- findRealm(credentials.realm)
