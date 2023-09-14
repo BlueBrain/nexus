@@ -3,6 +3,9 @@ package ch.epfl.bluebrain.nexus.tests
 import ch.epfl.bluebrain.nexus.tests.Identity.Authenticated
 import ch.epfl.bluebrain.nexus.tests.config.TestsConfig
 
+/**
+  * Utility methods for the handlebars templating
+  */
 trait HandleBarsFixture {
 
   def replacements(authenticated: Authenticated, otherReplacements: (String, String)*)(implicit

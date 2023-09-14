@@ -6,6 +6,10 @@ import ch.epfl.bluebrain.nexus.tests.config.TestsConfig
 import ch.epfl.bluebrain.nexus.tests.{HandleBarsFixture, SelfFixture}
 import io.circe.Json
 
+/**
+  * Utility methods to load the original payload, the fetch response for the `simple resource` used within the
+  * integration tests
+  */
 object SimpleResource extends HandleBarsFixture with SelfFixture {
 
   def fetchResponse(user: Authenticated, project: String, resourceId: String, rev: Int, priority: Int)(implicit

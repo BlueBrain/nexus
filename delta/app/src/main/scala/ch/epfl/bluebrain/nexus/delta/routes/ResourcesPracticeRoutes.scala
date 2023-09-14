@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.ResourcesPracticeRoutes.SchemaInput._
-import ch.epfl.bluebrain.nexus.delta.routes.ResourcesPracticeRoutes.{GenerateSchema, Input}
+import ch.epfl.bluebrain.nexus.delta.routes.ResourcesPracticeRoutes.{GenerateSchema, GenerationInput}
 import ch.epfl.bluebrain.nexus.delta.sdk.SchemaResource
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
@@ -34,6 +34,9 @@ import monix.execution.Scheduler
 
 import scala.annotation.nowarn
 
+/**
+  * The resource practice routes allowing to do read-only operations on resource
+  */
 final class ResourcesPracticeRoutes(
     identities: Identities,
     aclCheck: AclCheck,
@@ -77,7 +80,7 @@ final class ResourcesPracticeRoutes(
       extractCaller { implicit caller =>
         (resolveProjectRef & pathEndOrSingleSlash) { ref =>
           authorizeFor(ref, Write).apply {
-            (entity(as[Input])) { input =>
+            (entity(as[GenerationInput])) { input =>
               generate(ref, input)
             }
           }
@@ -85,7 +88,8 @@ final class ResourcesPracticeRoutes(
       }
     }
 
-  private def generate(project: ProjectRef, input: Input)(implicit caller: Caller) =
+  // Call the generate method matching the schema input
+  private def generate(project: ProjectRef, input: GenerationInput)(implicit caller: Caller) =
     input.schema match {
       case ExistingSchema(schemaId) =>
         emit(resourcesPractice.generate(project, schemaId, input.resource).flatMap(_.asJson))
@@ -107,8 +111,10 @@ object ResourcesPracticeRoutes {
 
   private[routes] object SchemaInput {
 
+    // Validate the generated resource with an existing schema
     final case class ExistingSchema(id: IdSegment) extends SchemaInput
 
+    // Validate the generated resource with the new schema bundled in the request
     final case class NewSchema(json: Json) extends SchemaInput
 
     implicit val schemaInputDecoder: Decoder[SchemaInput] =
@@ -122,14 +128,14 @@ object ResourcesPracticeRoutes {
 
   private val noSchema = ExistingSchema(IriSegment(schemas.resources))
 
-  final private[routes] case class Input(schema: SchemaInput = noSchema, resource: NexusSource)
+  final private[routes] case class GenerationInput(schema: SchemaInput = noSchema, resource: NexusSource)
 
-  private[routes] object Input {
+  private[routes] object GenerationInput {
     @nowarn("cat=unused")
-    implicit def practiceInput(implicit decodingOption: DecodingOption): Decoder[Input] = {
+    implicit def generationInputDecoder(implicit decodingOption: DecodingOption): Decoder[GenerationInput] = {
       implicit val configuration: Configuration             = Configuration.default.withDefaults
       implicit val nexusSourceDecoder: Decoder[NexusSource] = NexusSource.nexusSourceDecoder
-      deriveConfiguredDecoder[Input]
+      deriveConfiguredDecoder[GenerationInput]
     }
   }
 

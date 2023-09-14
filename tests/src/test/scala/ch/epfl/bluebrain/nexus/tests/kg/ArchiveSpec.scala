@@ -35,13 +35,7 @@ class ArchiveSpec extends BaseSpec with ArchiveHelpers with CirceEq {
 
   private val payloadResponse1 = SimpleResource.fetchResponse(Tweety, fullId, resource1Id, 1, 5)
 
-  private val payloadResponse2 = SimpleResource.fetchResponse(
-    Tweety,
-    fullId2,
-    resource2Id,
-    1,
-    6
-  )
+  private val payloadResponse2 = SimpleResource.fetchResponse(Tweety, fullId2, resource2Id, 1, 6)
 
   private val nexusLogoDigest =
     "edd70eff895cde1e36eaedd22ed8e9c870bb04155d05d275f970f4f255488e993a32a7c914ee195f6893d43b8be4e0b00db0a6d545a8462491eae788f664ea6b"
