@@ -3,9 +3,10 @@ package ch.epfl.bluebrain.nexus.tests.kg
 import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
 import ch.epfl.bluebrain.nexus.tests.BaseSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.listings.{Alice, Bob}
-import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Organizations, Resources}
-import io.circe.Json
 import ch.epfl.bluebrain.nexus.tests.Optics._
+import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Resources
+import ch.epfl.bluebrain.nexus.tests.resources.SimpleResource
+import io.circe.Json
 
 class MultiFetchSpec extends BaseSpec {
 
@@ -21,18 +22,11 @@ class MultiFetchSpec extends BaseSpec {
     super.beforeAll()
 
     val setup = for {
-      _ <- aclDsl.addPermission("/", Bob, Organizations.Create)
-      _ <- adminDsl.createOrganization(org1, org1, Bob)
-      _ <- adminDsl.createProject(org1, proj11, kgDsl.projectJson(name = proj11), Bob)
-      _ <- adminDsl.createProject(org1, proj12, kgDsl.projectJson(name = proj12), Bob)
+      _ <- createProjects(Bob, org1, proj11, proj12)
       _ <- aclDsl.addPermission(s"/$ref12", Alice, Resources.Read)
     } yield ()
 
-    val resourcePayload =
-      jsonContentOf(
-        "/kg/resources/simple-resource.json",
-        "priority" -> "5"
-      )
+    val resourcePayload = SimpleResource.sourcePayload(5)
 
     val createResources = for {
       // Creation

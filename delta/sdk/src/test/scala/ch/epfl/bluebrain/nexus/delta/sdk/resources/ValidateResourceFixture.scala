@@ -10,11 +10,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resources.ValidationResult._
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import io.circe.Json
+import io.circe.syntax.KeyOps
 import monix.bio.IO
 
 trait ValidateResourceFixture {
 
-  val defaultReport: ValidationReport = ValidationReport(conforms = true, 5, Json.obj())
+  val defaultReport: ValidationReport = ValidationReport(conforms = true, 5, Json.obj("conforms" := "true"))
   val defaultSchemaRevision           = 1
 
   def alwaysValidate: ValidateResource = new ValidateResource {

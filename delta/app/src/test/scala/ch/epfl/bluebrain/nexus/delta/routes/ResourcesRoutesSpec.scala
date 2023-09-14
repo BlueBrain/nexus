@@ -25,7 +25,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.FetchResou
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.NexusSource.DecodingOption
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.ProjectContextRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.{Resources, ResourcesConfig, ResourcesImpl, ResourcesPractice, ValidateResource}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.{Resources, ResourcesConfig, ResourcesImpl, ValidateResource}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject}
@@ -110,12 +110,6 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap {
         IdentitiesDummy(caller),
         aclCheck,
         resources,
-        ResourcesPractice(
-          resources.fetch(_, _, None),
-          validator,
-          fetchContext,
-          resolverContextResolution
-        ),
         DeltaSchemeDirectives(fetchContext, ioFromMap(uuid -> projectRef.organization), ioFromMap(uuid -> projectRef)),
         IndexingAction.noop
       )
@@ -187,6 +181,16 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap {
       ) ~> routes ~> check {
         response.status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual jsonContentOf("/resources/errors/invalid-resource.json")
+      }
+    }
+
+    "fail to create a resource against a schema that does not exist" in {
+      Put(
+        "/v1/resources/myorg/myproject/pretendschema/wrong",
+        payload.removeKeys(keywords.id).replaceKeyWithValue("number", "wrong").toEntity
+      ) ~> routes ~> check {
+        status shouldEqual StatusCodes.NotFound
+        response.asJson shouldEqual jsonContentOf("/schemas/errors/invalid-schema-2.json")
       }
     }
 
@@ -487,68 +491,6 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap {
           status shouldEqual StatusCodes.OK
           response.asJson shouldEqual payload
         }
-      }
-    }
-
-    "validate a resource successfully against the unconstrained schema" in {
-      Get(
-        s"/v1/resources/myorg/myproject/${UrlUtils.encode(schemas.resources.toString)}/myid2/validate"
-      ) ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual
-          json"""{
-                   "@context" : "https://bluebrain.github.io/nexus/contexts/validation.json",
-                   "@type" : "NoValidation",
-                   "project": "myorg/myproject",
-                   "schema" : "https://bluebrain.github.io/nexus/schemas/unconstrained.json?rev=1"
-                 }"""
-      }
-    }
-
-    "validate a resource successfully against its latest schema" in {
-      Get("/v1/resources/myorg/myproject/_/myid2/validate") ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual
-          json"""{
-                   "@context" : [
-                     "https://bluebrain.github.io/nexus/contexts/shacl-20170720.json",
-                     "https://bluebrain.github.io/nexus/contexts/validation.json"
-                   ],
-                   "@type" : "Validated",
-                   "project": "myorg/myproject",
-                   "schema" : "https://bluebrain.github.io/nexus/vocabulary/myschema?rev=1",
-                   "report": {
-                     "@type" : "sh:ValidationReport",
-                     "conforms" : true,
-                     "targetedNodes" : 10
-                   }
-                 }"""
-      }
-    }
-
-    "validate a resource against a schema that does not exist" in {
-      Get("/v1/resources/myorg/myproject/pretendschema/myid2/validate") ~> routes ~> check {
-        status shouldEqual StatusCodes.NotFound
-        response.asJson shouldEqual jsonContentOf("/schemas/errors/invalid-schema-2.json")
-      }
-    }
-
-    "validate a resource that does not exist" in {
-      Get("/v1/resources/myorg/myproject/_/pretendresource/validate") ~> routes ~> check {
-        status shouldEqual StatusCodes.NotFound
-        response.asJson shouldEqual jsonContentOf(
-          "/resources/errors/not-found.json",
-          "id"   -> (nxv + "pretendresource").toString,
-          "proj" -> "myorg/myproject"
-        )
-      }
-    }
-
-    "fail to validate a resource without resources/write permission" in {
-      aclCheck.subtract(AclAddress.Root, Anonymous -> Set(resources.write)).accepted
-      Get("/v1/resources/myorg/myproject/_/myid2/validate") ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
       }
     }
 

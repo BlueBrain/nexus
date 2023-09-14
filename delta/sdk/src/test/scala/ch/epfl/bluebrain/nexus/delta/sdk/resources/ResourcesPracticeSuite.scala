@@ -69,7 +69,11 @@ class ResourcesPracticeSuite extends BioSuite with ValidateResourceFixture with 
     val expectedData =
       ResourceGen.resource(id, projectRef, source.value, Revision(resourceSchema, defaultSchemaRevision))
 
-    practice.generate(projectRef, resourceSchema, source).map(_.value).assert(expectedData)
+    for {
+      generated <- practice.generate(projectRef, resourceSchema, source)
+      _          = assertEquals(generated.schema, None)
+      _          = assertEquals(generated.attempt.map(_.value), Right(expectedData))
+    } yield ()
   }
 
   test("Successfully generates a resource with a new schema") {
@@ -88,7 +92,12 @@ class ResourcesPracticeSuite extends BioSuite with ValidateResourceFixture with 
 
     val expectedData =
       ResourceGen.resource(id, projectRef, source.value, Revision(anotherSchema, defaultSchemaRevision))
-    practice.generate(projectRef, schema, source).map(_.value).assert(expectedData)
+
+    for {
+      generated <- practice.generate(projectRef, schema, source)
+      _          = assertEquals(generated.schema, Some(schema))
+      _          = assertEquals(generated.attempt.map(_.value), Right(expectedData))
+    } yield ()
   }
 
   test("Fail when validation raises an error") {
@@ -99,7 +108,12 @@ class ResourcesPracticeSuite extends BioSuite with ValidateResourceFixture with 
       fetchContext,
       resolverContextResolution
     )
-    practice.generate(projectRef, resourceSchema, source).error(expectedError)
+
+    for {
+      generated <- practice.generate(projectRef, resourceSchema, source)
+      _          = assertEquals(generated.schema, None)
+      _          = assertEquals(generated.attempt, Left(expectedError))
+    } yield ()
   }
 
   test("Validate a resource against a new schema reference") {

@@ -168,6 +168,7 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
   include(ResolversModule)
   include(SchemasModule)
   include(ResourcesModule)
+  include(ResourcesPracticeModule)
   include(MultiFetchModule)
   include(IdentitiesModule)
   include(VersionModule)

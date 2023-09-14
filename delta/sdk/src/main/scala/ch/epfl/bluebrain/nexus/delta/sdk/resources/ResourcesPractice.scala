@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources.expandResourceRef
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{ProjectContextRejection, ResourceFetchRejection}
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{ResourceRejection, ResourceState}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{ResourceGenerationResult, ResourceRejection, ResourceState}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import monix.bio.{IO, UIO}
@@ -35,7 +35,7 @@ trait ResourcesPractice {
     */
   def generate(project: ProjectRef, schema: IdSegment, source: NexusSource)(implicit
       caller: Caller
-  ): IO[ResourceRejection, DataResource]
+  ): UIO[ResourceGenerationResult]
 
   /**
     * Generates the resource and validate it against the provided schema
@@ -51,7 +51,7 @@ trait ResourcesPractice {
     */
   def generate(project: ProjectRef, schema: ResourceF[Schema], source: NexusSource)(implicit
       caller: Caller
-  ): IO[ResourceRejection, DataResource]
+  ): UIO[ResourceGenerationResult]
 
   /**
     * Validates an existing resource.
@@ -81,24 +81,30 @@ object ResourcesPractice {
 
     override def generate(project: ProjectRef, schema: IdSegment, source: NexusSource)(implicit
         caller: Caller
-    ): IO[ResourceRejection, DataResource] =
+    ): UIO[ResourceGenerationResult] = {
       for {
         projectContext <- fetchContext.onRead(project)
         schemaRef      <- Resources.expandResourceRef(schema, projectContext)
         jsonld         <- sourceParser(project, projectContext, source.value)
         validation     <- validateResource(jsonld.iri, jsonld.expanded, schemaRef, project, caller)
-        res            <- toResourceF(project, jsonld, source, validation)
-      } yield res
+        result         <- toResourceF(project, jsonld, source, validation)
+      } yield result
+    }.attempt.map { attempt =>
+      ResourceGenerationResult(None, attempt)
+    }
 
     override def generate(project: ProjectRef, schema: ResourceF[Schema], source: NexusSource)(implicit
         caller: Caller
-    ): IO[ResourceRejection, DataResource] =
+    ): UIO[ResourceGenerationResult] = {
       for {
         projectContext <- fetchContext.onRead(project)
         jsonld         <- sourceParser(project, projectContext, source.value)
         validation     <- validateResource(jsonld.iri, jsonld.expanded, schema)
-        res            <- toResourceF(project, jsonld, source, validation)
-      } yield res
+        result         <- toResourceF(project, jsonld, source, validation)
+      } yield result
+    }.attempt.map { attempt =>
+      ResourceGenerationResult(Some(schema), attempt)
+    }
 
     def validate(id: IdSegmentRef, project: ProjectRef, schemaOpt: Option[IdSegment])(implicit
         caller: Caller
