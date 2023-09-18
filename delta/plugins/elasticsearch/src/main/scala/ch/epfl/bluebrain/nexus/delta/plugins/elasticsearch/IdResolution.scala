@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.DataResource
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{SearchResults, SortList}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
 import io.circe.JsonObject
 import monix.bio.IO
 
@@ -55,9 +55,24 @@ object IdResolution {
   }
 
   // TODO: Use correct error
-  // TODO: The _project is an IRI and a decoder instance (iri to projectRef) is needed
   private def projectRefFromSource(source: JsonObject) =
-    IO.fromOption(source("_project").flatMap(_.as[ProjectRef].toOption), AuthorizationFailed)
+    IO.fromOption(
+      source("_project")
+        .flatMap(_.as[Iri].toOption)
+        .flatMap(projectRefFromIri),
+      AuthorizationFailed
+    )
+
+  private val projectRefRegex =
+    s"^.+/projects/(${Label.regex.regex})/(${Label.regex.regex})".r
+
+  private def projectRefFromIri(iri: Iri) =
+    iri.toString match {
+      case projectRefRegex(org, proj) =>
+        Some(ProjectRef(Label.unsafe(org), Label.unsafe(proj)))
+      case _                          =>
+        None
+    }
 }
 
 object IdResolutionResponse {

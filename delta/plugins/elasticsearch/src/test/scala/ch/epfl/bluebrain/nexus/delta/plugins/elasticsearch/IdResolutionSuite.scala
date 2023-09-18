@@ -60,9 +60,8 @@ class IdResolutionSuite extends BioSuite with Fixtures {
     (_, _) => IO.pure(resource)
 
   private val res = JsonObject(
-    // TODO: _project should be an IRI
     "@id"      -> Json.fromString(iri.toString),
-    "_project" -> Json.fromString("myorg/myproject")
+    "_project" -> Json.fromString("https://bbp.epfl.ch/nexus/v1/projects/myorg/myproject")
   )
 
   test("No listing results lead to AuthorizationFailed") {
