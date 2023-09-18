@@ -72,7 +72,7 @@ class BlazegraphViewsQuerySpec(docker: BlazegraphDocker)
   }
 
   implicit private val sc: Scheduler                = Scheduler.global
-  implicit private val httpConfig: HttpClientConfig = HttpClientConfig(AlwaysGiveUp, HttpClientWorthRetry.never, true)
+  implicit private val httpConfig: HttpClientConfig = HttpClientConfig(AlwaysGiveUp, HttpClientWorthRetry.never, false)
   implicit private val baseUri: BaseUri             = BaseUri("http://localhost", Label.unsafe("v1"))
 
   implicit private val uuidF: UUIDF = UUIDF.random

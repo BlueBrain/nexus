@@ -28,7 +28,7 @@ trait ConfigFixtures {
     )
 
   def httpClientConfig: HttpClientConfig =
-    HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never, true)
+    HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never, false)
 
   def fusionConfig: FusionConfig = FusionConfig(Uri("https://bbp.epfl.ch/nexus/web/"), enableRedirects = true)
 

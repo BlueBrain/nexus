@@ -54,7 +54,7 @@ object RealmsModule extends ModuleDef {
   }
 
   make[HttpClient].named("realm").from { (as: ActorSystem[Nothing], sc: Scheduler) =>
-    HttpClient.noRetry()(as.classicSystem, sc)
+    HttpClient.noRetry(compression = true)(as.classicSystem, sc)
   }
 
   many[SseEncoder[_]].add { base: BaseUri => RealmEvent.sseEncoder(base) }
