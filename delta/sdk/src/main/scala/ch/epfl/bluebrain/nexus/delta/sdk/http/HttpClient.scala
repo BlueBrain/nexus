@@ -126,9 +126,9 @@ object HttpClient {
             req.addHeader(acceptEncoding)
 
         for {
-          encodedResp <- client.execute(reqCompressionSupport).mapError(toHttpError(req))
-          resp        <- decodeResponse(req, encodedResp)
-          a           <- handleResponse.applyOrElse(resp, resp => consumeEntity[A](req, resp))
+          encodedResp <- client.execute(reqCompressionSupport).mapError(toHttpError(reqCompressionSupport))
+          resp        <- decodeResponse(reqCompressionSupport, encodedResp)
+          a           <- handleResponse.applyOrElse(resp, resp => consumeEntity[A](reqCompressionSupport, resp))
         } yield a
       }.retry(httpConfig.strategy)
 
