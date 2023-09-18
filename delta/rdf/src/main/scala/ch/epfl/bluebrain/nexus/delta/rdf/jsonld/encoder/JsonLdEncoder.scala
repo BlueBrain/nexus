@@ -137,8 +137,8 @@ object JsonLdEncoder {
           value: A
       )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, CompactedJsonLd] =
         for {
-          (expanded, context)  <- expandAndExtractContext(value)
-          compacted <- expanded.toCompacted(context)
+          (expanded, context) <- expandAndExtractContext(value)
+          compacted           <- expanded.toCompacted(context)
         } yield compacted
 
       override def expand(
@@ -146,13 +146,17 @@ object JsonLdEncoder {
       )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, ExpandedJsonLd] =
         expandAndExtractContext(value).map(_._1)
 
-      private def expandAndExtractContext(value: A)(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution) = {
-        val json = value.asJson
+      private def expandAndExtractContext(
+          value: A
+      )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution) = {
+        val json    = value.asJson
         val context = contextFromJson(json)
-        ExpandedJsonLd(json.replaceContext(context.contextObj)).map {
-          case expanded if fId(value).isBNode && expanded.rootId.isIri => expanded
-          case expanded => expanded.replaceId(fId(value))
-        }.map(_ -> context)
+        ExpandedJsonLd(json.replaceContext(context.contextObj))
+          .map {
+            case expanded if fId(value).isBNode && expanded.rootId.isIri => expanded
+            case expanded                                                => expanded.replaceId(fId(value))
+          }
+          .map(_ -> context)
       }
 
       override def context(value: A): ContextValue = contextFromJson(value.asJson)
