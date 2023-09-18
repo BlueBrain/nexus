@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import ch.epfl.bluebrain.nexus.delta.rdf.{IriOrBNode, RdfError}
-import io.circe.Encoder
+import io.circe.{Encoder, Json}
 import io.circe.syntax._
 import monix.bio.IO
 
@@ -137,21 +137,27 @@ object JsonLdEncoder {
           value: A
       )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, CompactedJsonLd] =
         for {
-          expanded  <- expand(value)
-          compacted <- expanded.toCompacted(context(value))
+          (expanded, context)  <- expandAndExtractContext(value)
+          compacted <- expanded.toCompacted(context)
         } yield compacted
 
       override def expand(
           value: A
-      )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, ExpandedJsonLd] = {
-        val json = value.asJson.replaceContext(context(value).contextObj)
-        ExpandedJsonLd(json).map {
+      )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, ExpandedJsonLd] =
+        expandAndExtractContext(value).map(_._1)
+
+      private def expandAndExtractContext(value: A)(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution) = {
+        val json = value.asJson
+        val context = contextFromJson(json)
+        ExpandedJsonLd(json.replaceContext(context.contextObj)).map {
           case expanded if fId(value).isBNode && expanded.rootId.isIri => expanded
-          case expanded                                                => expanded.replaceId(fId(value))
-        }
+          case expanded => expanded.replaceId(fId(value))
+        }.map(_ -> context)
       }
 
-      override def context(value: A): ContextValue = value.asJson.topContextValueOrEmpty merge ctx
+      override def context(value: A): ContextValue = contextFromJson(value.asJson)
+
+      private def contextFromJson(json: Json): ContextValue = json.topContextValueOrEmpty merge ctx
     }
 
   implicit val jsonLdEncoderUnit: JsonLdEncoder[Unit] = new JsonLdEncoder[Unit] {
