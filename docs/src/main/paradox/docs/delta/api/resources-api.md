@@ -72,7 +72,7 @@ The `{schema_id}` segment allows to define an existing SHACL schema to validate 
 
 - If `_` is provided, no SHACL validation will be performed
 - If another value is provided, Nexus will attempt to resolve the schema then validate the expanded JSON-LD value generated 
-- from the provided payload.
+from the provided payload.
 
 **Example**
 
