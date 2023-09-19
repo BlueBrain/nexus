@@ -4,7 +4,7 @@
   "dependencies": {
     "blazegraph": "2.1.6-RC",
     "postgresql": "15.4",
-    "elasticsearch": "8.9.1",
+    "elasticsearch": "8.9.2",
     "remoteStorage": "1.9.0"
   },
   "plugins": {

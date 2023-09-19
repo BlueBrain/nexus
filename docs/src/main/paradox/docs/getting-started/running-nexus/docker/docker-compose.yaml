@@ -23,7 +23,7 @@ services:
           memory: 1024M
 
   elasticsearch:
-    image: "docker.elastic.co/elasticsearch/elasticsearch:8.9.1"
+    image: "docker.elastic.co/elasticsearch/elasticsearch:8.9.2"
     environment:
       discovery.type: "single-node"
       bootstrap.memory_lock: "true"
