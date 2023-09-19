@@ -81,9 +81,7 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with TryValue
 
   private val perms = Seq(
     Permissions.resources.write,
-    Permissions.resources.read,
-    model.permissions.read,
-    model.permissions.write
+    Permissions.resources.read
   )
 
   private val asSubject     = addCredentials(OAuth2BearerToken("user"))

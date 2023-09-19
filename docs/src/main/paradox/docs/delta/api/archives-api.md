@@ -10,10 +10,7 @@ Each archive...
 
 @@@ note { .tip title="Authorization notes" }	
 
-When modifying archives, the caller must have `archives/write` permissions on the current path of the project or the 
-ancestor paths.
-
-When reading archives, the caller must have `resources/read` permissions on the current path of the project or the 
+For both reading and modifying archives, the caller must have `resources/read` permissions on the current path of the project or the 
 ancestor paths.
 
 Please visit @ref:[Authentication & authorization](authentication.md) section to learn more about it.
