@@ -89,8 +89,8 @@ object HttpClient {
   /**
     * Construct an Http client using an underlying akka http client which will not retry on failures
     */
-  final def noRetry()(implicit as: ActorSystem, scheduler: Scheduler): HttpClient = {
-    implicit val config: HttpClientConfig = HttpClientConfig.noRetry
+  final def noRetry(compression: Boolean)(implicit as: ActorSystem, scheduler: Scheduler): HttpClient = {
+    implicit val config: HttpClientConfig = HttpClientConfig.noRetry(compression)
     apply()
   }
 
@@ -119,11 +119,16 @@ object HttpClient {
       override def apply[A](
           req: HttpRequest
       )(handleResponse: PartialFunction[HttpResponse, HttpResult[A]]): HttpResult[A] = {
-        val reqCompressionSupport = if (httpConfig.compression) req.addHeader(acceptEncoding) else req
+        val reqCompressionSupport =
+          if (httpConfig.compression) {
+            Coders.Gzip.encodeMessage(req).addHeader(acceptEncoding)
+          } else
+            req.addHeader(acceptEncoding)
+
         for {
-          encodedResp <- client.execute(reqCompressionSupport).mapError(toHttpError(req))
-          resp        <- decodeResponse(req, encodedResp)
-          a           <- handleResponse.applyOrElse(resp, resp => consumeEntity[A](req, resp))
+          encodedResp <- client.execute(reqCompressionSupport).mapError(toHttpError(reqCompressionSupport))
+          resp        <- decodeResponse(reqCompressionSupport, encodedResp)
+          a           <- handleResponse.applyOrElse(resp, resp => consumeEntity[A](reqCompressionSupport, resp))
         } yield a
       }.retry(httpConfig.strategy)
 

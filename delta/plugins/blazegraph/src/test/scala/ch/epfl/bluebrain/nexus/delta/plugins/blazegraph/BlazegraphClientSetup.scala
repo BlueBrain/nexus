@@ -16,7 +16,7 @@ object BlazegraphClientSetup {
 
   def resource()(implicit s: Scheduler): Resource[Task, BlazegraphClient] = {
     for {
-      (httpClient, actorSystem) <- HttpClientSetup()
+      (httpClient, actorSystem) <- HttpClientSetup(compression = false)
       container                 <- BlazegraphContainer.resource()
     } yield {
       implicit val as: ActorSystem = actorSystem
