@@ -1,12 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 
 import cats.data.NonEmptyMap
-import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.Secret
+//import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.RebuildStrategy
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.AccessToken
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.IndexingRev
 import io.circe.generic.extras.Configuration
@@ -39,16 +36,8 @@ object CompositeViewValue {
 
   @SuppressWarnings(Array("TryGet"))
   @nowarn("cat=unused")
-  def databaseCodec(crypto: Crypto)(implicit configuration: Configuration): Codec[CompositeViewValue] = {
+  def databaseCodec()(implicit configuration: Configuration): Codec[CompositeViewValue] = {
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
-    implicit val stringSecretEncryptEncoder: Encoder[Secret[String]] = Encoder.encodeString.contramap {
-      case Secret(value) => crypto.encrypt(value).get
-    }
-    implicit val stringSecretDecryptDecoder: Decoder[Secret[String]] =
-      Decoder.decodeString.emap(str => crypto.decrypt(str).map(Secret(_)).toEither.leftMap(_.getMessage))
-
-    implicit val accessTokenCodec: Codec.AsObject[AccessToken] = deriveConfiguredCodec[AccessToken]
-
     implicit val finiteDurationEncoder: Encoder[FiniteDuration] = Encoder.encodeString.contramap(_.toString())
     implicit val finiteDurationDecoder: Decoder[FiniteDuration] = Decoder.decodeString.emap { s =>
       Duration(s) match {

@@ -69,12 +69,6 @@ This feature can be turned on via the flag `app.automatic-provisioning.enabled`.
 
 @link:[The `automatic-provisioning` section](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/app.conf#L197){ open=new } of the configuration defines the project provisioning configuration.
 
-## Encryption configuration
-
-Nexus Delta uses symmetric encryption to secure sensitive data information (tokens and passwords).
-
-@link:[The `encryption` section](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/app.conf#L276){ open=new } of the configuration defines the encryption configuration.
-
 ## Fusion configuration
 
 When fetching a resource, Nexus Delta allows to return a redirection to its representation in Fusion by providing `text/html` in the `Accept` header.

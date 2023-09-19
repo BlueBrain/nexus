@@ -5,17 +5,17 @@ import akka.http.scaladsl.client.RequestBuilding.{Get, Head}
 import akka.http.scaladsl.model.ContentTypes.`application/json`
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept}
-import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes, Uri}
+import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes}
 import akka.stream.alpakka.sse.scaladsl.EventSource
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.RemoteProjectSource
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.CompositeBranch
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.NQuads
+import ch.epfl.bluebrain.nexus.delta.sdk.auth.{AuthTokenProvider, Credentials}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.HttpResult
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.AuthToken
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectStatistics
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.StreamConverter
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -86,35 +86,47 @@ object DeltaClient {
 
   private val accept = Accept(`application/json`.mediaType, RdfMediaTypes.`application/ld+json`)
 
-  final private class DeltaClientImpl(client: HttpClient, retryDelay: FiniteDuration)(implicit
+  final private class DeltaClientImpl(
+      client: HttpClient,
+      authTokenProvider: AuthTokenProvider,
+      credentials: Credentials,
+      retryDelay: FiniteDuration
+  )(implicit
       as: ActorSystem[Nothing],
       scheduler: Scheduler
   ) extends DeltaClient {
 
     override def projectStatistics(source: RemoteProjectSource): HttpResult[ProjectStatistics] = {
-      implicit val cred: Option[AuthToken] = token(source)
-      val statisticsEndpoint: HttpRequest  =
-        Get(
-          source.endpoint / "projects" / source.project.organization.value / source.project.project.value / "statistics"
-        ).addHeader(accept).withCredentials
-      client.fromJsonTo[ProjectStatistics](statisticsEndpoint)
+      for {
+        authToken <- authTokenProvider(credentials)
+        request    =
+          Get(
+            source.endpoint / "projects" / source.project.organization.value / source.project.project.value / "statistics"
+          ).addHeader(accept).withCredentials(authToken)
+        result    <- client.fromJsonTo[ProjectStatistics](request)
+      } yield {
+        result
+      }
     }
 
     override def remaining(source: RemoteProjectSource, offset: Offset): HttpResult[RemainingElems] = {
-      implicit val cred: Option[AuthToken] = token(source)
-      val remainingEndpoint: HttpRequest   =
-        Get(elemAddress(source) / "remaining")
-          .addHeader(accept)
-          .addHeader(`Last-Event-ID`(offset.value.toString))
-          .withCredentials
-      client.fromJsonTo[RemainingElems](remainingEndpoint)
+      for {
+        authToken <- authTokenProvider(credentials)
+        request    = Get(elemAddress(source) / "remaining")
+                       .addHeader(accept)
+                       .addHeader(`Last-Event-ID`(offset.value.toString))
+                       .withCredentials(authToken)
+        result    <- client.fromJsonTo[RemainingElems](request)
+      } yield result
     }
 
     override def checkElems(source: RemoteProjectSource): HttpResult[Unit] = {
-      implicit val cred: Option[AuthToken] = token(source)
-      client(Head(elemAddress(source)).withCredentials) {
-        case resp if resp.status.isSuccess() => UIO.delay(resp.discardEntityBytes()) >> IO.unit
-      }
+      for {
+        authToken <- authTokenProvider(credentials)
+        result    <- client(Head(elemAddress(source)).withCredentials(authToken)) {
+                       case resp if resp.status.isSuccess() => UIO.delay(resp.discardEntityBytes()) >> IO.unit
+                     }
+      } yield result
     }
 
     override def elems(source: RemoteProjectSource, run: CompositeBranch.Run, offset: Offset): ElemStream[Unit] = {
@@ -123,10 +135,11 @@ object DeltaClient {
         case Offset.At(value) => Some(value.toString)
       }
 
-      implicit val cred: Option[AuthToken] = token(source)
-
       def send(request: HttpRequest): Future[HttpResponse] = {
-        client[HttpResponse](request.withCredentials)(IO.pure(_)).runToFuture
+        (for {
+          authToken <- authTokenProvider(credentials)
+          result    <- client[HttpResponse](request.withCredentials(authToken))(IO.pure(_))
+        } yield result).runToFuture
       }
 
       val suffix = run match {
@@ -155,37 +168,45 @@ object DeltaClient {
         .withQuery(typeQuery(source.selectFilter.types))
 
     override def resourceAsNQuads(source: RemoteProjectSource, id: Iri): HttpResult[Option[NQuads]] = {
-      implicit val cred: Option[AuthToken] = token(source)
-      val resourceUrl: Uri                 =
+      val resourceUrl =
         source.endpoint / "resources" / source.project.organization.value / source.project.project.value / "_" / id.toString
-      val req                              = Get(
-        source.resourceTag.fold(resourceUrl)(t => resourceUrl.withQuery(Query("tag" -> t.value)))
-      ).addHeader(Accept(RdfMediaTypes.`application/n-quads`)).withCredentials
-      client.fromEntityTo[String](req).map(nq => Some(NQuads(nq, id))).onErrorRecover {
-        case HttpClientStatusError(_, StatusCodes.NotFound, _) => None
-      }
+      for {
+        authToken <- authTokenProvider(credentials)
+        req        = Get(
+                       source.resourceTag.fold(resourceUrl)(t => resourceUrl.withQuery(Query("tag" -> t.value)))
+                     ).addHeader(Accept(RdfMediaTypes.`application/n-quads`)).withCredentials(authToken)
+        result    <- client.fromEntityTo[String](req).map(nq => Some(NQuads(nq, id))).onErrorRecover {
+                       case HttpClientStatusError(_, StatusCodes.NotFound, _) => None
+                     }
+      } yield result
     }
 
     override def resourceAsJson(source: RemoteProjectSource, id: Iri): HttpResult[Option[Json]] = {
-      implicit val cred: Option[AuthToken] = token(source)
-      val req                              = Get(
-        source.endpoint / "resources" / source.project.organization.value / source.project.project.value / "_" / id.toString
-      ).addHeader(accept).withCredentials
-      client.toJson(req).map(Some(_)).onErrorRecover { case HttpClientStatusError(_, StatusCodes.NotFound, _) =>
-        None
-      }
+      for {
+        authToken <- authTokenProvider(credentials)
+        req        =
+          Get(
+            source.endpoint / "resources" / source.project.organization.value / source.project.project.value / "_" / id.toString
+          ).addHeader(accept).withCredentials(authToken)
+        result    <-
+          client.toJson(req).map(Some(_)).onErrorRecover { case HttpClientStatusError(_, StatusCodes.NotFound, _) =>
+            None
+          }
+      } yield result
     }
-
-    private def token(source: RemoteProjectSource) =
-      source.token.map { token => AuthToken(token.value.value) }
   }
 
   /**
     * Factory method for delta clients.
     */
-  def apply(client: HttpClient, retryDelay: FiniteDuration)(implicit
+  def apply(
+      client: HttpClient,
+      authTokenProvider: AuthTokenProvider,
+      credentials: Credentials,
+      retryDelay: FiniteDuration
+  )(implicit
       as: ActorSystem[Nothing],
       sc: Scheduler
   ): DeltaClient =
-    new DeltaClientImpl(client, retryDelay)
+    new DeltaClientImpl(client, authTokenProvider, credentials, retryDelay)
 }

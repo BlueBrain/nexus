@@ -2,20 +2,19 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
 import akka.http.scaladsl.model.Uri
 import cats.data.NonEmptyList
-import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig.{BlazegraphAccess, RemoteSourceClientConfig, SinkConfig, SourcesConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.Interval
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjectionFields.{ElasticSearchProjectionFields, SparqlProjectionFields}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.{AccessToken, CrossProjectSource, ProjectSource, RemoteProjectSource}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.{CrossProjectSource, ProjectSource, RemoteProjectSource}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSourceFields.{CrossProjectSourceFields, ProjectSourceFields, RemoteProjectSourceFields}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{permissions, CompositeViewFields, TemplateSparqlConstructQuery}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
-import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
+import ch.epfl.bluebrain.nexus.delta.sdk.auth.Credentials
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.views.IndexingRev
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
@@ -31,8 +30,6 @@ import java.util.UUID
 import scala.concurrent.duration._
 
 trait CompositeViewsFixture extends ConfigFixtures with EitherValuable {
-
-  val crypto: Crypto = Crypto("changeme", "salt")
 
   val alwaysValidate: ValidateCompositeView = (_, _) => IO.unit
 
@@ -70,8 +67,7 @@ trait CompositeViewsFixture extends ConfigFixtures with EitherValuable {
   val remoteProjectFields = RemoteProjectSourceFields(
     Some(iri"http://example.com/remote-project-source"),
     ProjectRef(Label.unsafe("org"), Label.unsafe("remoteproject")),
-    Uri("http://example.com/remote-endpoint"),
-    Some(Secret("secret token"))
+    Uri("http://example.com/remote-endpoint")
   )
 
   val esProjectionFields         = ElasticSearchProjectionFields(
@@ -125,8 +121,7 @@ trait CompositeViewsFixture extends ConfigFixtures with EitherValuable {
     None,
     false,
     ProjectRef(Label.unsafe("org"), Label.unsafe("remoteproject")),
-    Uri("http://example.com/remote-endpoint"),
-    Some(AccessToken(Secret("secret token")))
+    Uri("http://example.com/remote-endpoint")
   )
 
   val esProjection         = ElasticSearchProjection(
@@ -182,7 +177,8 @@ trait CompositeViewsFixture extends ConfigFixtures with EitherValuable {
     batchConfig,
     3.seconds,
     false,
-    SinkConfig.Batch
+    SinkConfig.Batch,
+    Credentials.Anonymous
   )
 }
 
