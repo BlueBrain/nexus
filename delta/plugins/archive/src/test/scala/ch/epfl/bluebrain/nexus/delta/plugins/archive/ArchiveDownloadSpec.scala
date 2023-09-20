@@ -10,9 +10,10 @@ import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils.encode
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.FileSelf.ParsingError
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.{FileReference, FileSelfReference, ResourceReference}
-import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.{AuthorizationFailed, FilenameTooLong, InvalidFileSelf, ResourceNotFound}
+import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.{AuthorizationFailed, InvalidFileSelf, ResourceNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRepresentation.{CompactedJsonLd, Dot, ExpandedJsonLd, NQuads, NTriples, SourceJson}
-import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.{ArchiveFormat, ArchiveRejection, ArchiveValue}
+import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.{ArchiveRejection, ArchiveValue}
+import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.Zip
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.RemoteContextResolutionFixture
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.FileNotFound
@@ -50,7 +51,7 @@ import java.util.UUID
 import scala.concurrent.ExecutionContext
 import scala.reflect.ClassTag
 
-abstract class ArchiveDownloadSpec
+class ArchiveDownloadSpec
     extends TestKit(ActorSystem())
     with AnyWordSpecLike
     with Inspectors
@@ -81,9 +82,7 @@ abstract class ArchiveDownloadSpec
   private val permissions = Set(Permissions.resources.read)
   private val aclCheck    = AclSimpleCheck((subject, AclAddress.Root, permissions)).accepted
 
-  def format: ArchiveFormat[_]
-
-  def sourceToMap(source: AkkaSource): Map[String, String]
+  def sourceToMap(source: AkkaSource): Map[String, String] = fromZip(source).map { case (k, v) => k -> v.utf8String }
 
   "An ArchiveDownload" should {
     val storageRef                                    = ResourceRef.Revision(iri"http://localhost/${genString()}", 5)
@@ -147,20 +146,20 @@ abstract class ArchiveDownloadSpec
     )
 
     def downloadAndExtract(value: ArchiveValue, ignoreNotFound: Boolean) = {
-      archiveDownload(value, project.ref, format, ignoreNotFound).map(sourceToMap).accepted
+      archiveDownload(value, project.ref, ignoreNotFound).map(sourceToMap).accepted
     }
 
     def failToDownload[R <: ArchiveRejection: ClassTag](value: ArchiveValue, ignoreNotFound: Boolean) = {
-      archiveDownload(value, project.ref, format, ignoreNotFound).rejectedWith[R]
+      archiveDownload(value, project.ref, ignoreNotFound).rejectedWith[R]
     }
 
     def rejectedAccess(value: ArchiveValue) = {
       archiveDownload
-        .apply(value, project.ref, format, ignoreNotFound = true)(Caller.Anonymous, global)
+        .apply(value, project.ref, ignoreNotFound = true)(Caller.Anonymous, global)
         .rejectedWith[AuthorizationFailed]
     }
 
-    s"provide a ${format.fileExtension} for both resources and files" in {
+    s"provide a ${Zip.fileExtension} for both resources and files" in {
       val value    = ArchiveValue.unsafe(
         NonEmptySet.of(
           ResourceReference(Latest(id1), None, None, None),
@@ -175,7 +174,7 @@ abstract class ArchiveDownloadSpec
       result shouldEqual expected
     }
 
-    s"provide a ${format.fileExtension} for file selfs" in {
+    s"provide a ${Zip.fileExtension} for file selfs" in {
       val value    = ArchiveValue.unsafe(
         NonEmptySet.of(
           FileSelfReference(file1Self, None)
@@ -188,12 +187,12 @@ abstract class ArchiveDownloadSpec
       result shouldEqual expected
     }
 
-    s"fail to provide a ${format.fileExtension} for file selfs which do not resolve" in {
+    s"fail to provide a ${Zip.fileExtension} for file selfs which do not resolve" in {
       val value = ArchiveValue.unsafe(NonEmptySet.of(FileSelfReference("http://wrong.file/self", None)))
       failToDownload[InvalidFileSelf](value, ignoreNotFound = false)
     }
 
-    s"provide a ${format.fileExtension} for both resources and files with different paths and formats" in {
+    s"provide a ${Zip.fileExtension} for both resources and files with different paths and formats" in {
       val list = List(
         SourceJson      -> file1.value.asJson.sort.spaces2,
         CompactedJsonLd -> file1.toCompactedJsonLd.accepted.json.sort.spaces2,
@@ -226,39 +225,17 @@ abstract class ArchiveDownloadSpec
       }
     }
 
-    if (format == ArchiveFormat.Tar) {
-      "fail to provide a tar if the file name is too long and no path is provided" in {
-        val value = ArchiveValue.unsafe(
-          NonEmptySet.of(
-            FileReference(Latest(id2), None, None)
-          )
+    "provide a zip if the file name is long" in {
+      val value     = ArchiveValue.unsafe(
+        NonEmptySet.of(
+          FileReference(Latest(id2), None, None)
         )
-        failToDownload[FilenameTooLong](value, ignoreNotFound = false)
-      }
-
-      "provide a tar if the file name is too long but a path is provided" in {
-        val filePath = AbsolutePath.apply(s"/${genString()}/file.txt").rightValue
-        val value    = ArchiveValue.unsafe(
-          NonEmptySet.of(
-            FileReference(Latest(id2), None, Some(filePath))
-          )
-        )
-
-        downloadAndExtract(value, ignoreNotFound = false) should contain key filePath.value.toString
-      }
-    } else {
-      "provide a zip if the file name is long" in {
-        val value     = ArchiveValue.unsafe(
-          NonEmptySet.of(
-            FileReference(Latest(id2), None, None)
-          )
-        )
-        val file2Path = s"${project.ref.toString}/file/${file2.value.attributes.filename}"
-        downloadAndExtract(value, ignoreNotFound = false) should contain key file2Path
-      }
+      )
+      val file2Path = s"${project.ref.toString}/file/${file2.value.attributes.filename}"
+      downloadAndExtract(value, ignoreNotFound = false) should contain key file2Path
     }
 
-    s"fail to provide a ${format.fileExtension} when a resource is not found" in {
+    s"fail to provide a ${Zip.fileExtension} when a resource is not found" in {
       val value = ArchiveValue.unsafe(
         NonEmptySet.of(
           ResourceReference(Latest(iri"http://localhost/${genString()}"), None, None, None),
@@ -268,7 +245,7 @@ abstract class ArchiveDownloadSpec
       failToDownload[ResourceNotFound](value, ignoreNotFound = false)
     }
 
-    s"fail to provide a ${format.fileExtension} when a file is not found" in {
+    s"fail to provide a ${Zip.fileExtension} when a file is not found" in {
       val value = ArchiveValue.unsafe(
         NonEmptySet.of(
           ResourceReference(Latest(id1), None, None, None),
@@ -306,14 +283,14 @@ abstract class ArchiveDownloadSpec
       result shouldEqual expected
     }
 
-    s"fail to provide a ${format.fileExtension} when access to a resource is not found" in {
+    s"fail to provide a ${Zip.fileExtension} when access to a resource is not found" in {
       val value = ArchiveValue.unsafe(
         NonEmptySet.of(ResourceReference(Latest(id1), None, None, None))
       )
       rejectedAccess(value)
     }
 
-    s"fail to provide a ${format.fileExtension} when access to a file is not found" in {
+    s"fail to provide a ${Zip.fileExtension} when access to a file is not found" in {
       val value = ArchiveValue.unsafe(
         NonEmptySet.of(FileReference(Latest(id1), None, None))
       )

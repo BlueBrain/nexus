@@ -4,7 +4,8 @@ import akka.http.scaladsl.model.StatusCodes.{Created, SeeOther}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive1, Route}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.Archives
-import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.{permissions, ArchiveFormat}
+import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.permissions
+import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.Zip
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
@@ -76,14 +77,14 @@ class ArchiveRoutes(
                     (get & pathEndOrSingleSlash) {
                       authorizeFor(ref, permissions.read).apply {
                         archiveResponse {
-                          case Some(format) =>
+                          case Some(_) =>
                             parameter("ignoreNotFound".as[Boolean] ? false) { ignoreNotFound =>
-                              val response = archives.download(id, ref, format, ignoreNotFound).map { source =>
-                                sourceToFileResponse(source, format)
+                              val response = archives.download(id, ref, ignoreNotFound).map { source =>
+                                sourceToFileResponse(source)
                               }
                               emit(response)
                             }
-                          case None         => emit(archives.fetch(id, ref))
+                          case None    => emit(archives.fetch(id, ref))
                         }
                       }
                     }
@@ -96,9 +97,9 @@ class ArchiveRoutes(
       }
     }
 
-  private def sourceToFileResponse(source: AkkaSource, format: ArchiveFormat[_]): FileResponse =
-    FileResponse(s"archive.${format.fileExtension}", format.contentType, 0L, source)
+  private def sourceToFileResponse(source: AkkaSource): FileResponse =
+    FileResponse(s"archive.${Zip.fileExtension}", Zip.contentType, 0L, source)
 
-  private def archiveResponse: Directive1[Option[ArchiveFormat[_]]] =
-    extractRequest.map(ArchiveFormat(_))
+  private def archiveResponse: Directive1[Option[Zip.type]] =
+    extractRequest.map(Zip(_))
 }
