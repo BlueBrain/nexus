@@ -186,7 +186,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap {
     }
 
     "fail to create a resource against a schema that does not exist" in {
-      Put("/v1/resources/myorg/myproject/pretendschema/", payloadWithoutId.toEntity) ~> routes ~> check {
+      Put("/v1/resources/myorg/myproject/pretendschema/someid", payloadWithoutId.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
         response.asJson shouldEqual jsonContentOf("/schemas/errors/invalid-schema-2.json")
       }
