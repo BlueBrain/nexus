@@ -115,6 +115,8 @@ The composite views plugin configuration can be found @link:[here](https://githu
 
 There are several configuration flags related to tweaking the range of values allowed for sources, projections and rebuild interval.
 
+Authentication for remote sources can be specified in three different ways. The value of `plugins.composite-views.remote-source-credentials` should be speficied in the same way as remote storages, as shown @ref:[here](#remote-storage-configuration)
+
 ### Storage plugin configuration
 
 The storage plugin configuration can be found @link:[here](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/plugins/storage/src/main/resources/storage.conf){ open=new }. 
