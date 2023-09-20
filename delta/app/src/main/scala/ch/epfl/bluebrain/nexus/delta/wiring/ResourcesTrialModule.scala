@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.routes.ResourcesPracticeRoutes
+import ch.epfl.bluebrain.nexus.delta.routes.ResourcesTrialRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk.PriorityRoute
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.ProjectContextRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.{Resources, ResourcesConfig, ResourcesPractice, ValidateResource}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.{Resources, ResourcesConfig, ResourcesTrial, ValidateResource}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas
 import distage.ModuleDef
 import izumi.distage.model.definition.Id
@@ -24,11 +24,11 @@ import monix.bio.UIO
 import monix.execution.Scheduler
 
 /**
-  * Resources practice wiring
+  * Resources trial wiring
   */
-object ResourcesPracticeModule extends ModuleDef {
+object ResourcesTrialModule extends ModuleDef {
 
-  make[ResourcesPractice].from {
+  make[ResourcesTrial].from {
     (
         resources: Resources,
         validate: ValidateResource,
@@ -38,7 +38,7 @@ object ResourcesPracticeModule extends ModuleDef {
         clock: Clock[UIO],
         uuidF: UUIDF
     ) =>
-      ResourcesPractice(
+      ResourcesTrial(
         resources.fetch(_, _, None),
         validate,
         fetchContext.mapRejection(ProjectContextRejection),
@@ -46,12 +46,12 @@ object ResourcesPracticeModule extends ModuleDef {
       )(api, clock, uuidF)
   }
 
-  make[ResourcesPracticeRoutes].from {
+  make[ResourcesTrialRoutes].from {
     (
         identities: Identities,
         aclCheck: AclCheck,
         schemas: Schemas,
-        resourcesPractice: ResourcesPractice,
+        resourcesTrial: ResourcesTrial,
         schemeDirectives: DeltaSchemeDirectives,
         baseUri: BaseUri,
         s: Scheduler,
@@ -59,11 +59,11 @@ object ResourcesPracticeModule extends ModuleDef {
         ordering: JsonKeyOrdering,
         config: ResourcesConfig
     ) =>
-      ResourcesPracticeRoutes(
+      ResourcesTrialRoutes(
         identities,
         aclCheck,
         schemas,
-        resourcesPractice,
+        resourcesTrial,
         schemeDirectives
       )(
         baseUri,
@@ -74,7 +74,7 @@ object ResourcesPracticeModule extends ModuleDef {
       )
   }
 
-  many[PriorityRoute].add { (route: ResourcesPracticeRoutes) =>
+  many[PriorityRoute].add { (route: ResourcesTrialRoutes) =>
     PriorityRoute(pluginsMinPriority - 1, route.routes, requiresStrictEntity = true)
   }
 

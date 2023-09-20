@@ -1,5 +1,5 @@
-# Practice
-Practice operations contain read-only operations designed to help users compose and validate their
+# Trial
+Trial operations contain read-only operations designed to help users compose and validate their
 resources before effectively saving them in Nexus.
 
 @@@ note { .tip title="Authorization notes" }
@@ -19,7 +19,7 @@ It applies the same validation steps than the creation/update of resources, the 
 that nothing is persisted.
 
 ```
-GET /v1/practice/resources/{org_label}/{project_label}
+GET /v1/trial/resources/{org_label}/{project_label}
 
 {
   "schema": {schema},
@@ -43,13 +43,13 @@ The Json response will contain:
 **Example**
 
 Request
-:   @@snip [create.sh](assets/practice/resources/generate.sh)
+:   @@snip [create.sh](assets/trial/resources/generate.sh)
 
 Payload
-:   @@snip [payload.json](assets/practice/resources/payload.json)
+:   @@snip [payload.json](assets/trial/resources/payload.json)
 
 Response
-:   @@snip [created.json](assets/practice/resources/generated.json)
+:   @@snip [created.json](assets/trial/resources/generated.json)
 
 ## Validate
 

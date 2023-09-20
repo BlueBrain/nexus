@@ -7,8 +7,8 @@ import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.routes.ResourcesPracticeRoutes.SchemaInput._
-import ch.epfl.bluebrain.nexus.delta.routes.ResourcesPracticeRoutes.{GenerateSchema, GenerationInput}
+import ch.epfl.bluebrain.nexus.delta.routes.ResourcesTrialRoutes.SchemaInput._
+import ch.epfl.bluebrain.nexus.delta.routes.ResourcesTrialRoutes.{GenerateSchema, GenerationInput}
 import ch.epfl.bluebrain.nexus.delta.sdk.SchemaResource
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
@@ -22,7 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources.{write => Write}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.NexusSource.DecodingOption
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.{NexusSource, ResourcesPractice}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.{NexusSource, ResourcesTrial}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaRejection
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
@@ -35,13 +35,13 @@ import monix.execution.Scheduler
 import scala.annotation.nowarn
 
 /**
-  * The resource practice routes allowing to do read-only operations on resource
+  * The resource trial routes allowing to do read-only operations on resources
   */
-final class ResourcesPracticeRoutes(
+final class ResourcesTrialRoutes(
     identities: Identities,
     aclCheck: AclCheck,
     generateSchema: GenerateSchema,
-    resourcesPractice: ResourcesPractice,
+    resourcesTrial: ResourcesTrial,
     schemeDirectives: DeltaSchemeDirectives
 )(implicit
     baseUri: BaseUri,
@@ -56,7 +56,7 @@ final class ResourcesPracticeRoutes(
   import schemeDirectives._
   def routes: Route =
     baseUriPrefix(baseUri.prefix) {
-      concat(validateRoute, practiceRoute)
+      concat(validateRoute, generateRoute)
     }
 
   private def validateRoute: Route =
@@ -67,7 +67,7 @@ final class ResourcesPracticeRoutes(
             (get & idSegment & idSegmentRef & pathPrefix("validate") & pathEndOrSingleSlash) { (schema, id) =>
               val schemaOpt = underscoreToOption(schema)
               emit(
-                resourcesPractice.validate(id, project, schemaOpt).leftWiden[ResourceRejection]
+                resourcesTrial.validate(id, project, schemaOpt).leftWiden[ResourceRejection]
               )
             }
           }
@@ -75,8 +75,8 @@ final class ResourcesPracticeRoutes(
       }
     }
 
-  private def practiceRoute: Route =
-    (get & pathPrefix("practice") & pathPrefix("resources")) {
+  private def generateRoute: Route =
+    (get & pathPrefix("trial") & pathPrefix("resources")) {
       extractCaller { implicit caller =>
         (resolveProjectRef & pathEndOrSingleSlash) { project =>
           authorizeFor(project, Write).apply {
@@ -92,18 +92,18 @@ final class ResourcesPracticeRoutes(
   private def generate(project: ProjectRef, input: GenerationInput)(implicit caller: Caller) =
     input.schema match {
       case ExistingSchema(schemaId) =>
-        emit(resourcesPractice.generate(project, schemaId, input.resource).flatMap(_.asJson))
+        emit(resourcesTrial.generate(project, schemaId, input.resource).flatMap(_.asJson))
       case NewSchema(schemaSource)  =>
         emit(
           generateSchema(project, schemaSource, caller).flatMap { schema =>
-            resourcesPractice.generate(project, schema, input.resource).flatMap(_.asJson)
+            resourcesTrial.generate(project, schema, input.resource).flatMap(_.asJson)
           }
         )
     }
 
 }
 
-object ResourcesPracticeRoutes {
+object ResourcesTrialRoutes {
 
   type GenerateSchema = (ProjectRef, Json, Caller) => IO[SchemaRejection, SchemaResource]
 
@@ -143,7 +143,7 @@ object ResourcesPracticeRoutes {
       identities: Identities,
       aclCheck: AclCheck,
       schemas: Schemas,
-      resourcesPractice: ResourcesPractice,
+      resourcesTrial: ResourcesTrial,
       schemeDirectives: DeltaSchemeDirectives
   )(implicit
       baseUri: BaseUri,
@@ -151,12 +151,12 @@ object ResourcesPracticeRoutes {
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering,
       decodingOption: DecodingOption
-  ): ResourcesPracticeRoutes =
-    new ResourcesPracticeRoutes(
+  ): ResourcesTrialRoutes =
+    new ResourcesTrialRoutes(
       identities,
       aclCheck,
       (project, source, caller) => schemas.createDryRun(project, source)(caller).toBIO[SchemaRejection],
-      resourcesPractice,
+      resourcesTrial,
       schemeDirectives
     )
 }

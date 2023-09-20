@@ -23,7 +23,7 @@ import munit.Location
 
 import java.util.UUID
 
-class ResourcesPracticeSuite extends BioSuite with ValidateResourceFixture with TestHelpers with IOFixedClock {
+class ResourcesTrialSuite extends BioSuite with ValidateResourceFixture with TestHelpers with IOFixedClock {
 
   private val uuid                  = UUID.randomUUID()
   implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
@@ -78,7 +78,7 @@ class ResourcesPracticeSuite extends BioSuite with ValidateResourceFixture with 
     }
 
   test("Successfully generates a resource") {
-    val practice = ResourcesPractice(
+    val trial = ResourcesTrial(
       (_, _) => fetchResourceFail,
       alwaysValidate,
       fetchContext,
@@ -87,11 +87,11 @@ class ResourcesPracticeSuite extends BioSuite with ValidateResourceFixture with 
 
     val expectedData =
       ResourceGen.resource(id, projectRef, source.value, Revision(resourceSchema, defaultSchemaRevision))
-    assertSuccess(practice.generate(projectRef, resourceSchema, source))(None, expectedData)
+    assertSuccess(trial.generate(projectRef, resourceSchema, source))(None, expectedData)
   }
 
   test("Successfully generates a resource with a new schema") {
-    val practice = ResourcesPractice(
+    val trial = ResourcesTrial(
       (_, _) => fetchResourceFail,
       alwaysValidate,
       fetchContext,
@@ -106,19 +106,19 @@ class ResourcesPracticeSuite extends BioSuite with ValidateResourceFixture with 
 
     val expectedData =
       ResourceGen.resource(id, projectRef, source.value, Revision(anotherSchema, defaultSchemaRevision))
-    assertSuccess(practice.generate(projectRef, schema, source))(Some(schema), expectedData)
+    assertSuccess(trial.generate(projectRef, schema, source))(Some(schema), expectedData)
   }
 
   test("Fail when validation raises an error") {
     val expectedError = ReservedResourceId(id)
-    val practice      = ResourcesPractice(
+    val trial         = ResourcesTrial(
       (_, _) => fetchResourceFail,
       alwaysFail(expectedError),
       fetchContext,
       resolverContextResolution
     )
 
-    assertError(practice.generate(projectRef, resourceSchema, source))(None, expectedError)
+    assertError(trial.generate(projectRef, resourceSchema, source))(None, expectedError)
   }
 
   test("Validate a resource against a new schema reference") {
@@ -127,7 +127,7 @@ class ResourcesPracticeSuite extends BioSuite with ValidateResourceFixture with 
     )
     val anotherSchema = nxv + "anotherSchema"
 
-    val practice = ResourcesPractice(
+    val trial = ResourcesTrial(
       (_, _) => IO.pure(resource),
       alwaysValidate,
       fetchContext,
@@ -135,7 +135,7 @@ class ResourcesPracticeSuite extends BioSuite with ValidateResourceFixture with 
     )
 
     val expected = Validated(projectRef, Revision(anotherSchema, defaultSchemaRevision), defaultReport)
-    practice.validate(id, projectRef, Some(anotherSchema)).assert(expected)
+    trial.validate(id, projectRef, Some(anotherSchema)).assert(expected)
   }
 
   test("Validate a resource against its own schema") {
@@ -143,7 +143,7 @@ class ResourcesPracticeSuite extends BioSuite with ValidateResourceFixture with 
       ResourceGen.resource(id, projectRef, source.value, Revision(resourceSchema, 1))
     )
 
-    val practice = ResourcesPractice(
+    val trial = ResourcesTrial(
       (_, _) => IO.pure(resource),
       alwaysValidate,
       fetchContext,
@@ -151,7 +151,7 @@ class ResourcesPracticeSuite extends BioSuite with ValidateResourceFixture with 
     )
 
     val expected = Validated(projectRef, Revision(resourceSchema, defaultSchemaRevision), defaultReport)
-    practice.validate(id, projectRef, None).assert(expected)
+    trial.validate(id, projectRef, None).assert(expected)
   }
 
   test("Fail to validate a resource against the specified schema") {
@@ -163,14 +163,14 @@ class ResourcesPracticeSuite extends BioSuite with ValidateResourceFixture with 
     val expectedError =
       InvalidResource(id, Revision(anotherSchema, defaultSchemaRevision), defaultReport, resource.value.expanded)
 
-    val practice = ResourcesPractice(
+    val trial = ResourcesTrial(
       (_, _) => IO.pure(resource),
       alwaysFail(expectedError),
       fetchContext,
       resolverContextResolution
     )
 
-    practice.validate(id, projectRef, Some(anotherSchema)).error(expectedError)
+    trial.validate(id, projectRef, Some(anotherSchema)).error(expectedError)
   }
 
 }

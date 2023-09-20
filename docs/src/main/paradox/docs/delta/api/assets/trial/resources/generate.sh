@@ -1,6 +1,6 @@
 curl -X PUT \
      -H "Content-Type: application/json" \
-     "http://localhost:8080//practice/resources/myorg/myproj/" \
+     "http://localhost:8080/trial/resources/myorg/myproj/" \
      -d \
 '{
    "schema": "https://bbp.epfl.ch/nexus/schema/morphology"

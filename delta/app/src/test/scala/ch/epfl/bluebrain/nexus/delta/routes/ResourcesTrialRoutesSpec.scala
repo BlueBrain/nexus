@@ -6,7 +6,7 @@ import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.routes.ResourcesPracticeRoutes.GenerateSchema
+import ch.epfl.bluebrain.nexus.delta.routes.ResourcesTrialRoutes.GenerateSchema
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.SchemaGen
@@ -32,7 +32,7 @@ import monix.bio.{IO, UIO}
 
 import java.time.Instant
 
-class ResourcesPracticeRoutesSpec extends BaseRouteSpec with ResourceInstanceFixture with ValidateResourceFixture {
+class ResourcesTrialRoutesSpec extends BaseRouteSpec with ResourceInstanceFixture with ValidateResourceFixture {
 
   implicit private val caller: Caller =
     Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
@@ -72,7 +72,7 @@ class ResourcesPracticeRoutesSpec extends BaseRouteSpec with ResourceInstanceFix
 
   private val expectedError = ReservedResourceId(nxv + "invalid")
 
-  private val resourcesPractice = new ResourcesPractice {
+  private val resourcesTrial = new ResourcesTrial {
     override def generate(project: ProjectRef, schema: IdSegment, source: NexusSource)(implicit
         caller: Caller
     ): UIO[ResourceGenerationResult] =
@@ -116,20 +116,20 @@ class ResourcesPracticeRoutesSpec extends BaseRouteSpec with ResourceInstanceFix
 
   private lazy val routes =
     Route.seal(
-      new ResourcesPracticeRoutes(
+      new ResourcesTrialRoutes(
         IdentitiesDummy(caller),
         aclCheck,
         generateSchema,
-        resourcesPractice,
+        resourcesTrial,
         DeltaSchemeDirectives(fetchContext)
       ).routes
     )
 
-  "A resource practice route" should {
+  "A resource trial route" should {
 
     "fail to generate a resource for a user without access" in {
       val payload = json"""{ "resource": $validSource }"""
-      Get(s"/v1/practice/resources/$projectRef/", payload.toEntity) ~> routes ~> check {
+      Get(s"/v1/trial/resources/$projectRef/", payload.toEntity) ~> routes ~> check {
         response.status shouldEqual StatusCodes.Forbidden
         response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
       }
@@ -137,18 +137,18 @@ class ResourcesPracticeRoutesSpec extends BaseRouteSpec with ResourceInstanceFix
 
     "generate a resource without passing a schema" in {
       val payload = json"""{ "resource": $validSource }"""
-      Get(s"/v1/practice/resources/$projectRef/", payload.toEntity) ~> asAlice ~> routes ~> check {
+      Get(s"/v1/trial/resources/$projectRef/", payload.toEntity) ~> asAlice ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
         val jsonResponse = response.asJsonObject
         jsonResponse("schema") shouldBe empty
-        jsonResponse("result") shouldEqual Some(jsonContentOf("practice/generated-resource.json"))
+        jsonResponse("result") shouldEqual Some(jsonContentOf("trial/generated-resource.json"))
         jsonResponse("error") shouldBe empty
       }
     }
 
     "generate a resource passing a new schema" in {
       val payload = json"""{ "schema": $schemaSource, "resource": $validSource }"""
-      Get(s"/v1/practice/resources/$projectRef/", payload.toEntity) ~> asAlice ~> routes ~> check {
+      Get(s"/v1/trial/resources/$projectRef/", payload.toEntity) ~> asAlice ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
         val jsonResponse = response.asJsonObject
         jsonResponse("schema") should not be empty
@@ -159,7 +159,7 @@ class ResourcesPracticeRoutesSpec extends BaseRouteSpec with ResourceInstanceFix
 
     "fails to generate a resource when passing an invalid new schema" in {
       val payload = json"""{ "schema": { "invalid":  "xxx" }, "resource": $validSource }"""
-      Get(s"/v1/practice/resources/$projectRef/", payload.toEntity) ~> asAlice ~> routes ~> check {
+      Get(s"/v1/trial/resources/$projectRef/", payload.toEntity) ~> asAlice ~> routes ~> check {
         response.status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual
           json"""{
@@ -174,7 +174,7 @@ class ResourcesPracticeRoutesSpec extends BaseRouteSpec with ResourceInstanceFix
 
     "fails to generate a resource when the resource payload is invalid and without passing a schema" in {
       val payload = json"""{ "resource": $invalidSource }"""
-      Get(s"/v1/practice/resources/$projectRef/", payload.toEntity) ~> asAlice ~> routes ~> check {
+      Get(s"/v1/trial/resources/$projectRef/", payload.toEntity) ~> asAlice ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
         response.asJson shouldEqual
           json"""
@@ -190,7 +190,7 @@ class ResourcesPracticeRoutesSpec extends BaseRouteSpec with ResourceInstanceFix
 
     "fail to generate a resource passing a new schema" in {
       val payload = json"""{ "schema": $schemaSource, "resource": $invalidSource }"""
-      Get(s"/v1/practice/resources/$projectRef/", payload.toEntity) ~> asAlice ~> routes ~> check {
+      Get(s"/v1/trial/resources/$projectRef/", payload.toEntity) ~> asAlice ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
         val jsonResponse = response.asJsonObject
         jsonResponse("schema") should not be empty

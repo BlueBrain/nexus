@@ -20,7 +20,7 @@ import monix.bio.{IO, UIO}
 /**
   * Operations allowing to perform read-only operations on resources
   */
-trait ResourcesPractice {
+trait ResourcesTrial {
 
   /**
     * Generates the resource and validate it against the provided schema reference
@@ -69,13 +69,13 @@ trait ResourcesPractice {
   ): IO[ResourceRejection, ValidationResult]
 }
 
-object ResourcesPractice {
+object ResourcesTrial {
   def apply(
       fetchResource: (IdSegmentRef, ProjectRef) => IO[ResourceFetchRejection, DataResource],
       validateResource: ValidateResource,
       fetchContext: FetchContext[ProjectContextRejection],
       contextResolution: ResolverContextResolution
-  )(implicit api: JsonLdApi, clock: Clock[UIO], uuidF: UUIDF): ResourcesPractice = new ResourcesPractice {
+  )(implicit api: JsonLdApi, clock: Clock[UIO], uuidF: UUIDF): ResourcesTrial = new ResourcesTrial {
 
     private val sourceParser = JsonLdSourceResolvingParser[ResourceRejection](contextResolution, uuidF)
 
