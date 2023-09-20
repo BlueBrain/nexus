@@ -8,7 +8,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.migration.MigrateCom
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewEvent.{CompositeViewCreated, CompositeViewUpdated}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeViewEvent, CompositeViewState, CompositeViewValue}
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
-import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, Tag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
@@ -33,10 +32,9 @@ class MigrateCompositeViewsSuite extends BioSuite with Doobie.Fixture with Class
 
   implicit private lazy val xas: Transactors = doobie()
 
-  private val crypto: Crypto                     = Crypto("changeme", "salt")
-  private val eventSerializer                    = CompositeViewEvent.serializer(crypto)
+  private val eventSerializer                    = CompositeViewEvent.serializer
   implicit val eventGet: Get[CompositeViewEvent] = eventSerializer.getValue
-  private val stateSerializer                    = CompositeViewState.serializer(crypto)
+  private val stateSerializer                    = CompositeViewState.serializer
   implicit val stateGet: Get[CompositeViewState] = stateSerializer.getValue
 
   private def assertMigratedValue(value: CompositeViewValue, rev: Int)(implicit loc: Location): Unit = {

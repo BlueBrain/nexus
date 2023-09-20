@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 
 import akka.http.scaladsl.model.Uri
-import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSourceFields.{CrossProjectSourceFields, ProjectSourceFields, RemoteProjectSourceFields}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.SourceType._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -14,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.{Latest, UserTag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.PipeChain
-import io.circe.{Encoder, Json}
+import io.circe.Encoder
 
 import java.util.UUID
 import scala.annotation.nowarn
@@ -202,8 +201,7 @@ object CompositeViewSource {
       resourceTag: Option[UserTag],
       includeDeprecated: Boolean,
       project: ProjectRef,
-      endpoint: Uri,
-      token: Option[AccessToken]
+      endpoint: Uri
   ) extends CompositeViewSource {
 
     override def tpe: SourceType = RemoteProjectSourceType
@@ -213,18 +211,12 @@ object CompositeViewSource {
         Some(id),
         project,
         endpoint,
-        token.map(_.value),
         resourceSchemas,
         resourceTypes,
         resourceTag,
         includeDeprecated
       )
   }
-
-  final case class AccessToken(value: Secret[String])
-
-  @nowarn("cat=unused")
-  implicit private val accessTokenEncoder: Encoder[AccessToken] = Encoder.instance(_ => Json.Null)
 
   @nowarn("cat=unused")
   implicit final def sourceEncoder(implicit base: BaseUri): Encoder.AsObject[CompositeViewSource] = {
@@ -250,8 +242,7 @@ object CompositeViewSource {
 
   @nowarn("cat=unused")
   implicit final val sourceLdDecoder: JsonLdDecoder[CompositeViewSource] = {
-    implicit val identityLdDecoder: JsonLdDecoder[Identity]       = deriveDefaultJsonLdDecoder[Identity]
-    implicit val accessTokenLdDecoder: JsonLdDecoder[AccessToken] = deriveDefaultJsonLdDecoder[AccessToken]
+    implicit val identityLdDecoder: JsonLdDecoder[Identity] = deriveDefaultJsonLdDecoder[Identity]
     deriveDefaultJsonLdDecoder[CompositeViewSource]
   }
 }

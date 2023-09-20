@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.config
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.CacheConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApiConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclsConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.crypto.EncryptionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ServiceAccountConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.OrganizationsConfig
@@ -47,7 +46,6 @@ final case class AppConfig(
     schemas: SchemasConfig,
     serviceAccount: ServiceAccountConfig,
     sse: SseConfig,
-    encryption: EncryptionConfig,
     projections: ProjectionConfig,
     fusion: FusionConfig
 )
