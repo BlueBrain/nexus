@@ -1,6 +1,6 @@
 # Practice
-Practice operations contains read-only operations designed to help users compose and validate their
-resources before effectively save them in Nexus.
+Practice operations contain read-only operations designed to help users compose and validate their
+resources before effectively saving them in Nexus.
 
 @@@ note { .tip title="Authorization notes" }
 
@@ -35,6 +35,7 @@ This field is optional and defaults to no SHACL validation.
 * `{resource}`: Json: The resource payload to test and validate
 
 The Json response will contain:
+
 * The generated resource in the compacted JSON-LD format if the generation and the validation was successful
 * The generated schema if a new schema payload was provided
 * The error if the one of the steps fails (invalid resource/invalid new schema/existing schema not found/...)
@@ -49,3 +50,20 @@ Payload
 
 Response
 :   @@snip [created.json](assets/practice/resources/generated.json)
+
+## Validate
+
+This operation runs validation of a resource against a schema. This would be useful to test whether resources would
+match the shape of a new schema.
+
+```
+GET /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}/validate
+```
+
+**Example**
+
+Request
+:   @@snip [validate.sh](assets/resources/validate.sh)
+
+Response
+:   @@snip [validated.json](assets/resources/validated.json)

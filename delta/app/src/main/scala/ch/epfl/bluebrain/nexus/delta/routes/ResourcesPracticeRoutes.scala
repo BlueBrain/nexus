@@ -62,12 +62,12 @@ final class ResourcesPracticeRoutes(
   private def validateRoute: Route =
     pathPrefix("resources") {
       extractCaller { implicit caller =>
-        resolveProjectRef.apply { ref =>
-          authorizeFor(ref, Write).apply {
+        resolveProjectRef.apply { project =>
+          authorizeFor(project, Write).apply {
             (get & idSegment & idSegmentRef & pathPrefix("validate") & pathEndOrSingleSlash) { (schema, id) =>
               val schemaOpt = underscoreToOption(schema)
               emit(
-                resourcesPractice.validate(id, ref, schemaOpt).leftWiden[ResourceRejection]
+                resourcesPractice.validate(id, project, schemaOpt).leftWiden[ResourceRejection]
               )
             }
           }
@@ -78,10 +78,10 @@ final class ResourcesPracticeRoutes(
   private def practiceRoute: Route =
     (get & pathPrefix("practice") & pathPrefix("resources")) {
       extractCaller { implicit caller =>
-        (resolveProjectRef & pathEndOrSingleSlash) { ref =>
-          authorizeFor(ref, Write).apply {
+        (resolveProjectRef & pathEndOrSingleSlash) { project =>
+          authorizeFor(project, Write).apply {
             (entity(as[GenerationInput])) { input =>
-              generate(ref, input)
+              generate(project, input)
             }
           }
         }

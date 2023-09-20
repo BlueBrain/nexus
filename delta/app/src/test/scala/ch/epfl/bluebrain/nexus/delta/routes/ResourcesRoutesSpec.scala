@@ -71,6 +71,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap {
   private val myIdEncoded                 = UrlUtils.encode(myId.toString)
   private val myId2Encoded                = UrlUtils.encode(myId2.toString)
   private val payload                     = jsonContentOf("resources/resource.json", "id" -> myId)
+  private val payloadWithoutId            = payload.removeKeys(keywords.id)
   private val payloadWithBlankId          = jsonContentOf("resources/resource.json", "id" -> "")
   private val payloadWithUnderscoreFields =
     jsonContentOf("resources/resource-with-underscore-fields.json", "id" -> myId5)
@@ -177,7 +178,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap {
     "fail to create a resource that does not validate against a schema" in {
       Put(
         "/v1/resources/myorg/myproject/nxv:myschema/wrong",
-        payload.removeKeys(keywords.id).replaceKeyWithValue("number", "wrong").toEntity
+        payloadWithoutId.replaceKeyWithValue("number", "wrong").toEntity
       ) ~> routes ~> check {
         response.status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual jsonContentOf("/resources/errors/invalid-resource.json")
@@ -185,10 +186,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap {
     }
 
     "fail to create a resource against a schema that does not exist" in {
-      Put(
-        "/v1/resources/myorg/myproject/pretendschema/wrong",
-        payload.removeKeys(keywords.id).replaceKeyWithValue("number", "wrong").toEntity
-      ) ~> routes ~> check {
+      Put("/v1/resources/myorg/myproject/pretendschema/", payloadWithoutId.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
         response.asJson shouldEqual jsonContentOf("/schemas/errors/invalid-schema-2.json")
       }

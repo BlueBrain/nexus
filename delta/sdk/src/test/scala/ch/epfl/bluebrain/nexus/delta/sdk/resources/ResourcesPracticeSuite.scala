@@ -5,6 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
+import ch.epfl.bluebrain.nexus.delta.sdk.SchemaResource
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
@@ -12,11 +13,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.ValidationResult._
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{Resource, ResourceGenerationResult, ResourceRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{InvalidResource, ProjectContextRejection, ReservedResourceId}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Revision
 import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, TestHelpers}
-import monix.bio.IO
+import monix.bio.{IO, UIO}
+import munit.Location
 
 import java.util.UUID
 
@@ -58,6 +61,22 @@ class ResourcesPracticeSuite extends BioSuite with ValidateResourceFixture with 
   private val source         = NexusSource(jsonContentOf("resources/resource.json", "id" -> id))
   private val resourceSchema = nxv + "schema"
 
+  private def assertSuccess(
+      io: UIO[ResourceGenerationResult]
+  )(schema: Option[SchemaResource], result: Resource)(implicit loc: Location) =
+    io.map { generated =>
+      assertEquals(generated.schema, schema)
+      assertEquals(generated.attempt.map(_.value), Right(result))
+    }
+
+  private def assertError(
+      io: UIO[ResourceGenerationResult]
+  )(schema: Option[SchemaResource], error: ResourceRejection)(implicit loc: Location) =
+    io.map { generated =>
+      assertEquals(generated.schema, schema)
+      assertEquals(generated.attempt.map(_.value), Left(error))
+    }
+
   test("Successfully generates a resource") {
     val practice = ResourcesPractice(
       (_, _) => fetchResourceFail,
@@ -68,12 +87,7 @@ class ResourcesPracticeSuite extends BioSuite with ValidateResourceFixture with 
 
     val expectedData =
       ResourceGen.resource(id, projectRef, source.value, Revision(resourceSchema, defaultSchemaRevision))
-
-    for {
-      generated <- practice.generate(projectRef, resourceSchema, source)
-      _          = assertEquals(generated.schema, None)
-      _          = assertEquals(generated.attempt.map(_.value), Right(expectedData))
-    } yield ()
+    assertSuccess(practice.generate(projectRef, resourceSchema, source))(None, expectedData)
   }
 
   test("Successfully generates a resource with a new schema") {
@@ -92,12 +106,7 @@ class ResourcesPracticeSuite extends BioSuite with ValidateResourceFixture with 
 
     val expectedData =
       ResourceGen.resource(id, projectRef, source.value, Revision(anotherSchema, defaultSchemaRevision))
-
-    for {
-      generated <- practice.generate(projectRef, schema, source)
-      _          = assertEquals(generated.schema, Some(schema))
-      _          = assertEquals(generated.attempt.map(_.value), Right(expectedData))
-    } yield ()
+    assertSuccess(practice.generate(projectRef, schema, source))(Some(schema), expectedData)
   }
 
   test("Fail when validation raises an error") {
@@ -109,11 +118,7 @@ class ResourcesPracticeSuite extends BioSuite with ValidateResourceFixture with 
       resolverContextResolution
     )
 
-    for {
-      generated <- practice.generate(projectRef, resourceSchema, source)
-      _          = assertEquals(generated.schema, None)
-      _          = assertEquals(generated.attempt, Left(expectedError))
-    } yield ()
+    assertError(practice.generate(projectRef, resourceSchema, source))(None, expectedError)
   }
 
   test("Validate a resource against a new schema reference") {

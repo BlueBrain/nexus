@@ -139,7 +139,10 @@ class ResourcesPracticeRoutesSpec extends BaseRouteSpec with ResourceInstanceFix
       val payload = json"""{ "resource": $validSource }"""
       Get(s"/v1/practice/resources/$projectRef/", payload.toEntity) ~> asAlice ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual jsonContentOf("practice/resource-without-schema.json")
+        val jsonResponse = response.asJsonObject
+        jsonResponse("schema") shouldBe empty
+        jsonResponse("result") shouldEqual Some(jsonContentOf("practice/generated-resource.json"))
+        jsonResponse("error") shouldBe empty
       }
     }
 
@@ -204,8 +207,8 @@ class ResourcesPracticeRoutesSpec extends BaseRouteSpec with ResourceInstanceFix
     }
 
     s"successfully validate $myId for a user with access against the unconstrained schema" in {
-      val unconstrainedEncoded = UrlUtils.encode(schemas.resources.toString)
-      Get(s"/v1/resources/$projectRef/$unconstrainedEncoded/myId/validate") ~> asAlice ~> routes ~> check {
+      val unconstrained = UrlUtils.encode(schemas.resources.toString)
+      Get(s"/v1/resources/$projectRef/$unconstrained/myId/validate") ~> asAlice ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
         response.asJson shouldEqual
           json"""{
