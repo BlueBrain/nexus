@@ -121,7 +121,7 @@ A file is a binary attachment resource.
 
 ## Archives
 
-An archive is a collection of resources stored inside an archive file. The archiving format chosen for this purpose is tar (or tarball).
+An archive is a collection of resources stored inside an archive file. The archiving format chosen for this purpose is ZIP file.
 
 @ref:[Operations on archives](archives-api.md)
 
