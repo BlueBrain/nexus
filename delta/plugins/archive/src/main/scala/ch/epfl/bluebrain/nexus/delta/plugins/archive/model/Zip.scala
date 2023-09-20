@@ -17,17 +17,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.utils.HeadersUtils
 object Zip {
   type WriteFlow[Metadata] = Flow[(Metadata, Source[ByteString, _]), ByteString, NotUsed]
 
-  def apply(req: HttpRequest): Option[Zip.type] =
-    if (HeadersUtils.matches(req.headers, Zip.contentType.mediaType)) Some(Zip) else None
+  lazy val contentType: ContentType = MediaTypes.`application/zip`
 
-  def contentType: ContentType = MediaTypes.`application/zip`
+  lazy val writeFlow: WriteFlow[ArchiveMetadata] = Archive.zip()
 
-  def fileExtension: String = "zip"
+  lazy val ordering: Ordering[ArchiveMetadata] = Ordering.by(md => md.filePath)
 
-  def metadata(filename: String): ArchiveMetadata =
-    ArchiveMetadata.create(filename)
+  def metadata(filename: String): ArchiveMetadata = ArchiveMetadata.create(filename)
 
-  def writeFlow: WriteFlow[ArchiveMetadata] = Archive.zip()
-
-  def ordering: Ordering[ArchiveMetadata] = Ordering.by(md => md.filePath)
+  def checkHeader(req: HttpRequest): Boolean = HeadersUtils.matches(req.headers, Zip.contentType.mediaType)
 }
