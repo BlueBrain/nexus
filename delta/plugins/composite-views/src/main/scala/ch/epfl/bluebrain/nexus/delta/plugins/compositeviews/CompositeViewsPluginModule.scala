@@ -327,9 +327,9 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
 
   many[ResourceShift[_, _, _]].ref[CompositeView.Shift]
 
-  many[SseEncoder[_]].add { (base: BaseUri) => CompositeViewEvent.sseEncoder()(base) }
+  many[SseEncoder[_]].add { (base: BaseUri) => CompositeViewEvent.sseEncoder(base) }
 
-  many[ScopedEventMetricEncoder[_]].add { () => CompositeViewEvent.compositeViewMetricEncoder() }
+  many[ScopedEventMetricEncoder[_]].add { () => CompositeViewEvent.compositeViewMetricEncoder }
 
   many[PriorityRoute].add {
     (

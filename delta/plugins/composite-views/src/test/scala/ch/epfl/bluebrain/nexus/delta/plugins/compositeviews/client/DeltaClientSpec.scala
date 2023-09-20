@@ -166,10 +166,6 @@ class DeltaClientSpec
     "fail if project is unknown" in {
       deltaClient.projectStatistics(unknownProjectSource).rejected.errorCode.value shouldEqual StatusCodes.NotFound
     }
-
-//    "fail if token is invalid" in {
-//      deltaClient.projectStatistics(unknownToken).rejected.errorCode.value shouldEqual StatusCodes.Forbidden
-//    }
   }
 
   "Getting remaining information" should {
@@ -185,10 +181,6 @@ class DeltaClientSpec
         .errorCode
         .value shouldEqual StatusCodes.NotFound
     }
-
-//    "fail if token is invalid" in {
-//      deltaClient.remaining(unknownToken, Offset.Start).rejected.errorCode.value shouldEqual StatusCodes.Forbidden
-//    }
   }
 
   "Getting elems" should {
@@ -213,23 +205,11 @@ class DeltaClientSpec
     "return None if tag doesn't exist" in {
       deltaClient.resourceAsNQuads(source.copy(resourceTag = invalidTag), resourceId).accepted shouldEqual None
     }
-
-//    "fail if token is invalid" in {
-//      deltaClient
-//        .resourceAsNQuads(unknownToken, resourceId)
-//        .rejected
-//        .errorCode
-//        .value shouldEqual StatusCodes.Forbidden
-//    }
   }
 
   "Checking elems" should {
     "work" in {
       deltaClient.checkElems(source).accepted
     }
-//    "fail if token is invalid" in {
-//      deltaClient.checkElems(unknownToken).rejected.errorCode.value shouldEqual StatusCodes.Forbidden
-//    }
   }
-
 }
