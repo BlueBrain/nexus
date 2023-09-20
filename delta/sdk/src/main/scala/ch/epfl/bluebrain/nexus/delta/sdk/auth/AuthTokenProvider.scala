@@ -23,7 +23,7 @@ object AuthTokenProvider {
   def apply(authService: OpenIdAuthService): UIO[AuthTokenProvider] = {
     KeyValueStore[ClientCredentials, ParsedToken]().map(cache => new CachingOpenIdAuthTokenProvider(authService, cache))
   }
-  def anonymousForTest: AuthTokenProvider = new AnonymousAuthTokenProvider
+  def anonymousForTest: AuthTokenProvider            = new AnonymousAuthTokenProvider
   def fixedForTest(token: String): AuthTokenProvider = new AuthTokenProvider {
     override def apply(credentials: Credentials): UIO[Option[AuthToken]] = UIO.pure(Some(AuthToken(token)))
   }
