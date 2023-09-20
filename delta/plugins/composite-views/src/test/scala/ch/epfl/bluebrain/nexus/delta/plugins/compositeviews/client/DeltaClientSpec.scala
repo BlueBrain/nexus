@@ -142,7 +142,7 @@ class DeltaClientSpec
 
   implicit private val httpCfg: HttpClientConfig = httpClientConfig
   private val deltaClient                        =
-    DeltaClient(HttpClient(), AuthTokenProvider.anonymousForTest, Credentials.Anonymous, 1.second)
+    DeltaClient(HttpClient(), AuthTokenProvider.fixedForTest(token), Credentials.Anonymous, 1.second)
 
   private val source = RemoteProjectSource(
     iri"http://example.com/remote-project-source",
