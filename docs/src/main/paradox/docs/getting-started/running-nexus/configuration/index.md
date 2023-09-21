@@ -69,12 +69,6 @@ This feature can be turned on via the flag `app.automatic-provisioning.enabled`.
 
 @link:[The `automatic-provisioning` section](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/app.conf#L197){ open=new } of the configuration defines the project provisioning configuration.
 
-## Encryption configuration
-
-Nexus Delta uses symmetric encryption to secure sensitive data information (tokens and passwords).
-
-@link:[The `encryption` section](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/app.conf#L276){ open=new } of the configuration defines the encryption configuration.
-
 ## Fusion configuration
 
 When fetching a resource, Nexus Delta allows to return a redirection to its representation in Fusion by providing `text/html` in the `Accept` header.
@@ -120,6 +114,8 @@ The @link:[`plugins.blazegraph.slow-queries` section](https://github.com/BlueBra
 The composite views plugin configuration can be found @link:[here](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/plugins/composite-views/src/main/resources/composite-views.conf){ open=new }. 
 
 There are several configuration flags related to tweaking the range of values allowed for sources, projections and rebuild interval.
+
+Authentication for remote sources can be specified in three different ways. The value of `plugins.composite-views.remote-source-credentials` should be speficied in the same way as remote storages, as shown @ref:[here](#remote-storage-configuration)
 
 ### Storage plugin configuration
 

@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.config.BlazegraphViewsConfig.Credentials
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig.SinkConfig.SinkConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig.{BlazegraphAccess, RemoteSourceClientConfig, SourcesConfig}
+import ch.epfl.bluebrain.nexus.delta.sdk.auth
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
@@ -60,7 +61,8 @@ final case class CompositeViewsConfig(
     elasticsearchBatch: BatchConfig,
     restartCheckInterval: FiniteDuration,
     indexingEnabled: Boolean,
-    sinkConfig: SinkConfig
+    sinkConfig: SinkConfig,
+    remoteSourceCredentials: auth.Credentials
 )
 
 object CompositeViewsConfig {

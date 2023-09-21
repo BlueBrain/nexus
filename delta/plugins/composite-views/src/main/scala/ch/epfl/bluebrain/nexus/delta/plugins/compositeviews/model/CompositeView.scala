@@ -12,7 +12,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceShift
-import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -168,7 +167,7 @@ object CompositeView {
 
   type Shift = ResourceShift[CompositeViewState, CompositeView, Metadata]
 
-  def shift(views: CompositeViews)(implicit baseUri: BaseUri, crypto: Crypto): Shift =
+  def shift(views: CompositeViews)(implicit baseUri: BaseUri): Shift =
     ResourceShift.withMetadata[CompositeViewState, CompositeView, Metadata](
       CompositeViews.entityType,
       (ref, project) => views.fetch(IdSegmentRef(ref), project),

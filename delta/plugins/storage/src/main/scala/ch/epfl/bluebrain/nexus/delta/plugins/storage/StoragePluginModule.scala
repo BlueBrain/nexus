@@ -24,7 +24,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
-import ch.epfl.bluebrain.nexus.delta.sdk.auth.{AuthTokenProvider, Credentials, OpenIdAuthService}
+import ch.epfl.bluebrain.nexus.delta.sdk.auth.{AuthTokenProvider, Credentials}
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.ProjectDeletionTask
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
@@ -37,7 +37,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
-import ch.epfl.bluebrain.nexus.delta.sdk.realms.Realms
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
@@ -146,14 +145,6 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
   }
 
   many[ResourceShift[_, _, _]].ref[Storage.Shift]
-
-  make[OpenIdAuthService].from { (httpClient: HttpClient @Id("realm"), realms: Realms) =>
-    new OpenIdAuthService(httpClient, realms)
-  }
-
-  make[AuthTokenProvider].fromEffect { (authService: OpenIdAuthService) =>
-    AuthTokenProvider(authService)
-  }
 
   make[Files]
     .fromEffect {
