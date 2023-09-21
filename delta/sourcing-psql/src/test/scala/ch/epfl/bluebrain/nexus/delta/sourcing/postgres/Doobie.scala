@@ -13,6 +13,7 @@ import doobie.postgres.sqlstate
 import monix.bio.{IO, Task, UIO}
 import munit.Location
 import org.postgresql.util.PSQLException
+import monix.execution.Scheduler.Implicits.global
 
 object Doobie {
 

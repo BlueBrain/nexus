@@ -1,23 +1,32 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.organizations
 
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.sdk.generators.OrganizationGen.{organization, resourceFor}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
+import ch.epfl.bluebrain.nexus.delta.sdk.ScopeInitializationLog
+import ch.epfl.bluebrain.nexus.delta.sdk.generators.OrganizationGen.organization
+import ch.epfl.bluebrain.nexus.delta.sdk.generators.OrganizationGen.resourceFor
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.OrganizationSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.{IncorrectRev, OrganizationAlreadyExists, OrganizationIsDeprecated, OrganizationNotFound, RevisionNotFound}
-import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, ScopeInitializationLog}
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.IncorrectRev
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.OrganizationAlreadyExists
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.OrganizationIsDeprecated
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.OrganizationNotFound
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.RevisionNotFound
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
-import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues}
+import ch.epfl.bluebrain.nexus.testkit.IOFixedClock
+import ch.epfl.bluebrain.nexus.testkit.IOValues
 import monix.bio.UIO
 import monix.execution.Scheduler
+import org.scalatest.CancelAfterFailure
+import org.scalatest.OptionValues
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.{CancelAfterFailure, OptionValues}
 
 import java.time.Instant
 import java.util.UUID

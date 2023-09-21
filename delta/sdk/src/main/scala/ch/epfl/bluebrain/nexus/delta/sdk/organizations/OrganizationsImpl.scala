@@ -4,18 +4,24 @@ import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{SearchParams, SearchResults}
+import ch.epfl.bluebrain.nexus.delta.sdk.OrganizationResource
+import ch.epfl.bluebrain.nexus.delta.sdk.ScopeInitialization
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations.entityType
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.OrganizationsImpl.OrganizationsLog
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationCommand
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationCommand._
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationEvent
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection._
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.{OrganizationCommand, OrganizationEvent, OrganizationRejection, OrganizationState}
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationState
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.{OrganizationResource, ScopeInitialization}
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import monix.bio.{IO, UIO}
+import monix.bio.IO
+import monix.bio.UIO
 
 final class OrganizationsImpl private (
     log: OrganizationsLog,

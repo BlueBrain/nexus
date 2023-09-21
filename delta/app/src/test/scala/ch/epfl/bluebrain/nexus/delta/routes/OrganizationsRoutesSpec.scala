@@ -3,7 +3,8 @@ package ch.epfl.bluebrain.nexus.delta.routes
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.server.Route
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
@@ -12,14 +13,22 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.OrganizationGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.{OrganizationsConfig, OrganizationsImpl}
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{events, orgs => orgsPermissions}
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.OrganizationsConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.OrganizationDeleter
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.OrganizationsImpl
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.OrganizationNonEmpty
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{orgs => orgsPermissions}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.OwnerPermissionsScopeInitialization
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Authenticated
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Group
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.bio.IOFromMap
 import io.circe.Json
+import cats.effect.IO
 
 import java.util.UUID
 
@@ -38,7 +47,11 @@ class OrganizationsRoutesSpec extends BaseRouteSpec with IOFromMap {
     aclChecker.append,
     Set(orgsPermissions.write, orgsPermissions.read)
   )
-  private lazy val orgs  = OrganizationsImpl(Set(aopd), config, xas)
+
+  private lazy val orgs                            = OrganizationsImpl(Set(aopd), config, xas)
+  private lazy val orgDeleter: OrganizationDeleter = id =>
+    if (id == org1.label) IO.raiseError(OrganizationNonEmpty(id))
+    else IO.unit
 
   private val caller = Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
 
@@ -48,6 +61,7 @@ class OrganizationsRoutesSpec extends BaseRouteSpec with IOFromMap {
     OrganizationsRoutes(
       identities,
       orgs,
+      orgDeleter,
       aclChecker,
       DeltaSchemeDirectives.onlyResolveOrgUuid(ioFromMap(fixedUuid -> org1.label))
     )
@@ -209,6 +223,33 @@ class OrganizationsRoutesSpec extends BaseRouteSpec with IOFromMap {
       Delete("/v1/orgs/org2?rev=1") ~> addCredentials(OAuth2BearerToken("alice")) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson should equalIgnoreArrayOrder(org2DeprecatedMeta)
+      }
+    }
+
+    "fail to deprecate an organization if the revision is omitted" in {
+      Delete("/v1/orgs/org2") ~> addCredentials(OAuth2BearerToken("alice")) ~> routes ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
+    }
+
+    "delete an organization" in {
+      aclChecker.append(AclAddress.fromOrg(org2.label), caller.subject -> Set(orgsPermissions.delete)).accepted
+      Delete("/v1/orgs/org2?prune=true") ~> addCredentials(OAuth2BearerToken("alice")) ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+      }
+    }
+
+    "fail when trying to delete a non-empty organization" in {
+      aclChecker.append(AclAddress.fromOrg(org1.label), caller.subject -> Set(orgsPermissions.delete)).accepted
+      Delete("/v1/orgs/org1?prune=true") ~> addCredentials(OAuth2BearerToken("alice")) ~> routes ~> check {
+        status shouldEqual StatusCodes.Conflict
+      }
+    }
+
+    "fail to delete an organization without organizations/delete permission" in {
+      aclChecker.subtract(AclAddress.fromOrg(org2.label), caller.subject -> Set(orgsPermissions.delete)).accepted
+      Delete("/v1/orgs/org2?prune=true") ~> addCredentials(OAuth2BearerToken("alice")) ~> routes ~> check {
+        status shouldEqual StatusCodes.Forbidden
       }
     }
 

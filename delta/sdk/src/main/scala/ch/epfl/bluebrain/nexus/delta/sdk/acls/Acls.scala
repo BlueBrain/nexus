@@ -201,10 +201,10 @@ trait Acls {
   def delete(address: AclAddress, rev: Int)(implicit caller: Subject): IO[AclRejection, AclResource]
 
   /**
-    * Hard deletes events and states for the given acl address This is meant to be used internally for the project
-    * deletion feature
+    * Hard deletes events and states for the given acl address. This is meant to be used internally for project and
+    * organization deletion.
     */
-  def internalDelete(project: AclAddress): UIO[Unit]
+  def purge(project: AclAddress): UIO[Unit]
 
   private def filterSelf(resource: AclResource)(implicit caller: Caller): AclResource =
     resource.map(_.filter(caller.identities))
@@ -363,7 +363,7 @@ object Acls {
   def projectDeletionTask(acls: Acls): ProjectDeletionTask = new ProjectDeletionTask {
     override def apply(project: ProjectRef)(implicit subject: Subject): Task[ProjectDeletionReport.Stage] =
       acls
-        .internalDelete(project)
+        .purge(project)
         .as(
           ProjectDeletionReport.Stage("acls", "The acl has been deleted.")
         )

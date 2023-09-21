@@ -157,6 +157,8 @@ object Permissions {
     final val read: Permission   = Permission.unsafe("organizations/read")
     final val write: Permission  = Permission.unsafe("organizations/write")
     final val create: Permission = Permission.unsafe("organizations/create")
+    // TODO setup this permission
+    final val delete: Permission = Permission.unsafe("organizations/delete")
   }
 
   /**
