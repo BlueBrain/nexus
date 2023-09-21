@@ -34,7 +34,7 @@ trait ArchiveHelpers extends ScalaFutures with EitherValuable with OptionValues 
     fromZip(Source.single(byteString))
 
   def fromZip(source: Source[ByteString, Any])(implicit m: Materializer, e: ExecutionContext): ArchiveContent = {
-    val path   = JFiles.createTempFile("test", ".tar")
+    val path   = JFiles.createTempFile("test", ".zip")
     source.runWith(FileIO.toPath(path)).futureValue
     val result = Archive
       .zipReader(path.toFile)
