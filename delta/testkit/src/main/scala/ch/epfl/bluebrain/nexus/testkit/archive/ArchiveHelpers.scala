@@ -16,6 +16,9 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
 import java.security.MessageDigest
+import org.scalatest.concurrent.PatienceConfiguration
+import org.scalatest.time.Span
+import org.scalatest.time.Seconds
 
 trait ArchiveHelpers extends ScalaFutures with EitherValuable with OptionValues {
 
@@ -36,7 +39,10 @@ trait ArchiveHelpers extends ScalaFutures with EitherValuable with OptionValues 
 
   def fromZip(source: Source[ByteString, Any])(implicit m: Materializer, e: ExecutionContext): ArchiveContent = {
     val path   = JFiles.createTempFile("test", ".zip")
-    source.completionTimeout(10.seconds).runWith(FileIO.toPath(path)).futureValue
+    source
+      .completionTimeout(10.seconds)
+      .runWith(FileIO.toPath(path))
+      .futureValue(PatienceConfiguration.Timeout(Span(10, Seconds)))
     val result = Archive
       .zipReader(path.toFile)
       .mapAsync(1) { case (metadata, source) =>
