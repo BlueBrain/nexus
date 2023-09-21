@@ -1,17 +1,23 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.identities
 
-import akka.http.scaladsl.model.headers.OAuth2BearerToken
-import akka.http.scaladsl.model.{StatusCodes, Uri}
+import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
+import akka.http.scaladsl.model.{HttpRequest, StatusCodes, Uri}
 import cats.data.NonEmptySet
-import cats.implicits._
+import cats.effect.IO
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
-import ch.epfl.bluebrain.nexus.delta.kernel.cache.{CacheConfig, KeyValueStore}
+import ch.epfl.bluebrain.nexus.delta.kernel.cache.{CacheConfig, LocalCache}
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
+import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
+import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesImpl.{extractGroups, logger, GroupsCache}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.TokenRejection.{GetGroupsFromOidcError, InvalidAccessToken, UnknownAccessTokenIssuer}
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{AuthToken, Caller, TokenRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{AuthToken, Caller}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.RealmSearchParams
+import ch.epfl.bluebrain.nexus.delta.sdk.realms.Realms
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.Realm
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, User}
@@ -21,20 +27,19 @@ import com.nimbusds.jose.jwk.{JWK, JWKSet}
 import com.nimbusds.jose.proc.{JWSVerificationKeySelector, SecurityContext}
 import com.nimbusds.jwt.proc.{DefaultJWTClaimsVerifier, DefaultJWTProcessor}
 import io.circe.{Decoder, HCursor, Json}
-import monix.bio.{IO, UIO}
 
 import scala.util.Try
 
-class IdentitiesImpl private (
-    findActiveRealm: String => UIO[Option[Realm]],
-    getUserInfo: (Uri, OAuth2BearerToken) => IO[HttpClientError, Json],
+class IdentitiesImpl private[identities] (
+    findActiveRealm: String => IO[Option[Realm]],
+    getUserInfo: (Uri, OAuth2BearerToken) => IO[Json],
     groups: GroupsCache
 ) extends Identities {
   import scala.jdk.CollectionConverters._
 
   implicit private val kamonComponent: KamonMetricComponent = KamonMetricComponent("identities")
 
-  override def exchange(token: AuthToken): IO[TokenRejection, Caller] = {
+  override def exchange(token: AuthToken): IO[Caller] = {
     def realmKeyset(realm: Realm) = {
       val jwks = realm.keys.foldLeft(Set.empty[JWK]) { case (acc, e) =>
         Try(JWK.parse(e.noSpaces)).map(acc + _).getOrElse(acc)
@@ -56,7 +61,7 @@ class IdentitiesImpl private (
       )
     }
 
-    def fetchGroups(parsedToken: ParsedToken, realm: Realm): IO[TokenRejection, Set[Group]] = {
+    def fetchGroups(parsedToken: ParsedToken, realm: Realm): IO[Set[Group]] = {
       parsedToken.groups
         .map { s =>
           IO.pure(s.map(Group(_, realm.label)))
@@ -74,7 +79,7 @@ class IdentitiesImpl private (
     val result = for {
       parsedToken       <- IO.fromEither(ParsedToken.fromToken(token))
       activeRealmOption <- findActiveRealm(parsedToken.issuer)
-      activeRealm       <- IO.fromOption(activeRealmOption, UnknownAccessTokenIssuer)
+      activeRealm       <- IO.fromOption(activeRealmOption)(UnknownAccessTokenIssuer)
       _                 <- validate(activeRealm.acceptedAudiences, parsedToken, realmKeyset(activeRealm))
       groups            <- fetchGroups(parsedToken, activeRealm)
     } yield {
@@ -82,20 +87,20 @@ class IdentitiesImpl private (
       Caller(user, groups ++ Set(Anonymous, user, Authenticated(activeRealm.label)))
     }
     result.span("exchangeToken")
-  }.tapError { rejection =>
+  }.onError { rejection =>
     logger.debug(s"Extracting and validating the caller failed for the reason: $rejection")
   }
 }
 
 object IdentitiesImpl {
 
-  type GroupsCache = KeyValueStore[String, Set[Group]]
+  type GroupsCache = LocalCache[String, Set[Group]]
 
-  private val logger: Logger = Logger[this.type]
+  private val logger = Logger.cats[this.type]
 
   def extractGroups(
-      getUserInfo: (Uri, OAuth2BearerToken) => IO[HttpClientError, Json]
-  )(token: ParsedToken, realm: Realm): IO[TokenRejection, Option[Set[Group]]] = {
+      getUserInfo: (Uri, OAuth2BearerToken) => IO[Json]
+  )(token: ParsedToken, realm: Realm): IO[Option[Set[Group]]] = {
     def fromSet(cursor: HCursor): Decoder.Result[Set[String]] =
       cursor.get[Set[String]]("groups").map(_.map(_.trim).filterNot(_.isEmpty))
     def fromCsv(cursor: HCursor): Decoder.Result[Set[String]] =
@@ -105,7 +110,7 @@ object IdentitiesImpl {
         val stringGroups = fromSet(json.hcursor) orElse fromCsv(json.hcursor) getOrElse Set.empty[String]
         Some(stringGroups.map(str => Group(str, realm.label)))
       }
-      .onErrorHandleWith {
+      .handleErrorWith {
         case e: HttpClientStatusError if e.code == StatusCodes.Unauthorized || e.code == StatusCodes.Forbidden =>
           val message =
             s"A provided client token was rejected by the OIDC provider for user '${token.subject}' of realm '${token.issuer}', reason: '${e.reason}'"
@@ -119,19 +124,30 @@ object IdentitiesImpl {
 
   /**
     * Constructs a [[IdentitiesImpl]] instance
-    * @param findActiveRealm
-    *   function to find the active realm matching the given issuer
-    * @param getUserInfo
-    *   function to retrieve user info from the OIDC provider
+    *
+    * @param realms
+    *   the realms instance
+    * @param hc
+    *   the http client to retrieve groups
     * @param config
-    *   the indentities configuration
+    *   the cache configuration
     */
-  def apply(
-      findActiveRealm: String => UIO[Option[Realm]],
-      getUserInfo: (Uri, OAuth2BearerToken) => IO[HttpClientError, Json],
-      config: CacheConfig
-  ): UIO[Identities] =
-    KeyValueStore.local(config).map { groups =>
+  def apply(realms: Realms, hc: HttpClient, config: CacheConfig): IO[Identities] = {
+    val findActiveRealm: String => IO[Option[Realm]] = { (issuer: String) =>
+      val pagination = FromPagination(0, 1000)
+      val params     = RealmSearchParams(issuer = Some(issuer), deprecated = Some(false))
+      val sort       = ResourceF.defaultSort[Realm]
+      realms.list(pagination, params, sort).map {
+        _.results.map(entry => entry.source.value).headOption
+      }
+    }
+    val getUserInfo: (Uri, OAuth2BearerToken) => IO[Json] = { (uri: Uri, token: OAuth2BearerToken) =>
+      hc.toJson(HttpRequest(uri = uri, headers = List(Authorization(token))))
+    }
+
+    LocalCache[String, Set[Group]](config).map { groups =>
       new IdentitiesImpl(findActiveRealm, getUserInfo, groups)
     }
+  }
+
 }
