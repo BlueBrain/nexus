@@ -2,9 +2,10 @@ package ch.epfl.bluebrain.nexus.delta.plugins.archive.routes
 
 import akka.http.scaladsl.model.StatusCodes.{Created, SeeOther}
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.{Directive1, Route}
+import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.Archives
-import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.{permissions, ArchiveFormat}
+import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.permissions
+import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.Zip
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
@@ -53,10 +54,10 @@ class ArchiveRoutes(
               (post & entity(as[Json]) & pathEndOrSingleSlash) { json =>
                 operationName(s"$prefix/archives/{org}/{project}") {
                   authorizeFor(ref, permissions.write).apply {
-                    archiveResponse {
-                      case Some(_) => emitRedirect(SeeOther, archives.create(ref, json).map(_.uris.accessUri))
-                      case None    => emit(Created, archives.create(ref, json).mapValue(_.metadata))
-                    }
+                    archiveResponse(
+                      emitRedirect(SeeOther, archives.create(ref, json).map(_.uris.accessUri)),
+                      emit(Created, archives.create(ref, json).mapValue(_.metadata))
+                    )
                   }
                 }
               },
@@ -66,25 +67,24 @@ class ArchiveRoutes(
                     // create an archive with an id
                     (put & entity(as[Json]) & pathEndOrSingleSlash) { json =>
                       authorizeFor(ref, permissions.write).apply {
-                        archiveResponse {
-                          case Some(_) => emitRedirect(SeeOther, archives.create(id, ref, json).map(_.uris.accessUri))
-                          case None    => emit(Created, archives.create(id, ref, json).mapValue(_.metadata))
-                        }
+                        archiveResponse(
+                          emitRedirect(SeeOther, archives.create(id, ref, json).map(_.uris.accessUri)),
+                          emit(Created, archives.create(id, ref, json).mapValue(_.metadata))
+                        )
                       }
                     },
                     // fetch or download an archive
                     (get & pathEndOrSingleSlash) {
                       authorizeFor(ref, permissions.read).apply {
-                        archiveResponse {
-                          case Some(format) =>
-                            parameter("ignoreNotFound".as[Boolean] ? false) { ignoreNotFound =>
-                              val response = archives.download(id, ref, format, ignoreNotFound).map { source =>
-                                sourceToFileResponse(source, format)
-                              }
-                              emit(response)
+                        archiveResponse(
+                          parameter("ignoreNotFound".as[Boolean] ? false) { ignoreNotFound =>
+                            val response = archives.download(id, ref, ignoreNotFound).map { source =>
+                              sourceToFileResponse(source)
                             }
-                          case None         => emit(archives.fetch(id, ref))
-                        }
+                            emit(response)
+                          },
+                          emit(archives.fetch(id, ref))
+                        )
                       }
                     }
                   )
@@ -96,9 +96,9 @@ class ArchiveRoutes(
       }
     }
 
-  private def sourceToFileResponse(source: AkkaSource, format: ArchiveFormat[_]): FileResponse =
-    FileResponse(s"archive.${format.fileExtension}", format.contentType, 0L, source)
+  private def archiveResponse(validResp: Route, invalidResp: Route): Route =
+    extractRequest.map(Zip.checkHeader(_)).apply(valid => if (valid) validResp else invalidResp)
 
-  private def archiveResponse: Directive1[Option[ArchiveFormat[_]]] =
-    extractRequest.map(ArchiveFormat(_))
+  private def sourceToFileResponse(source: AkkaSource): FileResponse =
+    FileResponse(s"archive.zip", Zip.contentType, 0L, source)
 }

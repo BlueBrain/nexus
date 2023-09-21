@@ -13,8 +13,12 @@ import org.scalatest.concurrent.ScalaFutures
 
 import java.nio.file.{Files => JFiles}
 import scala.concurrent.ExecutionContext
+import scala.concurrent.duration._
 
 import java.security.MessageDigest
+import org.scalatest.concurrent.PatienceConfiguration
+import org.scalatest.time.Span
+import org.scalatest.time.Seconds
 
 trait ArchiveHelpers extends ScalaFutures with EitherValuable with OptionValues {
 
@@ -30,37 +34,15 @@ trait ArchiveHelpers extends ScalaFutures with EitherValuable with OptionValues 
     }
   }
 
-  def fromTar(byteString: ByteString)(implicit m: Materializer, e: ExecutionContext): ArchiveContent =
-    fromTar(Source.single(byteString))
-
-  def fromTar(source: Source[ByteString, Any])(implicit m: Materializer, e: ExecutionContext): ArchiveContent = {
-    val path   = JFiles.createTempFile("test", ".tar")
-    source.runWith(FileIO.toPath(path)).futureValue
-    val result = FileIO
-      .fromPath(path)
-      .via(Archive.tarReader())
-      .mapAsync(1) { case (metadata, source) =>
-        source
-          .runFold(ByteString.empty) { case (bytes, elem) =>
-            bytes ++ elem
-          }
-          .map { bytes =>
-            (metadata.filePath, bytes)
-          }
-      }
-      .runFold(Map.empty[String, ByteString]) { case (map, elem) =>
-        map + elem
-      }
-      .futureValue
-    result
-  }
-
   def fromZip(byteString: ByteString)(implicit m: Materializer, e: ExecutionContext): ArchiveContent =
     fromZip(Source.single(byteString))
 
   def fromZip(source: Source[ByteString, Any])(implicit m: Materializer, e: ExecutionContext): ArchiveContent = {
-    val path   = JFiles.createTempFile("test", ".tar")
-    source.runWith(FileIO.toPath(path)).futureValue
+    val path   = JFiles.createTempFile("test", ".zip")
+    source
+      .completionTimeout(10.seconds)
+      .runWith(FileIO.toPath(path))
+      .futureValue(PatienceConfiguration.Timeout(Span(10, Seconds)))
     val result = Archive
       .zipReader(path.toFile)
       .mapAsync(1) { case (metadata, source) =>
