@@ -126,8 +126,6 @@ class CompositeViewsSpec extends BaseSpec {
 
   "creating the view" should {
 
-    def jerryToken = tokensMap.get(Jerry).credentials.token()
-
     "create a composite view" in {
       val view = jsonContentOf(
         "/kg/views/composite/composite-view.json",
@@ -136,7 +134,6 @@ class CompositeViewsSpec extends BaseSpec {
           "org"            -> orgId,
           "org2"           -> orgId,
           "remoteEndpoint" -> "http://delta:8080/v1",
-          "token"          -> jerryToken,
           "bandQuery"      -> bandQuery,
           "albumQuery"     -> albumQuery
         ): _*
@@ -162,7 +159,6 @@ class CompositeViewsSpec extends BaseSpec {
           "org"            -> orgId,
           "org2"           -> orgId,
           "remoteEndpoint" -> "http://delta:8080/v1/other",
-          "token"          -> jerryToken,
           "bandQuery"      -> bandQuery,
           "albumQuery"     -> albumQuery
         ): _*
@@ -170,32 +166,6 @@ class CompositeViewsSpec extends BaseSpec {
 
       deltaClient.put[Json](s"/views/$orgId/bands/composite2", view, Jerry) { (_, response) =>
         response.status shouldEqual StatusCodes.BadRequest
-      }
-    }
-
-    "reject creating a composite view with wrong remote source token" in {
-      val view = jsonContentOf(
-        "/kg/views/composite/composite-view.json",
-        replacements(
-          Jerry,
-          "org"            -> orgId,
-          "org2"           -> orgId,
-          "remoteEndpoint" -> "http://delta:8080/v1",
-          "token"          -> s"${jerryToken}wrong",
-          "bandQuery"      -> bandQuery,
-          "albumQuery"     -> albumQuery
-        ): _*
-      )
-
-      deltaClient.put[Json](s"/views/$orgId/bands/composite2", view, Jerry) { (json, response) =>
-        response.status shouldEqual StatusCodes.BadRequest
-        json shouldEqual jsonContentOf(
-          "/kg/views/composite/composite-source-token-reject.json",
-          replacements(
-            Jerry,
-            "project" -> s"$orgId/songs"
-          ): _*
-        )
       }
     }
 
@@ -207,7 +177,6 @@ class CompositeViewsSpec extends BaseSpec {
           "org"            -> orgId,
           "org2"           -> orgId,
           "remoteEndpoint" -> "http://fail.does.not.exist.at.all.asndkajbskhabsdfjhabsdfjkh/v1",
-          "token"          -> jerryToken,
           "bandQuery"      -> bandQuery,
           "albumQuery"     -> albumQuery
         ): _*

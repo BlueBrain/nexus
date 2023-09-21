@@ -69,11 +69,6 @@ object ArchiveRejection {
           )).mkString("\n")
       )
 
-  final case class FilenameTooLong(id: Iri, project: ProjectRef, fileName: String)
-      extends ArchiveRejection(
-        s"File '$id' in project '$project' has a file name '$fileName' exceeding the 100 character limit for a tar file."
-      )
-
   /**
     * Rejection returned when an archive doesn't exist.
     *
@@ -201,7 +196,6 @@ object ArchiveRejection {
     HttpResponseFields {
       case ResourceAlreadyExists(_, _)        => StatusCodes.Conflict
       case InvalidResourceCollection(_, _, _) => StatusCodes.BadRequest
-      case FilenameTooLong(_, _, _)           => StatusCodes.BadRequest
       case ArchiveNotFound(_, _)              => StatusCodes.NotFound
       case InvalidArchiveId(_)                => StatusCodes.BadRequest
       case ProjectContextRejection(rejection) => rejection.status

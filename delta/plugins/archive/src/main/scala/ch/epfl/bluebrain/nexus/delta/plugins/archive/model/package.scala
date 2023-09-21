@@ -38,6 +38,6 @@ package object model {
     */
   object permissions {
     final val read: Permission  = Permissions.resources.read
-    final val write: Permission = Permission.unsafe("archives/write")
+    final val write: Permission = Permissions.resources.read
   }
 }

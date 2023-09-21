@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.archive
 
 import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
 import akka.http.scaladsl.model.MediaRanges.`*/*`
-import akka.http.scaladsl.model.MediaTypes.{`application/x-tar`, `application/zip`}
+import akka.http.scaladsl.model.MediaTypes.`application/zip`
 import akka.http.scaladsl.model.headers.{`Content-Type`, Accept, Location, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
@@ -81,9 +81,7 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with TryValue
 
   private val perms = Seq(
     Permissions.resources.write,
-    Permissions.resources.read,
-    model.permissions.read,
-    model.permissions.write
+    Permissions.resources.read
   )
 
   private val asSubject     = addCredentials(OAuth2BearerToken("user"))
@@ -283,36 +281,6 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with TryValue
             .deepMerge(archive)
             .deepMerge(archiveCtxJson)
         )
-      }
-    }
-
-    "fetch a tar archive ignoring not found" in {
-      forAll(List(Accept(`application/x-tar`), acceptAll)) { accept =>
-        Get(s"/v1/archives/$projectRef/$uuid?ignoreNotFound=true") ~> asSubject ~> accept ~> routes ~> check {
-          status shouldEqual StatusCodes.OK
-          header[`Content-Type`].value.value() shouldEqual `application/x-tar`.value
-          val result = fromTar(responseEntity.dataBytes)
-
-          result.keySet shouldEqual Set(
-            s"${project.ref}/file/file.txt",
-            s"${project.ref}/compacted/${encode(fileId.toString)}.json"
-          )
-
-          val expectedContent = fileContent
-          val actualContent   = result.entryAsString(s"${project.ref}/file/file.txt")
-          actualContent shouldEqual expectedContent
-
-          val expectedMetadata = FilesRoutesSpec.fileMetadata(
-            projectRef,
-            fileId,
-            file.value.attributes,
-            storageRef,
-            createdBy = subject,
-            updatedBy = subject
-          )
-          val actualMetadata   = result.entryAsJson(s"${project.ref}/compacted/${encode(fileId.toString)}.json")
-          actualMetadata shouldEqual expectedMetadata
-        }
       }
     }
 

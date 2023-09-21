@@ -5,15 +5,17 @@ import akka.http.scaladsl.model.{HttpRequest, Uri}
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.CacheConfig
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
+import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.IdentitiesRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk.PriorityRoute
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.auth.{AuthTokenProvider, OpenIdAuthService}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientError}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.{Identities, IdentitiesImpl}
-import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.RealmSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.Realms
@@ -22,7 +24,6 @@ import io.circe.Json
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 
 /**
   * Identities module wiring config.
@@ -44,6 +45,14 @@ object IdentitiesModule extends ModuleDef {
       hc.toJson(HttpRequest(uri = uri, headers = List(Authorization(token))))
     }
     IdentitiesImpl(findActiveRealm, getUserInfo, config)
+  }
+
+  make[OpenIdAuthService].from { (httpClient: HttpClient @Id("realm"), realms: Realms) =>
+    new OpenIdAuthService(httpClient, realms)
+  }
+
+  make[AuthTokenProvider].fromEffect { (authService: OpenIdAuthService) =>
+    AuthTokenProvider(authService)
   }
 
   many[RemoteContextResolution].addEffect(ContextValue.fromFile("contexts/identities.json").map { ctx =>

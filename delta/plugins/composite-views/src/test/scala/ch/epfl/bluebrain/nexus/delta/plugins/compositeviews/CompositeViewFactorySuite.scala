@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
 import akka.http.scaladsl.model.Uri
-import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjectionFields.{ElasticSearchProjectionFields, SparqlProjectionFields}
@@ -60,7 +59,6 @@ class CompositeViewFactorySuite extends BioSuite {
     Some(remoteSourceId),
     ProjectRef.unsafe("org", "remoteproject"),
     Uri("http://example.com/remote-endpoint"),
-    Some(Secret("secret token")),
     schemas,
     types,
     tag,
@@ -140,8 +138,7 @@ class CompositeViewFactorySuite extends BioSuite {
           tag,
           includeDeprecated,
           remoteSourceFields.project,
-          remoteSourceFields.endpoint,
-          remoteSourceFields.token.map(s => AccessToken(s))
+          remoteSourceFields.endpoint
         )
       )
   }

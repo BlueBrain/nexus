@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.DeltaClient
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.deletion.CompositeViewsDeletionTask
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.{CompositeProjectionLifeCycle, CompositeSinks, CompositeSpaces, CompositeViewsCoordinator, MetadataPredicates}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.migration.MigrateCompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model._
@@ -22,7 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, JsonLdCon
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
-import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
+import ch.epfl.bluebrain.nexus.delta.sdk.auth.AuthTokenProvider
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.ProjectDeletionTask
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
@@ -51,9 +51,15 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
 
   make[CompositeViewsConfig].fromEffect { cfg => CompositeViewsConfig.load(cfg) }
 
-  make[DeltaClient].from { (cfg: CompositeViewsConfig, as: ActorSystem[Nothing], sc: Scheduler) =>
-    val httpClient = HttpClient()(cfg.remoteSourceClient.http, as.classicSystem, sc)
-    DeltaClient(httpClient, cfg.remoteSourceClient.retryDelay)(as, sc)
+  make[DeltaClient].from {
+    (
+        cfg: CompositeViewsConfig,
+        as: ActorSystem[Nothing],
+        sc: Scheduler,
+        authTokenProvider: AuthTokenProvider
+    ) =>
+      val httpClient = HttpClient()(cfg.remoteSourceClient.http, as.classicSystem, sc)
+      DeltaClient(httpClient, authTokenProvider, cfg.remoteSourceCredentials, cfg.remoteSourceClient.retryDelay)(as, sc)
   }
 
   make[BlazegraphClient].named("blazegraph-composite-indexing-client").from {
@@ -91,7 +97,6 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         permissions: Permissions,
         client: ElasticSearchClient,
         deltaClient: DeltaClient,
-        crypto: Crypto,
         config: CompositeViewsConfig,
         baseUri: BaseUri
     ) =>
@@ -101,7 +106,6 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         permissions.fetchPermissionSet,
         client,
         deltaClient,
-        crypto,
         config.prefix,
         config.sources.maxSources,
         config.maxProjections
@@ -113,7 +117,6 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         fetchContext: FetchContext[ContextRejection],
         contextResolution: ResolverContextResolution,
         validate: ValidateCompositeView,
-        crypto: Crypto,
         config: CompositeViewsConfig,
         xas: Transactors,
         api: JsonLdApi,
@@ -124,7 +127,6 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         fetchContext.mapRejection(ProjectContextRejection),
         contextResolution,
         validate,
-        crypto,
         config,
         xas
       )(
@@ -319,15 +321,15 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
       )(baseUri, config.pagination, s, cr, ordering)
   }
 
-  make[CompositeView.Shift].from { (views: CompositeViews, base: BaseUri, crypto: Crypto) =>
-    CompositeView.shift(views)(base, crypto)
+  make[CompositeView.Shift].from { (views: CompositeViews, base: BaseUri) =>
+    CompositeView.shift(views)(base)
   }
 
   many[ResourceShift[_, _, _]].ref[CompositeView.Shift]
 
-  many[SseEncoder[_]].add { (crypto: Crypto, base: BaseUri) => CompositeViewEvent.sseEncoder(crypto)(base) }
+  many[SseEncoder[_]].add { (base: BaseUri) => CompositeViewEvent.sseEncoder(base) }
 
-  many[ScopedEventMetricEncoder[_]].add { (crypto: Crypto) => CompositeViewEvent.compositeViewMetricEncoder(crypto) }
+  many[ScopedEventMetricEncoder[_]].add { () => CompositeViewEvent.compositeViewMetricEncoder }
 
   many[PriorityRoute].add {
     (

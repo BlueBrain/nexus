@@ -18,7 +18,6 @@
     "acls/read",
     "projects/read",
     "permissions/read",
-    "archives/write",
     "organizations/create",
     "views/query",
     "storages/write",

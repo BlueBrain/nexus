@@ -6,7 +6,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.IriEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
@@ -170,17 +169,17 @@ object CompositeViewEvent {
   ) extends CompositeViewEvent
 
   @nowarn("cat=unused")
-  def serializer(crypto: Crypto): Serializer[Iri, CompositeViewEvent] = {
+  val serializer: Serializer[Iri, CompositeViewEvent] = {
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
     implicit val configuration: Configuration                       = Serializer.circeConfiguration
-    implicit val compositeViewValueCodec: Codec[CompositeViewValue] = CompositeViewValue.databaseCodec(crypto)
+    implicit val compositeViewValueCodec: Codec[CompositeViewValue] = CompositeViewValue.databaseCodec()
     implicit val codec: Codec.AsObject[CompositeViewEvent]          = deriveConfiguredCodec[CompositeViewEvent]
     Serializer.dropNulls()
   }
 
-  def compositeViewMetricEncoder(crypto: Crypto): ScopedEventMetricEncoder[CompositeViewEvent] =
+  val compositeViewMetricEncoder: ScopedEventMetricEncoder[CompositeViewEvent] =
     new ScopedEventMetricEncoder[CompositeViewEvent] {
-      override def databaseDecoder: Decoder[CompositeViewEvent] = serializer(crypto).codec
+      override def databaseDecoder: Decoder[CompositeViewEvent] = serializer.codec
 
       override def entityType: EntityType = CompositeViews.entityType
 
@@ -199,9 +198,9 @@ object CompositeViewEvent {
         )
     }
 
-  def sseEncoder(crypto: Crypto)(implicit base: BaseUri): SseEncoder[CompositeViewEvent] =
+  def sseEncoder(implicit base: BaseUri): SseEncoder[CompositeViewEvent] =
     new SseEncoder[CompositeViewEvent] {
-      override val databaseDecoder: Decoder[CompositeViewEvent] = serializer(crypto: Crypto).codec
+      override val databaseDecoder: Decoder[CompositeViewEvent] = serializer.codec
 
       override def entityType: EntityType = CompositeViews.entityType
 
