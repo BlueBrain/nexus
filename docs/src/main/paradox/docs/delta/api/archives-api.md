@@ -1,7 +1,7 @@
 # Archives
 
 An archive is a collection of resources stored inside an archive file. The archiving format chosen for this purpose is 
-tar (or tarball). Archive resources are rooted in the `/v1/archives/{org_label}/{project_label}/` collection.
+ZIP. Archive resources are rooted in the `/v1/archives/{org_label}/{project_label}/` collection.
 
 Each archive... 
 
@@ -10,10 +10,7 @@ Each archive...
 
 @@@ note { .tip title="Authorization notes" }	
 
-When modifying archives, the caller must have `archives/write` permissions on the current path of the project or the 
-ancestor paths.
-
-When reading archives, the caller must have `resources/read` permissions on the current path of the project or the 
+For both reading and modifying archives, the caller must have `resources/read` permissions on the current path of the project or the 
 ancestor paths.
 
 Please visit @ref:[Authentication & authorization](authentication.md) section to learn more about it.
@@ -104,7 +101,7 @@ The json payload:
 - If the `@id` value is not found on the payload, an @id will be generated as follows: `base:{UUID}`. The `base` is 
   the `prefix` defined on the resource's project (`{project_label}`).
 
-The response will be an HTTP 303 Location redirect, which will point to the url where to consume the archive (tarball).
+The response will be an HTTP 303 Location redirect, which will point to the url where to consume the archive (ZIP).
 
 The following diagram can help to understand the HTTP exchange
 ![post-redirect-get](assets/archives/post-redirect-get.png "Post/Redirect/Get archive")
@@ -112,7 +109,7 @@ The following diagram can help to understand the HTTP exchange
 **Example**
 
 The following example shows how to create an archive containing 3 files. 2 of them are resources and the other is a file.
-As a response, the tarball will be offered.
+As a response, the ZIP file will be offered.
 
 Request
 :   @@snip [archive.sh](assets/archives/create.sh)
@@ -150,16 +147,7 @@ Note that if the payload contains an @id different from the `{archive_id}`, the 
 
 When fetching an archive, the response format can be chosen through HTTP content negotiation.
 In order to fetch the archive metadata, the client can use any of the @ref:[following MIME types](content-negotiation.md#supported-mime-types).
-However, in order to fetch the archive content, the HTTP `Accept` header should be provided:
-
-* `*/*` or `application/x-tar` will return a tar archive (or tarball)
-* `application/zip` will return a zip archive
-
-@@@ note { .warning }
-
-@link:[The limitations of the tar format](https://en.wikipedia.org/wiki/Tar_(computing)) 
-makes the usage of archives difficult (among other things, the maximum file name is limited to 100 characters), 
-so its support will be removed in a future release.
+However, in order to fetch the archive content, the HTTP `Accept` header should be provided as `application/zip`.
 
 @@@
 
@@ -173,7 +161,7 @@ GET /v1/archives/{org_label}/{project_label}/{archive_id}?ignoreNotFound=true
 
 **Example**
 
-Request (tarball)
+Request (ZIP)
 :   @@snip [fetch.sh](assets/archives/fetch.sh)
 
 Request (metadata)

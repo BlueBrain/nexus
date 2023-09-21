@@ -35,4 +35,6 @@ jobs:
         run: sbt -Dsbt.color=always -Dsbt.supershell=false "project tests" test
       - name: Stop & clean Docker
         if: ${{ always() }}
-        run: docker-compose -f tests/docker/docker-compose.yml down --rmi "local" --volumes
+        run: |
+          docker-compose -f tests/docker/docker-compose.yml down --rmi "local" --volumes
+          docker system prune --force --volumes

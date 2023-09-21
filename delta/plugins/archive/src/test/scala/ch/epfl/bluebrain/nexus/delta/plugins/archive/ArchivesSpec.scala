@@ -5,7 +5,7 @@ import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.{FileReference, ResourceReference}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.{ArchiveNotFound, ProjectContextRejection}
-import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.{Archive, ArchiveFormat, ArchiveRejection, ArchiveValue}
+import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.{Archive, ArchiveRejection, ArchiveValue}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schema}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
@@ -63,8 +63,7 @@ class ArchivesSpec
 
   private val cfg           = ArchivePluginConfig(1, EphemeralLogConfig(5.seconds, 5.hours))
   private val download      = new ArchiveDownload {
-    override def apply[M](value: ArchiveValue, project: ProjectRef, format: ArchiveFormat[M], ignoreNotFound: Boolean)(
-        implicit
+    override def apply(value: ArchiveValue, project: ProjectRef, ignoreNotFound: Boolean)(implicit
         caller: Caller,
         scheduler: Scheduler
     ): IO[ArchiveRejection, AkkaSource] =
@@ -250,7 +249,7 @@ class ArchivesSpec
       resource.value shouldEqual Archive(id, project.ref, value.resources, 5.hours.toSeconds)
     }
 
-    "download an existing archive as zip and tar" in {
+    "download an existing archive as zip" in {
       val id         = iri"http://localhost/base/${genString()}"
       val resourceId = iri"http://localhost/${genString()}"
       val fileId     = iri"http://localhost/${genString()}"
@@ -261,8 +260,7 @@ class ArchivesSpec
         )
       )
       archives.create(id, project.ref, value).accepted
-      archives.download(id, project.ref, ArchiveFormat.Tar, ignoreNotFound = true).accepted
-      archives.download(id, project.ref, ArchiveFormat.Zip, ignoreNotFound = true).accepted
+      archives.download(id, project.ref, ignoreNotFound = true).accepted
     }
 
     "return not found for unknown archives" in {

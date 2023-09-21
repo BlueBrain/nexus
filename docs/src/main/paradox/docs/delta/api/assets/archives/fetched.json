@@ -32,6 +32,6 @@
   "_createdAt": "2021-05-17T14:54:42.939Z",
   "_createdBy": "http://localhost:8080/v1/realms/myrealm/users/john",
   "_updatedAt": "2021-05-17T14:54:42.939Z",
-  "_updatedBy": "http://localhost:8080/v1/realms/myrealm/users/john"
+  "_updatedBy": "http://localhost:8080/v1/realms/myrealm/users/john",
   "_expiresInSeconds": 17530
 }

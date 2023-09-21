@@ -4,12 +4,11 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.DeltaClient
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.projectionIndex
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{CrossProjectSourceForbidden, CrossProjectSourceProjectNotFound, DuplicateIds, InvalidElasticSearchProjectionPayload, InvalidEncryptionSecrets, InvalidRemoteProjectSource, PermissionIsNotDefined, TooManyProjections, TooManySources, WrappedElasticSearchClientError}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.{AccessToken, CrossProjectSource, ProjectSource, RemoteProjectSource}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{CrossProjectSourceForbidden, CrossProjectSourceProjectNotFound, DuplicateIds, InvalidElasticSearchProjectionPayload, InvalidRemoteProjectSource, PermissionIsNotDefined, TooManyProjections, TooManySources, WrappedElasticSearchClientError}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.{CrossProjectSource, ProjectSource, RemoteProjectSource}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeViewProjection, CompositeViewRejection, CompositeViewSource, CompositeViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
-import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
@@ -37,7 +36,6 @@ object ValidateCompositeView {
       fetchPermissions: UIO[Set[Permission]],
       client: ElasticSearchClient,
       deltaClient: DeltaClient,
-      crypto: Crypto,
       prefix: String,
       maxSources: Int,
       maxProjections: Int
@@ -47,13 +45,6 @@ object ValidateCompositeView {
 
     def validateProject(cpSource: CrossProjectSource) = {
       projects.fetch(cpSource.project).mapError(_ => CrossProjectSourceProjectNotFound(cpSource)).void
-    }
-
-    def validateCrypto(token: Option[AccessToken]): IO[InvalidEncryptionSecrets.type, Unit] = token match {
-      case Some(AccessToken(value)) =>
-        IO.fromEither(crypto.encrypt(value.value).flatMap(crypto.decrypt).toEither.void)
-          .mapError(_ => InvalidEncryptionSecrets)
-      case None                     => IO.unit
     }
 
     def validatePermission(permission: Permission) =
@@ -76,7 +67,7 @@ object ValidateCompositeView {
       case _: ProjectSource             => IO.unit
       case cpSource: CrossProjectSource => validateAcls(cpSource) >> validateProject(cpSource)
       case rs: RemoteProjectSource      =>
-        checkRemoteEvent(rs).mapError(InvalidRemoteProjectSource(rs, _)) >> validateCrypto(rs.token)
+        checkRemoteEvent(rs).mapError(InvalidRemoteProjectSource(rs, _))
     }
 
     val validateProjection: CompositeViewProjection => IO[CompositeViewRejection, Unit] = {

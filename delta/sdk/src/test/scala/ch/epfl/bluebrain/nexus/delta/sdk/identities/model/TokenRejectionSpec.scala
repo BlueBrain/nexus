@@ -25,8 +25,8 @@ class TokenRejectionSpec
 
     "be converted to compacted JSON-LD" in {
       val list = List(
-        noIssuer      -> json"""{"@type": "AccessTokenDoesNotContainSubject", "reason": "${noIssuer.reason}"}""",
-        invalidFormat -> json"""{"@type": "InvalidAccessTokenFormat", "reason": "${invalidFormat.reason}"}"""
+        noIssuer      -> json"""{"@type": "AccessTokenDoesNotContainSubject", "reason": "${noIssuer.getMessage}"}""",
+        invalidFormat -> json"""{"@type": "InvalidAccessTokenFormat", "reason": "${invalidFormat.getMessage}"}"""
       )
       forAll(list) { case (rejection, json) =>
         rejection.toCompactedJsonLd.accepted.json shouldEqual json.addContext(contexts.error)
@@ -35,8 +35,8 @@ class TokenRejectionSpec
 
     "be converted to expanded JSON-LD" in {
       val list = List(
-        noIssuer      -> json"""[{"@type": ["${nxv + "AccessTokenDoesNotContainSubject"}"], "${nxv + "reason"}": [{"@value": "${noIssuer.reason}"} ] } ]""",
-        invalidFormat -> json"""[{"@type": ["${nxv + "InvalidAccessTokenFormat"}"], "${nxv + "reason"}": [{"@value": "${invalidFormat.reason}"} ] } ]"""
+        noIssuer      -> json"""[{"@type": ["${nxv + "AccessTokenDoesNotContainSubject"}"], "${nxv + "reason"}": [{"@value": "${noIssuer.getMessage}"} ] } ]""",
+        invalidFormat -> json"""[{"@type": ["${nxv + "InvalidAccessTokenFormat"}"], "${nxv + "reason"}": [{"@value": "${invalidFormat.getMessage}"} ] } ]"""
       )
       forAll(list) { case (rejection, json) =>
         rejection.toExpandedJsonLd.accepted.json shouldEqual json

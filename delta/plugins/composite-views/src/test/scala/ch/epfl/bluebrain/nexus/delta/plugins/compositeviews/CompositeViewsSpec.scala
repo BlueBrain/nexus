@@ -59,7 +59,6 @@ class CompositeViewsSpec
       fetchContext,
       ResolverContextResolution(rcr),
       alwaysValidate,
-      crypto,
       config,
       xas
     ).accepted

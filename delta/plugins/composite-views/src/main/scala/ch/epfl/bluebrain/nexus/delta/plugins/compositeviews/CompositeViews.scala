@@ -17,7 +17,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.serialization.CompositeViewFieldsJsonLdSourceDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
-import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
@@ -478,15 +477,15 @@ object CompositeViews {
     }
   }
 
-  def definition(validate: ValidateCompositeView, crypto: Crypto)(implicit
+  def definition(validate: ValidateCompositeView)(implicit
       clock: Clock[UIO],
       uuidF: UUIDF
   ): ScopedEntityDefinition[Iri, CompositeViewState, CompositeViewCommand, CompositeViewEvent, CompositeViewRejection] =
     ScopedEntityDefinition(
       entityType,
       StateMachine(None, evaluate(validate), next),
-      CompositeViewEvent.serializer(crypto),
-      CompositeViewState.serializer(crypto),
+      CompositeViewEvent.serializer,
+      CompositeViewState.serializer,
       Tagger[CompositeViewEvent](
         {
           case r: CompositeViewTagAdded => Some(r.tag -> r.targetRev)
@@ -515,7 +514,6 @@ object CompositeViews {
       fetchContext: FetchContext[CompositeViewRejection],
       contextResolution: ResolverContextResolution,
       validate: ValidateCompositeView,
-      crypto: Crypto,
       config: CompositeViewsConfig,
       xas: Transactors
   )(implicit
@@ -530,7 +528,7 @@ object CompositeViews {
       .map { sourceDecoder =>
         new CompositeViews(
           ScopedEventLog(
-            definition(validate, crypto),
+            definition(validate),
             config.eventLog,
             xas
           ),

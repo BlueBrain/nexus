@@ -27,7 +27,7 @@ The latest stable release is **v1.8.0** released on **14.06.2023**.
 
 - @ref:[Resource payloads can't contain fields starting by `_` anymore](../delta/api/resources-api.md)
 - @ref:[The endpoint for fetching indexing errors as SSEs changed](../delta/api/views/index.md#fetch-indexing-failures-as-sses)
-- @ref:[Credentials for storages can now only be defined at the configuration level](../releases/v1.9-release-notes.md#storages)
+- @ref:[Credentials for storages can now only be defined at the configuration level](../releases/v1.9-release-notes.md#remote-storages)
 
 ### New features / enhancements
 
