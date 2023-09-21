@@ -36,51 +36,6 @@ trait LocalCache[K, V] {
   def remove(key: K): IO[Unit]
 
   /**
-    * Deletes the provided keys from the store.
-    *
-    * @param keys
-    *   the key to be deleted from the store
-    */
-  def removeAll(keys: Set[K]): IO[Unit]
-
-  /**
-    * Adds the (key, value) to the store only if the key does not exists. This operation is not atomic.
-    *
-    * @param key
-    *   the key under which the value is stored
-    * @param value
-    *   the value stored
-    * @return
-    *   true if the value was added, false otherwise. The response is wrapped on the effect type ''F[_]''
-    */
-  def putIfAbsent(key: K, value: V): IO[Boolean] =
-    get(key).flatMap {
-      case Some(_) => IO.pure(false)
-      case _       => put(key, value).map(_ => true)
-    }
-
-  /**
-    * If the value for the specified key is present, attempts to compute a new mapping given the key and its current
-    * mapped value. This operation is not atomic.
-    *
-    * @param key
-    *   the key under which the value is stored
-    * @param f
-    *   the function to compute a value
-    * @return
-    *   None wrapped on the effect type ''F[_]'' if the value does not exist for the given key. Some(value) wrapped on
-    *   the effect type ''F[_]'' where value is the result of computing the provided f function on the current value of
-    *   the provided key
-    */
-  def computeIfPresent(key: K, f: V => V): IO[Option[V]] =
-    get(key).flatMap {
-      case Some(value) =>
-        val computedValue = f(value)
-        put(key, computedValue).map(_ => Some(computedValue))
-      case other       => IO.pure(other)
-    }
-
-  /**
     * @return
     *   all the entries in the store
     */
@@ -90,15 +45,7 @@ trait LocalCache[K, V] {
     * @return
     *   a vector of all the values in the store
     */
-  def values: IO[Vector[V]] =
-    entries.map(_.values.toVector)
-
-  /**
-    * @return
-    *   a set of all the values in the store
-    */
-  def valuesSet: IO[Set[V]] =
-    entries.map(_.values.toSet)
+  def values: IO[Vector[V]] = entries.map(_.values.toVector)
 
   /**
     * @param key
@@ -133,7 +80,7 @@ trait LocalCache[K, V] {
     * @param op
     *   the computation yielding the value to associate with `key`, if `key` is previously unbound.
     */
-  def getOrElseAttemptUpdate[E](key: K, op: => IO[Option[V]]): IO[Option[V]] =
+  def getOrElseAttemptUpdate(key: K, op: => IO[Option[V]]): IO[Option[V]] =
     get(key).flatMap {
       case Some(value) => IO.pure(Some(value))
       case None        =>
@@ -144,62 +91,11 @@ trait LocalCache[K, V] {
     }
 
   /**
-    * @param key
-    *   the key
-    * @return
-    *   an the value for the provided key when found, ''or'' otherwise on the error channel
-    */
-  def getOr[E <: Throwable](key: K, or: => E): IO[V] =
-    get(key).flatMap(IO.fromOption(_)(or))
-
-  /**
     * Tests whether the cache contains the given key.
     * @param key
     *   the key to be tested
     */
   def containsKey(key: K): IO[Boolean] = get(key).map(_.isDefined)
-
-  /**
-    * Finds the first (key, value) pair that satisfies the predicate.
-    *
-    * @param f
-    *   the predicate to the satisfied
-    * @return
-    *   the first (key, value) pair that satisfies the predicate or None if none are found
-    */
-  def find(f: ((K, V)) => Boolean): IO[Option[(K, V)]]
-
-  /**
-    * Finds the first (key, value) pair for which the given partial function is defined, and applies the partial
-    * function to it.
-    *
-    * @param pf
-    *   the partial function
-    * @return
-    *   the first (key, value) pair that satisfies the predicate or None if none are found
-    */
-  def collectFirst[A](pf: PartialFunction[(K, V), A]): IO[Option[A]]
-
-  /**
-    * Finds the first (key, value) pair for which the given partial function is defined, and applies the partial
-    * function to it. If nothing is found, returns on the error channel the passed ''or''.
-    *
-    * @param pf
-    *   the partial function
-    */
-  def collectFirstOr[A, E <: Throwable](pf: PartialFunction[(K, V), A])(or: => E): IO[A] =
-    collectFirst(pf).flatMap(IO.fromOption(_)(or))
-
-  /**
-    * Finds the first value in the store that satisfies the predicate.
-    *
-    * @param f
-    *   the predicate to the satisfied
-    * @return
-    *   the first value that satisfies the predicate or None if none are found
-    */
-  def findValue(f: V => Boolean): IO[Option[V]] =
-    entries.map(_.find { case (_, v) => f(v) }.map { case (_, v) => v })
 
 }
 
@@ -280,13 +176,7 @@ object LocalCache {
 
     override def get(key: K): IO[Option[V]] = IO.delay(Option(cache.getIfPresent(key)))
 
-    override def find(f: ((K, V)) => Boolean): IO[Option[(K, V)]] = entries.map(_.find(f))
-
-    override def collectFirst[A](pf: PartialFunction[(K, V), A]): IO[Option[A]] = entries.map(_.collectFirst(pf))
-
     override def remove(key: K): IO[Unit] = IO.delay(cache.invalidate(key))
-
-    override def removeAll(keys: Set[K]): IO[Unit] = IO.delay(cache.invalidateAll(keys.asJava))
 
     override def entries: IO[Map[K, V]] = IO.delay(cache.asMap().asScala.toMap)
   }
