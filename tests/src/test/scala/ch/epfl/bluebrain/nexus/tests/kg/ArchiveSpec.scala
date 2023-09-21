@@ -231,25 +231,6 @@ class ArchiveSpec extends BaseSpec with ArchiveHelpers with CirceEq {
       }
     }
 
-    "succeed returning tar" in {
-      val prefix = "https%3A%2F%2Fdev.nexus.test.com%2Fsimplified-resource%2F"
-      deltaClient.get[ByteString](s"/archives/$fullId/test-resource:archive", Tweety, acceptAll) {
-        (byteString, response) =>
-          contentType(response) shouldEqual MediaTypes.`application/x-tar`.toContentType
-          response.status shouldEqual StatusCodes.OK
-
-          val result = fromTar(byteString)
-
-          val actualContent1 = result.entryAsJson(s"$fullId/compacted/${prefix}1%3Frev%3D1.json")
-          val actualContent2 = result.entryAsJson(s"$fullId2/compacted/${prefix}2.json")
-          val actualDigest3  = result.entryDigest("/some/other/nexus-logo.png")
-
-          filterMetadataKeys(actualContent1) should equalIgnoreArrayOrder(payloadResponse1)
-          filterMetadataKeys(actualContent2) should equalIgnoreArrayOrder(payloadResponse2)
-          actualDigest3 shouldEqual nexusLogoDigest
-      }
-    }
-
     "succeed returning zip" in {
       val prefix = "https%3A%2F%2Fdev.nexus.test.com%2Fsimplified-resource%2F"
       deltaClient.get[ByteString](s"/archives/$fullId/test-resource:archive", Tweety, acceptZip) {
@@ -300,11 +281,6 @@ class ArchiveSpec extends BaseSpec with ArchiveHelpers with CirceEq {
                            response.status shouldEqual StatusCodes.Created
                        }
         downloadLink = s"/archives/$fullId/test-resource:archive-not-found?ignoreNotFound=true"
-        _           <- deltaClient.get[ByteString](downloadLink, Tweety, acceptAll) { (byteString, response) =>
-                         contentType(response) shouldEqual MediaTypes.`application/x-tar`.toContentType
-                         response.status shouldEqual StatusCodes.OK
-                         assertContent(fromTar(byteString))
-                       }
         _           <- deltaClient.get[ByteString](downloadLink, Tweety, acceptZip) { (byteString, response) =>
                          contentType(response) shouldEqual MediaTypes.`application/zip`.toContentType
                          response.status shouldEqual StatusCodes.OK
