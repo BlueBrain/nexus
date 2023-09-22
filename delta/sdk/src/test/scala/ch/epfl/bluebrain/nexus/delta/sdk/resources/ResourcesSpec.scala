@@ -40,6 +40,7 @@ class ResourcesSpec
     with CirceLiteral
     with OptionValues
     with ValidateResourceFixture
+    with ResourceInstanceFixture
     with Fixtures {
 
   "The Resources state machine" when {
@@ -47,8 +48,6 @@ class ResourcesSpec
     val time2   = Instant.ofEpochMilli(10L)
     val subject = User("myuser", Label.unsafe("myrealm"))
     val caller  = Caller(subject, Set.empty)
-
-    import ch.epfl.bluebrain.nexus.delta.sdk.resources.ResourceFixture._
 
     val jsonld = JsonLdResult(myId, compacted, expanded, remoteContexts)
 

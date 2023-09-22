@@ -55,7 +55,7 @@ In the upcoming version, the support of the tar format to download archives will
 - Only trigger reindexing when indexing is impacted
 - Project deletion has been rewritten
 - @ref:[A refresh operation is now available for resources](../delta/api/resources-api.md#refresh)
-- @ref:[A validate operation is now available for resources](../delta/api/resources-api.md#validate)
+- @ref:[A validate operation is now available for resources](../delta/api/trial.md#validate)
 - Archives can now be downloaded as a zip
 
 A detailed list of changes included in the release can be found in the @ref:[release notes](v1.8-release-notes.md).

@@ -6,7 +6,7 @@
     },
     "https://bluebrain.github.io/nexus/contexts/metadata.json"
   ],
-  "@id": "https://dev.nexus.test.com/simplified-resource/{{resourceId}}",
+  "@id": "{{resourceId}}",
   "@type": "nxv:TestResource",
   "other:projects": [
     "testProject2",
