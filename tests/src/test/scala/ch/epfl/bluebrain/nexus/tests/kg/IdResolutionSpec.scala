@@ -28,10 +28,10 @@ class IdResolutionSpec extends BaseSpec {
         "field": "value"
       }
         """
-  private val resourceId           = "https://bbp.epfl.ch/neuron"
-  private val resourceId2          = "https://bbp.epfl.ch/synapse"
-  private val resourcePayload1     = resource(resourceId)
-  private val resourcePayload2     = resource(resourceId2)
+  private val uniqueId             = "https://bbp.epfl.ch/neuron"
+  private val reusedId             = "https://bbp.epfl.ch/synapse"
+  private val resourcePayload1     = resource(uniqueId)
+  private val resourcePayload2     = resource(reusedId)
 
   private val unauthorizedAccessErrorPayload =
     jsonContentOf("iam/errors/unauthorized-access.json")
@@ -45,8 +45,6 @@ class IdResolutionSpec extends BaseSpec {
       _ <- adminDsl.createProject(org1, proj11, kgDsl.projectJson(name = proj11), Bob)
       _ <- adminDsl.createProject(org1, proj12, kgDsl.projectJson(name = proj12), Bob)
     } yield ()
-
-    println(resourcePayload1)
 
     val createResources = for {
       _ <- deltaClient.post[Json](s"/resources/$ref11/_/", resourcePayload1, Bob)(expectCreated)
@@ -76,7 +74,7 @@ class IdResolutionSpec extends BaseSpec {
 
     "resolve a single resource" in {
       eventually {
-        deltaClient.get[Json](s"/resolve/${UrlUtils.encode(resourceId)}", Bob) { (json, response) =>
+        deltaClient.get[Json](s"/resolve/${UrlUtils.encode(uniqueId)}", Bob) { (json, response) =>
           response.status shouldEqual StatusCodes.OK
           json shouldEqual resourcePayload1
         }
@@ -85,30 +83,32 @@ class IdResolutionSpec extends BaseSpec {
 
     "return search results if the same id exists across several projects" in {
       eventually {
-        deltaClient.get[Json](s"/resolve/${UrlUtils.encode(resourceId2)}", Bob) { (json, response) =>
+        deltaClient.get[Json](s"/resolve/${UrlUtils.encode(reusedId)}", Bob) { (json, response) =>
           response.status shouldEqual StatusCodes.OK
           json.hcursor.get[Int]("_total") shouldEqual Right(2)
         }
       }
     }
 
-    "redirect to fusion error when if text/html header is present (no results)" in { pending }
+    "redirect to fusion error when if text/html accept header is present (no results)" in { pending }
 
-    "redirect to fusion resource page if header is present (single result)" in {
-      deltaClient.get[String](
-        s"/resolve/${UrlUtils.encode(resourceId)}",
-        Bob,
-        extraHeaders = List(Accept(MediaRange.One(`text/html`, 1f)))
-      ) { (_, response) =>
+    "redirect to fusion resource page if text/html accept header is present (single result)" in {
+      val expectedRedirectUrl =
+        s"https://bbp.epfl.ch/nexus/web/$ref11/resources/${UrlUtils.encode(uniqueId)}".replace("%3A", ":")
+
+      deltaClient.get[String](s"/resolve/${UrlUtils.encode(uniqueId)}", Bob, acceptTextHtml) { (_, response) =>
         response.status shouldEqual StatusCodes.SeeOther
-        locationHeaderOf(response) shouldEqual s"https://bbp.epfl.ch/nexus/web/$ref11/resources/${UrlUtils.encode(resourceId)}"
+        locationHeaderOf(response) shouldEqual expectedRedirectUrl
       }(PredefinedFromEntityUnmarshallers.stringUnmarshaller)
+
     }
 
-    "redirect to fusion resource selection page if header is present (multiple result)" in { pending }
+    "redirect to fusion resource selection page if text/html accept header is present (multiple result)" in { pending }
 
   }
 
   private def locationHeaderOf(response: HttpResponse) =
     response.header[Location].value.uri.toString()
+  private def acceptTextHtml                           =
+    List(Accept(MediaRange.One(`text/html`, 1f)))
 }
