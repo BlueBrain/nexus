@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import akka.actor.typed.ActorSystem
-import akka.http.scaladsl.server.Directives
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
@@ -269,14 +268,12 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         identities: Identities,
         aclCheck: AclCheck,
         idResolution: IdResolution,
-        baseUri: BaseUri,
         s: Scheduler,
         ordering: JsonKeyOrdering,
         rcr: RemoteContextResolution @Id("aggregate"),
         fusionConfig: FusionConfig
     ) =>
       new IdResolutionRoutes(identities, aclCheck, idResolution)(
-        baseUri,
         s,
         ordering,
         rcr,
@@ -356,15 +353,13 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
     ) =>
       PriorityRoute(
         priority,
-        Directives.concat(
-          ElasticSearchViewsRoutesHandler(
-            schemeDirectives,
-            es.routes,
-            query.routes,
-            indexing.routes
-          )(baseUri),
+        ElasticSearchViewsRoutesHandler(
+          schemeDirectives,
+          es.routes,
+          query.routes,
+          indexing.routes,
           idResolutionRoute.routes
-        ),
+        )(baseUri),
         requiresStrictEntity = true
       )
   }

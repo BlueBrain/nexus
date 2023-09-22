@@ -13,7 +13,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
-import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
 
@@ -21,26 +20,19 @@ class IdResolutionRoutes(
     identities: Identities,
     aclCheck: AclCheck,
     idResolution: IdResolution
-)(implicit
-    baseUri: BaseUri,
-    s: Scheduler,
-    jko: JsonKeyOrdering,
-    rcr: RemoteContextResolution,
-    fusionConfig: FusionConfig
-) extends AuthDirectives(identities, aclCheck) {
+)(implicit s: Scheduler, jko: JsonKeyOrdering, rcr: RemoteContextResolution, fusionConfig: FusionConfig)
+    extends AuthDirectives(identities, aclCheck) {
 
   def routes: Route =
-    baseUriPrefix(baseUri.prefix) {
-      pathPrefix("resolve") {
-        extractCaller { implicit caller =>
-          (get & iriSegment & pathEndOrSingleSlash) { iri =>
-            val resolved = idResolution.resolve(iri)
+    pathPrefix("resolve") {
+      extractCaller { implicit caller =>
+        (get & iriSegment & pathEndOrSingleSlash) { iri =>
+          val resolved = idResolution.resolve(iri)
 
-            emitOrFusionRedirect(
-              fusionUri(resolved),
-              emit(resolved)
-            )
-          }
+          emitOrFusionRedirect(
+            fusionUri(resolved),
+            emit(resolved)
+          )
         }
       }
     }
