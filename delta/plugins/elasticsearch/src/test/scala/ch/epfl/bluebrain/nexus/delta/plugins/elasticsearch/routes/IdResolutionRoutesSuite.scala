@@ -48,7 +48,7 @@ class IdResolutionRoutesSuite extends ElasticSearchViewsRoutesFixtures {
   "The IdResolution route" should {
 
     "return a resolved resource" in {
-      Get(s"/v1/resolve/$encodedIri") ~> route ~> check {
+      Get(s"/resolve/$encodedIri") ~> route ~> check {
         response.status shouldEqual StatusCodes.OK
         response.asJson shouldEqual jsonResource
       }
