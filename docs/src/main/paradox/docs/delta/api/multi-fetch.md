@@ -19,7 +19,7 @@ Please visit @ref:[Authentication & authorization](authentication.md) section to
 ## Payload
 
 ```
-GET /v1/multi-fetch/resources
+GET|POST /v1/multi-fetch/resources
 
 {
   "format": {format}
