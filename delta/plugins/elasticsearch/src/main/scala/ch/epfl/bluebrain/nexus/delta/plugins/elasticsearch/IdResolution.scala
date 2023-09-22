@@ -59,8 +59,8 @@ class IdResolution(
           _.map(SingleResult(resourceRef, projectRef, _))
         }
         .flatMap {
-          case Some(value) => IO.pure(value)
-          case None        => IO.terminate(new UnexpectedException("Resource found in ES payload but could not be fetched."))
+          case Some(result) => IO.pure(result)
+          case None         => IO.terminate(new UnexpectedException("Resource found in ES payload but could not be fetched."))
         }
     }
 
@@ -104,7 +104,7 @@ object IdResolutionResponse {
   case class MultipleResults(searchResults: SearchResults[JsonObject]) extends Result
 
   private val searchJsonLdEncoder: JsonLdEncoder[SearchResults[JsonObject]] =
-    searchResultsJsonLdEncoder(ContextValue(contexts.metadata))
+    searchResultsJsonLdEncoder(ContextValue(contexts.search))
 
   implicit def resultJsonLdEncoder: JsonLdEncoder[Result] =
     new JsonLdEncoder[Result] {
