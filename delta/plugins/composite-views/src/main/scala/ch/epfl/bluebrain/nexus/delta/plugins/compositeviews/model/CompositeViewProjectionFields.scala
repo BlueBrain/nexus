@@ -12,7 +12,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{Configuration, JsonLdDe
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.views.IndexingRev
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.{Encoder, JsonObject}
 
 import java.util.UUID
@@ -46,12 +45,6 @@ sealed trait CompositeViewProjectionFields {
     *   the resource types to filter by, empty means all
     */
   def resourceTypes: Set[Iri]
-
-  /**
-    * @return
-    *   the optional tag to filter by
-    */
-  def resourceTag: Option[UserTag]
 
   /**
     * @return
@@ -98,7 +91,6 @@ object CompositeViewProjectionFields {
       settings: Option[JsonObject] = None,
       resourceSchemas: Set[Iri] = Set.empty,
       resourceTypes: Set[Iri] = Set.empty,
-      resourceTag: Option[UserTag] = None,
       includeDeprecated: Boolean = false,
       includeMetadata: Boolean = false,
       includeContext: Boolean = false,
@@ -114,7 +106,6 @@ object CompositeViewProjectionFields {
         query,
         resourceSchemas,
         resourceTypes,
-        resourceTag,
         includeMetadata,
         includeDeprecated,
         includeContext,
@@ -134,7 +125,6 @@ object CompositeViewProjectionFields {
       query: SparqlConstructQuery,
       resourceSchemas: Set[Iri] = Set.empty,
       resourceTypes: Set[Iri] = Set.empty,
-      resourceTag: Option[UserTag] = None,
       includeDeprecated: Boolean = false,
       includeMetadata: Boolean = false,
       permission: Permission = permissions.query
@@ -149,7 +139,6 @@ object CompositeViewProjectionFields {
         query,
         resourceSchemas,
         resourceTypes,
-        resourceTag,
         includeMetadata,
         includeDeprecated,
         permission

@@ -131,7 +131,6 @@ trait CompositeViewsFixture extends ConfigFixtures with EitherValuable {
     query,
     Set.empty,
     Set.empty,
-    None,
     false,
     false,
     false,
@@ -148,7 +147,6 @@ trait CompositeViewsFixture extends ConfigFixtures with EitherValuable {
     query,
     Set.empty,
     Set.empty,
-    None,
     false,
     false,
     permissions.query
