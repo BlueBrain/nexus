@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import akka.actor.typed.ActorSystem
+import akka.http.scaladsl.server.Directives
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
@@ -349,28 +350,21 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         es: ElasticSearchViewsRoutes,
         query: ElasticSearchQueryRoutes,
         indexing: ElasticSearchIndexingRoutes,
+        idResolutionRoute: IdResolutionRoutes,
         schemeDirectives: DeltaSchemeDirectives,
         baseUri: BaseUri
     ) =>
       PriorityRoute(
         priority,
-        ElasticSearchViewsRoutesHandler(
-          schemeDirectives,
-          es.routes,
-          query.routes,
-          indexing.routes
-        )(baseUri),
-        requiresStrictEntity = true
-      )
-  }
-
-  many[PriorityRoute].add {
-    (
-      idResolutionRoute: IdResolutionRoutes
-    ) =>
-      PriorityRoute(
-        priority,
-        idResolutionRoute.routes,
+        Directives.concat(
+          ElasticSearchViewsRoutesHandler(
+            schemeDirectives,
+            es.routes,
+            query.routes,
+            indexing.routes
+          )(baseUri),
+          idResolutionRoute.routes
+        ),
         requiresStrictEntity = true
       )
   }
