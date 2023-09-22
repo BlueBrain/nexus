@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
-import ch.epfl.bluebrain.nexus.delta.sdk.error.{IdentityError, ServiceError}
+import ch.epfl.bluebrain.nexus.delta.sdk.error.{AuthTokenError, IdentityError, ServiceError}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import com.typesafe.scalalogging.Logger
 import io.circe.syntax._
@@ -33,6 +33,7 @@ object RdfExceptionHandler {
   ): ExceptionHandler =
     ExceptionHandler {
       case err: IdentityError  => discardEntityAndForceEmit(err)
+      case err: AuthTokenError => discardEntityAndForceEmit(err)
       case AuthorizationFailed => discardEntityAndForceEmit(AuthorizationFailed: ServiceError)
       case err: RdfError       => discardEntityAndForceEmit(err)
       case err: Throwable      =>

@@ -22,7 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.ResourceRe
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.{ResolverContextResolution, Resolvers, ResourceResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{Resource, ResourceEvent}
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.{Resources, ResourcesImpl, ValidateResource, ValidateResourceImpl}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.{Resources, ResourcesConfig, ResourcesImpl, ValidateResource}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
@@ -36,11 +36,17 @@ import monix.execution.Scheduler
   */
 object ResourcesModule extends ModuleDef {
 
+  make[ValidateResource].from { (resourceResolution: ResourceResolution[Schema], api: JsonLdApi) =>
+    ValidateResource(resourceResolution)(api)
+  }
+
+  make[ResourcesConfig].from { (config: AppConfig) => config.resources }
+
   make[Resources].from {
     (
-        validator: ValidateResource,
+        validate: ValidateResource,
         fetchContext: FetchContext[ContextRejection],
-        config: AppConfig,
+        config: ResourcesConfig,
         resolverContextResolution: ResolverContextResolution,
         api: JsonLdApi,
         xas: Transactors,
@@ -48,10 +54,10 @@ object ResourcesModule extends ModuleDef {
         uuidF: UUIDF
     ) =>
       ResourcesImpl(
-        validator,
+        validate,
         fetchContext.mapRejection(ProjectContextRejection),
         resolverContextResolution,
-        config.resources,
+        config,
         xas
       )(
         api,
@@ -82,21 +88,23 @@ object ResourcesModule extends ModuleDef {
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering,
         fusionConfig: FusionConfig,
-        config: AppConfig
+        config: ResourcesConfig
     ) =>
-      new ResourcesRoutes(identities, aclCheck, resources, schemeDirectives, indexingAction(_, _, _)(shift, cr))(
+      new ResourcesRoutes(
+        identities,
+        aclCheck,
+        resources,
+        schemeDirectives,
+        indexingAction(_, _, _)(shift, cr)
+      )(
         baseUri,
         s,
         cr,
         ordering,
         fusionConfig,
-        config.resources.decodingOption
+        config.decodingOption
       )
   }
-
-  make[ValidateResource].from((resourceResolution: ResourceResolution[Schema], api: JsonLdApi) =>
-    new ValidateResourceImpl(resourceResolution)(api)
-  )
 
   many[SseEncoder[_]].add { base: BaseUri => ResourceEvent.sseEncoder(base) }
 

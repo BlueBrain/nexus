@@ -66,9 +66,6 @@ Currently, the following permissions are required:
 - default permissions for storages
     - `storages/write`
 
-- default permissions for archives
-    - `archives/write`
-
 - default permissions for the version endpoint
     - `version/read`
 

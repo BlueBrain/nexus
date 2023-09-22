@@ -196,17 +196,6 @@ object StorageRejection {
       )
 
   /**
-    * Signals a rejection caused by the failure to encrypt/decrypt sensitive data (credentials)
-    */
-  final case class InvalidEncryptionSecrets(tpe: StorageType, details: String)
-      extends StorageRejection(
-        s"Storage type '$tpe' is using incorrect system secrets. Please contact the system administrator.",
-        Some(
-          s"Encryption/decryption for storage type '$tpe' fails due to wrong configuration for password or salt. Details '$details'."
-        )
-      )
-
-  /**
     * Signals a rejection caused when interacting with other APIs when fetching a resource
     */
   final case class ProjectContextRejection(rejection: ContextRejection)
@@ -241,16 +230,15 @@ object StorageRejection {
 
   implicit final val storageRejectionHttpResponseFields: HttpResponseFields[StorageRejection] =
     HttpResponseFields {
-      case RevisionNotFound(_, _)         => StatusCodes.NotFound
-      case TagNotFound(_)                 => StatusCodes.NotFound
-      case StorageNotFound(_, _)          => StatusCodes.NotFound
-      case DefaultStorageNotFound(_)      => StatusCodes.NotFound
-      case ResourceAlreadyExists(_, _)    => StatusCodes.Conflict
-      case IncorrectRev(_, _)             => StatusCodes.Conflict
-      case ProjectContextRejection(rej)   => rej.status
-      case StorageNotAccessible(_, _)     => StatusCodes.BadRequest
-      case InvalidEncryptionSecrets(_, _) => StatusCodes.InternalServerError
-      case _                              => StatusCodes.BadRequest
+      case RevisionNotFound(_, _)       => StatusCodes.NotFound
+      case TagNotFound(_)               => StatusCodes.NotFound
+      case StorageNotFound(_, _)        => StatusCodes.NotFound
+      case DefaultStorageNotFound(_)    => StatusCodes.NotFound
+      case ResourceAlreadyExists(_, _)  => StatusCodes.Conflict
+      case IncorrectRev(_, _)           => StatusCodes.Conflict
+      case ProjectContextRejection(rej) => rej.status
+      case StorageNotAccessible(_, _)   => StatusCodes.BadRequest
+      case _                            => StatusCodes.BadRequest
     }
 
 }

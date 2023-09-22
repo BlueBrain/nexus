@@ -110,6 +110,17 @@ class SchemasImplSuite
     schemas.create(mySchema3, projectRef, sourceNoId).assertEquals(expected)
   }
 
+  test("Creating a schema as a dry-run succeeds without persisting it in the database") {
+    val id       = nxv + "dry-run"
+    val source   = schemaSourceWithId(id)
+    val schema   = SchemaGen.schema(id, project.ref, source)
+    val expected = SchemaGen.resourceFor(schema, subject = subject)
+    for {
+      _ <- schemas.createDryRun(projectRef, source).assertEquals(expected)
+      _ <- schemas.fetch(IdSegmentRef(id), projectRef).intercept[SchemaNotFound]
+    } yield ()
+  }
+
   test("Creating a schema fails with different ids on the payload and passed") {
     val otherId = nxv + "other"
     schemas.create(otherId, projectRef, source).intercept(UnexpectedSchemaId(id = otherId, payloadId = mySchema))

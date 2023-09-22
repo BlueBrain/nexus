@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.tests.Identity.projects.{Bojack, PrincessCarolyn}
 import ch.epfl.bluebrain.nexus.tests.Identity.{Anonymous, ServiceAccount}
 import ch.epfl.bluebrain.nexus.tests.Optics.{admin, listing, supervision}
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Events, Organizations, Projects, Resources}
+import ch.epfl.bluebrain.nexus.tests.resources.SimpleResource
 import ch.epfl.bluebrain.nexus.tests.{BaseSpec, Identity, SchemaPayload}
 import io.circe.Json
 import io.circe.optics.JsonPath.root
@@ -95,11 +96,7 @@ final class ProjectsDeletionSpec extends BaseSpec with CirceEq with EitherValuab
     }
 
     "add additional resources" in {
-      val resourcePayload        =
-        jsonContentOf(
-          "/kg/resources/simple-resource.json",
-          "priority" -> "5"
-        )
+      val resourcePayload        = SimpleResource.sourcePayload(5)
       val schemaPayload          = SchemaPayload.loadSimple()
       val resolverPayload        =
         jsonContentOf(

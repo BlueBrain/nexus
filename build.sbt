@@ -12,15 +12,15 @@ scalafmt: {
 }
  */
 
-val scalacScapegoatVersion = "2.1.2"
-val scalaCompilerVersion   = "2.13.11"
+val scalacScapegoatVersion = "2.1.3"
+val scalaCompilerVersion   = "2.13.12"
 
 val akkaHttpVersion         = "10.2.10"
 val akkaHttpCirceVersion    = "1.39.2"
 val akkaCorsVersion         = "1.2.0"
 val akkaVersion             = "2.6.21"
 val alpakkaVersion          = "3.0.4"
-val apacheCompressVersion   = "1.23.0"
+val apacheCompressVersion   = "1.24.0"
 val apacheIoVersion         = "1.3.2"
 val awsSdkVersion           = "2.17.184"
 val byteBuddyAgentVersion   = "1.10.17"
@@ -29,7 +29,7 @@ val caffeineVersion         = "3.1.8"
 val catsEffectVersion       = "2.5.5"
 val catsRetryVersion        = "2.1.1"
 val catsVersion             = "2.10.0"
-val circeVersion            = "0.14.5"
+val circeVersion            = "0.14.6"
 val circeOpticsVersion      = "0.14.1"
 val circeExtrasVersions     = "0.14.3"
 val classgraphVersion       = "4.8.162"
@@ -46,8 +46,8 @@ val kanelaAgentVersion      = "1.0.17"
 val kindProjectorVersion    = "0.13.2"
 val log4catsVersion         = "1.7.0"
 val logbackVersion          = "1.4.11"
-val magnoliaVersion         = "1.1.4"
-val mockitoVersion          = "1.17.14"
+val magnoliaVersion         = "1.1.6"
+val mockitoVersion          = "1.17.22"
 val monixVersion            = "3.4.1"
 val monixBioVersion         = "1.2.0"
 val munitVersion            = "1.0.0-M8"
@@ -55,7 +55,7 @@ val nimbusJoseJwtVersion    = "9.31"
 val postgresJdbcVersion     = "42.6.0"
 val pureconfigVersion       = "0.17.4"
 val scalaLoggingVersion     = "3.9.5"
-val scalaTestVersion        = "3.2.16"
+val scalaTestVersion        = "3.2.17"
 val scalaXmlVersion         = "2.1.0"
 val topBraidVersion         = "1.3.2" // 1.4.1 fails to validate some test schemas
 val testContainersVersion   = "1.19.0"
@@ -970,8 +970,7 @@ lazy val servicePackaging = {
   import com.typesafe.sbt.packager.docker.{DockerChmodType, DockerVersion}
   import com.typesafe.sbt.packager.universal.UniversalPlugin.autoImport.Universal
   Seq(
-    Universal / mappings  += (WaitForIt.download(target.value) -> "bin/wait-for-it.sh"),
-    // docker publishing settings
+    // Docker publishing settings
     Docker / maintainer   := "Nexus Team <noreply@epfl.ch>",
     Docker / version      := {
       if (isSnapshot.value) "latest"

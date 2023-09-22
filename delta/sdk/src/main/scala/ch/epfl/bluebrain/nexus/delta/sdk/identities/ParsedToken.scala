@@ -28,7 +28,7 @@ object ParsedToken {
     * @param token
     *   the raw token
     */
-  private[identities] def fromToken(token: AuthToken): Either[TokenRejection, ParsedToken] = {
+  def fromToken(token: AuthToken): Either[TokenRejection, ParsedToken] = {
 
     def parseJwt: Either[TokenRejection, SignedJWT] =
       Either

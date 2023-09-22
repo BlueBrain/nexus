@@ -13,6 +13,7 @@
 * @ref:[Quotas](quotas.md)
 * @ref:[Schemas](schemas-api.md)
 * @ref:[Resources](resources-api.md)
+* @ref:[Practice](trial.md)
 * @ref:[Multi-fetch](multi-fetch.md)
 * @ref:[Id Resolution](id-resolution.md)
 * @ref:[Resolvers](resolvers-api.md)
@@ -122,7 +123,7 @@ A file is a binary attachment resource.
 
 ## Archives
 
-An archive is a collection of resources stored inside an archive file. The archiving format chosen for this purpose is tar (or tarball).
+An archive is a collection of resources stored inside an archive file. The archiving format chosen for this purpose is ZIP file.
 
 @ref:[Operations on archives](archives-api.md)
 

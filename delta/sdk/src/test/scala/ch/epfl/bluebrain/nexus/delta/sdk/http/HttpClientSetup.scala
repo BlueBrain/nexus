@@ -8,9 +8,9 @@ import monix.execution.Scheduler
 
 object HttpClientSetup {
 
-  def apply()(implicit s: Scheduler): Resource[Task, (HttpClient, ActorSystem)] = {
+  def apply(compression: Boolean)(implicit s: Scheduler): Resource[Task, (HttpClient, ActorSystem)] = {
     implicit val httpConfig: HttpClientConfig =
-      HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never, compression = true)
+      HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never, compression = compression)
     Resource
       .make[Task, ActorSystem](Task.delay(ActorSystem()))((as: ActorSystem) => Task.delay(as.terminate()).void)
       .map { implicit as =>

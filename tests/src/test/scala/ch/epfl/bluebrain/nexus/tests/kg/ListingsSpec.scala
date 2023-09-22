@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.tests.Identity.listings.{Alice, Bob}
 import ch.epfl.bluebrain.nexus.tests.Identity.{Anonymous, Delta}
 import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Organizations, Resources, Views}
+import ch.epfl.bluebrain.nexus.tests.resources.SimpleResource
 import io.circe.Json
 import org.scalatest.Inspectors
 
@@ -45,12 +46,7 @@ final class ListingsSpec extends BaseSpec with Inspectors with EitherValuable wi
     }
 
     "add additional resources" in {
-      val resourcePayload =
-        jsonContentOf(
-          "/kg/resources/simple-resource.json",
-          "priority"     -> "5",
-          "resourceType" -> resourceType
-        )
+      val resourcePayload = SimpleResource.sourcePayloadWithType(resourceType, 5)
       val schemaPayload   = SchemaPayload.loadSimple(resourceType)
       for {
         // Creation

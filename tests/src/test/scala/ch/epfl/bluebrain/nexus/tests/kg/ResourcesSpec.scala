@@ -10,17 +10,15 @@ import ch.epfl.bluebrain.nexus.testkit.{CirceEq, EitherValuable}
 import ch.epfl.bluebrain.nexus.tests.Identity.resources.{Morty, Rick}
 import ch.epfl.bluebrain.nexus.tests.Optics.listing._total
 import ch.epfl.bluebrain.nexus.tests.Optics.{filterKey, filterMetadataKeys}
-import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Organizations
+import ch.epfl.bluebrain.nexus.tests.resources.SimpleResource
 import ch.epfl.bluebrain.nexus.tests.{BaseSpec, Optics, SchemaPayload}
 import io.circe.Json
 import io.circe.optics.JsonPath.root
-import monix.bio.Task
 import monix.execution.Scheduler.Implicits.global
 import monocle.Optional
 import org.scalatest.matchers.{HavePropertyMatchResult, HavePropertyMatcher}
 
 import java.net.URLEncoder
-import scala.concurrent.duration._
 
 class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
 
@@ -35,33 +33,12 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
   private val IdLens: Optional[Json, String]   = root.`@id`.string
   private val TypeLens: Optional[Json, String] = root.`@type`.string
 
-  private val resource1Self = resourceSelf(id1, "https://dev.nexus.test.com/simplified-resource/1")
-
+  private val resource1Id                                = "https://dev.nexus.test.com/simplified-resource/1"
   private def resource1Response(rev: Int, priority: Int) =
-    jsonContentOf(
-      "/kg/resources/simple-resource-response.json",
-      replacements(
-        Rick,
-        "priority"   -> priority.toString,
-        "rev"        -> rev.toString,
-        "self"       -> resource1Self,
-        "project"    -> s"${config.deltaUri}/projects/$id1",
-        "resourceId" -> "1"
-      ): _*
-    )
+    SimpleResource.fetchResponse(Rick, id1, resource1Id, rev, priority)
 
   private def resource1AnnotatedSource(rev: Int, priority: Int) =
-    jsonContentOf(
-      "/kg/resources/simple-resource-with-metadata.json",
-      replacements(
-        Rick,
-        "priority"   -> priority.toString,
-        "rev"        -> rev.toString,
-        "self"       -> resource1Self,
-        "project"    -> s"${config.deltaUri}/projects/$id1",
-        "resourceId" -> "1"
-      ): _*
-    )
+    SimpleResource.annotatedResource(Rick, id1, resource1Id, rev, priority)
 
   private def `@id`(expectedId: String) = HavePropertyMatcher[Json, String] { json =>
     val actualId = IdLens.getOption(json)
@@ -83,23 +60,9 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
     )
   }
 
-  "creating projects" should {
-
-    "add necessary permissions for user" in {
-      aclDsl.addPermission(
-        "/",
-        Rick,
-        Organizations.Create
-      )
-    }
-
-    "succeed if payload is correct" in {
-      for {
-        _ <- adminDsl.createOrganization(orgId, orgId, Rick)
-        _ <- adminDsl.createProject(orgId, projId1, kgDsl.projectJson(name = id1), Rick)
-        _ <- adminDsl.createProject(orgId, projId2, kgDsl.projectJson(name = id2), Rick)
-      } yield succeed
-    }
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    createProjects(Rick, orgId, projId1, projId2).accepted
   }
 
   "adding schema" should {
@@ -144,19 +107,10 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
     }
 
     "succeed if the payload is correct" in {
-      val payload =
-        jsonContentOf(
-          "/kg/resources/simple-resource.json",
-          "priority"   -> "5",
-          "resourceId" -> "1"
-        )
+      val payload = SimpleResource.sourcePayload(resource1Id, 5)
 
       val id2      = URLEncoder.encode("https://dev.nexus.test.com/test-schema-imports", "UTF-8")
-      val payload2 = jsonContentOf(
-        "/kg/resources/simple-resource.json",
-        "priority"   -> "5",
-        "resourceId" -> "a"
-      )
+      val payload2 = SimpleResource.sourcePayload("https://dev.nexus.test.com/simplified-resource/a", 5)
 
       for {
         _ <- deltaClient.put[Json](s"/resources/$id1/test-schema/test-resource:1", payload, Rick) { (_, response) =>
@@ -178,12 +132,7 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
 
     "fetch the original payload" in {
       deltaClient.get[Json](s"/resources/$id1/test-schema/test-resource:1/source", Rick) { (json, response) =>
-        val expected =
-          jsonContentOf(
-            "/kg/resources/simple-resource.json",
-            "priority"   -> "5",
-            "resourceId" -> "1"
-          )
+        val expected = SimpleResource.sourcePayload(resource1Id, 5)
         response.status shouldEqual StatusCodes.OK
         json should equalIgnoreArrayOrder(expected)
       }
@@ -199,12 +148,7 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
     }
 
     "fetch the original payload with unexpanded id with metadata" in {
-      val payload =
-        jsonContentOf(
-          "/kg/resources/simple-resource-with-id.json",
-          "priority"   -> "5",
-          "resourceId" -> "42"
-        )
+      val payload = SimpleResource.sourcePayload("42", 5)
 
       for {
         _ <- deltaClient.post[Json](s"/resources/$id1/_/", payload, Rick) { (_, response) =>
@@ -218,10 +162,7 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
     }
 
     "fetch the original payload with generated id with metadata" in {
-      val payload = jsonContentOf(
-        "/kg/resources/simple-resource-with-id.json",
-        "priority" -> "5"
-      )
+      val payload = SimpleResource.sourcePayload(5)
 
       var generatedId: String = ""
 
@@ -254,11 +195,7 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
     }
 
     "fail if the schema doesn't exist in the project" in {
-      val payload = jsonContentOf(
-        "/kg/resources/simple-resource.json",
-        "priority"   -> "3",
-        "resourceId" -> "1"
-      )
+      val payload = SimpleResource.sourcePayload(resource1Id, 3)
 
       deltaClient.put[Json](s"/resources/$id2/test-schema/test-resource:1", payload, Rick) { (_, response) =>
         response.status shouldEqual StatusCodes.NotFound
@@ -266,11 +203,9 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
     }
 
     "fail if the payload contains nexus metadata fields (underscore fields)" in {
-      val payload = jsonContentOf(
-        "/kg/resources/simple-resource.json",
-        "priority"   -> "3",
-        "resourceId" -> "1"
-      ).deepMerge(json"""{"_self":  "http://delta/resources/path"}""")
+      val payload = SimpleResource
+        .sourcePayload("1", 3)
+        .deepMerge(json"""{"_self":  "http://delta/resources/path"}""")
 
       deltaClient.put[Json](s"/resources/$id2/_/test-resource:1", payload, Rick) { (_, response) =>
         response.status shouldEqual StatusCodes.BadRequest
@@ -367,31 +302,15 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
     }
 
     "resolve schema from the other project" in {
-      val payload = jsonContentOf(
-        "/kg/resources/simple-resource.json",
-        "priority"   -> "3",
-        "resourceId" -> "1"
-      )
-
-      eventually {
-        deltaClient.put[Json](s"/resources/$id2/test-schema/test-resource:1", payload, Rick) { (_, response) =>
-          response.status shouldEqual StatusCodes.Created
-        }
-      }
+      val payload = SimpleResource.sourcePayload(resource1Id, 3)
+      deltaClient.put[Json](s"/resources/$id2/test-schema/test-resource:1", payload, Rick) { expectCreated }
     }
   }
 
   "updating a resource" should {
     "send the update" in {
-      val payload = jsonContentOf(
-        "/kg/resources/simple-resource.json",
-        "priority"   -> "3",
-        "resourceId" -> "1"
-      )
-
-      deltaClient.put[Json](s"/resources/$id1/test-schema/test-resource:1?rev=1", payload, Rick) { (_, response) =>
-        response.status shouldEqual StatusCodes.OK
-      }
+      val payload = SimpleResource.sourcePayload(resource1Id, 3)
+      deltaClient.put[Json](s"/resources/$id1/test-schema/test-resource:1?rev=1", payload, Rick) { expectOk }
     }
 
     "fetch the update" in {
@@ -501,18 +420,12 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
 
   "check consistency of responses" in {
     (2 to 100).toList.traverse { resourceId =>
-      val payload = jsonContentOf(
-        "/kg/resources/simple-resource.json",
-        "priority"   -> "3",
-        "resourceId" -> s"$resourceId"
-      )
+      val payload = SimpleResource.sourcePayload(s"https://dev.nexus.test.com/simplified-resource/$resourceId", 3)
       for {
         _ <- deltaClient
                .put[Json](s"/resources/$id1/test-schema/test-resource:$resourceId?indexing=sync", payload, Rick) {
-                 (_, response) =>
-                   response.status shouldEqual StatusCodes.Created
+                 expectCreated
                }
-        _ <- Task.sleep(100.millis)
         _ <- deltaClient.get[Json](s"/resources/$id1/test-schema", Rick) { (json, response) =>
                response.status shouldEqual StatusCodes.OK
                val received = json.asObject.value("_total").value.asNumber.value.toInt.value
@@ -536,6 +449,30 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
 
     deltaClient.post[Json](s"/resources/$id1/", payload, Rick) { (_, response) =>
       response.status shouldEqual StatusCodes.Created
+    }
+  }
+
+  "fetch remote contexts for the created resource" in {
+    deltaClient.get[Json](s"/resources/$id1/_/myid/remote-contexts", Rick) { (json, response) =>
+      response.status shouldEqual StatusCodes.OK
+      val expected =
+        json"""
+          {
+          "@context": "https://bluebrain.github.io/nexus/contexts/remote-contexts.json",
+          "remoteContexts": [
+            {
+              "@type": "ProjectRemoteContextRef",
+              "iri": "https://dev.nexus.test.com/simplified-resource/mycontext",
+              "resource": {
+                "id": "https://dev.nexus.test.com/simplified-resource/mycontext",
+                "project": "$id1",
+                "rev": 1
+              }
+            }
+          ]
+        }"""
+
+      json shouldEqual expected
     }
   }
 

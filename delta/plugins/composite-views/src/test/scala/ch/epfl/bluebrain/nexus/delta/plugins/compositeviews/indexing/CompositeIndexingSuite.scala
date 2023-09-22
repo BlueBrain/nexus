@@ -279,8 +279,7 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
     None,
     includeDeprecated = false,
     project3,
-    Uri("https://bbp.epfl.ch/nexus"),
-    None
+    Uri("https://bbp.epfl.ch/nexus")
   )
 
   private val contextJson             = jsonContentOf("indexing/music-context.json")

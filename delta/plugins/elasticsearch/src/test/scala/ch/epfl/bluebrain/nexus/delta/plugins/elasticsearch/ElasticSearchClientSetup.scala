@@ -28,7 +28,7 @@ object ElasticSearchClientSetup extends CirceLiteral {
 
   def resource()(implicit s: Scheduler): Resource[Task, ElasticSearchClient] = {
     for {
-      (httpClient, actorSystem) <- HttpClientSetup()
+      (httpClient, actorSystem) <- HttpClientSetup(compression = true)
       container                 <- ElasticSearchContainer.resource()
     } yield {
       implicit val as: ActorSystem                           = actorSystem

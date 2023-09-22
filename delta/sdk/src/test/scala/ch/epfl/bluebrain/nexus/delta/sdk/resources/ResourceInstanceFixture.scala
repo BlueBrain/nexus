@@ -8,13 +8,13 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContext._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContext}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.jsonld.RemoteContextRef
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution.NexusContext
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution.ProjectRemoteContext
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import io.circe.{Json, JsonObject}
 
-private[resources] object ResourceFixture extends CirceLiteral {
+trait ResourceInstanceFixture extends CirceLiteral {
 
   val org: Label                      = Label.unsafe("myorg")
   val proj: Label                     = Label.unsafe("myproj")
@@ -62,7 +62,7 @@ private[resources] object ResourceFixture extends CirceLiteral {
     CompactedJsonLd.unsafe(myId, compactedObj.topContextValueOrEmpty, compactedObj.remove(keywords.context))
   val remoteContexts: Map[Iri, RemoteContext]  = Map(
     staticContext -> StaticContext(staticContext, ContextValue.empty),
-    nexusContext  -> NexusContext(nexusContext, projectRef, 5, ContextValue.empty)
+    nexusContext  -> ProjectRemoteContext(nexusContext, projectRef, 5, ContextValue.empty)
   )
   val remoteContextRefs: Set[RemoteContextRef] = RemoteContextRef(remoteContexts)
 

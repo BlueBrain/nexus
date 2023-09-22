@@ -47,11 +47,15 @@ class HttpClientSpec
   private val value2 = Value("second", 2, deprecated = true)
 
   private val baseUri         = Uri("http://localhost/v1")
-  private val reqGetValue     = HttpRequest(uri = baseUri / s"values/first")
+  private val getUri          = baseUri / s"values/first"
+  private val reqGetValue     = HttpRequest(uri = getUri)
   private val count           = Count()
-  private val reqStreamValues = HttpRequest(uri = baseUri / "values/events")
-  private val reqClientError  = HttpRequest(uri = baseUri / "values/errors/client")
-  private val reqServerError  = HttpRequest(uri = baseUri / "values/errors/server")
+  private val streamUri       = baseUri / "values/events"
+  private val reqStreamValues = HttpRequest(uri = streamUri)
+  private val clientErrorUri  = baseUri / "values/errors/client"
+  private val reqClientError  = HttpRequest(uri = clientErrorUri)
+  private val serverErrorUri  = baseUri / "values/errors/server"
+  private val reqServerError  = HttpRequest(uri = serverErrorUri)
 
   private def toSource(values: List[Json]): AkkaSource =
     Source(values.map(j => ByteString(j.noSpaces)))
@@ -63,22 +67,22 @@ class HttpClientSpec
 
     val httpSingleReq = new HttpSingleRequest {
       override def execute(request: HttpRequest): Task[HttpResponse] =
-        request match {
-          case `reqGetValue`     =>
+        request.uri match {
+          case `getUri`         =>
             Task.delay(count.reqGetValue.incrementAndGet()) >>
               Task(response(HttpEntity(`application/json`, value1.asJson.noSpaces)))
-          case `reqStreamValues` =>
+          case `streamUri`      =>
             Task.delay(count.reqStreamValues.incrementAndGet()) >>
               Task(response(HttpEntity(`application/octet-stream`, toSource(List(value1.asJson, value2.asJson)))))
-          case `reqClientError`  =>
+          case `clientErrorUri` =>
             Task.delay(count.reqClientError.incrementAndGet()) >>
               Task(response(HttpEntity(`application/json`, json"""{"error": "client"}""".noSpaces), BadRequest))
-          case `reqServerError`  =>
+          case `serverErrorUri` =>
             Task.delay(count.reqServerError.incrementAndGet()) >>
               Task(
                 response(HttpEntity(`application/json`, json"""{"error": "server"}""".noSpaces), InternalServerError)
               )
-          case _                 =>
+          case _                =>
             Task.delay(count.reqOtherError.incrementAndGet()) >>
               Task.raiseError(new IllegalArgumentException("wrong request"))
         }

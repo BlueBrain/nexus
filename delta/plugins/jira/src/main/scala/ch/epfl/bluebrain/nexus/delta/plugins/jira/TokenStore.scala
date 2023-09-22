@@ -1,7 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.jira
 
-import cats.effect.Clock
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils.instant
+import cats.effect.{Clock, IO}
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
@@ -10,7 +11,6 @@ import doobie.implicits._
 import doobie.postgres.implicits._
 import io.circe.Json
 import io.circe.syntax._
-import monix.bio.{Task, UIO}
 
 /**
   * Stores Jira tokens in the underlying databases
@@ -22,7 +22,7 @@ trait TokenStore {
     * @param user
     *   the user
     */
-  def get(user: User): Task[Option[OAuthToken]]
+  def get(user: User): IO[Option[OAuthToken]]
 
   /**
     * Save the token for the given user
@@ -31,7 +31,7 @@ trait TokenStore {
     * @param oauthToken
     *   the associated token
     */
-  def save(user: User, oauthToken: OAuthToken): Task[Unit]
+  def save(user: User, oauthToken: OAuthToken): IO[Unit]
 
 }
 
@@ -40,21 +40,23 @@ object TokenStore {
   /**
     * Create a token store
     */
-  def apply(xas: Transactors)(implicit clock: Clock[UIO]): TokenStore = {
+  def apply(xas: Transactors)(implicit clock: Clock[IO]): TokenStore = {
     new TokenStore {
-      override def get(user: Identity.User): Task[Option[OAuthToken]] =
-        sql"SELECT token_value FROM jira_tokens WHERE realm = ${user.realm.value} and subject = ${user.subject}"
-          .query[Json]
-          .option
-          .transact(xas.read)
+      override def get(user: Identity.User): IO[Option[OAuthToken]] =
+        toCatsIO(
+          sql"SELECT token_value FROM jira_tokens WHERE realm = ${user.realm.value} and subject = ${user.subject}"
+            .query[Json]
+            .option
+            .transact(xas.read)
+        )
           .flatMap {
             case Some(token) =>
-              Task.fromEither(token.as[OAuthToken]).map(Some(_))
-            case None        => Task.none
+              IO.fromEither(token.as[OAuthToken]).map(Some(_))
+            case None        => IO.none
           }
 
-      override def save(user: Identity.User, oauthToken: OAuthToken): Task[Unit] =
-        instant.flatMap { now =>
+      override def save(user: Identity.User, oauthToken: OAuthToken): IO[Unit] =
+        IOInstant.now.flatMap { now =>
           sql""" INSERT INTO jira_tokens(realm, subject, instant, token_value)
                    | VALUES(${user.realm.value}, ${user.subject}, $now, ${oauthToken.asJson})
                    | ON CONFLICT (realm, subject) DO UPDATE SET instant = EXCLUDED.instant, token_value = EXCLUDED.token_value

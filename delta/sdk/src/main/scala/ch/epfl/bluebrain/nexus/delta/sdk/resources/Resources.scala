@@ -11,8 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.ValidateResource.ValidationResult
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{IncorrectRev, InvalidResourceId, ResourceAlreadyExists, ResourceFetchRejection, ResourceIsDeprecated, ResourceNotFound, RevisionNotFound, TagNotFound, UnexpectedResourceSchema}
@@ -107,23 +106,6 @@ trait Resources {
   )(implicit caller: Caller): IO[ResourceRejection, DataResource]
 
   /**
-    * Validates an existing resource.
-    *
-    * @param id
-    *   the identifier that will be expanded to the Iri of the resource
-    * @param projectRef
-    *   the project reference where the resource belongs
-    * @param schemaOpt
-    *   the optional identifier that will be expanded to the schema reference to validate the resource. A None value
-    *   uses the currently available resource schema reference.
-    */
-  def validate(
-      id: IdSegmentRef,
-      projectRef: ProjectRef,
-      schemaOpt: Option[IdSegment]
-  )(implicit caller: Caller): IO[ResourceRejection, ValidationResult]
-
-  /**
     * Adds a tag to an existing resource.
     *
     * @param id
@@ -193,6 +175,23 @@ trait Resources {
   )(implicit caller: Subject): IO[ResourceRejection, DataResource]
 
   /**
+    * Fetches a resource state.
+    *
+    * @param id
+    *   the identifier that will be expanded to the Iri of the resource with its optional rev/tag
+    * @param projectRef
+    *   the project reference where the resource belongs
+    * @param schemaOpt
+    *   the optional identifier that will be expanded to the schema reference of the resource. A None value uses the
+    *   currently available resource schema reference.
+    */
+  def fetchState(
+      id: IdSegmentRef,
+      projectRef: ProjectRef,
+      schemaOpt: Option[IdSegment]
+  ): IO[ResourceFetchRejection, ResourceState]
+
+  /**
     * Fetches a resource.
     *
     * @param id
@@ -238,6 +237,27 @@ object Resources {
     * The default resource API mappings
     */
   val mappings: ApiMappings = ApiMappings("_" -> schemas.resources, "resource" -> schemas.resources, "nxv" -> nxv.base)
+
+  /**
+    * Expands the segment to a [[ResourceRef]]
+    */
+  def expandResourceRef(segment: IdSegment, context: ProjectContext): IO[InvalidResourceId, ResourceRef] =
+    IO.fromOption(
+      segment.toIri(context.apiMappings, context.base).map(ResourceRef(_)),
+      InvalidResourceId(segment.asString)
+    )
+
+  /**
+    * Expands the segment to a [[ResourceRef]] if defined
+    */
+  def expandResourceRef(
+      segmentOpt: Option[IdSegment],
+      context: ProjectContext
+  ): IO[InvalidResourceId, Option[ResourceRef]] =
+    segmentOpt match {
+      case None         => IO.none
+      case Some(schema) => expandResourceRef(schema, context).map(Some.apply)
+    }
 
   private[delta] def next(state: Option[ResourceState], event: ResourceEvent): Option[ResourceState] = {
     // format: off
@@ -285,14 +305,14 @@ object Resources {
   ): IO[ResourceRejection, ResourceEvent] = {
 
     def validate(
-        projectRef: ProjectRef,
-        schemaRef: ResourceRef,
-        caller: Caller,
         id: Iri,
-        expanded: ExpandedJsonLd
+        expanded: ExpandedJsonLd,
+        schemaRef: ResourceRef,
+        projectRef: ProjectRef,
+        caller: Caller
     ): IO[ResourceRejection, (ResourceRef.Revision, ProjectRef)] = {
       validateResource
-        .apply(projectRef, schemaRef, caller, id, expanded)
+        .apply(id, expanded, schemaRef, projectRef, caller)
         .map(result => (result.schema, result.project))
     }
 
@@ -302,7 +322,7 @@ object Resources {
         case None =>
           // format: off
           for {
-            (schemaRev, schemaProject) <- validate(c.project, c.schema, c.caller, c.id, expanded)
+            (schemaRev, schemaProject) <- validate(c.id, expanded, c.schema, c.project, c.caller)
             t                          <- IOUtils.instant
           } yield ResourceCreated(c.id, c.project, schemaRev, schemaProject, types, c.source, compacted, expanded, remoteContextRefs, 1, t, c.subject)
           // format: on
@@ -348,7 +368,7 @@ object Resources {
       for {
         s                          <- stateWhereResourceIsEditable(u)
         schemaRef = u.schemaOpt.getOrElse(ResourceRef.Latest(s.schema.iri))
-        (schemaRev, schemaProject) <- validate(s.project, schemaRef, u.caller, u.id, expanded)
+        (schemaRev, schemaProject) <- validate(u.id, expanded, schemaRef, s.project, u.caller)
         time                       <- IOUtils.instant
       } yield ResourceUpdated(u.id, u.project, schemaRev, schemaProject, types, u.source, compacted, expanded, remoteContextRefs, s.rev + 1, time, u.subject)
       // format: on
@@ -359,7 +379,7 @@ object Resources {
       // format: off
       for {
         s                          <- stateWhereResourceIsEditable(c)
-        (schemaRev, schemaProject) <- validate(s.project, c.schemaOpt.getOrElse(s.schema), c.caller, c.id, expanded)
+        (schemaRev, schemaProject) <- validate(c.id, expanded, c.schemaOpt.getOrElse(s.schema), s.project, c.caller)
         time                       <- IOUtils.instant
       } yield ResourceRefreshed(c.id, c.project, schemaRev, schemaProject, types, compacted, expanded, remoteContextRefs, s.rev + 1, time, c.subject)
       // format: on

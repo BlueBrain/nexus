@@ -9,9 +9,9 @@ import ch.epfl.bluebrain.nexus.testkit.CirceEq
 import ch.epfl.bluebrain.nexus.testkit.archive.ArchiveHelpers
 import ch.epfl.bluebrain.nexus.tests.HttpClient._
 import ch.epfl.bluebrain.nexus.tests.Identity.archives.Tweety
-import ch.epfl.bluebrain.nexus.tests.Identity.testRealm
 import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Projects, Resources}
+import ch.epfl.bluebrain.nexus.tests.resources.SimpleResource
 import ch.epfl.bluebrain.nexus.tests.{BaseSpec, Identity, SchemaPayload}
 import io.circe.Json
 
@@ -27,41 +27,15 @@ class ArchiveSpec extends BaseSpec with ArchiveHelpers with CirceEq {
 
   private val schemaPayload = SchemaPayload.loadSimple()
 
-  private val payload1 = jsonContentOf(
-    "/kg/resources/simple-resource.json",
-    "priority"   -> "5",
-    "resourceId" -> "1"
-  )
+  private val resource1Id = "https://dev.nexus.test.com/simplified-resource/1"
+  private val payload1    = SimpleResource.sourcePayload(resource1Id, 5)
 
-  private val payload2 = jsonContentOf(
-    "/kg/resources/simple-resource.json",
-    "priority"   -> "6",
-    "resourceId" -> "2"
-  )
+  private val resource2Id = "https://dev.nexus.test.com/simplified-resource/2"
+  private val payload2    = SimpleResource.sourcePayload(resource2Id, 6)
 
-  private val payloadResponse1 = jsonContentOf(
-    "/kg/resources/simple-resource-response.json",
-    "deltaUri"   -> config.deltaUri,
-    "realm"      -> testRealm.name,
-    "user"       -> Tweety.name,
-    "priority"   -> "5",
-    "rev"        -> "1",
-    "self"       -> resourceSelf(fullId, "https://dev.nexus.test.com/simplified-resource/1"),
-    "project"    -> s"${config.deltaUri}/projects/$fullId",
-    "resourceId" -> "1"
-  )
+  private val payloadResponse1 = SimpleResource.fetchResponse(Tweety, fullId, resource1Id, 1, 5)
 
-  private val payloadResponse2 = jsonContentOf(
-    "/kg/resources/simple-resource-response.json",
-    "deltaUri"   -> config.deltaUri,
-    "realm"      -> testRealm.name,
-    "user"       -> Tweety.name,
-    "priority"   -> "6",
-    "rev"        -> "1",
-    "self"       -> resourceSelf(fullId2, "https://dev.nexus.test.com/simplified-resource/2"),
-    "project"    -> s"${config.deltaUri}/projects/$fullId2",
-    "resourceId" -> "2"
-  )
+  private val payloadResponse2 = SimpleResource.fetchResponse(Tweety, fullId2, resource2Id, 1, 6)
 
   private val nexusLogoDigest =
     "edd70eff895cde1e36eaedd22ed8e9c870bb04155d05d275f970f4f255488e993a32a7c914ee195f6893d43b8be4e0b00db0a6d545a8462491eae788f664ea6b"
@@ -231,25 +205,6 @@ class ArchiveSpec extends BaseSpec with ArchiveHelpers with CirceEq {
       }
     }
 
-    "succeed returning tar" in {
-      val prefix = "https%3A%2F%2Fdev.nexus.test.com%2Fsimplified-resource%2F"
-      deltaClient.get[ByteString](s"/archives/$fullId/test-resource:archive", Tweety, acceptAll) {
-        (byteString, response) =>
-          contentType(response) shouldEqual MediaTypes.`application/x-tar`.toContentType
-          response.status shouldEqual StatusCodes.OK
-
-          val result = fromTar(byteString)
-
-          val actualContent1 = result.entryAsJson(s"$fullId/compacted/${prefix}1%3Frev%3D1.json")
-          val actualContent2 = result.entryAsJson(s"$fullId2/compacted/${prefix}2.json")
-          val actualDigest3  = result.entryDigest("/some/other/nexus-logo.png")
-
-          filterMetadataKeys(actualContent1) should equalIgnoreArrayOrder(payloadResponse1)
-          filterMetadataKeys(actualContent2) should equalIgnoreArrayOrder(payloadResponse2)
-          actualDigest3 shouldEqual nexusLogoDigest
-      }
-    }
-
     "succeed returning zip" in {
       val prefix = "https%3A%2F%2Fdev.nexus.test.com%2Fsimplified-resource%2F"
       deltaClient.get[ByteString](s"/archives/$fullId/test-resource:archive", Tweety, acceptZip) {
@@ -300,11 +255,6 @@ class ArchiveSpec extends BaseSpec with ArchiveHelpers with CirceEq {
                            response.status shouldEqual StatusCodes.Created
                        }
         downloadLink = s"/archives/$fullId/test-resource:archive-not-found?ignoreNotFound=true"
-        _           <- deltaClient.get[ByteString](downloadLink, Tweety, acceptAll) { (byteString, response) =>
-                         contentType(response) shouldEqual MediaTypes.`application/x-tar`.toContentType
-                         response.status shouldEqual StatusCodes.OK
-                         assertContent(fromTar(byteString))
-                       }
         _           <- deltaClient.get[ByteString](downloadLink, Tweety, acceptZip) { (byteString, response) =>
                          contentType(response) shouldEqual MediaTypes.`application/zip`.toContentType
                          response.status shouldEqual StatusCodes.OK

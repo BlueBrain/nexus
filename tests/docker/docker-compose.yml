@@ -2,12 +2,18 @@ version: "3.3"
 services:
   delta:
     depends_on:
-      - keycloak
-      - elasticsearch
-      - blazegraph
-      - postgres
-      - storage-service
-      - minio
+      keycloak:
+        condition: service_started
+      elasticsearch:
+        condition: service_healthy
+      blazegraph:
+        condition: service_started
+      postgres:
+        condition: service_started
+      storage-service:
+        condition: service_started
+      minio:
+        condition: service_started
     environment:
       DELTA_PLUGINS: "/opt/docker/plugins/"
       DELTA_EXTERNAL_CONF: "/config/delta-postgres.conf"
@@ -18,8 +24,6 @@ services:
       - '-c'
       - |
         ln -s /opt/docker/plugins/disabled/project-deletion.jar /opt/docker/plugins/project-deletion.jar &&
-        /opt/docker/bin/wait-for-it.sh -s -t 0 postgres:5432 -- &&
-        /opt/docker/bin/wait-for-it.sh -s -t 0 elasticsearch:9200 -- &&
         /opt/docker/bin/delta-app -Xmx4G
     ports:
       - 8080:8080
@@ -74,7 +78,7 @@ services:
       - 9090:8080
 
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.9.1
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.10.1
     environment:
       ES_JAVA_OPTS: "-Xmx2G"
       discovery.type: "single-node"
@@ -83,10 +87,10 @@ services:
       ingest.geoip.downloader.enabled: "false"
       ELASTIC_PASSWORD: "password"
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:9200/_cluster/health" ]
-      interval: 30s
-      timeout: 20s
-      retries: 3
+      test: [ "CMD", "curl", "-f", "http://elastic:password@localhost:9200/" ]
+      interval: 1s
+      timeout: 2s
+      retries: 60
     ports:
       - 9200:9200
     deploy:

@@ -23,8 +23,8 @@ Please visit @ref:[Authentication & authorization](authentication.md) section to
 
 @@@ note { .warning title="Remote contexts" }
 
-From Delta v1.5, remote contexts are only resolved during creates and updates.
-That means that when those get updated, the resources importing them must be also updated to take them into account the new version.
+Remote contexts are only resolved during creates and updates.
+That means that when those get updated, the resources importing them must be also updated to take them into account in a new version.
 
 @@@
 
@@ -33,6 +33,19 @@ That means that when those get updated, the resources importing them must be als
 The json payload for create and update operations cannot contain keys beginning with underscore (_), as these fields are reserved for Nexus metadata
 
 @@@
+
+## Nexus metadata
+
+When using the endpoints described on this page, the responses will contain global metadata described on the
+@ref:[Nexus Metadata](../metadata.md) page. In addition, the following resource specific metadata can be present
+
+- `_project`: address of the resource's project
+- `_incoming`: address to query to obtain the @ref:[list of incoming links](#list-incoming-links)
+- `_outgoing`: address to query to obtain the @ref:[list of outgoing links](#list-outgoing-links)
+- `_constrainedBy`: `@id` of the schema used to validate the resource; the schema can only be identified uniquely
+  together with `_schemaProject`. If no schema has been used to validate the resource, it will indicate the
+  unconstrained identifier.
+- `_schemaProject`: address of the project where the `_constrainedBy` schema is found
 
 ## Indexing
 
@@ -55,6 +68,12 @@ The json payload:
 - If the `@id` value is not found on the payload, an @id will be generated as follows: `base:{UUID}`. The `base` is the 
   `prefix` defined on the resource's project (`{project_label}`).
 
+The `{schema_id}` segment allows to define an existing SHACL schema to validate the resource with:
+
+- If `_` is provided, no SHACL validation will be performed
+- If another value is provided, Nexus will attempt to resolve the schema then validate the expanded JSON-LD value generated 
+from the provided payload.
+
 **Example**
 
 Request
@@ -75,7 +94,9 @@ to specify one. The @id will be specified in the last segment of the endpoint UR
 PUT /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}
   {...}
 ```
- 
+
+The `{schema_id}` has the same behaviour as @ref:[the creation using post operation](#create-using-post).
+
 Note that if the payload contains an @id different from the `{resource_id}`, the request will fail.
 
 **Example**
@@ -103,6 +124,11 @@ PUT /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}?rev={pre
 ```
 ... where `{previous_rev}` is the last known revision number for the resource.
 
+The `{schema_id}` segment allows to define an existing SHACL schema to validate the resource with:
+
+- If `_` is provided, no SHACL validation will be performed with the latest version of its current schema
+- If another value is provided, it has to match the identifier of the current schema as changing the schema of a
+resource is not currently supported. A different revision or tag of this schema can be provided though.
 
 **Example**
 
@@ -134,24 +160,6 @@ Request
 
 Response
 :   @@snip [refreshed.json](assets/resources/updated.json)
-
-
-## Validate
-
-This operation runs validation of a resource against a schema. This would be useful to test whether resources would
-match the shape of a new schema. 
-
-```
-GET /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}/validate
-```
-
-**Example**
-
-Request
-:   @@snip [validate.sh](assets/resources/validate.sh)
-
-Response
-:   @@snip [validated.json](assets/resources/validated.json)
 
 ## Tag
 
@@ -239,6 +247,11 @@ where ...
 
 `{rev}` and `{tag}` fields cannot be simultaneously present.
 
+The `{schema_id}` segment allows to pass the resource schema:
+
+- If `_` is provided, the value is ignored
+- If another value is provided, it must match the identifier of the resource schema.
+
 **Example**
 
 Request
@@ -272,6 +285,34 @@ Request
 
 Response
 :   @@snip [fetched.json](assets/resources/payload.json)
+
+## Fetch remote contexts
+
+Returns the remote contexts that have been detected during the JSON-LD resolution for this resource.
+
+These contexts can be:
+
+* Static contexts that are statically defined in Nexus
+* Project contexts that have been registered by Nexus, in this case the entry also provides the project this context lives
+and its revision at the time the JSON-LD resolution has been performed
+
+```
+GET /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}/remote-contexts?rev={rev}&tag={tag}
+```
+where ...
+
+- `{rev}`: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.
+- `{tag}`: String - the targeted tag to be fetched. This field is optional.
+
+`{rev}` and `{tag}` fields cannot be simultaneously present.
+
+**Example**
+
+Request
+:   @@snip [fetchTags.sh](assets/resources/remote-contexts.sh)
+
+Response
+:   @@snip [tags.json](assets/remote-contexts.json)
 
 ## Fetch tags
 
