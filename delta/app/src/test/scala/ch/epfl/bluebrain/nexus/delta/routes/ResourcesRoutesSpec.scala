@@ -178,7 +178,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap {
     "fail to create a resource that does not validate against a schema" in {
       Put(
         "/v1/resources/myorg/myproject/nxv:myschema/wrong",
-        payloadWithoutId.replaceKeyWithValue("number", "wrong").toEntity
+        payloadWithoutId.toEntity
       ) ~> routes ~> check {
         response.status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual jsonContentOf("/resources/errors/invalid-resource.json")
