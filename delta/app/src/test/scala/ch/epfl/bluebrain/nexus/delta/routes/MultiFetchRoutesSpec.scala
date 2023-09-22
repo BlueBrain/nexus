@@ -16,6 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
+import io.circe.Json
 import monix.bio.UIO
 
 class MultiFetchRoutesSpec extends BaseRouteSpec {
@@ -73,33 +74,40 @@ class MultiFetchRoutesSpec extends BaseRouteSpec {
           ]
         }"""
 
+    def multiFetchQuery[T](payload: Json)(checks: => T) =
+      List(Get, Post).foreach { method =>
+        method(endpoint, payload.toEntity) ~> asAlice ~> routes ~> check { checks }
+      }
+
     "return unauthorised results for a user with no access" in {
       val entity = request(ResourceRepresentation.CompactedJsonLd).toEntity
-      Get(endpoint, entity) ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual jsonContentOf("multi-fetch/all-unauthorized.json")
+      List(Get, Post).foreach { method =>
+        method(endpoint, entity) ~> routes ~> check {
+          status shouldEqual StatusCodes.OK
+          response.asJson shouldEqual jsonContentOf("multi-fetch/all-unauthorized.json")
+        }
       }
     }
 
     "return expected results as compacted json-ld for a user with limited access" in {
-      val entity = request(ResourceRepresentation.CompactedJsonLd).toEntity
-      Get(endpoint, entity) ~> asAlice ~> routes ~> check {
+      val payload = request(ResourceRepresentation.CompactedJsonLd)
+      multiFetchQuery(payload) {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual jsonContentOf("multi-fetch/compacted-response.json")
       }
     }
 
-    "return expected results as annotated source for a user with limited access using post method" in {
-      val entity = request(ResourceRepresentation.AnnotatedSourceJson).toEntity
-      Post(endpoint, entity) ~> asAlice ~> routes ~> check {
+    "return expected results as annotated source for a user with limited access" in {
+      val payload = request(ResourceRepresentation.AnnotatedSourceJson)
+      multiFetchQuery(payload) {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual jsonContentOf("multi-fetch/annotated-source-response.json")
       }
     }
 
     "return expected results as original payloads for a user with limited access" in {
-      val entity = request(ResourceRepresentation.SourceJson).toEntity
-      Get(endpoint, entity) ~> asAlice ~> routes ~> check {
+      val payload = request(ResourceRepresentation.SourceJson)
+      multiFetchQuery(payload) {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual jsonContentOf("multi-fetch/source-response.json")
       }
