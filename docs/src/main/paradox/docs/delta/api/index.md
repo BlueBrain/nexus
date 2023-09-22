@@ -24,6 +24,7 @@
 * @ref:[Jira integration](jira.md)
 * @ref:[Events](events-api.md)
 * @ref:[Supervision](supervision-api.md)
+* @ref:[Id Resolution](id-resolution.md)
 
 @@@
 

@@ -2,7 +2,7 @@
 
 Id Resolution allows to resolve a resource by providing only a resource identifier (the `@id` value of a resource). In
 case there are multiple resources with
-the same identifier across different project, the response provides all choices for disambiguation.
+the same identifier across different projects, the response provides all choices for disambiguation.
 
 @@@ note { .tip title="Authorization notes" }
 
@@ -12,7 +12,7 @@ Please visit @ref:[Authentication & authorization](authentication.md) section to
 
 @@@
 
-## Payload
+## Resolve
 
 ```
 GET /v1/resolve/{id}
@@ -25,8 +25,8 @@ where...
 ## Example
 
 The following example shows how to perform a request and possible responses. If the provided identifier can be resolved
-uniquely, the response is identical to that of the [resource fetch operation](resources-api.md#fetch). In case there are multiple choices, the
-response is that of a [listing operation](resources-api.md#list) that filters for the resource identifier.
+uniquely, the response is identical to that of the @ref:[resource fetch operation](resources-api.md#fetch). In case there are multiple choices, the
+response is that of a @ref:[listing operation](resources-api.md#list) that filters for the resource identifier.
 
 Request
 :   @@snip [request.sh](assets/id-resolution/request.sh)
