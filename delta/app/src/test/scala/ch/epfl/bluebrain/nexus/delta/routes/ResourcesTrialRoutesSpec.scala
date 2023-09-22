@@ -146,9 +146,9 @@ class ResourcesTrialRoutesSpec extends BaseRouteSpec with ResourceInstanceFixtur
       }
     }
 
-    "generate a resource passing a new schema" in {
+    "generate a resource passing a new schema and using post" in {
       val payload = json"""{ "schema": $schemaSource, "resource": $validSource }"""
-      Get(s"/v1/trial/resources/$projectRef/", payload.toEntity) ~> asAlice ~> routes ~> check {
+      Post(s"/v1/trial/resources/$projectRef/", payload.toEntity) ~> asAlice ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
         val jsonResponse = response.asJsonObject
         jsonResponse("schema") should not be empty

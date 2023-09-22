@@ -89,9 +89,9 @@ class MultiFetchRoutesSpec extends BaseRouteSpec {
       }
     }
 
-    "return expected results as annotated source for a user with limited access" in {
+    "return expected results as annotated source for a user with limited access using post method" in {
       val entity = request(ResourceRepresentation.AnnotatedSourceJson).toEntity
-      Get(endpoint, entity) ~> asAlice ~> routes ~> check {
+      Post(endpoint, entity) ~> asAlice ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual jsonContentOf("multi-fetch/annotated-source-response.json")
       }

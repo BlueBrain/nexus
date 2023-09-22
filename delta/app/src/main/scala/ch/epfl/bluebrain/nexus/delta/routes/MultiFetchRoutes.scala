@@ -38,7 +38,7 @@ class MultiFetchRoutes(
       pathPrefix("multi-fetch") {
         pathPrefix("resources") {
           extractCaller { implicit caller =>
-            (get & entity(as[MultiFetchRequest])) { request =>
+            ((get | post) & entity(as[MultiFetchRequest])) { request =>
               implicit val printer: Printer = selectPrinter(request)
               emit(multiFetch(request).flatMap(_.asJson))
             }

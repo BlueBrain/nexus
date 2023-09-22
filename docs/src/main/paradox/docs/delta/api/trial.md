@@ -19,7 +19,7 @@ It applies the same validation steps than the creation/update of resources, the 
 that nothing is persisted.
 
 ```
-GET /v1/trial/resources/{org_label}/{project_label}
+GET|POST /v1/trial/resources/{org_label}/{project_label}
 
 {
   "schema": {schema},
