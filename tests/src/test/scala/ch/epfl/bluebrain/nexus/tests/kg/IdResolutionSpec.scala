@@ -101,14 +101,10 @@ class IdResolutionSpec extends BaseSpec {
     }
 
     "redirect to fusion resource page if text/html accept header is present (single result)" in {
-      val expectedRedirectUrl =
-        s"https://bbp.epfl.ch/nexus/web/$ref11/resources/$encodedUniqueId".replace("%3A", ":")
-
       deltaClient.get[String](s"/resolve/$encodedUniqueId", Bob, acceptTextHtml) { (_, response) =>
         response.status shouldEqual StatusCodes.SeeOther
-        locationHeaderOf(response) shouldEqual expectedRedirectUrl
+        locationHeaderOf(response) shouldEqual fusionResourcePageFor(encodedUniqueId)
       }(PredefinedFromEntityUnmarshallers.stringUnmarshaller)
-
     }
 
     "redirect to fusion resource selection page if text/html accept header is present (multiple result)" in { pending }
@@ -119,4 +115,7 @@ class IdResolutionSpec extends BaseSpec {
     response.header[Location].value.uri.toString()
   private def acceptTextHtml                           =
     List(Accept(MediaRange.One(`text/html`, 1f)))
+  private def fusionResourcePageFor(encodedId: String) =
+    s"https://bbp.epfl.ch/nexus/web/$ref11/resources/$encodedId".replace("%3A", ":")
+
 }
