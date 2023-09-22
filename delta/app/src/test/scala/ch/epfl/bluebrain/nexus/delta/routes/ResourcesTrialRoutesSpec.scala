@@ -129,7 +129,7 @@ class ResourcesTrialRoutesSpec extends BaseRouteSpec with ResourceInstanceFixtur
 
     "fail to generate a resource for a user without access" in {
       val payload = json"""{ "resource": $validSource }"""
-      Get(s"/v1/trial/resources/$projectRef/", payload.toEntity) ~> routes ~> check {
+      Post(s"/v1/trial/resources/$projectRef/", payload.toEntity) ~> routes ~> check {
         response.status shouldEqual StatusCodes.Forbidden
         response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
       }
@@ -137,7 +137,7 @@ class ResourcesTrialRoutesSpec extends BaseRouteSpec with ResourceInstanceFixtur
 
     "generate a resource without passing a schema" in {
       val payload = json"""{ "resource": $validSource }"""
-      Get(s"/v1/trial/resources/$projectRef/", payload.toEntity) ~> asAlice ~> routes ~> check {
+      Post(s"/v1/trial/resources/$projectRef/", payload.toEntity) ~> asAlice ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
         val jsonResponse = response.asJsonObject
         jsonResponse("schema") shouldBe empty
@@ -159,7 +159,7 @@ class ResourcesTrialRoutesSpec extends BaseRouteSpec with ResourceInstanceFixtur
 
     "fails to generate a resource when passing an invalid new schema" in {
       val payload = json"""{ "schema": { "invalid":  "xxx" }, "resource": $validSource }"""
-      Get(s"/v1/trial/resources/$projectRef/", payload.toEntity) ~> asAlice ~> routes ~> check {
+      Post(s"/v1/trial/resources/$projectRef/", payload.toEntity) ~> asAlice ~> routes ~> check {
         response.status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual
           json"""{
@@ -174,7 +174,7 @@ class ResourcesTrialRoutesSpec extends BaseRouteSpec with ResourceInstanceFixtur
 
     "fails to generate a resource when the resource payload is invalid and without passing a schema" in {
       val payload = json"""{ "resource": $invalidSource }"""
-      Get(s"/v1/trial/resources/$projectRef/", payload.toEntity) ~> asAlice ~> routes ~> check {
+      Post(s"/v1/trial/resources/$projectRef/", payload.toEntity) ~> asAlice ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
         response.asJson shouldEqual
           json"""
@@ -190,7 +190,7 @@ class ResourcesTrialRoutesSpec extends BaseRouteSpec with ResourceInstanceFixtur
 
     "fail to generate a resource passing a new schema" in {
       val payload = json"""{ "schema": $schemaSource, "resource": $invalidSource }"""
-      Get(s"/v1/trial/resources/$projectRef/", payload.toEntity) ~> asAlice ~> routes ~> check {
+      Post(s"/v1/trial/resources/$projectRef/", payload.toEntity) ~> asAlice ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
         val jsonResponse = response.asJsonObject
         jsonResponse("schema") should not be empty
