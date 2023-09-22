@@ -43,15 +43,15 @@ class ResourcesTrialSpec extends BaseSpec with CirceEq {
     def schema    = root.schema.`@id`.string.getOption(_)
 
     "fail for a user without access" in {
-      deltaClient.getWithBody[Json](s"/trial/resources/$ref/", payloadWithoutSchema, Alice)(expectForbidden)
+      deltaClient.post[Json](s"/trial/resources/$ref/", payloadWithoutSchema, Alice)(expectForbidden)
     }
 
     "fail for an unknown project" in {
-      deltaClient.getWithBody[Json](s"/trial/resources/$org/xxx/", payloadWithoutSchema, Alice)(expectForbidden)
+      deltaClient.post[Json](s"/trial/resources/$org/xxx/", payloadWithoutSchema, Alice)(expectForbidden)
     }
 
     "succeed for a payload without schema" in {
-      deltaClient.getWithBody[Json](s"/trial/resources/$ref/", payloadWithoutSchema, Bob) { (json, response) =>
+      deltaClient.post[Json](s"/trial/resources/$ref/", payloadWithoutSchema, Bob) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
         resultId(json).value shouldEqual resourceId
         schema(json) shouldBe empty
@@ -60,7 +60,7 @@ class ResourcesTrialSpec extends BaseSpec with CirceEq {
     }
 
     "succeed for a payload with an existing schema" in {
-      deltaClient.getWithBody[Json](s"/trial/resources/$ref/", payloadWithExistingSchema, Bob) { (json, response) =>
+      deltaClient.post[Json](s"/trial/resources/$ref/", payloadWithExistingSchema, Bob) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
         resultId(json).value shouldEqual resourceId
         schema(json) shouldBe empty
@@ -69,7 +69,7 @@ class ResourcesTrialSpec extends BaseSpec with CirceEq {
     }
 
     "succeed for a payload with a new schema" in {
-      deltaClient.getWithBody[Json](s"/trial/resources/$ref/", payloadWithNewSchema, Bob) { (json, response) =>
+      deltaClient.post[Json](s"/trial/resources/$ref/", payloadWithNewSchema, Bob) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
         resultId(json).value shouldEqual resourceId
         schema(json).value shouldBe newSchemaId
@@ -79,7 +79,7 @@ class ResourcesTrialSpec extends BaseSpec with CirceEq {
 
     "fail for a resource with an invalid context without generating any schema" in {
       val payload = json"""{  "resource": { "@context": [ "https://bbp.epfl.ch/unknown-context" ], "test": "fail" } }"""
-      deltaClient.getWithBody[Json](s"/trial/resources/$ref/", payload, Bob) { (json, response) =>
+      deltaClient.post[Json](s"/trial/resources/$ref/", payload, Bob) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
         resultId(json) shouldBe empty
         schema(json) shouldBe empty
@@ -90,7 +90,7 @@ class ResourcesTrialSpec extends BaseSpec with CirceEq {
     "fail for a resource with an invalid context but also returning the generated schema" in {
       val resourcePayload = json"""{ "@context": [ "https://bbp.epfl.ch/unknown-context" ], "test": "fail" }"""
       val payload         = json"""{  "schema": $newSchemaPayload, "resource": $resourcePayload }"""
-      deltaClient.getWithBody[Json](s"/trial/resources/$ref/", payload, Bob) { (json, response) =>
+      deltaClient.post[Json](s"/trial/resources/$ref/", payload, Bob) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
         resultId(json) shouldBe empty
         schema(json).value shouldBe newSchemaId
@@ -101,7 +101,7 @@ class ResourcesTrialSpec extends BaseSpec with CirceEq {
     "fail for a resource when shacl validation fails returning the generated " in {
       val resourcePayload = SimpleResource.sourcePayloadWithType("nxv:UnexpectedType", 99)
       val payload         = json"""{ "schema": $newSchemaPayload ,"resource": $resourcePayload }"""
-      deltaClient.getWithBody[Json](s"/trial/resources/$ref/", payload, Bob) { (json, response) =>
+      deltaClient.post[Json](s"/trial/resources/$ref/", payload, Bob) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
         resultId(json) shouldBe empty
         schema(json).value shouldBe newSchemaId

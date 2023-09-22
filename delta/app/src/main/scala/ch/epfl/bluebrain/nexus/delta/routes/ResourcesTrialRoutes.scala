@@ -76,7 +76,7 @@ final class ResourcesTrialRoutes(
     }
 
   private def generateRoute: Route =
-    (get & pathPrefix("trial") & pathPrefix("resources")) {
+    (pathPrefix("trial") & pathPrefix("resources") & post) {
       extractCaller { implicit caller =>
         (resolveProjectRef & pathEndOrSingleSlash) { project =>
           authorizeFor(project, Write).apply {
@@ -100,7 +100,6 @@ final class ResourcesTrialRoutes(
           }
         )
     }
-
 }
 
 object ResourcesTrialRoutes {
