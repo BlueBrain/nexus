@@ -96,7 +96,7 @@ class IdResolutionSpec extends BaseSpec {
       val expectedRedirectUrl =
         s"https://bbp.epfl.ch/nexus/web/$ref11/resources/${UrlUtils.encode(uniqueId)}".replace("%3A", ":")
 
-      deltaClient.get[String](s"/resolve/${UrlUtils.encode(uniqueId)}", Bob, acceptTextHtml) { (_, response) =>
+      deltaClient.get[String](s"/resolve/${UrlUtils.encode(uniqueId + "s")}", Bob, acceptTextHtml) { (_, response) =>
         response.status shouldEqual StatusCodes.SeeOther
         locationHeaderOf(response) shouldEqual expectedRedirectUrl
       }(PredefinedFromEntityUnmarshallers.stringUnmarshaller)
