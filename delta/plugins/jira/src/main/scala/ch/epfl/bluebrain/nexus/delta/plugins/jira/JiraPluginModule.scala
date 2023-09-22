@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.jira
 import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.plugins.jira.config.JiraConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.jira.routes.JiraRoutes
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
@@ -21,7 +22,7 @@ class JiraPluginModule(priority: Int) extends ModuleDef {
   make[JiraConfig].from { JiraConfig.load(_) }
 
   make[JiraClient].fromEffect { (xas: Transactors, jiraConfig: JiraConfig, clock: Clock[IO]) =>
-    JiraClient(TokenStore(xas)(clock), jiraConfig)
+    JiraClient(TokenStore(xas)(clock), jiraConfig).toUIO
   }
 
   make[JiraRoutes].from {
