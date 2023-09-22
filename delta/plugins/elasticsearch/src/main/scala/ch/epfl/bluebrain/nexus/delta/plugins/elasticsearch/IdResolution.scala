@@ -1,11 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination
+import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.IdResolutionResponse._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.DefaultSearchRequest.RootSearch
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.DefaultViewsQuery
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.ElasticSearchQueryError.AuthorizationFailed
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.{DefaultViewsQuery, ElasticSearchQueryError}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
@@ -46,15 +47,15 @@ class IdResolution(
     */
   def resolve(
       iri: Iri
-  )(implicit caller: Caller): UIO[Result] = {
+  )(implicit caller: Caller): IO[ElasticSearchQueryError, Result] = {
     val locate  = ResourcesSearchParams(id = Some(iri))
-    val request = RootSearch(locate, Pagination.OnePage, SortList.empty)
+    val request = RootSearch(locate, FromPagination(0, 10000), SortList.empty)
 
     defaultViewsQuery
       .list(request)
       .flatMap { searchResults =>
         searchResults.results match {
-          case Nil         => UIO.pure(AuthorizationFailed(ResourceRef(iri)))
+          case Nil         => IO.raiseError(AuthorizationFailed)
           case Seq(result) =>
             projectRefFromSource(result.source)
               .traverse { projectRef =>
@@ -68,7 +69,6 @@ class IdResolution(
           case _           => UIO.pure(MultipleResults(searchResults))
         }
       }
-      .onErrorHandle(e => ElasticSearchQueryError(e.reason))
   }
 
   private def projectRefFromSource(source: JsonObject) =
@@ -94,12 +94,6 @@ object IdResolutionResponse {
   sealed trait Error extends Result {
     def reason: String
   }
-
-  final case class AuthorizationFailed(id: ResourceRef) extends Error {
-    override def reason: String = "The supplied authentication is not authorized to access this resource."
-  }
-
-  final case class ElasticSearchQueryError(reason: String) extends Error
 
   final case object UnexpectedError extends Error {
     override def reason: String = s"An unexpected error occurred"
@@ -127,9 +121,12 @@ object IdResolutionResponse {
   implicit def resultJsonLdEncoder: JsonLdEncoder[Result] =
     new JsonLdEncoder[Result] {
 
+      // helps with type inference
+      private def encoder[A](value: JsonLdContent[A, _]): JsonLdEncoder[A] = value.encoder
+
       override def context(value: Result): ContextValue = value match {
         case error: Error                   => errorJsonLdEncoder.context(error)
-        case SingleResult(_, _, content)    => content.encoder.context(content)
+        case SingleResult(_, _, content)    => encoder(content).context(content.resource.value)
         case MultipleResults(searchResults) => searchJsonLdEncoder.context(searchResults)
       }
 
@@ -138,7 +135,7 @@ object IdResolutionResponse {
       )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, ExpandedJsonLd] =
         value match {
           case error: Error                   => errorJsonLdEncoder.expand(error)
-          case SingleResult(_, _, content)    => content.encoder.expand(content)
+          case SingleResult(_, _, content)    => encoder(content).expand(content.resource.value)
           case MultipleResults(searchResults) => searchJsonLdEncoder.expand(searchResults)
         }
 
@@ -147,7 +144,7 @@ object IdResolutionResponse {
       )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, CompactedJsonLd] =
         value match {
           case error: Error                   => errorJsonLdEncoder.compact(error)
-          case SingleResult(_, _, content)    => content.encoder.compact(content)
+          case SingleResult(_, _, content)    => encoder(content).compact(content.resource.value)
           case MultipleResults(searchResults) => searchJsonLdEncoder.compact(searchResults)
         }
     }

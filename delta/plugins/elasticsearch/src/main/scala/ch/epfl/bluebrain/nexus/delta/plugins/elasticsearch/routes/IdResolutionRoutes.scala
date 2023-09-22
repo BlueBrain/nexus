@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
 
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.IdResolution
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{IdResolution, IdResolutionResponse}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
@@ -27,11 +27,25 @@ class IdResolutionRoutes(
 
   def routes: Route =
     baseUriPrefix(baseUri.prefix) {
-      extractCaller { implicit caller =>
-        (get & pathPrefix("resolve")) {
-          (iriSegment & pathEndOrSingleSlash) { iri =>
-            println(fusionConfig)
-            emit(idResolution.resolve(iri))
+      pathPrefix("resolve") {
+        extractCaller { implicit caller =>
+          (get & iriSegment & pathEndOrSingleSlash) { iri =>
+            val resolved = idResolution.resolve(iri)
+
+            val r          = resolved.mapError(_ => new Exception("Error")).hideErrors
+            val fusionUris = r.flatMap {
+              case _: IdResolutionResponse.Error                     =>
+                fusionErrorUri
+              case IdResolutionResponse.SingleResult(id, project, _) =>
+                fusionResourceUri(project, id.iri)
+              case IdResolutionResponse.MultipleResults(_)           =>
+                fusionErrorUri
+            }.hideErrors
+
+            emitOrFusionRedirect(
+              fusionUris,
+              emit(resolved)
+            )
           }
         }
       }

@@ -71,7 +71,7 @@ class IdResolutionSuite extends BioSuite with Fixtures {
     val noListingResults = defaultViewsQuery(searchResults(Seq.empty))
     new IdResolution(noListingResults, fetchResource)
       .resolve(iri)(alice)
-      .assert(AuthorizationFailed(ResourceRef(iri)))
+      .assert(AuthorizationFailed(iri))
   }
 
   test("Single listing result leads to the resource being fetched") {

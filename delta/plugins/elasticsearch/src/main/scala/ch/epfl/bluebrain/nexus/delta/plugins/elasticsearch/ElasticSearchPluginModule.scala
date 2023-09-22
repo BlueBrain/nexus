@@ -349,7 +349,6 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         es: ElasticSearchViewsRoutes,
         query: ElasticSearchQueryRoutes,
         indexing: ElasticSearchIndexingRoutes,
-        idResolutionRoute: IdResolutionRoutes,
         schemeDirectives: DeltaSchemeDirectives,
         baseUri: BaseUri
     ) =>
@@ -359,9 +358,19 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
           schemeDirectives,
           es.routes,
           query.routes,
-          indexing.routes,
-          idResolutionRoute.routes
+          indexing.routes
         )(baseUri),
+        requiresStrictEntity = true
+      )
+  }
+
+  many[PriorityRoute].add {
+    (
+      idResolutionRoute: IdResolutionRoutes
+    ) =>
+      PriorityRoute(
+        priority,
+        idResolutionRoute.routes,
         requiresStrictEntity = true
       )
   }
