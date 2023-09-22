@@ -18,7 +18,7 @@ class IdResolutionSpec extends BaseSpec {
   private val ref11  = s"$org1/$proj11"
   private val ref12  = s"$org1/$proj12"
 
-  private def resource(id: String) =
+  private def resource(id: String)  =
     json"""
       {
         "@context": {
@@ -28,10 +28,12 @@ class IdResolutionSpec extends BaseSpec {
         "field": "value"
       }
         """
-  private val uniqueId             = "https://bbp.epfl.ch/neuron"
-  private val reusedId             = "https://bbp.epfl.ch/synapse"
-  private val resourcePayload1     = resource(uniqueId)
-  private val resourcePayload2     = resource(reusedId)
+  private val uniqueId              = "https://bbp.epfl.ch/neuron"
+  private val encodedUniqueId       = UrlUtils.encode(uniqueId)
+  private val reusedId              = "https://bbp.epfl.ch/synapse"
+  private val encodedReusedId       = UrlUtils.encode(reusedId)
+  private val uniqueResourcePayload = resource(uniqueId)
+  private val reusedResourcePayload = resource(reusedId)
 
   private val unauthorizedAccessErrorPayload =
     jsonContentOf("iam/errors/unauthorized-access.json")
@@ -47,19 +49,18 @@ class IdResolutionSpec extends BaseSpec {
     } yield ()
 
     val createResources = for {
-      _ <- deltaClient.post[Json](s"/resources/$ref11/_/", resourcePayload1, Bob)(expectCreated)
-      _ <- deltaClient.post[Json](s"/resources/$ref11/_/", resourcePayload2, Bob)(expectCreated)
-      _ <- deltaClient.post[Json](s"/resources/$ref12/_/", resourcePayload2, Bob)(expectCreated)
+      _ <- deltaClient.post[Json](s"/resources/$ref11/_/", uniqueResourcePayload, Bob)(expectCreated)
+      _ <- deltaClient.post[Json](s"/resources/$ref11/_/", reusedResourcePayload, Bob)(expectCreated)
+      _ <- deltaClient.post[Json](s"/resources/$ref12/_/", reusedResourcePayload, Bob)(expectCreated)
     } yield ()
 
     (setup >> createResources).accepted
   }
 
   "Id resolution" should {
-    val iri = UrlUtils.encode("https://bluebrain.github.io/nexus/vocabulary/resource")
 
     "lead to an authorization failure for a user without permission" in {
-      deltaClient.get[Json](s"/resolve/$iri", Alice) { (json, response) =>
+      deltaClient.get[Json](s"/resolve/$encodedUniqueId", Alice) { (json, response) =>
         response.status shouldEqual StatusCodes.Forbidden
         json shouldEqual unauthorizedAccessErrorPayload
       }
@@ -74,16 +75,16 @@ class IdResolutionSpec extends BaseSpec {
 
     "resolve a single resource" in {
       eventually {
-        deltaClient.get[Json](s"/resolve/${UrlUtils.encode(uniqueId)}", Bob) { (json, response) =>
+        deltaClient.get[Json](s"/resolve/$encodedUniqueId", Bob) { (json, response) =>
           response.status shouldEqual StatusCodes.OK
-          json shouldEqual resourcePayload1
+          json shouldEqual uniqueResourcePayload
         }
       }
     }
 
     "return search results if the same id exists across several projects" in {
       eventually {
-        deltaClient.get[Json](s"/resolve/${UrlUtils.encode(reusedId)}", Bob) { (json, response) =>
+        deltaClient.get[Json](s"/resolve/$encodedReusedId", Bob) { (json, response) =>
           response.status shouldEqual StatusCodes.OK
           json.hcursor.get[Int]("_total") shouldEqual Right(2)
         }
@@ -101,9 +102,9 @@ class IdResolutionSpec extends BaseSpec {
 
     "redirect to fusion resource page if text/html accept header is present (single result)" in {
       val expectedRedirectUrl =
-        s"https://bbp.epfl.ch/nexus/web/$ref11/resources/${UrlUtils.encode(uniqueId)}".replace("%3A", ":")
+        s"https://bbp.epfl.ch/nexus/web/$ref11/resources/$encodedUniqueId".replace("%3A", ":")
 
-      deltaClient.get[String](s"/resolve/${UrlUtils.encode(uniqueId)}", Bob, acceptTextHtml) { (_, response) =>
+      deltaClient.get[String](s"/resolve/$encodedUniqueId", Bob, acceptTextHtml) { (_, response) =>
         response.status shouldEqual StatusCodes.SeeOther
         locationHeaderOf(response) shouldEqual expectedRedirectUrl
       }(PredefinedFromEntityUnmarshallers.stringUnmarshaller)
