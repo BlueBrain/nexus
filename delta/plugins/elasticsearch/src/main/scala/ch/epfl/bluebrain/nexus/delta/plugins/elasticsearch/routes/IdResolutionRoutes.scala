@@ -34,8 +34,6 @@ class IdResolutionRoutes(
 
             val r          = resolved.mapError(_ => new Exception("Error")).hideErrors
             val fusionUris = r.flatMap {
-              case _: IdResolutionResponse.Error                     =>
-                fusionErrorUri
               case IdResolutionResponse.SingleResult(id, project, _) =>
                 fusionResourceUri(project, id.iri)
               case IdResolutionResponse.MultipleResults(_)           =>

@@ -1,8 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.IdResolutionResponse.{AuthorizationFailed, MultipleResults, SingleResult}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.IdResolutionResponse.{MultipleResults, SingleResult}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.IdResolutionSuite.searchResults
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultViewId, permissions}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.ElasticSearchQueryError.AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.{DefaultSearchRequest, DefaultViewsQuery}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
@@ -71,7 +72,7 @@ class IdResolutionSuite extends BioSuite with Fixtures {
     val noListingResults = defaultViewsQuery(searchResults(Seq.empty))
     new IdResolution(noListingResults, fetchResource)
       .resolve(iri)(alice)
-      .assert(AuthorizationFailed(iri))
+      .assertError(_ == AuthorizationFailed)
   }
 
   test("Single listing result leads to the resource being fetched") {

@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.IdResolutionResponse._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams
@@ -19,8 +18,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{SearchResults, SortList}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
-import io.circe.{Encoder, Json, JsonObject}
+import io.circe.JsonObject
 import monix.bio.{IO, UIO}
+
+import java.rmi.UnexpectedException
 
 /**
   * @param defaultViewsQuery
@@ -51,30 +52,37 @@ class IdResolution(
     val locate  = ResourcesSearchParams(id = Some(iri))
     val request = RootSearch(locate, FromPagination(0, 10000), SortList.empty)
 
+    def fetchSingleResult: ProjectRef => UIO[Result] = { projectRef =>
+      val resourceRef = ResourceRef(iri)
+      fetchResource(resourceRef, projectRef)
+        .map {
+          _.map(SingleResult(resourceRef, projectRef, _))
+        }
+        .flatMap {
+          case Some(value) => IO.pure(value)
+          case None        => IO.terminate(new UnexpectedException("Resource found in ES payload but could not be fetched."))
+        }
+    }
+
     defaultViewsQuery
       .list(request)
       .flatMap { searchResults =>
         searchResults.results match {
           case Nil         => IO.raiseError(AuthorizationFailed)
-          case Seq(result) =>
-            projectRefFromSource(result.source)
-              .traverse { projectRef =>
-                val resourceRef = ResourceRef(iri)
-                fetchResource(resourceRef, projectRef).map {
-                  _.map(SingleResult(resourceRef, projectRef, _))
-                    .getOrElse(UnexpectedError)
-                }
-              }
-              .map(_.getOrElse(UnexpectedError))
+          case Seq(result) => projectRefFromSource(result.source).flatMap(fetchSingleResult)
           case _           => UIO.pure(MultipleResults(searchResults))
         }
       }
   }
 
+  /** Extract the _project field of a given [[JsonObject]] as projectRef */
   private def projectRefFromSource(source: JsonObject) =
     source("_project")
       .flatMap(_.as[Iri].toOption)
-      .flatMap(projectRefFromIri)
+      .flatMap(projectRefFromIri) match {
+      case Some(projectRef) => UIO.pure(projectRef)
+      case None             => UIO.terminate(new UnexpectedException("Could not read '_project' field as IRI."))
+    }
 
   private val projectRefRegex =
     s"^.+/projects/(${Label.regex.regex})/(${Label.regex.regex})".r
@@ -91,29 +99,9 @@ class IdResolution(
 object IdResolutionResponse {
   sealed trait Result
 
-  sealed trait Error extends Result {
-    def reason: String
-  }
-
-  final case object UnexpectedError extends Error {
-    override def reason: String = s"An unexpected error occurred"
-  }
-
   final case class SingleResult[A](id: ResourceRef, project: ProjectRef, content: JsonLdContent[A, _]) extends Result
 
   case class MultipleResults(searchResults: SearchResults[JsonObject]) extends Result
-
-  implicit private val errorEncoder: Encoder.AsObject[Error] =
-    Encoder.AsObject.instance[Error] { r =>
-      JsonObject(
-        "@type"  -> Json.fromString(r.getClass.getSimpleName),
-        "reason" -> Json.fromString(r.reason)
-      )
-    }
-
-  private val errorJsonLdEncoder: JsonLdEncoder[Error] = {
-    JsonLdEncoder.computeFromCirce(ContextValue(contexts.error))
-  }
 
   private val searchJsonLdEncoder: JsonLdEncoder[SearchResults[JsonObject]] =
     searchResultsJsonLdEncoder(ContextValue(contexts.metadata))
@@ -125,7 +113,6 @@ object IdResolutionResponse {
       private def encoder[A](value: JsonLdContent[A, _]): JsonLdEncoder[A] = value.encoder
 
       override def context(value: Result): ContextValue = value match {
-        case error: Error                   => errorJsonLdEncoder.context(error)
         case SingleResult(_, _, content)    => encoder(content).context(content.resource.value)
         case MultipleResults(searchResults) => searchJsonLdEncoder.context(searchResults)
       }
@@ -134,7 +121,6 @@ object IdResolutionResponse {
           value: Result
       )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, ExpandedJsonLd] =
         value match {
-          case error: Error                   => errorJsonLdEncoder.expand(error)
           case SingleResult(_, _, content)    => encoder(content).expand(content.resource.value)
           case MultipleResults(searchResults) => searchJsonLdEncoder.expand(searchResults)
         }
@@ -143,7 +129,6 @@ object IdResolutionResponse {
           value: Result
       )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, CompactedJsonLd] =
         value match {
-          case error: Error                   => errorJsonLdEncoder.compact(error)
           case SingleResult(_, _, content)    => encoder(content).compact(content.resource.value)
           case MultipleResults(searchResults) => searchJsonLdEncoder.compact(searchResults)
         }
