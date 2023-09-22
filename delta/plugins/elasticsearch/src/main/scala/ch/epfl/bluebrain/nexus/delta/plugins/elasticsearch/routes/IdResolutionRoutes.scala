@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
 import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.IdResolutionResponse.{MultipleResults, SingleResult}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.ElasticSearchQueryError
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{IdResolution, IdResolutionResponse}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
@@ -49,9 +50,9 @@ class IdResolutionRoutes(
   ): UIO[Uri] =
     resolved
       .flatMap {
-        case IdResolutionResponse.SingleResult(id, project, _) => fusionResourceUri(project, id.iri)
-        case IdResolutionResponse.MultipleResults(_)           => fusionErrorUri
+        case SingleResult(id, project, _) => fusionResourceUri(project, id.iri)
+        case MultipleResults(_)           => fusionLoginUri
       }
-      .onErrorHandleWith { _ => fusionErrorUri }
+      .onErrorHandleWith { _ => fusionLoginUri }
 
 }

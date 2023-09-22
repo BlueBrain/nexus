@@ -90,13 +90,20 @@ class IdResolutionSpec extends BaseSpec {
       }
     }
 
-    "redirect to fusion error when if text/html accept header is present (no results)" in { pending }
+    "redirect to fusion login when if text/html accept header is present (no results)" in {
+      val expectedRedirectUrl = "https://bbp.epfl.ch/nexus/web/login"
+
+      deltaClient.get[String]("/resolve/unknownId", Bob, acceptTextHtml) { (_, response) =>
+        response.status shouldEqual StatusCodes.SeeOther
+        locationHeaderOf(response) shouldEqual expectedRedirectUrl
+      }(PredefinedFromEntityUnmarshallers.stringUnmarshaller)
+    }
 
     "redirect to fusion resource page if text/html accept header is present (single result)" in {
       val expectedRedirectUrl =
         s"https://bbp.epfl.ch/nexus/web/$ref11/resources/${UrlUtils.encode(uniqueId)}".replace("%3A", ":")
 
-      deltaClient.get[String](s"/resolve/${UrlUtils.encode(uniqueId + "s")}", Bob, acceptTextHtml) { (_, response) =>
+      deltaClient.get[String](s"/resolve/${UrlUtils.encode(uniqueId)}", Bob, acceptTextHtml) { (_, response) =>
         response.status shouldEqual StatusCodes.SeeOther
         locationHeaderOf(response) shouldEqual expectedRedirectUrl
       }(PredefinedFromEntityUnmarshallers.stringUnmarshaller)

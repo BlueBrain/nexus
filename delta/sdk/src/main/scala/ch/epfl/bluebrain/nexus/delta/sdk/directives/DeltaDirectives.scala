@@ -164,6 +164,7 @@ trait DeltaDirectives extends UriDirectives {
       case None        => provide(Offset.Start)
     }
 
+  /** The URI of a resource in fusion (given a project & id pair) */
   def fusionResourceUri(projectRef: ProjectRef, id: IdSegmentRef)(implicit config: FusionConfig): UIO[Uri] =
     UIO.pure {
       val resourceBase =
@@ -175,6 +176,7 @@ trait DeltaDirectives extends UriDirectives {
       }
     }
 
-  def fusionErrorUri(implicit config: FusionConfig): UIO[Uri] =
-    UIO.pure { config.base / "error" }
+  /** The URI of fusion's main login page */
+  def fusionLoginUri(implicit config: FusionConfig): UIO[Uri] =
+    UIO.pure { config.base / "login" }
 }
