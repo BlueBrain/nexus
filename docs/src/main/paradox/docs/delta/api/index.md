@@ -14,6 +14,7 @@
 * @ref:[Schemas](schemas-api.md)
 * @ref:[Resources](resources-api.md)
 * @ref:[Multi-fetch](multi-fetch.md)
+* @ref:[Id Resolution](id-resolution.md)
 * @ref:[Resolvers](resolvers-api.md)
 * @ref:[Views](views/index.md)
 * @ref:[Storages](storages-api.md)
@@ -24,7 +25,6 @@
 * @ref:[Jira integration](jira.md)
 * @ref:[Events](events-api.md)
 * @ref:[Supervision](supervision-api.md)
-* @ref:[Id Resolution](id-resolution.md)
 
 @@@
 
