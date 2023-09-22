@@ -69,12 +69,6 @@ This feature can be turned on via the flag `app.automatic-provisioning.enabled`.
 
 @link:[The `automatic-provisioning` section](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/app.conf#L197){ open=new } of the configuration defines the project provisioning configuration.
 
-## Encryption configuration
-
-Nexus Delta uses symmetric encryption to secure sensitive data information (tokens and passwords).
-
-@link:[The `encryption` section](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/app.conf#L276){ open=new } of the configuration defines the encryption configuration.
-
 ## Fusion configuration
 
 When fetching a resource, Nexus Delta allows to return a redirection to its representation in Fusion by providing `text/html` in the `Accept` header.
@@ -121,6 +115,8 @@ The composite views plugin configuration can be found @link:[here](https://githu
 
 There are several configuration flags related to tweaking the range of values allowed for sources, projections and rebuild interval.
 
+Authentication for remote sources can be specified in three different ways. The value of `plugins.composite-views.remote-source-credentials` should be speficied in the same way as remote storages, as shown @ref:[here](#remote-storage-configuration)
+
 ### Storage plugin configuration
 
 The storage plugin configuration can be found @link:[here](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/plugins/storage/src/main/resources/storage.conf){ open=new }. 
@@ -129,7 +125,36 @@ Nexus Delta supports 3 types of storages: 'disk', 'amazon' (s3 compatible) and '
 
 - For disk storages the most relevant configuration flag is `plugins.storage.storages.disk.default-volume`, which defines the default location in the Nexus Delta filesystem where the files using that storage are going to be saved.
 - For S3 compatible storages the most relevant configuration flags are the ones related to the S3 settings: `plugins.storage.storages.amazon.default-endpoint`, `plugins.storage.storages.amazon.default-access-key` and `plugins.storage.storages.amazon.default-secret-key`.
-- For remote disk storages the most relevant configuration flags are `plugins.storage.storages.remote-disk.default-endpoint` (the endpoint where the remote storage service is running) and `plugins.storage.storages.remote-disk.default-credentials` (the Bearer token to authenticate to the remote storage service).
+- For remote disk storages the most relevant configuration flags are `plugins.storage.storages.remote-disk.default-endpoint` (the endpoint where the remote storage service is running) and `plugins.storage.storages.remote-disk.credentials` (the method to authenticate to the remote storage service).
+
+#### Remote storage configuration
+
+Authentication for remote storage can be specified in three different ways. The value of `plugins.storage.storages.remote-disk.credentials` can be:
+
+##### Recommended: client credentials (OpenId authentication)
+```hocon
+{
+  type: "client-credentials"
+  user: "username"
+  password: "password"
+  realm: "internal"
+}
+```
+This configuration tells Delta to log into the `internal` realm (which should have already been defined) with the `user` and `password` credentials, which will give Delta an access token to use when making requests to remote storage
+
+##### Anonymous
+```hocon
+{
+  type: "anonymous"
+}
+```
+##### Long-living auth token (legacy)
+```hocon
+{
+  type: "jwt-token"
+  token: "long-living-auth-token"
+}
+```
 
 ### Archive plugin configuration
 

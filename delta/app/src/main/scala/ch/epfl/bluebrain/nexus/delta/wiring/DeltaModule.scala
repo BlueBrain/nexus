@@ -20,7 +20,6 @@ import ch.epfl.bluebrain.nexus.delta.routes.ErrorRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction.AggregateIndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.Acls
-import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.http.StrictEntity
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
@@ -61,7 +60,6 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
   make[BaseUri].from { appCfg.http.baseUri }
   make[StrictEntity].from { appCfg.http.strictEntityTimeout }
   make[ServiceAccount].from { appCfg.serviceAccount.value }
-  make[Crypto].from { appCfg.encryption.crypto }
 
   make[Transactors].fromResource {
     Transactors.init(appCfg.database)

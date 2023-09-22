@@ -11,12 +11,12 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.RouteResult
 import akka.stream.scaladsl.Source
 import akka.testkit.TestKit
-import ch.epfl.bluebrain.nexus.delta.kernel.Secret
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.{AccessToken, RemoteProjectSource}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.RemoteProjectSource
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.CompositeBranch
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.NQuads
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
+import ch.epfl.bluebrain.nexus.delta.sdk.auth.{AuthTokenProvider, Credentials}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.QueryParamsUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectStatistics
@@ -141,7 +141,8 @@ class DeltaClientSpec
   }
 
   implicit private val httpCfg: HttpClientConfig = httpClientConfig
-  private val deltaClient                        = DeltaClient(HttpClient(), 1.second)
+  private val deltaClient                        =
+    DeltaClient(HttpClient(), AuthTokenProvider.fixedForTest(token), Credentials.Anonymous, 1.second)
 
   private val source = RemoteProjectSource(
     iri"http://example.com/remote-project-source",
@@ -151,13 +152,10 @@ class DeltaClientSpec
     None,
     includeDeprecated = false,
     project,
-    Uri("http://localhost:8080/v1"),
-    Some(AccessToken(Secret(token)))
+    Uri("http://localhost:8080/v1")
   )
 
   private val unknownProjectSource = source.copy(project = ProjectRef.unsafe("org", "unknown"))
-
-  private val unknownToken = source.copy(token = Some(AccessToken(Secret("invalid"))))
 
   "Getting project statistics" should {
 
@@ -167,10 +165,6 @@ class DeltaClientSpec
 
     "fail if project is unknown" in {
       deltaClient.projectStatistics(unknownProjectSource).rejected.errorCode.value shouldEqual StatusCodes.NotFound
-    }
-
-    "fail if token is invalid" in {
-      deltaClient.projectStatistics(unknownToken).rejected.errorCode.value shouldEqual StatusCodes.Forbidden
     }
   }
 
@@ -186,10 +180,6 @@ class DeltaClientSpec
         .rejected
         .errorCode
         .value shouldEqual StatusCodes.NotFound
-    }
-
-    "fail if token is invalid" in {
-      deltaClient.remaining(unknownToken, Offset.Start).rejected.errorCode.value shouldEqual StatusCodes.Forbidden
     }
   }
 
@@ -215,23 +205,11 @@ class DeltaClientSpec
     "return None if tag doesn't exist" in {
       deltaClient.resourceAsNQuads(source.copy(resourceTag = invalidTag), resourceId).accepted shouldEqual None
     }
-
-    "fail if token is invalid" in {
-      deltaClient
-        .resourceAsNQuads(unknownToken, resourceId)
-        .rejected
-        .errorCode
-        .value shouldEqual StatusCodes.Forbidden
-    }
   }
 
   "Checking elems" should {
     "work" in {
       deltaClient.checkElems(source).accepted
     }
-    "fail if token is invalid" in {
-      deltaClient.checkElems(unknownToken).rejected.errorCode.value shouldEqual StatusCodes.Forbidden
-    }
   }
-
 }

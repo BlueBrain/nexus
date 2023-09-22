@@ -33,9 +33,9 @@ class CompositeViewsSerializationSuite extends SerializationSuite with Composite
     // format: on
   )
 
-  private val eventSerializer = CompositeViewEvent.serializer(crypto)
-  private val sseEncoder      = CompositeViewEvent.sseEncoder(crypto)
-  private val metricEncoder   = CompositeViewEvent.compositeViewMetricEncoder(crypto)
+  private val eventSerializer = CompositeViewEvent.serializer
+  private val sseEncoder      = CompositeViewEvent.sseEncoder
+  private val metricEncoder   = CompositeViewEvent.compositeViewMetricEncoder
 
   eventsMapping.foreach { case (event, (database, sse)) =>
     test(s"Correctly serialize ${event.getClass.getName}") {
@@ -91,7 +91,7 @@ class CompositeViewsSerializationSuite extends SerializationSuite with Composite
 
   private val jsonState = jsonContentOf("/composite-views/database/view-state.json")
 
-  private val stateSerializer = CompositeViewState.serializer(crypto)
+  private val stateSerializer = CompositeViewState.serializer
 
   test(s"Correctly serialize a CompositeViewState") {
     stateSerializer.codec(state).equalsIgnoreArrayOrder(jsonState)

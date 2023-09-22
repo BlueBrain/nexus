@@ -166,13 +166,12 @@ class Archives(
   def download(
       id: IdSegment,
       project: ProjectRef,
-      format: ArchiveFormat[_],
       ignoreNotFound: Boolean
   )(implicit caller: Caller, scheduler: Scheduler): IO[ArchiveRejection, AkkaSource] =
     (for {
       resource <- fetch(id, project)
       value     = resource.value
-      source   <- archiveDownload(value.value, project, format, ignoreNotFound)
+      source   <- archiveDownload(value.value, project, ignoreNotFound)
     } yield source).span("downloadArchive")
 
   private def eval(cmd: CreateArchive): IO[ArchiveRejection, ArchiveResource] =

@@ -60,7 +60,6 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
     fetchContext,
     ResolverContextResolution(rcr),
     alwaysValidate,
-    crypto,
     config,
     xas
   ).accepted

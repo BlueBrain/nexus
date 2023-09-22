@@ -23,8 +23,8 @@ Please visit @ref:[Authentication & authorization](authentication.md) section to
 
 @@@ note { .warning title="Remote contexts" }
 
-From Delta v1.5, remote contexts are only resolved during creates and updates.
-That means that when those get updated, the resources importing them must be also updated to take them into account the new version.
+Remote contexts are only resolved during creates and updates.
+That means that when those get updated, the resources importing them must be also updated to take them into account in a new version.
 
 @@@
 
@@ -68,6 +68,12 @@ The json payload:
 - If the `@id` value is not found on the payload, an @id will be generated as follows: `base:{UUID}`. The `base` is the 
   `prefix` defined on the resource's project (`{project_label}`).
 
+The `{schema_id}` segment allows to define an existing SHACL schema to validate the resource with:
+
+- If `_` is provided, no SHACL validation will be performed
+- If another value is provided, Nexus will attempt to resolve the schema then validate the expanded JSON-LD value generated 
+from the provided payload.
+
 **Example**
 
 Request
@@ -88,7 +94,9 @@ to specify one. The @id will be specified in the last segment of the endpoint UR
 PUT /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}
   {...}
 ```
- 
+
+The `{schema_id}` has the same behaviour as @ref:[the creation using post operation](#create-using-post).
+
 Note that if the payload contains an @id different from the `{resource_id}`, the request will fail.
 
 **Example**
@@ -116,6 +124,11 @@ PUT /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}?rev={pre
 ```
 ... where `{previous_rev}` is the last known revision number for the resource.
 
+The `{schema_id}` segment allows to define an existing SHACL schema to validate the resource with:
+
+- If `_` is provided, no SHACL validation will be performed with the latest version of its current schema
+- If another value is provided, it has to match the identifier of the current schema as changing the schema of a
+resource is not currently supported. A different revision or tag of this schema can be provided though.
 
 **Example**
 
@@ -233,6 +246,11 @@ where ...
 - `{tag}`: String - the targeted tag to be fetched. This field is optional.
 
 `{rev}` and `{tag}` fields cannot be simultaneously present.
+
+The `{schema_id}` segment allows to pass the resource schema:
+
+- If `_` is provided, the value is ignored
+- If another value is provided, it must match the identifier of the resource schema.
 
 **Example**
 

@@ -15,7 +15,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.Sto
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.contexts.{storages => storageCtxId, storagesMetadata => storageMetaCtxId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageAccess
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.AuthTokenProvider
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.routes.StoragesRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.schemas.{storage => storagesSchemaId}
@@ -25,6 +24,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.auth.{AuthTokenProvider, Credentials}
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.ProjectDeletionTask
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
@@ -59,7 +59,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
   make[StorageTypeConfig].from { cfg: StoragePluginConfig => cfg.storages.storageTypeConfig }
 
   make[HttpClient].named("storage").from { (as: ActorSystem[Nothing], sc: Scheduler) =>
-    HttpClient.noRetry()(as.classicSystem, sc)
+    HttpClient.noRetry(compression = false)(as.classicSystem, sc)
   }
 
   make[Storages]
@@ -146,10 +146,6 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
 
   many[ResourceShift[_, _, _]].ref[Storage.Shift]
 
-  make[AuthTokenProvider].from { (cfg: StorageTypeConfig) =>
-    AuthTokenProvider(cfg)
-  }
-
   make[Files]
     .fromEffect {
       (
@@ -226,8 +222,14 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
     (
         client: HttpClient @Id("storage"),
         as: ActorSystem[Nothing],
-        authTokenProvider: AuthTokenProvider
-    ) => new RemoteDiskStorageClient(client, authTokenProvider)(as.classicSystem)
+        authTokenProvider: AuthTokenProvider,
+        cfg: StorageTypeConfig
+    ) =>
+      new RemoteDiskStorageClient(
+        client,
+        authTokenProvider,
+        cfg.remoteDisk.map(_.credentials).getOrElse(Credentials.Anonymous)
+      )(as.classicSystem)
   }
 
   many[ServiceDependency].addSet {

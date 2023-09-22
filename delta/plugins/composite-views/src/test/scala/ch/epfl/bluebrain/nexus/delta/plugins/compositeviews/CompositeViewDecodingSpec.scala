@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
 import akka.http.scaladsl.model.Uri
 import cats.data.NonEmptyList
-import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.Interval
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjectionFields.{ElasticSearchProjectionFields, SparqlProjectionFields}
@@ -112,8 +111,7 @@ class CompositeViewDecodingSpec
       RemoteProjectSourceFields(
         Some(iri"http://music.com/sources/songs"),
         ProjectGen.project("remote_demo", "songs").ref,
-        Uri("https://example2.nexus.com"),
-        Some(Secret("mytoken"))
+        Uri("https://example2.nexus.com")
       )
     ),
     NonEmptyList.of(
@@ -146,8 +144,7 @@ class CompositeViewDecodingSpec
       RemoteProjectSourceFields(
         None,
         ProjectGen.project("remote_demo", "songs").ref,
-        Uri("https://example2.nexus.com"),
-        Some(Secret("mytoken"))
+        Uri("https://example2.nexus.com")
       )
     ),
     NonEmptyList.of(
