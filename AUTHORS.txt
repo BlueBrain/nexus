@@ -1,14 +1,17 @@
 Daniel Bell (maintainer)
+Daniel Tattan Birch (maintainer)
 Oliver Grabinski (maintainer)
 Simon Dumas (maintainer)
 
 Alejandra Garcia Rojas Martinez (author)
 Alexander Ulbrich (author)
 Anna-Kristin Kaufmann (author)
+Bilal Meddah
 Bogdan Roman (author)
 Carolina Lindqvist (author)
 Dhanesh Neela Mana (author)
 Didac Montero (author)
+Dinika Saxena (author)
 Henry Genet (author)
 Ian Lavriushev (author)
 Jonathan Lurie (author)
