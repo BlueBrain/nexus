@@ -5,6 +5,7 @@ import akka.http.scaladsl.model.{HttpRequest, Uri}
 import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -20,7 +21,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.execution.Scheduler
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 
 /**
   * Realms module wiring config.
@@ -46,11 +46,10 @@ object RealmsModule extends ModuleDef {
         realms: Realms,
         cfg: AppConfig,
         aclCheck: AclCheck,
-        s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
     ) =>
-      new RealmsRoutes(identities, realms, aclCheck)(cfg.http.baseUri, cfg.realms.pagination, s, cr, ordering)
+      new RealmsRoutes(identities, realms, aclCheck)(cfg.http.baseUri, cfg.realms.pagination, cr, ordering)
   }
 
   make[HttpClient].named("realm").from { (as: ActorSystem[Nothing], sc: Scheduler) =>

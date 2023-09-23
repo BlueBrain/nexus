@@ -29,14 +29,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.{Realm, RealmRejection}
 import io.circe.Decoder
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
-import monix.execution.Scheduler
 
 import scala.annotation.nowarn
 
 class RealmsRoutes(identities: Identities, realms: Realms, aclCheck: AclCheck)(implicit
     baseUri: BaseUri,
     paginationConfig: PaginationConfig,
-    s: Scheduler,
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering
 ) extends AuthDirectives(identities, aclCheck)
@@ -142,7 +140,6 @@ object RealmsRoutes {
   def apply(identities: Identities, realms: Realms, aclCheck: AclCheck)(implicit
       baseUri: BaseUri,
       paginationConfig: PaginationConfig,
-      s: Scheduler,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering
   ): Route =
