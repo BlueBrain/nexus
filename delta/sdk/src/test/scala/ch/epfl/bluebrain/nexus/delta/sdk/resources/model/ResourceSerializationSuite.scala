@@ -5,6 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.sdk.SerializationSuite
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.ResourceInstanceFixture
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder.SseData
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
@@ -15,15 +16,13 @@ import io.circe.JsonObject
 
 import java.time.Instant
 
-class ResourceSerializationSuite extends SerializationSuite {
+class ResourceSerializationSuite extends SerializationSuite with ResourceInstanceFixture {
 
   private val sseEncoder = ResourceEvent.sseEncoder
 
   val instant: Instant = Instant.EPOCH
   val realm: Label     = Label.unsafe("myrealm")
   val subject: Subject = User("username", realm)
-
-  import ch.epfl.bluebrain.nexus.delta.sdk.resources.ResourceFixture._
 
   private val created    =
     ResourceCreated(

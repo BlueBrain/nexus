@@ -13,6 +13,7 @@
 * @ref:[Quotas](quotas.md)
 * @ref:[Schemas](schemas-api.md)
 * @ref:[Resources](resources-api.md)
+* @ref:[Practice](trial.md)
 * @ref:[Multi-fetch](multi-fetch.md)
 * @ref:[Resolvers](resolvers-api.md)
 * @ref:[Views](views/index.md)

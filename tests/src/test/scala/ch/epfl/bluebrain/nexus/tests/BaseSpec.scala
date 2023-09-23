@@ -15,6 +15,7 @@ import ch.epfl.bluebrain.nexus.tests.admin.AdminDsl
 import ch.epfl.bluebrain.nexus.tests.config.ConfigLoader._
 import ch.epfl.bluebrain.nexus.tests.config.TestsConfig
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission
+import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Organizations
 import ch.epfl.bluebrain.nexus.tests.iam.{AclDsl, PermissionDsl}
 import ch.epfl.bluebrain.nexus.tests.kg.{ElasticSearchViewsDsl, KgDsl}
 import com.typesafe.config.ConfigFactory
@@ -36,6 +37,8 @@ trait BaseSpec
     with CirceLiteral
     with CirceEq
     with BeforeAndAfterAll
+    with HandleBarsFixture
+    with SelfFixture
     with TestHelpers
     with ScalatestRouteTest
     with Eventually
@@ -196,6 +199,19 @@ trait BaseSpec
     } yield ()
   }
 
+  /**
+    * Create projects and the parent organization for the provided user
+    */
+  def createProjects(user: Authenticated, org: String, projects: String*): Task[Unit] =
+    for {
+      _ <- aclDsl.addPermission("/", user, Organizations.Create)
+      _ <- adminDsl.createOrganization(org, org, user, ignoreConflict = true)
+      _ <- projects.traverse { project =>
+             val projectRef = s"$org/$project"
+             adminDsl.createProject(org, project, kgDsl.projectJson(name = projectRef), user)
+           }
+    } yield ()
+
   private[tests] def dispositionType(response: HttpResponse): ContentDispositionType =
     response.header[`Content-Disposition`].value.dispositionType
 
@@ -216,13 +232,6 @@ trait BaseSpec
   private[tests] def decodeGzip(input: ByteString): String =
     Coders.Gzip.decode(input).map(_.utf8String)(global).futureValue
 
-  private[tests] def replacements(authenticated: Authenticated, otherReplacements: (String, String)*) =
-    Seq(
-      "deltaUri" -> config.deltaUri.toString(),
-      "realm"    -> authenticated.realm.name,
-      "user"     -> authenticated.name
-    ) ++ otherReplacements
-
   private[tests] def genId(length: Int = 15): String =
     genString(length = length, Vector.range('a', 'z') ++ Vector.range('0', '9'))
 
@@ -236,26 +245,6 @@ trait BaseSpec
   private[tests] def expectOk[A] = expect(StatusCodes.OK)
 
   private[tests] def tag(name: String, rev: Int) = json"""{"tag": "$name", "rev": $rev}"""
-
-  private[tests] def resourceSelf(project: String, id: String): String = {
-    val uri = Uri(s"${config.deltaUri}/resources/$project/_")
-    uri.copy(path = uri.path / id).toString
-  }
-
-  private[tests] def resolverSelf(project: String, id: String): String = {
-    val uri = Uri(s"${config.deltaUri}/resolvers/$project")
-    uri.copy(path = uri.path / id).toString
-  }
-
-  private[tests] def viewSelf(project: String, id: String): String = {
-    val uri = Uri(s"${config.deltaUri}/views/$project")
-    uri.copy(path = uri.path / id).toString
-  }
-
-  private[tests] def storageSelf(project: String, id: String): String = {
-    val uri = Uri(s"${config.deltaUri}/storages/$project")
-    uri.copy(path = uri.path / id).toString
-  }
 }
 
 object BaseSpec {
