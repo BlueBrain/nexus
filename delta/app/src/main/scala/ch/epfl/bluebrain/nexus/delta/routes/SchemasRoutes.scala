@@ -28,7 +28,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaRejection.SchemaNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.{Schema, SchemaRejection}
 import io.circe.{Json, Printer}
-import monix.execution.Scheduler
 
 /**
   * The schemas routes
@@ -52,7 +51,6 @@ final class SchemasRoutes(
     indexAction: IndexingAction.Execute[Schema]
 )(implicit
     baseUri: BaseUri,
-    s: Scheduler,
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering,
     fusionConfig: FusionConfig
@@ -192,7 +190,6 @@ object SchemasRoutes {
       index: IndexingAction.Execute[Schema]
   )(implicit
       baseUri: BaseUri,
-      s: Scheduler,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering,
       fusionConfig: FusionConfig

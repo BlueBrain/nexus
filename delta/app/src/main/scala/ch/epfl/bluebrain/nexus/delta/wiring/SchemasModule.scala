@@ -27,7 +27,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.schemas.{SchemaImports, Schemas, Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import izumi.distage.model.definition.{Id, ModuleDef}
-import monix.execution.Scheduler
 
 /**
   * Schemas wiring
@@ -74,14 +73,12 @@ object SchemasModule extends ModuleDef {
         indexingAction: IndexingAction @Id("aggregate"),
         shift: Schema.Shift,
         baseUri: BaseUri,
-        s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering,
         fusionConfig: FusionConfig
     ) =>
       new SchemasRoutes(identities, aclCheck, schemas, schemeDirectives, indexingAction(_, _, _)(shift, cr))(
         baseUri,
-        s,
         cr,
         ordering,
         fusionConfig
