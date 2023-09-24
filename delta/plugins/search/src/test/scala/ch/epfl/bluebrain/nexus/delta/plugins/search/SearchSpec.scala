@@ -88,7 +88,6 @@ class SearchSpec
     SparqlConstructQuery.unsafe("CONSTRUCT ..."),
     Set.empty,
     Set.empty,
-    None,
     false,
     false,
     false,
