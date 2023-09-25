@@ -71,9 +71,8 @@ object AclsModule extends ModuleDef {
     } yield RemoteContextResolution.fixed(contexts.acls -> aclsCtx, contexts.aclsMetadata -> aclsMetaCtx)
   )
 
-  make[UserPermissionsRoutes].from { (identities: Identities, aclCheck: AclCheck, baseUri: BaseUri,
-                                      s: Scheduler) =>
-    new UserPermissionsRoutes(identities, aclCheck)(baseUri, s)
+  make[UserPermissionsRoutes].from { (identities: Identities, aclCheck: AclCheck, baseUri: BaseUri) =>
+    new UserPermissionsRoutes(identities, aclCheck)(baseUri)
   }
 
   many[PriorityRoute].add { (route: UserPermissionsRoutes) =>

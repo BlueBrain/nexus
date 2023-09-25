@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import monix.execution.Scheduler
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 
 /**
   * The permissions routes.
@@ -22,8 +22,7 @@ import monix.execution.Scheduler
   *   verify the acls for users
   */
 final class UserPermissionsRoutes(identities: Identities, aclCheck: AclCheck)(implicit
-    baseUri: BaseUri,
-    s: Scheduler,
+    baseUri: BaseUri
 ) extends AuthDirectives(identities, aclCheck)
     with CirceUnmarshalling {
 
@@ -33,9 +32,11 @@ final class UserPermissionsRoutes(identities: Identities, aclCheck: AclCheck)(im
         pathPrefix("permissions") {
           projectRef { project =>
             extractCaller { implicit caller =>
-              (head & permission) { permission =>
-                authorizeFor(project, permission)(caller) {
-                  complete(StatusCodes.NoContent)
+              head {
+                parameter("permission".as[Permission]) { permission =>
+                  authorizeFor(project, permission)(caller) {
+                    complete(StatusCodes.NoContent)
+                  }
                 }
               }
             }
@@ -47,8 +48,7 @@ final class UserPermissionsRoutes(identities: Identities, aclCheck: AclCheck)(im
 
 object UserPermissionsRoutes {
   def apply(identities: Identities, aclCheck: AclCheck)(implicit
-      baseUri: BaseUri,
-      s: Scheduler,
+      baseUri: BaseUri
   ): Route =
     new UserPermissionsRoutes(identities, aclCheck: AclCheck).routes
 
