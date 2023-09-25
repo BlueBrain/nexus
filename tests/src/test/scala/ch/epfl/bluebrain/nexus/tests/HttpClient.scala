@@ -5,7 +5,7 @@ import akka.http.scaladsl.model.HttpCharsets._
 import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model.Multipart.FormData
 import akka.http.scaladsl.model.Multipart.FormData.BodyPart
-import akka.http.scaladsl.model.headers.{Accept, Authorization, HttpEncodings, `Accept-Encoding`}
+import akka.http.scaladsl.model.headers.{`Accept-Encoding`, Accept, Authorization, HttpEncodings}
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
 import akka.http.scaladsl.{Http, HttpExt}
@@ -256,12 +256,14 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit as: ActorSyst
   private def identityHeader(identity: Identity): Option[HttpHeader] = {
     identity match {
       case Anonymous => None
-      case _ =>
-        Some(Option(tokensMap.get(identity)).getOrElse(
-          throw new IllegalArgumentException(
-            "The provided user has not been properly initialized, please add it to Identity.allUsers."
+      case _         =>
+        Some(
+          Option(tokensMap.get(identity)).getOrElse(
+            throw new IllegalArgumentException(
+              "The provided user has not been properly initialized, please add it to Identity.allUsers."
+            )
           )
-        ))
+        )
     }
   }
 

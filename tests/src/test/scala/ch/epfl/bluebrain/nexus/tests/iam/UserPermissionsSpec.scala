@@ -8,7 +8,8 @@ import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Resources
 
 class UserPermissionsSpec extends BaseSpec {
 
-  private def urlFor(permission: String, project: String) = s"/user/permissions/$project?permission=${encode(permission)}"
+  private def urlFor(permission: String, project: String) =
+    s"/user/permissions/$project?permission=${encode(permission)}"
 
   "if a user does not have a permission, 403 should be returned" in {
     deltaClient.head(urlFor("resources/read", "org/project"), UserWithNoPermissions) { response =>
@@ -20,8 +21,8 @@ class UserPermissionsSpec extends BaseSpec {
     for {
       _ <- aclDsl.addPermission("/org/project", UserWithPermissions, Resources.Read)
       _ <- deltaClient.head(urlFor("resources/read", "org/project"), UserWithPermissions) { response =>
-        response.status shouldBe StatusCodes.NoContent
-      }
+             response.status shouldBe StatusCodes.NoContent
+           }
     } yield succeed
   }
 }

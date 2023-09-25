@@ -109,7 +109,7 @@ trait UriDirectives extends QueryParamsUnmarshalling {
 
   def permission: Directive1[Permission] = parameter("permission").flatMap { value =>
     Permission(value) match {
-      case Left(err) => reject(validationRejection(err.getMessage))
+      case Left(err)         => reject(validationRejection(err.getMessage))
       case Right(permission) => provide(permission)
     }
   }

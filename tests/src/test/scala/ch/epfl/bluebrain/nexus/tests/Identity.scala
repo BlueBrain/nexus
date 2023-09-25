@@ -42,7 +42,7 @@ object Identity extends TestHelpers {
 
   object userPermissions {
     val UserWithNoPermissions = UserCredentials(genString(), genString(), testRealm)
-    val UserWithPermissions = UserCredentials(genString(), genString(), testRealm)
+    val UserWithPermissions   = UserCredentials(genString(), genString(), testRealm)
   }
 
   object archives {

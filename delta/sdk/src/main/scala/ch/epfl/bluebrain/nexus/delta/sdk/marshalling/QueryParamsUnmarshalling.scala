@@ -95,7 +95,7 @@ trait QueryParamsUnmarshalling {
     Unmarshaller.strict[String, Permission] { string =>
       Permission(string) match {
         case Right(value) => value
-        case Left(err) => throw new IllegalArgumentException(err.getMessage)
+        case Left(err)    => throw new IllegalArgumentException(err.getMessage)
       }
     }
 
