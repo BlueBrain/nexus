@@ -3,11 +3,12 @@ package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.JsonLdDocument
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import io.circe.{Encoder, Json}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.jsonld.RemoteContextRef
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.syntax.{EncoderOps, KeyOps}
+import io.circe.{Encoder, Json}
 
 import java.time.Instant
 
@@ -43,6 +44,7 @@ object GraphAnalyticsResult {
   final case class Index private (
       project: ProjectRef,
       id: Iri,
+      remoteContexts: Set[RemoteContextRef],
       rev: Int,
       deprecated: Boolean,
       types: Set[Iri],
@@ -58,6 +60,7 @@ object GraphAnalyticsResult {
     def active(
         project: ProjectRef,
         id: Iri,
+        remoteContexts: Set[RemoteContextRef],
         rev: Int,
         types: Set[Iri],
         createdAt: Instant,
@@ -66,11 +69,12 @@ object GraphAnalyticsResult {
         updatedBy: Subject,
         value: JsonLdDocument
     ) =
-      new Index(project, id, rev, false, types, createdAt, createdBy, updatedAt, updatedBy, Some(value))
+      new Index(project, id, remoteContexts, rev, false, types, createdAt, createdBy, updatedAt, updatedBy, Some(value))
 
     def deprecated(
         project: ProjectRef,
         id: Iri,
+        remoteContexts: Set[RemoteContextRef],
         rev: Int,
         types: Set[Iri],
         createdAt: Instant,
@@ -78,20 +82,21 @@ object GraphAnalyticsResult {
         updatedAt: Instant,
         updatedBy: Subject
     ) =
-      new Index(project, id, rev, true, types, createdAt, createdBy, updatedAt, updatedBy, None)
+      new Index(project, id, remoteContexts, rev, true, types, createdAt, createdBy, updatedAt, updatedBy, None)
 
     implicit val encoder: Encoder[Index] = Encoder.instance { i =>
       import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
       Json
         .obj(
-          keywords.id   := i.id,
-          "_project"    := i.project,
-          "_rev"        := i.rev,
-          "_deprecated" := i.deprecated,
-          "_createdAt"  := i.createdAt,
-          "_createdBy"  := i.createdBy,
-          "_updatedAt"  := i.updatedAt,
-          "_updatedBy"  := i.updatedBy
+          keywords.id      := i.id,
+          "remoteContexts" := i.remoteContexts,
+          "_project"       := i.project,
+          "_rev"           := i.rev,
+          "_deprecated"    := i.deprecated,
+          "_createdAt"     := i.createdAt,
+          "_createdBy"     := i.createdBy,
+          "_updatedAt"     := i.updatedAt,
+          "_updatedBy"     := i.updatedBy
         )
         .addIfNonEmpty(keywords.tpe, i.types)
         .deepMerge(i.value.map(_.asJson).getOrElse(Json.obj()))

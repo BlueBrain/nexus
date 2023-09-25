@@ -172,6 +172,17 @@ An example of the ElasticSearch Document looks as follows:
       "path": "http://schema.org/brother",
       "isInArray": false
     }
+  ],
+  "remoteContexts": [
+    {
+      "@type": "ProjectRemoteContextRef",
+      "iri": "https://bbp.epfl.ch/contexts/person",
+      "resource": {
+        "id": "https://bbp.epfl.ch/contexts/person",
+        "project": "myorg/myproject",
+        "rev": 1
+      }
+    }
   ]
 }
 ```
@@ -185,3 +196,5 @@ An example of the ElasticSearch Document looks as follows:
 - `isInArray` - Boolean: Flag to inform whether the current path (or its parent) is part of an array.
 - `dataType` - String: The type of the value present in the current path. Possible values are: string, numeric and boolean
 - `found` - Boolean: Flag to inform whether an @id inside `references` has been resolved as a relationship.
+- `remoteContexts` - Json Object Array: A collection of remote contexts detected during the JSON-LD resolution for this resource. 
+  See the @ref:[Resources - Fetch remote contexts](resources-api.md#fetch-remote-contexts) operation to learn about the remote context types.

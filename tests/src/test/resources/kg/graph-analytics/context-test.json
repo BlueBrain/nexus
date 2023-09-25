@@ -1,0 +1,13 @@
+{
+  "@id": "https://bbp.epfl.ch/contexts/person",
+  "@context": {
+    "@base": "http://example.com/",
+    "@vocab": "http://schema.org/",
+    "worksFor": {
+      "@type": "@id"
+    },
+    "colleague": {
+      "@type": "@id"
+    }
+  }
+}
