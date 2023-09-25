@@ -88,15 +88,15 @@ object GraphAnalyticsResult {
       import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
       Json
         .obj(
-          keywords.id       := i.id,
+          keywords.id      := i.id,
           "remoteContexts" := i.remoteContexts,
-          "_project"        := i.project,
-          "_rev"            := i.rev,
-          "_deprecated"     := i.deprecated,
-          "_createdAt"      := i.createdAt,
-          "_createdBy"      := i.createdBy,
-          "_updatedAt"      := i.updatedAt,
-          "_updatedBy"      := i.updatedBy
+          "_project"       := i.project,
+          "_rev"           := i.rev,
+          "_deprecated"    := i.deprecated,
+          "_createdAt"     := i.createdAt,
+          "_createdBy"     := i.createdBy,
+          "_updatedAt"     := i.updatedAt,
+          "_updatedBy"     := i.updatedBy
         )
         .addIfNonEmpty(keywords.tpe, i.types)
         .deepMerge(i.value.map(_.asJson).getOrElse(Json.obj()))
