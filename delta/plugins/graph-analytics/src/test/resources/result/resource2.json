@@ -7,6 +7,12 @@
     "http://schema.org/Dataset",
     "http://www.w3.org/ns/prov#Entity"
   ],
+  "_remoteContexts": [
+    {
+      "iri": "https://bluebrain.github.io/nexus/contexts/metadata.json",
+      "@type": "StaticContextRef"
+    }
+  ],
   "_project": "myorg/myproject",
   "_rev": 1,
   "_deprecated": false,

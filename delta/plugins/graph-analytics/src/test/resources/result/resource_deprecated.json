@@ -4,6 +4,12 @@
     "https://neuroshapes.org/NeuroMorphology"
   ],
   "@id": "http://localhost/deprecated",
+  "_remoteContexts": [
+    {
+      "iri": "https://bluebrain.github.io/nexus/contexts/metadata.json",
+      "@type": "StaticContextRef"
+    }
+  ],
   "_project": "myorg/myproject",
   "_rev": 1,
   "_deprecated": true,
