@@ -14,6 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{JsonLdFormat, QueryParamsU
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.StringSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.{IndexingMode, OrderingFields}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
@@ -105,6 +106,13 @@ trait UriDirectives extends QueryParamsUnmarshalling {
     (label & label).tmap { case (org, proj) =>
       ProjectRef(org, proj)
     }
+
+  def permission: Directive1[Permission] = parameter("permission").flatMap { value =>
+    Permission(value) match {
+      case Left(err) => reject(validationRejection(err.getMessage))
+      case Right(permission) => provide(permission)
+    }
+  }
 
   /**
     * This directive passes when the query parameter specified is not present

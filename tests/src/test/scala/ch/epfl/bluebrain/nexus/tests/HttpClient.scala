@@ -5,7 +5,7 @@ import akka.http.scaladsl.model.HttpCharsets._
 import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model.Multipart.FormData
 import akka.http.scaladsl.model.Multipart.FormData.BodyPart
-import akka.http.scaladsl.model.headers.{`Accept-Encoding`, Accept, Authorization, HttpEncodings}
+import akka.http.scaladsl.model.headers.{Accept, Authorization, HttpEncodings, `Accept-Encoding`}
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
 import akka.http.scaladsl.{Http, HttpExt}
@@ -35,6 +35,11 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit as: ActorSyst
 
   def apply(req: HttpRequest): Task[HttpResponse] =
     Task.deferFuture(httpExt.singleRequest(req))
+
+  def head(url: Uri, identity: Identity)(assertResponse: HttpResponse => Assertion): Task[Assertion] = {
+    val req = HttpRequest(HEAD, s"$baseUrl$url", headers = identityHeader(identity).toList)
+    Task.deferFuture(httpExt.singleRequest(req)).map(assertResponse)
+  }
 
   def run[A](req: HttpRequest)(implicit um: FromEntityUnmarshaller[A]): Task[(A, HttpResponse)] =
     Task.deferFuture(httpExt.singleRequest(req)).flatMap { res =>
@@ -127,6 +132,10 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit as: ActorSyst
   )(implicit um: FromEntityUnmarshaller[A]): Task[Assertion] =
     requestAssert(GET, url, None, identity, extraHeaders)(assertResponse)
 
+//  def head(url: String, identity: Identity)(assertResponse: HttpResponse => Assertion): Task[Assertion] = {
+//    requestAssertHead(url, identity)(assertResponse)
+//  }
+
   def getJson[A](url: String, identity: Identity)(implicit um: FromEntityUnmarshaller[A]): Task[A] = {
     def onFail(e: Throwable) =
       throw new IllegalStateException(
@@ -140,6 +149,34 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit as: ActorSyst
       assertResponse: (A, HttpResponse) => Assertion
   )(implicit um: FromEntityUnmarshaller[A]): Task[Assertion] =
     requestAssert(DELETE, url, None, identity, extraHeaders)(assertResponse)
+
+//  def requestAssertHead(url: String, identity: Identity)(assertResponse: HttpResponse => Assertion): Task[Assertion] = {
+//    def buildClue(response: HttpResponse) =
+//      s"""
+//         |Endpoint: ${HEAD.value} $url
+//         |Identity: $identity
+//         |Token: ${Option(tokensMap.get(identity)).map(_.credentials.token()).getOrElse("None")}
+//         |Status code: ${response.status}
+//         |Response:
+//         |$a
+//         |""".stripMargin
+//
+//    def onFail(e: Throwable) =
+//      fail(
+//        s"Something went wrong while processing the response for url: ${HEAD.value} $url with identity $identity",
+//        e
+//      )
+//
+//    requestJson(
+//      method,
+//      url,
+//      body,
+//      identity,
+//      (a: A, response: HttpResponse) => assertResponse(a, response) withClue buildClue(a, response),
+//      onFail,
+//      extraHeaders
+//    )
+//  }
 
   def requestAssert[A](
       method: HttpMethod,
@@ -212,6 +249,22 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit as: ActorSyst
       extraHeaders
     )
 
+//  def requestHead[R](url: String, identity: Identity, handleError: Throwable => Assertion): Task[Assertion] = {
+//    apply(HttpRequest())
+//  }
+
+  private def identityHeader(identity: Identity): Option[HttpHeader] = {
+    identity match {
+      case Anonymous => None
+      case _ =>
+        Some(Option(tokensMap.get(identity)).getOrElse(
+          throw new IllegalArgumentException(
+            "The provided user has not been properly initialized, please add it to Identity.allUsers."
+          )
+        ))
+    }
+  }
+
   def request[A, B, R](
       method: HttpMethod,
       url: String,
@@ -226,15 +279,7 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit as: ActorSyst
       HttpRequest(
         method = method,
         uri = s"$baseUrl$url",
-        headers = identity match {
-          case Anonymous => extraHeaders
-          case _         =>
-            extraHeaders :+ Option(tokensMap.get(identity)).getOrElse(
-              throw new IllegalArgumentException(
-                "The provided user has not been properly initialized, please add it to Identity.allUsers."
-              )
-            )
-        },
+        headers = extraHeaders ++ identityHeader(identity),
         entity = body.fold(HttpEntity.Empty)(toEntity)
       )
     ).flatMap { res =>

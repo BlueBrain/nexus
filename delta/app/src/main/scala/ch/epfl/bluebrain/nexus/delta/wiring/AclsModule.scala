@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.routes.AclsRoutes
+import ch.epfl.bluebrain.nexus.delta.routes.{AclsRoutes, UserPermissionsRoutes}
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.{AclCheck, Acls, AclsImpl}
@@ -70,6 +70,15 @@ object AclsModule extends ModuleDef {
       aclsMetaCtx <- ContextValue.fromFile("contexts/acls-metadata.json")
     } yield RemoteContextResolution.fixed(contexts.acls -> aclsCtx, contexts.aclsMetadata -> aclsMetaCtx)
   )
+
+  make[UserPermissionsRoutes].from { (identities: Identities, aclCheck: AclCheck, baseUri: BaseUri,
+                                      s: Scheduler) =>
+    new UserPermissionsRoutes(identities, aclCheck)(baseUri, s)
+  }
+
+  many[PriorityRoute].add { (route: UserPermissionsRoutes) =>
+    PriorityRoute(pluginsMaxPriority + 100, route.routes, requiresStrictEntity = true)
+  }
 
   many[PriorityRoute].add { (route: AclsRoutes) =>
     PriorityRoute(pluginsMaxPriority + 5, route.routes, requiresStrictEntity = true)
