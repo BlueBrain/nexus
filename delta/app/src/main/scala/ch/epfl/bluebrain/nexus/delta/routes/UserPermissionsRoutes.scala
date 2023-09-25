@@ -12,12 +12,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 
 /**
-  * The permissions routes.
+  * The user permissions routes. Used for checking whether the current logged in user has certain permissions.
   *
   * @param identities
   *   the identities operations bundle
-  * @param permissions
-  *   the permissions operations bundle
   * @param aclCheck
   *   verify the acls for users
   */
@@ -51,5 +49,4 @@ object UserPermissionsRoutes {
       baseUri: BaseUri
   ): Route =
     new UserPermissionsRoutes(identities, aclCheck: AclCheck).routes
-
 }
