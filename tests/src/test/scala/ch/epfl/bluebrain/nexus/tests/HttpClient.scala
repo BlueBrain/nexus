@@ -217,10 +217,6 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit as: ActorSyst
       extraHeaders
     )
 
-//  def requestHead[R](url: String, identity: Identity, handleError: Throwable => Assertion): Task[Assertion] = {
-//    apply(HttpRequest())
-//  }
-
   private def identityHeader(identity: Identity): Option[HttpHeader] = {
     identity match {
       case Anonymous => None
