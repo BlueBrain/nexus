@@ -75,7 +75,6 @@ class CompositeViewFactorySuite extends BioSuite {
     Some(JsonObject("settings" -> Json.obj())),
     schemas,
     types,
-    tag,
     includeDeprecated,
     includeMetadata,
     includeContext
@@ -87,7 +86,6 @@ class CompositeViewFactorySuite extends BioSuite {
     SparqlConstructQuery.unsafe("CONSTRUCT..."),
     schemas,
     types,
-    tag,
     includeDeprecated,
     includeMetadata
   )
@@ -155,7 +153,6 @@ class CompositeViewFactorySuite extends BioSuite {
           esProjectionFields.query,
           schemas,
           types,
-          tag,
           includeMetadata,
           includeDeprecated,
           includeContext,
@@ -180,7 +177,6 @@ class CompositeViewFactorySuite extends BioSuite {
           blazegraphProjectionFields.query,
           schemas,
           types,
-          tag,
           includeMetadata,
           includeDeprecated,
           permissions.query
@@ -216,7 +212,6 @@ class CompositeViewFactorySuite extends BioSuite {
           blazegraphProjectionFields.query,
           schemas,
           types,
-          tag,
           includeMetadata,
           includeDeprecated,
           permissions.query
@@ -234,7 +229,6 @@ class CompositeViewFactorySuite extends BioSuite {
       blazegraphProjectionFields.query,
       schemas,
       types,
-      tag,
       includeMetadata,
       includeDeprecated,
       permissions.query
@@ -257,7 +251,6 @@ class CompositeViewFactorySuite extends BioSuite {
       blazegraphProjectionFields.query,
       schemas,
       types,
-      tag,
       includeMetadata,
       includeDeprecated,
       permissions.query
@@ -280,7 +273,6 @@ class CompositeViewFactorySuite extends BioSuite {
       blazegraphProjectionFields.query,
       schemas,
       Set(nxv + "OldType"),
-      tag,
       includeMetadata,
       includeDeprecated,
       permissions.query

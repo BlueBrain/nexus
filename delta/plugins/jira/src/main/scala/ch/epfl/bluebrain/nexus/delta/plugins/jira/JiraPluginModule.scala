@@ -12,7 +12,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import izumi.distage.model.definition.{Id, ModuleDef}
-import monix.execution.Scheduler
 
 /**
   * Jira plugin wiring.
@@ -31,7 +30,6 @@ class JiraPluginModule(priority: Int) extends ModuleDef {
         aclCheck: AclCheck,
         jiraClient: JiraClient,
         baseUri: BaseUri,
-        s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
     ) =>
@@ -41,7 +39,6 @@ class JiraPluginModule(priority: Int) extends ModuleDef {
         jiraClient
       )(
         baseUri,
-        s,
         cr,
         ordering
       )
