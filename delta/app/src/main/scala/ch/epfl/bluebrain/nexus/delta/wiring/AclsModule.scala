@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
+import akka.http.scaladsl.server.RouteConcatenation
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
@@ -75,12 +76,12 @@ object AclsModule extends ModuleDef {
     new UserPermissionsRoutes(identities, aclCheck)(baseUri)
   }
 
-  many[PriorityRoute].add { (route: UserPermissionsRoutes) =>
-    PriorityRoute(pluginsMaxPriority + 100, route.routes, requiresStrictEntity = true)
-  }
-
-  many[PriorityRoute].add { (route: AclsRoutes) =>
-    PriorityRoute(pluginsMaxPriority + 5, route.routes, requiresStrictEntity = true)
+  many[PriorityRoute].add { (alcs: AclsRoutes, userPermissions: UserPermissionsRoutes) =>
+    PriorityRoute(
+      pluginsMaxPriority + 5,
+      RouteConcatenation.concat(alcs.routes, userPermissions.routes),
+      requiresStrictEntity = true
+    )
   }
 }
 // $COVERAGE-ON$
