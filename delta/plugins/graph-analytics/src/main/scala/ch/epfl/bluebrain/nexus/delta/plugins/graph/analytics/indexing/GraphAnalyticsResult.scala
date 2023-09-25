@@ -89,7 +89,7 @@ object GraphAnalyticsResult {
       Json
         .obj(
           keywords.id       := i.id,
-          "_remoteContexts" := i.remoteContexts,
+          "remoteContexts" := i.remoteContexts,
           "_project"        := i.project,
           "_rev"            := i.rev,
           "_deprecated"     := i.deprecated,

@@ -5,7 +5,7 @@
     "http://www.w3.org/ns/prov#Entity",
     "https://neuroshapes.org/ResponseTrace"
   ],
-  "_remoteContexts": [
+  "remoteContexts": [
     {
       "iri": "https://bluebrain.github.io/nexus/contexts/metadata.json",
       "@type": "StaticContextRef"
