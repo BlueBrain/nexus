@@ -132,10 +132,6 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit as: ActorSyst
   )(implicit um: FromEntityUnmarshaller[A]): Task[Assertion] =
     requestAssert(GET, url, None, identity, extraHeaders)(assertResponse)
 
-//  def head(url: String, identity: Identity)(assertResponse: HttpResponse => Assertion): Task[Assertion] = {
-//    requestAssertHead(url, identity)(assertResponse)
-//  }
-
   def getJson[A](url: String, identity: Identity)(implicit um: FromEntityUnmarshaller[A]): Task[A] = {
     def onFail(e: Throwable) =
       throw new IllegalStateException(
@@ -149,34 +145,6 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit as: ActorSyst
       assertResponse: (A, HttpResponse) => Assertion
   )(implicit um: FromEntityUnmarshaller[A]): Task[Assertion] =
     requestAssert(DELETE, url, None, identity, extraHeaders)(assertResponse)
-
-//  def requestAssertHead(url: String, identity: Identity)(assertResponse: HttpResponse => Assertion): Task[Assertion] = {
-//    def buildClue(response: HttpResponse) =
-//      s"""
-//         |Endpoint: ${HEAD.value} $url
-//         |Identity: $identity
-//         |Token: ${Option(tokensMap.get(identity)).map(_.credentials.token()).getOrElse("None")}
-//         |Status code: ${response.status}
-//         |Response:
-//         |$a
-//         |""".stripMargin
-//
-//    def onFail(e: Throwable) =
-//      fail(
-//        s"Something went wrong while processing the response for url: ${HEAD.value} $url with identity $identity",
-//        e
-//      )
-//
-//    requestJson(
-//      method,
-//      url,
-//      body,
-//      identity,
-//      (a: A, response: HttpResponse) => assertResponse(a, response) withClue buildClue(a, response),
-//      onFail,
-//      extraHeaders
-//    )
-//  }
 
   def requestAssert[A](
       method: HttpMethod,
