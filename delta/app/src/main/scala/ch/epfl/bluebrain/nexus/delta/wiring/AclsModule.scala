@@ -1,12 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
+import akka.http.scaladsl.server.RouteConcatenation
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.routes.AclsRoutes
+import ch.epfl.bluebrain.nexus.delta.routes.{AclsRoutes, UserPermissionsRoutes}
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.{AclCheck, Acls, AclsImpl}
@@ -71,8 +72,16 @@ object AclsModule extends ModuleDef {
     } yield RemoteContextResolution.fixed(contexts.acls -> aclsCtx, contexts.aclsMetadata -> aclsMetaCtx)
   )
 
-  many[PriorityRoute].add { (route: AclsRoutes) =>
-    PriorityRoute(pluginsMaxPriority + 5, route.routes, requiresStrictEntity = true)
+  make[UserPermissionsRoutes].from { (identities: Identities, aclCheck: AclCheck, baseUri: BaseUri) =>
+    new UserPermissionsRoutes(identities, aclCheck)(baseUri)
+  }
+
+  many[PriorityRoute].add { (alcs: AclsRoutes, userPermissions: UserPermissionsRoutes) =>
+    PriorityRoute(
+      pluginsMaxPriority + 5,
+      RouteConcatenation.concat(alcs.routes, userPermissions.routes),
+      requiresStrictEntity = true
+    )
   }
 }
 // $COVERAGE-ON$
