@@ -15,10 +15,6 @@ jobs:
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
       - name: Setup JDK
         uses: actions/setup-java@v3
         with:
@@ -26,6 +22,10 @@ jobs:
           java-version: '17'
           check-latest: true
           cache: 'sbt'
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
       - name: Clean, build Delta & Storage images
         run: |
           sbt -Dsbt.color=always -Dsbt.supershell=false \

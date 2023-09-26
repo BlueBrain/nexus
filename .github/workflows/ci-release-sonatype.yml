@@ -17,6 +17,13 @@ jobs:
       SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
+      - name: Setup JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          check-latest: true
+          cache: 'sbt'
       - name: Checkout
         uses: actions/checkout@v3
         with:
