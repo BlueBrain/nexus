@@ -19,7 +19,6 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
           check-latest: true
-          cache: 'sbt'
       - name: Checkout
         uses: actions/checkout@v3
         with:
