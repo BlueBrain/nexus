@@ -197,12 +197,15 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/permissions-api.html" class="page">Permissions</a></li>
       <li><a href="../../../docs/delta/api/realms-api.html" class="page">Realms</a></li>
       <li><a href="../../../docs/delta/api/acls-api.html" class="page">Access Control Lists</a></li>
+      <li><a href="../../../docs/delta/api/user-permissions-api.html" class="page">User Permissions</a></li>
       <li><a href="../../../docs/delta/api/orgs-api.html" class="page">Organizations</a></li>
       <li><a href="../../../docs/delta/api/projects-api.html" class="page">Projects</a></li>
       <li><a href="../../../docs/delta/api/quotas.html" class="page">Quotas</a></li>
       <li><a href="../../../docs/delta/api/schemas-api.html" class="page">Schemas</a></li>
       <li><a href="../../../docs/delta/api/resources-api.html" class="active page">Resources</a></li>
+      <li><a href="../../../docs/delta/api/trial.html" class="page">Trial</a></li>
       <li><a href="../../../docs/delta/api/multi-fetch.html" class="page">Multi fetch</a></li>
+      <li><a href="../../../docs/delta/api/id-resolution.html" class="page">Id Resolution</a></li>
       <li><a href="../../../docs/delta/api/resolvers-api.html" class="page">Resolvers</a></li>
       <li><a href="../../../docs/delta/api/views/index.html" class="page">Views</a>
       <ul>
@@ -222,6 +225,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/events-api.html" class="page">Global events</a></li>
       <li><a href="../../../docs/delta/api/supervision-api.html" class="page">Supervision</a></li>
     </ul></li>
+    <li><a href="../../../docs/delta/metadata.html" class="page">Nexus Metadata</a></li>
     <li><a href="../../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
     <li><a href="../../../docs/delta/benchmarks/index.html" class="page">Benchmarks</a>
     <ul>
@@ -237,17 +241,18 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../../docs/delta/api/resources-api.html#resources" class="header">Resources</a>
   <ul>
+    <li><a href="../../../docs/delta/api/resources-api.html#nexus-metadata" class="header">Nexus metadata</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#indexing" class="header">Indexing</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#create-using-post" class="header">Create using POST</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#create-using-put" class="header">Create using PUT</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#update" class="header">Update</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#refresh" class="header">Refresh</a></li>
-    <li><a href="../../../docs/delta/api/resources-api.html#validate" class="header">Validate</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#tag" class="header">Tag</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#remove-tag" class="header">Remove tag</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#deprecate" class="header">Deprecate</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#fetch" class="header">Fetch</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#fetch-original-payload" class="header">Fetch original payload</a></li>
+    <li><a href="../../../docs/delta/api/resources-api.html#fetch-remote-contexts" class="header">Fetch remote contexts</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#fetch-tags" class="header">Fetch tags</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#list" class="header">List</a>
     <ul>
@@ -288,17 +293,18 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../../docs/delta/api/resources-api.html#resources" class="header">Resources</a>
   <ul>
+    <li><a href="../../../docs/delta/api/resources-api.html#nexus-metadata" class="header">Nexus metadata</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#indexing" class="header">Indexing</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#create-using-post" class="header">Create using POST</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#create-using-put" class="header">Create using PUT</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#update" class="header">Update</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#refresh" class="header">Refresh</a></li>
-    <li><a href="../../../docs/delta/api/resources-api.html#validate" class="header">Validate</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#tag" class="header">Tag</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#remove-tag" class="header">Remove tag</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#deprecate" class="header">Deprecate</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#fetch" class="header">Fetch</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#fetch-original-payload" class="header">Fetch original payload</a></li>
+    <li><a href="../../../docs/delta/api/resources-api.html#fetch-remote-contexts" class="header">Fetch remote contexts</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#fetch-tags" class="header">Fetch tags</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#list" class="header">List</a>
     <ul>
@@ -344,8 +350,17 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <p>When modifying resources, the caller must have <code>resources/write</code> permissions on the current path of the project or the ancestor paths.</p>
 <p>When reading resources, the caller must have <code>resources/read</code> permissions on the current path of the project or the ancestor paths.</p>
 <p>Please visit <a href="authentication.html">Authentication &amp; authorization</a> section to learn more about it.</p></div><div class="callout note warning"><div class="callout-title">Remote contexts</div>
-<p>From Delta v1.5, remote contexts are only resolved during creates and updates. That means that when those get updated, the resources importing them must be also updated to take them into account the new version.</p></div><div class="callout note warning"><div class="callout-title">JSON payloads</div>
+<p>Remote contexts are only resolved during creates and updates. That means that when those get updated, the resources importing them must be also updated to take them into account in a new version.</p></div><div class="callout note warning"><div class="callout-title">JSON payloads</div>
 <p>The json payload for create and update operations cannot contain keys beginning with underscore (_), as these fields are reserved for Nexus metadata</p></div>
+<h2><a href="#nexus-metadata" name="nexus-metadata" class="anchor"><span class="anchor-link"></span></a>Nexus metadata</h2>
+<p>When using the endpoints described on this page, the responses will contain global metadata described on the <a href="../metadata.html">Nexus Metadata</a> page. In addition, the following resource specific metadata can be present</p>
+<ul>
+  <li><code>_project</code>: address of the resource&rsquo;s project</li>
+  <li><code>_incoming</code>: address to query to obtain the <a href="resources-api.html#list-incoming-links">list of incoming links</a></li>
+  <li><code>_outgoing</code>: address to query to obtain the <a href="resources-api.html#list-outgoing-links">list of outgoing links</a></li>
+  <li><code>_constrainedBy</code>: <code>@id</code> of the schema used to validate the resource; the schema can only be identified uniquely  together with <code>_schemaProject</code>. If no schema has been used to validate the resource, it will indicate the  unconstrained identifier.</li>
+  <li><code>_schemaProject</code>: address of the project where the <code>_constrainedBy</code> schema is found</li>
+</ul>
 <h2><a href="#indexing" name="indexing" class="anchor"><span class="anchor-link"></span></a>Indexing</h2>
 <p>All the API calls modifying a resource (creation, update, tagging, deprecation) can specify whether the resource should be indexed synchronously or in the background. This behaviour is controlled using <code>indexing</code> query param, which can be one of two values:</p>
 <ul>
@@ -360,6 +375,11 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <ul>
   <li>If the <code>@id</code> value is found on the payload, this @id will be used.</li>
   <li>If the <code>@id</code> value is not found on the payload, an @id will be generated as follows: <code>base:{UUID}</code>. The <code>base</code> is the  <code>prefix</code> defined on the resource&rsquo;s project (<code>{project_label}</code>).</li>
+</ul>
+<p>The <code>{schema_id}</code> segment allows to define an existing SHACL schema to validate the resource with:</p>
+<ul>
+  <li>If <code>_</code> is provided, no SHACL validation will be performed</li>
+  <li>If another value is provided, Nexus will attempt to resolve the schema then validate the expanded JSON-LD value generated from the provided payload.</li>
 </ul>
 <p><strong>Example</strong></p>
 <dl>
@@ -416,6 +436,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <pre><code>PUT /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}
   {...}
 </code></pre>
+<p>The <code>{schema_id}</code> has the same behaviour as <a href="resources-api.html#create-using-post">the creation using post operation</a>.</p>
 <p>Note that if the payload contains an @id different from the <code>{resource_id}</code>, the request will fail.</p>
 <p><strong>Example</strong></p>
 <dl>
@@ -474,6 +495,11 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   {...}
 </code></pre>
 <p>&hellip; where <code>{previous_rev}</code> is the last known revision number for the resource.</p>
+<p>The <code>{schema_id}</code> segment allows to define an existing SHACL schema to validate the resource with:</p>
+<ul>
+  <li>If <code>_</code> is provided, no SHACL validation will be performed with the latest version of its current schema</li>
+  <li>If another value is provided, it has to match the identifier of the current schema as changing the schema of a resource is not currently supported. A different revision or tag of this schema can be provided though.</li>
+</ul>
 <p><strong>Example</strong></p>
 <dl>
   <dt>Request</dt>
@@ -553,24 +579,6 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   &quot;_createdBy&quot;: &quot;http://localhost:8080/v1/realms/myrealm/users/john&quot;,
   &quot;_updatedAt&quot;: &quot;2021-04-17T14:56:42.939Z&quot;,
   &quot;_updatedBy&quot;: &quot;http://localhost:8080/v1/realms/myrealm/users/john&quot;
-}</code></pre></dd>
-</dl>
-<h2><a href="#validate" name="validate" class="anchor"><span class="anchor-link"></span></a>Validate</h2>
-<p>This operation runs validation of a resource against a schema. This would be useful to test whether resources would match the shape of a new schema. </p>
-<pre><code>GET /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}/validate
-</code></pre>
-<p><strong>Example</strong></p>
-<dl>
-  <dt>Request</dt>
-  <dd>
-  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/resources/validate.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl &quot;http://localhost:8080/v1/resources/myorg/myproj/myschema/base:fd8a2b32-170e-44e8-808f-44a8cbbc49b0/validate&quot;</code></pre></dd>
-  <dt>Response</dt>
-  <dd>
-  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/resources/validated.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
-  &quot;@context&quot; : &quot;https://bluebrain.github.io/nexus/contexts/shacl-20170720.json&quot;,
-  &quot;@type&quot; : &quot;sh:ValidationReport&quot;,
-  &quot;conforms&quot; : true,
-  &quot;targetedNodes&quot; : 2
 }</code></pre></dd>
 </dl>
 <h2><a href="#tag" name="tag" class="anchor"><span class="anchor-link"></span></a>Tag</h2>
@@ -704,6 +712,11 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   <li><code>{tag}</code>: String - the targeted tag to be fetched. This field is optional.</li>
 </ul>
 <p><code>{rev}</code> and <code>{tag}</code> fields cannot be simultaneously present.</p>
+<p>The <code>{schema_id}</code> segment allows to pass the resource schema:</p>
+<ul>
+  <li>If <code>_</code> is provided, the value is ignored</li>
+  <li>If another value is provided, it must match the identifier of the resource schema.</li>
+</ul>
 <p><strong>Example</strong></p>
 <dl>
   <dt>Request</dt>
@@ -766,6 +779,47 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   &quot;name&quot;: &quot;Alex&quot;,
   &quot;number&quot;: 24,
   &quot;bool&quot;: false
+}</code></pre></dd>
+</dl>
+<h2><a href="#fetch-remote-contexts" name="fetch-remote-contexts" class="anchor"><span class="anchor-link"></span></a>Fetch remote contexts</h2>
+<p>Returns the remote contexts that have been detected during the JSON-LD resolution for this resource.</p>
+<p>These contexts can be:</p>
+<ul>
+  <li>Static contexts that are statically defined in Nexus</li>
+  <li>Project contexts that have been registered by Nexus, in this case the entry also provides the project this context lives and its revision at the time the JSON-LD resolution has been performed</li>
+</ul>
+<pre><code>GET /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}/remote-contexts?rev={rev}&amp;tag={tag}
+</code></pre>
+<p>where &hellip;</p>
+<ul>
+  <li><code>{rev}</code>: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.</li>
+  <li><code>{tag}</code>: String - the targeted tag to be fetched. This field is optional.</li>
+</ul>
+<p><code>{rev}</code> and <code>{tag}</code> fields cannot be simultaneously present.</p>
+<p><strong>Example</strong></p>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/resources/remote-contexts.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl &quot;http://localhost:8080/v1/resources/org/proj/_/my-resource/remote-contexts&quot;</code></pre></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/remote-contexts.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
+  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/remote-contexts.json&quot;,
+  &quot;remoteContexts&quot;: [
+    {
+      &quot;@type&quot;: &quot;StaticContextRef&quot;,
+      &quot;iri&quot;: &quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;
+    },
+    {
+      &quot;@type&quot;: &quot;ProjectContextRef&quot;,
+      &quot;iri&quot;: &quot;https://localhost/nexus/context&quot;,
+      &quot;resource&quot;: {
+        &quot;id&quot;: &quot;https://localhost/nexus/context&quot;,
+        &quot;project&quot;: &quot;org/proj&quot;,
+        &quot;rev&quot;: 5
+      }
+    }
+  ]
 }</code></pre></dd>
 </dl>
 <h2><a href="#fetch-tags" name="fetch-tags" class="anchor"><span class="anchor-link"></span></a>Fetch tags</h2>
@@ -869,7 +923,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   <li><code>{deprecated}</code>: Boolean - can be used to filter the resulting resources based on their deprecation status</li>
   <li><code>{rev}</code>: Number - can be used to filter the resulting resources based on their revision value</li>
   <li><code>{type}</code>: Iri - can be used to filter the resulting resources based on their <code>@type</code> value. This parameter can appear  multiple times, filtering further the <code>@type</code> value.</li>
-  <li><code>{typeOperator}</code>: String (<code>and</code>/<code>or</code>) - used to determine how multiple <code>type</code> values affect the query, either requiring all to match (<code>and</code>) or any to match (<code>or</code>); defaults to <code>or</code></li>
+  <li><code>{typeOperator}</code>: String (<code>and</code>/<code>or</code>) - used to determine how multiple <code>type</code> values affect the query, either requiring all to match (<code>and</code>) or any to match (<code>or</code>); defaults to <code>or</code>.  See <a href="https://en.wikipedia.org/wiki/De_Morgan%27s_laws" title="De Morgan&#39;s laws">De Morgan&rsquo;s laws</a> for inference rules.</li>
   <li><code>{createdBy}</code>: Iri - can be used to filter the resulting resources based on their creator</li>
   <li><code>{createdAt}</code>: Time range - can be used to filter the resulting resources based on their creation date</li>
   <li><code>{updatedBy}</code>: Iri - can be used to filter the resulting resources based on the person which performed the last update</li>
@@ -1251,13 +1305,13 @@ Schemas
 </span>
 </div>
 </a>
-<a href="../../../docs/delta/api/multi-fetch.html" title="Multi fetch" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../../docs/delta/api/trial.html" title="Trial" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-Multi fetch
+Trial
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">

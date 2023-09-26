@@ -197,12 +197,15 @@ BlueBrain/nexus
       <li><a href="../../../../docs/delta/api/permissions-api.html" class="page">Permissions</a></li>
       <li><a href="../../../../docs/delta/api/realms-api.html" class="page">Realms</a></li>
       <li><a href="../../../../docs/delta/api/acls-api.html" class="page">Access Control Lists</a></li>
+      <li><a href="../../../../docs/delta/api/user-permissions-api.html" class="page">User Permissions</a></li>
       <li><a href="../../../../docs/delta/api/orgs-api.html" class="page">Organizations</a></li>
       <li><a href="../../../../docs/delta/api/projects-api.html" class="page">Projects</a></li>
       <li><a href="../../../../docs/delta/api/quotas.html" class="page">Quotas</a></li>
       <li><a href="../../../../docs/delta/api/schemas-api.html" class="page">Schemas</a></li>
       <li><a href="../../../../docs/delta/api/resources-api.html" class="page">Resources</a></li>
+      <li><a href="../../../../docs/delta/api/trial.html" class="page">Trial</a></li>
       <li><a href="../../../../docs/delta/api/multi-fetch.html" class="page">Multi fetch</a></li>
+      <li><a href="../../../../docs/delta/api/id-resolution.html" class="page">Id Resolution</a></li>
       <li><a href="../../../../docs/delta/api/resolvers-api.html" class="page">Resolvers</a></li>
       <li><a href="../../../../docs/delta/api/views/index.html" class="page">Views</a>
       <ul>
@@ -222,6 +225,7 @@ BlueBrain/nexus
       <li><a href="../../../../docs/delta/api/events-api.html" class="page">Global events</a></li>
       <li><a href="../../../../docs/delta/api/supervision-api.html" class="page">Supervision</a></li>
     </ul></li>
+    <li><a href="../../../../docs/delta/metadata.html" class="page">Nexus Metadata</a></li>
     <li><a href="../../../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
     <li><a href="../../../../docs/delta/benchmarks/index.html" class="page">Benchmarks</a>
     <ul>
@@ -245,7 +249,6 @@ BlueBrain/nexus
     <ul>
       <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#service-account-configuration" class="header">Service account configuration</a></li>
       <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#automatic-project-provisioning" class="header">Automatic project provisioning</a></li>
-      <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#encryption-configuration" class="header">Encryption configuration</a></li>
       <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#fusion-configuration" class="header">Fusion configuration</a></li>
       <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#projections-configuration" class="header">Projections configuration</a></li>
       <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#plugins-configuration" class="header">Plugins configuration</a>
@@ -294,7 +297,6 @@ BlueBrain/nexus
     <ul>
       <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#service-account-configuration" class="header">Service account configuration</a></li>
       <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#automatic-project-provisioning" class="header">Automatic project provisioning</a></li>
-      <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#encryption-configuration" class="header">Encryption configuration</a></li>
       <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#fusion-configuration" class="header">Fusion configuration</a></li>
       <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#projections-configuration" class="header">Projections configuration</a></li>
       <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#plugins-configuration" class="header">Plugins configuration</a>
@@ -367,9 +369,6 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 </ul>
 <p>This feature can be turned on via the flag <code>app.automatic-provisioning.enabled</code>.</p>
 <p><a href="https://github.com/BlueBrain/nexus/blob/master/delta/app/src/main/resources/app.conf#L197" title="The `automatic-provisioning` section" target="_blank" rel="noopener noreferrer">The <code>automatic-provisioning</code> section</a> of the configuration defines the project provisioning configuration.</p>
-<h2><a href="#encryption-configuration" name="encryption-configuration" class="anchor"><span class="anchor-link"></span></a>Encryption configuration</h2>
-<p>Nexus Delta uses symmetric encryption to secure sensitive data information (tokens and passwords).</p>
-<p><a href="https://github.com/BlueBrain/nexus/blob/master/delta/app/src/main/resources/app.conf#L276" title="The `encryption` section" target="_blank" rel="noopener noreferrer">The <code>encryption</code> section</a> of the configuration defines the encryption configuration.</p>
 <h2><a href="#fusion-configuration" name="fusion-configuration" class="anchor"><span class="anchor-link"></span></a>Fusion configuration</h2>
 <p>When fetching a resource, Nexus Delta allows to return a redirection to its representation in Fusion by providing <code>text/html</code> in the <code>Accept</code> header.</p>
 <p><a href="https://github.com/BlueBrain/nexus/blob/master/delta/app/src/main/resources/app.conf#L40" title="The `fusion` section" target="_blank" rel="noopener noreferrer">The <code>fusion</code> section</a> of the configuration defines the fusion configuration.</p>
@@ -392,14 +391,37 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <h3><a href="#composite-views-plugin-configuration" name="composite-views-plugin-configuration" class="anchor"><span class="anchor-link"></span></a>Composite views plugin configuration</h3>
 <p>The composite views plugin configuration can be found <a href="https://github.com/BlueBrain/nexus/blob/master/delta/plugins/composite-views/src/main/resources/composite-views.conf" title="here" target="_blank" rel="noopener noreferrer">here</a>. </p>
 <p>There are several configuration flags related to tweaking the range of values allowed for sources, projections and rebuild interval.</p>
+<p>Authentication for remote sources can be specified in three different ways. The value of <code>plugins.composite-views.remote-source-credentials</code> should be speficied in the same way as remote storages, as shown <a href="index.html#remote-storage-configuration">here</a></p>
 <h3><a href="#storage-plugin-configuration" name="storage-plugin-configuration" class="anchor"><span class="anchor-link"></span></a>Storage plugin configuration</h3>
 <p>The storage plugin configuration can be found <a href="https://github.com/BlueBrain/nexus/blob/master/delta/plugins/storage/src/main/resources/storage.conf" title="here" target="_blank" rel="noopener noreferrer">here</a>. </p>
 <p>Nexus Delta supports 3 types of storages: &lsquo;disk&rsquo;, &lsquo;amazon&rsquo; (s3 compatible) and &lsquo;remote&rsquo;.</p>
 <ul>
   <li>For disk storages the most relevant configuration flag is <code>plugins.storage.storages.disk.default-volume</code>, which defines the default location in the Nexus Delta filesystem where the files using that storage are going to be saved.</li>
   <li>For S3 compatible storages the most relevant configuration flags are the ones related to the S3 settings: <code>plugins.storage.storages.amazon.default-endpoint</code>, <code>plugins.storage.storages.amazon.default-access-key</code> and <code>plugins.storage.storages.amazon.default-secret-key</code>.</li>
-  <li>For remote disk storages the most relevant configuration flags are <code>plugins.storage.storages.remote-disk.default-endpoint</code> (the endpoint where the remote storage service is running) and <code>plugins.storage.storages.remote-disk.default-credentials</code> (the Bearer token to authenticate to the remote storage service).</li>
+  <li>For remote disk storages the most relevant configuration flags are <code>plugins.storage.storages.remote-disk.default-endpoint</code> (the endpoint where the remote storage service is running) and <code>plugins.storage.storages.remote-disk.credentials</code> (the method to authenticate to the remote storage service).</li>
 </ul>
+<h4><a href="#remote-storage-configuration" name="remote-storage-configuration" class="anchor"><span class="anchor-link"></span></a>Remote storage configuration</h4>
+<p>Authentication for remote storage can be specified in three different ways. The value of <code>plugins.storage.storages.remote-disk.credentials</code> can be:</p>
+<h5><a href="#recommended-client-credentials-openid-authentication-" name="recommended-client-credentials-openid-authentication-" class="anchor"><span class="anchor-link"></span></a>Recommended: client credentials (OpenId authentication)</h5>
+<pre class="prettyprint"><code class="language-hocon">{
+  type: &quot;client-credentials&quot;
+  user: &quot;username&quot;
+  password: &quot;password&quot;
+  realm: &quot;internal&quot;
+}
+</code></pre>
+<p>This configuration tells Delta to log into the <code>internal</code> realm (which should have already been defined) with the <code>user</code> and <code>password</code> credentials, which will give Delta an access token to use when making requests to remote storage</p>
+<h5><a href="#anonymous" name="anonymous" class="anchor"><span class="anchor-link"></span></a>Anonymous</h5>
+<pre class="prettyprint"><code class="language-hocon">{
+  type: &quot;anonymous&quot;
+}
+</code></pre>
+<h5><a href="#long-living-auth-token-legacy-" name="long-living-auth-token-legacy-" class="anchor"><span class="anchor-link"></span></a>Long-living auth token (legacy)</h5>
+<pre class="prettyprint"><code class="language-hocon">{
+  type: &quot;jwt-token&quot;
+  token: &quot;long-living-auth-token&quot;
+}
+</code></pre>
 <h3><a href="#archive-plugin-configuration" name="archive-plugin-configuration" class="anchor"><span class="anchor-link"></span></a>Archive plugin configuration</h3>
 <p>The archive plugin configuration can be found <a href="https://github.com/BlueBrain/nexus/blob/master/delta/plugins/archive/src/main/resources/archive.conf" title="here" target="_blank" rel="noopener noreferrer">here</a>.</p>
 <h3><a href="#jira-plugin-configuration" name="jira-plugin-configuration" class="anchor"><span class="anchor-link"></span></a>Jira plugin configuration</h3>

@@ -197,12 +197,15 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/permissions-api.html" class="page">Permissions</a></li>
       <li><a href="../../../docs/delta/api/realms-api.html" class="page">Realms</a></li>
       <li><a href="../../../docs/delta/api/acls-api.html" class="page">Access Control Lists</a></li>
+      <li><a href="../../../docs/delta/api/user-permissions-api.html" class="page">User Permissions</a></li>
       <li><a href="../../../docs/delta/api/orgs-api.html" class="page">Organizations</a></li>
       <li><a href="../../../docs/delta/api/projects-api.html" class="page">Projects</a></li>
       <li><a href="../../../docs/delta/api/quotas.html" class="page">Quotas</a></li>
       <li><a href="../../../docs/delta/api/schemas-api.html" class="page">Schemas</a></li>
       <li><a href="../../../docs/delta/api/resources-api.html" class="page">Resources</a></li>
+      <li><a href="../../../docs/delta/api/trial.html" class="page">Trial</a></li>
       <li><a href="../../../docs/delta/api/multi-fetch.html" class="page">Multi fetch</a></li>
+      <li><a href="../../../docs/delta/api/id-resolution.html" class="page">Id Resolution</a></li>
       <li><a href="../../../docs/delta/api/resolvers-api.html" class="page">Resolvers</a></li>
       <li><a href="../../../docs/delta/api/views/index.html" class="page">Views</a>
       <ul>
@@ -222,6 +225,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/events-api.html" class="page">Global events</a></li>
       <li><a href="../../../docs/delta/api/supervision-api.html" class="page">Supervision</a></li>
     </ul></li>
+    <li><a href="../../../docs/delta/metadata.html" class="page">Nexus Metadata</a></li>
     <li><a href="../../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
     <li><a href="../../../docs/delta/benchmarks/index.html" class="page">Benchmarks</a>
     <ul>
@@ -237,6 +241,7 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../../docs/delta/api/files-api.html#files" class="header">Files</a>
   <ul>
+    <li><a href="../../../docs/delta/api/files-api.html#nexus-metadata" class="header">Nexus metadata</a></li>
     <li><a href="../../../docs/delta/api/files-api.html#indexing" class="header">Indexing</a></li>
     <li><a href="../../../docs/delta/api/files-api.html#create-using-post" class="header">Create using POST</a></li>
     <li><a href="../../../docs/delta/api/files-api.html#create-using-put" class="header">Create using PUT</a></li>
@@ -279,6 +284,7 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../../docs/delta/api/files-api.html#files" class="header">Files</a>
   <ul>
+    <li><a href="../../../docs/delta/api/files-api.html#nexus-metadata" class="header">Nexus metadata</a></li>
     <li><a href="../../../docs/delta/api/files-api.html#indexing" class="header">Indexing</a></li>
     <li><a href="../../../docs/delta/api/files-api.html#create-using-post" class="header">Create using POST</a></li>
     <li><a href="../../../docs/delta/api/files-api.html#create-using-put" class="header">Create using PUT</a></li>
@@ -320,6 +326,21 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <p>Each file belongs to a <code>project</code> identifier by the label <code>{project_label}</code> inside an <code>organization</code> identifier by the label <code>{org_label}</code>.</p><div class="callout note tip"><div class="callout-title">Authorization notes</div>
 <p>When creating, updating and reading files, the caller must have the permissions defined on the storage associated to the file on the current path of the project or the ancestor paths.</p>
 <p>Please visit <a href="authentication.html">Authentication &amp; authorization</a> section to learn more about it.</p></div>
+<h2><a href="#nexus-metadata" name="nexus-metadata" class="anchor"><span class="anchor-link"></span></a>Nexus metadata</h2>
+<p>When using the endpoints described on this page, the responses will contain global metadata described on the <a href="../metadata.html">Nexus Metadata</a> page. In addition, the following files specific metadata can be present</p>
+<ul>
+  <li><code>_bytes</code>: size of the file in bytes</li>
+  <li><code>_digest</code>: algorithm and checksum used for file integrity</li>
+  <li><code>_filename</code>: name of the file</li>
+  <li><code>_location</code>: path where the file is stored on the underlying storage</li>
+  <li><code>_mediaType</code>: <a href="https://en.wikipedia.org/wiki/MIME" title="MIME" target="_blank" rel="noopener noreferrer">MIME</a> specifying the type of the file</li>
+  <li><code>_origin</code>: whether the file attributes resulted from an action taken by a client or the Nexus Storage Service</li>
+  <li><code>_storage</code>: <code>@id</code>, <code>@type</code>, and revision of the <a href="storages-api.html">Storage</a> used for the file</li>
+  <li><code>_uuid</code>: <a href="https://en.wikipedia.org/wiki/Universally_unique_identifier" title="UUID" target="_blank" rel="noopener noreferrer">UUID</a> of the file</li>
+  <li><code>_project</code>: address of the file&rsquo;s project</li>
+  <li><code>_incoming</code>: address to query to obtain the <a href="resources-api.html#list-incoming-links">list of incoming links</a></li>
+  <li><code>_outgoing</code>: address to query to obtain the <a href="resources-api.html#list-outgoing-links">list of outgoing links</a></li>
+</ul>
 <h2><a href="#indexing" name="indexing" class="anchor"><span class="anchor-link"></span></a>Indexing</h2>
 <p>All the API calls modifying a file (creation, update, tagging, deprecation) can specify whether the file should be indexed synchronously or in the background. This behaviour is controlled using <code>indexing</code> query param, which can be one of two values:</p>
 <ul>

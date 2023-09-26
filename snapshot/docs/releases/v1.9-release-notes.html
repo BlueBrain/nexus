@@ -197,12 +197,15 @@ BlueBrain/nexus
       <li><a href="../../docs/delta/api/permissions-api.html" class="page">Permissions</a></li>
       <li><a href="../../docs/delta/api/realms-api.html" class="page">Realms</a></li>
       <li><a href="../../docs/delta/api/acls-api.html" class="page">Access Control Lists</a></li>
+      <li><a href="../../docs/delta/api/user-permissions-api.html" class="page">User Permissions</a></li>
       <li><a href="../../docs/delta/api/orgs-api.html" class="page">Organizations</a></li>
       <li><a href="../../docs/delta/api/projects-api.html" class="page">Projects</a></li>
       <li><a href="../../docs/delta/api/quotas.html" class="page">Quotas</a></li>
       <li><a href="../../docs/delta/api/schemas-api.html" class="page">Schemas</a></li>
       <li><a href="../../docs/delta/api/resources-api.html" class="page">Resources</a></li>
+      <li><a href="../../docs/delta/api/trial.html" class="page">Trial</a></li>
       <li><a href="../../docs/delta/api/multi-fetch.html" class="page">Multi fetch</a></li>
+      <li><a href="../../docs/delta/api/id-resolution.html" class="page">Id Resolution</a></li>
       <li><a href="../../docs/delta/api/resolvers-api.html" class="page">Resolvers</a></li>
       <li><a href="../../docs/delta/api/views/index.html" class="page">Views</a>
       <ul>
@@ -222,6 +225,7 @@ BlueBrain/nexus
       <li><a href="../../docs/delta/api/events-api.html" class="page">Global events</a></li>
       <li><a href="../../docs/delta/api/supervision-api.html" class="page">Supervision</a></li>
     </ul></li>
+    <li><a href="../../docs/delta/metadata.html" class="page">Nexus Metadata</a></li>
     <li><a href="../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
     <li><a href="../../docs/delta/benchmarks/index.html" class="page">Benchmarks</a>
     <ul>
@@ -243,19 +247,41 @@ BlueBrain/nexus
       <ul>
         <li><a href="../../docs/releases/v1.9-release-notes.html#self-incoming-and-outgoing-links" class="header">self, incoming and outgoing links</a></li>
         <li><a href="../../docs/releases/v1.9-release-notes.html#multi-fetch" class="header">Multi fetch</a></li>
+        <li><a href="../../docs/releases/v1.9-release-notes.html#resources-trial-and-resource-generation" class="header">Resources trial and resource generation</a></li>
         <li><a href="../../docs/releases/v1.9-release-notes.html#payload-validation" class="header">Payload validation</a></li>
         <li><a href="../../docs/releases/v1.9-release-notes.html#aggregations" class="header">Aggregations</a></li>
+        <li><a href="../../docs/releases/v1.9-release-notes.html#remote-contexts" class="header">Remote contexts</a></li>
       </ul></li>
-      <li><a href="../../docs/releases/v1.9-release-notes.html#views" class="header">Views</a></li>
+      <li><a href="../../docs/releases/v1.9-release-notes.html#views" class="header">Views</a>
+      <ul>
+        <li><a href="../../docs/releases/v1.9-release-notes.html#indexing-errors-listing" class="header">Indexing errors listing</a></li>
+        <li><a href="../../docs/releases/v1.9-release-notes.html#resource-type-filtering-performance-improvement" class="header">Resource type filtering performance improvement</a></li>
+        <li><a href="../../docs/releases/v1.9-release-notes.html#compressing-requests-to-elasticsearch" class="header">Compressing requests to Elasticsearch</a></li>
+      </ul></li>
       <li><a href="../../docs/releases/v1.9-release-notes.html#composite-views" class="header">Composite views</a>
       <ul>
         <li><a href="../../docs/releases/v1.9-release-notes.html#batching-queries-to-the-intermediate-space" class="header">Batching queries to the intermediate space</a></li>
         <li><a href="../../docs/releases/v1.9-release-notes.html#partial-reindexing" class="header">Partial reindexing</a></li>
+        <li><a href="../../docs/releases/v1.9-release-notes.html#remote-authentication" class="header">Remote authentication</a></li>
+        <li><a href="../../docs/releases/v1.9-release-notes.html#remove-the-resourcetag-field-in-projections-of-composite-views" class="header">Remove the resourceTag field in projections of composite views</a></li>
       </ul></li>
       <li><a href="../../docs/releases/v1.9-release-notes.html#elasticsearch-views" class="header">Elasticsearch Views</a></li>
-      <li><a href="../../docs/releases/v1.9-release-notes.html#archives" class="header">Archives</a></li>
+      <li><a href="../../docs/releases/v1.9-release-notes.html#archives" class="header">Archives</a>
+      <ul>
+        <li><a href="../../docs/releases/v1.9-release-notes.html#add-files-by-their-self" class="header">Add files by their <code>_self</code></a></li>
+        <li><a href="../../docs/releases/v1.9-release-notes.html#annotated-source-as-a-format" class="header">Annotated source as a format</a></li>
+        <li><a href="../../docs/releases/v1.9-release-notes.html#require-only-resources-read-permission-for-archive-creation" class="header">Require only <code>resources/read</code> permission for archive creation</a></li>
+        <li><a href="../../docs/releases/v1.9-release-notes.html#remove-support-for-tarball-archives" class="header">Remove support for Tarball archives</a></li>
+      </ul></li>
       <li><a href="../../docs/releases/v1.9-release-notes.html#storages" class="header">Storages</a></li>
-      <li><a href="../../docs/releases/v1.9-release-notes.html#graph-analytics" class="header">Graph Analytics</a></li>
+      <li><a href="../../docs/releases/v1.9-release-notes.html#remote-storages" class="header">Remote Storages</a></li>
+      <li><a href="../../docs/releases/v1.9-release-notes.html#graph-analytics" class="header">Graph analytics</a>
+      <ul>
+        <li><a href="../../docs/releases/v1.9-release-notes.html#search-endpoint-for-graph-analytics-views" class="header">Search endpoint for Graph analytics&rsquo; views</a></li>
+        <li><a href="../../docs/releases/v1.9-release-notes.html#indexing-remote-contexts-in-graph-analytics" class="header">Indexing remote contexts in Graph Analytics</a></li>
+      </ul></li>
+      <li><a href="../../docs/releases/v1.9-release-notes.html#id-resolution" class="header">Id Resolution</a></li>
+      <li><a href="../../docs/releases/v1.9-release-notes.html#user-permissions" class="header">User Permissions</a></li>
     </ul></li>
     <li><a href="../../docs/releases/v1.9-release-notes.html#nexus-fusion" class="header">Nexus Fusion</a></li>
     <li><a href="../../docs/releases/v1.9-release-notes.html#nexus-forge" class="header">Nexus forge</a></li>
@@ -288,19 +314,41 @@ BlueBrain/nexus
       <ul>
         <li><a href="../../docs/releases/v1.9-release-notes.html#self-incoming-and-outgoing-links" class="header">self, incoming and outgoing links</a></li>
         <li><a href="../../docs/releases/v1.9-release-notes.html#multi-fetch" class="header">Multi fetch</a></li>
+        <li><a href="../../docs/releases/v1.9-release-notes.html#resources-trial-and-resource-generation" class="header">Resources trial and resource generation</a></li>
         <li><a href="../../docs/releases/v1.9-release-notes.html#payload-validation" class="header">Payload validation</a></li>
         <li><a href="../../docs/releases/v1.9-release-notes.html#aggregations" class="header">Aggregations</a></li>
+        <li><a href="../../docs/releases/v1.9-release-notes.html#remote-contexts" class="header">Remote contexts</a></li>
       </ul></li>
-      <li><a href="../../docs/releases/v1.9-release-notes.html#views" class="header">Views</a></li>
+      <li><a href="../../docs/releases/v1.9-release-notes.html#views" class="header">Views</a>
+      <ul>
+        <li><a href="../../docs/releases/v1.9-release-notes.html#indexing-errors-listing" class="header">Indexing errors listing</a></li>
+        <li><a href="../../docs/releases/v1.9-release-notes.html#resource-type-filtering-performance-improvement" class="header">Resource type filtering performance improvement</a></li>
+        <li><a href="../../docs/releases/v1.9-release-notes.html#compressing-requests-to-elasticsearch" class="header">Compressing requests to Elasticsearch</a></li>
+      </ul></li>
       <li><a href="../../docs/releases/v1.9-release-notes.html#composite-views" class="header">Composite views</a>
       <ul>
         <li><a href="../../docs/releases/v1.9-release-notes.html#batching-queries-to-the-intermediate-space" class="header">Batching queries to the intermediate space</a></li>
         <li><a href="../../docs/releases/v1.9-release-notes.html#partial-reindexing" class="header">Partial reindexing</a></li>
+        <li><a href="../../docs/releases/v1.9-release-notes.html#remote-authentication" class="header">Remote authentication</a></li>
+        <li><a href="../../docs/releases/v1.9-release-notes.html#remove-the-resourcetag-field-in-projections-of-composite-views" class="header">Remove the resourceTag field in projections of composite views</a></li>
       </ul></li>
       <li><a href="../../docs/releases/v1.9-release-notes.html#elasticsearch-views" class="header">Elasticsearch Views</a></li>
-      <li><a href="../../docs/releases/v1.9-release-notes.html#archives" class="header">Archives</a></li>
+      <li><a href="../../docs/releases/v1.9-release-notes.html#archives" class="header">Archives</a>
+      <ul>
+        <li><a href="../../docs/releases/v1.9-release-notes.html#add-files-by-their-self" class="header">Add files by their <code>_self</code></a></li>
+        <li><a href="../../docs/releases/v1.9-release-notes.html#annotated-source-as-a-format" class="header">Annotated source as a format</a></li>
+        <li><a href="../../docs/releases/v1.9-release-notes.html#require-only-resources-read-permission-for-archive-creation" class="header">Require only <code>resources/read</code> permission for archive creation</a></li>
+        <li><a href="../../docs/releases/v1.9-release-notes.html#remove-support-for-tarball-archives" class="header">Remove support for Tarball archives</a></li>
+      </ul></li>
       <li><a href="../../docs/releases/v1.9-release-notes.html#storages" class="header">Storages</a></li>
-      <li><a href="../../docs/releases/v1.9-release-notes.html#graph-analytics" class="header">Graph Analytics</a></li>
+      <li><a href="../../docs/releases/v1.9-release-notes.html#remote-storages" class="header">Remote Storages</a></li>
+      <li><a href="../../docs/releases/v1.9-release-notes.html#graph-analytics" class="header">Graph analytics</a>
+      <ul>
+        <li><a href="../../docs/releases/v1.9-release-notes.html#search-endpoint-for-graph-analytics-views" class="header">Search endpoint for Graph analytics&rsquo; views</a></li>
+        <li><a href="../../docs/releases/v1.9-release-notes.html#indexing-remote-contexts-in-graph-analytics" class="header">Indexing remote contexts in Graph Analytics</a></li>
+      </ul></li>
+      <li><a href="../../docs/releases/v1.9-release-notes.html#id-resolution" class="header">Id Resolution</a></li>
+      <li><a href="../../docs/releases/v1.9-release-notes.html#user-permissions" class="header">User Permissions</a></li>
     </ul></li>
     <li><a href="../../docs/releases/v1.9-release-notes.html#nexus-fusion" class="header">Nexus Fusion</a></li>
     <li><a href="../../docs/releases/v1.9-release-notes.html#nexus-forge" class="header">Nexus forge</a></li>
@@ -338,17 +386,28 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <h4><a href="#multi-fetch" name="multi-fetch" class="anchor"><span class="anchor-link"></span></a>Multi fetch</h4>
 <p>Multiple resources can now be retrieved within a single call with the multi-fetch operation.</p>
 <p><a href="../delta/api/multi-fetch.html">More information</a></p>
+<h4><a href="#resources-trial-and-resource-generation" name="resources-trial-and-resource-generation" class="anchor"><span class="anchor-link"></span></a>Resources trial and resource generation</h4>
+<p>Until 1.9, operations about resources were resulting in writes in the primary store and indexing in the knowledge graph. However, users may also want to first experiment/refine/polish/validate a resource and schema and only create/update the resource when they are happy with it.</p>
+<p><a href="../delta/api/trial.html#resource-generation">More information</a></p>
 <h4><a href="#payload-validation" name="payload-validation" class="anchor"><span class="anchor-link"></span></a>Payload validation</h4>
 <p>It is now forbidden for JSON payloads to contain fields beginning with underscore (_). This can be disabled be setting <code>app.resources.decoding-option</code> to <code>lenient</code>, however it is not recommended as specification of this data in payloads can have unexpected consequences in both data and the user-interface</p>
 <p>Listings by types can now be controlled with the <code>typeOperator</code> query parameter. Possible values are <code>or</code> and <code>and</code>, which will match any and all types, respectively.</p>
 <h4><a href="#aggregations" name="aggregations" class="anchor"><span class="anchor-link"></span></a>Aggregations</h4>
 <p>It is now possible to aggregate resources by <code>@type</code> or <code>project</code>.</p>
 <p><a href="../delta/api/resources-api.html#aggregations">More information</a></p>
+<h4><a href="#remote-contexts" name="remote-contexts" class="anchor"><span class="anchor-link"></span></a>Remote contexts</h4>
+<p>When creating/updating a resource, Nexus Delta now keeps track of the remote contexts that have been resolved during the operation.</p>
+<p><a href="../delta/api/resources-api.html#fetch-remote-contexts">More information</a></p>
 <h3><a href="#views" name="views" class="anchor"><span class="anchor-link"></span></a>Views</h3>
+<h4><a href="#indexing-errors-listing" name="indexing-errors-listing" class="anchor"><span class="anchor-link"></span></a>Indexing errors listing</h4>
 <p>Indexing errors can now be listed and filtered for a given view.</p>
 <p><a href="../delta/api/views/index.html#listing-indexing-failures">More information</a></p>
+<h4><a href="#resource-type-filtering-performance-improvement" name="resource-type-filtering-performance-improvement" class="anchor"><span class="anchor-link"></span></a>Resource type filtering performance improvement</h4>
+<p>To improve indexing performance, the types defined in the <a href="../delta/api/views/pipes.html#filter-by-type">FilterByType pipe</a>, <a href="../delta/api/views/sparql-view-api.html#payload">Sparql View payload</a>, or the <a href="../delta/api/views/composite-view-api.html#sources">Composite View source payload</a> are filtered in PostgreSQL rather than in Nexus Delta. This avoids querying for data just to discard it straight away.</p>
+<h4><a href="#compressing-requests-to-elasticsearch" name="compressing-requests-to-elasticsearch" class="anchor"><span class="anchor-link"></span></a>Compressing requests to Elasticsearch</h4>
+<p>The different requests to Elasticsearch are now compressed by default allowing to reduce the I/Os especially during indexing.</p>
 <h3><a href="#composite-views" name="composite-views" class="anchor"><span class="anchor-link"></span></a>Composite views</h3>
-<p>To enhance performance of indexing of composite views, Nexus Delta introduces the following features.</p>
+<p>New features enhance performance of indexing of composite views, as well as authentication changes for views which incorporate projects on remote Delta instances</p>
 <h4><a href="#batching-queries-to-the-intermediate-space" name="batching-queries-to-the-intermediate-space" class="anchor"><span class="anchor-link"></span></a>Batching queries to the intermediate space</h4>
 <p>Construct queries to the intermediate space can now be batched.</p>
 <p><a href="../delta/api/views/composite-view-api.html#batching-queries-to-the-intermediate-space">More information</a></p>
@@ -357,22 +416,47 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <p>For example, if a source is added/updated/removed, all the spaces (intermediate space and projection spaces) get reindexed. However if a projection is added/updated/removed, now only the space related to this projection is reindexed which reduces the number of operations and consequently speed up the indexing.</p>
 <p>Preserving the intermediate space also reduces the fragmentation of the Blazegraph journal.</p>
 <p><a href="../delta/api/views/composite-view-api.html#batching-queries-to-the-intermediate-space">More information</a></p>
+<h4><a href="#remote-authentication" name="remote-authentication" class="anchor"><span class="anchor-link"></span></a>Remote authentication</h4>
+<p>Rather than storing an auth token in the composite view, it is now expected to specify an authentication method in the Delta configuration</p>
+<p><a href="../getting-started/running-nexus/configuration/index.html#composite-views-plugin-configuration">More information</a></p>
+<h4><a href="#remove-the-resourcetag-field-in-projections-of-composite-views" name="remove-the-resourcetag-field-in-projections-of-composite-views" class="anchor"><span class="anchor-link"></span></a>Remove the resourceTag field in projections of composite views</h4>
+<p>This field was never used so as there is no plan for it, it is now removed.</p>
 <h3><a href="#elasticsearch-views" name="elasticsearch-views" class="anchor"><span class="anchor-link"></span></a>Elasticsearch Views</h3>
 <p>The Elasticsearch mapping of an Elasticsearch View can be retrieved.</p>
 <p><a href="../delta/api/views/elasticsearch-view-api.html#fetch-elasticsearch-mapping">More information</a></p>
 <h3><a href="#archives" name="archives" class="anchor"><span class="anchor-link"></span></a>Archives</h3>
-<p>Resources can be added to an archive using a <code>_self</code>.</p>
+<h4><a href="#add-files-by-their-self" name="add-files-by-their-self" class="anchor"><span class="anchor-link"></span></a>Add files by their <code>_self</code></h4>
+<p>Files can be added to an archive using a <code>_self</code>.</p>
 <p><a href="../delta/api/archives-api.html#payload">More information</a></p>
+<h4><a href="#annotated-source-as-a-format" name="annotated-source-as-a-format" class="anchor"><span class="anchor-link"></span></a>Annotated source as a format</h4>
+<p>Annotated source is now available as an output format when creating an archive.</p>
+<p><a href="../delta/api/archives-api.html#payload">More information</a></p>
+<h4><a href="#require-only-resources-read-permission-for-archive-creation" name="require-only-resources-read-permission-for-archive-creation" class="anchor"><span class="anchor-link"></span></a>Require only <code>resources/read</code> permission for archive creation</h4>
+<p>Creating an archive now requires only the <code>resources/read</code> permission instead of <code>archives/write</code>.</p>
+<h4><a href="#remove-support-for-tarball-archives" name="remove-support-for-tarball-archives" class="anchor"><span class="anchor-link"></span></a>Remove support for Tarball archives</h4>
+<p>Tarball archives are no longer supported due to unnecessary restrictions. ZIP is now the only allowed format and clients should send <code>application/zip</code> in the <code>Accept</code> header when creating archives.</p>
 <h3><a href="#storages" name="storages" class="anchor"><span class="anchor-link"></span></a>Storages</h3>
+<h3><a href="#remote-storages" name="remote-storages" class="anchor"><span class="anchor-link"></span></a>Remote Storages</h3>
 <p>Storages can no longer be created with credentials that would get stored:</p>
 <ul>
   <li>For S3 storages, this would be <code>accessKey</code>/<code>secretKey</code>.</li>
   <li>For remote storages, this means <code>credentials</code>.</li>
 </ul>
 <p>These should instead be defined in the Delta configuration.</p>
-<h3><a href="#graph-analytics" name="graph-analytics" class="anchor"><span class="anchor-link"></span></a>Graph Analytics</h3>
-<p>The Elasticsearch views behind Graph Analytics can now be queried using the <code>_search</code> endpoint.</p>
+<p><a href="../getting-started/running-nexus/configuration/index.html#remote-storage-configuration">More information</a></p>
+<h3><a href="#graph-analytics" name="graph-analytics" class="anchor"><span class="anchor-link"></span></a>Graph analytics</h3>
+<h4><a href="#search-endpoint-for-graph-analytics-views" name="search-endpoint-for-graph-analytics-views" class="anchor"><span class="anchor-link"></span></a>Search endpoint for Graph analytics&rsquo; views</h4>
+<p>The Elasticsearch views behind Graph analytics can now be queried using the <code>_search</code> endpoint.</p>
 <p><a href="../delta/api/graph-analytics-api.html">More information</a></p>
+<h4><a href="#indexing-remote-contexts-in-graph-analytics" name="indexing-remote-contexts-in-graph-analytics" class="anchor"><span class="anchor-link"></span></a>Indexing remote contexts in Graph Analytics</h4>
+<p>Remote contexts used during the JSON-LD resolution for a resource are now indexed in the Graph analytics views and can be found via the <a href="v1.9-release-notes.html#search-endpoint-for-graph-analytics-views">search endpoint</a></p>
+<p><a href="../delta/api/graph-analytics-api.html#document-structure">More information</a></p>
+<h3><a href="#id-resolution" name="id-resolution" class="anchor"><span class="anchor-link"></span></a>Id Resolution</h3>
+<p>It is now possible to perform ID resolution by providing only the identifier of a resource. </p>
+<p><a href="../delta/api/id-resolution.html">More information</a></p>
+<h3><a href="#user-permissions" name="user-permissions" class="anchor"><span class="anchor-link"></span></a>User Permissions</h3>
+<p>It is now possible to query whether the current logged in user has a specific permission in a specific context.</p>
+<p><a href="../delta/api/user-permissions-api.html">More information</a></p>
 <h2><a href="#nexus-fusion" name="nexus-fusion" class="anchor"><span class="anchor-link"></span></a>Nexus Fusion</h2>
 <p>TODO</p>
 <h2><a href="#nexus-forge" name="nexus-forge" class="anchor"><span class="anchor-link"></span></a>Nexus forge</h2>

@@ -197,12 +197,15 @@ BlueBrain/nexus
       <li><a href="../../../../docs/delta/api/permissions-api.html" class="page">Permissions</a></li>
       <li><a href="../../../../docs/delta/api/realms-api.html" class="page">Realms</a></li>
       <li><a href="../../../../docs/delta/api/acls-api.html" class="page">Access Control Lists</a></li>
+      <li><a href="../../../../docs/delta/api/user-permissions-api.html" class="page">User Permissions</a></li>
       <li><a href="../../../../docs/delta/api/orgs-api.html" class="page">Organizations</a></li>
       <li><a href="../../../../docs/delta/api/projects-api.html" class="page">Projects</a></li>
       <li><a href="../../../../docs/delta/api/quotas.html" class="page">Quotas</a></li>
       <li><a href="../../../../docs/delta/api/schemas-api.html" class="page">Schemas</a></li>
       <li><a href="../../../../docs/delta/api/resources-api.html" class="page">Resources</a></li>
+      <li><a href="../../../../docs/delta/api/trial.html" class="page">Trial</a></li>
       <li><a href="../../../../docs/delta/api/multi-fetch.html" class="page">Multi fetch</a></li>
+      <li><a href="../../../../docs/delta/api/id-resolution.html" class="page">Id Resolution</a></li>
       <li><a href="../../../../docs/delta/api/resolvers-api.html" class="page">Resolvers</a></li>
       <li><a href="../../../../docs/delta/api/views/index.html" class="page">Views</a>
       <ul>
@@ -222,6 +225,7 @@ BlueBrain/nexus
       <li><a href="../../../../docs/delta/api/events-api.html" class="page">Global events</a></li>
       <li><a href="../../../../docs/delta/api/supervision-api.html" class="page">Supervision</a></li>
     </ul></li>
+    <li><a href="../../../../docs/delta/metadata.html" class="page">Nexus Metadata</a></li>
     <li><a href="../../../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
     <li><a href="../../../../docs/delta/benchmarks/index.html" class="page">Benchmarks</a>
     <ul>
@@ -471,7 +475,6 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
          &quot;context&quot;: _context_,
          &quot;resourceSchemas&quot;: [ &quot;{resourceSchema}&quot;, ...],
          &quot;resourceTypes&quot;: [ &quot;{resourceType}&quot;, ...],
-         &quot;resourceTag&quot;: &quot;{tag}&quot;,
          &quot;includeMetadata&quot;: {includeMetadata},
          &quot;includeDeprecated&quot;: {includeDeprecated},
          &quot;permission&quot;: {permission},
@@ -491,7 +494,6 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   <li><code>{query}</code>: <a href="https://www.w3.org/TR/rdf-sparql-query/#construct" title="Sparql Construct Query" target="_blank" rel="noopener noreferrer">Sparql Construct Query</a> - Defines the Sparql query to execute against the  intermediate Sparql space for each target resource.</li>
   <li><code>{resourceSchema}</code>: Iri - Selects only resources that are validated against the provided schema Iri to perform the  query. This field is optional.</li>
   <li><code>{resourceType}</code>: Iri - Select only resources of the provided type Iri to perform the query. This field is optional.</li>
-  <li><code>{tag}</code>: String - Selects only resources with the provided tag to perform the query. This field is optional.</li>
   <li><code>{includeMetadata}</code>: Boolean - If true, the resource&rsquo;s nexus metadata (<code>_constrainedBy</code>, <code>_deprecated</code>, &hellip;) will be  included in the ElasticSearch document. The default value is <code>false</code>.</li>
   <li><code>{includeDeprecated}</code>: Boolean - If true, deprecated resources are also indexed. The default value is <code>false</code>.</li>
   <li><code>{permission}</code>: String - the permission necessary to query this projection. Defaults to <code>views/query</code>.</li>
@@ -512,7 +514,6 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
          &quot;query&quot;: &quot;{query}&quot;,
          &quot;resourceSchemas&quot;: [ &quot;{resourceSchema}&quot;, ...],
          &quot;resourceTypes&quot;: [ &quot;{resourceType}&quot;, ...],
-         &quot;resourceTag&quot;: &quot;{tag}&quot;,
          &quot;includeMetadata&quot;: {includeMetadata},
          &quot;includeDeprecated&quot;: {includeDeprecated},
         &quot;permission&quot;: &quot;{permission}&quot;
@@ -526,7 +527,6 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   <li><code>{projectionId}</code>: Iri - The identifier of the projection. This field is optional. When missing, a randomly generated  Iri will be assigned.</li>
   <li><code>{resourceSchema}</code>: Iri - Selects only resources that are validated against the provided schema Iri to perform the  query. This field is optional.</li>
   <li><code>{resourceType}</code>: Iri - Select only resources of the provided type Iri to perform the query. This field is optional.</li>
-  <li><code>{tag}</code>: String - Selects only resources with the provided tag to perform the query. This field is optional.</li>
   <li><code>{includeMetadata}</code>: Boolean - If true, the resource&rsquo;s nexus metadata (<code>_constrainedBy</code>, <code>_deprecated</code>, &hellip;) will be  stored in the ElasticSearch document. Otherwise it won&rsquo;t. The default value is <code>false</code>.</li>
   <li><code>{includeDeprecated}</code>: Boolean - If true, deprecated resources are also indexed. The default value is <code>false</code>.</li>
   <li><code>{query}</code>: <a href="https://www.w3.org/TR/rdf-sparql-query/#construct" title="Sparql Construct Query" target="_blank" rel="noopener noreferrer">Sparql Construct Query</a> - Defines the Sparql query to  execute against the intermediate Sparql space for each target resource.</li>

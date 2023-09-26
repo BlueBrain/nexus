@@ -197,12 +197,15 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/permissions-api.html" class="page">Permissions</a></li>
       <li><a href="../../../docs/delta/api/realms-api.html" class="page">Realms</a></li>
       <li><a href="../../../docs/delta/api/acls-api.html" class="page">Access Control Lists</a></li>
+      <li><a href="../../../docs/delta/api/user-permissions-api.html" class="page">User Permissions</a></li>
       <li><a href="../../../docs/delta/api/orgs-api.html" class="page">Organizations</a></li>
       <li><a href="../../../docs/delta/api/projects-api.html" class="page">Projects</a></li>
       <li><a href="../../../docs/delta/api/quotas.html" class="page">Quotas</a></li>
       <li><a href="../../../docs/delta/api/schemas-api.html" class="page">Schemas</a></li>
       <li><a href="../../../docs/delta/api/resources-api.html" class="page">Resources</a></li>
+      <li><a href="../../../docs/delta/api/trial.html" class="page">Trial</a></li>
       <li><a href="../../../docs/delta/api/multi-fetch.html" class="page">Multi fetch</a></li>
+      <li><a href="../../../docs/delta/api/id-resolution.html" class="page">Id Resolution</a></li>
       <li><a href="../../../docs/delta/api/resolvers-api.html" class="page">Resolvers</a></li>
       <li><a href="../../../docs/delta/api/views/index.html" class="page">Views</a>
       <ul>
@@ -222,6 +225,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/events-api.html" class="page">Global events</a></li>
       <li><a href="../../../docs/delta/api/supervision-api.html" class="page">Supervision</a></li>
     </ul></li>
+    <li><a href="../../../docs/delta/metadata.html" class="page">Nexus Metadata</a></li>
     <li><a href="../../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
     <li><a href="../../../docs/delta/benchmarks/index.html" class="page">Benchmarks</a>
     <ul>
@@ -241,6 +245,7 @@ BlueBrain/nexus
     <li><a href="../../../docs/delta/api/index.html#permissions" class="header">Permissions</a></li>
     <li><a href="../../../docs/delta/api/index.html#realms" class="header">Realms</a></li>
     <li><a href="../../../docs/delta/api/index.html#acls" class="header">ACLs</a></li>
+    <li><a href="../../../docs/delta/api/index.html#user-permissions" class="header">User Permissions</a></li>
     <li><a href="../../../docs/delta/api/index.html#organizations" class="header">Organizations</a></li>
     <li><a href="../../../docs/delta/api/index.html#projects" class="header">Projects</a></li>
     <li><a href="../../../docs/delta/api/index.html#quotas" class="header">Quotas</a></li>
@@ -279,6 +284,7 @@ BlueBrain/nexus
     <li><a href="../../../docs/delta/api/index.html#permissions" class="header">Permissions</a></li>
     <li><a href="../../../docs/delta/api/index.html#realms" class="header">Realms</a></li>
     <li><a href="../../../docs/delta/api/index.html#acls" class="header">ACLs</a></li>
+    <li><a href="../../../docs/delta/api/index.html#user-permissions" class="header">User Permissions</a></li>
     <li><a href="../../../docs/delta/api/index.html#organizations" class="header">Organizations</a></li>
     <li><a href="../../../docs/delta/api/index.html#projects" class="header">Projects</a></li>
     <li><a href="../../../docs/delta/api/index.html#quotas" class="header">Quotas</a></li>
@@ -317,7 +323,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <p>A permission is the basic unit to provide a way to limit applications&rsquo; access to sensitive information.</p>
 <p><a href="permissions-api.html">Operations on permisions</a></p>
 <h2><a href="#realms" name="realms" class="anchor"><span class="anchor-link"></span></a>Realms</h2>
-<p>A realm provides with the necessary information to perform authentication against a certain <a href="https://en.wikipedia.org/wiki/OpenID_Connect" title="OIDC" target="_blank" rel="noopener noreferrer">OIDC</a> provider . </p>
+<p>A realm provides with the necessary information to perform authentication against a certain <a href="https://en.wikipedia.org/wiki/OpenID_Connect" title="OIDC" target="_blank" rel="noopener noreferrer">OIDC</a> provider .</p>
 <p><a href="realms-api.html">Operations on realms</a></p>
 <h2><a href="#acls" name="acls" class="anchor"><span class="anchor-link"></span></a>ACLs</h2>
 <p>In order to restrict applications&rsquo; access to data by placing restrictions on them, three parameters are important:</p>
@@ -328,6 +334,9 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 </ul>
 <p>An ACL defines the set of <strong>permissions</strong> that certain <strong>identities</strong> have on a concrete <strong>path</strong>.</p>
 <p><a href="acls-api.html">Operations on ACLs</a></p>
+<h2><a href="#user-permissions" name="user-permissions" class="anchor"><span class="anchor-link"></span></a>User Permissions</h2>
+<p>ACLs are the permission model used in Delta. Sometimes it can be more convenient to ask more basic questions about whether a user has a permission, rather than trying to determine this yourself from the ACLs API. This is what the user permissions API is for</p>
+<p><a href="user-permissions-api.html">Operations on User Permissions</a></p>
 <h2><a href="#organizations" name="organizations" class="anchor"><span class="anchor-link"></span></a>Organizations</h2>
 <p>The top-level grouping resource in the platform, called organization</p>
 <p><a href="orgs-api.html">Operations on organizations</a></p>
@@ -338,7 +347,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <p>Defines the maximum number of resources and events that can exist in a certain scope.</p>
 <p><a href="quotas.html">Operations on quotas</a></p>
 <h2><a href="#schemas" name="schemas" class="anchor"><span class="anchor-link"></span></a>Schemas</h2>
-<p>A schema is a resource which defines a set of rules and constrains using <a href="https://www.w3.org/TR/shacl/" title="SHACL" target="_blank" rel="noopener noreferrer">SHACL</a>. </p>
+<p>A schema is a resource which defines a set of rules and constrains using <a href="https://www.w3.org/TR/shacl/" title="SHACL" target="_blank" rel="noopener noreferrer">SHACL</a>.</p>
 <p><a href="schemas-api.html">Operations on schemas</a></p>
 <h2><a href="#resources" name="resources" class="anchor"><span class="anchor-link"></span></a>Resources</h2>
 <p>A resource is the most generic entity on the Knowledge Graph. Resources can be <code>schemas</code>, <code>resolvers</code>, <code>views</code>, <code>storages</code>, <code>files</code> or <code>data</code>.</p>
@@ -356,7 +365,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <p>A file is a binary attachment resource.</p>
 <p><a href="files-api.html">Operations on files</a></p>
 <h2><a href="#archives" name="archives" class="anchor"><span class="anchor-link"></span></a>Archives</h2>
-<p>An archive is a collection of resources stored inside an archive file. The archiving format chosen for this purpose is tar (or tarball).</p>
+<p>An archive is a collection of resources stored inside an archive file. The archiving format chosen for this purpose is ZIP file.</p>
 <p><a href="archives-api.html">Operations on archives</a></p>
 <h2><a href="#resource-lifecycle" name="resource-lifecycle" class="anchor"><span class="anchor-link"></span></a>Resource Lifecycle</h2>
 <p>Nexus Delta is build using the <a href="https://martinfowler.com/eaaDev/EventSourcing.html" title="event sourcing" target="_blank" rel="noopener noreferrer">event sourcing</a> approach. This strategy captures all changes to an application state as a sequence of events.</p>

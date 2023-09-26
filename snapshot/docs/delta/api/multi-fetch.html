@@ -197,12 +197,15 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/permissions-api.html" class="page">Permissions</a></li>
       <li><a href="../../../docs/delta/api/realms-api.html" class="page">Realms</a></li>
       <li><a href="../../../docs/delta/api/acls-api.html" class="page">Access Control Lists</a></li>
+      <li><a href="../../../docs/delta/api/user-permissions-api.html" class="page">User Permissions</a></li>
       <li><a href="../../../docs/delta/api/orgs-api.html" class="page">Organizations</a></li>
       <li><a href="../../../docs/delta/api/projects-api.html" class="page">Projects</a></li>
       <li><a href="../../../docs/delta/api/quotas.html" class="page">Quotas</a></li>
       <li><a href="../../../docs/delta/api/schemas-api.html" class="page">Schemas</a></li>
       <li><a href="../../../docs/delta/api/resources-api.html" class="page">Resources</a></li>
+      <li><a href="../../../docs/delta/api/trial.html" class="page">Trial</a></li>
       <li><a href="../../../docs/delta/api/multi-fetch.html" class="active page">Multi fetch</a></li>
+      <li><a href="../../../docs/delta/api/id-resolution.html" class="page">Id Resolution</a></li>
       <li><a href="../../../docs/delta/api/resolvers-api.html" class="page">Resolvers</a></li>
       <li><a href="../../../docs/delta/api/views/index.html" class="page">Views</a>
       <ul>
@@ -222,6 +225,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/events-api.html" class="page">Global events</a></li>
       <li><a href="../../../docs/delta/api/supervision-api.html" class="page">Supervision</a></li>
     </ul></li>
+    <li><a href="../../../docs/delta/metadata.html" class="page">Nexus Metadata</a></li>
     <li><a href="../../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
     <li><a href="../../../docs/delta/benchmarks/index.html" class="page">Benchmarks</a>
     <ul>
@@ -288,7 +292,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <p>When performing a request, the caller must have <code>resources/read</code> permission on the project each resource belongs to.</p>
 <p>Please visit <a href="authentication.html">Authentication &amp; authorization</a> section to learn more about it.</p></div>
 <h2><a href="#payload" name="payload" class="anchor"><span class="anchor-link"></span></a>Payload</h2>
-<pre><code>GET /v1/multi-fetch/resources
+<pre><code>GET|POST /v1/multi-fetch/resources
 
 {
   &quot;format&quot;: {format}
@@ -303,7 +307,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 </code></pre>
 <p>where&hellip;</p>
 <ul>
-  <li><code>{format}</code>: String - the format we expect for the resources in the response. Accepts the following values: source (to get the original payload), compacted, expanded, n-triples, dot</li>
+  <li><code>{format}</code>: String - the format we expect for the resources in the response. Accepts the following values: source (to get the original payload), annotated-source (to get the original payload with metadata), compacted, expanded, n-triples, dot</li>
   <li><code>{project}</code>: String - the project (in the format &lsquo;myorg/myproject&rsquo;) where the specified resource belongs. This field  is optional. It defaults to the current project.</li>
   <li><code>{id}</code>: Iri - the @id value of the resource to be returned. Can contain a tag or a revision.</li>
 </ul>
@@ -408,7 +412,7 @@ Snapshot
 <footer class="md-footer">
 <div class="md-footer-nav">
 <nav class="md-footer-nav__inner md-grid">
-<a href="../../../docs/delta/api/resources-api.html" title="Resources" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+<a href="../../../docs/delta/api/trial.html" title="Trial" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
 <div class="md-flex__cell md-flex__cell--shrink">
 <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
 </div>
@@ -417,17 +421,17 @@ Snapshot
 <span class="md-footer-nav__direction">
 Previous
 </span>
-Resources
+Trial
 </span>
 </div>
 </a>
-<a href="../../../docs/delta/api/resolvers-api.html" title="Resolvers" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../../docs/delta/api/id-resolution.html" title="Id Resolution" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-Resolvers
+Id Resolution
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">

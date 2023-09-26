@@ -39,6 +39,17 @@
               "path": "http://schema.org/worksFor"
             }
           ],
+          "remoteContexts": [
+            {
+              "@type": "ProjectRemoteContextRef",
+              "iri": "https://bbp.epfl.ch/contexts/person",
+              "resource": {
+                "id": "https://bbp.epfl.ch/contexts/person",
+                "project": "myorg/myproj",
+                "rev": 1
+              }
+            }
+          ],
           "_createdAt": "2023-08-08T15:49:14.081Z",
           "_createdBy": {
             "@type": "User",

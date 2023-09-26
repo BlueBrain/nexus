@@ -197,12 +197,15 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/permissions-api.html" class="page">Permissions</a></li>
       <li><a href="../../../docs/delta/api/realms-api.html" class="page">Realms</a></li>
       <li><a href="../../../docs/delta/api/acls-api.html" class="page">Access Control Lists</a></li>
+      <li><a href="../../../docs/delta/api/user-permissions-api.html" class="page">User Permissions</a></li>
       <li><a href="../../../docs/delta/api/orgs-api.html" class="page">Organizations</a></li>
       <li><a href="../../../docs/delta/api/projects-api.html" class="page">Projects</a></li>
       <li><a href="../../../docs/delta/api/quotas.html" class="page">Quotas</a></li>
       <li><a href="../../../docs/delta/api/schemas-api.html" class="page">Schemas</a></li>
       <li><a href="../../../docs/delta/api/resources-api.html" class="page">Resources</a></li>
+      <li><a href="../../../docs/delta/api/trial.html" class="page">Trial</a></li>
       <li><a href="../../../docs/delta/api/multi-fetch.html" class="page">Multi fetch</a></li>
+      <li><a href="../../../docs/delta/api/id-resolution.html" class="page">Id Resolution</a></li>
       <li><a href="../../../docs/delta/api/resolvers-api.html" class="page">Resolvers</a></li>
       <li><a href="../../../docs/delta/api/views/index.html" class="page">Views</a>
       <ul>
@@ -222,6 +225,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/events-api.html" class="page">Global events</a></li>
       <li><a href="../../../docs/delta/api/supervision-api.html" class="page">Supervision</a></li>
     </ul></li>
+    <li><a href="../../../docs/delta/metadata.html" class="page">Nexus Metadata</a></li>
     <li><a href="../../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
     <li><a href="../../../docs/delta/benchmarks/index.html" class="page">Benchmarks</a>
     <ul>
@@ -520,6 +524,17 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
               &quot;path&quot;: &quot;http://schema.org/worksFor&quot;
             }
           ],
+          &quot;remoteContexts&quot;: [
+            {
+              &quot;@type&quot;: &quot;ProjectRemoteContextRef&quot;,
+              &quot;iri&quot;: &quot;https://bbp.epfl.ch/contexts/person&quot;,
+              &quot;resource&quot;: {
+                &quot;id&quot;: &quot;https://bbp.epfl.ch/contexts/person&quot;,
+                &quot;project&quot;: &quot;myorg/myproj&quot;,
+                &quot;rev&quot;: 1
+              }
+            }
+          ],
           &quot;_createdAt&quot;: &quot;2023-08-08T15:49:14.081Z&quot;,
           &quot;_createdBy&quot;: {
             &quot;@type&quot;: &quot;User&quot;,
@@ -621,6 +636,17 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
       &quot;path&quot;: &quot;http://schema.org/brother&quot;,
       &quot;isInArray&quot;: false
     }
+  ],
+  &quot;remoteContexts&quot;: [
+    {
+      &quot;@type&quot;: &quot;ProjectRemoteContextRef&quot;,
+      &quot;iri&quot;: &quot;https://bbp.epfl.ch/contexts/person&quot;,
+      &quot;resource&quot;: {
+        &quot;id&quot;: &quot;https://bbp.epfl.ch/contexts/person&quot;,
+        &quot;project&quot;: &quot;myorg/myproject&quot;,
+        &quot;rev&quot;: 1
+      }
+    }
   ]
 }
 </code></pre>
@@ -633,6 +659,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   <li><code>isInArray</code> - Boolean: Flag to inform whether the current path (or its parent) is part of an array.</li>
   <li><code>dataType</code> - String: The type of the value present in the current path. Possible values are: string, numeric and boolean</li>
   <li><code>found</code> - Boolean: Flag to inform whether an @id inside <code>references</code> has been resolved as a relationship.</li>
+  <li><code>remoteContexts</code> - Json Object Array: A collection of remote contexts detected during the JSON-LD resolution for this resource.  See the <a href="resources-api.html#fetch-remote-contexts">Resources - Fetch remote contexts</a> operation to learn about the remote context types.</li>
 </ul>
 </div>
 <div>

@@ -197,12 +197,15 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/permissions-api.html" class="page">Permissions</a></li>
       <li><a href="../../../docs/delta/api/realms-api.html" class="page">Realms</a></li>
       <li><a href="../../../docs/delta/api/acls-api.html" class="page">Access Control Lists</a></li>
+      <li><a href="../../../docs/delta/api/user-permissions-api.html" class="page">User Permissions</a></li>
       <li><a href="../../../docs/delta/api/orgs-api.html" class="page">Organizations</a></li>
       <li><a href="../../../docs/delta/api/projects-api.html" class="page">Projects</a></li>
       <li><a href="../../../docs/delta/api/quotas.html" class="page">Quotas</a></li>
       <li><a href="../../../docs/delta/api/schemas-api.html" class="page">Schemas</a></li>
       <li><a href="../../../docs/delta/api/resources-api.html" class="page">Resources</a></li>
+      <li><a href="../../../docs/delta/api/trial.html" class="page">Trial</a></li>
       <li><a href="../../../docs/delta/api/multi-fetch.html" class="page">Multi fetch</a></li>
+      <li><a href="../../../docs/delta/api/id-resolution.html" class="page">Id Resolution</a></li>
       <li><a href="../../../docs/delta/api/resolvers-api.html" class="page">Resolvers</a></li>
       <li><a href="../../../docs/delta/api/views/index.html" class="page">Views</a>
       <ul>
@@ -222,6 +225,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/events-api.html" class="page">Global events</a></li>
       <li><a href="../../../docs/delta/api/supervision-api.html" class="page">Supervision</a></li>
     </ul></li>
+    <li><a href="../../../docs/delta/metadata.html" class="page">Nexus Metadata</a></li>
     <li><a href="../../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
     <li><a href="../../../docs/delta/benchmarks/index.html" class="page">Benchmarks</a>
     <ul>
@@ -288,14 +292,13 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 </div>
 <div class="md-content__searchable">
 <h1><a href="#archives" name="archives" class="anchor"><span class="anchor-link"></span></a>Archives</h1>
-<p>An archive is a collection of resources stored inside an archive file. The archiving format chosen for this purpose is tar (or tarball). Archive resources are rooted in the <code>/v1/archives/{org_label}/{project_label}/</code> collection.</p>
+<p>An archive is a collection of resources stored inside an archive file. The archiving format chosen for this purpose is ZIP. Archive resources are rooted in the <code>/v1/archives/{org_label}/{project_label}/</code> collection.</p>
 <p>Each archive&hellip; </p>
 <ul>
   <li>belongs to a <code>project</code> identifier by the label <code>{project_label}</code></li>
   <li>inside an <code>organization</code> identifier by the label <code>{org_label}</code></li>
 </ul><div class="callout note tip"><div class="callout-title">Authorization notes</div>
-<p>When modifying archives, the caller must have <code>archives/write</code> permissions on the current path of the project or the ancestor paths.</p>
-<p>When reading archives, the caller must have <code>resources/read</code> permissions on the current path of the project or the ancestor paths.</p>
+<p>For both reading and modifying archives, the caller must have <code>resources/read</code> permissions on the current path of the project or the ancestor paths.</p>
 <p>Please visit <a href="authentication.html">Authentication &amp; authorization</a> section to learn more about it.</p></div>
 <h2><a href="#lifecycle" name="lifecycle" class="anchor"><span class="anchor-link"></span></a>Lifecycle</h2>
 <p>Contrarily to the rest of the platform resources, archives are not persisted resources, given their nature. Therefore there are no update, tag or deprecation operations available on archive resources.</p>
@@ -352,7 +355,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
     <ul>
       <li>Only allowed for Resource type</li>
       <li>Optional and defaults to compacted</li>
-      <li>Accepts the following values: source (to get the original payload), compacted, expanded, n-triples, dot</li>
+      <li>Accepts the following values: source (to get the original payload), annotated-source (to get the original payload with metadata), compacted, expanded, n-triples, dot</li>
       <li>Can not be present at the same time as <code>originalSource</code> field.</li>
     </ul>
   </li>
@@ -374,10 +377,10 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   <li>If the <code>@id</code> value is found on the payload, this @id will be used.</li>
   <li>If the <code>@id</code> value is not found on the payload, an @id will be generated as follows: <code>base:{UUID}</code>. The <code>base</code> is  the <code>prefix</code> defined on the resource&rsquo;s project (<code>{project_label}</code>).</li>
 </ul>
-<p>The response will be an HTTP 303 Location redirect, which will point to the url where to consume the archive (tarball).</p>
+<p>The response will be an HTTP 303 Location redirect, which will point to the url where to consume the archive (ZIP).</p>
 <p>The following diagram can help to understand the HTTP exchange <img src="assets/archives/post-redirect-get.png" alt="post-redirect-get" title="Post/Redirect/Get archive" /></p>
 <p><strong>Example</strong></p>
-<p>The following example shows how to create an archive containing 3 files. 2 of them are resources and the other is a file. As a response, the tarball will be offered.</p>
+<p>The following example shows how to create an archive containing 3 files. 2 of them are resources and the other is a file. As a response, the ZIP file will be offered.</p>
 <dl>
   <dt>Request</dt>
   <dd>
@@ -510,24 +513,20 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 </dl>
 <p>Note that if the payload contains an @id different from the <code>{archive_id}</code>, the request will fail.</p>
 <h2><a href="#fetch" name="fetch" class="anchor"><span class="anchor-link"></span></a>Fetch</h2>
-<p>When fetching an archive, the response format can be chosen through HTTP content negotiation. In order to fetch the archive metadata, the client can use any of the <a href="content-negotiation.html#supported-mime-types">following MIME types</a>. However, in order to fetch the archive content, the HTTP <code>Accept</code> header should be provided:</p>
-<ul>
-  <li><code>*/*</code> or <code>application/x-tar</code> will return a tar archive (or tarball)</li>
-  <li><code>application/zip</code> will return a zip archive</li>
-</ul><div class="callout note warning"><div class="callout-title">Note</div>
-<p><a href="https://en.wikipedia.org/wiki/Tar_(computing)" title="The limitations of the tar format">The limitations of the tar format</a> makes the usage of archives difficult (among other things, the maximum file name is limited to 100 characters), so its support will be removed in a future release.</p></div>
+<p>When fetching an archive, the response format can be chosen through HTTP content negotiation. In order to fetch the archive metadata, the client can use any of the <a href="content-negotiation.html#supported-mime-types">following MIME types</a>. However, in order to fetch the archive content, the HTTP <code>Accept</code> header should be provided as <code>application/zip</code>.</p>
+<p>@@@</p>
 <p>When downloading the archive, it is possible to ignore resources that does not exist by appending the query parameter <code>ignoreNotFound=true</code> to the fetch link.</p>
 <pre><code>GET /v1/archives/{org_label}/{project_label}/{archive_id}
 GET /v1/archives/{org_label}/{project_label}/{archive_id}?ignoreNotFound=true
 </code></pre>
 <p><strong>Example</strong></p>
 <dl>
-  <dt>Request (tarball)
+  <dt>Request (ZIP)
   </dt>
   <dd>
   <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/archives/fetch.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl &quot;http://localhost:8080/v1/archives/myorg/myproject/myarchive&quot; \
-     -H &quot;Accept: application/x-tar&quot; \
-     -o output.tar</code></pre></dd>
+     -H &quot;Accept: application/x-zip&quot; \
+     -o output.zip</code></pre></dd>
   <dt>Request (metadata)
   </dt>
   <dd>
@@ -569,7 +568,7 @@ GET /v1/archives/{org_label}/{project_label}/{archive_id}?ignoreNotFound=true
   &quot;_createdAt&quot;: &quot;2021-05-17T14:54:42.939Z&quot;,
   &quot;_createdBy&quot;: &quot;http://localhost:8080/v1/realms/myrealm/users/john&quot;,
   &quot;_updatedAt&quot;: &quot;2021-05-17T14:54:42.939Z&quot;,
-  &quot;_updatedBy&quot;: &quot;http://localhost:8080/v1/realms/myrealm/users/john&quot;
+  &quot;_updatedBy&quot;: &quot;http://localhost:8080/v1/realms/myrealm/users/john&quot;,
   &quot;_expiresInSeconds&quot;: 17530
 }</code></pre></dd>
 </dl>
