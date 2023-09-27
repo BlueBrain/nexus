@@ -7,9 +7,11 @@ import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.testkit.{CirceEq, EitherValuable}
+import ch.epfl.bluebrain.nexus.tests.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.tests.Identity.resources.{Morty, Rick}
 import ch.epfl.bluebrain.nexus.tests.Optics.listing._total
 import ch.epfl.bluebrain.nexus.tests.Optics.{filterKey, filterMetadataKeys}
+import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Resources
 import ch.epfl.bluebrain.nexus.tests.resources.SimpleResource
 import ch.epfl.bluebrain.nexus.tests.{BaseSpec, Optics, SchemaPayload}
 import io.circe.Json
@@ -62,7 +64,12 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    createProjects(Rick, orgId, projId1, projId2).accepted
+    val setup =
+      for {
+        _ <- createProjects(Rick, orgId, projId1, projId2)
+        _ <- aclDsl.addPermission(s"/$id1", Morty, Resources.Read)
+      } yield ()
+    setup.accepted
   }
 
   "adding schema" should {
@@ -122,8 +129,24 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
       } yield succeed
     }
 
-    "fetch the payload wih metadata" in {
-      deltaClient.get[Json](s"/resources/$id1/test-schema/test-resource:1", Rick) { (json, response) =>
+    "fail to fetch the resource when the user does not have access" in {
+      deltaClient.get[Json](s"/resources/$id1/test-schema/test-resource:1", Anonymous) { expectForbidden }
+    }
+
+    "fail to fetch the original payload when the user does not have access" in {
+      deltaClient.get[Json](s"/resources/$id1/test-schema/test-resource:1/source", Anonymous) {
+        expectForbidden
+      }
+    }
+
+    "fail to fetch the annotated original payload when the user does not have access" in {
+      deltaClient.get[Json](s"/resources/$id1/test-schema/test-resource:1/source?annotate=true", Anonymous) {
+        expectForbidden
+      }
+    }
+
+    "fetch the resource wih metadata" in {
+      deltaClient.get[Json](s"/resources/$id1/test-schema/test-resource:1", Morty) { (json, response) =>
         val expected = resource1Response(1, 5)
         response.status shouldEqual StatusCodes.OK
         filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
@@ -131,7 +154,7 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
     }
 
     "fetch the original payload" in {
-      deltaClient.get[Json](s"/resources/$id1/test-schema/test-resource:1/source", Rick) { (json, response) =>
+      deltaClient.get[Json](s"/resources/$id1/test-schema/test-resource:1/source", Morty) { (json, response) =>
         val expected = SimpleResource.sourcePayload(resource1Id, 5)
         response.status shouldEqual StatusCodes.OK
         json should equalIgnoreArrayOrder(expected)
@@ -139,7 +162,7 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
     }
 
     "fetch the original payload with metadata" in {
-      deltaClient.get[Json](s"/resources/$id1/test-schema/test-resource:1/source?annotate=true", Rick) {
+      deltaClient.get[Json](s"/resources/$id1/test-schema/test-resource:1/source?annotate=true", Morty) {
         (json, response) =>
           response.status shouldEqual StatusCodes.OK
           val expected = resource1AnnotatedSource(1, 5)
@@ -154,7 +177,7 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
         _ <- deltaClient.post[Json](s"/resources/$id1/_/", payload, Rick) { (_, response) =>
                response.status shouldEqual StatusCodes.Created
              }
-        _ <- deltaClient.get[Json](s"/resources/$id1/_/42/source?annotate=true", Rick) { (json, response) =>
+        _ <- deltaClient.get[Json](s"/resources/$id1/_/42/source?annotate=true", Morty) { (json, response) =>
                response.status shouldEqual StatusCodes.OK
                json should have(`@id`(s"42"))
              }
@@ -172,7 +195,7 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
                generatedId = Optics.`@id`.getOption(json).getOrElse(fail("could not find @id of created resource"))
                succeed
              }
-        _ <- deltaClient.get[Json](s"/resources/$id1/_/${UrlUtils.encode(generatedId)}/source?annotate=true", Rick) {
+        _ <- deltaClient.get[Json](s"/resources/$id1/_/${UrlUtils.encode(generatedId)}/source?annotate=true", Morty) {
                (json, response) =>
                  response.status shouldEqual StatusCodes.OK
                  json should have(`@id`(generatedId))
@@ -181,16 +204,9 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
     }
 
     "return not found if a resource is missing" in {
-      deltaClient.get[Json](s"/resources/$id1/test-schema/does-not-exist-resource:1/source?annotate=true", Rick) {
+      deltaClient.get[Json](s"/resources/$id1/test-schema/does-not-exist-resource:1/source?annotate=true", Morty) {
         (_, response) =>
           response.status shouldEqual StatusCodes.NotFound
-      }
-    }
-
-    "return forbidden if the user does not have access to the resource" in {
-      deltaClient.get[Json](s"/resources/$id1/test-schema/test-resource:1/source?annotate=true", Morty) {
-        (_, response) =>
-          response.status shouldEqual StatusCodes.Forbidden
       }
     }
 
@@ -386,15 +402,15 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
 
       for {
         _ <-
-          deltaClient.get[Json](s"/resources/$id1/test-schema/test-resource:1?tag=v1.0.1", Rick) { (json, response) =>
+          deltaClient.get[Json](s"/resources/$id1/test-schema/test-resource:1?tag=v1.0.1", Morty) { (json, response) =>
             response.status shouldEqual StatusCodes.OK
             filterMetadataKeys(json) should equalIgnoreArrayOrder(expectedTag1)
           }
-        _ <- deltaClient.get[Json](s"/resources/$id1/_/test-resource:1?tag=v1.0.0", Rick) { (json, response) =>
+        _ <- deltaClient.get[Json](s"/resources/$id1/_/test-resource:1?tag=v1.0.0", Morty) { (json, response) =>
                response.status shouldEqual StatusCodes.OK
                filterMetadataKeys(json) should equalIgnoreArrayOrder(expectedTag2)
              }
-        _ <- deltaClient.get[Json](s"/resources/$id1/_/test-resource:1?tag=v1.0.2", Rick) { (json, response) =>
+        _ <- deltaClient.get[Json](s"/resources/$id1/_/test-resource:1?tag=v1.0.2", Morty) { (json, response) =>
                response.status shouldEqual StatusCodes.OK
                filterMetadataKeys(json) should equalIgnoreArrayOrder(expectedTag3)
              }
@@ -453,7 +469,7 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
   }
 
   "fetch remote contexts for the created resource" in {
-    deltaClient.get[Json](s"/resources/$id1/_/myid/remote-contexts", Rick) { (json, response) =>
+    deltaClient.get[Json](s"/resources/$id1/_/myid/remote-contexts", Morty) { (json, response) =>
       response.status shouldEqual StatusCodes.OK
       val expected =
         json"""
@@ -480,7 +496,7 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
 
     deltaClient.get[String](
       s"/resources/$id1/_/test-resource:1",
-      Rick,
+      Morty,
       extraHeaders = List(Accept(MediaRange.One(`text/html`, 1f)))
     ) { (_, response) =>
       response.status shouldEqual StatusCodes.SeeOther
