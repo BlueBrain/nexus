@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, JsonLdCon
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.QueryParamsUnmarshalling.{IriBase, IriVocab}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
@@ -87,6 +88,14 @@ trait QueryParamsUnmarshalling {
       UserTag(string) match {
         case Right(tagLabel) => tagLabel
         case Left(err)       => throw new IllegalArgumentException(err.message)
+      }
+    }
+
+  implicit def permissionFromStringUnmarshaller: FromStringUnmarshaller[Permission] =
+    Unmarshaller.strict[String, Permission] { string =>
+      Permission(string) match {
+        case Right(value) => value
+        case Left(err)    => throw new IllegalArgumentException(err.getMessage)
       }
     }
 

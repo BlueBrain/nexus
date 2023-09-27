@@ -92,13 +92,10 @@ object GraphAnalyticsStream {
           }
         case Resources.entityType =>
           Task.fromEither(ResourceState.serializer.codec.decodeJson(json)).flatMap {
-            case s if s.deprecated =>
-              Task.pure(
-                Index.deprecated(s.project, s.id, s.rev, s.types, s.createdAt, s.createdBy, s.updatedAt, s.updatedBy)
-              )
-            case s                 =>
-              JsonLdDocument.fromExpanded(s.expanded, findRelationships(project, xas, relationshipBatch)).map { d =>
-                Index.active(s.project, s.id, s.rev, s.types, s.createdAt, s.createdBy, s.updatedAt, s.updatedBy, d)
+            case state if state.deprecated => deprecatedIndex(state)
+            case state                     =>
+              JsonLdDocument.fromExpanded(state.expanded, findRelationships(project, xas, relationshipBatch)).map {
+                doc => activeIndex(state, doc)
               }
           }
         case _                    => Task.pure(Noop)
@@ -107,4 +104,34 @@ object GraphAnalyticsStream {
     StreamingQuery.elems(project, start, SelectFilter.latest, qc, xas, decode)
   }
   // $COVERAGE-ON$
+
+  private def deprecatedIndex(state: ResourceState) =
+    Task.pure(
+      Index.deprecated(
+        state.project,
+        state.id,
+        state.remoteContexts,
+        state.rev,
+        state.types,
+        state.createdAt,
+        state.createdBy,
+        state.updatedAt,
+        state.updatedBy
+      )
+    )
+
+  private def activeIndex(state: ResourceState, doc: JsonLdDocument) =
+    Index.active(
+      state.project,
+      state.id,
+      state.remoteContexts,
+      state.rev,
+      state.types,
+      state.createdAt,
+      state.createdBy,
+      state.updatedAt,
+      state.updatedBy,
+      doc
+    )
+
 }

@@ -35,20 +35,15 @@ final class GraphAnalyticsSpec extends BaseSpec with CirceEq with EitherValuable
 
   "GraphAnalytics" should {
     "add resources" in {
+      def postResource(resourcePath: String) =
+        deltaClient.post[Json](s"/resources/$ref/", jsonContentOf(resourcePath), Bojack)(expectCreated)
+
       for {
-        _ <- deltaClient.post[Json](s"/resources/$ref/", jsonContentOf("/kg/graph-analytics/person1.json"), Bojack)(
-               expectCreated
-             )
-        _ <- deltaClient.post[Json](s"/resources/$ref/", jsonContentOf("/kg/graph-analytics/person2.json"), Bojack)(
-               expectCreated
-             )
-        _ <- deltaClient.post[Json](s"/resources/$ref/", jsonContentOf("/kg/graph-analytics/person3.json"), Bojack)(
-               expectCreated
-             )
-        _ <-
-          deltaClient.post[Json](s"/resources/$ref/", jsonContentOf("/kg/graph-analytics/organization.json"), Bojack)(
-            expectCreated
-          )
+        _ <- postResource("/kg/graph-analytics/context-test.json")
+        _ <- postResource("/kg/graph-analytics/person1.json")
+        _ <- postResource("/kg/graph-analytics/person2.json")
+        _ <- postResource("/kg/graph-analytics/person3.json")
+        _ <- postResource("/kg/graph-analytics/organization.json")
       } yield succeed
     }
 
@@ -98,7 +93,7 @@ final class GraphAnalyticsSpec extends BaseSpec with CirceEq with EitherValuable
     }
 
     "query for person1" in eventually {
-      val expected = jsonContentOf("/kg/graph-analytics/es-hit-source-person1.json")
+      val expected = jsonContentOf("/kg/graph-analytics/es-hit-source-person1.json", "projectRef" -> ref)
 
       // We ignore fields that are time or project dependent.
       // "relationships" are ignored as its "found" field can sometimes be
