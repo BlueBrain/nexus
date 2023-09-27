@@ -70,7 +70,7 @@ object BlazegraphSlowQueryStoreSuite {
     )
   }
 
-  private val Now          = Instant.now()
+  private val Now          = Instant.now().truncatedTo(ChronoUnit.MILLIS)
   private val OneWeekAgo   = Now.minus(Duration.ofDays(7))
   private val EightDaysAgo = Now.minus(Duration.ofDays(8))
   private val RecentQuery  = queryAtTime(Now)
