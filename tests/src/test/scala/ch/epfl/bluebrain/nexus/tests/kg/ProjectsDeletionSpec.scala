@@ -120,14 +120,14 @@ final class ProjectsDeletionSpec extends BaseSpec with CirceEq with EitherValuab
              )
         _ <- deltaClient.uploadFile[Json](
                s"/files/$ref1/attachment.json",
-               contentOf("/kg/files/attachment.json"),
+               "some file content",
                ContentTypes.`application/json`,
                "attachment.json",
                Bojack
              )(expectCreated)
         _ <- deltaClient.uploadFile[Json](
                s"/files/$ref2/attachment.json",
-               contentOf("/kg/files/attachment.json"),
+               "some file content",
                ContentTypes.`application/json`,
                "attachment.json",
                Bojack

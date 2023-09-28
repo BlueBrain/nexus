@@ -93,6 +93,16 @@ class EventsSpec extends BaseSpec with Inspectors {
       val resourceId = "https://dev.nexus.test.com/simplified-resource/1"
       val payload    = SimpleResource.sourcePayload(resourceId, 3)
 
+      val fileContent =
+        """|{
+           |  "this": ["is", "a", "test", "attachment"]
+           |}""".stripMargin
+
+      val updatedFileContent =
+        """|{
+           |  "this": ["is", "a", "test", "attachment", "2"]
+           |}""".stripMargin
+
       for {
         //ResourceCreated event
         _ <- deltaClient.put[Json](s"/resources/$id/_/test-resource:1", payload, BugsBunny) { (_, response) =>
@@ -124,7 +134,7 @@ class EventsSpec extends BaseSpec with Inspectors {
         //FileCreated event
         _ <- deltaClient.uploadFile[Json](
                s"/files/$id/attachment.json",
-               contentOf("/kg/files/attachment.json"),
+               fileContent,
                ContentTypes.`application/json`,
                "attachment.json",
                BugsBunny
@@ -134,7 +144,7 @@ class EventsSpec extends BaseSpec with Inspectors {
         //FileUpdated event
         _ <- deltaClient.uploadFile[Json](
                s"/files/$id/attachment.json?rev=1",
-               contentOf("/kg/files/attachment2.json"),
+               updatedFileContent,
                ContentTypes.`application/json`,
                "attachment.json",
                BugsBunny
