@@ -79,17 +79,17 @@ class RemoteStorageSpec extends StorageSpec {
     )
 
     for {
-      _         <- deltaClient.post[Json](s"/storages/$fullId", payload, Coyote) { (json, response) =>
+      _         <- deltaClient.post[Json](s"/storages/$projectRef", payload, Coyote) { (json, response) =>
                      if (response.status != StatusCodes.Created) {
                        fail(s"Unexpected status '${response.status}', response:\n${json.spaces2}")
                      } else succeed
                    }
-      _         <- deltaClient.get[Json](s"/storages/$fullId/nxv:$storageId", Coyote) { (json, response) =>
-                     val expected = storageResponse(fullId, storageId, "resources/read", "files/write")
+      _         <- deltaClient.get[Json](s"/storages/$projectRef/nxv:$storageId", Coyote) { (json, response) =>
+                     val expected = storageResponse(projectRef, storageId, "resources/read", "files/write")
                      filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
                      response.status shouldEqual StatusCodes.OK
                    }
-      _         <- deltaClient.get[Json](s"/storages/$fullId/nxv:$storageId/source", Coyote) { (json, response) =>
+      _         <- deltaClient.get[Json](s"/storages/$projectRef/nxv:$storageId/source", Coyote) { (json, response) =>
                      response.status shouldEqual StatusCodes.OK
                      val expected = jsonContentOf(
                        "/kg/storages/storage-source.json",
@@ -103,12 +103,12 @@ class RemoteStorageSpec extends StorageSpec {
                      Permission(storageName, "read"),
                      Permission(storageName, "write")
                    )
-      _         <- deltaClient.post[Json](s"/storages/$fullId", payload2, Coyote) { (_, response) =>
+      _         <- deltaClient.post[Json](s"/storages/$projectRef", payload2, Coyote) { (_, response) =>
                      response.status shouldEqual StatusCodes.Created
                    }
       storageId2 = s"${storageId}2"
-      _         <- deltaClient.get[Json](s"/storages/$fullId/nxv:$storageId2", Coyote) { (json, response) =>
-                     val expected = storageResponse(fullId, storageId2, s"$storageName/read", s"$storageName/write")
+      _         <- deltaClient.get[Json](s"/storages/$projectRef/nxv:$storageId2", Coyote) { (json, response) =>
+                     val expected = storageResponse(projectRef, storageId2, s"$storageName/read", s"$storageName/write")
                      filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
                      response.status shouldEqual StatusCodes.OK
                    }
@@ -116,8 +116,8 @@ class RemoteStorageSpec extends StorageSpec {
   }
 
   def putFile(name: String, content: String, storageId: String)(implicit position: Position) = {
-    deltaClient.putAttachment[Json](
-      s"/files/$fullId/test-resource:$name?storage=nxv:${storageId}",
+    deltaClient.uploadFile[Json](
+      s"/files/$projectRef/test-resource:$name?storage=nxv:${storageId}",
       content,
       MediaTypes.`text/plain`.toContentType(HttpCharsets.`UTF-8`),
       name,
@@ -156,15 +156,17 @@ class RemoteStorageSpec extends StorageSpec {
       _ <- putFile("largefile13.txt", content, s"${storageId}2")
       _ <- putFile("largefile14.txt", content, s"${storageId}2")
       _ <- putFile("largefile15.txt", content, s"${storageId}2")
-      _ <- deltaClient.put[ByteString](s"/archives/$fullId/nxv:very-large-archive", payload, Coyote) { (_, response) =>
-             before = System.currentTimeMillis()
-             response.status shouldEqual StatusCodes.Created
-           }
       _ <-
-        deltaClient.get[ByteString](s"/archives/$fullId/nxv:very-large-archive", Coyote, acceptAll) { (_, response) =>
-          println(s"time taken to download archive: ${System.currentTimeMillis() - before}ms")
-          response.status shouldEqual StatusCodes.OK
-          contentType(response) shouldEqual MediaTypes.`application/x-tar`.toContentType
+        deltaClient.put[ByteString](s"/archives/$projectRef/nxv:very-large-archive", payload, Coyote) { (_, response) =>
+          before = System.currentTimeMillis()
+          response.status shouldEqual StatusCodes.Created
+        }
+      _ <-
+        deltaClient.get[ByteString](s"/archives/$projectRef/nxv:very-large-archive", Coyote, acceptAll) {
+          (_, response) =>
+            println(s"time taken to download archive: ${System.currentTimeMillis() - before}ms")
+            response.status shouldEqual StatusCodes.OK
+            contentType(response) shouldEqual MediaTypes.`application/x-tar`.toContentType
         }
     } yield {
       succeed
@@ -182,7 +184,7 @@ class RemoteStorageSpec extends StorageSpec {
         "id"       -> storageId
       )
 
-      deltaClient.post[Json](s"/storages/$fullId", filterKey("folder")(payload), Coyote) { (_, response) =>
+      deltaClient.post[Json](s"/storages/$projectRef", filterKey("folder")(payload), Coyote) { (_, response) =>
         response.status shouldEqual StatusCodes.BadRequest
       }
     }
@@ -198,44 +200,45 @@ class RemoteStorageSpec extends StorageSpec {
         "path"      -> Json.fromString(s"file.txt"),
         "mediaType" -> Json.fromString("text/plain")
       )
-      val fileId   = s"${config.deltaUri}/resources/$fullId/_/file.txt"
+      val fileId   = s"${config.deltaUri}/resources/$projectRef/_/file.txt"
       val expected = jsonContentOf(
         "/kg/files/remote-linked.json",
         replacements(
           Coyote,
           "id"          -> fileId,
-          "self"        -> fileSelf(fullId, fileId),
+          "self"        -> fileSelf(projectRef, fileId),
           "filename"    -> "file.txt",
           "storageId"   -> s"${storageId}2",
           "storageType" -> storageType,
-          "projId"      -> s"$fullId",
-          "project"     -> s"${config.deltaUri}/projects/$fullId"
+          "projId"      -> s"$projectRef",
+          "project"     -> s"${config.deltaUri}/projects/$projectRef"
         ): _*
       )
 
-      deltaClient.put[Json](s"/files/$fullId/file.txt?storage=nxv:${storageId}2", payload, Coyote) { (json, response) =>
-        filterMetadataKeys.andThen(filterKey("_location"))(json) shouldEqual expected
-        response.status shouldEqual StatusCodes.Created
+      deltaClient.put[Json](s"/files/$projectRef/file.txt?storage=nxv:${storageId}2", payload, Coyote) {
+        (json, response) =>
+          filterMetadataKeys.andThen(filterKey("_location"))(json) shouldEqual expected
+          response.status shouldEqual StatusCodes.Created
       }
     }
 
     "fetch eventually a linked file with updated attributes" in eventually {
-      val fileId   = s"${config.deltaUri}/resources/$fullId/_/file.txt"
+      val fileId   = s"${config.deltaUri}/resources/$projectRef/_/file.txt"
       val expected = jsonContentOf(
         "/kg/files/remote-updated-linked.json",
         replacements(
           Coyote,
-          "id"          -> s"${config.deltaUri}/resources/$fullId/_/file.txt",
-          "self"        -> fileSelf(fullId, fileId),
+          "id"          -> s"${config.deltaUri}/resources/$projectRef/_/file.txt",
+          "self"        -> fileSelf(projectRef, fileId),
           "filename"    -> "file.txt",
           "storageId"   -> s"${storageId}2",
           "storageType" -> storageType,
-          "projId"      -> s"$fullId",
-          "project"     -> s"${config.deltaUri}/projects/$fullId"
+          "projId"      -> s"$projectRef",
+          "project"     -> s"${config.deltaUri}/projects/$projectRef"
         ): _*
       )
 
-      deltaClient.get[Json](s"/files/$fullId/file.txt", Coyote) { (json, response) =>
+      deltaClient.get[Json](s"/files/$projectRef/file.txt", Coyote) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
         filterMetadataKeys.andThen(filterKey("_location"))(json) shouldEqual expected
       }
@@ -248,7 +251,7 @@ class RemoteStorageSpec extends StorageSpec {
         "mediaType" -> Json.fromString("image/png")
       )
 
-      deltaClient.put[Json](s"/files/$fullId/nonexistent.png?storage=nxv:${storageId}2", payload, Coyote) {
+      deltaClient.put[Json](s"/files/$projectRef/nonexistent.png?storage=nxv:${storageId}2", payload, Coyote) {
         (_, response) =>
           response.status shouldEqual StatusCodes.BadRequest
       }
@@ -289,8 +292,8 @@ class RemoteStorageSpec extends StorageSpec {
       deltaClient.get[Json]("/supervision/projections", Coyote) { (json1, _) =>
         eventually {
           // update the file
-          deltaClient.putAttachment[Json](
-            s"/files/$fullId/file.txt?storage=nxv:${storageId}2&rev=2",
+          deltaClient.uploadFile[Json](
+            s"/files/$projectRef/file.txt?storage=nxv:${storageId}2&rev=2",
             contentOf("/kg/files/attachment.json"),
             ContentTypes.`application/json`,
             "file.txt",

@@ -122,7 +122,7 @@ class EventsSpec extends BaseSpec with Inspectors {
                response.status shouldEqual StatusCodes.OK
              }
         //FileCreated event
-        _ <- deltaClient.putAttachment[Json](
+        _ <- deltaClient.uploadFile[Json](
                s"/files/$id/attachment.json",
                contentOf("/kg/files/attachment.json"),
                ContentTypes.`application/json`,
@@ -132,7 +132,7 @@ class EventsSpec extends BaseSpec with Inspectors {
                response.status shouldEqual StatusCodes.Created
              }
         //FileUpdated event
-        _ <- deltaClient.putAttachment[Json](
+        _ <- deltaClient.uploadFile[Json](
                s"/files/$id/attachment.json?rev=1",
                contentOf("/kg/files/attachment2.json"),
                ContentTypes.`application/json`,

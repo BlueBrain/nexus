@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.storage.config
 
 import java.nio.file.Path
-
 import akka.http.scaladsl.model.Uri
+import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
 import ch.epfl.bluebrain.nexus.storage.DeltaIdentitiesClient.Identity.{Anonymous, Subject, User}
 import ch.epfl.bluebrain.nexus.storage.JsonLdCirceSupport.OrderedKeys
 import ch.epfl.bluebrain.nexus.storage.config.AppConfig._
@@ -31,6 +31,7 @@ final case class AppConfig(
     storage: StorageConfig,
     subject: SubjectConfig,
     delta: DeltaClientConfig,
+    mediaTypeDetector: MediaTypeDetectorConfig,
     digest: DigestConfig
 )
 
