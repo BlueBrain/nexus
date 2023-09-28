@@ -8,13 +8,13 @@
     {
       "@id": "{{deltaUri}}/resources/{{project}}/_/attachment.json",
       "@type": "File",
-      "_bytes": 52,
+      "_bytes": 42,
       "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/files.json",
       "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
       "_deprecated": true,
       "_digest": {
         "_algorithm": "SHA-256",
-        "_value": "0e5ce4e33df07eb312e462d9b4646aebf44e7c4d758891e632dbb0533df85e3f"
+        "_value": "9144c8a8c435aff3262ba0a4620590f774c1d86a13956619723052eca6546c64"
       },
       "_filename": "attachment.json",
       "_incoming": "{{fileSelfPrefix}}attachment.json/incoming",
@@ -58,17 +58,17 @@
     {
       "@id": "{{deltaUri}}/resources/{{project}}/_/attachment2",
       "@type": "File",
-      "_bytes": 26,
+      "_bytes": 9,
       "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/files.json",
       "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
       "_deprecated": false,
       "_digest": {
         "_algorithm": "SHA-256",
-        "_value": "62ad07ee5e775552034186daafd7d77054620f2bc9fb8da629fd7af24b4c84e7"
+        "_value": "2b67fbb2c302811c3e4941183b1b2037774ee7dfc8b633eef1afa2231d001615"
       },
       "_filename": "attachment2",
       "_incoming": "{{fileSelfPrefix}}attachment2/incoming",
-      "_mediaType": "text/plain; charset=UTF-8",
+      "_mediaType": "application/octet-stream",
       "_outgoing": "{{fileSelfPrefix}}attachment2/outgoing",
       "_project": "{{deltaUri}}/projects/{{project}}",
       "_rev": 1,
@@ -83,17 +83,17 @@
     {
       "@id": "{{deltaUri}}/resources/{{project}}/_/attachment3",
       "@type": "File",
-      "_bytes": 26,
+      "_bytes": 9,
       "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/files.json",
       "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
       "_deprecated": false,
       "_digest": {
         "_algorithm": "SHA-256",
-        "_value": "62ad07ee5e775552034186daafd7d77054620f2bc9fb8da629fd7af24b4c84e7"
+        "_value": "2b67fbb2c302811c3e4941183b1b2037774ee7dfc8b633eef1afa2231d001615"
       },
       "_filename": "attachment2",
       "_incoming": "{{fileSelfPrefix}}attachment3/incoming",
-      "_mediaType": "text/plain; charset=UTF-8",
+      "_mediaType": "application/octet-stream",
       "_outgoing": "{{fileSelfPrefix}}attachment3/outgoing",
       "_project": "{{deltaUri}}/projects/{{project}}",
       "_rev": 1,

@@ -48,18 +48,27 @@ class FormDataExtractorSpec
         .toEntity()
 
     "be extracted with the default content type" in {
-      val entity = createEntity("file", NoContentType, Some("file.txt"))
+      val entity = createEntity("file", NoContentType, Some("file"))
 
-      val expectedDescription         = FileDescription(uuid, "file.txt", Some(`application/octet-stream`))
+      val expectedDescription         = FileDescription(uuid, "file", Some(`application/octet-stream`))
       val (description, resultEntity) = extractor(iri, entity, 179, None).accepted
       description shouldEqual expectedDescription
       consume(resultEntity.dataBytes) shouldEqual content
     }
 
-    "be extracted with the custom media type" in {
+    "be extracted with the custom media type from the config" in {
       val entity                      = createEntity("file", NoContentType, Some("file.custom"))
       val expectedDescription         = FileDescription(uuid, "file.custom", Some(customContentType))
       val (description, resultEntity) = extractor(iri, entity, 2000, None).accepted
+      description shouldEqual expectedDescription
+      consume(resultEntity.dataBytes) shouldEqual content
+    }
+
+    "be extracted with the akka detection from the extension" in {
+      val entity = createEntity("file", NoContentType, Some("file.txt"))
+
+      val expectedDescription         = FileDescription(uuid, "file.txt", Some(`text/plain(UTF-8)`))
+      val (description, resultEntity) = extractor(iri, entity, 179, None).accepted
       description shouldEqual expectedDescription
       consume(resultEntity.dataBytes) shouldEqual content
     }

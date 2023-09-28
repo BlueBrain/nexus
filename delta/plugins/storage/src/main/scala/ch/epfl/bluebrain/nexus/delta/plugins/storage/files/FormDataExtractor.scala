@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.MediaTypes.`multipart/form-data`
+import akka.http.scaladsl.model.Multipart.FormData
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.unmarshalling.Unmarshaller.UnsupportedContentTypeException
@@ -15,6 +16,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileDescriptio
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import monix.bio.IO
 import monix.execution.Scheduler
+
+import scala.util.Try
 
 sealed trait FormDataExtractor {
 
@@ -71,33 +74,11 @@ object FormDataExtractor {
       ): IO[FileRejection, (FileDescription, BodyPartEntity)] = {
         val sizeLimit = Math.min(storageAvailableSpace.getOrElse(Long.MaxValue), maxFileSize)
         IO.deferFuture(um(entity.withSizeLimit(sizeLimit)))
-          .mapError {
-            case RejectionError(r)                  =>
-              WrappedAkkaRejection(r)
-            case Unmarshaller.NoContentException    =>
-              WrappedAkkaRejection(RequestEntityExpectedRejection)
-            case x: UnsupportedContentTypeException =>
-              WrappedAkkaRejection(UnsupportedRequestContentTypeRejection(x.supported, x.actualContentType))
-            case x: IllegalArgumentException        =>
-              WrappedAkkaRejection(ValidationRejection(Option(x.getMessage).getOrElse(""), Some(x)))
-            case x: ExceptionWithErrorInfo          =>
-              WrappedAkkaRejection(MalformedRequestContentRejection(x.info.format(withDetail = false), x))
-            case x                                  =>
-              WrappedAkkaRejection(MalformedRequestContentRejection(Option(x.getMessage).getOrElse(""), x))
-          }
+          .mapError(onError)
           .flatMap { formData =>
             IO.fromFuture(
               formData.parts
-                .mapAsync(parallelism = 1) {
-                  case part if part.name == fieldName =>
-                    val filename    = part.filename.getOrElse("file")
-                    val contentType = detectContentType(filename, part.entity.contentType)
-                    FileDescription(filename, contentType).runToFuture.map { desc =>
-                      Some(desc -> part.entity)
-                    }
-                  case part                           =>
-                    part.entity.discardBytes().future.as(None)
-                }
+                .mapAsync(parallelism = 1)(describe)
                 .collect { case Some(values) => values }
                 .toMat(Sink.headOption)(Keep.right)
                 .run()
@@ -110,15 +91,49 @@ object FormDataExtractor {
           }
       }
 
+      private def onError(th: Throwable) = th match {
+        case RejectionError(r)                  =>
+          WrappedAkkaRejection(r)
+        case Unmarshaller.NoContentException    =>
+          WrappedAkkaRejection(RequestEntityExpectedRejection)
+        case x: UnsupportedContentTypeException =>
+          WrappedAkkaRejection(UnsupportedRequestContentTypeRejection(x.supported, x.actualContentType))
+        case x: IllegalArgumentException        =>
+          WrappedAkkaRejection(ValidationRejection(Option(x.getMessage).getOrElse(""), Some(x)))
+        case x: ExceptionWithErrorInfo          =>
+          WrappedAkkaRejection(MalformedRequestContentRejection(x.info.format(withDetail = false), x))
+        case x                                  =>
+          WrappedAkkaRejection(MalformedRequestContentRejection(Option(x.getMessage).getOrElse(""), x))
+      }
+
+      private def describe(part: FormData.BodyPart) = part match {
+        case part if part.name == fieldName =>
+          val filename    = part.filename.getOrElse("file")
+          val contentType = detectContentType(filename, part.entity.contentType)
+          FileDescription(filename, contentType).runToFuture.map { desc =>
+            Some(desc -> part.entity)
+          }
+        case part                           =>
+          part.entity.discardBytes().future.as(None)
+      }
+
       private def detectContentType(filename: String, contentTypeFromAkka: ContentType) = {
         val bodyDefinedContentType = Option.when(contentTypeFromAkka != defaultContentType)(contentTypeFromAkka)
 
-        def detectFromConfig = for {
-          extension       <- FileUtils.extension(filename)
-          customMediaType <- mediaTypeDetector.find(extension)
-        } yield ContentType(customMediaType, () => HttpCharsets.`UTF-8`)
+        val extensionOpt = FileUtils.extension(filename)
 
-        bodyDefinedContentType.orElse(detectFromConfig).getOrElse(contentTypeFromAkka)
+        def detectFromConfig = for {
+          extension       <- extensionOpt
+          customMediaType <- mediaTypeDetector.find(extension)
+        } yield contentType(customMediaType)
+
+        def detectAkkaFromExtension = extensionOpt.flatMap { e =>
+          Try(MediaTypes.forExtension(e)).map(contentType).toOption
+        }
+
+        bodyDefinedContentType.orElse(detectFromConfig).orElse(detectAkkaFromExtension).getOrElse(contentTypeFromAkka)
       }
+
+      private def contentType(mediaType: MediaType) = ContentType(mediaType, () => HttpCharsets.`UTF-8`)
     }
 }

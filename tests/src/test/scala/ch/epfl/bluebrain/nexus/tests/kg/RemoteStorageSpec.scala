@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.tests.Optics.{filterKey, filterMetadataKeys, proj
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Supervision
 import io.circe.generic.semiauto.deriveDecoder
+import io.circe.syntax.KeyOps
 import io.circe.{Decoder, Json}
 import monix.bio.Task
 import org.scalactic.source.Position
@@ -173,7 +174,7 @@ class RemoteStorageSpec extends StorageSpec {
     }
   }
 
-  "creating a remote storage" should {
+  "Creating a remote storage" should {
     "fail creating a RemoteDiskStorage without folder" in {
       val payload = jsonContentOf(
         "/kg/storages/remote-disk.json",
@@ -190,72 +191,165 @@ class RemoteStorageSpec extends StorageSpec {
     }
   }
 
-  s"Linking in Remote storage" should {
-    "link an existing file" in {
-      val createFile = s"echo 'file content' > /tmp/$remoteFolder/file.txt"
-      s"docker exec nexus-storage-service bash -c \"$createFile\"".!
+  def createFile(filename: String) = Task.delay {
+    val createFile = s"echo 'file content' > /tmp/$remoteFolder/$filename"
+    s"docker exec nexus-storage-service bash -c \"$createFile\"".!
+  }
 
-      val payload  = Json.obj(
-        "filename"  -> Json.fromString("file.txt"),
-        "path"      -> Json.fromString(s"file.txt"),
-        "mediaType" -> Json.fromString("text/plain")
-      )
-      val fileId   = s"${config.deltaUri}/resources/$projectRef/_/file.txt"
-      val expected = jsonContentOf(
-        "/kg/files/remote-linked.json",
-        replacements(
-          Coyote,
-          "id"          -> fileId,
-          "self"        -> fileSelf(projectRef, fileId),
-          "filename"    -> "file.txt",
-          "storageId"   -> s"${storageId}2",
-          "storageType" -> storageType,
-          "projId"      -> s"$projectRef",
-          "project"     -> s"${config.deltaUri}/projects/$projectRef"
-        ): _*
-      )
+  def linkPayload(filename: String, path: String, mediaType: Option[String]) =
+    Json.obj(
+      "filename"  := filename,
+      "path"      := path,
+      "mediaType" := mediaType
+    )
 
-      deltaClient.put[Json](s"/files/$projectRef/file.txt?storage=nxv:${storageId}2", payload, Coyote) {
-        (json, response) =>
-          filterMetadataKeys.andThen(filterKey("_location"))(json) shouldEqual expected
-          response.status shouldEqual StatusCodes.Created
-      }
+  def linkFile(payload: Json)(fileId: String, filename: String, mediaType: Option[String]) = {
+    val expected = jsonContentOf(
+      "/kg/files/remote-linked.json",
+      replacements(
+        Coyote,
+        "id"          -> fileId,
+        "self"        -> fileSelf(projectRef, fileId),
+        "filename"    -> filename,
+        "mediaType"   -> mediaType.orNull,
+        "storageId"   -> s"${storageId}2",
+        "storageType" -> storageType,
+        "projId"      -> s"$projectRef",
+        "project"     -> s"${config.deltaUri}/projects/$projectRef"
+      ): _*
+    )
+    deltaClient.put[Json](s"/files/$projectRef/$filename?storage=nxv:${storageId}2", payload, Coyote) {
+      (json, response) =>
+        filterMetadataKeys.andThen(filterKey("_location"))(json) shouldEqual expected
+        response.status shouldEqual StatusCodes.Created
     }
+  }
 
-    "fetch eventually a linked file with updated attributes" in eventually {
-      val fileId   = s"${config.deltaUri}/resources/$projectRef/_/file.txt"
-      val expected = jsonContentOf(
-        "/kg/files/remote-updated-linked.json",
-        replacements(
-          Coyote,
-          "id"          -> s"${config.deltaUri}/resources/$projectRef/_/file.txt",
-          "self"        -> fileSelf(projectRef, fileId),
-          "filename"    -> "file.txt",
-          "storageId"   -> s"${storageId}2",
-          "storageType" -> storageType,
-          "projId"      -> s"$projectRef",
-          "project"     -> s"${config.deltaUri}/projects/$projectRef"
-        ): _*
-      )
+  def fetchUpdatedLinkedFile(fileId: String, filename: String, mediaType: String) = {
+    val expected = jsonContentOf(
+      "/kg/files/remote-updated-linked.json",
+      replacements(
+        Coyote,
+        "id"          -> fileId,
+        "self"        -> fileSelf(projectRef, fileId),
+        "filename"    -> filename,
+        "mediaType"   -> mediaType,
+        "storageId"   -> s"${storageId}2",
+        "storageType" -> storageType,
+        "projId"      -> s"$projectRef",
+        "project"     -> s"${config.deltaUri}/projects/$projectRef"
+      ): _*
+    )
 
-      deltaClient.get[Json](s"/files/$projectRef/file.txt", Coyote) { (json, response) =>
+    eventually {
+      deltaClient.get[Json](s"/files/$projectRef/$filename", Coyote) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
         filterMetadataKeys.andThen(filterKey("_location"))(json) shouldEqual expected
       }
     }
+  }
 
-    "fail to link a nonexistent file" in {
-      val payload = Json.obj(
-        "filename"  -> Json.fromString("logo.png"),
-        "path"      -> Json.fromString("non/existent.png"),
-        "mediaType" -> Json.fromString("image/png")
-      )
+  "Linking a custom file providing a media type for a .custom file" should {
+
+    val filename = "link_file.custom"
+    val fileId   = s"${config.deltaUri}/resources/$projectRef/_/$filename"
+
+    "succeed" in {
+
+      val mediaType = "application/json"
+      val payload   = linkPayload(filename, filename, Some(mediaType))
+
+      for {
+        _ <- createFile(filename)
+        // Get a first response without the digest
+        _ <- linkFile(payload)(fileId, filename, Some(mediaType))
+        // Eventually
+      } yield succeed
+    }
+
+    "fetch eventually a linked file with updated attributes" in {
+      val mediaType = "application/json"
+      fetchUpdatedLinkedFile(fileId, filename, mediaType)
+    }
+  }
+
+  "Linking a file without a media type for a .custom file" should {
+
+    val filename = "link_file_no_media_type.custom"
+    val fileId   = s"${config.deltaUri}/resources/$projectRef/_/$filename"
+
+    "succeed" in {
+      val payload = linkPayload(filename, filename, None)
+
+      for {
+        _ <- createFile(filename)
+        // Get a first response without the digest
+        _ <- linkFile(payload)(fileId, filename, None)
+        // Eventually
+      } yield succeed
+    }
+
+    "fetch eventually a linked file with updated attributes detecting application/custom from config" in {
+      val mediaType = "application/custom"
+      fetchUpdatedLinkedFile(fileId, filename, mediaType)
+    }
+  }
+
+  "Linking a file without a media type for a .txt file" should {
+
+    val filename = "link_file.txt"
+    val fileId   = s"${config.deltaUri}/resources/$projectRef/_/$filename"
+
+    "succeed" in {
+      val payload = linkPayload(filename, filename, None)
+
+      for {
+        _ <- createFile(filename)
+        // Get a first response without the digest
+        _ <- linkFile(payload)(fileId, filename, None)
+        // Eventually
+      } yield succeed
+    }
+
+    "fetch eventually a linked file with updated attributes detecting text/plain from akka" in {
+      val mediaType = "text/plain; charset=UTF-8"
+      fetchUpdatedLinkedFile(fileId, filename, mediaType)
+    }
+  }
+
+  "Linking a file without a media type for a file without extension" should {
+
+    val filename = "link_file_no_extension"
+    val fileId   = s"${config.deltaUri}/resources/$projectRef/_/$filename"
+
+    "succeed" in {
+      val payload = linkPayload(filename, filename, None)
+
+      for {
+        _ <- createFile(filename)
+        // Get a first response without the digest
+        _ <- linkFile(payload)(fileId, filename, None)
+        // Eventually
+      } yield succeed
+    }
+
+    "fetch eventually a linked file with updated attributes falling back to default mediaType" in {
+      val mediaType = "application/octet-stream"
+      fetchUpdatedLinkedFile(fileId, filename, mediaType)
+    }
+  }
+
+  "Linking providing a nonexistent file" should {
+
+    "fail" in {
+      val payload = linkPayload("logo.png", "non/existent.png", Some("image/png"))
 
       deltaClient.put[Json](s"/files/$projectRef/nonexistent.png?storage=nxv:${storageId}2", payload, Coyote) {
         (_, response) =>
           response.status shouldEqual StatusCodes.BadRequest
       }
     }
+
   }
 
   "The file-attributes-updated projection description" should {
@@ -294,7 +388,7 @@ class RemoteStorageSpec extends StorageSpec {
           // update the file
           deltaClient.uploadFile[Json](
             s"/files/$projectRef/file.txt?storage=nxv:${storageId}2&rev=2",
-            contentOf("/kg/files/attachment.json"),
+            s"""{ "json": "content"}""",
             ContentTypes.`application/json`,
             "file.txt",
             Coyote
