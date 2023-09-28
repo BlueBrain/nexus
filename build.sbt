@@ -216,7 +216,7 @@ lazy val kernel = project
       log4cats,
       pureconfig,
       scalaLogging,
-      munit % Test,
+      munit     % Test,
       scalaTest % Test
     ),
     addCompilerPlugin(kindProjector),
@@ -735,6 +735,19 @@ lazy val storage = project
     coverageMinimumStmtTotal := 75
   )
   .dependsOn(kernel)
+  .settings(cargo := {
+    import scala.sys.process._
+
+    val log = streams.value.log
+    val cmd = Process(Seq("cargo", "build", "--release"), baseDirectory.value / "permissions-fixer")
+    if (cmd.! == 0) {
+      log.success("Cargo build successful.")
+      (baseDirectory.value / "permissions-fixer" / "target" / "release" / "nexus-fixer") -> "bin/nexus-fixer"
+    } else {
+      log.error("Cargo build failed.")
+      throw new RuntimeException
+    }
+  })
   .settings(
     name                     := "storage",
     moduleName               := "storage",
@@ -767,7 +780,10 @@ lazy val storage = project
       baseDirectory.value / "nexus-storage.jar"
     ),
     Test / testOptions       += Tests.Argument(TestFrameworks.ScalaTest, "-o", "-u", "target/test-reports"),
-    Test / parallelExecution := false
+    Test / parallelExecution := false,
+    Universal / mappings     := {
+      (Universal / mappings).value :+ cargo.value
+    }
   )
 
 lazy val tests = project
