@@ -9,6 +9,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
+      - name: Setup JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          check-latest: true
       - name: Checkout
         uses: actions/checkout@v3
       - name: Review

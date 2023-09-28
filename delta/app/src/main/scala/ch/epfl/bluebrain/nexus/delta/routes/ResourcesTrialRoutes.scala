@@ -63,8 +63,8 @@ final class ResourcesTrialRoutes(
     pathPrefix("resources") {
       extractCaller { implicit caller =>
         resolveProjectRef.apply { project =>
-          authorizeFor(project, Write).apply {
-            (get & idSegment & idSegmentRef & pathPrefix("validate") & pathEndOrSingleSlash) { (schema, id) =>
+          (get & idSegment & idSegmentRef & pathPrefix("validate") & pathEndOrSingleSlash) { (schema, id) =>
+            authorizeFor(project, Write).apply {
               val schemaOpt = underscoreToOption(schema)
               emit(
                 resourcesTrial.validate(id, project, schemaOpt).leftWiden[ResourceRejection]
