@@ -46,6 +46,7 @@ object FormDataExtractor {
   private val defaultContentType: ContentType.Binary = ContentTypes.`application/octet-stream`
 
   // Creating an unmarshaller defaulting to `application/octet-stream` as a content type
+  @SuppressWarnings(Array("TryGet"))
   implicit private val um: FromEntityUnmarshaller[Multipart.FormData] =
     MultipartUnmarshallers
       .multipartUnmarshaller[Multipart.FormData, Multipart.FormData.BodyPart, Multipart.FormData.BodyPart.Strict](
