@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.ce.CatsScopeInitialization
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
@@ -36,7 +37,9 @@ class SearchPluginModule(priority: Int) extends ModuleDef {
       new SearchScopeInitialization(views, config.indexing, serviceAccount, config.defaults)(baseUri)
   }
 
-  many[ScopeInitialization].ref[SearchScopeInitialization]
+  many[ScopeInitialization].add { (s: SearchScopeInitialization) =>
+    CatsScopeInitialization.toBioScope(s)
+  }
 
   make[SearchRoutes].from {
     (
