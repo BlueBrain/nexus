@@ -1,14 +1,16 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing
 
-import cats.syntax.all._
+import cats.effect.IO
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.toMonixBIOOps
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef.{ActiveViewDef, DeprecatedViewDef}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.projections.CompositeProjections
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.CompositeGraphStream
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ExecutionStrategy.TransientSingleNode
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{CompiledProjection, PipeChain}
-import monix.bio.{IO, Task}
+import monix.bio.{Task, IO => BIO}
 
 /**
   * Handle the different life stages of a composite view projection
@@ -39,7 +41,7 @@ object CompositeProjectionLifeCycle {
     * Hook that allows to capture changes to apply before starting the indexing of a composite view
     */
   trait Hook {
-    def apply(view: ActiveViewDef): Option[Task[Unit]]
+    def apply(view: ActiveViewDef): Option[IO[Unit]]
   }
 
   /**
@@ -96,20 +98,20 @@ object CompositeProjectionLifeCycle {
     }
 
     private def detectHook(view: ActiveViewDef) = {
-      val initial: Option[Task[Unit]] = None
+      val initial: Option[IO[Unit]] = None
       hooks.toList
         .foldLeft(initial) { case (acc, hook) =>
           (acc ++ hook(view)).reduceOption(_ >> _)
         }
         .map { task =>
-          Task.pure(CompiledProjection.fromTask(view.metadata, TransientSingleNode, task))
+          Task.pure(CompiledProjection.fromTask(view.metadata, TransientSingleNode, task.toUIO))
         }
     }
 
     override def destroyOnIndexingChange(prev: ActiveViewDef, next: CompositeViewDef): Task[Unit] =
       (prev, next) match {
         case (prev, next) if prev.ref != next.ref                                            =>
-          IO.terminate(new IllegalArgumentException(s"Different views were provided: '${prev.ref}' and '${next.ref}'"))
+          BIO.terminate(new IllegalArgumentException(s"Different views were provided: '${prev.ref}' and '${next.ref}'"))
         case (prev, _: DeprecatedViewDef)                                                    =>
           logger.info(s"View '${prev.ref}' has been deprecated, cleaning up the current one.") >> destroyAll(prev)
         case (prev, nextActive: ActiveViewDef) if prev.indexingRev != nextActive.indexingRev =>
