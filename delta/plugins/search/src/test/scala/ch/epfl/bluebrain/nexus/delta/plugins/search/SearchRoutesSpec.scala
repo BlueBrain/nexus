@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.search
 
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
-import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchRejection
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
@@ -10,18 +10,17 @@ import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
-import monix.bio.IO
 
 class SearchRoutesSpec extends BaseRouteSpec {
 
   // Dummy implementation of search which just returns the payload
   private val search = new Search {
-    override def query(payload: JsonObject, qp: Uri.Query)(implicit caller: Caller): IO[SearchRejection, Json] =
+    override def query(payload: JsonObject, qp: Uri.Query)(implicit caller: Caller): IO[Json] =
       IO.pure(payload.asJson)
 
     override def query(suite: Label, payload: JsonObject, qp: Uri.Query)(implicit
         caller: Caller
-    ): IO[SearchRejection, Json] =
+    ): IO[Json] =
       IO.pure(Json.obj(suite.value -> payload.asJson))
   }
 
