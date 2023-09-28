@@ -1,6 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion
 
-import cats.implicits.toTraverseOps
+import cats.effect.{Clock, IO, Timer}
+import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion.model.ProjectDeletionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.ProjectResource
@@ -9,17 +12,15 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.{Projects, ProjectsStatistics}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{CompiledProjection, ExecutionStrategy, ProjectionMetadata, Supervisor}
-import com.typesafe.scalalogging.Logger
 import fs2.Stream
-import monix.bio.{Task, UIO}
 
 import java.time.Instant
 
 class ProjectDeletionRunner(projects: Projects, config: ProjectDeletionConfig, projectStatistics: ProjectsStatistics) {
 
-  private val logger: Logger = Logger[ProjectDeletionRunner]
+  private val logger = Logger.cats[ProjectDeletionRunner]
 
-  private def lastEventTime(pr: ProjectResource, now: Instant): UIO[Instant] = {
+  private def lastEventTime(pr: ProjectResource, now: Instant): IO[Instant] = {
     projectStatistics
       .get(pr.value.ref)
       .map(_.map(_.lastEventTime).getOrElse {
@@ -28,34 +29,32 @@ class ProjectDeletionRunner(projects: Projects, config: ProjectDeletionConfig, p
       })
   }
 
-  private val allProjects: UIO[Seq[ProjectResource]] = {
+  private val allProjects: IO[Seq[ProjectResource]] = {
     projects
       .list(
         Pagination.OnePage,
-        ProjectSearchParams(filter = _ => UIO.pure(true)),
+        ProjectSearchParams(filter = _ => IO.pure(true).toUIO),
         Ordering.by(_.updatedAt) // this is not needed, we are forced to specify an ordering
       )
       .map(_.results)
       .map(_.map(_.source))
   }
 
-  private def deleteProject(pr: ProjectResource): UIO[Unit] = {
+  private def deleteProject(pr: ProjectResource): IO[Unit] = {
     implicit val caller: Subject = Identity.Anonymous
-    projects
-      .delete(pr.value.ref, pr.rev)
-      .void
-      .onErrorHandleWith(e => UIO.delay(logger.error(s"Error deleting project from plugin: $e")))
+    toCatsIO(projects.delete(pr.value.ref, pr.rev).mapError(_ => new Exception("h")))
+      .handleErrorWith(e => logger.error(s"Error deleting project from plugin: $e"))
       .void
   }
 
-  def projectDeletionPass: UIO[Unit] = {
+  def projectDeletionPass(implicit clock: Clock[IO]): IO[Unit] = {
 
     val shouldDeleteProject = ShouldDeleteProject(config, lastEventTime)
 
-    def possiblyDelete(project: ProjectResource): UIO[Unit] = {
+    def possiblyDelete(project: ProjectResource): IO[Unit] = {
       shouldDeleteProject(project).flatMap {
         case true  => deleteProject(project)
-        case false => UIO.unit
+        case false => IO.unit
       }
     }
 
@@ -77,14 +76,15 @@ object ProjectDeletionRunner {
       config: ProjectDeletionConfig,
       projectStatistics: ProjectsStatistics,
       supervisor: Supervisor
-  ): Task[ProjectDeletionRunner] = {
+  )(implicit clock: Clock[IO], timer: Timer[IO]): IO[ProjectDeletionRunner] = {
 
     val runner = new ProjectDeletionRunner(projects, config, projectStatistics)
 
     val continuousStream = Stream
-      .fixedRate[Task](config.idleCheckPeriod)
+      .fixedRate[IO](config.idleCheckPeriod)
       .evalMap(_ => runner.projectDeletionPass)
       .drain
+      .translate(ioToUioK)
 
     val compiledProjection =
       CompiledProjection.fromStream(projectionMetadata, ExecutionStrategy.TransientSingleNode, _ => continuousStream)
