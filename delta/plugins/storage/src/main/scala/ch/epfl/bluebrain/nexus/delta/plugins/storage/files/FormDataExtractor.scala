@@ -74,6 +74,7 @@ object FormDataExtractor {
       ): IO[FileRejection, (FileDescription, BodyPartEntity)] = {
         val sizeLimit = Math.min(storageAvailableSpace.getOrElse(Long.MaxValue), maxFileSize)
         IO.deferFuture(um(entity.withSizeLimit(sizeLimit)))
+          .mapError(onError)
           .flatMap { formData =>
             IO.fromFuture(
               formData.parts
