@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.search.model
 
+import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.{Interval, RebuildStrategy}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.TemplateSparqlConstructQuery
@@ -13,7 +14,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import com.typesafe.config.Config
 import io.circe.parser._
 import io.circe.{Decoder, JsonObject}
-import monix.bio.IO
 import pureconfig.configurable.genericMapReader
 import pureconfig.error.CannotConvert
 import pureconfig.{ConfigReader, ConfigSource}
@@ -49,11 +49,11 @@ object SearchConfig {
   /**
     * Converts a [[Config]] into an [[SearchConfig]]
     */
-  def load(config: Config): IO[SearchConfigError, SearchConfig] = {
+  def load(config: Config): IO[SearchConfig] = {
     val pluginConfig = config.getConfig("plugins.search")
     def loadSuites = {
       val suiteSource = ConfigSource.fromConfig(pluginConfig).at("suites")
-      IO.fromEither(suiteSource.load[Suites]).mapError(InvalidSuites)
+      IO.fromEither(suiteSource.load[Suites].leftMap(InvalidSuites))
     }
     for {
       fields        <- loadOption(pluginConfig, "fields", loadExternalConfig[JsonObject])
@@ -80,12 +80,12 @@ object SearchConfig {
     )
   }
 
-  private def loadOption[A](config: Config, path: String, io: String => IO[SearchConfigError, A]) =
+  private def loadOption[A](config: Config, path: String, io: String => IO[A]) =
     if (config.hasPath(path))
       io(config.getString(path)).map(Some(_))
     else IO.none
 
-  private def loadExternalConfig[A: Decoder](filePath: String): IO[SearchConfigError, A] =
+  private def loadExternalConfig[A: Decoder](filePath: String): IO[A] =
     for {
       content <- IO.fromEither(
                    Try(Files.readString(Path.of(filePath))).toEither.leftMap(LoadingFileError(filePath, _))
@@ -93,7 +93,7 @@ object SearchConfig {
       json    <- IO.fromEither(decode[A](content).leftMap { e => InvalidJsonError(filePath, e.getMessage) })
     } yield json
 
-  private def loadSparqlQuery(filePath: String): IO[SearchConfigError, SparqlConstructQuery] =
+  private def loadSparqlQuery(filePath: String): IO[SparqlConstructQuery] =
     for {
       content <- IO.fromEither(
                    Try(Files.readString(Path.of(filePath))).toEither.leftMap(LoadingFileError(filePath, _))
@@ -103,7 +103,7 @@ object SearchConfig {
                  })
     } yield json
 
-  private def loadDefaults(config: Config): IO[SearchConfigError, Defaults] =
+  private def loadDefaults(config: Config): IO[Defaults] =
     IO.fromEither(
       Try(
         ConfigSource.fromConfig(config).at("defaults").loadOrThrow[Defaults]
@@ -116,7 +116,7 @@ object SearchConfig {
     * correct finite duration, there will be no rebuild strategy. If both finite durations are present, then the
     * specified rebuild strategy must be greater or equal to the min rebuild interval.
     */
-  private def loadRebuildStrategy(config: Config): IO[SearchConfigError, Option[RebuildStrategy]] =
+  private def loadRebuildStrategy(config: Config): IO[Option[RebuildStrategy]] =
     (
       readFiniteDuration(config, "indexing.rebuild-strategy"),
       readFiniteDuration(config, "indexing.min-interval-rebuild")
