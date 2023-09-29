@@ -59,7 +59,7 @@ final case class ResourceState(
     source: Json,
     compacted: CompactedJsonLd,
     expanded: ExpandedJsonLd,
-    remoteContexts: Set[RemoteContextRef],
+    remoteContexts: Set[RemoteContextRef] = Set.empty,
     rev: Int,
     deprecated: Boolean,
     schema: ResourceRef,
@@ -94,7 +94,7 @@ object ResourceState {
     import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.CompactedJsonLd.Database._
     import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd.Database._
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
-    implicit val configuration: Configuration         = Serializer.circeConfiguration
+    implicit val configuration: Configuration         = Serializer.circeConfiguration.withDefaults
     implicit val codec: Codec.AsObject[ResourceState] = deriveConfiguredCodec[ResourceState]
     Serializer()
   }

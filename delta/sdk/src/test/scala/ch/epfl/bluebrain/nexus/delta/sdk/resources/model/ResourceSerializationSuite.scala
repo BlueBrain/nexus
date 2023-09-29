@@ -146,7 +146,7 @@ class ResourceSerializationSuite extends SerializationSuite with ResourceInstanc
   )
 
   resourcesMappingNoRemoteContexts.foreach { case (event, database) =>
-    test(s"Correctly deserialize missing remote contexts in ${event.getClass.getSimpleName}") {
+    test(s"Correctly deserialize a ${event.getClass.getSimpleName} with no RemoteContext") {
       assertEquals(ResourceEvent.serializer.codec.decodeJson(database), Right(event))
     }
   }
@@ -170,7 +170,8 @@ class ResourceSerializationSuite extends SerializationSuite with ResourceInstanc
     updatedBy = subject
   )
 
-  private val jsonState = jsonContentOf("/resources/resource-state.json")
+  private val jsonState                = jsonContentOf("/resources/resource-state.json")
+  private val jsonStateNoRemoteContext = jsonContentOf("/resources/resource-state-no-remote-contexts.json")
 
   test(s"Correctly serialize a ResourceState") {
     assertOutput(ResourceState.serializer, state, jsonState)
@@ -178,6 +179,13 @@ class ResourceSerializationSuite extends SerializationSuite with ResourceInstanc
 
   test(s"Correctly deserialize a ResourceState") {
     assertEquals(ResourceState.serializer.codec.decodeJson(jsonState), Right(state))
+  }
+
+  test("Correctly deserialize a ResourceState with no remote contexts") {
+    assertEquals(
+      ResourceState.serializer.codec.decodeJson(jsonStateNoRemoteContext),
+      Right(state.copy(remoteContexts = Set.empty))
+    )
   }
 
   implicit class ResourceEventTestOps(event: ResourceEvent) {
