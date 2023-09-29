@@ -2,28 +2,26 @@ package ch.epfl.bluebrain.nexus.tests.iam
 
 import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils.encode
-import ch.epfl.bluebrain.nexus.tests.BaseSpec
-import ch.epfl.bluebrain.nexus.tests.Identity.userPermissions.{AdminUser, UserWithNoPermissions, UserWithPermissions}
+import ch.epfl.bluebrain.nexus.tests.Identity.userPermissions.{UserWithNoPermissions, UserWithPermissions}
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission
-import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Organizations, Resources}
+import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Resources
+import ch.epfl.bluebrain.nexus.tests.{BaseSpec, Identity}
 import io.circe.Json
 import org.scalactic.source.Position
 
 class UserPermissionsSpec extends BaseSpec {
 
-  val org, project = genId()
-  val StorageId = "https://bluebrain.github.io/nexus/vocabulary/storage1"
-  val StorageReadPermission = Permission("s3-storage", "read")
+  val org, project           = genId()
+  val StorageId              = "https://bluebrain.github.io/nexus/vocabulary/storage1"
+  val StorageReadPermission  = Permission("s3-storage", "read")
   val StorageWritePermission = Permission("s3-storage", "write")
 
   override def beforeAll(): Unit = {
     super.beforeAll()
     val result = for {
       _ <- permissionDsl.addPermissions(StorageReadPermission, StorageWritePermission)
-      _ <- aclDsl.addPermission("/", AdminUser, Organizations.Create)
-      _ <- adminDsl.createOrganization(org, "UserPermissionsSpec organisation", AdminUser)
-      _ <- adminDsl.createProject(org, project, adminDsl.projectPayload(), AdminUser)
-      _ <- aclDsl.addPermission("/", AdminUser, Permission.Storages.Write)
+      _ <- adminDsl.createOrganization(org, "UserPermissionsSpec organisation", Identity.ServiceAccount)
+      _ <- adminDsl.createProject(org, project, adminDsl.projectPayload(), Identity.ServiceAccount)
       _ <- createStorage(StorageId, StorageReadPermission, StorageWritePermission)
     } yield succeed
 
@@ -91,7 +89,7 @@ class UserPermissionsSpec extends BaseSpec {
       "read-permission"  -> readPermission.value,
       "write-permission" -> writePermission.value
     )
-    deltaClient.post[Json](s"/storages/$org/$project", payload, AdminUser) { (_, response) =>
+    deltaClient.post[Json](s"/storages/$org/$project", payload, Identity.ServiceAccount) { (_, response) =>
       withClue("creation of storage failed: ") {
         response.status shouldEqual StatusCodes.Created
       }
