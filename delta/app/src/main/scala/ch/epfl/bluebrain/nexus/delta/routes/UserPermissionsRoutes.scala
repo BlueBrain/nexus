@@ -3,12 +3,15 @@ package ch.epfl.bluebrain.nexus.delta.routes
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.MigrateEffectSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
-import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.StoragePermissionProvider
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 
 /**
@@ -19,10 +22,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
   * @param aclCheck
   *   verify the acls for users
   */
-final class UserPermissionsRoutes(identities: Identities, aclCheck: AclCheck)(implicit
-    baseUri: BaseUri
+final class UserPermissionsRoutes(identities: Identities, aclCheck: AclCheck, storages: StoragePermissionProvider)(
+    implicit baseUri: BaseUri
 ) extends AuthDirectives(identities, aclCheck)
-    with CirceUnmarshalling {
+    with CirceUnmarshalling
+    with MigrateEffectSyntax {
 
   def routes: Route =
     baseUriPrefix(baseUri.prefix) {
@@ -31,11 +35,21 @@ final class UserPermissionsRoutes(identities: Identities, aclCheck: AclCheck)(im
           projectRef { project =>
             extractCaller { implicit caller =>
               head {
-                parameter("permission".as[Permission]) { permission =>
-                  authorizeFor(project, permission)(caller) {
-                    complete(StatusCodes.NoContent)
+                concat(
+                  parameter("permission".as[Permission]) { permission =>
+                    authorizeFor(project, permission)(caller) {
+                      complete(StatusCodes.NoContent)
+                    }
+                  },
+                  parameters("storage", "type") { (storageId, `type`) =>
+                    authorizeForAsync(
+                      AclAddress.fromProject(project),
+                      storages.permissionFor(IdSegmentRef(storageId), project, `type` == "read")
+                    )(caller) {
+                      complete(StatusCodes.NoContent)
+                    }
                   }
-                }
+                )
               }
             }
           }
@@ -45,8 +59,8 @@ final class UserPermissionsRoutes(identities: Identities, aclCheck: AclCheck)(im
 }
 
 object UserPermissionsRoutes {
-  def apply(identities: Identities, aclCheck: AclCheck)(implicit
+  def apply(identities: Identities, aclCheck: AclCheck, storagePermissionProvider: StoragePermissionProvider)(implicit
       baseUri: BaseUri
   ): Route =
-    new UserPermissionsRoutes(identities, aclCheck: AclCheck).routes
+    new UserPermissionsRoutes(identities, aclCheck: AclCheck, storagePermissionProvider).routes
 }

@@ -68,6 +68,11 @@ abstract class AuthDirectives(identities: Identities, aclCheck: AclCheck) {
   def authorizeFor(path: AclAddress, permission: Permission)(implicit caller: Caller): Directive0 =
     authorizeAsync(toCatsIO(aclCheck.authorizeFor(path, permission)).unsafeToFuture()) or failWith(AuthorizationFailed)
 
+  def authorizeForAsync(path: AclAddress, fetchPermission: IO[Permission])(implicit caller: Caller): Directive0 = {
+    val check = fetchPermission.flatMap(permission => toCatsIO(aclCheck.authorizeFor(path, permission)))
+    authorizeAsync(check.unsafeToFuture()) or failWith(AuthorizationFailed)
+  }
+
   /**
     * Check whether [[Caller]] is the configured service account.
     */

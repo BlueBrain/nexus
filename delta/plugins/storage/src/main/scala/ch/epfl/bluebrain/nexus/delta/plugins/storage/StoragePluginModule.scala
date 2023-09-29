@@ -33,14 +33,15 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.{Permissions, StoragePermissionProvider}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Supervisor
 import com.typesafe.config.Config
 import izumi.distage.model.definition.{Id, ModuleDef}
@@ -93,6 +94,22 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           uuidF
         )
     }
+
+  make[StoragePermissionProvider].from { (storages: Storages) =>
+    new StoragePermissionProvider {
+      override def permissionFor(id: IdSegmentRef, project: ProjectRef, read: Boolean): UIO[Permission] =
+        storages
+          .fetch(id, project)
+          .map(storage => storage.value.storageValue)
+          .map(storage =>
+            read match {
+              case true  => storage.readPermission
+              case false => storage.writePermission
+            }
+          )
+          .hideErrorsWith(_ => new RuntimeException("bob"))
+    }
+  }
 
   make[StoragesStatistics].from {
     (
