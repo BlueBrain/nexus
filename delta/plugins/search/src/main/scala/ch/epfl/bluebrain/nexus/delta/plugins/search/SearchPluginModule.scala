@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.search
 
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeProjectionLifeCycle
@@ -13,13 +14,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.ce.CatsScopeInitialization
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import com.typesafe.config.Config
 import distage.ModuleDef
 import io.circe.syntax.EncoderOps
 import izumi.distage.model.definition.Id
 
 class SearchPluginModule(priority: Int) extends ModuleDef {
 
-  make[SearchConfig].fromEffect { cfg => SearchConfig.load(cfg) }
+  make[SearchConfig].fromEffect { (cfg: Config) => SearchConfig.load(cfg).toUIO }
 
   make[Search].from {
     (
