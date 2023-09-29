@@ -99,7 +99,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
 
   make[StoragePermissionProvider].from { (storages: Storages) =>
     new StoragePermissionProvider {
-      override def permissionFor(id: IdSegmentRef, project: ProjectRef, read: AccessType): UIO[Permission] =
+      override def permissionFor(id: IdSegmentRef, project: ProjectRef, read: AccessType): UIO[Permission] = {
         storages
           .fetch(id, project)
           .map(storage => storage.value.storageValue)
@@ -109,7 +109,8 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
               case Write => storage.writePermission
             }
           )
-          .hideErrorsWith(_ => new RuntimeException("bob"))
+          .hideErrors
+      }
     }
   }
 
