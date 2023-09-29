@@ -43,7 +43,7 @@ final class UserPermissionsRoutes(identities: Identities, aclCheck: AclCheck, st
                     }
                   },
                   parameters("storage".as[IdSegment], "type".as[AccessType]) { (storageId, `type`) =>
-                    authorizeForAsync(
+                    authorizeForIO(
                       AclAddress.fromProject(project),
                       storages.permissionFor(IdSegmentRef(storageId), project, `type`)
                     )(caller) {
