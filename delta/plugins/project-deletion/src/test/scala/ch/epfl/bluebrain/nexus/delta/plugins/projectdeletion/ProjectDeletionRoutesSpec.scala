@@ -10,7 +10,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
-import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 
 import scala.concurrent.duration.DurationInt
@@ -22,7 +21,6 @@ class ProjectDeletionRoutesSpec
     with IOValues
     with TestHelpers {
 
-  implicit private val scheduler: Scheduler         = Scheduler.global
   implicit private val cl: ClassLoader              = getClass.getClassLoader
   implicit private val ordering: JsonKeyOrdering    = JsonKeyOrdering.default()
   implicit private val baseUri: BaseUri             = BaseUri("http://localhost", Label.unsafe("v1"))

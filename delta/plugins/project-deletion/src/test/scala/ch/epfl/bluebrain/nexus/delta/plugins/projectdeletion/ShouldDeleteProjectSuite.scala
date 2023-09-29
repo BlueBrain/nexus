@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion
 
+import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion.ShouldDeleteProjectSuite.{assertDeleted, assertNotDeleted, configWhere, projectWhere, shouldBeDeleted, ThreeHoursAgo, TwoDaysAgo}
 import ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion.model.ProjectDeletionConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -11,8 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.Project
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers.genString
-import ch.epfl.bluebrain.nexus.testkit.bio.{BioAssertions, BioSuite}
-import monix.bio.UIO
+import ch.epfl.bluebrain.nexus.testkit.ce.{CatsEffectAssertions, CatsEffectSuite}
 import munit.{Assertions, Location}
 
 import java.time.{Duration, Instant}
@@ -20,7 +20,7 @@ import scala.collection.mutable
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.util.matching.Regex
 
-class ShouldDeleteProjectSuite extends BioSuite {
+class ShouldDeleteProjectSuite extends CatsEffectSuite {
 
   test("delete a deprecated project") {
     assertDeleted(
@@ -104,7 +104,7 @@ class ShouldDeleteProjectSuite extends BioSuite {
   }
 }
 
-object ShouldDeleteProjectSuite extends Assertions with BioAssertions {
+object ShouldDeleteProjectSuite extends Assertions with CatsEffectAssertions {
   case class ProjectFixture(
       deprecated: Boolean,
       updatedAt: Instant,
@@ -167,31 +167,33 @@ object ShouldDeleteProjectSuite extends Assertions with BioAssertions {
     )
   }
 
-  def addTo(deletedProjects: mutable.Set[ProjectResource]): ProjectResource => UIO[Unit] = { pr =>
-    UIO.delay {
+  def addTo(deletedProjects: mutable.Set[ProjectResource]): ProjectResource => IO[Unit] = { pr =>
+    IO.delay {
       deletedProjects.add(pr)
       ()
     }
   }
 
-  def assertDeleted(result: UIO[Boolean])(implicit loc: Location): UIO[Unit] = {
-    assertUIO[Boolean](result, _ == true, "project was not deleted")
+  def assertDeleted(result: IO[Boolean])(implicit loc: Location): IO[Unit] = {
+    assertIO[Boolean, Boolean](result, true, "project was not deleted")
   }
 
-  def assertNotDeleted(result: UIO[Boolean])(implicit loc: Location): UIO[Unit] = {
-    assertUIO[Boolean](result, _ == false, "project was deleted")
+  def assertNotDeleted(result: IO[Boolean])(implicit loc: Location): IO[Unit] = {
+    assertIO[Boolean, Boolean](result, false, "project was deleted")
   }
 
   val TwoDaysAgo    = Instant.now().minus(Duration.ofDays(2))
   val ThreeHoursAgo = Instant.now().minus(Duration.ofHours(3))
 
+  implicit val clock: Clock[IO] = Clock.create
+
   def shouldBeDeleted(
       config: ProjectDeletionConfig,
       project: ProjectFixture
-  ): UIO[Boolean] = {
+  ): IO[Boolean] = {
     val shouldDeleteProject = ShouldDeleteProject(
       config,
-      lastEventTime = (_, _) => UIO.pure(project.lastEventTime)
+      lastEventTime = (_, _) => IO.pure(project.lastEventTime)
     )
 
     shouldDeleteProject(project.resource)
