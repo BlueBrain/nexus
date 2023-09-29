@@ -10,8 +10,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, IdSegmentRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.StoragePermissionProvider
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.StoragePermissionProvider.AccessType
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 
 /**
@@ -41,10 +42,10 @@ final class UserPermissionsRoutes(identities: Identities, aclCheck: AclCheck, st
                       complete(StatusCodes.NoContent)
                     }
                   },
-                  parameters("storage", "type") { (storageId, `type`) =>
+                  parameters("storage".as[IdSegment], "type".as[AccessType]) { (storageId, `type`) =>
                     authorizeForAsync(
                       AclAddress.fromProject(project),
-                      storages.permissionFor(IdSegmentRef(storageId), project, `type` == "read")
+                      storages.permissionFor(IdSegmentRef(storageId), project, `type`)
                     )(caller) {
                       complete(StatusCodes.NoContent)
                     }

@@ -12,6 +12,9 @@ import org.scalactic.source.Position
 class UserPermissionsSpec extends BaseSpec {
 
   val org, project = genId()
+  val StorageId = "https://bluebrain.github.io/nexus/vocabulary/storage1"
+  val StorageReadPermission = Permission("s3-storage", "read")
+  val StorageWritePermission = Permission("s3-storage", "write")
 
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -44,10 +47,6 @@ class UserPermissionsSpec extends BaseSpec {
            }
     } yield succeed
   }
-
-  val StorageId              = "https://bluebrain.github.io/nexus/vocabulary/storage1"
-  val StorageReadPermission  = Permission("dan-storage", "read")
-  val StorageWritePermission = Permission("dan-storage", "write")
 
   private def storageUrlFor(project: String, storageId: String, typ: String): String = {
     s"/user/permissions/$project?storage=${encode(storageId)}&type=$typ"

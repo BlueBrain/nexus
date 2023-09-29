@@ -33,6 +33,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.StoragePermissionProvider.AccessType
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.StoragePermissionProvider.AccessType.{Read, Write}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.{Permissions, StoragePermissionProvider}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
@@ -97,14 +99,14 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
 
   make[StoragePermissionProvider].from { (storages: Storages) =>
     new StoragePermissionProvider {
-      override def permissionFor(id: IdSegmentRef, project: ProjectRef, read: Boolean): UIO[Permission] =
+      override def permissionFor(id: IdSegmentRef, project: ProjectRef, read: AccessType): UIO[Permission] =
         storages
           .fetch(id, project)
           .map(storage => storage.value.storageValue)
           .map(storage =>
             read match {
-              case true  => storage.readPermission
-              case false => storage.writePermission
+              case Read  => storage.readPermission
+              case Write => storage.writePermission
             }
           )
           .hideErrorsWith(_ => new RuntimeException("bob"))
