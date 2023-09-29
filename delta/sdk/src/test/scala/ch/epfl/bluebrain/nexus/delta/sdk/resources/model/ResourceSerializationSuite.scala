@@ -108,21 +108,21 @@ class ResourceSerializationSuite extends SerializationSuite with ResourceInstanc
   )
 
   resourcesMapping.foreach { case (event, (database, sse), action) =>
-    test(s"Correctly serialize ${event.getClass.getName}") {
+    test(s"Correctly serialize ${event.getClass.getSimpleName}") {
       assertOutput(ResourceEvent.serializer, event, database)
     }
 
-    test(s"Correctly deserialize ${event.getClass.getName}") {
+    test(s"Correctly deserialize ${event.getClass.getSimpleName}") {
       assertEquals(ResourceEvent.serializer.codec.decodeJson(database), Right(event))
     }
 
-    test(s"Correctly serialize ${event.getClass.getName} as an SSE") {
+    test(s"Correctly serialize ${event.getClass.getSimpleName} as an SSE") {
       sseEncoder.toSse
         .decodeJson(database)
         .assertRight(SseData(ClassUtils.simpleName(event), Some(ProjectRef(org, proj)), sse))
     }
 
-    test(s"Correctly encode ${event.getClass.getName} to metric") {
+    test(s"Correctly encode ${event.getClass.getSimpleName} to metric") {
       ResourceEvent.resourceEventMetricEncoder.toMetric.decodeJson(database).assertRight {
         ProjectScopedMetric(
           instant,
@@ -136,6 +136,18 @@ class ResourceSerializationSuite extends SerializationSuite with ResourceInstanc
           JsonObject.empty
         )
       }
+    }
+  }
+
+  private val resourcesMappingNoRemoteContexts = List(
+    (created.noRemoteContext, jsonContentOf("resources/database/resource-created-no-remote-contexts.json")),
+    (updated.noRemoteContext, jsonContentOf("resources/database/resource-updated-no-remote-contexts.json")),
+    (refreshed.noRemoteContext, jsonContentOf("resources/database/resource-refreshed-no-remote-contexts.json"))
+  )
+
+  resourcesMappingNoRemoteContexts.foreach { case (event, database) =>
+    test(s"Correctly deserialize missing remote contexts in ${event.getClass.getSimpleName}") {
+      assertEquals(ResourceEvent.serializer.codec.decodeJson(database), Right(event))
     }
   }
 
@@ -166,6 +178,15 @@ class ResourceSerializationSuite extends SerializationSuite with ResourceInstanc
 
   test(s"Correctly deserialize a ResourceState") {
     assertEquals(ResourceState.serializer.codec.decodeJson(jsonState), Right(state))
+  }
+
+  implicit class ResourceEventTestOps(event: ResourceEvent) {
+    def noRemoteContext: ResourceEvent = event match {
+      case r: ResourceCreated   => r.copy(remoteContexts = Set.empty)
+      case r: ResourceUpdated   => r.copy(remoteContexts = Set.empty)
+      case r: ResourceRefreshed => r.copy(remoteContexts = Set.empty)
+      case r                    => r
+    }
   }
 
 }
