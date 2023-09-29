@@ -160,6 +160,7 @@ object Vocabulary {
     val score                 = Metadata("score")
     val self                  = Metadata("self")
     val source                = Metadata("source")
+    val tags                  = Metadata("tags")
     val tokenEndpoint         = Metadata("tokenEndpoint")
     val total                 = Metadata("total")
     val types                 = Metadata("types")
@@ -216,7 +217,6 @@ object Vocabulary {
     val acls                  = contexts + "acls.json"
     val aclsMetadata          = contexts + "acls-metadata.json"
     val error                 = contexts + "error.json"
-    val validation            = contexts + "validation.json"
     val identities            = contexts + "identities.json"
     val metadata              = contexts + "metadata.json"
     val offset                = contexts + "offset.json"
@@ -236,10 +236,11 @@ object Vocabulary {
     val search                = contexts + "search.json"
     val schemasMetadata       = contexts + "schemas-metadata.json"
     val shacl                 = contexts + "shacl-20170720.json"
+    val statistics            = contexts + "statistics.json"
     val supervision           = contexts + "supervision.json"
     val tags                  = contexts + "tags.json"
+    val validation            = contexts + "validation.json"
     val version               = contexts + "version.json"
-    val statistics            = contexts + "statistics.json"
 
   }
 

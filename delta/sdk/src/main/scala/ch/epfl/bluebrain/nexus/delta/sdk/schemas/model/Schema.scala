@@ -17,9 +17,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import io.circe.Json
+import io.circe.{Encoder, Json}
 import monix.bio.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema.Metadata
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import io.circe.syntax.EncoderOps
 
 /**
   * A schema representation
@@ -67,9 +70,12 @@ final case class Schema(
     Graph.empty(id).add(triples)
   }
 
+  def metadata: Metadata = Metadata(tags.tags)
 }
 
 object Schema {
+
+  final case class Metadata(tags: List[UserTag])
 
   implicit val schemaJsonLdEncoder: JsonLdEncoder[Schema] =
     new JsonLdEncoder[Schema] {
@@ -88,14 +94,21 @@ object Schema {
         value.source.topContextValueOrEmpty.merge(ContextValue(contexts.shacl))
     }
 
-  type Shift = ResourceShift[SchemaState, Schema, Nothing]
+  implicit private val fileMetadataEncoder: Encoder[Metadata] = { m =>
+    Json.obj("_tags" -> m.tags.asJson)
+  }
+
+  implicit val fileMetadataJsonLdEncoder: JsonLdEncoder[Metadata] =
+    JsonLdEncoder.computeFromCirce(ContextValue(contexts.metadata))
+
+  type Shift = ResourceShift[SchemaState, Schema, Metadata]
 
   def shift(schemas: Schemas)(implicit baseUri: BaseUri): Shift =
-    ResourceShift.apply[SchemaState, Schema](
+    ResourceShift.withMetadata[SchemaState, Schema, Metadata](
       Schemas.entityType,
       (ref, project) => schemas.fetch(IdSegmentRef(ref), project).toBIO[SchemaRejection],
       state => state.toResource,
-      value => JsonLdContent(value, value.value.source, None)
+      value => JsonLdContent(value, value.value.source, Some(value.value.metadata))
     )
 
 }
