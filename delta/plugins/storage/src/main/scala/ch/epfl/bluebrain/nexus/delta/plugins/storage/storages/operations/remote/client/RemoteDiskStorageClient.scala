@@ -7,6 +7,7 @@ import akka.http.scaladsl.model.Multipart.FormData
 import akka.http.scaladsl.model.Multipart.FormData.BodyPart
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.Uri.Path
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.MigrateEffectSyntax
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection.UnexpectedFetchError
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.MoveFileRejection.UnexpectedMoveError
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.{FetchFileRejection, MoveFileRejection, SaveFileRejection}
@@ -34,7 +35,7 @@ import scala.concurrent.duration._
   */
 final class RemoteDiskStorageClient(client: HttpClient, getAuthToken: AuthTokenProvider, credentials: Credentials)(
     implicit as: ActorSystem
-) {
+) extends MigrateEffectSyntax {
   import as.dispatcher
 
   private val serviceName = Name.unsafe("remoteStorage")
@@ -58,7 +59,7 @@ final class RemoteDiskStorageClient(client: HttpClient, getAuthToken: AuthTokenP
     *   the storage bucket name
     */
   def exists(bucket: Label)(implicit baseUri: BaseUri): IO[HttpClientError, Unit] = {
-    getAuthToken(credentials).flatMap { authToken =>
+    getAuthToken(credentials).toBIO.flatMap { authToken =>
       val endpoint = baseUri.endpoint / "buckets" / bucket.value
       val req      = Head(endpoint).withCredentials(authToken)
       client(req) {
@@ -82,7 +83,7 @@ final class RemoteDiskStorageClient(client: HttpClient, getAuthToken: AuthTokenP
       relativePath: Path,
       entity: BodyPartEntity
   )(implicit baseUri: BaseUri): IO[SaveFileRejection, RemoteDiskStorageFileAttributes] = {
-    getAuthToken(credentials).flatMap { authToken =>
+    getAuthToken(credentials).toBIO.flatMap { authToken =>
       val endpoint      = baseUri.endpoint / "buckets" / bucket.value / "files" / relativePath
       val filename      = relativePath.lastSegment.getOrElse("filename")
       val multipartForm = FormData(BodyPart("file", entity, Map("filename" -> filename))).toEntity()
@@ -106,7 +107,7 @@ final class RemoteDiskStorageClient(client: HttpClient, getAuthToken: AuthTokenP
     *   the relative path to the file location
     */
   def getFile(bucket: Label, relativePath: Path)(implicit baseUri: BaseUri): IO[FetchFileRejection, AkkaSource] = {
-    getAuthToken(credentials).flatMap { authToken =>
+    getAuthToken(credentials).toBIO.flatMap { authToken =>
       val endpoint = baseUri.endpoint / "buckets" / bucket.value / "files" / relativePath
       client.toDataBytes(Get(endpoint).withCredentials(authToken)).mapError {
         case error @ HttpClientStatusError(_, `NotFound`, _) if !bucketNotFoundType(error) =>
@@ -129,7 +130,7 @@ final class RemoteDiskStorageClient(client: HttpClient, getAuthToken: AuthTokenP
       bucket: Label,
       relativePath: Path
   )(implicit baseUri: BaseUri): IO[FetchFileRejection, RemoteDiskStorageFileAttributes] = {
-    getAuthToken(credentials).flatMap { authToken =>
+    getAuthToken(credentials).toBIO.flatMap { authToken =>
       val endpoint = baseUri.endpoint / "buckets" / bucket.value / "attributes" / relativePath
       client.fromJsonTo[RemoteDiskStorageFileAttributes](Get(endpoint).withCredentials(authToken)).mapError {
         case error @ HttpClientStatusError(_, `NotFound`, _) if !bucketNotFoundType(error) =>
@@ -156,7 +157,7 @@ final class RemoteDiskStorageClient(client: HttpClient, getAuthToken: AuthTokenP
       sourceRelativePath: Path,
       destRelativePath: Path
   )(implicit baseUri: BaseUri): IO[MoveFileRejection, RemoteDiskStorageFileAttributes] = {
-    getAuthToken(credentials).flatMap { authToken =>
+    getAuthToken(credentials).toBIO.flatMap { authToken =>
       val endpoint = baseUri.endpoint / "buckets" / bucket.value / "files" / destRelativePath
       val payload  = Json.obj("source" -> sourceRelativePath.toString.asJson)
       client.fromJsonTo[RemoteDiskStorageFileAttributes](Put(endpoint, payload).withCredentials(authToken)).mapError {
