@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, JsonLdCon
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.QueryParamsUnmarshalling.{IriBase, IriVocab}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.StoragePermissionProvider.AccessType
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
@@ -97,6 +98,14 @@ trait QueryParamsUnmarshalling {
         case Right(value) => value
         case Left(err)    => throw new IllegalArgumentException(err.getMessage)
       }
+    }
+
+  implicit def accessTypeFromStringUnmarshaller: FromStringUnmarshaller[AccessType] =
+    Unmarshaller.strict[String, AccessType] {
+      case "read"  => AccessType.Read
+      case "write" => AccessType.Write
+      case string  =>
+        throw new IllegalArgumentException(s"Access type can be either 'read' or 'write', received [$string]")
     }
 
   /**
