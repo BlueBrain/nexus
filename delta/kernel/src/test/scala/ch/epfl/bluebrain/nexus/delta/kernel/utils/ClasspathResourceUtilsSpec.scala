@@ -1,26 +1,26 @@
 package ch.epfl.bluebrain.nexus.delta.kernel.utils
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceError.{InvalidJson, InvalidJsonObject, ResourcePathNotFound}
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
-import monix.bio.IO
-import monix.execution.Scheduler
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
-class ClasspathResourceUtilsSpec extends AnyWordSpecLike with Matchers with ClasspathResourceUtils with ScalaFutures {
-  implicit private val sc: Scheduler            = Scheduler.global
+import ClasspathResourceUtils._
+
+class ClasspathResourceUtilsSpec extends AnyWordSpecLike with Matchers with ScalaFutures {
   implicit private val classLoader: ClassLoader = getClass.getClassLoader
 
-  private def accept[E, A](io: IO[E, A]): A =
-    io.attempt.runSyncUnsafe() match {
+  private def accept[A](io: IO[A]): A =
+    io.attempt.unsafeRunSync() match {
       case Left(value)  => fail(s"Expected Right, found Left with value '$value'")
       case Right(value) => value
     }
 
-  private def reject[E, A](io: IO[E, A]): E =
-    io.attempt.runSyncUnsafe() match {
+  private def reject[A](io: IO[A]): Throwable =
+    io.attempt.unsafeRunSync() match {
       case Left(value)  => value
       case Right(value) => fail(s"Expected Left, found Right with value '$value'")
     }

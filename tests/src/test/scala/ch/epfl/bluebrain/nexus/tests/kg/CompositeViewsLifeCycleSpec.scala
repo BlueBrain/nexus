@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.tests.kg
 
 import cats.data.NonEmptyMap
 import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.tests.BaseSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.compositeviews.Jerry
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Events, Organizations, Views}
@@ -9,9 +10,12 @@ import ch.epfl.bluebrain.nexus.tests.kg.CompositeViewsLifeCycleSpec.Spaces.Proje
 import ch.epfl.bluebrain.nexus.tests.kg.CompositeViewsLifeCycleSpec.{query, Spaces}
 import io.circe.generic.semiauto.deriveDecoder
 import io.circe.{Decoder, Json}
+import monix.bio.Task
 import org.scalactic.source.Position
 
 final class CompositeViewsLifeCycleSpec extends BaseSpec {
+
+  implicit private val classLoader: ClassLoader = getClass.getClassLoader
 
   private val orgId   = genId()
   private val projId  = genId()
@@ -31,7 +35,7 @@ final class CompositeViewsLifeCycleSpec extends BaseSpec {
 
   private val viewEndpoint = s"/views/$orgId/$projId/composite"
 
-  private def createView(query: String, includeCrossProject: Boolean, includeSparqlProjection: Boolean) = {
+  private def createView(query: String, includeCrossProject: Boolean, includeSparqlProjection: Boolean): IO[Json] = {
     val includeCrossProjectOpt     = Option.when(includeCrossProject)("cross_project" -> includeCrossProject.toString)
     val includeSparqlProjectionOpt = Option.when(includeSparqlProjection)("sparql" -> includeSparqlProjection.toString)
     val values                     = List(
@@ -39,18 +43,17 @@ final class CompositeViewsLifeCycleSpec extends BaseSpec {
       "proj"  -> proj2Id,
       "query" -> query
     ) ++ includeCrossProjectOpt ++ includeSparqlProjectionOpt
-    IO(
-      jsonContentOf(
-        "/kg/views/composite/composite-view-lifecycle.json",
-        replacements(
-          Jerry,
-          values: _*
-        ): _*
-      )
+    ioJsonContentOf(
+      "/kg/views/composite/composite-view-lifecycle.json",
+      replacements(
+        Jerry,
+        values: _*
+      ): _*
     )
+
   }
 
-  private def fetchSpaces = deltaClient.getJson[Spaces](s"$viewEndpoint/description", Jerry)
+  private def fetchSpaces: Task[Spaces] = deltaClient.getJson[Spaces](s"$viewEndpoint/description", Jerry)
 
   private def includeAllSpaces(spaces: Spaces)(implicit pos: Position) = {
     eventually { blazegraphDsl.includes(spaces.commonSpace) }

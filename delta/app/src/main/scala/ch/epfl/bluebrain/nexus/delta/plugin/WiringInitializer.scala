@@ -4,7 +4,7 @@ import cats.effect.{IO, Resource}
 import cats.syntax.traverse._
 import cats.syntax.flatMap._
 import cats.syntax.monadError._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.toCatsIO
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.sdk.error.PluginError.PluginInitializationError
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.{Plugin, PluginDef}

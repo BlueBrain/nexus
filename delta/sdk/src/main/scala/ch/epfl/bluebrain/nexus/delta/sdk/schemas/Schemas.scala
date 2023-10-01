@@ -262,7 +262,7 @@ object Schemas {
     def validate(id: Iri, graph: Graph): IO[Unit] =
       for {
         _      <- IO.raiseWhen(id.startsWith(schemas.base))(ReservedSchemaId(id))
-        report <- toCatsIO(ShaclEngine(graph, reportDetails = true).mapError(SchemaShaclEngineRejection(id, _: String)))
+        report <- ShaclEngine(graph, reportDetails = true).adaptError(e => SchemaShaclEngineRejection(id, e.toString))
         result <- IO.raiseWhen(!report.isValid())(InvalidSchema(id, report))
       } yield result
 

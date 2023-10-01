@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.migration
 
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.migration.MigrateCompositeViews.{eventsToMigrate, statesToMigrate}
@@ -9,18 +10,19 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewE
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeViewEvent, CompositeViewState, CompositeViewValue}
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, Tag}
-import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import doobie.postgres.implicits._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, Tag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
+import doobie.postgres.implicits._
+import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
+
 import doobie.Get
-import munit.{AnyFixture, Location}
 import doobie.implicits._
-import io.circe.syntax.EncoderOps
 import io.circe.JsonObject
-import monix.bio.IO
+import io.circe.syntax.EncoderOps
+import monix.bio.{IO, UIO}
+import munit.{AnyFixture, Location}
 
 import java.time.Instant
 
@@ -110,7 +112,7 @@ object MigrateCompositeViewsSuite extends ClasspathResourceUtils {
     } yield (project, id, rev)
   }
 
-  def loadEvent(jsonPath: String)(implicit xas: Transactors, classLoader: ClassLoader) = {
+  def loadEvent(jsonPath: String)(implicit xas: Transactors, classLoader: ClassLoader): IO[Unit, Unit] = {
     def insert(project: ProjectRef, id: String, rev: Int, json: JsonObject) =
       sql"""
            | INSERT INTO scoped_events (
@@ -130,17 +132,17 @@ object MigrateCompositeViewsSuite extends ClasspathResourceUtils {
            |  $rev,
            |  ${json.asJson},
            |  ${Instant.EPOCH}
-           | )""".stripMargin.update.run.void.transact(xas.write)
+           | )""".stripMargin.update.run.void.transact(xas.write).hideErrors
 
     for {
-      json               <- ioJsonObjectContentOf(jsonPath)
+      json               <- ioJsonObjectContentOf(jsonPath): UIO[JsonObject]
       (project, id, rev) <- extractIdentifiers(json)
       _                  <- insert(project, id, rev, json)
     } yield ()
   }
 
   def loadState(tag: Tag, jsonPath: String)(implicit xas: Transactors, classLoader: ClassLoader) = {
-    def insert(project: ProjectRef, id: String, rev: Int, json: JsonObject) =
+    def insert(project: ProjectRef, id: String, rev: Int, json: JsonObject): UIO[Unit] =
       sql"""
            | INSERT INTO scoped_states (
            |  type,
@@ -163,10 +165,10 @@ object MigrateCompositeViewsSuite extends ClasspathResourceUtils {
            |  ${json.asJson},
            |  ${false},
            |  ${Instant.EPOCH}
-           | )""".stripMargin.update.run.void.transact(xas.write)
+           | )""".stripMargin.update.run.void.transact(xas.write).hideErrors
 
     for {
-      json               <- ioJsonObjectContentOf(jsonPath)
+      json               <- ioJsonObjectContentOf(jsonPath): UIO[JsonObject]
       (project, id, rev) <- extractIdentifiers(json)
       _                  <- insert(project, id, rev, json)
     } yield ()

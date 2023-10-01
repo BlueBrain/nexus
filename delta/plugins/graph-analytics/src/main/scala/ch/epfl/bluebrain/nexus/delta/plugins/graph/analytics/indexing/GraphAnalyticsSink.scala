@@ -70,6 +70,7 @@ final class GraphAnalyticsSink(
 
   private def documentId[A](elem: Elem[A]) = elem.id.toString
 
+  // TODO: depends on Operation.Sink in the sourcing module being moved to CE
   override def apply(elements: Chunk[Elem[GraphAnalyticsResult]]): Task[Chunk[Elem[Unit]]] = {
     val result = elements.foldLeft(GraphAnalyticsSink.empty) {
       case (acc, success: SuccessElem[GraphAnalyticsResult]) =>

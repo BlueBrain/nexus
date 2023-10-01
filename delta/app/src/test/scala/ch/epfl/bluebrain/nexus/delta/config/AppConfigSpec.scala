@@ -2,12 +2,13 @@ package ch.epfl.bluebrain.nexus.delta.config
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
 import ch.epfl.bluebrain.nexus.testkit.IOValues
+import ch.epfl.bluebrain.nexus.testkit.ce.CatsIOValues
 import com.typesafe.config.impl.ConfigImpl
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
-class AppConfigSpec extends AnyWordSpecLike with Matchers with IOValues with BeforeAndAfterAll {
+class AppConfigSpec extends AnyWordSpecLike with Matchers with IOValues with CatsIOValues with BeforeAndAfterAll {
 
   implicit private val classLoader: ClassLoader = getClass.getClassLoader
 

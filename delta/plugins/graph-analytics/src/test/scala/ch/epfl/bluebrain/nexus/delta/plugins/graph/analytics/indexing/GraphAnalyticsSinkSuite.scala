@@ -1,5 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing
 
+import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchClientSetup
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.GraphAnalyticsResult.Index
@@ -18,7 +20,6 @@ import ch.epfl.bluebrain.nexus.testkit.bio.{BioSuite, PatienceConfig}
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
 import fs2.Chunk
 import io.circe.Json
-import monix.bio.{Task, UIO}
 import munit.AnyFixture
 
 import java.time.Instant
@@ -65,21 +66,19 @@ class GraphAnalyticsSinkSuite
   // File linked by 'resource1', resolved after an update by query
   private val file1     = iri"http://localhost/file1"
 
-  private def loadExpanded(path: String): UIO[ExpandedJsonLd] =
+  private def loadExpanded(path: String): IO[ExpandedJsonLd] =
     ioJsonContentOf(path)
       .flatMap { json =>
-        Task.fromEither(ExpandedJsonLd.expanded(json))
+        IO.fromEither(ExpandedJsonLd.expanded(json))
       }
-      .memoizeOnSuccess
-      .hideErrors
 
-  private def getTypes(expandedJsonLd: ExpandedJsonLd): UIO[Set[Iri]] =
-    UIO.pure(expandedJsonLd.cursor.getTypes.getOrElse(Set.empty))
+  private def getTypes(expandedJsonLd: ExpandedJsonLd): Set[Iri] =
+    expandedJsonLd.cursor.getTypes.getOrElse(Set.empty)
 
-  private val findRelationships: UIO[Map[Iri, Set[Iri]]] = {
+  private val findRelationships: IO[Map[Iri, Set[Iri]]] = {
     for {
-      resource1Types <- expanded1.flatMap(getTypes)
-      resource2Types <- expanded2.flatMap(getTypes)
+      resource1Types <- expanded1.map(getTypes)
+      resource2Types <- expanded2.map(getTypes)
     } yield Map(
       resource1 -> resource1Types,
       resource2 -> resource2Types,
@@ -100,10 +99,10 @@ class GraphAnalyticsSinkSuite
     SuccessElem(Resources.entityType, id, Some(project), Instant.EPOCH, Offset.start, result, 1)
 
   test("Push index results") {
-    def indexActive(id: Iri, io: UIO[ExpandedJsonLd]) = {
+    def indexActive(id: Iri, io: IO[ExpandedJsonLd]) = {
       for {
         expanded <- io
-        types    <- getTypes(expanded)
+        types     = getTypes(expanded)
         doc      <- JsonLdDocument.fromExpanded(expanded, _ => findRelationships)
       } yield {
         val result =

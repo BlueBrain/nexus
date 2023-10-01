@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics
 
+import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
@@ -8,12 +9,13 @@ import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.config.GraphAnalyti
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.{graphAnalyticsMappings, scriptContent, updateRelationshipsScriptId, GraphAnalyticsSink, GraphAnalyticsStream}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration
 import fs2.Stream
-import monix.bio.Task
+import org.typelevel.log4cats.{Logger => Log4CatsLogger}
 
 sealed trait GraphAnalyticsCoordinator
 
@@ -21,7 +23,7 @@ object GraphAnalyticsCoordinator {
 
   /** If indexing is disabled we can only log */
   final private case object Noop extends GraphAnalyticsCoordinator {
-    def log: Task[Unit] =
+    def log: IO[Unit] =
       logger.info("Graph Analytics indexing has been disabled via config")
   }
 
@@ -41,24 +43,23 @@ object GraphAnalyticsCoordinator {
     *   how to delete an index
     */
   final private class Active(
-      fetchProjects: Offset => ElemStream[ProjectDef],
+      fetchProjects: Offset => Stream[IO, Elem[ProjectDef]],
       analyticsStream: GraphAnalyticsStream,
       supervisor: Supervisor,
       sink: ProjectRef => Sink,
-      createIndex: ProjectRef => Task[Unit],
-      deleteIndex: ProjectRef => Task[Unit]
+      createIndex: ProjectRef => IO[Unit],
+      deleteIndex: ProjectRef => IO[Unit]
   ) extends GraphAnalyticsCoordinator {
 
-    def run(offset: Offset): Stream[Task, Elem[Unit]] =
+    def run(offset: Offset): Stream[IO, Elem[Unit]]                  =
       fetchProjects(offset).evalMap {
         _.traverse {
           case p if p.markedForDeletion => destroy(p.ref)
           case p                        => start(p.ref)
         }
       }
-
-    private def compile(project: ProjectRef): Task[CompiledProjection] =
-      Task.fromEither(
+    private def compile(project: ProjectRef): IO[CompiledProjection] =
+      IO.fromEither(
         CompiledProjection.compile(
           analyticsMetadata(project),
           ExecutionStrategy.PersistentSingleNode,
@@ -66,48 +67,45 @@ object GraphAnalyticsCoordinator {
           sink(project)
         )
       )
-
     // Start the analysis projection for the given project
-    private def start(project: ProjectRef): Task[Unit] =
+    private def start(project: ProjectRef): IO[Unit]                 =
       for {
         compiled <- compile(project)
-        status   <- supervisor.describe(compiled.metadata.name)
+        status   <- migration.toCatsIO(supervisor.describe(compiled.metadata.name))
         _        <- status match {
                       case Some(value) if value.status == ExecutionStatus.Running =>
                         logger.info(s"Graph analysis of '$project' is already running.")
-                      case _                                                      =>
-                        logger.info(s"Starting graph analysis of '$project'...") >>
-                          supervisor.run(
-                            compiled,
-                            createIndex(project)
-                          )
+                      case _                                                      => startGraphAnalysis(compiled, project)
                     }
       } yield ()
 
+    private def startGraphAnalysis(compiled: CompiledProjection, project: ProjectRef): IO[ExecutionStatus] =
+      for {
+        _      <- logger.info(s"Starting graph analysis of '$project'...")
+        status <- migration.toCatsIO(supervisor.run(compiled, migration.toMonixBIO(createIndex(project))))
+      } yield status
     // Destroy the analysis for the given project and deletes the related Elasticsearch index
-    private def destroy(project: ProjectRef): Task[Unit] = {
+    private def destroy(project: ProjectRef): IO[Unit] = {
       logger.info(s"Project '$project' has been marked as deleted, stopping the graph analysis...") >>
-        supervisor
-          .destroy(
-            projectionName(project),
-            deleteIndex(project)
-          )
-          .void
+        migration.toCatsIO(
+          supervisor
+            .destroy(
+              projectionName(project),
+              migration.toMonixBIO(deleteIndex(project))
+            )
+            .void
+        )
     }
-
   }
-
   final val id                                        = nxv + "graph-analytics"
-  private val logger: Logger                          = Logger[GraphAnalyticsCoordinator]
+  private val logger: Log4CatsLogger[IO]              = Logger.cats[GraphAnalyticsCoordinator]
   private[analytics] val metadata: ProjectionMetadata = ProjectionMetadata("system", "ga-coordinator", None, None)
-
-  private def analyticsMetadata(project: ProjectRef) = ProjectionMetadata(
+  private def analyticsMetadata(project: ProjectRef)  = ProjectionMetadata(
     "ga",
     projectionName(project),
     Some(project),
     Some(id)
   )
-
   private[analytics] case class ProjectDef(ref: ProjectRef, markedForDeletion: Boolean)
 
   /**
@@ -129,10 +127,13 @@ object GraphAnalyticsCoordinator {
       supervisor: Supervisor,
       client: ElasticSearchClient,
       config: GraphAnalyticsConfig
-  ): Task[GraphAnalyticsCoordinator] =
+  ): IO[GraphAnalyticsCoordinator] =
     if (config.indexingEnabled) {
       val coordinator = apply(
-        projects.states(_).map(_.map { p => ProjectDef(p.project, p.markedForDeletion) }),
+        projects
+          .states(_)
+          .map(_.map { p => ProjectDef(p.project, p.markedForDeletion) })
+          .translate(migration.taskToIoK),
         analyticsStream,
         supervisor,
         ref =>
@@ -144,39 +145,39 @@ object GraphAnalyticsCoordinator {
           ),
         ref =>
           graphAnalyticsMappings.flatMap { mappings =>
-            client.createIndex(index(config.prefix, ref), Some(mappings), None)
+            migration.toCatsIO(client.createIndex(index(config.prefix, ref), Some(mappings), None))
           }.void,
-        ref => client.deleteIndex(index(config.prefix, ref)).void
+        ref => migration.toCatsIO(client.deleteIndex(index(config.prefix, ref)).void)
       )
 
       for {
         script <- scriptContent
-        _      <- client.createScript(updateRelationshipsScriptId, script)
+        _      <- migration.toCatsIO(client.createScript(updateRelationshipsScriptId, script))
         c      <- coordinator
       } yield c
     } else {
       Noop.log.as(Noop)
     }
-
   private[analytics] def apply(
-      fetchProjects: Offset => ElemStream[ProjectDef],
+      fetchProjects: Offset => Stream[IO, Elem[ProjectDef]],
       analyticsStream: GraphAnalyticsStream,
       supervisor: Supervisor,
       sink: ProjectRef => Sink,
-      createIndex: ProjectRef => Task[Unit],
-      deleteIndex: ProjectRef => Task[Unit]
-  ): Task[GraphAnalyticsCoordinator] = {
+      createIndex: ProjectRef => IO[Unit],
+      deleteIndex: ProjectRef => IO[Unit]
+  ): IO[GraphAnalyticsCoordinator] = {
     val coordinator =
       new Active(fetchProjects, analyticsStream, supervisor, sink, createIndex, deleteIndex)
-    supervisor
-      .run(
-        CompiledProjection.fromStream(
-          metadata,
-          ExecutionStrategy.EveryNode,
-          coordinator.run
+    migration.toCatsIO(
+      supervisor
+        .run(
+          CompiledProjection.fromStream(
+            metadata,
+            ExecutionStrategy.EveryNode,
+            coordinator.run(_).translate(migration.ioToTaskK)
+          )
         )
-      )
-      .as(coordinator)
+        .as(coordinator)
+    )
   }
-
 }

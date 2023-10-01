@@ -1,27 +1,32 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics
 
+import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.GraphAnalyticsCoordinator.ProjectDef
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.GraphAnalyticsResult.Noop
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.{GraphAnalyticsResult, GraphAnalyticsStream}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.SupervisorSetup.unapply
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{CacheSink, Elem, ExecutionStatus, ProjectionProgress, SupervisorSetup}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
 import ch.epfl.bluebrain.nexus.testkit.bio.{BioSuite, PatienceConfig}
-import munit.AnyFixture
+import ch.epfl.bluebrain.nexus.testkit.ce.CatsEffectSuite
 import fs2.Stream
 import fs2.concurrent.SignallingRef
-import monix.bio.Task
+import munit.AnyFixture
 
 import java.time.Instant
-import collection.mutable.{Set => MutableSet}
-import concurrent.duration._
+import scala.collection.mutable.{Set => MutableSet}
+import scala.concurrent.duration._
 
 class GraphAnalyticsCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
+
+  private lazy val catsEffectSuite = new CatsEffectSuite {}
+  import catsEffectSuite._
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(supervisor)
 
@@ -43,14 +48,14 @@ class GraphAnalyticsCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtu
   private def failed[A](ref: ProjectRef, id: Iri, error: Throwable, offset: Long): Elem[A] =
     FailedElem(tpe = Projects.entityType, id, Some(ref), Instant.EPOCH, Offset.at(offset), error, 1)
 
-  private val resumeSignal = SignallingRef[Task, Boolean](false).runSyncUnsafe()
+  private val resumeSignal = SignallingRef[IO, Boolean](false).unsafeRunSync()
 
   // Stream 2 elements until signal is set to true and then 2 more
-  private def projectStream: ElemStream[ProjectDef] =
+  private def projectStream: Stream[IO, Elem[ProjectDef]] =
     Stream(
       success(project1, project1Id, ProjectDef(project1, markedForDeletion = false), 1L),
       success(project2, project2Id, ProjectDef(project2, markedForDeletion = false), 2L)
-    ) ++ Stream.never[Task].interruptWhen(resumeSignal) ++
+    ) ++ Stream.never[IO].interruptWhen(resumeSignal) ++
       Stream(
         success(project1, project1Id, ProjectDef(project1, markedForDeletion = false), 3L),
         success(project2, project2Id, ProjectDef(project2, markedForDeletion = true), 4L)
@@ -86,8 +91,8 @@ class GraphAnalyticsCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtu
              graphAnalysisStream,
              sv,
              _ => sink,
-             (ref: ProjectRef) => Task.pure(createdIndices.add(ref)).void,
-             (ref: ProjectRef) => Task.pure(deletedIndices.add(ref)).void
+             (ref: ProjectRef) => IO.pure(createdIndices.add(ref)).void,
+             (ref: ProjectRef) => IO.pure(deletedIndices.add(ref)).void
            )
       _ <- sv.describe(GraphAnalyticsCoordinator.metadata.name)
              .map(_.map(_.progress))

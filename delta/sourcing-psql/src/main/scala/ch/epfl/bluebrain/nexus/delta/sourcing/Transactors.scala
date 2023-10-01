@@ -4,6 +4,7 @@ import cats.effect.{Blocker, IO, Resource}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.{CacheConfig, KeyValueStore}
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors.PartitionsCache
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseConfig
@@ -31,11 +32,12 @@ final case class Transactors(
     cache: PartitionsCache
 )(implicit s: Scheduler) {
 
-  def readCE: Transactor[IO]  = read.mapK(BIO.liftTo)
-  def writeCE: Transactor[IO] = write.mapK(BIO.liftTo)
+  def readCE: Transactor[IO]      = read.mapK(BIO.liftTo)
+  def writeCE: Transactor[IO]     = write.mapK(BIO.liftTo)
+  def streamingCE: Transactor[IO] = streaming.mapK(BIO.liftTo)
 
   def execDDL(ddl: String)(implicit cl: ClassLoader): Task[Unit] =
-    ClasspathResourceUtils.ioContentOf(ddl).flatMap(Fragment.const0(_).update.run.transact(write)).void
+    ClasspathResourceUtils.ioContentOf(ddl).flatMap(Fragment.const0(_).update.run.transact(writeCE)).void
 
   def execDDLs(ddls: List[String])(implicit cl: ClassLoader): Task[Unit] =
     ddls.traverse(execDDL).void

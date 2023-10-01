@@ -1,12 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics
 
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.toCatsIO
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.JsonLdDocument
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.nxvFile
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.testkit.{CirceEq, IOValues, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.ce.CatsIOValues
+import ch.epfl.bluebrain.nexus.testkit.{CirceEq, TestHelpers}
 import io.circe.syntax.EncoderOps
 import monix.bio.UIO
 import org.scalatest.OptionValues
@@ -17,14 +19,14 @@ class JsonLdDocumentSpec
     extends AnyWordSpecLike
     with Matchers
     with TestHelpers
-    with IOValues
+    with CatsIOValues
     with OptionValues
     with ContextFixtures
     with CirceEq {
   "A JsonLdDocument" should {
     implicit val jsonLdApi: JsonLdApi = JsonLdJavaApi.lenient
     val input                         = jsonContentOf("reconstructed-cell.json")
-    val expanded                      = ExpandedJsonLd(input).accepted
+    val expanded                      = toCatsIO(ExpandedJsonLd(input)).accepted
 
     "be generated from expanded Json resource" in {
       val nodeRef1                                   = iri"http://api.brain-map.org/api/v2/data/Structure/733"

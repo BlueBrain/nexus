@@ -17,19 +17,21 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.{Decoder, JsonObject}
-import monix.bio.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
+import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
 
 trait GraphAnalytics {
 
   /**
     * The relationship statistics between different types for the passed ''projectRef''
     */
-  def relationships(projectRef: ProjectRef): IO[GraphAnalyticsRejection, AnalyticsGraph]
+  def relationships(projectRef: ProjectRef): IO[AnalyticsGraph]
 
   /**
     * The properties statistics of the passed ''project'' and type ''tpe''.
     */
-  def properties(projectRef: ProjectRef, tpe: IdSegment): IO[GraphAnalyticsRejection, PropertiesStatistics]
+  def properties(projectRef: ProjectRef, tpe: IdSegment): IO[PropertiesStatistics]
 
 }
 
@@ -43,14 +45,16 @@ object GraphAnalytics {
   ): GraphAnalytics =
     new GraphAnalytics {
 
-      private val expandIri: ExpandIri[InvalidPropertyType] = new ExpandIri(InvalidPropertyType.apply)
+      private val iriExpander: ExpandIri[InvalidPropertyType] = new ExpandIri(InvalidPropertyType.apply)
 
-      private def propertiesAggQueryFor(tpe: Iri)                                                     =
+      private def propertiesAggQueryFor(tpe: Iri): IO[JsonObject]          =
         propertiesAggQuery(config).map(_.replace("@type" -> "{{type}}", tpe))
 
-      override def relationships(projectRef: ProjectRef): IO[GraphAnalyticsRejection, AnalyticsGraph] =
+      private def fetchProjectContext(ref: ProjectRef): IO[ProjectContext] = fetchContext.onRead(ref)
+
+      override def relationships(projectRef: ProjectRef): IO[AnalyticsGraph] =
         for {
-          _     <- fetchContext.onRead(projectRef)
+          _     <- fetchProjectContext(projectRef)
           query <- relationshipsAggQuery(config)
           stats <- client
                      .searchAs[AnalyticsGraph](QueryBuilder(query), index(prefix, projectRef).value, Query.Empty)
@@ -60,18 +64,20 @@ object GraphAnalytics {
       override def properties(
           projectRef: ProjectRef,
           tpe: IdSegment
-      ): IO[GraphAnalyticsRejection, PropertiesStatistics] = {
+      ): IO[PropertiesStatistics] = {
 
-        def search(tpe: Iri, idx: IndexLabel, query: JsonObject) = {
+        def search(tpe: Iri, idx: IndexLabel, query: JsonObject): IO[PropertiesStatistics] = {
           implicit val d: Decoder[PropertiesStatistics] = propertiesDecoderFromEsAggregations(tpe)
           client
             .searchAs[PropertiesStatistics](QueryBuilder(query).withTotalHits(true), idx.value, Query.Empty)
             .mapError(err => WrappedElasticSearchRejection(WrappedElasticSearchClientError(err)))
         }
 
+        def expandIri(pc: ProjectContext): IO[Iri] = iriExpander.apply(tpe, pc)
+
         for {
-          pc     <- fetchContext.onRead(projectRef)
-          tpeIri <- expandIri(tpe, pc)
+          pc     <- fetchProjectContext(projectRef)
+          tpeIri <- expandIri(pc)
           query  <- propertiesAggQueryFor(tpeIri)
           stats  <- search(tpeIri, index(prefix, projectRef), query)
         } yield stats

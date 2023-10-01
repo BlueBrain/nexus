@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts => nxvContexts, nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
@@ -11,7 +12,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 import com.typesafe.scalalogging.Logger
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
-import monix.bio.UIO
 
 package object model {
 
@@ -52,37 +52,33 @@ package object model {
 
   implicit private val logger: Logger = Logger("ElasticSearchPlugin")
 
+  // TODODODODODO Sort out memoization
   /**
     * Default elasticsearch mapping for a view
     */
-  val defaultElasticsearchMapping: UIO[JsonObject] = ClasspathResourceUtils
+  val defaultElasticsearchMapping: IO[JsonObject] = ClasspathResourceUtils
     .ioJsonObjectContentOf("defaults/default-mapping.json")
     .logAndDiscardErrors("loading default elasticsearch mapping")
-    .memoize
 
   /**
     * Default elasticsearch settings for a view
     */
-  val defaultElasticsearchSettings: UIO[JsonObject] = ClasspathResourceUtils
+  val defaultElasticsearchSettings: IO[JsonObject] = ClasspathResourceUtils
     .ioJsonObjectContentOf("defaults/default-settings.json")
     .logAndDiscardErrors("loading default elasticsearch settings")
-    .memoize
 
-  val emptyResults: UIO[Json] = ClasspathResourceUtils
+  val emptyResults: IO[Json] = ClasspathResourceUtils
     .ioJsonObjectContentOf("defaults/empty-results.json")
     .logAndDiscardErrors("loading empty elasticsearch results")
     .map(_.asJson)
-    .memoize
 
   /** Mapping for the event metrics index */
-  val metricsMapping: UIO[JsonObject] = ClasspathResourceUtils
+  val metricsMapping: IO[JsonObject] = ClasspathResourceUtils
     .ioJsonObjectContentOf("metrics/metrics-mapping.json")
     .logAndDiscardErrors("loading metrics mapping")
-    .memoize
 
   /** Settings for the event metrics index */
-  val metricsSettings: UIO[JsonObject] = ClasspathResourceUtils
+  val metricsSettings: IO[JsonObject] = ClasspathResourceUtils
     .ioJsonObjectContentOf("metrics/metrics-settings.json")
     .logAndDiscardErrors("loading metrics settings")
-    .memoize
 }

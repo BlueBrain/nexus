@@ -1,10 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.ioJsonObjectContentOf
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import com.typesafe.scalalogging.Logger
 import io.circe.JsonObject
-import monix.bio.UIO
 
 /**
   * A graph analytics view information
@@ -22,8 +22,8 @@ object GraphAnalyticsView {
 
   private val mappings = ioJsonObjectContentOf("elasticsearch/mappings.json")
 
-  val default: UIO[GraphAnalyticsView] = mappings
+  // TODODODODODO Sort out memoization
+  val default: IO[GraphAnalyticsView] = mappings
     .map(GraphAnalyticsView(_))
     .logAndDiscardErrors("loading graph analytics mapping")
-    .memoize
 }

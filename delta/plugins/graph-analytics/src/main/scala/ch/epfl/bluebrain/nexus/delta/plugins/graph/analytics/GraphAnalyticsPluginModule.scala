@@ -21,7 +21,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projections
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Supervisor
 import izumi.distage.model.definition.{Id, ModuleDef}
-import monix.execution.Scheduler
 
 /**
   * Graph analytics plugin wiring.
@@ -66,7 +65,6 @@ class GraphAnalyticsPluginModule(priority: Int) extends ModuleDef {
         projections: Projections,
         schemeDirectives: DeltaSchemeDirectives,
         baseUri: BaseUri,
-        s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering,
         viewsQuery: GraphAnalyticsViewsQuery
@@ -80,7 +78,6 @@ class GraphAnalyticsPluginModule(priority: Int) extends ModuleDef {
         viewsQuery
       )(
         baseUri,
-        s,
         cr,
         ordering
       )

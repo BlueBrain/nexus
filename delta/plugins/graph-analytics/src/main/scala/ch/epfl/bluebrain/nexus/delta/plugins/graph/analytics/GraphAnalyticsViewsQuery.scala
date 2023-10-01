@@ -1,13 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics
 
 import akka.http.scaladsl.model.Uri
+import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.toCatsIO
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.WrappedElasticSearchClientError
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SortList
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.{Json, JsonObject}
-import monix.bio.IO
 
 /** Allows to perform elasticsearch queries on Graph Analytics views */
 trait GraphAnalyticsViewsQuery {
@@ -21,7 +21,7 @@ trait GraphAnalyticsViewsQuery {
     * @param qp
     *   the extra query parameters for the elasticsearch index
     */
-  def query(projectRef: ProjectRef, query: JsonObject, qp: Uri.Query): IO[ElasticSearchViewRejection, Json]
+  def query(projectRef: ProjectRef, query: JsonObject, qp: Uri.Query): IO[Json]
 }
 
 /**
@@ -32,7 +32,7 @@ trait GraphAnalyticsViewsQuery {
   *   elasticsearch client
   */
 class GraphAnalyticsViewsQueryImpl(prefix: String, client: ElasticSearchClient) extends GraphAnalyticsViewsQuery {
-  override def query(projectRef: ProjectRef, query: JsonObject, qp: Uri.Query): IO[ElasticSearchViewRejection, Json] = {
+  override def query(projectRef: ProjectRef, query: JsonObject, qp: Uri.Query): IO[Json] = {
     val index = GraphAnalytics.index(prefix, projectRef)
     client.search(query, Set(index.value), qp)(SortList.empty).mapError(WrappedElasticSearchClientError)
   }

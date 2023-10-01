@@ -50,6 +50,7 @@ val mockitoVersion          = "1.17.22"
 val monixVersion            = "3.4.1"
 val monixBioVersion         = "1.2.0"
 val munitVersion            = "1.0.0-M8"
+val munitCEVersion            = "1.0.7"
 val nimbusJoseJwtVersion    = "9.31"
 val postgresJdbcVersion     = "42.6.0"
 val pureconfigVersion       = "0.17.4"
@@ -115,6 +116,7 @@ lazy val magnolia           = "com.softwaremill.magnolia1_2" %% "magnolia"      
 lazy val mockito            = "org.mockito"                  %% "mockito-scala"            % mockitoVersion
 lazy val monixBio           = "io.monix"                     %% "monix-bio"                % monixBioVersion
 lazy val munit              = "org.scalameta"                %% "munit"                    % munitVersion
+lazy val munitCE              = "org.typelevel"                %% "munit-cats-effect-2"                    % munitCEVersion
 lazy val nimbusJoseJwt      = "com.nimbusds"                  % "nimbus-jose-jwt"          % nimbusJoseJwtVersion
 lazy val pureconfig         = "com.github.pureconfig"        %% "pureconfig"               % pureconfigVersion
 lazy val pureconfigCats     =  "com.github.pureconfig"       %% "pureconfig-cats"          % pureconfigVersion
@@ -329,6 +331,7 @@ lazy val sdk = project
       akkaTestKitTyped % Test,
       akkaHttpTestKit  % Test,
       munit            % Test,
+      munitCE            % Test,
       scalaTest        % Test
     ),
     addCompilerPlugin(kindProjector),
@@ -1018,6 +1021,7 @@ Global / excludeLintKeys        += packageDoc / publishArtifact
 Global / excludeLintKeys        += docs / paradoxRoots
 Global / excludeLintKeys        += docs / Paradox / paradoxNavigationDepth
 Global / concurrentRestrictions += Tags.limit(Tags.Test, 1)
+Global / onChangedBuildSource   := ReloadOnSourceChanges
 
 addCommandAlias(
   "review",

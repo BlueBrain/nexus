@@ -15,10 +15,11 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, EntityType, ProjectRef, Tag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.{SelectFilter, StreamingQuery}
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import doobie._
 import doobie.implicits._
 import io.circe.Json
-import monix.bio.{Task, UIO}
+import cats.effect.IO
 
 trait GraphAnalyticsStream {
 
@@ -40,7 +41,7 @@ object GraphAnalyticsStream {
   /**
     * We look for a resource with these ids in this project and return their types if it can be found
     */
-  private def query(project: ProjectRef, xas: Transactors)(nel: NonEmptyList[Iri]): UIO[Map[Iri, Set[Iri]]] = {
+  private def query(project: ProjectRef, xas: Transactors)(nel: NonEmptyList[Iri]): IO[Map[Iri, Set[Iri]]] = {
     val inIds = Fragments.in(fr"id", nel)
     sql"""
          | SELECT id, value->'types'
@@ -52,7 +53,7 @@ object GraphAnalyticsStream {
          |""".stripMargin
       .query[(Iri, Option[Json])]
       .to[List]
-      .transact(xas.streaming)
+      .transact(xas.streamingCE)
       .map { l =>
         l.foldLeft(emptyMapType) { case (acc, (id, json)) =>
           val types = json.flatMap(_.as[Set[Iri]].toOption).getOrElse(Set.empty)
@@ -66,9 +67,9 @@ object GraphAnalyticsStream {
     */
   private[indexing] def findRelationships(project: ProjectRef, xas: Transactors, batchSize: Int)(
       ids: Set[Iri]
-  ): UIO[Map[Iri, Set[Iri]]] = {
+  ): IO[Map[Iri, Set[Iri]]] = {
     val groupIds = NonEmptyList.fromList(ids.toList).map(_.grouped(batchSize).toList)
-    val noop     = UIO.pure(emptyMapType)
+    val noop     = IO.pure(emptyMapType)
     groupIds.fold(noop) { list =>
       list.foldLeftM(emptyMapType) { case (acc, l) =>
         query(project, xas)(l).map(_ ++ acc)
@@ -84,40 +85,38 @@ object GraphAnalyticsStream {
     val relationshipBatch = 500
 
     // Decode the json payloads to [[GraphAnalyticsResult]] We only care for resources and files
-    def decode(entityType: EntityType, json: Json): Task[GraphAnalyticsResult] =
+    def decode(entityType: EntityType, json: Json): IO[GraphAnalyticsResult] =
       entityType match {
         case Files.entityType     =>
-          Task.fromEither(FileState.serializer.codec.decodeJson(json)).map { s =>
+          IO.fromEither(FileState.serializer.codec.decodeJson(json)).map { s =>
             UpdateByQuery(s.id, s.types)
           }
         case Resources.entityType =>
-          Task.fromEither(ResourceState.serializer.codec.decodeJson(json)).flatMap {
-            case state if state.deprecated => deprecatedIndex(state)
+          IO.fromEither(ResourceState.serializer.codec.decodeJson(json)).flatMap {
+            case state if state.deprecated => IO.pure(deprecatedIndex(state))
             case state                     =>
               JsonLdDocument.fromExpanded(state.expanded, findRelationships(project, xas, relationshipBatch)).map {
                 doc => activeIndex(state, doc)
               }
           }
-        case _                    => Task.pure(Noop)
+        case _                    => IO.pure(Noop)
       }
 
-    StreamingQuery.elems(project, start, SelectFilter.latest, qc, xas, decode)
+    StreamingQuery.elems(project, start, SelectFilter.latest, qc, xas, (a, b) => ioToTaskK.apply(decode(a, b)))
   }
   // $COVERAGE-ON$
 
   private def deprecatedIndex(state: ResourceState) =
-    Task.pure(
-      Index.deprecated(
-        state.project,
-        state.id,
-        state.remoteContexts,
-        state.rev,
-        state.types,
-        state.createdAt,
-        state.createdBy,
-        state.updatedAt,
-        state.updatedBy
-      )
+    Index.deprecated(
+      state.project,
+      state.id,
+      state.remoteContexts,
+      state.rev,
+      state.types,
+      state.createdAt,
+      state.createdBy,
+      state.updatedAt,
+      state.updatedBy
     )
 
   private def activeIndex(state: ResourceState, doc: JsonLdDocument) =

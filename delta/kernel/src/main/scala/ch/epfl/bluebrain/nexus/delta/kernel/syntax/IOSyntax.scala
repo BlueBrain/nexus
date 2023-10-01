@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.kernel.syntax
 import cats.Functor
 import cats.effect.IO
-import cats.syntax.functor._
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import com.typesafe.scalalogging.Logger
 import monix.bio.{IO => BIO, Task, UIO}
@@ -18,6 +18,8 @@ trait IOSyntax {
   implicit final def taskSyntaxLogErrors[A](task: Task[A]): TaskOps[A] = new TaskOps(task)
 
   implicit final def ioFunctorOps[A, F[_]: Functor](io: IO[F[A]]): IOFunctorOps[A, F] = new IOFunctorOps(io)
+
+  implicit final def ioOps[A](io: IO[A]): IOOps[A] = new IOOps(io)
 }
 
 final class BIORetryStrategyOps[E, A](private val io: BIO[E, A]) extends AnyVal {
@@ -65,4 +67,17 @@ final class IOFunctorOps[A, F[_]: Functor](private val io: IO[F[A]]) {
     *   a new [[F]] with value being the result of applying [[f]] to the value of old [[F]]
     */
   def mapValue[B](f: A => B): IO[F[B]] = io.map(_.map(f))
+}
+
+final class IOOps[A](private val io: IO[A]) {
+
+  /**
+    * Log errors before hiding them
+    */
+  def logAndDiscardErrors(action: String)(implicit logger: Logger): IO[A] =
+    // TODO the method this replicates says it hides errors, but it uses `terminate` - I'm not sure I understand the desired semantics?
+    // You can't discard errors and return an A at the same time?
+    io.onError { ex =>
+      IO.delay(logger.warn(s"A Task is hiding an error while '$action'", ex))
+    }
 }

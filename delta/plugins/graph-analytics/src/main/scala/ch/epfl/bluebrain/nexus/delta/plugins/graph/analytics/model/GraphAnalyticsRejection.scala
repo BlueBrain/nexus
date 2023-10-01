@@ -12,6 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
+import ch.epfl.bluebrain.nexus.delta.sourcing.rejection.Rejection
 
 /**
   * Enumeration of graph analytics rejection types.
@@ -19,7 +20,7 @@ import io.circe.{Encoder, JsonObject}
   * @param reason
   *   a descriptive message as to why the rejection occurred
   */
-sealed abstract class GraphAnalyticsRejection(val reason: String) extends Product with Serializable
+sealed abstract class GraphAnalyticsRejection(val reason: String) extends Rejection
 
 object GraphAnalyticsRejection {
 

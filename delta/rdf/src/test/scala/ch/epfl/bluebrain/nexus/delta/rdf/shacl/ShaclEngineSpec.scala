@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.shacl
 
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.toCatsIO
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
@@ -7,7 +8,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
-import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOValues, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.ce.CatsIOValues
+import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, TestHelpers}
+import io.circe.Json
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -16,7 +19,7 @@ class ShaclEngineSpec
     extends AnyWordSpecLike
     with Matchers
     with TestHelpers
-    with IOValues
+    with CatsIOValues
     with EitherValuable
     with Inspectors {
 
@@ -30,9 +33,11 @@ class ShaclEngineSpec
 
     implicit val rcr: RemoteContextResolution = RemoteContextResolution.fixed(contexts.shacl -> shaclResolvedCtx)
 
-    val schemaGraph   = Graph(ExpandedJsonLd(schema).accepted).rightValue
+    def expandedJsonLd(j: Json): ExpandedJsonLd = toCatsIO(ExpandedJsonLd(j)).accepted
+
+    val schemaGraph   = Graph(expandedJsonLd(schema)).rightValue
     val schemaShapes  = ShaclShapesGraph(schemaGraph)
-    val resourceGraph = Graph(ExpandedJsonLd(resource).accepted).rightValue
+    val resourceGraph = Graph(expandedJsonLd(resource)).rightValue
 
     "validate data form schema mModel" in {
       val report = ShaclEngine(resourceGraph, schemaGraph, reportDetails = true).accepted
@@ -50,13 +55,13 @@ class ShaclEngineSpec
 
     "fail validating shapes if unexpected field value" in {
       val wrongSchema = schema.replace("minCount" -> 1, "wrong")
-      val graph       = Graph(ExpandedJsonLd(wrongSchema).accepted).rightValue
+      val graph       = Graph(toCatsIO(ExpandedJsonLd(wrongSchema)).accepted).rightValue
       ShaclEngine(graph, reportDetails = true).accepted.isValid() shouldEqual false
     }
 
     "fail validating data if not matching nodes" in {
       val resourceChangedType = resource.replace(keywords.tpe -> "Custom", "Other")
-      val resourceGraph       = Graph(ExpandedJsonLd(resourceChangedType).accepted).rightValue
+      val resourceGraph       = Graph(expandedJsonLd(resourceChangedType)).rightValue
       val r1                  = ShaclEngine(resourceGraph, schemaGraph, reportDetails = true).accepted
       val r2                  = ShaclEngine(resourceGraph, schemaShapes, reportDetails = true, validateShapes = false).accepted
       forAll(List(r1, r2)) { report =>
@@ -68,7 +73,7 @@ class ShaclEngineSpec
 
     "fail validating data if wrong field type" in {
       val resourceChangedNumber = resource.replace("number" -> 24, "Other")
-      val resourceGraph         = Graph(ExpandedJsonLd(resourceChangedNumber).accepted).rightValue
+      val resourceGraph         = Graph(expandedJsonLd(resourceChangedNumber)).rightValue
       ShaclEngine(resourceGraph, schemaGraph, reportDetails = true).accepted shouldEqual
         ValidationReport(false, 10, jsonContentOf("shacl/failed_number.json"))
     }

@@ -8,7 +8,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import io.circe.{Encoder, Json}
-import monix.bio.IO
+import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.MissingPredicate
 import org.apache.jena.query.DatasetFactory
 import org.apache.jena.rdf.model.Resource
 
@@ -44,20 +46,20 @@ object ValidationReport {
       contexts.shacl -> ContextValue.fromFile("contexts/shacl.json")
     )
 
-  final def apply(report: Resource)(implicit api: JsonLdApi): IO[String, ValidationReport] = {
+  final def apply(report: Resource)(implicit api: JsonLdApi): IO[ValidationReport] = {
     val tmpGraph = Graph.unsafe(DatasetFactory.create(report.getModel).asDatasetGraph())
     for {
       rootNode      <- IO.fromEither(
                          tmpGraph
                            .find { case (_, p, _) => p == predicate(sh.conforms) }
                            .map { case (s, _, _) => if (s.isURI) iri"${s.getURI}" else BNode(s.getBlankNodeLabel) }
-                           .toRight("Unable to find predicate sh:conforms in the validation report graph")
+                           .toRight(MissingPredicate(sh.conforms))
                        )
       graph          = tmpGraph.replaceRootNode(rootNode)
-      compacted     <- graph.toCompactedJsonLd(shaclCtx).mapError(_.getMessage)
+      compacted     <- graph.toCompactedJsonLd(shaclCtx)
       json           = compacted.json
-      conforms      <- IO.fromEither(json.hcursor.get[Boolean]("conforms")).mapError(_.message)
-      targetedNodes <- IO.fromEither(json.hcursor.get[Int]("targetedNodes")).mapError(_.message)
+      conforms      <- IO.fromEither(json.hcursor.get[Boolean]("conforms"))
+      targetedNodes <- IO.fromEither(json.hcursor.get[Int]("targetedNodes"))
     } yield ValidationReport(conforms, targetedNodes, json)
   }
 

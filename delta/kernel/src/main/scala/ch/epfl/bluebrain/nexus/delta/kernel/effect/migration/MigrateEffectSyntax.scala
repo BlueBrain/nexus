@@ -12,6 +12,8 @@ trait MigrateEffectSyntax {
   implicit def toCatsIO[E <: Throwable, A](io: BIO[E, A]): IO[A]                        = io.to[IO]
   implicit def toCatsIOOps[E <: Throwable, A](io: BIO[E, A]): MonixBioToCatsIOOps[E, A] = new MonixBioToCatsIOOps(io)
 
+  implicit def toMonixBIO[E <: Throwable, A](io: IO[A]): BIO[E, A] = io.toBIO
+
   implicit def toMonixBIOOps[A](io: IO[A]): CatsIOToBioOps[A] = new CatsIOToBioOps(io)
 
   val taskToIoK: Task ~> IO = λ[Task ~> IO](toCatsIO(_))
