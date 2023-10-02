@@ -39,9 +39,9 @@ class SearchConfigHookSuite extends CatsEffectSuite with CompositeViewsFixture {
   private val proj = ProjectRef.unsafe("org", "proj")
 
   // Create a search view from the provided config
-  private def searchView(defaults: Defaults, config: IndexingConfig) = {
+  private def searchView(defaults: Defaults, config: IndexingConfig): IO[ActiveViewDef] = {
     val fields             = SearchViewFactory(defaults, config)
-    val compositeViewValue = toCatsIO(CompositeViewFactory.create(fields))
+    val compositeViewValue = CompositeViewFactory.create(fields)
     compositeViewValue.map { value =>
       ActiveViewDef(ViewRef(proj, defaultViewId), UUID.randomUUID(), 1, value)
     }

@@ -35,7 +35,9 @@ final class SearchScopeInitialization(
       project: Project,
       subject: Identity.Subject
   ): IO[Unit] = {
-    toCatsIO(views.create(defaultViewId, project.ref, SearchViewFactory(defaults, config))).void
+    views
+      .create(defaultViewId, project.ref, SearchViewFactory(defaults, config))
+      .void
       .handleErrorWith {
         case _: ViewAlreadyExists       => IO.unit
         case _: ProjectContextRejection => IO.unit

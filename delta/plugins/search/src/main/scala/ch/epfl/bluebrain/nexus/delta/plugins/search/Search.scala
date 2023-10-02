@@ -93,14 +93,12 @@ object Search {
       ) =
         for {
           allProjections    <- listProjections().map(_.filter(projectionPredicate))
-          accessibleIndices <- toCatsIO(
-                                 aclCheck.mapFilter[TargetProjection, String](
-                                   allProjections,
-                                   p => ProjectAcl(p.view.project) -> p.projection.permission,
-                                   p => projectionIndex(p.projection, p.view.uuid, prefix).value
-                                 )
+          accessibleIndices <- aclCheck.mapFilter[TargetProjection, String](
+                                 allProjections,
+                                 p => ProjectAcl(p.view.project) -> p.projection.permission,
+                                 p => projectionIndex(p.projection, p.view.uuid, prefix).value
                                )
-          results           <- toCatsIO(client.search(payload, accessibleIndices, qp)().mapError(WrappedElasticSearchClientError))
+          results           <- client.search(payload, accessibleIndices, qp)().mapError(WrappedElasticSearchClientError)
         } yield results
 
       override def query(payload: JsonObject, qp: Uri.Query)(implicit caller: Caller): IO[Json] =

@@ -46,9 +46,8 @@ object SearchConfigHook {
       subject: Subject,
       baseUri: BaseUri
   ): (ActiveViewDef, CompositeViewFields) => IO[Unit] = { (viewDef: ActiveViewDef, fields: CompositeViewFields) =>
-    toCatsIO(
-      views.update(viewDef.ref.viewId, viewDef.ref.project, viewDef.rev, fields)
-    )
+    views
+      .update(viewDef.ref.viewId, viewDef.ref.project, viewDef.rev, fields)
       .handleErrorWith(e => logger.error(s"Could not update view '${viewDef.ref}'. Message: '${e.getMessage}'"))
       .flatMap(_ => logger.info(s"Search view '${viewDef.ref}' has been successfully updated."))
   }
