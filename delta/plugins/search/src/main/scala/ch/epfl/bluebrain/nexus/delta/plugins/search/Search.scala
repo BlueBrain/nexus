@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.search
 
 import akka.http.scaladsl.model.Uri
 import cats.effect.IO
-import cats.implicits.catsSyntaxApplicativeId
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
@@ -60,7 +60,7 @@ object Search {
       compositeViews
         .list(
           Pagination.OnePage,
-          CompositeViewSearchParams(deprecated = Some(false), filter = v => (v.id == defaultViewId).pure),
+          CompositeViewSearchParams(deprecated = Some(false), filter = v => IO.delay(v.id == defaultViewId).toUIO),
           Ordering.by(_.createdAt)
         )
         .map(
