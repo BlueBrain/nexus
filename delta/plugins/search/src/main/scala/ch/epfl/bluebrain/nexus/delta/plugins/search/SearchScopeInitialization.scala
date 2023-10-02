@@ -44,7 +44,7 @@ final class SearchScopeInitialization(
         case rej                        =>
           val str =
             s"Failed to create the search view for project '${project.ref}' due to '${rej.getMessage}'."
-          IO.delay(logger.error(str)) >> IO.raiseError(ScopeInitializationFailed(str))
+          logger.error(str) >> IO.raiseError(ScopeInitializationFailed(str))
       }
       .named("createSearchView", "search")
   }
