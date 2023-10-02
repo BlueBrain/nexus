@@ -11,20 +11,31 @@ The described endpoints are experimental and the responses structure might chang
 
 @@@
 
-## Head
+Requests
+: All requests should have no body
+
+Responses
+: A response will have a 204 (no content) status code if the user is authorised
+: A response will have a 403 (forbidden) status code if the user is not authorised
+
+
+## Standard permissions
 
 This operation determines whether the current logged in user has a specific permission in a specific context
-
 ```
 HEAD /v1/user/permissions/{org_label}/{project_label}?permission={permission}
 ```
-
 where
 - `{permission}`: String - the permission to check
 
-Request
-: The request should have no body
 
-Response
-: The response will have a 204 (no content) status code if the user is authorised
-: The response will have a 403 (forbidden) status code if the user is not authorised
+## Storage access permissions
+
+This operation determines whether the current logged in user would be able to access files on a specific storage
+```
+HEAD /v1/user/permissions/{org_label}/{project_label}?storage={storage_id}&type={access_type}
+```
+where
+- `{storage_id}`: String - the id of the storage
+- `{access_type}`: String - the access type of the storage. Can be `read` or `write`
+
