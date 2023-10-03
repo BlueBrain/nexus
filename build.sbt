@@ -384,6 +384,7 @@ lazy val app = project
         )
       )
     },
+    Test / javaOptions    += cglibFix,
     Test / fork           := true,
     Test / test           := {
       val _ = copyPlugins.value
@@ -914,7 +915,7 @@ lazy val compilation = {
   Seq(
     scalaVersion                           := scalaCompilerVersion,
     scalacOptions                          ~= { options: Seq[String] => options.filterNot(Set("-Wself-implicit", "-Xlint:infer-any", "-Wnonunit-statement")) },
-    javaSpecificationVersion               := "11",
+    javaSpecificationVersion               := "17",
     javacOptions                          ++= Seq(
       "-source",
       javaSpecificationVersion.value,
@@ -978,12 +979,15 @@ lazy val servicePackaging = {
       else version.value
     },
     Docker / daemonUser   := "nexus",
-    dockerBaseImage       := "eclipse-temurin:11-jre",
+    dockerBaseImage       := "eclipse-temurin:17-jre",
     dockerBuildxPlatforms := Seq("linux/arm64/v8", "linux/amd64"),
     dockerExposedPorts    := Seq(8080),
     dockerUsername        := Some("bluebrain"),
     dockerUpdateLatest    := false,
-    dockerChmodType       := DockerChmodType.UserGroupWriteExecute
+    dockerChmodType       := DockerChmodType.UserGroupWriteExecute,
+    dockerEnvVars         := Map(
+      "JAVA_OPTS" -> cglibFix
+    )
   )
 }
 
@@ -1067,3 +1071,6 @@ def unitTestsWithCoverageCommandsForModules(modules: List[String]) = {
 addCommandAlias("core-unit-tests-with-coverage", unitTestsWithCoverageCommandsForModules(coreModules))
 addCommandAlias("app-unit-tests-with-coverage", unitTestsWithCoverageCommandsForModules(List("app")))
 addCommandAlias("plugins-unit-tests-with-coverage", unitTestsWithCoverageCommandsForModules(List("plugins")))
+
+// This option allows distage 1.0.10 to run on JDK 17+
+val cglibFix = "--add-opens=java.base/java.lang=ALL-UNNAMED"

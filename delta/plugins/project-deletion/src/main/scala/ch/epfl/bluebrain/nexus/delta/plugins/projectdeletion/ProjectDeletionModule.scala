@@ -1,5 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion
 
+import cats.effect.{Clock, IO, Timer}
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion.model.{contexts, ProjectDeletionConfig}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -8,7 +10,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{Projects, ProjectsStatistics}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Supervisor
 import izumi.distage.model.definition.{Id, ModuleDef}
-import monix.execution.Scheduler
 
 class ProjectDeletionModule(priority: Int) extends ModuleDef {
 
@@ -24,10 +25,9 @@ class ProjectDeletionModule(priority: Int) extends ModuleDef {
     (
         config: ProjectDeletionConfig,
         baseUri: BaseUri,
-        s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
-    ) => new ProjectDeletionRoutes(config)(baseUri, s, cr, ordering)
+    ) => new ProjectDeletionRoutes(config)(baseUri, cr, ordering)
   }
 
   many[PriorityRoute].add { (route: ProjectDeletionRoutes) =>
@@ -39,7 +39,9 @@ class ProjectDeletionModule(priority: Int) extends ModuleDef {
         projects: Projects,
         config: ProjectDeletionConfig,
         projectStatistics: ProjectsStatistics,
-        supervisor: Supervisor
-    ) => ProjectDeletionRunner.start(projects, config, projectStatistics, supervisor)
+        supervisor: Supervisor,
+        clock: Clock[IO],
+        timer: Timer[IO]
+    ) => ProjectDeletionRunner.start(projects, config, projectStatistics, supervisor)(clock, timer).toUIO
   }
 }

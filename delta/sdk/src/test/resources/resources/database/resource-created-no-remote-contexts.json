@@ -1,0 +1,54 @@
+{
+  "id": "https://bluebrain.github.io/nexus/vocabulary/myId",
+  "project": "myorg/myproj",
+  "schema": "https://bluebrain.github.io/nexus/schemas/unconstrained.json?rev=1",
+  "schemaProject": "myorg/myproj",
+  "types": [
+    "https://neuroshapes.org/Morphology"
+  ],
+  "source": {
+    "@context": [
+      "https://neuroshapes.org",
+      "https://bluebrain.github.io/nexus/contexts/metadata.json",
+      {
+        "@vocab": "https://bluebrain.github.io/nexus/vocabulary/"
+      }
+    ],
+    "@id": "https://bluebrain.github.io/nexus/vocabulary/myId",
+    "@type": "Morphology",
+    "name": "Morphology 001"
+  },
+  "compacted": {
+    "@context": [
+      "https://neuroshapes.org",
+      "https://bluebrain.github.io/nexus/contexts/metadata.json",
+      {
+        "@vocab": "https://bluebrain.github.io/nexus/vocabulary/"
+      }
+    ],
+    "@id": "https://bluebrain.github.io/nexus/vocabulary/myId",
+    "@type": "Morphology",
+    "name": "Morphology 001"
+  },
+  "expanded": [
+    {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/myId",
+      "@type": [
+        "https://neuroshapes.org/Morphology"
+      ],
+      "https://bluebrain.github.io/nexus/vocabulary/name": [
+        {
+          "@value": "Morphology 001"
+        }
+      ]
+    }
+  ],
+  "rev": 1,
+  "instant": "1970-01-01T00:00:00Z",
+  "subject": {
+    "subject": "username",
+    "realm": "myrealm",
+    "@type": "User"
+  },
+  "@type": "ResourceCreated"
+}
