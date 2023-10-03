@@ -18,7 +18,7 @@ import io.circe.{Encoder, JsonObject}
   * @param reason
   *   a descriptive message as to why the rejection occurred
   */
-sealed abstract class OrganizationRejection(val reason: String) extends Throwable with Product with Serializable
+sealed abstract class OrganizationRejection(val reason: String) extends Exception(reason) with Product with Serializable
 
 object OrganizationRejection {
 
