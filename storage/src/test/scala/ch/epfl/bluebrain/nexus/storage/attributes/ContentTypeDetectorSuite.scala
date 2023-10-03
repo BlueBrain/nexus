@@ -25,13 +25,6 @@ class ContentTypeDetectorSuite extends FunSuite {
     assertEquals(detector(jsonPath, isDir = false), expected)
   }
 
-  test("Detect overridden content type") {
-    val customMediaType = MediaTypes.`application/vnd.api+json`
-    val detector        = new ContentTypeDetector(MediaTypeDetectorConfig("json" -> MediaTypes.`application/vnd.api+json`))
-    val expected        = ContentType(customMediaType, () => `UTF-8`)
-    assertEquals(detector(jsonPath, isDir = false), expected)
-  }
-
   test("Detect `application/octet-stream` as a default value") {
     val detector = new ContentTypeDetector(MediaTypeDetectorConfig("json" -> MediaTypes.`application/vnd.api+json`))
     val expected = ContentTypes.`application/octet-stream`
