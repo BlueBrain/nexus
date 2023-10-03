@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.Project
-import ch.epfl.bluebrain.nexus.delta.sdk.{CatsScopeInitialization, Defaults}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Defaults, ScopeInitialization}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 
@@ -24,7 +24,7 @@ final class SearchScopeInitialization(
     serviceAccount: ServiceAccount,
     defaults: Defaults
 )(implicit baseUri: BaseUri)
-    extends CatsScopeInitialization {
+    extends ScopeInitialization {
 
   private val logger = Logger.cats[SearchScopeInitialization]
 

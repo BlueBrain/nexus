@@ -1,12 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.sdk.SIO.SIO
-import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.Project
-import monix.bio.{IO => BIO}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 
 /**
   * Lifecycle hook for organization and project initialization. It's meant to be used for plugins to preconfigure an
@@ -14,7 +11,7 @@ import monix.bio.{IO => BIO}
   * Implementations should use a `many[ScopeInitialization]` binding such that all implementation are collected during
   * the service bootstrapping.
   */
-trait ScopeInitializationF[F[_]] {
+trait ScopeInitialization {
 
   /**
     * The method is invoked synchronously during the organization creation for its immediate configuration.
@@ -27,7 +24,7 @@ trait ScopeInitializationF[F[_]] {
     * @param subject
     *   the identity that was recorded for the creation of the organization
     */
-  def onOrganizationCreation(organization: Organization, subject: Subject): F[Unit]
+  def onOrganizationCreation(organization: Organization, subject: Subject): IO[Unit]
 
   /**
     * The method is invoked synchronously during the project creation for immediate configuration of the project.
@@ -40,13 +37,6 @@ trait ScopeInitializationF[F[_]] {
     * @param subject
     *   the identity that was recorded for the creation of the project
     */
-  def onProjectCreation(project: Project, subject: Subject): F[Unit]
+  def onProjectCreation(project: Project, subject: Subject): IO[Unit]
 
 }
-
-object SIO {
-  type SIO[A] = BIO[ScopeInitializationFailed, A]
-}
-
-trait ScopeInitialization     extends ScopeInitializationF[SIO]
-trait CatsScopeInitialization extends ScopeInitializationF[IO]

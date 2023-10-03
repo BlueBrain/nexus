@@ -20,6 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.rejection.Rejection
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionErr
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
@@ -30,7 +31,7 @@ import io.circe.{Encoder, Json, JsonObject}
   * @param reason
   *   a descriptive message as to why the rejection occurred
   */
-sealed abstract class ElasticSearchViewRejection(val reason: String) extends Product with Serializable
+sealed abstract class ElasticSearchViewRejection(val reason: String) extends Rejection
 
 object ElasticSearchViewRejection {
 
