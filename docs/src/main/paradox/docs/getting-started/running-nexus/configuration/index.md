@@ -127,6 +127,32 @@ Nexus Delta supports 3 types of storages: 'disk', 'amazon' (s3 compatible) and '
 - For S3 compatible storages the most relevant configuration flags are the ones related to the S3 settings: `plugins.storage.storages.amazon.default-endpoint`, `plugins.storage.storages.amazon.default-access-key` and `plugins.storage.storages.amazon.default-secret-key`.
 - For remote disk storages the most relevant configuration flags are `plugins.storage.storages.remote-disk.default-endpoint` (the endpoint where the remote storage service is running) and `plugins.storage.storages.remote-disk.credentials` (the method to authenticate to the remote storage service).
 
+#### File configuration
+
+When the media type is not provided by the user, Delta relies on automatic detection based on the file extension in order to provide one.
+
+From 1.9, it is possible to provide a list of extensions with an associated media type to compute the media type.
+
+This list can be defined at `files.media-type-detector.extensions`:
+```hocon
+files {
+  # Allows to define default media types for the given file extensions
+  media-type-detector {
+    extensions {
+      custom = "application/custom"
+      ntriples = "application/n-triples"
+    }
+  }
+}
+```
+
+The media type resolution process follow this order stopping at the first successful step:
+
+* Select the `Content-Type` header from the file creation/update request
+* Compare the extension to the custom list provided in the configuratio
+* Fallback on akka automatic detection
+* Fallback to the default value `application/octet-stream`
+
 #### Remote storage configuration
 
 Authentication for remote storage can be specified in three different ways. The value of `plugins.storage.storages.remote-disk.credentials` can be:
