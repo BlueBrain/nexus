@@ -90,6 +90,7 @@ object ResourceEvent {
       source: Json,
       compacted: CompactedJsonLd,
       expanded: ExpandedJsonLd,
+      // TODO: Remove default after 1.10 migration
       remoteContexts: Set[RemoteContextRef] = Set.empty,
       rev: Int,
       instant: Instant,
@@ -133,6 +134,7 @@ object ResourceEvent {
       source: Json,
       compacted: CompactedJsonLd,
       expanded: ExpandedJsonLd,
+      // TODO: Remove default after 1.10 migration
       remoteContexts: Set[RemoteContextRef] = Set.empty,
       rev: Int,
       instant: Instant,
@@ -173,6 +175,7 @@ object ResourceEvent {
       types: Set[Iri],
       compacted: CompactedJsonLd,
       expanded: ExpandedJsonLd,
+      // TODO: Remove default after 1.10 migration
       remoteContexts: Set[RemoteContextRef] = Set.empty,
       rev: Int,
       instant: Instant,
@@ -269,6 +272,8 @@ object ResourceEvent {
     import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd.Database._
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
 
+    // TODO: The `.withDefaults` method is used in order to inject the default empty remoteContexts
+    //  when deserializing an event that has none. Remove it after 1.10 migration.
     implicit val configuration: Configuration = Serializer.circeConfiguration.withDefaults
 
     implicit val coder: Codec.AsObject[ResourceEvent] = deriveConfiguredCodec[ResourceEvent]

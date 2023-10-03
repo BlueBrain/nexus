@@ -145,6 +145,7 @@ class ResourceSerializationSuite extends SerializationSuite with ResourceInstanc
     (refreshed.noRemoteContext, jsonContentOf("resources/database/resource-refreshed-no-remote-contexts.json"))
   )
 
+  // TODO: Remove test after 1.10 migration.
   resourcesMappingNoRemoteContexts.foreach { case (event, database) =>
     test(s"Correctly deserialize a ${event.getClass.getSimpleName} with no RemoteContext") {
       assertEquals(ResourceEvent.serializer.codec.decodeJson(database), Right(event))
@@ -181,6 +182,7 @@ class ResourceSerializationSuite extends SerializationSuite with ResourceInstanc
     assertEquals(ResourceState.serializer.codec.decodeJson(jsonState), Right(state))
   }
 
+  // TODO: Remove test after 1.10 migration.
   test("Correctly deserialize a ResourceState with no remote contexts") {
     assertEquals(
       ResourceState.serializer.codec.decodeJson(jsonStateNoRemoteContext),
