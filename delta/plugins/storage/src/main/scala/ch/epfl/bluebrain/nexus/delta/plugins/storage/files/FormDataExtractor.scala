@@ -17,6 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import monix.bio.IO
 import monix.execution.Scheduler
 
+import scala.concurrent.Future
 import scala.util.Try
 
 sealed trait FormDataExtractor {
@@ -73,25 +74,17 @@ object FormDataExtractor {
           storageAvailableSpace: Option[Long]
       ): IO[FileRejection, (FileDescription, BodyPartEntity)] = {
         val sizeLimit = Math.min(storageAvailableSpace.getOrElse(Long.MaxValue), maxFileSize)
-        IO.deferFuture(um(entity.withSizeLimit(sizeLimit)))
-          .mapError(onError)
-          .flatMap { formData =>
-            IO.fromFuture(
-              formData.parts
-                .mapAsync(parallelism = 1)(describe)
-                .collect { case Some(values) => values }
-                .toMat(Sink.headOption)(Keep.right)
-                .run()
-            ).mapError {
-              case _: EntityStreamSizeException =>
-                FileTooLarge(maxFileSize, storageAvailableSpace)
-              case th                           =>
-                WrappedAkkaRejection(MalformedRequestContentRejection(th.getMessage, th))
-            }.flatMap(IO.fromOption(_, InvalidMultipartFieldName(id)))
-          }
+        for {
+          formData <- unmarshall(entity, sizeLimit)
+          fileOpt  <- extractFile(formData, maxFileSize, storageAvailableSpace)
+          file     <- IO.fromOption(fileOpt, InvalidMultipartFieldName(id))
+        } yield file
       }
 
-      private def onError(th: Throwable) = th match {
+      private def unmarshall(entity: HttpEntity, sizeLimit: Long) =
+        IO.deferFuture(um(entity.withSizeLimit(sizeLimit))).mapError(onUnmarshallingError)
+
+      private def onUnmarshallingError(th: Throwable) = th match {
         case RejectionError(r)                  =>
           WrappedAkkaRejection(r)
         case Unmarshaller.NoContentException    =>
@@ -106,7 +99,26 @@ object FormDataExtractor {
           WrappedAkkaRejection(MalformedRequestContentRejection(Option(x.getMessage).getOrElse(""), x))
       }
 
-      private def describe(part: FormData.BodyPart) = part match {
+      private def extractFile(
+          formData: FormData,
+          maxFileSize: Long,
+          storageAvailableSpace: Option[Long]
+      ): IO[FileRejection, Option[(FileDescription, BodyPartEntity)]] = IO
+        .fromFuture(
+          formData.parts
+            .mapAsync(parallelism = 1)(extractFile)
+            .collect { case Some(values) => values }
+            .toMat(Sink.headOption)(Keep.right)
+            .run()
+        )
+        .mapError {
+          case _: EntityStreamSizeException =>
+            FileTooLarge(maxFileSize, storageAvailableSpace)
+          case th                           =>
+            WrappedAkkaRejection(MalformedRequestContentRejection(th.getMessage, th))
+        }
+
+      private def extractFile(part: FormData.BodyPart): Future[Option[(FileDescription, BodyPartEntity)]] = part match {
         case part if part.name == fieldName =>
           val filename    = part.filename.getOrElse("file")
           val contentType = detectContentType(filename, part.entity.contentType)
