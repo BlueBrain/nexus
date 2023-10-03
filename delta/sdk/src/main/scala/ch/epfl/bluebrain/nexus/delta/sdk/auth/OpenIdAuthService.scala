@@ -4,6 +4,7 @@ import akka.http.javadsl.model.headers.HttpCredentials
 import akka.http.scaladsl.model.HttpMethods.POST
 import akka.http.scaladsl.model.headers.Authorization
 import akka.http.scaladsl.model.{HttpRequest, Uri}
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.MigrateEffectSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.auth.Credentials.ClientCredentials
@@ -15,7 +16,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.realms.Realms
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.Realm
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import io.circe.Json
-import monix.bio.{IO, UIO}
 
 /**
   * Exchanges client credentials for an auth token with a remote OpenId service, as defined in the specified realm
@@ -25,7 +25,7 @@ class OpenIdAuthService(httpClient: HttpClient, realms: Realms) extends MigrateE
   /**
     * Exchanges client credentials for an auth token with a remote OpenId service, as defined in the specified realm
     */
-  def auth(credentials: ClientCredentials): UIO[ParsedToken] = {
+  def auth(credentials: ClientCredentials): IO[ParsedToken] = {
     for {
       realm       <- findRealm(credentials.realm)
       response    <- requestToken(realm.tokenEndpoint, credentials.user, credentials.password)
@@ -35,14 +35,14 @@ class OpenIdAuthService(httpClient: HttpClient, realms: Realms) extends MigrateE
     }
   }
 
-  private def findRealm(id: Label): UIO[Realm] = {
+  private def findRealm(id: Label): IO[Realm] = {
     for {
-      realm <- realms.fetch(id).toUIO
-      _     <- UIO.when(realm.deprecated)(UIO.terminate(RealmIsDeprecated(realm.value)))
+      realm <- realms.fetch(id)
+      _     <- IO.raiseWhen(realm.deprecated)(RealmIsDeprecated(realm.value))
     } yield realm.value
   }
 
-  private def requestToken(tokenEndpoint: Uri, user: String, password: Secret[String]): UIO[Json] = {
+  private def requestToken(tokenEndpoint: Uri, user: String, password: Secret[String]): IO[Json] = {
     httpClient
       .toJson(
         HttpRequest(
@@ -62,13 +62,13 @@ class OpenIdAuthService(httpClient: HttpClient, realms: Realms) extends MigrateE
       .hideErrorsWith(AuthTokenHttpError)
   }
 
-  private def parseResponse(json: Json): UIO[ParsedToken] = {
+  private def parseResponse(json: Json): IO[ParsedToken] = {
     for {
       rawToken    <- json.hcursor.get[String]("access_token") match {
-                       case Left(failure) => IO.terminate(AuthTokenNotFoundInResponse(failure))
-                       case Right(value)  => UIO.pure(value)
+                       case Left(failure) => IO.raiseError(AuthTokenNotFoundInResponse(failure))
+                       case Right(value)  => IO.pure(value)
                      }
-      parsedToken <- IO.fromEither(ParsedToken.fromToken(AuthToken(rawToken))).hideErrors
+      parsedToken <- IO.fromEither(ParsedToken.fromToken(AuthToken(rawToken)))
     } yield {
       parsedToken
     }

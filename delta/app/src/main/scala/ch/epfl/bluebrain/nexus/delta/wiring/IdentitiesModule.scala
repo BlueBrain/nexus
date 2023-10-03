@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
+import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.CacheConfig
@@ -34,8 +35,8 @@ object IdentitiesModule extends ModuleDef {
     new OpenIdAuthService(httpClient, realms)
   }
 
-  make[AuthTokenProvider].fromEffect { (authService: OpenIdAuthService) =>
-    AuthTokenProvider(authService)
+  make[AuthTokenProvider].fromEffect { (authService: OpenIdAuthService, clock: Clock[IO]) =>
+    AuthTokenProvider(authService)(clock)
   }
 
   many[RemoteContextResolution].addEffect(ContextValue.fromFile("contexts/identities.json").map { ctx =>
