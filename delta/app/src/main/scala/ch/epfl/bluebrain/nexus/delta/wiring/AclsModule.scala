@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.{AclCheck, Acls, AclsImpl}
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.ProjectDeletionTask
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, MetadataContextValue}
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.{Permissions, StoragePermissionProvider}
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import izumi.distage.model.definition.{Id, ModuleDef}
@@ -72,8 +72,14 @@ object AclsModule extends ModuleDef {
     } yield RemoteContextResolution.fixed(contexts.acls -> aclsCtx, contexts.aclsMetadata -> aclsMetaCtx)
   )
 
-  make[UserPermissionsRoutes].from { (identities: Identities, aclCheck: AclCheck, baseUri: BaseUri) =>
-    new UserPermissionsRoutes(identities, aclCheck)(baseUri)
+  make[UserPermissionsRoutes].from {
+    (
+        identities: Identities,
+        aclCheck: AclCheck,
+        baseUri: BaseUri,
+        storagePermissionProvider: StoragePermissionProvider
+    ) =>
+      new UserPermissionsRoutes(identities, aclCheck, storagePermissionProvider)(baseUri)
   }
 
   many[PriorityRoute].add { (alcs: AclsRoutes, userPermissions: UserPermissionsRoutes) =>

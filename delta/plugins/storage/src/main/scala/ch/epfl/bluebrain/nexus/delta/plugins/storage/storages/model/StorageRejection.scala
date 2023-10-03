@@ -27,7 +27,8 @@ import io.circe.{Encoder, JsonObject}
   *   a descriptive message as to why the rejection occurred
   */
 sealed abstract class StorageRejection(val reason: String, val loggedDetails: Option[String] = None)
-    extends Product
+    extends Exception(reason)
+    with Product
     with Serializable
 
 object StorageRejection {

@@ -7,6 +7,7 @@ import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept}
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes}
 import akka.stream.alpakka.sse.scaladsl.EventSource
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.MigrateEffectSyntax
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.RemoteProjectSource
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.CompositeBranch
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -87,11 +88,12 @@ object DeltaClient {
   )(implicit
       as: ActorSystem[Nothing],
       scheduler: Scheduler
-  ) extends DeltaClient {
+  ) extends DeltaClient
+      with MigrateEffectSyntax {
 
     override def projectStatistics(source: RemoteProjectSource): HttpResult[ProjectStatistics] = {
       for {
-        authToken <- authTokenProvider(credentials)
+        authToken <- authTokenProvider(credentials).toBIO
         request    =
           Get(
             source.endpoint / "projects" / source.project.organization.value / source.project.project.value / "statistics"
@@ -104,7 +106,7 @@ object DeltaClient {
 
     override def remaining(source: RemoteProjectSource, offset: Offset): HttpResult[RemainingElems] = {
       for {
-        authToken <- authTokenProvider(credentials)
+        authToken <- authTokenProvider(credentials).toBIO
         request    = Get(elemAddress(source) / "remaining")
                        .addHeader(accept)
                        .addHeader(`Last-Event-ID`(offset.value.toString))
@@ -115,7 +117,7 @@ object DeltaClient {
 
     override def checkElems(source: RemoteProjectSource): HttpResult[Unit] = {
       for {
-        authToken <- authTokenProvider(credentials)
+        authToken <- authTokenProvider(credentials).toBIO
         result    <- client(Head(elemAddress(source)).withCredentials(authToken)) {
                        case resp if resp.status.isSuccess() => UIO.delay(resp.discardEntityBytes()) >> IO.unit
                      }
@@ -130,7 +132,7 @@ object DeltaClient {
 
       def send(request: HttpRequest): Future[HttpResponse] = {
         (for {
-          authToken <- authTokenProvider(credentials)
+          authToken <- authTokenProvider(credentials).toBIO
           result    <- client[HttpResponse](request.withCredentials(authToken))(IO.pure(_))
         } yield result).runToFuture
       }
@@ -164,7 +166,7 @@ object DeltaClient {
       val resourceUrl =
         source.endpoint / "resources" / source.project.organization.value / source.project.project.value / "_" / id.toString
       for {
-        authToken <- authTokenProvider(credentials)
+        authToken <- authTokenProvider(credentials).toBIO
         req        = Get(
                        source.resourceTag.fold(resourceUrl)(t => resourceUrl.withQuery(Query("tag" -> t.value)))
                      ).addHeader(Accept(RdfMediaTypes.`application/n-quads`)).withCredentials(authToken)
