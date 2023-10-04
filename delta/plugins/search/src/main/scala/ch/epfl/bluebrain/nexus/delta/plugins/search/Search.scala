@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.search
 
 import akka.http.scaladsl.model.Uri
 import cats.effect.IO
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
@@ -17,6 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress.{Project => Proje
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import io.circe.{Json, JsonObject}
+import monix.bio.UIO
 
 trait Search {
 
@@ -60,7 +60,7 @@ object Search {
       compositeViews
         .list(
           Pagination.OnePage,
-          CompositeViewSearchParams(deprecated = Some(false), filter = v => IO.delay(v.id == defaultViewId).toUIO),
+          CompositeViewSearchParams(deprecated = Some(false), filter = v => UIO.pure(v.id == defaultViewId)),
           Ordering.by(_.createdAt)
         )
         .map(
