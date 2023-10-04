@@ -8,6 +8,7 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.LocalCache
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{RealmGen, WellKnownGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpUnexpectedError
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesImpl.{GroupsCache, RealmCache}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.TokenRejection.{AccessTokenDoesNotContainAnIssuer, AccessTokenDoesNotContainSubject, GetGroupsFromOidcError, InvalidAccessToken, InvalidAccessTokenFormat, UnknownAccessTokenIssuer}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{AuthToken, Caller}
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.Realm
@@ -120,15 +121,18 @@ class IdentitiesImplSuite extends CatsEffectSuite with TestHelpers with IOFromMa
       (_: Uri) => HttpUnexpectedError(HttpRequest(), "Error while getting response")
     )(uri)
 
-  private val identities: Identities = LocalCache[String, Set[Group]]()
-    .map { cache =>
-      new IdentitiesImpl(
-        findActiveRealm,
-        (uri: Uri, _: OAuth2BearerToken) => userInfo(uri),
-        cache
-      )
-    }
-    .unsafeRunSync()
+  private val realmCache  = LocalCache[String, Option[Realm]]()
+  private val groupsCache = LocalCache[String, Set[Group]]()
+
+  private val identitiesFromCaches: (RealmCache, GroupsCache) => Identities = (realmCache, groupsCache) =>
+    new IdentitiesImpl(
+      realmCache,
+      findActiveRealm,
+      (uri: Uri, _: OAuth2BearerToken) => userInfo(uri),
+      groupsCache
+    )
+
+  private val identities = identitiesFromCaches(realmCache.unsafeRunSync(), groupsCache.unsafeRunSync())
 
   private val auth   = Authenticated(githubLabel)
   private val group1 = Group("group1", githubLabel)
@@ -324,6 +328,28 @@ class IdentitiesImplSuite extends CatsEffectSuite with TestHelpers with IOFromMa
 
     val expectedError = GetGroupsFromOidcError("Robert", gitlabLabel.value)
     identities.exchange(token).intercept(expectedError)
+  }
+
+  test("Cache realm and groups") {
+    val token = generateToken(
+      subject = "Bobby",
+      issuer = githubLabel,
+      rsaKey = rsaKey,
+      expires = nowPlus1h,
+      groups = None,
+      useCommas = true
+    )
+
+    for {
+      parsedToken <- IO.fromEither(ParsedToken.fromToken(token))
+      realm       <- realmCache
+      groups      <- groupsCache
+      _           <- realm.get(parsedToken.rawToken).assertNone
+      _           <- groups.get(parsedToken.rawToken).assertNone
+      _           <- identitiesFromCaches(realm, groups).exchange(token)
+      _           <- realm.get(parsedToken.rawToken).assertSome(Some(github))
+      _           <- groups.get(parsedToken.rawToken).assertSome(Set(group3, group4))
+    } yield ()
   }
 
 }

@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesImpl.{extractGroups, logger, GroupsCache}
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesImpl.{extractGroups, logger, GroupsCache, RealmCache}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.TokenRejection.{GetGroupsFromOidcError, InvalidAccessToken, UnknownAccessTokenIssuer}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{AuthToken, Caller}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
@@ -31,6 +31,7 @@ import io.circe.{Decoder, HCursor, Json}
 import scala.util.Try
 
 class IdentitiesImpl private[identities] (
+    realm: RealmCache,
     findActiveRealm: String => IO[Option[Realm]],
     getUserInfo: (Uri, OAuth2BearerToken) => IO[Json],
     groups: GroupsCache
@@ -61,6 +62,14 @@ class IdentitiesImpl private[identities] (
       )
     }
 
+    def fetchRealm(parsedToken: ParsedToken): IO[Realm] =
+      realm
+        .getOrElseUpdate(parsedToken.rawToken, findActiveRealm(parsedToken.issuer))
+        .flatMap {
+          case Some(realm) => IO.pure(realm)
+          case None        => IO.raiseError(UnknownAccessTokenIssuer)
+        }
+
     def fetchGroups(parsedToken: ParsedToken, realm: Realm): IO[Set[Group]] = {
       parsedToken.groups
         .map { s =>
@@ -77,11 +86,10 @@ class IdentitiesImpl private[identities] (
     }
 
     val result = for {
-      parsedToken       <- IO.fromEither(ParsedToken.fromToken(token))
-      activeRealmOption <- findActiveRealm(parsedToken.issuer)
-      activeRealm       <- IO.fromOption(activeRealmOption)(UnknownAccessTokenIssuer)
-      _                 <- validate(activeRealm.acceptedAudiences, parsedToken, realmKeyset(activeRealm))
-      groups            <- fetchGroups(parsedToken, activeRealm)
+      parsedToken <- IO.fromEither(ParsedToken.fromToken(token))
+      activeRealm <- fetchRealm(parsedToken)
+      _           <- validate(activeRealm.acceptedAudiences, parsedToken, realmKeyset(activeRealm))
+      groups      <- fetchGroups(parsedToken, activeRealm)
     } yield {
       val user = User(parsedToken.subject, activeRealm.label)
       Caller(user, groups ++ Set(Anonymous, user, Authenticated(activeRealm.label)))
@@ -95,6 +103,7 @@ class IdentitiesImpl private[identities] (
 object IdentitiesImpl {
 
   type GroupsCache = LocalCache[String, Set[Group]]
+  type RealmCache  = LocalCache[String, Option[Realm]]
 
   private val logger = Logger.cats[this.type]
 
@@ -133,10 +142,14 @@ object IdentitiesImpl {
     *   the cache configuration
     */
   def apply(realms: Realms, hc: HttpClient, config: CacheConfig): IO[Identities] = {
+    val groupsCache = LocalCache[String, Set[Group]](config)
+    val realmCache  = LocalCache[String, Option[Realm]](config)
+
     val findActiveRealm: String => IO[Option[Realm]] = { (issuer: String) =>
       val pagination = FromPagination(0, 1000)
       val params     = RealmSearchParams(issuer = Some(issuer), deprecated = Some(false))
       val sort       = ResourceF.defaultSort[Realm]
+
       realms.list(pagination, params, sort).map {
         _.results.map(entry => entry.source.value).headOption
       }
@@ -145,8 +158,8 @@ object IdentitiesImpl {
       hc.toJson(HttpRequest(uri = uri, headers = List(Authorization(token))))
     }
 
-    LocalCache[String, Set[Group]](config).map { groups =>
-      new IdentitiesImpl(findActiveRealm, getUserInfo, groups)
+    (realmCache, groupsCache).mapN { (realm, groups) =>
+      new IdentitiesImpl(realm, findActiveRealm, getUserInfo, groups)
     }
   }
 
