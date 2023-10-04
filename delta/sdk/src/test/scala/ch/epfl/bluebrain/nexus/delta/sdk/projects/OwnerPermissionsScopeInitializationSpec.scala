@@ -9,14 +9,15 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
-import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.ce.CatsIOValues
+import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, TestHelpers}
 import monix.bio.UIO
 import org.scalatest.matchers.should.Matchers
 
 class OwnerPermissionsScopeInitializationSpec
     extends DoobieScalaTestFixture
     with Matchers
-    with IOValues
+    with CatsIOValues
     with IOFixedClock
     with TestHelpers
     with ConfigFixtures {

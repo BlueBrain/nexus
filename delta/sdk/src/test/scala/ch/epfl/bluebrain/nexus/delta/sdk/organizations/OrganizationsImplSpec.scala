@@ -1,9 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.organizations
 
+import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.OrganizationGen.{organization, resourceFor}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
-import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.OrganizationSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
@@ -13,7 +13,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, ScopeInitializationLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
-import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues}
+import ch.epfl.bluebrain.nexus.testkit.IOFixedClock
+import ch.epfl.bluebrain.nexus.testkit.ce.CatsIOValues
 import monix.bio.UIO
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
@@ -25,7 +26,7 @@ import java.util.UUID
 class OrganizationsImplSpec
     extends DoobieScalaTestFixture
     with Matchers
-    with IOValues
+    with CatsIOValues
     with IOFixedClock
     with CancelAfterFailure
     with OptionValues

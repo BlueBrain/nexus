@@ -18,6 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionRepor
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, ProjectRef, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.rejection.Rejection
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
 
@@ -27,7 +28,7 @@ import io.circe.{Encoder, JsonObject}
   * @param reason
   *   a descriptive message as to why the rejection occurred
   */
-sealed abstract class ResolverRejection(val reason: String) extends Product with Serializable
+sealed abstract class ResolverRejection(val reason: String) extends Rejection
 
 object ResolverRejection {
 

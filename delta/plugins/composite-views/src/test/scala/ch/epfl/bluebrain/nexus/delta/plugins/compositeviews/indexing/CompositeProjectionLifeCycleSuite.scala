@@ -2,22 +2,23 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing
 
 import cats.data.NonEmptyMapImpl
 import cats.effect.concurrent.Ref
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViewsFixture
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeProjectionLifeCycle.Hook
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeProjectionLifeCycleSuite.DestroyResult
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeProjectionLifeCycleSuite.DestroyResult._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef.{ActiveViewDef, DeprecatedViewDef}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, IndexingViewRef, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{CompiledProjection, ExecutionStatus, ExecutionStrategy, Projection, ProjectionMetadata}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
 import ch.epfl.bluebrain.nexus.testkit.bio.{BioSuite, PatienceConfig}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeProjectionLifeCycleSuite.DestroyResult._
 import monix.bio.{Task, UIO}
 import munit.Location
 
-import concurrent.duration._
 import java.util.UUID
+import scala.concurrent.duration._
 
 class CompositeProjectionLifeCycleSuite extends BioSuite with CompositeViewsFixture {
 
@@ -34,7 +35,7 @@ class CompositeProjectionLifeCycleSuite extends BioSuite with CompositeViewsFixt
   private def createHook(name: String, test: ViewRef => Boolean, ref: Ref[Task, Set[String]]): Hook =
     (view: CompositeViewDef.ActiveViewDef) => {
       Option.when(test(view.ref)) {
-        ref.update {
+        ref.mapK(taskToIoK).update {
           _ + name
         }
       }

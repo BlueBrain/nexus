@@ -16,6 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.rejection.Rejection
 import com.typesafe.scalalogging.Logger
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
@@ -26,10 +27,7 @@ import io.circe.{Encoder, JsonObject}
   * @param reason
   *   a descriptive message as to why the rejection occurred
   */
-sealed abstract class StorageRejection(val reason: String, val loggedDetails: Option[String] = None)
-    extends Exception(reason)
-    with Product
-    with Serializable
+sealed abstract class StorageRejection(val reason: String, val loggedDetails: Option[String] = None) extends Rejection
 
 object StorageRejection {
 

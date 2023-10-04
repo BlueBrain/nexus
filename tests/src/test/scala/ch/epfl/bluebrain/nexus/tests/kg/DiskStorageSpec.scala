@@ -37,11 +37,11 @@ class DiskStorageSpec extends StorageSpec {
     val payload2 = jsonContentOf("/kg/storages/disk-perms.json")
 
     for {
-      _         <- deltaClient.post[Json](s"/storages/$fullId", payload, Coyote) { (_, response) =>
+      _         <- deltaClient.post[Json](s"/storages/$projectRef", payload, Coyote) { (_, response) =>
                      response.status shouldEqual StatusCodes.Created
                    }
-      _         <- deltaClient.get[Json](s"/storages/$fullId/nxv:$storageId", Coyote) { (json, response) =>
-                     val expected = storageResponse(fullId, storageId, "resources/read", "files/write")
+      _         <- deltaClient.get[Json](s"/storages/$projectRef/nxv:$storageId", Coyote) { (json, response) =>
+                     val expected = storageResponse(projectRef, storageId, "resources/read", "files/write")
                      filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
                      response.status shouldEqual StatusCodes.OK
                    }
@@ -49,12 +49,12 @@ class DiskStorageSpec extends StorageSpec {
                      Permission(storageName, "read"),
                      Permission(storageName, "write")
                    )
-      _         <- deltaClient.post[Json](s"/storages/$fullId", payload2, Coyote) { (_, response) =>
+      _         <- deltaClient.post[Json](s"/storages/$projectRef", payload2, Coyote) { (_, response) =>
                      response.status shouldEqual StatusCodes.Created
                    }
       storageId2 = s"${storageId}2"
-      _         <- deltaClient.get[Json](s"/storages/$fullId/nxv:$storageId2", Coyote) { (json, response) =>
-                     val expected = storageResponse(fullId, storageId2, s"$storageName/read", s"$storageName/write")
+      _         <- deltaClient.get[Json](s"/storages/$projectRef/nxv:$storageId2", Coyote) { (json, response) =>
+                     val expected = storageResponse(projectRef, storageId2, s"$storageName/read", s"$storageName/write")
                      filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
                      response.status shouldEqual StatusCodes.OK
                    }
@@ -70,7 +70,7 @@ class DiskStorageSpec extends StorageSpec {
           "volume" -> Json.fromString(volume)
         )
 
-      deltaClient.post[Json](s"/storages/$fullId", payload, Coyote) { (json, response) =>
+      deltaClient.post[Json](s"/storages/$projectRef", payload, Coyote) { (json, response) =>
         json shouldEqual jsonContentOf("/kg/storages/error.json", "volume" -> volume)
         response.status shouldEqual StatusCodes.BadRequest
       }
@@ -85,7 +85,7 @@ class DiskStorageSpec extends StorageSpec {
         "mediaType" -> Json.fromString("image/png")
       )
 
-      deltaClient.put[Json](s"/files/$fullId/linking.png", payload, Coyote) { (json, response) =>
+      deltaClient.put[Json](s"/files/$projectRef/linking.png", payload, Coyote) { (json, response) =>
         response.status shouldEqual StatusCodes.BadRequest
         json shouldEqual jsonContentOf("/kg/files/linking-notsupported.json", "org" -> orgId, "proj" -> projId)
       }

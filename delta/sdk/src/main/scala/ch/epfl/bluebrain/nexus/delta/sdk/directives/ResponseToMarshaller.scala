@@ -75,6 +75,11 @@ object ResponseToMarshaller extends RdfMarshalling {
   )(implicit s: Scheduler, cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToMarshaller =
     ResponseToMarshaller(io.map(Complete(OK, Seq.empty, _)).attempt)
 
+  implicit def ioEntityMarshaller[A: ToEntityMarshaller](
+      io: IO[A]
+  )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToMarshaller =
+    ResponseToMarshaller(io.map[UseRight[A]](v => Right(Complete(OK, Seq.empty, v))))
+
   implicit def ioEntityMarshaller[E: JsonLdEncoder: HttpResponseFields, A: ToEntityMarshaller](
       io: IO[Either[E, A]]
   )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToMarshaller = {

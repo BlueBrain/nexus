@@ -10,6 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.delta.sourcing.rejection.Rejection
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
 
@@ -19,7 +20,7 @@ import io.circe.{Encoder, JsonObject}
   * @param reason
   *   a descriptive message as to why the rejection occurred
   */
-sealed abstract class AclRejection(val reason: String) extends Product with Serializable
+sealed abstract class AclRejection(val reason: String) extends Rejection
 
 object AclRejection {
 

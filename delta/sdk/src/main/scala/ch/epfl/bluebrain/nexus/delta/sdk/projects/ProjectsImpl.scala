@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.projects
 
 import cats.effect.Clock
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
@@ -45,7 +46,7 @@ final class ProjectsImpl private (
                       caller
                     )
                   ).span("createProject")
-      _        <- IO.parTraverseUnordered(scopeInitializations)(_.onProjectCreation(resource.value, caller))
+      _        <- IO.parTraverseUnordered(scopeInitializations)(_.onProjectCreation(resource.value, caller).toUIO)
                     .void
                     .mapError(ProjectInitializationFailed)
                     .span("initializeProject")

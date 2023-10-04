@@ -81,7 +81,7 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit as: ActorSyst
     )
   }
 
-  def putAttachment[A](
+  def uploadFile[A](
       url: String,
       attachment: String,
       contentType: ContentType,

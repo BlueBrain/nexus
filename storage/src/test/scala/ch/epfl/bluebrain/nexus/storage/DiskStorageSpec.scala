@@ -1,9 +1,5 @@
 package ch.epfl.bluebrain.nexus.storage
 
-import java.io.File
-import java.nio.charset.StandardCharsets
-import java.nio.charset.StandardCharsets.UTF_8
-import java.nio.file.{Files, Paths}
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.ContentTypes._
 import akka.http.scaladsl.model.MediaTypes.`application/x-tar`
@@ -12,23 +8,28 @@ import akka.stream.scaladsl.{Sink, Source}
 import akka.testkit.TestKit
 import akka.util.ByteString
 import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
 import ch.epfl.bluebrain.nexus.storage.File.{Digest, FileAttributes}
 import ch.epfl.bluebrain.nexus.storage.Rejection.{PathAlreadyExists, PathNotFound}
 import ch.epfl.bluebrain.nexus.storage.StorageError.{PathInvalid, PermissionsFixingFailed}
 import ch.epfl.bluebrain.nexus.storage.Storages.BucketExistence.{BucketDoesNotExist, BucketExists}
 import ch.epfl.bluebrain.nexus.storage.Storages.DiskStorage
 import ch.epfl.bluebrain.nexus.storage.Storages.PathExistence.{PathDoesNotExist, PathExists}
-import ch.epfl.bluebrain.nexus.storage.attributes.AttributesCache
+import ch.epfl.bluebrain.nexus.storage.attributes.{AttributesCache, ContentTypeDetector}
 import ch.epfl.bluebrain.nexus.storage.config.AppConfig.{DigestConfig, StorageConfig}
 import ch.epfl.bluebrain.nexus.storage.utils.{EitherValues, IOEitherValues, Randomness}
-import org.apache.commons.io.FileUtils
 import org.mockito.IdiomaticMockito
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{BeforeAndAfterAll, Inspectors, OptionValues}
 
+import java.io.File
+import java.nio.charset.StandardCharsets
+import java.nio.charset.StandardCharsets.UTF_8
+import java.nio.file.{Files, Paths}
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
+import scala.reflect.io.Directory
 
 class DiskStorageSpec
     extends TestKit(ActorSystem("DiskStorageSpec"))
@@ -46,15 +47,17 @@ class DiskStorageSpec
 
   implicit val ec: ExecutionContext = system.dispatcher
 
-  val rootPath    = Files.createTempDirectory("storage-test")
-  val scratchPath = Files.createTempDirectory("scratch")
-  val sConfig     = StorageConfig(rootPath, List(scratchPath), Paths.get("nexus"), fixerEnabled = true, Vector("/bin/echo"))
-  val dConfig     = DigestConfig("SHA-256", 1L, 1, 1, 1.second)
-  val cache       = mock[AttributesCache[IO]]
-  val storage     = new DiskStorage[IO](sConfig, dConfig, cache)
+  val rootPath            = Files.createTempDirectory("storage-test")
+  val scratchPath         = Files.createTempDirectory("scratch")
+  val sConfig             = StorageConfig(rootPath, List(scratchPath), Paths.get("nexus"), fixerEnabled = true, Vector("/bin/echo"))
+  val dConfig             = DigestConfig("SHA-256", 1L, 1, 1, 1.second)
+  val contentTypeDetector = new ContentTypeDetector(MediaTypeDetectorConfig.Empty)
+  val cache               = mock[AttributesCache[IO]]
+  val storage             = new DiskStorage[IO](sConfig, contentTypeDetector, dConfig, cache)
 
   override def afterAll(): Unit = {
-    FileUtils.deleteDirectory(rootPath.toFile)
+    Directory(rootPath.toFile).deleteRecursively()
+    ()
   }
 
   trait AbsoluteDirectoryCreated {
@@ -164,7 +167,8 @@ class DiskStorageSpec
 
       "fail when call to nexus-fixer fails" in new AbsoluteDirectoryCreated {
         val falseBinary  = if (new File("/bin/false").exists()) "/bin/false" else "/usr/bin/false"
-        val badStorage   = new DiskStorage[IO](sConfig.copy(fixerCommand = Vector(falseBinary)), dConfig, cache)
+        val badStorage   =
+          new DiskStorage[IO](sConfig.copy(fixerCommand = Vector(falseBinary)), contentTypeDetector, dConfig, cache)
         val file         = "some/folder/my !file.txt"
         val absoluteFile = baseRootPath.resolve(Paths.get(file))
         Files.createDirectories(absoluteFile.getParent)

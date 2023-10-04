@@ -116,22 +116,16 @@ services:
   storage-service:
     container_name: "nexus-storage-service"
     image: bluebrain/nexus-storage:latest
+    environment:
+      STORAGE_CONFIG_FILE: "/config/storage.conf"
+      KAMON_ENABLED: "false"
     entrypoint: [ "./bin/storage",
-                  "-Dapp.instance.interface=0.0.0.0",
-                  "-Dapp.http.interface=0.0.0.0",
-                  "-Dapp.http.public-uri=http://storage.tests.nexus.ocp.bbp.epfl.ch",
-                  "-Dapp.subject.anonymous=false",
-                  "-Dapp.subject.realm=internal",
-                  "-Dapp.subject.name=service-account-delta",
-                  "-Dapp.storage.root-volume=/tmp",
-                  "-Dapp.storage.protected-directory=protected",
-                  "-Dapp.storage.fixer-enabled=false",
-                  "-Dapp.delta.public-iri=https://test.nexus.bbp.epfl.ch",
-                  "-Dapp.delta.internal-iri=http://delta:8080",
                   "-Dkamon.modules.prometheus-reporter.enabled=false",
                   "-Dkamon.modules.jaeger.enabled=false" ]
     ports:
       - 8090:8090
+    volumes:
+      - ./config:/config
 
   minio:
     image: minio/minio:RELEASE.2021-07-30T00-02-00Z

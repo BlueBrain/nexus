@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.search
 
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeProjectionLifeCycle
@@ -12,14 +13,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import com.typesafe.config.Config
 import distage.ModuleDef
 import io.circe.syntax.EncoderOps
 import izumi.distage.model.definition.Id
-import monix.execution.Scheduler
 
 class SearchPluginModule(priority: Int) extends ModuleDef {
 
-  make[SearchConfig].fromEffect { cfg => SearchConfig.load(cfg) }
+  make[SearchConfig].fromEffect { (cfg: Config) => SearchConfig.load(cfg).toUIO }
 
   make[Search].from {
     (
@@ -36,7 +37,6 @@ class SearchPluginModule(priority: Int) extends ModuleDef {
     (views: CompositeViews, config: SearchConfig, serviceAccount: ServiceAccount, baseUri: BaseUri) =>
       new SearchScopeInitialization(views, config.indexing, serviceAccount, config.defaults)(baseUri)
   }
-
   many[ScopeInitialization].ref[SearchScopeInitialization]
 
   make[SearchRoutes].from {
@@ -46,10 +46,9 @@ class SearchPluginModule(priority: Int) extends ModuleDef {
         search: Search,
         config: SearchConfig,
         baseUri: BaseUri,
-        s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
-    ) => new SearchRoutes(identities, aclCheck, search, config.fields.asJson)(baseUri, s, cr, ordering)
+    ) => new SearchRoutes(identities, aclCheck, search, config.fields.asJson)(baseUri, cr, ordering)
   }
 
   many[PriorityRoute].add { (route: SearchRoutes) =>
