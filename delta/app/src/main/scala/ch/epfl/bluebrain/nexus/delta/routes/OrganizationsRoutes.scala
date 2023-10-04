@@ -10,6 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.OrganizationsRoutes.OrganizationInput
 import ch.epfl.bluebrain.nexus.delta.sdk.OrganizationResource
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.ce.DeltaDirectives.{emit => emitCE}
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
@@ -20,9 +21,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.OrganizationSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.{Organization, OrganizationRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.{OrganizationDeleter, Organizations}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions._
 import io.circe.Decoder
 import io.circe.generic.extras.Configuration
@@ -47,6 +48,7 @@ import scala.annotation.nowarn
 final class OrganizationsRoutes(
     identities: Identities,
     organizations: Organizations,
+    orgDeleter: OrganizationDeleter,
     aclCheck: AclCheck,
     schemeDirectives: DeltaSchemeDirectives
 )(implicit
@@ -113,11 +115,20 @@ final class OrganizationsRoutes(
                       }
                     }
                   },
-                  // Deprecate organization
+                  // Deprecate or delete organization
                   delete {
-                    authorizeFor(id, orgs.write).apply {
-                      parameter("rev".as[Int]) { rev => emit(organizations.deprecate(id, rev).mapValue(_.metadata)) }
-                    }
+                    concat(
+                      parameter("rev".as[Int]) { rev =>
+                        authorizeFor(id, orgs.write).apply {
+                          emit(organizations.deprecate(id, rev).mapValue(_.metadata))
+                        }
+                      },
+                      parameter("prune".requiredValue(true)) { _ =>
+                        authorizeFor(id, orgs.delete).apply {
+                          emitCE(orgDeleter.delete(id).attemptNarrow[OrganizationRejection])
+                        }
+                      }
+                    )
                   }
                 )
               }
@@ -154,6 +165,7 @@ object OrganizationsRoutes {
   def apply(
       identities: Identities,
       organizations: Organizations,
+      orgDeleter: OrganizationDeleter,
       aclCheck: AclCheck,
       schemeDirectives: DeltaSchemeDirectives
   )(implicit
@@ -163,6 +175,6 @@ object OrganizationsRoutes {
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering
   ): Route =
-    new OrganizationsRoutes(identities, organizations, aclCheck, schemeDirectives).routes
+    new OrganizationsRoutes(identities, organizations, orgDeleter, aclCheck, schemeDirectives).routes
 
 }

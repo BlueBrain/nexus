@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing
 import cats.implicits._
 import Transactors.PartitionsCache
 import ch.epfl.bluebrain.nexus.delta.sourcing.PartitionInit.{createOrgPartition, createProjectPartition, projectRefHash}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import doobie.Fragment
 import doobie.free.connection
 import monix.bio.Task
@@ -73,7 +73,7 @@ object PartitionInit {
     */
   def createOrgPartition(mainTable: String, projectRef: ProjectRef): Fragment =
     Fragment.const(s"""
-         | CREATE TABLE IF NOT EXISTS ${orgPartition(mainTable, projectRef)}
+         | CREATE TABLE IF NOT EXISTS ${orgPartitionFromProj(mainTable, projectRef)}
          | PARTITION OF $mainTable FOR VALUES IN ('${projectRef.organization}')
          | PARTITION BY LIST (project);
          |""".stripMargin)
@@ -89,7 +89,7 @@ object PartitionInit {
   def createProjectPartition(mainTable: String, projectRef: ProjectRef): Fragment =
     Fragment.const(s"""
          | CREATE TABLE IF NOT EXISTS ${projectRefPartition(mainTable, projectRef)}
-         | PARTITION OF ${orgPartition(mainTable, projectRef)} FOR VALUES IN ('${projectRef.project}')
+         | PARTITION OF ${orgPartitionFromProj(mainTable, projectRef)} FOR VALUES IN ('${projectRef.project}')
          |""".stripMargin)
 
   def projectRefHash(projectRef: ProjectRef): String =
@@ -98,10 +98,13 @@ object PartitionInit {
   def projectRefPartition(mainTable: String, projectRef: ProjectRef) =
     s"${mainTable}_${projectRefHash(projectRef)}"
 
-  private def orgHash(projectRef: ProjectRef) =
-    MD5.hash(projectRef.organization.value)
+  def orgHash(orgId: Label): String =
+    MD5.hash(orgId.value)
 
-  private def orgPartition(mainTable: String, projectRef: ProjectRef) =
-    s"${mainTable}_${orgHash(projectRef)}"
+  def orgPartition(mainTable: String, orgId: Label) =
+    s"${mainTable}_${orgHash(orgId)}"
+
+  private def orgPartitionFromProj(mainTable: String, projectRef: ProjectRef) =
+    orgPartition(mainTable, projectRef.organization)
 
 }

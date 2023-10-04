@@ -62,6 +62,8 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
   make[StrictEntity].from { appCfg.http.strictEntityTimeout }
   make[ServiceAccount].from { appCfg.serviceAccount.value }
 
+  implicit val scheduler: Scheduler = Scheduler.global
+
   make[Transactors].fromResource {
     Transactors.init(appCfg.database)
   }
@@ -104,7 +106,7 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
   make[Clock[IO]].from(Clock.create[IO])
   make[Timer[IO]].from(IO.timer(ExecutionContext.global))
   make[UUIDF].from(UUIDF.random)
-  make[Scheduler].from(Scheduler.global)
+  make[Scheduler].from(scheduler)
   make[JsonKeyOrdering].from(
     JsonKeyOrdering.default(topKeys =
       List("@context", "@id", "@type", "reason", "details", "sourceId", "projectionId", "_total", "_results")
