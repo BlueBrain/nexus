@@ -4,6 +4,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri.Query
 import akka.testkit.TestKit
 import cats.data.NonEmptyList
+import cats.effect.IO
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView
@@ -31,9 +32,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.IndexingRev
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit._
+import ch.epfl.bluebrain.nexus.testkit.ce.CatsIOValues
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchDocker
 import io.circe.{Json, JsonObject}
-import monix.bio.UIO
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -55,6 +56,7 @@ class SearchSpec
     with Inspectors
     with ScalaTestElasticSearchClientSetup
     with ConfigFixtures
+    with CatsIOValues
     with IOValues
     with Eventually
     with Fixtures
@@ -115,7 +117,7 @@ class SearchSpec
 
   private val projections = Seq(projectionProj1, projectionProj2)
 
-  private val listViews: ListProjections = () => UIO.pure(projections)
+  private val listViews: ListProjections = () => IO.pure(projections)
 
   private val allSuite   = Label.unsafe("allSuite")
   private val proj2Suite = Label.unsafe("proj2Suite")

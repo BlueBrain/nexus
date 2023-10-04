@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.kernel.effect.migration
 
 import cats.effect.IO
 import cats.~>
-import monix.bio.{IO => BIO, UIO}
+import monix.bio.{IO => BIO, Task, UIO}
 import monix.execution.Scheduler.Implicits.global
 
 import scala.reflect.ClassTag
@@ -13,7 +13,8 @@ trait MigrateEffectSyntax {
 
   implicit def toMonixBIOOps[A](io: IO[A]): CatsIOToBioOps[A] = new CatsIOToBioOps(io)
 
-  val ioToUioK: IO ~> UIO = λ[IO ~> UIO](_.toUIO)
+  val taskToIoK: Task ~> IO = λ[Task ~> IO](toCatsIO(_))
+  val ioToUioK: IO ~> UIO   = λ[IO ~> UIO](_.toUIO)
 
 }
 

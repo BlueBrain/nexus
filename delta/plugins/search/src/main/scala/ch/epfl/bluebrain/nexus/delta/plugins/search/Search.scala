@@ -1,6 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.search
 
 import akka.http.scaladsl.model.Uri
+import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.projectionIndex
@@ -14,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress.{Project => Proje
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import io.circe.{Json, JsonObject}
-import monix.bio.{IO, UIO}
+import monix.bio.UIO
 
 trait Search {
 
@@ -24,7 +26,7 @@ trait Search {
     * @param payload
     *   the query payload
     */
-  def query(payload: JsonObject, qp: Uri.Query)(implicit caller: Caller): IO[SearchRejection, Json]
+  def query(payload: JsonObject, qp: Uri.Query)(implicit caller: Caller): IO[Json]
 
   /**
     * Queries the underlying search indices for the provided suite that the ''caller'' has access to
@@ -34,14 +36,14 @@ trait Search {
     * @param payload
     *   the query payload
     */
-  def query(suite: Label, payload: JsonObject, qp: Uri.Query)(implicit caller: Caller): IO[SearchRejection, Json]
+  def query(suite: Label, payload: JsonObject, qp: Uri.Query)(implicit caller: Caller): IO[Json]
 }
 
 object Search {
 
   final case class TargetProjection(projection: ElasticSearchProjection, view: CompositeView)
 
-  private[search] type ListProjections = () => UIO[Seq[TargetProjection]]
+  private[search] type ListProjections = () => IO[Seq[TargetProjection]]
 
   /**
     * Constructs a new [[Search]] instance.
@@ -99,19 +101,17 @@ object Search {
           results           <- client.search(payload, accessibleIndices, qp)().mapError(WrappedElasticSearchClientError)
         } yield results
 
-      override def query(payload: JsonObject, qp: Uri.Query)(implicit caller: Caller): IO[SearchRejection, Json] =
+      override def query(payload: JsonObject, qp: Uri.Query)(implicit caller: Caller): IO[Json] =
         query(_ => true, payload, qp)
 
       override def query(suite: Label, payload: JsonObject, qp: Uri.Query)(implicit
           caller: Caller
-      ): IO[SearchRejection, Json] =
-        IO.fromOption(
-          suites.get(suite),
-          UnknownSuite(suite)
-        ).flatMap { projects =>
+      ): IO[Json] = {
+        IO.fromOption(suites.get(suite))(UnknownSuite(suite)).flatMap { projects =>
           def predicate(p: TargetProjection): Boolean = projects.contains(p.view.project)
           query(predicate(_), payload, qp)
         }
+      }
 
     }
 }

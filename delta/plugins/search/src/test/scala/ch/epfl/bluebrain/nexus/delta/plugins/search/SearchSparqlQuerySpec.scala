@@ -2,6 +2,8 @@ package ch.epfl.bluebrain.nexus.delta.plugins.search
 
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
+import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.SparqlNTriples
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
@@ -15,9 +17,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.blazegraph.BlazegraphDocker
+import ch.epfl.bluebrain.nexus.testkit.ce.CatsIOValues
 import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOValues, TestHelpers, TestMatchers}
 import io.circe.Json
-import monix.bio.IO
 import monix.execution.Scheduler
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
@@ -39,6 +41,7 @@ class SearchSparqlQuerySpec
     with Inspectors
     with TestMatchers
     with IOValues
+    with CatsIOValues
     with BlazegraphDocker {
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(6.seconds, 10.milliseconds)
@@ -57,7 +60,7 @@ class SearchSparqlQuerySpec
 
   private def toNTriples(json: Json): NTriples = {
     for {
-      expanded <- ExpandedJsonLd(json)
+      expanded <- toCatsIO(ExpandedJsonLd(json))
       graph    <- IO.fromEither(expanded.toGraph)
       ntriples <- IO.fromEither(graph.toNTriples)
     } yield ntriples
@@ -89,7 +92,7 @@ class SearchSparqlQuerySpec
       val q         = contentOf("construct-query.sparql").replaceAll(quote("{resource_id}"), traceId.rdfFormat)
       val query     = SparqlConstructQuery(q).rightValue
       val compacted = for {
-        ntriples  <- client.query(Set(index), query, SparqlNTriples)
+        ntriples  <- toCatsIO(client.query(Set(index), query, SparqlNTriples))
         graph     <- IO.fromEither(Graph(ntriples.value.copy(rootNode = traceId)))
         compacted <- graph.toCompactedJsonLd(ctx)
       } yield compacted
