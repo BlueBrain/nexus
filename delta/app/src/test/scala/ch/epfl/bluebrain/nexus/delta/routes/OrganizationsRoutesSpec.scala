@@ -49,9 +49,7 @@ class OrganizationsRoutesSpec extends BaseRouteSpec with IOFromMap {
   )
 
   private lazy val orgs                            = OrganizationsImpl(Set(aopd), config, xas)
-  private lazy val orgDeleter: OrganizationDeleter = id =>
-    if (id == org1.label) IO.raiseError(OrganizationNonEmpty(id))
-    else IO.unit
+  private lazy val orgDeleter: OrganizationDeleter = id => IO.raiseWhen(id == org1.label)(OrganizationNonEmpty(id))
 
   private val caller = Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
 
