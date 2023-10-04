@@ -32,9 +32,9 @@ class MultiFetchSpec extends BaseSpec {
     val createResources = for {
       // Creation
       _ <- deltaClient.put[Json](s"/resources/$ref11/_/nxv:resource", resourcePayload, Bob)(expectCreated)
-      _ <- deltaClient.putAttachment[Json](
+      _ <- deltaClient.uploadFile[Json](
              s"/files/$ref12/nxv:file",
-             contentOf("/kg/files/attachment.json"),
+             """{ "content": "json" }""",
              ContentTypes.`application/json`,
              "attachment.json",
              Bob

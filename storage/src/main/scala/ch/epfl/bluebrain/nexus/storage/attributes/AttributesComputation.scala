@@ -1,11 +1,5 @@
 package ch.epfl.bluebrain.nexus.storage.attributes
 
-import java.nio.file.{Files, Path}
-import java.security.MessageDigest
-
-import akka.http.scaladsl.model.HttpCharsets.`UTF-8`
-import akka.http.scaladsl.model.MediaTypes.{`application/octet-stream`, `application/x-tar`}
-import akka.http.scaladsl.model.{ContentType, MediaType, MediaTypes}
 import akka.stream.Materializer
 import akka.stream.scaladsl.{Keep, Sink}
 import akka.util.ByteString
@@ -14,8 +8,9 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.storage.File.{Digest, FileAttributes}
 import ch.epfl.bluebrain.nexus.storage.StorageError.InternalError
 import ch.epfl.bluebrain.nexus.storage._
-import org.apache.commons.io.FilenameUtils
 
+import java.nio.file.{Files, Path}
+import java.security.MessageDigest
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
@@ -36,28 +31,7 @@ trait AttributesComputation[F[_], Source] {
 
 object AttributesComputation {
 
-  /**
-    * Detects the media type of the provided path, based on the file system detector available for a certain path or on
-    * the path extension. If the path is a directory, a application/x-tar content-type is returned
-    *
-    * @param path
-    *   the path
-    * @param isDir
-    *   flag to decide whether or not the path is a directory
-    */
-  def detectMediaType(path: Path, isDir: Boolean = false): ContentType =
-    if (isDir) {
-      `application/x-tar`
-    } else {
-      lazy val fromExtension   = Try(MediaTypes.forExtension(FilenameUtils.getExtension(path.toFile.getName)))
-        .getOrElse(`application/octet-stream`)
-      val mediaType: MediaType = Try(Files.probeContentType(path)) match {
-        case Success(value) if value != null && value.nonEmpty => MediaType.parse(value).getOrElse(fromExtension)
-        case _                                                 => fromExtension
-      }
-      ContentType(mediaType, () => `UTF-8`)
-    }
-  private def sinkSize: Sink[ByteString, Future[Long]]                 = Sink.fold(0L)(_ + _.size)
+  private def sinkSize: Sink[ByteString, Future[Long]] = Sink.fold(0L)(_ + _.size)
 
   def sinkDigest(msgDigest: MessageDigest)(implicit ec: ExecutionContext): Sink[ByteString, Future[Digest]] =
     Sink
@@ -76,6 +50,7 @@ object AttributesComputation {
     *   a AttributesComputation implemented for a source of type AkkaSource
     */
   implicit def akkaAttributes[F[_]](implicit
+      contentTypeDetector: ContentTypeDetector,
       ec: ExecutionContext,
       mt: Materializer,
       F: Effect[F]
@@ -91,7 +66,7 @@ object AttributesComputation {
               .alsoToMat(sinkSize)(Keep.right)
               .toMat(sinkDigest(msgDigest)) { (bytesF, digestF) =>
                 (bytesF, digestF).mapN { case (bytes, digest) =>
-                  FileAttributes(path.toAkkaUri, bytes, digest, detectMediaType(path, isDir))
+                  FileAttributes(path.toAkkaUri, bytes, digest, contentTypeDetector(path, isDir))
                 }
               }
               .run()

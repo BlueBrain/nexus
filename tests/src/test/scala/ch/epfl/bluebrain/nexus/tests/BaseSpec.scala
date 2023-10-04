@@ -239,6 +239,8 @@ trait BaseSpec
 
   private[tests] def expectCreated[A] = expect(StatusCodes.Created)
 
+  private[tests] def expectNotFound[A] = expect(StatusCodes.NotFound)
+
   private[tests] def expectForbidden[A]  = expect(StatusCodes.Forbidden)
   private[tests] def expectBadRequest[A] = expect(StatusCodes.BadRequest)
 

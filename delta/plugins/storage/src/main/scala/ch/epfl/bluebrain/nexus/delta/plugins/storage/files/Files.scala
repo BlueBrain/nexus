@@ -720,7 +720,7 @@ object Files {
   ): Files = {
     implicit val classicAs: ClassicActorSystem = as.classicSystem
     new Files(
-      FormDataExtractor.apply,
+      FormDataExtractor(config.mediaTypeDetector),
       ScopedEventLog(definition, config.eventLog, xas),
       aclCheck,
       fetchContext,

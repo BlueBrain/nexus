@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.storage
 
 import java.nio.file.Paths
 import java.time.Clock
-
 import akka.actor.ActorSystem
 import akka.event.{Logging, LoggingAdapter}
 import akka.http.scaladsl.Http
@@ -10,7 +9,7 @@ import akka.http.scaladsl.server.Route
 import akka.util.Timeout
 import cats.effect.Effect
 import ch.epfl.bluebrain.nexus.storage.Storages.DiskStorage
-import ch.epfl.bluebrain.nexus.storage.attributes.AttributesCache
+import ch.epfl.bluebrain.nexus.storage.attributes.{AttributesCache, ContentTypeDetector}
 import ch.epfl.bluebrain.nexus.storage.config.{AppConfig, Settings}
 import ch.epfl.bluebrain.nexus.storage.config.AppConfig._
 import ch.epfl.bluebrain.nexus.storage.routes.Routes
@@ -60,9 +59,10 @@ object Main {
     implicit val deltaIdentities: DeltaIdentitiesClient[Task] = new DeltaIdentitiesClient[Task](appConfig.delta)
     implicit val timeout                                      = Timeout(1.minute)
     implicit val clock                                        = Clock.systemUTC
+    implicit val contentTypeDetector                          = new ContentTypeDetector(appConfig.mediaTypeDetector)
 
     val storages: Storages[Task, AkkaSource] =
-      new DiskStorage(appConfig.storage, appConfig.digest, AttributesCache[Task, AkkaSource])
+      new DiskStorage(appConfig.storage, contentTypeDetector, appConfig.digest, AttributesCache[Task, AkkaSource])
 
     val logger: LoggingAdapter = Logging(as, getClass)
 
