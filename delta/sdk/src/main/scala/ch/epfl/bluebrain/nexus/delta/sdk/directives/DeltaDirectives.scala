@@ -119,15 +119,7 @@ trait DeltaDirectives extends UriDirectives {
       s: Scheduler
   ): Route =
     emitOrFusionRedirect(
-      UIO.pure {
-        val resourceBase =
-          config.base / projectRef.organization.value / projectRef.project.value / "resources" / id.value.asString
-        id match {
-          case _: Latest        => resourceBase
-          case Revision(_, rev) => resourceBase.withQuery(Uri.Query("rev" -> rev.toString))
-          case Tag(_, tag)      => resourceBase.withQuery(Uri.Query("tag" -> tag.value))
-        }
-      },
+      fusionResourceUri(projectRef, id),
       emitDelta
     )
 
@@ -144,7 +136,10 @@ trait DeltaDirectives extends UriDirectives {
       emitDelta
     )
 
-  private def emitOrFusionRedirect(fusionUri: UIO[Uri], emitDelta: Route)(implicit config: FusionConfig, s: Scheduler) =
+  /**
+    * If the `Accept` header is set to `text/html`, redirect to the provided uri if the feature is enabled
+    */
+  def emitOrFusionRedirect(fusionUri: UIO[Uri], emitDelta: Route)(implicit config: FusionConfig, s: Scheduler): Route =
     extractRequest { req =>
       if (config.enableRedirects && req.header[Accept].exists(_.mediaRanges.contains(fusionRange))) {
         emitRedirect(SeeOther, ResponseToRedirect.uioRedirect(fusionUri))
@@ -168,4 +163,20 @@ trait DeltaDirectives extends UriDirectives {
         }
       case None        => provide(Offset.Start)
     }
+
+  /** The URI of a resource in fusion (given a project & id pair) */
+  def fusionResourceUri(projectRef: ProjectRef, id: IdSegmentRef)(implicit config: FusionConfig): UIO[Uri] =
+    UIO.pure {
+      val resourceBase =
+        config.base / projectRef.organization.value / projectRef.project.value / "resources" / id.value.asString
+      id match {
+        case _: Latest        => resourceBase
+        case Revision(_, rev) => resourceBase.withQuery(Uri.Query("rev" -> rev.toString))
+        case Tag(_, tag)      => resourceBase.withQuery(Uri.Query("tag" -> tag.value))
+      }
+    }
+
+  /** The URI of fusion's main login page */
+  def fusionLoginUri(implicit config: FusionConfig): UIO[Uri] =
+    UIO.pure { config.base / "login" }
 }

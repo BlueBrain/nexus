@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearc
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, defaultElasticsearchMapping, defaultElasticsearchSettings, schema => viewsSchemaId, ElasticSearchView, ElasticSearchViewEvent}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.{DefaultViewsQuery, ElasticSearchQueryError}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.{ElasticSearchIndexingRoutes, ElasticSearchQueryRoutes, ElasticSearchViewsRoutes, ElasticSearchViewsRoutesHandler}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
@@ -259,6 +259,28 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
       )
   }
 
+  make[IdResolution].from { (defaultViewsQuery: DefaultViewsQuery.Elasticsearch, shifts: ResourceShifts) =>
+    new IdResolution(defaultViewsQuery, (resourceRef, projectRef) => shifts.fetch(resourceRef, projectRef))
+  }
+
+  make[IdResolutionRoutes].from {
+    (
+        identities: Identities,
+        aclCheck: AclCheck,
+        idResolution: IdResolution,
+        s: Scheduler,
+        ordering: JsonKeyOrdering,
+        rcr: RemoteContextResolution @Id("aggregate"),
+        fusionConfig: FusionConfig
+    ) =>
+      new IdResolutionRoutes(identities, aclCheck, idResolution)(
+        s,
+        ordering,
+        rcr,
+        fusionConfig
+      )
+  }
+
   make[ElasticSearchScopeInitialization]
     .from { (views: ElasticSearchViews, serviceAccount: ServiceAccount, config: ElasticSearchViewsConfig) =>
       new ElasticSearchScopeInitialization(views, serviceAccount, config.defaults)
@@ -325,6 +347,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         es: ElasticSearchViewsRoutes,
         query: ElasticSearchQueryRoutes,
         indexing: ElasticSearchIndexingRoutes,
+        idResolutionRoute: IdResolutionRoutes,
         schemeDirectives: DeltaSchemeDirectives,
         baseUri: BaseUri
     ) =>
@@ -334,7 +357,8 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
           schemeDirectives,
           es.routes,
           query.routes,
-          indexing.routes
+          indexing.routes,
+          idResolutionRoute.routes
         )(baseUri),
         requiresStrictEntity = true
       )

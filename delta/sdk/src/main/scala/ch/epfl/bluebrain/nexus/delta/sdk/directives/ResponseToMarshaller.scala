@@ -7,6 +7,7 @@ import akka.http.scaladsl.server.Directives.{complete, onSuccess, reject}
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
@@ -16,7 +17,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{HttpResponseFields, RdfMar
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import monix.bio.{IO => BIO, UIO}
 import monix.execution.Scheduler
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 
 trait ResponseToMarshaller {
   def apply(statusOverride: Option[StatusCode]): Route
@@ -43,6 +43,21 @@ object ResponseToMarshaller extends RdfMarshalling {
       onSuccess(ioRoute.runToFuture)(identity)
     }
 
+  private[directives] def apply[E: JsonLdEncoder, A: ToEntityMarshaller](
+      io: IO[Either[Response[E], Complete[A]]]
+  )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToMarshaller =
+    (statusOverride: Option[StatusCode]) => {
+
+      val uioFinal = io.map(_.map(value => value.copy(status = statusOverride.getOrElse(value.status))))
+
+      val ioRoute = uioFinal.flatMap {
+        case Left(r: Reject[E])    => UIO.pure(reject(r))
+        case Left(e: Complete[E])  => e.value.toCompactedJsonLd.map(r => complete(e.status, e.headers, r.json))
+        case Right(v: Complete[A]) => UIO.pure(complete(v.status, v.headers, v.value))
+      }
+      onSuccess(ioRoute.unsafeToFuture())(identity)
+    }
+
   private[directives] type UseRight[A] = Either[Response[Unit], Complete[A]]
 
   implicit def uioEntityMarshaller[A: ToEntityMarshaller](
@@ -60,24 +75,29 @@ object ResponseToMarshaller extends RdfMarshalling {
   )(implicit s: Scheduler, cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToMarshaller =
     ResponseToMarshaller(io.map(Complete(OK, Seq.empty, _)).attempt)
 
+  implicit def ioEntityMarshaller[A: ToEntityMarshaller](
+      io: IO[A]
+  )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToMarshaller =
+    ResponseToMarshaller(io.map[UseRight[A]](v => Right(Complete(OK, Seq.empty, v))))
+
   implicit def ioEntityMarshaller[E: JsonLdEncoder: HttpResponseFields, A: ToEntityMarshaller](
       io: IO[Either[E, A]]
-  )(implicit s: Scheduler, cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToMarshaller = {
+  )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToMarshaller = {
     val ioComplete = io.map {
       _.bimap(
         e => Complete(e),
         a => Complete(OK, Seq.empty, a)
       )
     }
-    ResponseToMarshaller(ioComplete.toUIO)
+    ResponseToMarshaller(ioComplete)
   }
 
   implicit def ioResponseEntityMarshaller[E: JsonLdEncoder, A: ToEntityMarshaller](
       io: IO[Either[Response[E], A]]
-  )(implicit s: Scheduler, cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToMarshaller = {
+  )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToMarshaller = {
     val ioComplete = io.map {
       _.map(a => Complete(OK, Seq.empty, a))
     }
-    ResponseToMarshaller(ioComplete.toUIO)
+    ResponseToMarshaller(ioComplete)
   }
 }

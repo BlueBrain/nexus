@@ -7,6 +7,7 @@ import akka.http.scaladsl.model.MediaTypes.`text/html`
 import akka.http.scaladsl.model.headers.{Accept, Location, OAuth2BearerToken}
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
+import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutesSpec.fileMetadata
@@ -114,7 +115,7 @@ class FilesRoutesSpec
     storagesStatistics,
     xas,
     config,
-    FilesConfig(eventLogConfig),
+    FilesConfig(eventLogConfig, MediaTypeDetectorConfig.Empty),
     remoteDiskStorageClient
   )
   private val groupDirectives =

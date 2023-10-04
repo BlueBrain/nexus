@@ -1,0 +1,9 @@
+{
+  "@context": {
+    "@vocab": "https://schema.org/"
+  },
+  "@id": "https://example.com/Alice",
+  "@type": "Person",
+  "name": "Alice",
+  "age": 42
+}

@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.organizations
 
 import cats.effect.Clock
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
@@ -36,7 +37,7 @@ final class OrganizationsImpl private (
   )(implicit caller: Subject): IO[OrganizationRejection, OrganizationResource] =
     for {
       resource <- eval(CreateOrganization(label, description, caller)).span("createOrganization")
-      _        <- IO.parTraverseUnordered(scopeInitializations)(_.onOrganizationCreation(resource.value, caller))
+      _        <- IO.parTraverseUnordered(scopeInitializations)(_.onOrganizationCreation(resource.value, caller).toUIO)
                     .void
                     .mapError(OrganizationInitializationFailed)
                     .span("initializeOrganization")

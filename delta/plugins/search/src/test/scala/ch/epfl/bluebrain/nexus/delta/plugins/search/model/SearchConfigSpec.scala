@@ -5,6 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchConfigError.{Inv
 import ch.epfl.bluebrain.nexus.delta.sdk.Defaults
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.IOValues
+import ch.epfl.bluebrain.nexus.testkit.ce.CatsIOValues
 import com.typesafe.config.ConfigFactory
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
@@ -12,7 +13,7 @@ import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.concurrent.duration.DurationInt
 
-class SearchConfigSpec extends AnyWordSpecLike with Matchers with Inspectors with IOValues {
+class SearchConfigSpec extends AnyWordSpecLike with Matchers with Inspectors with CatsIOValues with IOValues {
 
   private def getAbsolutePath(path: String) = getClass.getResource(path).getPath
 

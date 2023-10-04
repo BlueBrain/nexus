@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.tests.{BaseSpec, SchemaPayload}
 import ch.epfl.bluebrain.nexus.tests.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.tests.Identity.aggregations.{Charlie, Rose}
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Organizations, Resources, Views}
+import ch.epfl.bluebrain.nexus.tests.resources.SimpleResource
 import io.circe.Json
 import org.scalatest.Inspectors
 
@@ -37,11 +38,7 @@ final class AggregationsSpec extends BaseSpec with Inspectors with EitherValuabl
       _ <- aclDsl.addPermission(s"/$ref12", Rose, Views.Query)
     } yield ()
 
-    val resourcePayload =
-      jsonContentOf(
-        "/kg/resources/simple-resource.json",
-        "priority" -> "5"
-      )
+    val resourcePayload = SimpleResource.sourcePayload(5)
     val schemaPayload   = SchemaPayload.loadSimple()
     val postResources   = for {
       // Creation

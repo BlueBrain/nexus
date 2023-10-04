@@ -14,7 +14,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, Defaults}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
-import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.ce.CatsIOValues
+import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, TestHelpers}
 import monix.bio.UIO
 import monix.execution.Scheduler
 import org.scalatest.Inspectors
@@ -27,7 +28,7 @@ class BlazegraphScopeInitializationSpec
     with Matchers
     with Inspectors
     with IOFixedClock
-    with IOValues
+    with CatsIOValues
     with TestHelpers
     with ConfigFixtures
     with Fixtures {

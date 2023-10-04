@@ -7,16 +7,17 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.directives.BasicDirectives.extractRequestContext
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination._
 import ch.epfl.bluebrain.nexus.delta.kernel.search.{Pagination, TimeRange}
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{JsonLdFormat, QueryParamsUnmarshalling}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.StringSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.{IndexingMode, OrderingFields}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import io.circe.Json
 
 import java.util.UUID
@@ -127,6 +128,14 @@ trait UriDirectives extends QueryParamsUnmarshalling {
     pathPrefix(Segment).flatMap {
       case segment if reservedIdSegments.contains(segment) => reject()
       case segment                                         => provide(IdSegment(segment))
+    }
+
+  def iriSegment: Directive1[Iri] =
+    pathPrefix(Segment).flatMap { segment =>
+      Iri(segment) match {
+        case Left(_)    => reject()
+        case Right(iri) => provide(iri)
+      }
     }
 
   /**

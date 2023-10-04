@@ -4,23 +4,25 @@ import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.directives.Credentials
+import cats.effect.IO
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.error.IdentityError.{AuthenticationFailed, InvalidToken}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{AuthToken, Caller, ServiceAccount}
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{AuthToken, Caller, ServiceAccount, TokenRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import monix.execution.Scheduler
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 
 import scala.concurrent.Future
 
 /**
   * Akka HTTP directives for authentication
   */
-abstract class AuthDirectives(identities: Identities, aclCheck: AclCheck)(implicit val s: Scheduler) {
+abstract class AuthDirectives(identities: Identities, aclCheck: AclCheck) {
 
   private def authenticator: AsyncAuthenticator[Caller] = {
     case Credentials.Missing         => Future.successful(None)
@@ -28,8 +30,11 @@ abstract class AuthDirectives(identities: Identities, aclCheck: AclCheck)(implic
       val cred = OAuth2BearerToken(token)
       identities
         .exchange(AuthToken(cred.token))
-        .bimap(InvalidToken, Some(_))
-        .runToFuture
+        .attemptNarrow[TokenRejection]
+        .flatMap { attempt =>
+          IO.fromEither(attempt.bimap(InvalidToken, Some(_)))
+        }
+        .unsafeToFuture()
   }
 
   private def isBearerToken: Directive0 =
@@ -61,7 +66,12 @@ abstract class AuthDirectives(identities: Identities, aclCheck: AclCheck)(implic
     * Checks whether given [[Caller]] has the [[Permission]] on the [[AclAddress]].
     */
   def authorizeFor(path: AclAddress, permission: Permission)(implicit caller: Caller): Directive0 =
-    authorizeAsync(aclCheck.authorizeFor(path, permission).runToFuture) or failWith(AuthorizationFailed)
+    authorizeAsync(toCatsIO(aclCheck.authorizeFor(path, permission)).unsafeToFuture()) or failWith(AuthorizationFailed)
+
+  def authorizeForIO(path: AclAddress, fetchPermission: IO[Permission])(implicit caller: Caller): Directive0 = {
+    val check = fetchPermission.flatMap(permission => toCatsIO(aclCheck.authorizeFor(path, permission)))
+    authorizeAsync(check.unsafeToFuture()) or failWith(AuthorizationFailed)
+  }
 
   /**
     * Check whether [[Caller]] is the configured service account.

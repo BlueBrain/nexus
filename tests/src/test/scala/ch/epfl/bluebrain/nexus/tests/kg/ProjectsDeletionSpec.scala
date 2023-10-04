@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.tests.Identity.projects.{Bojack, PrincessCarolyn}
 import ch.epfl.bluebrain.nexus.tests.Identity.{Anonymous, ServiceAccount}
 import ch.epfl.bluebrain.nexus.tests.Optics.{admin, listing, supervision}
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Events, Organizations, Projects, Resources}
+import ch.epfl.bluebrain.nexus.tests.resources.SimpleResource
 import ch.epfl.bluebrain.nexus.tests.{BaseSpec, Identity, SchemaPayload}
 import io.circe.Json
 import io.circe.optics.JsonPath.root
@@ -95,11 +96,7 @@ final class ProjectsDeletionSpec extends BaseSpec with CirceEq with EitherValuab
     }
 
     "add additional resources" in {
-      val resourcePayload        =
-        jsonContentOf(
-          "/kg/resources/simple-resource.json",
-          "priority" -> "5"
-        )
+      val resourcePayload        = SimpleResource.sourcePayload(5)
       val schemaPayload          = SchemaPayload.loadSimple()
       val resolverPayload        =
         jsonContentOf(
@@ -121,16 +118,16 @@ final class ProjectsDeletionSpec extends BaseSpec with CirceEq with EitherValuab
                ref1 -> "https://bluebrain.github.io/nexus/vocabulary/defaultElasticSearchIndex",
                ref2 -> "https://bluebrain.github.io/nexus/vocabulary/defaultElasticSearchIndex"
              )
-        _ <- deltaClient.putAttachment[Json](
+        _ <- deltaClient.uploadFile[Json](
                s"/files/$ref1/attachment.json",
-               contentOf("/kg/files/attachment.json"),
+               "some file content",
                ContentTypes.`application/json`,
                "attachment.json",
                Bojack
              )(expectCreated)
-        _ <- deltaClient.putAttachment[Json](
+        _ <- deltaClient.uploadFile[Json](
                s"/files/$ref2/attachment.json",
-               contentOf("/kg/files/attachment.json"),
+               "some file content",
                ContentTypes.`application/json`,
                "attachment.json",
                Bojack

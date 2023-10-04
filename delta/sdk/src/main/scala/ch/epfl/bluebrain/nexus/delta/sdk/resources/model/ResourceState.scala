@@ -59,7 +59,8 @@ final case class ResourceState(
     source: Json,
     compacted: CompactedJsonLd,
     expanded: ExpandedJsonLd,
-    remoteContexts: Set[RemoteContextRef],
+    // TODO: Remove default after 1.10 migration
+    remoteContexts: Set[RemoteContextRef] = Set.empty,
     rev: Int,
     deprecated: Boolean,
     schema: ResourceRef,
@@ -94,7 +95,10 @@ object ResourceState {
     import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.CompactedJsonLd.Database._
     import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd.Database._
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
-    implicit val configuration: Configuration         = Serializer.circeConfiguration
+
+    // TODO: The `.withDefaults` method is used in order to inject the default empty remoteContexts
+    //  when deserializing an event that has none. Remove it after 1.10 migration.
+    implicit val configuration: Configuration         = Serializer.circeConfiguration.withDefaults
     implicit val codec: Codec.AsObject[ResourceState] = deriveConfiguredCodec[ResourceState]
     Serializer()
   }

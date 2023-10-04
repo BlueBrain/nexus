@@ -1,10 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
-import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.Project
-import monix.bio.IO
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 
 /**
   * Lifecycle hook for organization and project initialization. It's meant to be used for plugins to preconfigure an
@@ -25,7 +24,7 @@ trait ScopeInitialization {
     * @param subject
     *   the identity that was recorded for the creation of the organization
     */
-  def onOrganizationCreation(organization: Organization, subject: Subject): IO[ScopeInitializationFailed, Unit]
+  def onOrganizationCreation(organization: Organization, subject: Subject): IO[Unit]
 
   /**
     * The method is invoked synchronously during the project creation for immediate configuration of the project.
@@ -38,6 +37,6 @@ trait ScopeInitialization {
     * @param subject
     *   the identity that was recorded for the creation of the project
     */
-  def onProjectCreation(project: Project, subject: Subject): IO[ScopeInitializationFailed, Unit]
+  def onProjectCreation(project: Project, subject: Subject): IO[Unit]
 
 }

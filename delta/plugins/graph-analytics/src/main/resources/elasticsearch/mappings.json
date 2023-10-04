@@ -108,6 +108,30 @@
           "type": "keyword"
         }
       }
+    },
+    "remoteContexts": {
+      "type": "nested",
+      "properties": {
+        "iri": {
+          "type": "keyword"
+        },
+        "@type": {
+          "type": "keyword"
+        },
+        "resource": {
+          "properties": {
+            "id": {
+              "type": "keyword"
+            },
+            "project": {
+              "type": "keyword"
+            },
+            "rev": {
+              "type": "long"
+            }
+          }
+        }
+      }
     }
   }
 }

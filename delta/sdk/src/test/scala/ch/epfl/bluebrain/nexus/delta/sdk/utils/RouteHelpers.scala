@@ -10,7 +10,7 @@ import akka.testkit.TestDuration
 import akka.util.ByteString
 import ch.epfl.bluebrain.nexus.testkit.EitherValuable
 import io.circe.parser.parse
-import io.circe.{Decoder, Json, Printer}
+import io.circe.{Decoder, Json, JsonObject, Printer}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -68,6 +68,13 @@ final class HttpResponseOps(private val http: HttpResponse) extends Consumer {
 
   def asJson(implicit materializer: Materializer): Json =
     asJson(http.entity.dataBytes)
+
+  def asJsonObject(implicit materializer: Materializer): JsonObject = {
+    val json = asJson(http.entity.dataBytes)
+    json.asObject.getOrElse(
+      fail(s"Error converting '$json' to a JsonObject.")
+    )
+  }
 
   def as[A: Decoder](implicit materializer: Materializer, A: ClassTag[A]): A =
     asJson.as[A] match {

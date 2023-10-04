@@ -1,9 +1,5 @@
 package ch.epfl.bluebrain.nexus.storage
 
-import java.net.URLDecoder
-import java.nio.file.StandardCopyOption._
-import java.nio.file.{Files, Path, Paths}
-import java.security.MessageDigest
 import akka.http.scaladsl.model.Uri
 import akka.stream.Materializer
 import akka.stream.alpakka.file.scaladsl.Directory
@@ -16,10 +12,14 @@ import ch.epfl.bluebrain.nexus.storage.StorageError.{InternalError, PathInvalid,
 import ch.epfl.bluebrain.nexus.storage.Storages.BucketExistence._
 import ch.epfl.bluebrain.nexus.storage.Storages.PathExistence._
 import ch.epfl.bluebrain.nexus.storage.Storages.{BucketExistence, PathExistence}
-import ch.epfl.bluebrain.nexus.storage.attributes.AttributesCache
 import ch.epfl.bluebrain.nexus.storage.attributes.AttributesComputation._
+import ch.epfl.bluebrain.nexus.storage.attributes.{AttributesCache, ContentTypeDetector}
 import ch.epfl.bluebrain.nexus.storage.config.AppConfig.{DigestConfig, StorageConfig}
 
+import java.net.URLDecoder
+import java.nio.file.StandardCopyOption._
+import java.nio.file.{Files, Path, Paths}
+import java.security.MessageDigest
 import scala.annotation.tailrec
 import scala.concurrent.{ExecutionContext, Future}
 import scala.sys.process._
@@ -150,7 +150,12 @@ object Storages {
   /**
     * An Disk implementation of Storage interface.
     */
-  final class DiskStorage[F[_]](config: StorageConfig, digestConfig: DigestConfig, cache: AttributesCache[F])(implicit
+  final class DiskStorage[F[_]](
+      config: StorageConfig,
+      contentTypeDetector: ContentTypeDetector,
+      digestConfig: DigestConfig,
+      cache: AttributesCache[F]
+  )(implicit
       ec: ExecutionContext,
       mt: Materializer,
       F: Effect[F]
@@ -197,7 +202,7 @@ object Storages {
               .toMat(FileIO.toPath(absFilePath)) { case (digFuture, ioFuture) =>
                 digFuture.zipWith(ioFuture) {
                   case (digest, io) if absFilePath.toFile.exists() =>
-                    Future(FileAttributes(absFilePath.toAkkaUri, io.count, digest, detectMediaType(absFilePath)))
+                    Future(FileAttributes(absFilePath.toAkkaUri, io.count, digest, contentTypeDetector(absFilePath)))
                   case _                                           =>
                     Future.failed(InternalError(s"I/O error writing file to path '$path'"))
                 }
@@ -240,7 +245,7 @@ object Storages {
         }
 
       def computeSizeAndMove(isDir: Boolean): F[RejOrAttributes] = {
-        lazy val mediaType = detectMediaType(absDestPath, isDir)
+        lazy val mediaType = contentTypeDetector(absDestPath, isDir)
         size(absSourcePath).flatMap { computedSize =>
           F.fromTry(Try(Files.createDirectories(absDestPath.getParent))) >>
             F.fromTry(Try(Files.move(absSourcePath, absDestPath, ATOMIC_MOVE))) >>

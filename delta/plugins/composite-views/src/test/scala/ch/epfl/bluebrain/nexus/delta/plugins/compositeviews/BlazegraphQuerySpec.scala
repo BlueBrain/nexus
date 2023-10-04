@@ -86,7 +86,6 @@ class BlazegraphQuerySpec
       construct,
       Set.empty,
       Set.empty,
-      None,
       false,
       false,
       permission
@@ -103,7 +102,6 @@ class BlazegraphQuerySpec
       construct,
       Set.empty,
       Set.empty,
-      None,
       false,
       false,
       false,

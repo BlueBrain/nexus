@@ -22,7 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.ResourceRe
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.{ResolverContextResolution, Resolvers, ResourceResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{Resource, ResourceEvent}
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.{Resources, ResourcesImpl, ResourcesPractice, ValidateResource}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.{Resources, ResourcesConfig, ResourcesImpl, ValidateResource}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
@@ -40,11 +40,13 @@ object ResourcesModule extends ModuleDef {
     ValidateResource(resourceResolution)(api)
   }
 
+  make[ResourcesConfig].from { (config: AppConfig) => config.resources }
+
   make[Resources].from {
     (
         validate: ValidateResource,
         fetchContext: FetchContext[ContextRejection],
-        config: AppConfig,
+        config: ResourcesConfig,
         resolverContextResolution: ResolverContextResolution,
         api: JsonLdApi,
         xas: Transactors,
@@ -55,31 +57,13 @@ object ResourcesModule extends ModuleDef {
         validate,
         fetchContext.mapRejection(ProjectContextRejection),
         resolverContextResolution,
-        config.resources,
+        config,
         xas
       )(
         api,
         clock,
         uuidF
       )
-  }
-
-  make[ResourcesPractice].from {
-    (
-        resources: Resources,
-        validate: ValidateResource,
-        fetchContext: FetchContext[ContextRejection],
-        contextResolution: ResolverContextResolution,
-        api: JsonLdApi,
-        clock: Clock[UIO],
-        uuidF: UUIDF
-    ) =>
-      ResourcesPractice(
-        resources.fetch(_, _, None),
-        validate,
-        fetchContext.mapRejection(ProjectContextRejection),
-        contextResolution
-      )(api, clock, uuidF)
   }
 
   make[ResolverContextResolution].from {
@@ -96,7 +80,6 @@ object ResourcesModule extends ModuleDef {
         identities: Identities,
         aclCheck: AclCheck,
         resources: Resources,
-        resourcesPractice: ResourcesPractice,
         schemeDirectives: DeltaSchemeDirectives,
         indexingAction: IndexingAction @Id("aggregate"),
         shift: Resource.Shift,
@@ -105,13 +88,12 @@ object ResourcesModule extends ModuleDef {
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering,
         fusionConfig: FusionConfig,
-        config: AppConfig
+        config: ResourcesConfig
     ) =>
       new ResourcesRoutes(
         identities,
         aclCheck,
         resources,
-        resourcesPractice,
         schemeDirectives,
         indexingAction(_, _, _)(shift, cr)
       )(
@@ -120,7 +102,7 @@ object ResourcesModule extends ModuleDef {
         cr,
         ordering,
         fusionConfig,
-        config.resources.decodingOption
+        config.decodingOption
       )
   }
 

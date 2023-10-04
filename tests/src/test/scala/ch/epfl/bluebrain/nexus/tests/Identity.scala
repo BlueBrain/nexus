@@ -40,6 +40,11 @@ object Identity extends TestHelpers {
     val Marge = UserCredentials(genString(), genString(), testRealm)
   }
 
+  object userPermissions {
+    val UserWithNoPermissions = UserCredentials(genString(), genString(), testRealm)
+    val UserWithPermissions   = UserCredentials(genString(), genString(), testRealm)
+  }
+
   object archives {
     val Tweety = UserCredentials(genString(), genString(), testRealm)
   }
@@ -94,6 +99,6 @@ object Identity extends TestHelpers {
   }
 
   lazy val allUsers =
-    acls.Marge :: archives.Tweety :: compositeviews.Jerry :: events.BugsBunny :: listings.Bob :: listings.Alice :: aggregations.Charlie :: aggregations.Rose :: orgs.Fry :: orgs.Leela :: projects.Bojack :: projects.PrincessCarolyn :: resources.Rick :: resources.Morty :: storages.Coyote :: views.ScoobyDoo :: mash.Radar :: supervision.Mickey :: Nil
+    userPermissions.UserWithNoPermissions :: userPermissions.UserWithPermissions :: acls.Marge :: archives.Tweety :: compositeviews.Jerry :: events.BugsBunny :: listings.Bob :: listings.Alice :: aggregations.Charlie :: aggregations.Rose :: orgs.Fry :: orgs.Leela :: projects.Bojack :: projects.PrincessCarolyn :: resources.Rick :: resources.Morty :: storages.Coyote :: views.ScoobyDoo :: mash.Radar :: supervision.Mickey :: Nil
 
 }

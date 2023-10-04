@@ -24,7 +24,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources.{read
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.NexusSource.DecodingOption
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{InvalidJsonLdFormat, InvalidSchemaRejection, ResourceNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{Resource, ResourceRejection}
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.{NexusSource, Resources, ResourcesPractice}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.{NexusSource, Resources}
 import io.circe.{Json, Printer}
 import monix.bio.IO
 import monix.execution.Scheduler
@@ -47,7 +47,6 @@ final class ResourcesRoutes(
     identities: Identities,
     aclCheck: AclCheck,
     resources: Resources,
-    resourcesPractice: ResourcesPractice,
     schemeDirectives: DeltaSchemeDirectives,
     index: IndexingAction.Execute[Resource]
 )(implicit
@@ -173,16 +172,6 @@ final class ResourcesRoutes(
                           )
                         }
                       },
-                      (pathPrefix("validate") & get & pathEndOrSingleSlash & idSegmentRef(id)) { id =>
-                        authorizeFor(ref, Write).apply {
-                          emit(
-                            resourcesPractice
-                              .validate(id, ref, schemaOpt)
-                              .leftWiden[ResourceRejection]
-                          )
-                        }
-
-                      },
                       // Fetch a resource original source
                       (pathPrefix("source") & get & pathEndOrSingleSlash & idSegmentRef(id)) { id =>
                         authorizeFor(ref, Read).apply {
@@ -273,7 +262,6 @@ object ResourcesRoutes {
       identities: Identities,
       aclCheck: AclCheck,
       resources: Resources,
-      resourcesPractice: ResourcesPractice,
       projectsDirectives: DeltaSchemeDirectives,
       index: IndexingAction.Execute[Resource]
   )(implicit
@@ -283,7 +271,7 @@ object ResourcesRoutes {
       ordering: JsonKeyOrdering,
       fusionConfig: FusionConfig,
       decodingOption: DecodingOption
-  ): Route = new ResourcesRoutes(identities, aclCheck, resources, resourcesPractice, projectsDirectives, index).routes
+  ): Route = new ResourcesRoutes(identities, aclCheck, resources, projectsDirectives, index).routes
 
   def asSourceWithMetadata(
       resource: ResourceF[Resource]

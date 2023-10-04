@@ -1,14 +1,5 @@
 {
-  "@context": {
-    "@base": "http://example.com/",
-    "@vocab": "http://schema.org/",
-    "worksFor": {
-      "@type": "@id"
-    },
-    "colleague": {
-      "@type": "@id"
-    }
-  },
+  "@context": "https://bbp.epfl.ch/contexts/person",
   "@type": "Person",
   "@id": "http://example.com/person1",
   "givenName": "Alice",

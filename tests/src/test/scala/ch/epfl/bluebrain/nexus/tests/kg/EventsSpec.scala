@@ -5,6 +5,7 @@ import ch.epfl.bluebrain.nexus.tests.BaseSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.events.BugsBunny
 import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Events, Organizations, Resources}
+import ch.epfl.bluebrain.nexus.tests.resources.SimpleResource
 import io.circe.Json
 import monix.bio.Task
 import monix.execution.Scheduler.Implicits.global
@@ -89,11 +90,18 @@ class EventsSpec extends BaseSpec with Inspectors {
 
     "add events to project" in {
       //Created event
-      val payload = jsonContentOf(
-        "/kg/resources/simple-resource.json",
-        "priority"   -> "3",
-        "resourceId" -> "1"
-      )
+      val resourceId = "https://dev.nexus.test.com/simplified-resource/1"
+      val payload    = SimpleResource.sourcePayload(resourceId, 3)
+
+      val fileContent =
+        """|{
+           |  "this": ["is", "a", "test", "attachment"]
+           |}""".stripMargin
+
+      val updatedFileContent =
+        """|{
+           |  "this": ["is", "a", "test", "attachment", "2"]
+           |}""".stripMargin
 
       for {
         //ResourceCreated event
@@ -106,11 +114,7 @@ class EventsSpec extends BaseSpec with Inspectors {
         //ResourceUpdated event
         _ <- deltaClient.put[Json](
                s"/resources/$id/_/test-resource:1?rev=1",
-               jsonContentOf(
-                 "/kg/resources/simple-resource.json",
-                 "priority"   -> "5",
-                 "resourceId" -> "1"
-               ),
+               SimpleResource.sourcePayload(resourceId, 5),
                BugsBunny
              ) { (_, response) =>
                response.status shouldEqual StatusCodes.OK
@@ -128,9 +132,9 @@ class EventsSpec extends BaseSpec with Inspectors {
                response.status shouldEqual StatusCodes.OK
              }
         //FileCreated event
-        _ <- deltaClient.putAttachment[Json](
+        _ <- deltaClient.uploadFile[Json](
                s"/files/$id/attachment.json",
-               contentOf("/kg/files/attachment.json"),
+               fileContent,
                ContentTypes.`application/json`,
                "attachment.json",
                BugsBunny
@@ -138,9 +142,9 @@ class EventsSpec extends BaseSpec with Inspectors {
                response.status shouldEqual StatusCodes.Created
              }
         //FileUpdated event
-        _ <- deltaClient.putAttachment[Json](
+        _ <- deltaClient.uploadFile[Json](
                s"/files/$id/attachment.json?rev=1",
-               contentOf("/kg/files/attachment2.json"),
+               updatedFileContent,
                ContentTypes.`application/json`,
                "attachment.json",
                BugsBunny

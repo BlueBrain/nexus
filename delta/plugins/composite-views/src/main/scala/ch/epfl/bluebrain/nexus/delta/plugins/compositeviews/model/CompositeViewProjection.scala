@@ -12,7 +12,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.views.IndexingRev
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Operation, PipeChain}
 import io.circe.{Encoder, JsonObject}
 
@@ -58,12 +57,6 @@ sealed trait CompositeViewProjection extends Product with Serializable {
     *   the resource types to filter by, empty means all
     */
   def resourceTypes: Set[Iri]
-
-  /**
-    * @return
-    *   the optional tag to filter by
-    */
-  def resourceTag: Option[UserTag]
 
   /**
     * @return
@@ -132,7 +125,6 @@ object CompositeViewProjection {
       query: SparqlConstructQuery,
       resourceSchemas: Set[Iri],
       resourceTypes: Set[Iri],
-      resourceTag: Option[UserTag],
       includeMetadata: Boolean,
       includeDeprecated: Boolean,
       includeContext: Boolean,
@@ -161,7 +153,6 @@ object CompositeViewProjection {
       query: SparqlConstructQuery,
       resourceSchemas: Set[Iri],
       resourceTypes: Set[Iri],
-      resourceTag: Option[UserTag],
       includeMetadata: Boolean,
       includeDeprecated: Boolean,
       permission: Permission

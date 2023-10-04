@@ -15,7 +15,7 @@
   },
   "_filename": "{{filename}}",
   "_incoming": "{{self}}/incoming",
-  "_mediaType": "text/plain",
+  "_mediaType": "{{mediaType}}",
   "_origin": "Storage",
   "_outgoing": "{{self}}/outgoing",
   "_project": "{{project}}",

@@ -21,7 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectR
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.{deriveConfiguredCodec, deriveConfiguredEncoder}
 import io.circe.syntax._
-import io.circe.{Codec, Decoder, Encoder, Json, JsonObject}
+import io.circe._
 
 import java.time.Instant
 import scala.annotation.nowarn
@@ -90,7 +90,8 @@ object ResourceEvent {
       source: Json,
       compacted: CompactedJsonLd,
       expanded: ExpandedJsonLd,
-      remoteContexts: Set[RemoteContextRef],
+      // TODO: Remove default after 1.10 migration
+      remoteContexts: Set[RemoteContextRef] = Set.empty,
       rev: Int,
       instant: Instant,
       subject: Subject
@@ -133,7 +134,8 @@ object ResourceEvent {
       source: Json,
       compacted: CompactedJsonLd,
       expanded: ExpandedJsonLd,
-      remoteContexts: Set[RemoteContextRef],
+      // TODO: Remove default after 1.10 migration
+      remoteContexts: Set[RemoteContextRef] = Set.empty,
       rev: Int,
       instant: Instant,
       subject: Subject
@@ -173,7 +175,8 @@ object ResourceEvent {
       types: Set[Iri],
       compacted: CompactedJsonLd,
       expanded: ExpandedJsonLd,
-      remoteContexts: Set[RemoteContextRef],
+      // TODO: Remove default after 1.10 migration
+      remoteContexts: Set[RemoteContextRef] = Set.empty,
       rev: Int,
       instant: Instant,
       subject: Subject
@@ -269,8 +272,9 @@ object ResourceEvent {
     import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd.Database._
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
 
-    //TODO remove after migration of events
-    implicit val configuration: Configuration = Serializer.circeConfiguration
+    // TODO: The `.withDefaults` method is used in order to inject the default empty remoteContexts
+    //  when deserializing an event that has none. Remove it after 1.10 migration.
+    implicit val configuration: Configuration = Serializer.circeConfiguration.withDefaults
 
     implicit val coder: Codec.AsObject[ResourceEvent] = deriveConfiguredCodec[ResourceEvent]
     Serializer()

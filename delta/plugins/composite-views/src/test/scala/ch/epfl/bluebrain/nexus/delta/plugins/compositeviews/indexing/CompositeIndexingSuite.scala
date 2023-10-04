@@ -290,7 +290,6 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
     query,
     resourceSchemas = Set.empty,
     resourceTypes = Set(iri"http://music.com/Band"),
-    resourceTag = None,
     includeMetadata = false,
     includeDeprecated = false,
     includeContext = false,
@@ -308,7 +307,6 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
     query,
     resourceSchemas = Set.empty,
     resourceTypes = Set.empty,
-    resourceTag = None,
     includeMetadata = false,
     includeDeprecated = false,
     permissions.query

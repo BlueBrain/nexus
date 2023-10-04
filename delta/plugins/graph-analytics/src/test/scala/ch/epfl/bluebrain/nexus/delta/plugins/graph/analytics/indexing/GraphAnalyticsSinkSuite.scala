@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.JsonLdDocumen
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.nxvFile
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
+import ch.epfl.bluebrain.nexus.delta.sdk.model.jsonld.RemoteContextRef
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
@@ -40,6 +41,9 @@ class GraphAnalyticsSinkSuite
   private lazy val sink = new GraphAnalyticsSink(client, 5, 100.millis, index)
 
   private val project = ProjectRef.unsafe("myorg", "myproject")
+
+  private val remoteContexts: Set[RemoteContextRef] =
+    Set(RemoteContextRef.StaticContextRef(iri"https://bluebrain.github.io/nexus/contexts/metadata.json"))
 
   // resource1 has references to 'resource3', 'file1' and 'generatedBy',
   // 'generatedBy' remains unresolved
@@ -102,13 +106,17 @@ class GraphAnalyticsSinkSuite
         types    <- getTypes(expanded)
         doc      <- JsonLdDocument.fromExpanded(expanded, _ => findRelationships)
       } yield {
-        val result = Index.active(project, id, 1, types, Instant.EPOCH, Anonymous, Instant.EPOCH, Anonymous, doc)
+        val result =
+          Index.active(project, id, remoteContexts, 1, types, Instant.EPOCH, Anonymous, Instant.EPOCH, Anonymous, doc)
         success(id, result)
       }
     }
 
     def indexDeprecated(id: Iri, types: Set[Iri]) =
-      success(id, Index.deprecated(project, id, 1, types, Instant.EPOCH, Anonymous, Instant.EPOCH, Anonymous))
+      success(
+        id,
+        Index.deprecated(project, id, remoteContexts, 1, types, Instant.EPOCH, Anonymous, Instant.EPOCH, Anonymous)
+      )
 
     for {
       active1            <- indexActive(resource1, expanded1)

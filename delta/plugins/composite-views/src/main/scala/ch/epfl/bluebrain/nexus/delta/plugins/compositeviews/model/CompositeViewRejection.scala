@@ -24,6 +24,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.rejection.Rejection
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
 
@@ -33,7 +34,7 @@ import io.circe.{Encoder, Json, JsonObject}
   * @param reason
   *   a descriptive message as to why the rejection occurred
   */
-sealed abstract class CompositeViewRejection(val reason: String) extends Product with Serializable
+sealed abstract class CompositeViewRejection(val reason: String) extends Rejection
 
 object CompositeViewRejection {
 

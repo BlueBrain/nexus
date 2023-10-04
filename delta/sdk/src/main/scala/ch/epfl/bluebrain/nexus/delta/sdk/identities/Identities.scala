@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.identities
 
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{AuthToken, Caller, TokenRejection}
-import monix.bio.IO
+import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{AuthToken, Caller}
 
 /**
   * Operations pertaining to authentication, token validation and identities.
@@ -14,6 +14,6 @@ trait Identities {
     * @param token
     *   a well formatted authentication token (usually a bearer token)
     */
-  def exchange(token: AuthToken): IO[TokenRejection, Caller]
+  def exchange(token: AuthToken): IO[Caller]
 
 }

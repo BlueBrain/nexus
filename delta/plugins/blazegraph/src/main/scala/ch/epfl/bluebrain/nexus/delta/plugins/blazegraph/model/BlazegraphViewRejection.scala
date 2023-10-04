@@ -20,10 +20,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.rejection.Rejection
 import io.circe.syntax.EncoderOps
 import io.circe.{Encoder, JsonObject}
 
-sealed abstract class BlazegraphViewRejection(val reason: String) extends Product with Serializable
+sealed abstract class BlazegraphViewRejection(val reason: String) extends Rejection
 
 object BlazegraphViewRejection {
 

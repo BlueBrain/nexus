@@ -218,6 +218,11 @@ trait CatsEffectAssertions { self: Assertions =>
     def assert(implicit loc: Location): IO[Unit] =
       assertIOBoolean(io, "value is not true")
   }
+
+  implicit class MunitCatsAssertionsOptionOps[A](io: IO[Option[A]])(implicit loc: Location) {
+    def assertSome(expected: A): IO[Unit] = assertIO(io, Some(expected), s"the Option did not contains $expected")
+    def assertNone: IO[Unit]              = assertIO(io, None, "the Option was not empty")
+  }
 }
 
 object CatsEffectAssertions extends Assertions with CatsEffectAssertions

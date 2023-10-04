@@ -36,6 +36,11 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit as: ActorSyst
   def apply(req: HttpRequest): Task[HttpResponse] =
     Task.deferFuture(httpExt.singleRequest(req))
 
+  def head(url: Uri, identity: Identity)(assertResponse: HttpResponse => Assertion): Task[Assertion] = {
+    val req = HttpRequest(HEAD, s"$baseUrl$url", headers = identityHeader(identity).toList)
+    Task.deferFuture(httpExt.singleRequest(req)).map(assertResponse)
+  }
+
   def run[A](req: HttpRequest)(implicit um: FromEntityUnmarshaller[A]): Task[(A, HttpResponse)] =
     Task.deferFuture(httpExt.singleRequest(req)).flatMap { res =>
       Task.deferFuture(um.apply(res.entity)).map(a => (a, res))
@@ -76,7 +81,7 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit as: ActorSyst
     )
   }
 
-  def putAttachment[A](
+  def uploadFile[A](
       url: String,
       attachment: String,
       contentType: ContentType,
@@ -212,6 +217,20 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit as: ActorSyst
       extraHeaders
     )
 
+  private def identityHeader(identity: Identity): Option[HttpHeader] = {
+    identity match {
+      case Anonymous => None
+      case _         =>
+        Some(
+          Option(tokensMap.get(identity)).getOrElse(
+            throw new IllegalArgumentException(
+              "The provided user has not been properly initialized, please add it to Identity.allUsers."
+            )
+          )
+        )
+    }
+  }
+
   def request[A, B, R](
       method: HttpMethod,
       url: String,
@@ -226,15 +245,7 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit as: ActorSyst
       HttpRequest(
         method = method,
         uri = s"$baseUrl$url",
-        headers = identity match {
-          case Anonymous => extraHeaders
-          case _         =>
-            extraHeaders :+ Option(tokensMap.get(identity)).getOrElse(
-              throw new IllegalArgumentException(
-                "The provided user has not been properly initialized, please add it to Identity.allUsers."
-              )
-            )
-        },
+        headers = extraHeaders ++ identityHeader(identity),
         entity = body.fold(HttpEntity.Empty)(toEntity)
       )
     ).flatMap { res =>

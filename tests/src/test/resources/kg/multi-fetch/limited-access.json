@@ -13,10 +13,10 @@
       "@id" : "https://bluebrain.github.io/nexus/vocabulary/file",
       "project" : "{{project2}}",
       "value" : {
-        "_bytes" : 47,
+        "_bytes" : 21,
         "_digest" : {
           "_algorithm" : "SHA-256",
-          "_value" : "00ff4b34e3f3695c3abcdec61cba72c2238ed172ef34ae1196bfad6a4ec23dda"
+          "_value" : "5ef661604649ed3d825176db889d7af0e2c1012d2ffa5080f8a220a234212517"
         },
         "_filename" : "attachment.json",
         "_mediaType" : "application/json",

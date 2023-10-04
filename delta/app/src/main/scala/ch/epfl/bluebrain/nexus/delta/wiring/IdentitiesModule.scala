@@ -1,12 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
-import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
-import akka.http.scaladsl.model.{HttpRequest, Uri}
+import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.CacheConfig
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
-import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -14,16 +11,12 @@ import ch.epfl.bluebrain.nexus.delta.routes.IdentitiesRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk.PriorityRoute
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.auth.{AuthTokenProvider, OpenIdAuthService}
-import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientError}
+import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.{Identities, IdentitiesImpl}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.RealmSearchParams
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.Realms
-import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.Realm
-import io.circe.Json
 import izumi.distage.model.definition.{Id, ModuleDef}
-import monix.bio.{IO, UIO}
-import monix.execution.Scheduler
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 
 /**
   * Identities module wiring config.
@@ -35,24 +28,15 @@ object IdentitiesModule extends ModuleDef {
   make[CacheConfig].from((cfg: AppConfig) => cfg.identities)
 
   make[Identities].fromEffect { (realms: Realms, hc: HttpClient @Id("realm"), config: CacheConfig) =>
-    val findActiveRealm: String => UIO[Option[Realm]] = { (issuer: String) =>
-      val pagination = FromPagination(0, 1000)
-      val params     = RealmSearchParams(issuer = Some(issuer), deprecated = Some(false))
-      val sort       = ResourceF.defaultSort[Realm]
-      realms.list(pagination, params, sort).map { _.results.map(entry => entry.source.value).headOption }.toUIO
-    }
-    val getUserInfo: (Uri, OAuth2BearerToken) => IO[HttpClientError, Json] = { (uri: Uri, token: OAuth2BearerToken) =>
-      hc.toJson(HttpRequest(uri = uri, headers = List(Authorization(token))))
-    }
-    IdentitiesImpl(findActiveRealm, getUserInfo, config)
+    IdentitiesImpl(realms, hc, config).toUIO
   }
 
   make[OpenIdAuthService].from { (httpClient: HttpClient @Id("realm"), realms: Realms) =>
     new OpenIdAuthService(httpClient, realms)
   }
 
-  make[AuthTokenProvider].fromEffect { (authService: OpenIdAuthService) =>
-    AuthTokenProvider(authService)
+  make[AuthTokenProvider].fromEffect { (authService: OpenIdAuthService, clock: Clock[IO]) =>
+    AuthTokenProvider(authService)(clock)
   }
 
   many[RemoteContextResolution].addEffect(ContextValue.fromFile("contexts/identities.json").map { ctx =>
@@ -63,11 +47,10 @@ object IdentitiesModule extends ModuleDef {
     (
         identities: Identities,
         aclCheck: AclCheck,
-        s: Scheduler,
         baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
-    ) => new IdentitiesRoutes(identities, aclCheck)(s, baseUri, cr, ordering)
+    ) => new IdentitiesRoutes(identities, aclCheck)(baseUri, cr, ordering)
 
   }
 

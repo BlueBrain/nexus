@@ -93,7 +93,6 @@ class ElasticSearchQuerySpec
       construct,
       Set.empty,
       Set.empty,
-      None,
       false,
       false,
       false,
@@ -115,7 +114,6 @@ class ElasticSearchQuerySpec
       construct,
       Set.empty,
       Set.empty,
-      None,
       false,
       false,
       permissions.query

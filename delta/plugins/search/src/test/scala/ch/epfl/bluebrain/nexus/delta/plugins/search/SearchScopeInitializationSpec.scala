@@ -16,6 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit.IOValues
+import ch.epfl.bluebrain.nexus.testkit.ce.CatsIOValues
 import io.circe.JsonObject
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -25,6 +26,7 @@ class SearchScopeInitializationSpec
     with AnyWordSpecLike
     with CompositeViewsFixture
     with Matchers
+    with CatsIOValues
     with IOValues
     with Fixtures {
 
