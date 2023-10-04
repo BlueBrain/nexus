@@ -28,7 +28,6 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
           check-latest: true
-          cache: 'sbt'
       - name: Set up proxy for docker buildx
         run: |
           echo http_proxy=${http_proxy} >> $GITHUB_ENV
