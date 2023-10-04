@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
-import cats.effect.{Blocker, Resource}
+import cats.effect.{Blocker, IO, Resource}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.{CacheConfig, KeyValueStore}
@@ -15,7 +15,8 @@ import doobie.implicits._
 import doobie.util.ExecutionContexts
 import doobie.util.transactor.Transactor
 import io.github.classgraph.ClassGraph
-import monix.bio.Task
+import monix.bio.{IO => BIO, Task}
+import monix.execution.Scheduler
 
 import scala.concurrent.duration._
 import scala.jdk.CollectionConverters._
@@ -28,7 +29,10 @@ final case class Transactors(
     write: Transactor[Task],
     streaming: Transactor[Task],
     cache: PartitionsCache
-) {
+)(implicit s: Scheduler) {
+
+  def readCE: Transactor[IO]  = read.mapK(BIO.liftTo)
+  def writeCE: Transactor[IO] = write.mapK(BIO.liftTo)
 
   def execDDL(ddl: String)(implicit cl: ClassLoader): Task[Unit] =
     ClasspathResourceUtils.ioContentOf(ddl).flatMap(Fragment.const0(_).update.run.transact(write)).void
@@ -76,7 +80,9 @@ object Transactors {
     * @param password
     *   the password
     */
-  def test(host: String, port: Int, username: String, password: String): Resource[Task, Transactors] = {
+  def test(host: String, port: Int, username: String, password: String)(implicit
+      s: Scheduler
+  ): Resource[Task, Transactors] = {
     val access         = DatabaseAccess(host, port, 10)
     val databaseConfig = DatabaseConfig(
       access,
@@ -88,10 +94,10 @@ object Transactors {
       false,
       CacheConfig(500, 10.minutes)
     )
-    init(databaseConfig)(getClass.getClassLoader)
+    init(databaseConfig)(getClass.getClassLoader, s)
   }
 
-  def init(config: DatabaseConfig)(implicit classLoader: ClassLoader): Resource[Task, Transactors] = {
+  def init(config: DatabaseConfig)(implicit classLoader: ClassLoader, s: Scheduler): Resource[Task, Transactors] = {
     def transactor(access: DatabaseAccess, readOnly: Boolean, poolName: String) = {
       for {
         ce        <- ExecutionContexts.fixedThreadPool[Task](access.poolSize)

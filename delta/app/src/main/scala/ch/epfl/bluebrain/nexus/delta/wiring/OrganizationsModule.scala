@@ -20,6 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
 import monix.execution.Scheduler
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.OrganizationDeleter
 
 /**
   * Organizations module wiring config.
@@ -43,10 +44,15 @@ object OrganizationsModule extends ModuleDef {
       )(clock, uuidF)
   }
 
+  make[OrganizationDeleter].from { (xas: Transactors) =>
+    OrganizationDeleter(xas)
+  }
+
   make[OrganizationsRoutes].from {
     (
         identities: Identities,
         organizations: Organizations,
+        orgDeleter: OrganizationDeleter,
         cfg: AppConfig,
         aclCheck: AclCheck,
         schemeDirectives: DeltaSchemeDirectives,
@@ -54,7 +60,7 @@ object OrganizationsModule extends ModuleDef {
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
     ) =>
-      new OrganizationsRoutes(identities, organizations, aclCheck, schemeDirectives)(
+      new OrganizationsRoutes(identities, organizations, orgDeleter, aclCheck, schemeDirectives)(
         cfg.http.baseUri,
         cfg.organizations.pagination,
         s,

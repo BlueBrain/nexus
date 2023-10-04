@@ -89,6 +89,22 @@ Request
 Response
 :   @@snip [deprecated.json](assets/organizations/deprecated.json)
 
+## Delete
+
+Delete a organization containing no projects. If there is a project, returns 409 Conflict. 
+
+```
+DELETE /v1/orgs/{label}?prune=true
+```
+
+... where
+
+- `{label}`: String - is the user friendly name that identifies this organization.
+
+**Example**
+
+Request
+:   @@snip [delete.sh](assets/organizations/deprecate.sh)
 
 ## Fetch (current version)
 

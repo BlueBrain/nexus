@@ -195,8 +195,8 @@ object Organizations {
 
     command match {
       case c: CreateOrganization    => create(c)
-      case c: UpdateOrganization    => update(c)
-      case c: DeprecateOrganization => deprecate(c)
+      case u: UpdateOrganization    => update(u)
+      case d: DeprecateOrganization => deprecate(d)
     }
   }
 

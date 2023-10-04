@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.CacheConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclsConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClientConfig, HttpClientWorthRetry}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
@@ -19,6 +20,8 @@ trait ConfigFixtures {
   def queryConfig: QueryConfig = QueryConfig(5, RefreshStrategy.Stop)
 
   def eventLogConfig: EventLogConfig = EventLogConfig(queryConfig, 5.seconds)
+
+  def aclsConfig: AclsConfig = AclsConfig(eventLogConfig)
 
   def pagination: PaginationConfig =
     PaginationConfig(
@@ -37,4 +40,6 @@ trait ConfigFixtures {
     1.second,
     RetryStrategyConfig.AlwaysGiveUp
   )
+
+  def logConfig: EventLogConfig = EventLogConfig(queryConfig, 10.seconds)
 }
