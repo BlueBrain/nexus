@@ -102,21 +102,21 @@ class S3StorageSpec extends StorageSpec {
     )
 
     for {
-      _         <- deltaClient.post[Json](s"/storages/$fullId", payload, Coyote) { (_, response) =>
+      _         <- deltaClient.post[Json](s"/storages/$projectRef", payload, Coyote) { (_, response) =>
                      response.status shouldEqual StatusCodes.Created
                    }
-      _         <- deltaClient.get[Json](s"/storages/$fullId/nxv:$storageId", Coyote) { (json, response) =>
-                     val expected = storageResponse(fullId, storageId, "resources/read", "files/write")
+      _         <- deltaClient.get[Json](s"/storages/$projectRef/nxv:$storageId", Coyote) { (json, response) =>
+                     val expected = storageResponse(projectRef, storageId, "resources/read", "files/write")
                      filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
                      response.status shouldEqual StatusCodes.OK
                    }
       _         <- permissionDsl.addPermissions(Permission(storageName, "read"), Permission(storageName, "write"))
-      _         <- deltaClient.post[Json](s"/storages/$fullId", payload2, Coyote) { (_, response) =>
+      _         <- deltaClient.post[Json](s"/storages/$projectRef", payload2, Coyote) { (_, response) =>
                      response.status shouldEqual StatusCodes.Created
                    }
       storageId2 = s"${storageId}2"
-      _         <- deltaClient.get[Json](s"/storages/$fullId/nxv:$storageId2", Coyote) { (json, response) =>
-                     val expected = storageResponse(fullId, storageId2, "s3/read", "s3/write")
+      _         <- deltaClient.get[Json](s"/storages/$projectRef/nxv:$storageId2", Coyote) { (json, response) =>
+                     val expected = storageResponse(projectRef, storageId2, "s3/read", "s3/write")
                        .deepMerge(Json.obj("region" -> Json.fromString("eu-west-2")))
                      filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
                      response.status shouldEqual StatusCodes.OK
@@ -133,7 +133,7 @@ class S3StorageSpec extends StorageSpec {
         "endpoint"  -> s3Endpoint
       )
 
-      deltaClient.post[Json](s"/storages/$fullId", payload, Coyote) { (json, response) =>
+      deltaClient.post[Json](s"/storages/$projectRef", payload, Coyote) { (json, response) =>
         json shouldEqual jsonContentOf("/kg/storages/s3-error.json")
         response.status shouldEqual StatusCodes.BadRequest
       }
@@ -147,21 +147,22 @@ class S3StorageSpec extends StorageSpec {
         "path"      -> Json.fromString(logoKey),
         "mediaType" -> Json.fromString("image/png")
       )
-      val fileId  = s"${config.deltaUri}/resources/$fullId/_/logo.png"
-      deltaClient.put[Json](s"/files/$fullId/logo.png?storage=nxv:${storageId}2", payload, Coyote) { (json, response) =>
-        response.status shouldEqual StatusCodes.Created
-        filterMetadataKeys(json) shouldEqual
-          jsonContentOf(
-            "/kg/files/linking-metadata.json",
-            replacements(
-              Coyote,
-              "projId"         -> fullId,
-              "self"           -> fileSelf(fullId, fileId),
-              "endpoint"       -> s3Endpoint,
-              "endpointBucket" -> s3BucketEndpoint,
-              "key"            -> logoKey
-            ): _*
-          )
+      val fileId  = s"${config.deltaUri}/resources/$projectRef/_/logo.png"
+      deltaClient.put[Json](s"/files/$projectRef/logo.png?storage=nxv:${storageId}2", payload, Coyote) {
+        (json, response) =>
+          response.status shouldEqual StatusCodes.Created
+          filterMetadataKeys(json) shouldEqual
+            jsonContentOf(
+              "/kg/files/linking-metadata.json",
+              replacements(
+                Coyote,
+                "projId"         -> projectRef,
+                "self"           -> fileSelf(projectRef, fileId),
+                "endpoint"       -> s3Endpoint,
+                "endpointBucket" -> s3BucketEndpoint,
+                "key"            -> logoKey
+              ): _*
+            )
       }
     }
   }
@@ -173,7 +174,7 @@ class S3StorageSpec extends StorageSpec {
       "mediaType" -> Json.fromString("image/png")
     )
 
-    deltaClient.put[Json](s"/files/$fullId/nonexistent.png?storage=nxv:${storageId}2", payload, Coyote) {
+    deltaClient.put[Json](s"/files/$projectRef/nonexistent.png?storage=nxv:${storageId}2", payload, Coyote) {
       (json, response) =>
         response.status shouldEqual StatusCodes.BadRequest
         json shouldEqual jsonContentOf(

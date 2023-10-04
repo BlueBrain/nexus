@@ -21,7 +21,6 @@ val akkaCorsVersion         = "1.2.0"
 val akkaVersion             = "2.6.21"
 val alpakkaVersion          = "3.0.4"
 val apacheCompressVersion   = "1.24.0"
-val apacheIoVersion         = "1.3.2"
 val awsSdkVersion           = "2.17.184"
 val byteBuddyAgentVersion   = "1.10.17"
 val betterMonadicForVersion = "0.3.1"
@@ -77,7 +76,6 @@ lazy val alpakkaFile        = "com.lightbend.akka"           %% "akka-stream-alp
 lazy val alpakkaSse         = "com.lightbend.akka"           %% "akka-stream-alpakka-sse"  % alpakkaVersion
 lazy val alpakkaS3          = "com.lightbend.akka"           %% "akka-stream-alpakka-s3"   % alpakkaVersion
 lazy val apacheCompress     = "org.apache.commons"            % "commons-compress"         % apacheCompressVersion
-lazy val apacheIo           = "org.apache.commons"            % "commons-io"               % apacheIoVersion
 lazy val awsSdk             = "software.amazon.awssdk"        % "s3"                       % awsSdkVersion
 lazy val betterMonadicFor   = "com.olegpy"                   %% "better-monadic-for"       % betterMonadicForVersion
 lazy val byteBuddyAgent     = "net.bytebuddy"                 % "byte-buddy-agent"         % byteBuddyAgentVersion
@@ -206,6 +204,8 @@ lazy val kernel = project
   .settings(shared, compilation, coverage, release, assertJavaVersion)
   .settings(
     libraryDependencies  ++= Seq(
+      akkaActorTyped, // Needed to create content type
+      akkaHttpCore,
       caffeine,
       catsRetry,
       circeCore,
@@ -216,6 +216,7 @@ lazy val kernel = project
       log4cats,
       pureconfig,
       scalaLogging,
+      munit     % Test,
       scalaTest % Test
     ),
     addCompilerPlugin(kindProjector),
@@ -734,6 +735,7 @@ lazy val storage = project
     servicePackaging,
     coverageMinimumStmtTotal := 75
   )
+  .dependsOn(kernel)
   .settings(cargo := {
     import scala.sys.process._
 
@@ -753,10 +755,8 @@ lazy val storage = project
     buildInfoKeys            := Seq[BuildInfoKey](version),
     buildInfoPackage         := "ch.epfl.bluebrain.nexus.storage.config",
     Docker / packageName     := "nexus-storage",
-    javaSpecificationVersion := "1.8",
     libraryDependencies     ++= Seq(
       apacheCompress,
-      apacheIo,
       akkaHttp,
       akkaHttpCirce,
       akkaStream,
@@ -773,6 +773,7 @@ lazy val storage = project
       akkaHttpTestKit % Test,
       akkaTestKit     % Test,
       mockito         % Test,
+      munit           % Test,
       scalaTest       % Test
     ),
     cleanFiles              ++= Seq(

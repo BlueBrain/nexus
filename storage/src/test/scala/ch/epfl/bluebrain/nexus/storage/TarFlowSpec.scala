@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.storage
 
 import java.io.ByteArrayInputStream
 import java.nio.file.{Files, Path, Paths}
-
 import akka.actor.ActorSystem
 import akka.stream.alpakka.file.scaladsl.Directory
 import akka.stream.scaladsl.{FileIO, Source}
@@ -10,12 +9,12 @@ import akka.testkit.TestKit
 import akka.util.ByteString
 import ch.epfl.bluebrain.nexus.storage.utils.{EitherValues, IOEitherValues, Randomness}
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
-import org.apache.commons.io.FileUtils
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{BeforeAndAfterAll, Inspectors, OptionValues}
 
 import scala.annotation.tailrec
+import scala.reflect.io.{Directory => ScalaDirectory}
 
 class TarFlowSpec
     extends TestKit(ActorSystem("TarFlowSpec"))
@@ -34,7 +33,7 @@ class TarFlowSpec
 
   override def afterAll(): Unit = {
     super.afterAll()
-    FileUtils.cleanDirectory(basePath.toFile)
+    ScalaDirectory(basePath.toFile).deleteRecursively()
     ()
   }
 

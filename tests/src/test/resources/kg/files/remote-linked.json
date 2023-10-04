@@ -13,7 +13,9 @@
     "_value": ""
   },
   "_filename": "{{filename}}",
-  "_mediaType": "text/plain",
+  {{#if mediaType}}
+  "_mediaType": "{{mediaType}}",
+  {{/if}}
   "_origin": "Storage",
   "_incoming": "{{self}}/incoming",
   "_outgoing": "{{self}}/outgoing",
