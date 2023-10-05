@@ -42,10 +42,10 @@ object TokenStore {
   def apply(xas: Transactors)(implicit clock: Clock[IO]): TokenStore = {
     new TokenStore {
       override def get(user: Identity.User): IO[Option[OAuthToken]] =
-          sql"SELECT token_value FROM jira_tokens WHERE realm = ${user.realm.value} and subject = ${user.subject}"
-            .query[Json]
-            .option
-            .transact(xas.readCE)
+        sql"SELECT token_value FROM jira_tokens WHERE realm = ${user.realm.value} and subject = ${user.subject}"
+          .query[Json]
+          .option
+          .transact(xas.readCE)
           .flatMap {
             case Some(token) =>
               IO.fromEither(token.as[OAuthToken]).map(Some(_))
