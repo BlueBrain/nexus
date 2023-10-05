@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.jira
 
 import cats.effect.{Clock, IO}
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
@@ -43,12 +42,10 @@ object TokenStore {
   def apply(xas: Transactors)(implicit clock: Clock[IO]): TokenStore = {
     new TokenStore {
       override def get(user: Identity.User): IO[Option[OAuthToken]] =
-        toCatsIO(
-          sql"SELECT token_value FROM jira_tokens WHERE realm = ${user.realm.value} and subject = ${user.subject}"
-            .query[Json]
-            .option
-            .transact(xas.read)
-        )
+        sql"SELECT token_value FROM jira_tokens WHERE realm = ${user.realm.value} and subject = ${user.subject}"
+          .query[Json]
+          .option
+          .transact(xas.readCE)
           .flatMap {
             case Some(token) =>
               IO.fromEither(token.as[OAuthToken]).map(Some(_))
@@ -60,7 +57,7 @@ object TokenStore {
           sql""" INSERT INTO jira_tokens(realm, subject, instant, token_value)
                    | VALUES(${user.realm.value}, ${user.subject}, $now, ${oauthToken.asJson})
                    | ON CONFLICT (realm, subject) DO UPDATE SET instant = EXCLUDED.instant, token_value = EXCLUDED.token_value
-              """.stripMargin.update.run.transact(xas.write).void
+              """.stripMargin.update.run.transact(xas.writeCE).void
         }
     }
   }
