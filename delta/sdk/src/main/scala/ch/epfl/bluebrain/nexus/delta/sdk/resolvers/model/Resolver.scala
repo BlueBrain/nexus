@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model
 
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
@@ -104,7 +105,7 @@ object Resolver {
   def shift(resolvers: Resolvers)(implicit baseUri: BaseUri): Shift =
     ResourceShift.apply[ResolverState, Resolver](
       Resolvers.entityType,
-      (ref, project) => resolvers.fetch(IdSegmentRef(ref), project),
+      (ref, project) => resolvers.fetch(IdSegmentRef(ref), project).toBIO[ResolverRejection],
       state => state.toResource,
       value => JsonLdContent(value, value.value.source, None)
     )

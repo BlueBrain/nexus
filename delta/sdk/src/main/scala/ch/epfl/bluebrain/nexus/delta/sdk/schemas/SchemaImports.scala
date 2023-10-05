@@ -1,26 +1,28 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.schemas
 
 import cats.data.NonEmptyList
+import cats.effect.{ContextShift, IO}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.owl
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
+import ch.epfl.bluebrain.nexus.delta.sdk.Resolve
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.Resource
-import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaRejection.InvalidSchemaResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.{Schema, SchemaRejection}
-import ch.epfl.bluebrain.nexus.delta.sdk.Resolve
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.{Resolvers, ResourceResolution}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.Resource
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaRejection.InvalidSchemaResolution
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
-import monix.bio.IO
 
 /**
   * Resolves the OWL imports from a Schema
   */
-final class SchemaImports(resolveSchema: Resolve[Schema], resolveResource: Resolve[Resource]) { self =>
+final class SchemaImports(resolveSchema: Resolve[Schema], resolveResource: Resolve[Resource])(implicit
+    contextShift: ContextShift[IO]
+) { self =>
 
   /**
     * Resolve the ''imports'' from the passed ''expanded'' document and recursively from the resolved documents.
@@ -36,7 +38,7 @@ final class SchemaImports(resolveSchema: Resolve[Schema], resolveResource: Resol
     */
   def resolve(id: Iri, projectRef: ProjectRef, expanded: ExpandedJsonLd)(implicit
       caller: Caller
-  ): IO[SchemaRejection, NonEmptyList[ExpandedJsonLd]] = {
+  ): IO[NonEmptyList[ExpandedJsonLd]] = {
 
     def detectNonOntology(resourceSuccess: Map[ResourceRef, Resource]): Set[ResourceRef] =
       resourceSuccess.collect {
@@ -47,14 +49,14 @@ final class SchemaImports(resolveSchema: Resolve[Schema], resolveResource: Resol
         schemaRejections: Map[ResourceRef, ResourceResolutionReport],
         resourceRejections: Map[ResourceRef, ResourceResolutionReport],
         nonOntologies: Set[ResourceRef]
-    ): IO[InvalidSchemaResolution, Unit] =
-      IO.when(resourceRejections.nonEmpty || nonOntologies.nonEmpty)(
-        IO.raiseError(InvalidSchemaResolution(id, schemaRejections, resourceRejections, nonOntologies))
+    ): IO[Unit] =
+      IO.raiseWhen(resourceRejections.nonEmpty || nonOntologies.nonEmpty)(
+        InvalidSchemaResolution(id, schemaRejections, resourceRejections, nonOntologies)
       )
 
     def lookupFromSchemasAndResources(
         toResolve: Set[ResourceRef]
-    ): IO[InvalidSchemaResolution, Iterable[ExpandedJsonLd]] =
+    ): IO[Iterable[ExpandedJsonLd]] =
       for {
         (schemaRejections, schemaSuccess)     <- lookupInBatch(toResolve, resolveSchema(_, projectRef, caller))
         resourcesToResolve                     = toResolve -- schemaSuccess.keySet
@@ -74,14 +76,22 @@ final class SchemaImports(resolveSchema: Resolve[Schema], resolveResource: Resol
       }
   }
 
-  private def lookupInBatch[A](toResolve: Set[ResourceRef], fetch: ResourceRef => IO[ResourceResolutionReport, A]) =
+  private def lookupInBatch[A](
+      toResolve: Set[ResourceRef],
+      fetch: ResourceRef => IO[Either[ResourceResolutionReport, A]]
+  ): IO[(Map[ResourceRef, ResourceResolutionReport], Map[ResourceRef, A])] =
     toResolve.toList
-      .parTraverse(ref => fetch(ref).bimap(ref -> _, ref -> _).attempt)
+      .parTraverse { ref => fetch(ref).map(_.bimap(ref -> _, ref -> _)) }
       .map(_.partitionMap(identity))
       .map { case (rejections, successes) => rejections.toMap -> successes.toMap }
 }
 
 object SchemaImports {
+
+  final def alwaysFail(implicit contextShift: ContextShift[IO]) = new SchemaImports(
+    (_, _, _) => IO.pure(Left(ResourceResolutionReport())),
+    (_, _, _) => IO.pure(Left(ResourceResolutionReport()))
+  )
 
   /**
     * Construct a [[SchemaImports]].
@@ -91,17 +101,17 @@ object SchemaImports {
       resolvers: Resolvers,
       schemas: Schemas,
       resources: Resources
-  ): SchemaImports = {
+  )(implicit contextShift: ContextShift[IO]): SchemaImports = {
     def resolveSchema(ref: ResourceRef, projectRef: ProjectRef, caller: Caller)   =
       ResourceResolution
         .schemaResource(aclCheck, resolvers, schemas)
         .resolve(ref, projectRef)(caller)
-        .map(_.value)
+        .map(_.map(_.value))
     def resolveResource(ref: ResourceRef, projectRef: ProjectRef, caller: Caller) =
       ResourceResolution
         .dataResource(aclCheck, resolvers, resources)
         .resolve(ref, projectRef)(caller)
-        .map(_.value)
+        .map(_.map(_.value))
     new SchemaImports(resolveSchema, resolveResource)
   }
 

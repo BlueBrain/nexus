@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.resolvers
 
 import cats.data.NonEmptyList
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
@@ -11,7 +12,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.ResolverGen.{resolverResourc
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContextDummy, Projects}
@@ -27,8 +27,9 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Authenticated, Gro
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues}
-import monix.bio.{IO, UIO}
+import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
+import ch.epfl.bluebrain.nexus.testkit.ce.{CatsIOValues, IOFixedClock}
+import monix.bio.UIO
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
 
@@ -36,8 +37,8 @@ import java.util.UUID
 
 class ResolversImplSpec
     extends DoobieScalaTestFixture
+    with CatsIOValues
     with Matchers
-    with IOValues
     with IOFixedClock
     with CancelAfterFailure
     with CirceLiteral
@@ -63,10 +64,7 @@ class ResolversImplSpec
       contexts.resolversMetadata -> jsonContentOf("/contexts/resolvers-metadata.json").topContextValueOrEmpty
     )
 
-  private val resolverContextResolution: ResolverContextResolution = new ResolverContextResolution(
-    res,
-    (_, _, _) => IO.raiseError(ResourceResolutionReport())
-  )
+  private val resolverContextResolution: ResolverContextResolution = ResolverContextResolution(res)
 
   private val org               = Label.unsafe("org")
   private val apiMappings       = ApiMappings("nxv" -> nxv.base, "Person" -> schema.Person)
@@ -91,7 +89,7 @@ class ResolversImplSpec
   private lazy val resolvers: Resolvers = ResolversImpl(
     fetchContext,
     resolverContextResolution,
-    ResolversConfig(eventLogConfig, pagination, defaults),
+    ResolversConfig(eventLogConfig, defaults),
     xas
   )
 
@@ -210,9 +208,7 @@ class ResolversImplSpec
         ) { case (id, value) =>
           val payloadId = nxv + "resolver-fail"
           val payload   = sourceFrom(payloadId, value)
-          resolvers
-            .create(id, projectRef, payload)
-            .rejected shouldEqual UnexpectedResolverId(id, payloadId)
+          resolvers.create(id, projectRef, payload).rejected(UnexpectedResolverId(id, payloadId))
         }
       }
 
@@ -224,14 +220,14 @@ class ResolversImplSpec
           )
         ) { case (id, value) =>
           val payload = sourceWithoutId(value)
-          resolvers.create(id, projectRef, payload).rejected shouldEqual InvalidResolverId(id)
+          resolvers.create(id, projectRef, payload).rejected(InvalidResolverId(id))
         }
       }
 
       "fail if priority already exists" in {
         resolvers
           .create(nxv + "in-project-other", projectRef, inProjectValue)
-          .rejected shouldEqual PriorityAlreadyExists(projectRef, nxv + "in-project", inProjectValue.priority)
+          .rejected(PriorityAlreadyExists(projectRef, nxv + "in-project", inProjectValue.priority))
       }
 
       "fail if it already exists" in {
@@ -245,15 +241,10 @@ class ResolversImplSpec
           val payload = sourceWithoutId(value)
           resolvers
             .create(id.toString, projectRef, payload)
-            .rejected shouldEqual ResourceAlreadyExists(id, projectRef)
+            .rejected(ResourceAlreadyExists(id, projectRef))
 
           val payloadWithId = sourceFrom(id, value)
-          resolvers
-            .create(projectRef, payloadWithId)
-            .rejected shouldEqual ResourceAlreadyExists(
-            id,
-            projectRef
-          )
+          resolvers.create(projectRef, payloadWithId).rejected(ResourceAlreadyExists(id, projectRef))
         }
       }
 
@@ -302,7 +293,7 @@ class ResolversImplSpec
         val payload      = sourceWithoutId(invalidValue)
         resolvers
           .create(nxv + "cross-project-no-id", projectRef, payload)
-          .rejected shouldEqual NoIdentities
+          .rejected(NoIdentities)
       }
 
       "fail if some provided identities don't belong to the caller for a cross-project resolver" in {
@@ -315,7 +306,7 @@ class ResolversImplSpec
         val payload      = sourceWithoutId(invalidValue)
         resolvers
           .create(nxv + "cross-project-miss-id", projectRef, payload)
-          .rejected shouldEqual InvalidIdentities(Set(alice.subject))
+          .rejected(InvalidIdentities(Set(alice.subject)))
       }
 
       "fail if mandatory values in source are missing" in {
@@ -376,7 +367,7 @@ class ResolversImplSpec
           val payload = sourceWithoutId(value)
           resolvers
             .update(id, projectRef, 1, payload)
-            .rejected shouldEqual ResolverNotFound(id, projectRef)
+            .rejected(ResolverNotFound(id, projectRef))
         }
       }
 
@@ -390,7 +381,7 @@ class ResolversImplSpec
           val payload = sourceWithoutId(value)
           resolvers
             .update(id, projectRef, 5, payload)
-            .rejected shouldEqual IncorrectRev(5, 2)
+            .rejected(IncorrectRev(5, 2))
         }
       }
 
@@ -405,7 +396,7 @@ class ResolversImplSpec
           val payload   = sourceFrom(payloadId, value)
           resolvers
             .update(id, projectRef, 2, payload)
-            .rejected shouldEqual UnexpectedResolverId(id = id, payloadId = payloadId)
+            .rejected(UnexpectedResolverId(id = id, payloadId = payloadId))
         }
       }
 
@@ -442,7 +433,7 @@ class ResolversImplSpec
         val payload      = sourceWithoutId(invalidValue)
         resolvers
           .update(nxv + "cross-project", projectRef, 2, payload)
-          .rejected shouldEqual NoIdentities
+          .rejected(NoIdentities)
       }
 
       "fail if some provided identities don't belong to the caller for a cross-project resolver" in {
@@ -454,7 +445,7 @@ class ResolversImplSpec
         val payload      = sourceWithoutId(invalidValue)
         resolvers
           .update(nxv + "cross-project", projectRef, 2, payload)
-          .rejected shouldEqual InvalidIdentities(Set(alice.subject))
+          .rejected(InvalidIdentities(Set(alice.subject)))
       }
     }
 
@@ -488,7 +479,7 @@ class ResolversImplSpec
             nxv + "cross-project-xxx"
           )
         ) { id =>
-          resolvers.tag(id, projectRef, tag, 1, 2).rejected shouldEqual ResolverNotFound(id, projectRef)
+          resolvers.tag(id, projectRef, tag, 1, 2).rejected(ResolverNotFound(id, projectRef))
         }
       }
 
@@ -499,7 +490,7 @@ class ResolversImplSpec
             nxv + "cross-project"
           )
         ) { id =>
-          resolvers.tag(id, projectRef, tag, 1, 21).rejected shouldEqual IncorrectRev(21, 3)
+          resolvers.tag(id, projectRef, tag, 1, 21).rejected(IncorrectRev(21, 3))
         }
       }
 
@@ -510,7 +501,7 @@ class ResolversImplSpec
             nxv + "cross-project"
           )
         ) { id =>
-          resolvers.tag(id, projectRef, tag, 20, 3).rejected shouldEqual RevisionNotFound(20, 3)
+          resolvers.tag(id, projectRef, tag, 20, 3).rejected(RevisionNotFound(20, 3))
         }
       }
 
@@ -565,7 +556,7 @@ class ResolversImplSpec
             nxv + "cross-project-xxx"
           )
         ) { id =>
-          resolvers.deprecate(id, projectRef, 3).rejected shouldEqual ResolverNotFound(id, projectRef)
+          resolvers.deprecate(id, projectRef, 3).rejected(ResolverNotFound(id, projectRef))
         }
       }
 
@@ -576,7 +567,7 @@ class ResolversImplSpec
             nxv + "cross-project"
           )
         ) { id =>
-          resolvers.deprecate(id, projectRef, 3).rejected shouldEqual IncorrectRev(3, 4)
+          resolvers.deprecate(id, projectRef, 3).rejected(IncorrectRev(3, 4))
         }
       }
 
@@ -609,7 +600,7 @@ class ResolversImplSpec
             nxv + "cross-project"
           )
         ) { id =>
-          resolvers.deprecate(id, projectRef, 4).rejected shouldEqual ResolverIsDeprecated(id)
+          resolvers.deprecate(id, projectRef, 4).rejected(ResolverIsDeprecated(id))
         }
       }
 
@@ -622,7 +613,7 @@ class ResolversImplSpec
         ) { case (id, value) =>
           resolvers
             .update(id, projectRef, 4, sourceWithoutId(value))
-            .rejected shouldEqual ResolverIsDeprecated(id)
+            .rejected(ResolverIsDeprecated(id))
         }
       }
 
@@ -728,14 +719,12 @@ class ResolversImplSpec
       }
 
       "fail if revision does not exist" in {
-        resolvers.fetch(IdSegmentRef(nxv + "in-project", 30), projectRef).rejected shouldEqual
-          RevisionNotFound(30, 5)
+        resolvers.fetch(IdSegmentRef(nxv + "in-project", 30), projectRef).rejected(RevisionNotFound(30, 5))
       }
 
       "fail if tag does not exist" in {
         val unknownTag = UserTag.unsafe("xxx")
-        resolvers.fetch(IdSegmentRef(nxv + "in-project", unknownTag), projectRef).rejected shouldEqual
-          TagNotFound(unknownTag)
+        resolvers.fetch(IdSegmentRef(nxv + "in-project", unknownTag), projectRef).rejected(TagNotFound(unknownTag))
       }
     }
 

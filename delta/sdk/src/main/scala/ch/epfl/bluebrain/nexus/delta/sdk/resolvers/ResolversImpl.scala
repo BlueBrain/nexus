@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resolvers
 
-import cats.effect.Clock
+import cats.effect.{Clock, IO}
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
@@ -27,7 +28,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, ProjectRef}
 import doobie.implicits._
 import io.circe.Json
-import monix.bio.{IO, UIO}
 
 final class ResolversImpl private (
     log: ResolversLog,
@@ -40,7 +40,7 @@ final class ResolversImpl private (
   override def create(
       projectRef: ProjectRef,
       source: Json
-  )(implicit caller: Caller): IO[ResolverRejection, ResolverResource] = {
+  )(implicit caller: Caller): IO[ResolverResource] = {
     for {
       pc                   <- fetchContext.onCreate(projectRef)
       (iri, resolverValue) <- sourceDecoder(projectRef, pc, source)
@@ -52,7 +52,7 @@ final class ResolversImpl private (
       id: IdSegment,
       projectRef: ProjectRef,
       source: Json
-  )(implicit caller: Caller): IO[ResolverRejection, ResolverResource] = {
+  )(implicit caller: Caller): IO[ResolverResource] = {
     for {
       pc            <- fetchContext.onCreate(projectRef)
       iri           <- expandIri(id, pc)
@@ -65,7 +65,7 @@ final class ResolversImpl private (
       id: IdSegment,
       projectRef: ProjectRef,
       resolverValue: ResolverValue
-  )(implicit caller: Caller): IO[ResolverRejection, ResolverResource] = {
+  )(implicit caller: Caller): IO[ResolverResource] = {
     for {
       pc    <- fetchContext.onCreate(projectRef)
       iri   <- expandIri(id, pc)
@@ -79,7 +79,7 @@ final class ResolversImpl private (
       projectRef: ProjectRef,
       rev: Int,
       source: Json
-  )(implicit caller: Caller): IO[ResolverRejection, ResolverResource] = {
+  )(implicit caller: Caller): IO[ResolverResource] = {
     for {
       pc            <- fetchContext.onModify(projectRef)
       iri           <- expandIri(id, pc)
@@ -95,7 +95,7 @@ final class ResolversImpl private (
       resolverValue: ResolverValue
   )(implicit
       caller: Caller
-  ): IO[ResolverRejection, ResolverResource] = {
+  ): IO[ResolverResource] = {
     for {
       pc    <- fetchContext.onModify(projectRef)
       iri   <- expandIri(id, pc)
@@ -112,7 +112,7 @@ final class ResolversImpl private (
       rev: Int
   )(implicit
       subject: Identity.Subject
-  ): IO[ResolverRejection, ResolverResource] = {
+  ): IO[ResolverResource] = {
     for {
       pc  <- fetchContext.onModify(projectRef)
       iri <- expandIri(id, pc)
@@ -124,7 +124,7 @@ final class ResolversImpl private (
       id: IdSegment,
       projectRef: ProjectRef,
       rev: Int
-  )(implicit subject: Identity.Subject): IO[ResolverRejection, ResolverResource] = {
+  )(implicit subject: Identity.Subject): IO[ResolverResource] = {
     for {
       pc  <- fetchContext.onModify(projectRef)
       iri <- expandIri(id, pc)
@@ -132,7 +132,7 @@ final class ResolversImpl private (
     } yield res
   }.span("deprecateResolver")
 
-  override def fetch(id: IdSegmentRef, projectRef: ProjectRef): IO[ResolverRejection, ResolverResource] = {
+  override def fetch(id: IdSegmentRef, projectRef: ProjectRef): IO[ResolverResource] = {
     for {
       pc      <- fetchContext.onRead(projectRef)
       iri     <- expandIri(id.value, pc)
@@ -151,7 +151,7 @@ final class ResolversImpl private (
       pagination: FromPagination,
       params: ResolverSearchParams,
       ordering: Ordering[ResolverResource]
-  ): UIO[UnscoredSearchResults[ResolverResource]] = {
+  ): IO[UnscoredSearchResults[ResolverResource]] = {
     val scope = params.project.fold[Scope](Scope.Root)(ref => Scope.Project(ref))
     SearchResults(
       log.currentStates(scope, _.toResource).evalFilter(params.matches),
@@ -160,7 +160,7 @@ final class ResolversImpl private (
     ).span("listResolvers")
   }
 
-  private def eval(cmd: ResolverCommand): IO[ResolverRejection, ResolverResource] =
+  private def eval(cmd: ResolverCommand) =
     log.evaluate(cmd.project, cmd.id, cmd).map(_._2.toResource)
 }
 
@@ -176,13 +176,12 @@ object ResolversImpl {
       contextResolution: ResolverContextResolution,
       config: ResolversConfig,
       xas: Transactors
-  )(implicit api: JsonLdApi, clock: Clock[UIO], uuidF: UUIDF): Resolvers = {
-    def priorityAlreadyExists(ref: ProjectRef, self: Iri, priority: Priority): IO[PriorityAlreadyExists, Unit] = {
+  )(implicit api: JsonLdApi, clock: Clock[IO], uuidF: UUIDF): Resolvers = {
+    def priorityAlreadyExists(ref: ProjectRef, self: Iri, priority: Priority): IO[Unit] = {
       sql"SELECT id FROM scoped_states WHERE type = ${Resolvers.entityType} AND org = ${ref.organization} AND project = ${ref.project}  AND id != $self AND (value->'value'->'priority')::int = ${priority.value} "
         .query[Iri]
         .option
-        .transact(xas.read)
-        .hideErrors
+        .transact(xas.readCE)
         .flatMap {
           case Some(other) => IO.raiseError(PriorityAlreadyExists(ref, other, priority))
           case None        => IO.unit

@@ -10,11 +10,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen, Sc
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.ValidationResult._
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{Resource, ResourceGenerationResult, ResourceRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{InvalidResource, ProjectContextRejection, ReservedResourceId}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{Resource, ResourceGenerationResult, ResourceRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Revision
 import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, TestHelpers}
@@ -41,10 +41,7 @@ class ResourcesTrialSuite extends BioSuite with ValidateResourceFixture with Tes
 
   private val fetchResourceFail = IO.terminate(new IllegalStateException("Should not be attempt to fetch a resource"))
 
-  private val resolverContextResolution: ResolverContextResolution = new ResolverContextResolution(
-    res,
-    (_, _, _) => fetchResourceFail
-  )
+  private val resolverContextResolution: ResolverContextResolution = ResolverContextResolution(res)
 
   private val am             = ApiMappings(Map("nxv" -> nxv.base, "Person" -> schema.Person))
   private val allApiMappings = am + Resources.mappings

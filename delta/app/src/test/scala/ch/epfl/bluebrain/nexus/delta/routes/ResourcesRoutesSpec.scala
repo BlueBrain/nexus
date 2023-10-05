@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.MediaTypes.`text/html`
 import akka.http.scaladsl.model.headers.{Accept, Location, OAuth2BearerToken}
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas}
@@ -22,7 +23,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.FetchResource
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.NexusSource.DecodingOption
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.{Resources, ResourcesConfig, ResourcesImpl, ValidateResource}
@@ -32,7 +32,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.testkit.bio.IOFromMap
 import io.circe.{Json, Printer}
-import monix.bio.{IO, UIO}
 
 import java.util.UUID
 
@@ -84,19 +83,16 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap {
   private val aclCheck = AclSimpleCheck().accepted
 
   private val fetchSchema: (ResourceRef, ProjectRef) => FetchResource[Schema] = {
-    case (ref, _) if ref.iri == schema2.id => UIO.some(SchemaGen.resourceFor(schema2, deprecated = true))
-    case (ref, _) if ref.iri == schema1.id => UIO.some(SchemaGen.resourceFor(schema1))
-    case _                                 => UIO.none
+    case (ref, _) if ref.iri == schema2.id => IO.pure(Some(SchemaGen.resourceFor(schema2, deprecated = true)))
+    case (ref, _) if ref.iri == schema1.id => IO.pure(Some(SchemaGen.resourceFor(schema1)))
+    case _                                 => IO.none
   }
 
   private val validator: ValidateResource                          = ValidateResource(
     ResourceResolutionGen.singleInProject(projectRef, fetchSchema)
   )
   private val fetchContext                                         = FetchContextDummy(List(project.value), ProjectContextRejection)
-  private val resolverContextResolution: ResolverContextResolution = new ResolverContextResolution(
-    rcr,
-    (_, _, _) => IO.raiseError(ResourceResolutionReport())
-  )
+  private val resolverContextResolution: ResolverContextResolution = ResolverContextResolution(rcr)
 
   private def routesWithDecodingOption(implicit decodingOption: DecodingOption) = {
     val resources = ResourcesImpl(

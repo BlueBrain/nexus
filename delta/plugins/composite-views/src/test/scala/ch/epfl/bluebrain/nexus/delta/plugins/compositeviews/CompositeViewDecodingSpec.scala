@@ -17,11 +17,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, TestHelpers}
-import monix.bio.IO
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{Inspectors, OptionValues}
@@ -52,8 +50,7 @@ class CompositeViewDecodingSpec
   val uuid                          = UUID.randomUUID()
   implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
 
-  val resolverContext: ResolverContextResolution =
-    new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
+  val resolverContext: ResolverContextResolution = ResolverContextResolution(rcr)
   private val decoder                            = CompositeViewFieldsJsonLdSourceDecoder(uuidF, resolverContext, 1.minute)
 
   val query1 =

@@ -1,6 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resources
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -25,7 +27,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues}
-import monix.bio.UIO
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
 
@@ -70,9 +71,9 @@ class ResourcesImplSpec
   private val schema2      = SchemaGen.schema(schema.Person, project.ref, schemaSource.removeKeys(keywords.id))
 
   private val fetchSchema: (ResourceRef, ProjectRef) => FetchResource[Schema] = {
-    case (ref, _) if ref.iri == schema2.id => UIO.some(SchemaGen.resourceFor(schema2, deprecated = true))
-    case (ref, _) if ref.iri == schema1.id => UIO.some(SchemaGen.resourceFor(schema1))
-    case _                                 => UIO.none
+    case (ref, _) if ref.iri == schema2.id => IO.pure(Some(SchemaGen.resourceFor(schema2, deprecated = true)))
+    case (ref, _) if ref.iri == schema1.id => IO.pure(Some(SchemaGen.resourceFor(schema1)))
+    case _                                 => IO.none
   }
   private val resourceResolution: ResourceResolution[Schema]                  =
     ResourceResolutionGen.singleInProject(projectRef, fetchSchema)
@@ -89,7 +90,7 @@ class ResourcesImplSpec
 
   private val resolverContextResolution: ResolverContextResolution = new ResolverContextResolution(
     res,
-    (r, p, _) => resources.fetch(r, p).bimap(_ => ResourceResolutionReport(), identity)
+    (r, p, _) => resources.fetch(r, p).bimap(_ => ResourceResolutionReport(), identity).attempt
   )
 
   private lazy val resources: Resources = ResourcesImpl(

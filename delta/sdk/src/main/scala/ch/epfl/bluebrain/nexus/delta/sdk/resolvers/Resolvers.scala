@@ -1,6 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resolvers
 
-import cats.effect.Clock
+import cats.effect.{Clock, IO}
+import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
+import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
@@ -8,7 +11,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.ResolverResource
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
-import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, IdSegmentRef, ResourceToSchemaMappings, Tags}
@@ -17,7 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.IdentityResolution.{ProvidedIdentities, UseCurrentCaller}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverCommand.{CreateResolver, DeprecateResolver, TagResolver, UpdateResolver}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverEvent.{ResolverCreated, ResolverDeprecated, ResolverTagAdded, ResolverUpdated}
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.{DifferentResolverType, IncorrectRev, InvalidIdentities, InvalidResolverId, NoIdentities, PriorityAlreadyExists, ResolverIsDeprecated, ResolverNotFound, ResourceAlreadyExists, RevisionNotFound}
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.{DifferentResolverType, IncorrectRev, InvalidIdentities, InvalidResolverId, NoIdentities, ResolverIsDeprecated, ResolverNotFound, ResourceAlreadyExists, RevisionNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverValue.{CrossProjectValue, InProjectValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
@@ -27,7 +29,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{ScopedEntityDefinition, StateMachine}
 import io.circe.Json
-import monix.bio.{IO, UIO}
 
 /**
   * Operations for handling resolvers
@@ -42,9 +43,7 @@ trait Resolvers {
     * @param source
     *   the payload to create the resolver
     */
-  def create(projectRef: ProjectRef, source: Json)(implicit
-      caller: Caller
-  ): IO[ResolverRejection, ResolverResource]
+  def create(projectRef: ProjectRef, source: Json)(implicit caller: Caller): IO[ResolverResource]
 
   /**
     * Create a new resolver with the provided id
@@ -56,9 +55,7 @@ trait Resolvers {
     * @param source
     *   the payload to create the resolver
     */
-  def create(id: IdSegment, projectRef: ProjectRef, source: Json)(implicit
-      caller: Caller
-  ): IO[ResolverRejection, ResolverResource]
+  def create(id: IdSegment, projectRef: ProjectRef, source: Json)(implicit caller: Caller): IO[ResolverResource]
 
   /**
     * Create a new resolver with the provided id
@@ -71,7 +68,7 @@ trait Resolvers {
     */
   def create(id: IdSegment, projectRef: ProjectRef, resolverValue: ResolverValue)(implicit
       caller: Caller
-  ): IO[ResolverRejection, ResolverResource]
+  ): IO[ResolverResource]
 
   /**
     * Update an existing resolver
@@ -86,7 +83,7 @@ trait Resolvers {
     */
   def update(id: IdSegment, projectRef: ProjectRef, rev: Int, source: Json)(implicit
       caller: Caller
-  ): IO[ResolverRejection, ResolverResource]
+  ): IO[ResolverResource]
 
   /**
     * Update an existing resolver
@@ -101,7 +98,7 @@ trait Resolvers {
     */
   def update(id: IdSegment, projectRef: ProjectRef, rev: Int, resolverValue: ResolverValue)(implicit
       caller: Caller
-  ): IO[ResolverRejection, ResolverResource]
+  ): IO[ResolverResource]
 
   /**
     * Add a tag to an existing resolver
@@ -119,7 +116,7 @@ trait Resolvers {
     */
   def tag(id: IdSegment, projectRef: ProjectRef, tag: UserTag, tagRev: Int, rev: Int)(implicit
       subject: Subject
-  ): IO[ResolverRejection, ResolverResource]
+  ): IO[ResolverResource]
 
   /**
     * Deprecate an existing resolver
@@ -130,9 +127,7 @@ trait Resolvers {
     * @param rev
     *   the ResolverState revision of the resolver
     */
-  def deprecate(id: IdSegment, projectRef: ProjectRef, rev: Int)(implicit
-      subject: Subject
-  ): IO[ResolverRejection, ResolverResource]
+  def deprecate(id: IdSegment, projectRef: ProjectRef, rev: Int)(implicit subject: Subject): IO[ResolverResource]
 
   /**
     * Fetch the resolver at the requested version
@@ -141,7 +136,7 @@ trait Resolvers {
     * @param projectRef
     *   the project where the resolver belongs
     */
-  def fetch(id: IdSegmentRef, projectRef: ProjectRef): IO[ResolverRejection, ResolverResource]
+  def fetch(id: IdSegmentRef, projectRef: ProjectRef): IO[ResolverResource]
 
   /**
     * Fetches and validate the resolver, rejecting if the project does not exists or if it is deprecated
@@ -150,7 +145,7 @@ trait Resolvers {
     * @param projectRef
     *   the project reference
     */
-  def fetchActiveResolver(id: Iri, projectRef: ProjectRef): IO[ResolverRejection, Resolver] =
+  def fetchActiveResolver(id: Iri, projectRef: ProjectRef): IO[Resolver] =
     fetch(id, projectRef).flatMap(res => IO.raiseWhen(res.deprecated)(ResolverIsDeprecated(id)).as(res.value))
 
   /**
@@ -169,7 +164,7 @@ trait Resolvers {
       pagination: FromPagination,
       params: ResolverSearchParams,
       ordering: Ordering[ResolverResource]
-  ): UIO[UnscoredSearchResults[ResolverResource]]
+  ): IO[UnscoredSearchResults[ResolverResource]]
 
   /**
     * List resolvers within a project
@@ -188,13 +183,13 @@ trait Resolvers {
       pagination: FromPagination,
       params: ResolverSearchParams,
       ordering: Ordering[ResolverResource]
-  ): UIO[UnscoredSearchResults[ResolverResource]] =
+  ): IO[UnscoredSearchResults[ResolverResource]] =
     list(pagination, params.copy(project = Some(projectRef)), ordering)
 }
 
 object Resolvers {
 
-  type ValidatePriority = (ProjectRef, Iri, Priority) => IO[PriorityAlreadyExists, Unit]
+  type ValidatePriority = (ProjectRef, Iri, Priority) => IO[Unit]
 
   /**
     * The resolver entity type.
@@ -217,7 +212,7 @@ object Resolvers {
     Label.unsafe("resolvers") -> schemas.resolvers
   )
 
-  import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils.instant
+  import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant.now
 
   private[delta] def next(state: Option[ResolverState], event: ResolverEvent): Option[ResolverState] = {
 
@@ -267,15 +262,15 @@ object Resolvers {
   private[delta] def evaluate(
       validatePriority: ValidatePriority
   )(state: Option[ResolverState], command: ResolverCommand)(implicit
-      clock: Clock[UIO]
-  ): IO[ResolverRejection, ResolverEvent] = {
+      clock: Clock[IO]
+  ): IO[ResolverEvent] = {
 
     def validateResolverValue(
         project: ProjectRef,
         id: Iri,
         value: ResolverValue,
         caller: Caller
-    ): IO[ResolverRejection, Unit] =
+    ): IO[Unit] =
       (value match {
         case CrossProjectValue(_, _, _, _, _, identityResolution) =>
           identityResolution match {
@@ -283,18 +278,17 @@ object Resolvers {
             case ProvidedIdentities(value) if value.isEmpty => IO.raiseError(NoIdentities)
             case ProvidedIdentities(value)                  =>
               val missing = value.diff(caller.identities)
-              IO.when(missing.nonEmpty)(IO.raiseError(InvalidIdentities(missing)))
+              IO.raiseWhen(missing.nonEmpty)(InvalidIdentities(missing))
           }
-
-        case _ => IO.unit
+        case _                                                    => IO.unit
       }) >> validatePriority(project, id, value.priority)
 
-    def create(c: CreateResolver): IO[ResolverRejection, ResolverCreated] = state match {
+    def create(c: CreateResolver): IO[ResolverCreated] = state match {
       // Create a resolver
       case None    =>
         for {
           _   <- validateResolverValue(c.project, c.id, c.value, c.caller)
-          now <- instant
+          now <- now
         } yield ResolverCreated(
           id = c.id,
           project = c.project,
@@ -309,7 +303,7 @@ object Resolvers {
         IO.raiseError(ResourceAlreadyExists(c.id, c.project))
     }
 
-    def update(c: UpdateResolver): IO[ResolverRejection, ResolverUpdated] = state match {
+    def update(c: UpdateResolver): IO[ResolverUpdated] = state match {
       // Update a non existing resolver
       case None                      =>
         IO.raiseError(ResolverNotFound(c.id, c.project))
@@ -323,9 +317,9 @@ object Resolvers {
       // Update a resolver
       case Some(s) =>
         for {
-          _   <- IO.when(s.value.tpe != c.value.tpe)(IO.raiseError(DifferentResolverType(c.id, c.value.tpe, s.value.tpe)))
+          _   <- IO.raiseWhen(s.value.tpe != c.value.tpe)(DifferentResolverType(c.id, c.value.tpe, s.value.tpe))
           _   <- validateResolverValue(c.project, c.id, c.value, c.caller)
-          now <- instant
+          now <- now
         } yield ResolverUpdated(
           id = c.id,
           project = c.project,
@@ -337,7 +331,7 @@ object Resolvers {
         )
     }
 
-    def addTag(c: TagResolver): IO[ResolverRejection, ResolverTagAdded] = state match {
+    def addTag(c: TagResolver): IO[ResolverTagAdded] = state match {
       // Resolver can't be found
       case None                                               =>
         IO.raiseError(ResolverNotFound(c.id, c.project))
@@ -348,7 +342,7 @@ object Resolvers {
       case Some(s) if c.targetRev <= 0 || c.targetRev > s.rev =>
         IO.raiseError(RevisionNotFound(c.targetRev, s.rev))
       case Some(s)                                            =>
-        instant.map { now =>
+        now.map { now =>
           ResolverTagAdded(
             id = c.id,
             project = c.project,
@@ -362,7 +356,7 @@ object Resolvers {
         }
     }
 
-    def deprecate(c: DeprecateResolver): IO[ResolverRejection, ResolverDeprecated] = state match {
+    def deprecate(c: DeprecateResolver): IO[ResolverDeprecated] = state match {
       // Resolver can't be found
       case None                      =>
         IO.raiseError(ResolverNotFound(c.id, c.project))
@@ -372,7 +366,7 @@ object Resolvers {
       case Some(s) if s.deprecated   =>
         IO.raiseError(ResolverIsDeprecated(s.id))
       case Some(s)                   =>
-        instant.map { now =>
+        now.map { now =>
           ResolverDeprecated(
             id = c.id,
             project = c.project,
@@ -392,15 +386,16 @@ object Resolvers {
     }
   }
 
+  private type ResolverDefinition =
+    ScopedEntityDefinition[Iri, ResolverState, ResolverCommand, ResolverEvent, ResolverRejection]
+
   /**
     * Entity definition for [[Resolvers]]
     */
-  def definition(validatePriority: ValidatePriority)(implicit
-      clock: Clock[UIO]
-  ): ScopedEntityDefinition[Iri, ResolverState, ResolverCommand, ResolverEvent, ResolverRejection] =
+  def definition(validatePriority: ValidatePriority)(implicit clock: Clock[IO]): ResolverDefinition =
     ScopedEntityDefinition(
       entityType,
-      StateMachine(None, evaluate(validatePriority), next),
+      StateMachine(None, evaluate(validatePriority)(_, _).toBIO[ResolverRejection], next),
       ResolverEvent.serializer,
       ResolverState.serializer,
       Tagger[ResolverEvent](

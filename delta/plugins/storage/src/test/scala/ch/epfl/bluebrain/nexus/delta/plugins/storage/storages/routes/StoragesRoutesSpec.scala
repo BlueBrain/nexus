@@ -28,7 +28,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
@@ -102,7 +101,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with TryValues with StorageFixtur
 
   private lazy val storages    = Storages(
     fetchContext,
-    new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport())),
+    ResolverContextResolution(rcr),
     IO.pure(perms),
     (_, _) => IO.unit,
     xas,

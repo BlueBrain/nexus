@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
-import cats.effect.{Clock, IO}
+import cats.effect.{Clock, ContextShift, IO}
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
@@ -59,9 +59,10 @@ object SchemasModule extends ModuleDef {
         aclCheck: AclCheck,
         resolvers: Resolvers,
         resources: Resources,
-        schemas: Schemas
+        schemas: Schemas,
+        contextShift: ContextShift[IO]
     ) =>
-      SchemaImports(aclCheck, resolvers, schemas, resources)
+      SchemaImports(aclCheck, resolvers, schemas, resources)(contextShift)
   }
 
   make[SchemasRoutes].from {

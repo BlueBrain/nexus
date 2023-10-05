@@ -13,7 +13,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegmentRef, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
@@ -22,7 +21,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.testkit.ce.{CatsEffectSuite, IOFixedClock}
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
-import monix.bio.{IO => BIO}
 import munit.AnyFixture
 
 import java.util.UUID
@@ -53,15 +51,9 @@ class SchemasImplSuite
       contexts.schemasMetadata -> ContextValue.fromFile("contexts/schemas-metadata.json")
     )
 
-  private val schemaImports: SchemaImports = new SchemaImports(
-    (_, _, _) => BIO.raiseError(ResourceResolutionReport()),
-    (_, _, _) => BIO.raiseError(ResourceResolutionReport())
-  )
+  private val schemaImports: SchemaImports = SchemaImports.alwaysFail
 
-  private val resolverContextResolution: ResolverContextResolution = new ResolverContextResolution(
-    res,
-    (_, _, _) => BIO.raiseError(ResourceResolutionReport())
-  )
+  private val resolverContextResolution: ResolverContextResolution = ResolverContextResolution(res)
 
   private val org               = Label.unsafe("myorg")
   private val am                = ApiMappings("nxv" -> nxv.base)

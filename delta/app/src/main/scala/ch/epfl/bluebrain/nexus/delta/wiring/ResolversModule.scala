@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
-import cats.effect.Clock
+import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
@@ -26,8 +26,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{Resolver, ResolverEven
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import izumi.distage.model.definition.{Id, ModuleDef}
-import monix.bio.UIO
-import monix.execution.Scheduler
 
 /**
   * Resolvers wiring
@@ -42,7 +40,7 @@ object ResolversModule extends ModuleDef {
         config: AppConfig,
         xas: Transactors,
         api: JsonLdApi,
-        clock: Clock[UIO],
+        clock: Clock[IO],
         uuidF: UUIDF
     ) =>
       ResolversImpl(
@@ -68,7 +66,6 @@ object ResolversModule extends ModuleDef {
 
   make[ResolversRoutes].from {
     (
-        config: AppConfig,
         identities: Identities,
         aclCheck: AclCheck,
         resolvers: Resolvers,
@@ -77,7 +74,6 @@ object ResolversModule extends ModuleDef {
         shift: Resolver.Shift,
         multiResolution: MultiResolution,
         baseUri: BaseUri,
-        s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering,
         fusionConfig: FusionConfig
@@ -91,8 +87,6 @@ object ResolversModule extends ModuleDef {
         indexingAction(_, _, _)(shift, cr)
       )(
         baseUri,
-        config.resolvers.pagination,
-        s,
         cr,
         ordering,
         fusionConfig
@@ -104,7 +98,7 @@ object ResolversModule extends ModuleDef {
   many[ScopedEventMetricEncoder[_]].add { ResolverEvent.resolverEventMetricEncoder }
 
   make[ResolverScopeInitialization].from { (resolvers: Resolvers, serviceAccount: ServiceAccount, config: AppConfig) =>
-    new ResolverScopeInitialization(resolvers, serviceAccount, config.resolvers.defaults)
+    ResolverScopeInitialization(resolvers, serviceAccount, config.resolvers.defaults)
   }
   many[ScopeInitialization].ref[ResolverScopeInitialization]
 
