@@ -184,12 +184,16 @@ final class FilesRoutes(
     }
 
   def fetch(id: IdSegmentRef, ref: ProjectRef)(implicit caller: Caller): Route =
-    headerValueByType(Accept) {
+    (headerValueByType(Accept) & varyAcceptHeaders) {
       case accept if accept.mediaRanges.exists(metadataMediaRanges.contains) =>
-        emit(fetchMetadata(id, ref).rejectOn[FileNotFound])
+        emit(fetchMetadata(id, ref).rejectWhen(unauthorizedOrNotFound))
       case _                                                                 =>
-        emit(files.fetchContent(id, ref).rejectOn[FileNotFound])
+        emit(files.fetchContent(id, ref).rejectWhen(unauthorizedOrNotFound))
     }
+
+  private val unauthorizedOrNotFound: PartialFunction[FileRejection, Boolean] = {
+    case _: AuthorizationFailed | _: FileNotFound => true
+  }
 
   def fetchMetadata(id: IdSegmentRef, ref: ProjectRef)(implicit caller: Caller): IO[FileRejection, FileResource] =
     aclCheck.authorizeForOr(ref, Read)(AuthorizationFailed(ref, Read)) >> files.fetch(id, ref)
