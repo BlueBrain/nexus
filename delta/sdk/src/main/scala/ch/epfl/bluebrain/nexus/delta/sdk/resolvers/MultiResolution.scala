@@ -1,15 +1,16 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resolvers
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.{ExpandIri, JsonLdContent}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, IdSegmentRef}
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.{InvalidResolution, InvalidResolvedResourceId, InvalidResolverResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport.ResolverReport
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{MultiResolutionResult, ResolverRejection, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import monix.bio.IO
 
 /**
   * Allow to attempt resolutions for the different resource types available
@@ -19,7 +20,7 @@ import monix.bio.IO
   *   the resource resolution
   */
 final class MultiResolution(
-    fetchProject: ProjectRef => IO[ResolverRejection, ProjectContext],
+    fetchProject: ProjectRef => IO[ProjectContext],
     resourceResolution: ResolverResolution[JsonLdContent[_, _]]
 ) {
 
@@ -36,10 +37,10 @@ final class MultiResolution(
   def apply(
       resourceSegment: IdSegmentRef,
       projectRef: ProjectRef
-  )(implicit caller: Caller): IO[ResolverRejection, MultiResolutionResult[ResourceResolutionReport]] =
+  )(implicit caller: Caller): IO[MultiResolutionResult[ResourceResolutionReport]] =
     for {
       project     <- fetchProject(projectRef)
-      resourceRef <- expandResourceIri(resourceSegment, project)
+      resourceRef <- toCatsIO(expandResourceIri(resourceSegment, project))
       result      <- resourceResolution.resolveReport(resourceRef, projectRef).flatMap {
                        case (resourceReport, Some(resourceResult)) =>
                          IO.pure(MultiResolutionResult(resourceReport, resourceResult))
@@ -61,12 +62,12 @@ final class MultiResolution(
       resourceSegment: IdSegmentRef,
       projectRef: ProjectRef,
       resolverSegment: IdSegment
-  )(implicit caller: Caller): IO[ResolverRejection, MultiResolutionResult[ResolverReport]] = {
+  )(implicit caller: Caller): IO[MultiResolutionResult[ResolverReport]] = {
 
     for {
       project     <- fetchProject(projectRef)
-      resourceRef <- expandResourceIri(resourceSegment, project)
-      resolverId  <- Resolvers.expandIri(resolverSegment, project)
+      resourceRef <- toCatsIO(expandResourceIri(resourceSegment, project))
+      resolverId  <- toCatsIO(Resolvers.expandIri(resolverSegment, project))
       result      <- resourceResolution.resolveReport(resourceRef, projectRef, resolverId).flatMap {
                        case (resourceReport, Some(resourceResult)) =>
                          IO.pure(MultiResolutionResult(resourceReport, resourceResult))

@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.MediaTypes.`text/html`
 import akka.http.scaladsl.model.headers.{Accept, Location, OAuth2BearerToken}
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
+import cats.effect.{ContextShift, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
@@ -22,7 +23,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{events, resour
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.{SchemaImports, SchemasConfig, SchemasImpl}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
@@ -31,14 +31,16 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.testkit.bio.IOFromMap
 import ch.epfl.bluebrain.nexus.testkit.ce.IOFixedClock
 import io.circe.Json
-import monix.bio.IO
 
 import java.util.UUID
+import scala.concurrent.ExecutionContext
 
 class SchemasRoutesSpec extends BaseRouteSpec with IOFixedClock with IOFromMap {
 
   private val uuid                  = UUID.randomUUID()
   implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
+
+  implicit private val contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
 
   private val caller = Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
 
@@ -61,15 +63,9 @@ class SchemasRoutesSpec extends BaseRouteSpec with IOFixedClock with IOFromMap {
   private val payloadNoId    = payload.removeKeys(keywords.id)
   private val payloadUpdated = payloadNoId.replace("datatype" -> "xsd:integer", "xsd:double")
 
-  private val schemaImports = new SchemaImports(
-    (_, _, _) => IO.raiseError(ResourceResolutionReport()),
-    (_, _, _) => IO.raiseError(ResourceResolutionReport())
-  )
+  private val schemaImports = SchemaImports.alwaysFail
 
-  private val resolverContextResolution: ResolverContextResolution = new ResolverContextResolution(
-    rcr,
-    (_, _, _) => IO.raiseError(ResourceResolutionReport())
-  )
+  private val resolverContextResolution: ResolverContextResolution = ResolverContextResolution(rcr)
 
   private lazy val aclCheck = AclSimpleCheck().accepted
 

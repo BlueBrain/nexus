@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.MediaTypes.`text/html`
 import akka.http.scaladsl.model.headers.{Accept, Location, OAuth2BearerToken}
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas}
@@ -22,7 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers._
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverType.{CrossProject, InProject}
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{ResolverRejection, ResolverType, ResourceResolutionReport}
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{ResolverRejection, ResolverType}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.Resource
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
@@ -30,14 +31,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.{Defaults, IndexingAction}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
+import ch.epfl.bluebrain.nexus.testkit.ce.IOFixedClock
 import io.circe.Json
 import io.circe.syntax._
-import monix.bio.{IO, UIO}
 
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 
-class ResolversRoutesSpec extends BaseRouteSpec {
+class ResolversRoutesSpec extends BaseRouteSpec with IOFixedClock {
 
   private val uuid                  = UUID.randomUUID()
   implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
@@ -58,10 +59,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
     Caller(bob, Set(bob))
   )
 
-  val resolverContextResolution: ResolverContextResolution = new ResolverContextResolution(
-    rcr,
-    (_, _, _) => IO.raiseError(ResourceResolutionReport())
-  )
+  val resolverContextResolution: ResolverContextResolution = ResolverContextResolution(rcr)
 
   private val resourceId = nxv + "resource"
   private val resource   =
@@ -77,18 +75,18 @@ class ResolversRoutesSpec extends BaseRouteSpec {
   )
   private val resourceFS     = SchemaGen.resourceFor(schemaResource)
 
-  def fetchResource: (ResourceRef, ProjectRef) => UIO[Option[JsonLdContent[Resource, Nothing]]] =
+  def fetchResource: (ResourceRef, ProjectRef) => IO[Option[JsonLdContent[Resource, Nothing]]] =
     (ref: ResourceRef, _: ProjectRef) =>
       ref match {
-        case Latest(`resourceId`) => UIO.some(JsonLdContent(resourceFR, resourceFR.value.source, None))
-        case _                    => UIO.none
+        case Latest(`resourceId`) => IO.pure(Some(JsonLdContent(resourceFR, resourceFR.value.source, None)))
+        case _                    => IO.none
       }
 
-  def fetchSchema: (ResourceRef, ProjectRef) => UIO[Option[JsonLdContent[Schema, Nothing]]] =
+  def fetchSchema: (ResourceRef, ProjectRef) => IO[Option[JsonLdContent[Schema, Nothing]]] =
     (ref: ResourceRef, _: ProjectRef) =>
       ref match {
-        case Revision(_, `schemaId`, 5) => UIO.some(JsonLdContent(resourceFS, resourceFS.value.source, None))
-        case _                          => UIO.none
+        case Revision(_, `schemaId`, 5) => IO.pure(Some(JsonLdContent(resourceFS, resourceFS.value.source, None)))
+        case _                          => IO.none
       }
 
   private val defaults = Defaults("resolverName", "resolverDescription")
@@ -96,7 +94,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
   private lazy val resolvers = ResolversImpl(
     fetchContext,
     resolverContextResolution,
-    ResolversConfig(eventLogConfig, pagination, defaults),
+    ResolversConfig(eventLogConfig, defaults),
     xas
   )
 
@@ -111,7 +109,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
     resolvers,
     (ref: ResourceRef, project: ProjectRef) =>
       fetchResource(ref, project).flatMap {
-        case Some(c) => UIO.some(c)
+        case Some(c) => IO.pure(Some(c))
         case None    => fetchSchema(ref, project)
       }
   )
@@ -447,10 +445,10 @@ class ResolversRoutesSpec extends BaseRouteSpec {
     def inProject(
         id: Iri,
         priority: Int,
-        rev: Int = 1,
-        deprecated: Boolean = false,
+        rev: Int,
+        deprecated: Boolean,
         createdBy: Subject = bob,
-        updatedBy: Subject = bob
+        updatedBy: Subject
     ) =
       resolverMetadata(
         id,
@@ -654,66 +652,6 @@ class ResolversRoutesSpec extends BaseRouteSpec {
           request ~> check {
             status shouldEqual StatusCodes.Forbidden
             response.asJson shouldEqual authorizationFailedResponse
-          }
-        }
-      }
-    }
-
-    "listing the resolvers" should {
-
-      def expectedResults(results: Json*): Json = {
-        val ctx = json"""{"@context": ["${contexts.metadata}", "${contexts.search}", "${contexts.resolvers}"]}"""
-        Json.obj("_total" -> Json.fromInt(results.size), "_results" -> Json.arr(results: _*)) deepMerge ctx
-      }
-
-      "return the deprecated resolvers the user has access to" in {
-        Get(s"/v1/resolvers/${project.ref}/caches?deprecated=true") ~> asBob ~> routes ~> check {
-          status shouldEqual StatusCodes.OK
-          response.asJson shouldEqual expectedResults(inProjectLast)
-        }
-      }
-
-      "return the in project resolvers" in {
-        val encodedResolver          = UrlUtils.encode(nxv.Resolver.toString)
-        val encodedInProjectResolver = UrlUtils.encode(nxv.InProject.toString)
-        Get(
-          s"/v1/resolvers/${project.ref}/caches?type=$encodedResolver&type=$encodedInProjectResolver"
-        ) ~> asBob ~> routes ~> check {
-          status shouldEqual StatusCodes.OK
-          response.asJson should equalIgnoreArrayOrder(
-            expectedResults(
-              inProjectLast,
-              inProject(nxv + "in-project-put2", 3),
-              inProject(nxv + "in-project-post", 1)
-            )
-          )
-        }
-      }
-
-      "return the resolvers with revision 2" in {
-        Get(s"/v1/resolvers/${project2.ref}/caches?rev=2") ~> asAlice ~> routes ~> check {
-          status shouldEqual StatusCodes.OK
-          response.asJson should equalIgnoreArrayOrder(
-            expectedResults(
-              crossProjectUseCurrentLast,
-              crossProjectProvidedIdentitiesLast.replace(
-                Json.arr("nxv:Schema".asJson, "nxv:Custom".asJson),
-                Json.arr(nxv.Schema.asJson, (nxv + "Custom").asJson)
-              )
-            )
-          )
-        }
-      }
-
-      "fail to list resolvers if the user has not access resolvers/read on the project" in {
-        forAll(
-          List(
-            Get(s"/v1/resolvers/${project.ref}/caches?deprecated=true") ~> routes,
-            Get(s"/v1/resolvers/${project2.ref}/caches") ~> asBob ~> routes
-          )
-        ) { request =>
-          request ~> check {
-            status shouldEqual StatusCodes.Forbidden
           }
         }
       }

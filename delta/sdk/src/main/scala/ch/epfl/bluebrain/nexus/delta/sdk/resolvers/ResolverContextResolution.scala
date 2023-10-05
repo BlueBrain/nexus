@@ -1,10 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resolvers
 
+import cats.effect.IO
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution.Result
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolutionError.RemoteContextNotAccessible
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContext, RemoteContextResolution}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContext, RemoteContextResolution, RemoteContextResolutionError}
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
@@ -16,7 +19,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.Resource
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import io.circe.syntax._
-import monix.bio.IO
 
 import scala.collection.concurrent
 
@@ -40,32 +42,32 @@ final class ResolverContextResolution(val rcr: RemoteContextResolution, resolveR
         IO.pure(cache.get(iri)).flatMap {
           case Some(s) => IO.pure(s)
           case None    =>
-            rcr
-              .resolve(iri)
-              .onErrorFallbackTo(
-                resolveResource(ResourceRef(iri), projectRef, caller)
-                  .bimap(
-                    report =>
+            toCatsIO(rcr.resolve(iri))
+              .handleErrorWith(_ =>
+                resolveResource(ResourceRef(iri), projectRef, caller).flatMap {
+                  case Left(report)    =>
+                    IO.raiseError(
                       RemoteContextNotAccessible(
                         iri,
                         s"Resolution via static resolution and via resolvers failed in '$projectRef'",
                         Some(report.asJson)
-                      ),
-                    ProjectRemoteContext.fromResource
-                  )
+                      )
+                    )
+                  case Right(resource) => IO.pure(ProjectRemoteContext.fromResource(resource))
+                }
               )
-              .tapEval { context =>
+              .flatTap { context =>
                 IO.pure(cache.put(iri, context)) *>
                   logger.debug(s"Iri $iri has been resolved for project $projectRef and caller $caller.subject")
               }
         }
-      }
+      }.toBIO[RemoteContextResolutionError]
     }
 }
 
 object ResolverContextResolution {
 
-  private val logger: Logger = Logger[ResolverContextResolution]
+  private val logger = Logger.cats[ResolverContextResolution]
 
   /**
     * A remote context defined in Nexus as a resource
@@ -89,7 +91,7 @@ object ResolverContextResolution {
     *   a previously defined 'RemoteContextResolution'
     */
   def apply(rcr: RemoteContextResolution): ResolverContextResolution =
-    new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
+    new ResolverContextResolution(rcr, (_, _, _) => IO.pure(Left(ResourceResolutionReport())))
 
   /**
     * Constructs a [[ResolverContextResolution]]

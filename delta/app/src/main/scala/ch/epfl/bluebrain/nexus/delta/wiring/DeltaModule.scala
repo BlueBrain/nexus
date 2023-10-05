@@ -8,7 +8,7 @@ import akka.http.scaladsl.model.headers.Location
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import akka.stream.{Materializer, SystemMaterializer}
 import cats.data.NonEmptyList
-import cats.effect.{Clock, IO, Resource, Sync, Timer}
+import cats.effect.{Clock, ContextShift, IO, Resource, Sync, Timer}
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
@@ -105,6 +105,7 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
   make[Clock[UIO]].from(Clock[UIO])
   make[Clock[IO]].from(Clock.create[IO])
   make[Timer[IO]].from(IO.timer(ExecutionContext.global))
+  make[ContextShift[IO]].from(IO.contextShift(ExecutionContext.global))
   make[UUIDF].from(UUIDF.random)
   make[Scheduler].from(scheduler)
   make[JsonKeyOrdering].from(

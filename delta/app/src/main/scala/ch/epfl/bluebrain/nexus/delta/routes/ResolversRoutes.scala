@@ -1,17 +1,20 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
 import akka.http.scaladsl.model.StatusCodes.Created
+import akka.http.scaladsl.model.{StatusCode, StatusCodes}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
+import cats.effect.IO
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.ce.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
@@ -19,9 +22,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, IdSegmentRef, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resolvers.{read => Read, write => Write}
@@ -29,10 +29,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.Resol
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{MultiResolutionResult, Resolver, ResolverRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.{MultiResolution, Resolvers}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import io.circe.Json
-import kamon.instrumentation.akka.http.TracingDirectives.operationName
-import monix.bio.IO
-import monix.execution.Scheduler
+import io.circe.{Json, Printer}
 
 /**
   * The resolver routes
@@ -45,7 +42,7 @@ import monix.execution.Scheduler
   *   the resolvers module
   * @param schemeDirectives
   *   directives related to orgs and projects
-  * @param index
+  * @param indexAction
   *   the indexing action on write operations
   */
 final class ResolversRoutes(
@@ -54,11 +51,9 @@ final class ResolversRoutes(
     resolvers: Resolvers,
     multiResolution: MultiResolution,
     schemeDirectives: DeltaSchemeDirectives,
-    index: IndexingAction.Execute[Resolver]
+    indexAction: IndexingAction.Execute[Resolver]
 )(implicit
     baseUri: BaseUri,
-    paginationConfig: PaginationConfig,
-    s: Scheduler,
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering,
     fusionConfig: FusionConfig
@@ -66,138 +61,104 @@ final class ResolversRoutes(
     with CirceUnmarshalling
     with RdfMarshalling {
 
-  import baseUri.prefixSegment
   import schemeDirectives._
 
   implicit private val resourceFUnitJsonLdEncoder: JsonLdEncoder[ResourceF[Unit]] =
     ResourceF.resourceFAJsonLdEncoder(ContextValue(contexts.resolversMetadata))
 
-  private def resolverSearchParams(implicit projectRef: ProjectRef, caller: Caller): Directive1[ResolverSearchParams] =
-    (searchParams & types).tmap { case (deprecated, rev, createdBy, updatedBy, types) =>
-      val fetchAllCached = aclCheck.fetchAll.memoizeOnSuccess
-      ResolverSearchParams(
-        Some(projectRef),
-        deprecated,
-        rev,
-        createdBy,
-        updatedBy,
-        types,
-        resolver => aclCheck.authorizeFor(resolver.project, Read, fetchAllCached)
-      )
-    }
+  private def emitFetch(io: IO[ResolverResource]): Route                            =
+    emit(io.attemptNarrow[ResolverRejection].rejectOn[ResolverNotFound])
+  private def emitMetadata(statusCode: StatusCode, io: IO[ResolverResource]): Route =
+    emit(statusCode, io.map(_.void).attemptNarrow[ResolverRejection])
+
+  private def emitMetadata(io: IO[ResolverResource]): Route = emitMetadata(StatusCodes.OK, io)
+
+  private def emitMetadataOrReject(io: IO[ResolverResource]): Route =
+    emit(io.map(_.void).attemptNarrow[ResolverRejection].rejectOn[ResolverNotFound])
+
+  private def emitSource(io: IO[ResolverResource]): Route = {
+    implicit val source: Printer = sourcePrinter
+    emit(io.map(_.value.source).attemptNarrow[ResolverRejection].rejectOn[ResolverNotFound])
+  }
+
+  private def emitTags(io: IO[ResolverResource]): Route =
+    emit(io.map(_.value.tags).attemptNarrow[ResolverRejection].rejectOn[ResolverNotFound])
 
   def routes: Route =
     (baseUriPrefix(baseUri.prefix) & replaceUri("resolvers", schemas.resolvers)) {
       pathPrefix("resolvers") {
         extractCaller { implicit caller =>
-          resolveProjectRef.apply { implicit ref =>
-            val projectAddress = ref
-            val authorizeRead  = authorizeFor(projectAddress, Read)
-            val authorizeWrite = authorizeFor(projectAddress, Write)
+          (resolveProjectRef & indexingMode) { (ref, mode) =>
+            def index(resolver: ResolverResource): IO[Unit] = indexAction(resolver.value.project, resolver, mode)
+            val authorizeRead                               = authorizeFor(ref, Read)
+            val authorizeWrite                              = authorizeFor(ref, Write)
             concat(
-              (pathEndOrSingleSlash & operationName(s"$prefixSegment/resolvers/{org}/{project}")) {
+              pathEndOrSingleSlash {
                 // Create a resolver without an id segment
-                (post & noParameter("rev") & entity(as[Json]) & indexingMode) { (payload, mode) =>
+                (post & noParameter("rev") & entity(as[Json])) { payload =>
                   authorizeWrite {
-                    emit(Created, resolvers.create(ref, payload).tapEval(index(ref, _, mode)).map(_.void))
+                    emitMetadata(Created, resolvers.create(ref, payload).flatTap(index))
                   }
                 }
               },
-              (pathPrefix("caches") & pathEndOrSingleSlash) {
-                operationName(s"$prefixSegment/resolvers/{org}/{project}/caches") {
-                  // List resolvers in cache
-                  (get & extractUri & fromPaginated & resolverSearchParams & sort[Resolver]) {
-                    (uri, pagination, params, order) =>
-                      authorizeRead {
-                        implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[ResolverResource]] =
-                          searchResultsJsonLdEncoder(Resolver.context, pagination, uri)
-
-                        emit(resolvers.list(pagination, params, order).widen[SearchResults[ResolverResource]])
-                      }
-                  }
-                }
-              },
-              (idSegment & indexingMode) { (id, mode) =>
+              idSegment { id =>
                 concat(
                   pathEndOrSingleSlash {
-                    operationName(s"$prefixSegment/resolvers/{org}/{project}/{id}") {
-                      concat(
-                        put {
-                          authorizeWrite {
-                            (parameter("rev".as[Int].?) & pathEndOrSingleSlash & entity(as[Json])) {
-                              case (None, payload)      =>
-                                // Create a resolver with an id segment
-                                emit(
-                                  Created,
-                                  resolvers.create(id, ref, payload).tapEval(index(ref, _, mode)).map(_.void)
-                                )
-                              case (Some(rev), payload) =>
-                                // Update a resolver
-                                emit(resolvers.update(id, ref, rev, payload).tapEval(index(ref, _, mode)).map(_.void))
-                            }
+                    concat(
+                      put {
+                        authorizeWrite {
+                          (parameter("rev".as[Int].?) & pathEndOrSingleSlash & entity(as[Json])) {
+                            case (None, payload)      =>
+                              // Create a resolver with an id segment
+                              emitMetadata(Created, resolvers.create(id, ref, payload).flatTap(index))
+                            case (Some(rev), payload) =>
+                              // Update a resolver
+                              emitMetadata(resolvers.update(id, ref, rev, payload).flatTap(index))
                           }
-                        },
-                        (delete & parameter("rev".as[Int])) { rev =>
-                          authorizeWrite {
-                            // Deprecate a resolver
-                            emit(
-                              resolvers
-                                .deprecate(id, ref, rev)
-                                .tapEval(index(ref, _, mode))
-                                .map(_.void)
-                                .rejectOn[ResolverNotFound]
-                            )
-                          }
-                        },
-                        // Fetches a resolver
-                        (get & idSegmentRef(id)) { id =>
-                          emitOrFusionRedirect(
-                            ref,
-                            id,
-                            authorizeRead {
-                              emit(resolvers.fetch(id, ref).rejectOn[ResolverNotFound])
-                            }
-                          )
                         }
-                      )
-                    }
+                      },
+                      (delete & parameter("rev".as[Int])) { rev =>
+                        authorizeWrite {
+                          // Deprecate a resolver
+                          emitMetadataOrReject(resolvers.deprecate(id, ref, rev).flatTap(index))
+                        }
+                      },
+                      // Fetches a resolver
+                      (get & idSegmentRef(id)) { id =>
+                        emitOrFusionRedirect(
+                          ref,
+                          id,
+                          authorizeRead {
+                            emitFetch(resolvers.fetch(id, ref))
+                          }
+                        )
+                      }
+                    )
                   },
                   // Fetches a resolver original source
                   (pathPrefix("source") & get & pathEndOrSingleSlash & idSegmentRef(id) & authorizeRead) { id =>
-                    operationName(s"$prefixSegment/resolvers/{org}/{project}/{id}/source") {
-                      emit(resolvers.fetch(id, ref).map(_.value.source).rejectOn[ResolverNotFound])
-                    }
+                    emitSource(resolvers.fetch(id, ref))
                   },
                   // Tags
                   (pathPrefix("tags") & pathEndOrSingleSlash) {
-                    operationName(s"$prefixSegment/resolvers/{org}/{project}/{id}/tags") {
-                      concat(
-                        // Fetch a resolver tags
-                        (get & idSegmentRef(id) & authorizeRead) { id =>
-                          emit(resolvers.fetch(id, ref).map(_.value.tags).rejectOn[ResolverNotFound])
-                        },
-                        // Tag a resolver
-                        (post & parameter("rev".as[Int])) { rev =>
-                          authorizeWrite {
-                            entity(as[Tag]) { case Tag(tagRev, tag) =>
-                              emit(
-                                Created,
-                                resolvers
-                                  .tag(id, ref, tag, tagRev, rev)
-                                  .tapEval(index(ref, _, mode))
-                                  .map(_.void)
-                              )
-                            }
+                    concat(
+                      // Fetch a resolver tags
+                      (get & idSegmentRef(id) & authorizeRead) { id =>
+                        emitTags(resolvers.fetch(id, ref))
+                      },
+                      // Tag a resolver
+                      (post & parameter("rev".as[Int])) { rev =>
+                        authorizeWrite {
+                          entity(as[Tag]) { case Tag(tagRev, tag) =>
+                            emitMetadata(Created, resolvers.tag(id, ref, tag, tagRev, rev).flatTap(index))
                           }
                         }
-                      )
-                    }
+                      }
+                    )
                   },
                   // Fetch a resource using a resolver
                   (idSegmentRef & pathEndOrSingleSlash) { resourceIdRef =>
-                    operationName(s"$prefixSegment/resolvers/{org}/{project}/{id}/{resourceId}") {
-                      resolve(resourceIdRef, ref, underscoreToOption(id))
-                    }
+                    resolve(resourceIdRef, ref, underscoreToOption(id))
                   }
                 )
               }
@@ -212,11 +173,11 @@ final class ResolversRoutes(
   ): Route =
     authorizeFor(projectRef, Permissions.resources.read).apply {
       parameter("showReport".as[Boolean].withDefault(default = false)) { showReport =>
-        def emitResult[R: JsonLdEncoder](io: IO[ResolverRejection, MultiResolutionResult[R]]) =
+        def emitResult[R: JsonLdEncoder](io: IO[MultiResolutionResult[R]]) =
           if (showReport)
-            emit(io.map(_.report))
+            emit(io.map(_.report).attemptNarrow[ResolverRejection])
           else
-            emit(io.map(_.value.jsonLdValue))
+            emit(io.map(_.value.jsonLdValue).attemptNarrow[ResolverRejection])
 
         resolverId.fold(emitResult(multiResolution(resourceSegment, projectRef))) { resolverId =>
           emitResult(multiResolution(resourceSegment, projectRef, resolverId))
@@ -241,8 +202,6 @@ object ResolversRoutes {
       index: IndexingAction.Execute[Resolver]
   )(implicit
       baseUri: BaseUri,
-      s: Scheduler,
-      paginationConfig: PaginationConfig,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering,
       fusionConfig: FusionConfig

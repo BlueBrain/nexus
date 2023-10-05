@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
@@ -59,7 +60,7 @@ final class SchemasImpl private (
       pc               <- fetchContext.onCreate(projectRef)
       iri              <- id.traverse(expandIri(_, pc))
       jsonLd           <- sourceParser(projectRef, pc, iri, source)
-      expandedResolved <- schemaImports.resolve(jsonLd.iri, projectRef, jsonLd.expanded.addType(nxv.Schema))
+      expandedResolved <- resolveImports(jsonLd.iri, projectRef, jsonLd.expanded)
     } yield CreateSchema(jsonLd.iri, projectRef, source, jsonLd.compacted, expandedResolved, caller.subject)
 
   override def update(
@@ -72,7 +73,7 @@ final class SchemasImpl private (
       pc                    <- fetchContext.onModify(projectRef)
       iri                   <- expandIri(id, pc)
       (compacted, expanded) <- sourceParser(projectRef, pc, iri, source).map { j => (j.compacted, j.expanded) }
-      expandedResolved      <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
+      expandedResolved      <- resolveImports(iri, projectRef, expanded)
       res                   <-
         eval(UpdateSchema(iri, projectRef, source, compacted, expandedResolved, rev, caller.subject))
     } yield res
@@ -87,7 +88,7 @@ final class SchemasImpl private (
       iri                   <- expandIri(id, pc)
       schema                <- log.stateOr(projectRef, iri, SchemaNotFound(iri, projectRef))
       (compacted, expanded) <- sourceParser(projectRef, pc, iri, schema.source).map { j => (j.compacted, j.expanded) }
-      expandedResolved      <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
+      expandedResolved      <- resolveImports(iri, projectRef, expanded)
       res                   <-
         eval(RefreshSchema(iri, projectRef, compacted, expandedResolved, schema.rev, caller.subject))
     } yield res
@@ -149,6 +150,9 @@ final class SchemasImpl private (
 
   private def dryRun(cmd: SchemaCommand) =
     log.dryRun(cmd.project, cmd.id, cmd).map(_._2.toResource)
+
+  private def resolveImports(id: Iri, projectRef: ProjectRef, expanded: ExpandedJsonLd)(implicit caller: Caller) =
+    schemaImports.resolve(id, projectRef, expanded.addType(nxv.Schema)).toBIO[SchemaRejection]
 }
 
 object SchemasImpl {

@@ -1,6 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resources
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
@@ -123,8 +125,11 @@ object ValidateResource {
       ) = {
         resourceResolution
           .resolve(schemaRef, projectRef)(caller)
-          .mapError(InvalidSchemaRejection(schemaRef, projectRef, _))
-          .tapEval(schema => assertNotDeprecated(schema))
-      }
+          .flatMap { result =>
+            val invalidSchema = result.leftMap(InvalidSchemaRejection(schemaRef, projectRef, _))
+            IO.fromEither(invalidSchema)
+          }
+          .flatTap(schema => assertNotDeprecated(schema))
+      }.toBIO[ResourceRejection]
     }
 }

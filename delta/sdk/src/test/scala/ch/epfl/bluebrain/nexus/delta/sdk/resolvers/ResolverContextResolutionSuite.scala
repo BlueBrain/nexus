@@ -1,32 +1,33 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resolvers
 
 import akka.http.scaladsl.model.Uri
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
+import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContext.StaticContext
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolutionError.RemoteContextNotAccessible
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ResourceResolutionGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
+import ch.epfl.bluebrain.nexus.testkit.TestHelpers
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceUris, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution.ProjectRemoteContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.FetchResource
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.Resource
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
-import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.ce.CatsEffectSuite
 import io.circe.Json
 import io.circe.syntax._
-import monix.bio.IO
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
 
 import java.time.Instant
 
-class ResolverContextResolutionSpec extends AnyWordSpecLike with IOValues with TestHelpers with Matchers {
+class ResolverContextResolutionSuite extends CatsEffectSuite with TestHelpers {
 
   private val metadataContext = jsonContentOf("/contexts/metadata.json").topContextValueOrEmpty
 
@@ -65,7 +66,7 @@ class ResolverContextResolutionSpec extends AnyWordSpecLike with IOValues with T
 
   def fetchResource: (ResourceRef, ProjectRef) => FetchResource[Resource] = { (r: ResourceRef, p: ProjectRef) =>
     (r, p) match {
-      case (Latest(id), `project`) if resourceId == id => IO.some(resource)
+      case (Latest(id), `project`) if resourceId == id => IO.pure(Some(resource))
       case _                                           => IO.none
     }
   }
@@ -74,23 +75,20 @@ class ResolverContextResolutionSpec extends AnyWordSpecLike with IOValues with T
 
   private val resolverContextResolution = ResolverContextResolution(rcr, resourceResolution)
 
-  "Resolving contexts" should {
+  private def resolve(iri: Iri) =
+    toCatsIO(resolverContextResolution(project).resolve(iri))
 
-    "resolve correctly static contexts" in {
-      val expected = StaticContext(contexts.metadata, metadataContext)
-      resolverContextResolution(project).resolve(contexts.metadata).accepted shouldEqual expected
-    }
-
-    "resolve correctly a resource context" in {
-      val expected = ProjectRemoteContext(resourceId, project, 5, ContextValue(context))
-      resolverContextResolution(project).resolve(resourceId).accepted shouldEqual expected
-    }
-
-    "fail is applying for an unknown resource" in {
-      resolverContextResolution(project)
-        .resolve(nxv + "xxx")
-        .rejectedWith[RemoteContextNotAccessible]
-    }
+  test("Resolve correctly static contexts") {
+    val expected = StaticContext(contexts.metadata, metadataContext)
+    resolve(contexts.metadata).assertEquals(expected)
   }
 
+  test("Resolve correctly a resource context") {
+    val expected = ProjectRemoteContext(resourceId, project, 5, ContextValue(context))
+    resolve(resourceId).assertEquals(expected)
+  }
+
+  test("Fail is applying for an unknown resource") {
+    resolve(nxv + "xxx").intercept[RemoteContextNotAccessible]
+  }
 }

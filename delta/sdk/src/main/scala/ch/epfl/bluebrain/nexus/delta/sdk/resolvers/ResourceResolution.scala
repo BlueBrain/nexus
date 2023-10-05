@@ -1,19 +1,19 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resolvers
 
+import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.{FetchResource, ResourceResolution}
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{Resolver, ResolverRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.Resolver
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.Resource
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas
-import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.{Schema, SchemaRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, ProjectRef, ResourceRef}
-import monix.bio.{IO, UIO}
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 
 object ResourceResolution {
 
@@ -29,9 +29,9 @@ object ResourceResolution {
     *   how to fetch the resource
     */
   def apply[R](
-      checkAcls: (ProjectRef, Set[Identity]) => UIO[Boolean],
-      listResolvers: ProjectRef => UIO[List[Resolver]],
-      fetchResolver: (Iri, ProjectRef) => IO[ResolverRejection, Resolver],
+      checkAcls: (ProjectRef, Set[Identity]) => IO[Boolean],
+      listResolvers: ProjectRef => IO[List[Resolver]],
+      fetchResolver: (Iri, ProjectRef) => IO[Resolver],
       fetch: (ResourceRef, ProjectRef) => FetchResource[R]
   ): ResourceResolution[R] =
     new ResolverResolution(checkAcls, listResolvers, fetchResolver, fetch, (r: ResourceF[R]) => r.types)
@@ -67,7 +67,7 @@ object ResourceResolution {
     apply(
       aclCheck,
       resolvers,
-      (ref: ResourceRef, project: ProjectRef) => resources.fetch(ref, project).redeem(_ => None, Some(_)),
+      (ref: ResourceRef, project: ProjectRef) => toCatsIO(resources.fetch(ref, project).redeem(_ => None, Some(_))),
       Permissions.resources.read
     )
 
@@ -84,8 +84,7 @@ object ResourceResolution {
     apply(
       aclCheck,
       resolvers,
-      (ref: ResourceRef, project: ProjectRef) =>
-        schemas.fetch(ref, project).toBIO[SchemaRejection].redeem(_ => None, Some(_)),
+      (ref: ResourceRef, project: ProjectRef) => schemas.fetch(ref, project).redeem(_ => None, Some(_)),
       Permissions.schemas.read
     )
 

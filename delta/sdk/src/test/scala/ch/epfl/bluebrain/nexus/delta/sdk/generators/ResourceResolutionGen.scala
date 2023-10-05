@@ -1,12 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.generators
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.{FetchResource, ResourceResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.ResolverNotFound
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, ProjectRef, ResourceRef}
-import monix.bio.{IO, UIO}
 
 object ResourceResolutionGen {
 
@@ -24,7 +24,7 @@ object ResourceResolutionGen {
     val resolver = ResolverGen.inProject(nxv + "in-project", projectRef)
 
     resolvers.ResourceResolution(
-      (_: ProjectRef, _: Set[Identity]) => UIO.pure(false),
+      (_: ProjectRef, _: Set[Identity]) => IO.pure(false),
       (_: ProjectRef) => IO.pure(List(resolver)),
       (resolverId: Iri, p: ProjectRef) =>
         if (resolverId == resolver.id && p == resolver.project)
