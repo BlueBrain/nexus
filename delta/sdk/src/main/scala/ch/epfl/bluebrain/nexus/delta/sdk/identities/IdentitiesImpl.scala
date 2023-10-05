@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.identities
 
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{HttpRequest, StatusCodes, Uri}
-import cats.data.NonEmptySet
+import cats.data.{NonEmptySet, OptionT}
 import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
@@ -62,13 +62,10 @@ class IdentitiesImpl private[identities] (
       )
     }
 
-    def fetchRealm(parsedToken: ParsedToken): IO[Realm] =
-      realm
-        .getOrElseUpdate(parsedToken.rawToken, findActiveRealm(parsedToken.issuer))
-        .flatMap {
-          case Some(realm) => IO.pure(realm)
-          case None        => IO.raiseError(UnknownAccessTokenIssuer)
-        }
+    def fetchRealm(parsedToken: ParsedToken): IO[Realm] = {
+      val getRealm = realm.getOrElseAttemptUpdate(parsedToken.rawToken, findActiveRealm(parsedToken.issuer))
+      OptionT(getRealm).getOrRaise(UnknownAccessTokenIssuer)
+    }
 
     def fetchGroups(parsedToken: ParsedToken, realm: Realm): IO[Set[Group]] = {
       parsedToken.groups
@@ -103,7 +100,7 @@ class IdentitiesImpl private[identities] (
 object IdentitiesImpl {
 
   type GroupsCache = LocalCache[String, Set[Group]]
-  type RealmCache  = LocalCache[String, Option[Realm]]
+  type RealmCache  = LocalCache[String, Realm]
 
   private val logger = Logger.cats[this.type]
 
@@ -143,7 +140,7 @@ object IdentitiesImpl {
     */
   def apply(realms: Realms, hc: HttpClient, config: CacheConfig): IO[Identities] = {
     val groupsCache = LocalCache[String, Set[Group]](config)
-    val realmCache  = LocalCache[String, Option[Realm]](config)
+    val realmCache  = LocalCache[String, Realm](config)
 
     val findActiveRealm: String => IO[Option[Realm]] = { (issuer: String) =>
       val pagination = FromPagination(0, 1000)

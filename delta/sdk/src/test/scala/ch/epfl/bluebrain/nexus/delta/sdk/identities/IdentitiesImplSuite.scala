@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.model.{HttpRequest, Uri}
 import cats.data.NonEmptySet
 import cats.effect.IO
+import cats.effect.concurrent.Ref
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.LocalCache
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{RealmGen, WellKnownGen}
@@ -109,6 +110,8 @@ class IdentitiesImplSuite extends CatsEffectSuite with TestHelpers with IOFromMa
       keys = Set(parser.parse(rsaKey.toPublicJWK.toJSONString).rightValue)
     )
 
+  type FindRealm = String => IO[Option[Realm]]
+
   private val findActiveRealm: String => IO[Option[Realm]] = ioFromMap[String, Realm](
     githubLabel.value  -> github,
     githubLabel2.value -> github2,
@@ -121,18 +124,21 @@ class IdentitiesImplSuite extends CatsEffectSuite with TestHelpers with IOFromMa
       (_: Uri) => HttpUnexpectedError(HttpRequest(), "Error while getting response")
     )(uri)
 
-  private val realmCache  = LocalCache[String, Option[Realm]]()
+  private val realmCache  = LocalCache[String, Realm]()
   private val groupsCache = LocalCache[String, Set[Group]]()
 
-  private val identitiesFromCaches: (RealmCache, GroupsCache) => Identities = (realmCache, groupsCache) =>
-    new IdentitiesImpl(
-      realmCache,
-      findActiveRealm,
-      (uri: Uri, _: OAuth2BearerToken) => userInfo(uri),
-      groupsCache
-    )
+  private val identitiesFromCaches: (RealmCache, GroupsCache) => FindRealm => Identities =
+    (realmCache, groupsCache) =>
+      findRealm =>
+        new IdentitiesImpl(
+          realmCache,
+          findRealm,
+          (uri: Uri, _: OAuth2BearerToken) => userInfo(uri),
+          groupsCache
+        )
 
-  private val identities = identitiesFromCaches(realmCache.unsafeRunSync(), groupsCache.unsafeRunSync())
+  private val identities =
+    identitiesFromCaches(realmCache.unsafeRunSync(), groupsCache.unsafeRunSync())(findActiveRealm)
 
   private val auth   = Authenticated(githubLabel)
   private val group1 = Group("group1", githubLabel)
@@ -346,9 +352,36 @@ class IdentitiesImplSuite extends CatsEffectSuite with TestHelpers with IOFromMa
       groups      <- groupsCache
       _           <- realm.get(parsedToken.rawToken).assertNone
       _           <- groups.get(parsedToken.rawToken).assertNone
-      _           <- identitiesFromCaches(realm, groups).exchange(token)
-      _           <- realm.get(parsedToken.rawToken).assertSome(Some(github))
+      _           <- identitiesFromCaches(realm, groups)(findActiveRealm).exchange(token)
+      _           <- realm.get(parsedToken.rawToken).assertSome(github)
       _           <- groups.get(parsedToken.rawToken).assertSome(Set(group3, group4))
+    } yield ()
+  }
+
+  test("Find active realm function should not run once value is cached") {
+    val token = generateToken(
+      subject = "Robert",
+      issuer = githubLabel,
+      rsaKey = rsaKey,
+      expires = nowPlus1h,
+      groups = Some(Set("group1", "group2"))
+    )
+
+    def findRealmOnce: Ref[IO, Boolean] => String => IO[Option[Realm]] = ref =>
+      _ =>
+        for {
+          flag <- ref.get
+          _    <- IO.raiseWhen(!flag)(new RuntimeException("Function executed more than once!"))
+          _    <- ref.set(false)
+        } yield Some(github)
+
+    for {
+      sem       <- Ref.of[IO, Boolean](true)
+      realm     <- realmCache
+      groups    <- groupsCache
+      identities = identitiesFromCaches(realm, groups)(findRealmOnce(sem))
+      _         <- identities.exchange(token)
+      _         <- identities.exchange(token)
     } yield ()
   }
 
