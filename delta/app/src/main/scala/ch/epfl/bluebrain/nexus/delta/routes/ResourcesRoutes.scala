@@ -144,7 +144,7 @@ final class ResourcesRoutes(
                             }
                           },
                           // Fetch a resource
-                          (get & idSegmentRef(id)) { id =>
+                          (get & idSegmentRef(id) & varyAcceptHeaders) { id =>
                             emitOrFusionRedirect(
                               ref,
                               id,
@@ -173,15 +173,16 @@ final class ResourcesRoutes(
                         }
                       },
                       // Fetch a resource original source
-                      (pathPrefix("source") & get & pathEndOrSingleSlash & idSegmentRef(id)) { id =>
+                      (pathPrefix("source") & get & pathEndOrSingleSlash & idSegmentRef(id) & varyAcceptHeaders) { id =>
                         authorizeFor(ref, Read).apply {
-                          parameter("annotate".as[Boolean].withDefault(false)) { annotate =>
+                          (parameter("annotate".as[Boolean].withDefault(false))) { annotate =>
                             implicit val source: Printer = sourcePrinter
                             if (annotate) {
                               emit(
                                 resources
                                   .fetch(id, ref, schemaOpt)
                                   .flatMap(asSourceWithMetadata)
+                                  .rejectWhen(wrongJsonOrNotFound)
                               )
                             } else {
                               val sourceIO = resources.fetch(id, ref, schemaOpt).map(_.value.source)
