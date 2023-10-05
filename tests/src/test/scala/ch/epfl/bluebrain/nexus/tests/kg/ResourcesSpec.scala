@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.MediaTypes.`text/html`
-import akka.http.scaladsl.model.headers.{Accept, Location}
+import akka.http.scaladsl.model.headers.{Accept, Location, RawHeader}
 import akka.http.scaladsl.model.{MediaRange, StatusCodes}
 import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers
 import cats.implicits._
@@ -34,6 +34,8 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
 
   private val IdLens: Optional[Json, String]   = root.`@id`.string
   private val TypeLens: Optional[Json, String] = root.`@type`.string
+
+  private val varyHeader = RawHeader("Vary", "Accept,Accept-Encoding")
 
   private val resource1Id                                = "https://dev.nexus.test.com/simplified-resource/1"
   private def resource1Response(rev: Int, priority: Int) =
@@ -130,18 +132,24 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
     }
 
     "fail to fetch the resource when the user does not have access" in {
-      deltaClient.get[Json](s"/resources/$id1/test-schema/test-resource:1", Anonymous) { expectForbidden }
+      deltaClient.get[Json](s"/resources/$id1/test-schema/test-resource:1", Anonymous) { (_, response) =>
+        expectForbidden
+        response.headers should not contain varyHeader
+      }
     }
 
     "fail to fetch the original payload when the user does not have access" in {
-      deltaClient.get[Json](s"/resources/$id1/test-schema/test-resource:1/source", Anonymous) {
+      deltaClient.get[Json](s"/resources/$id1/test-schema/test-resource:1/source", Anonymous) { (_, response) =>
         expectForbidden
+        response.headers should not contain varyHeader
       }
     }
 
     "fail to fetch the annotated original payload when the user does not have access" in {
       deltaClient.get[Json](s"/resources/$id1/test-schema/test-resource:1/source?annotate=true", Anonymous) {
-        expectForbidden
+        (_, response) =>
+          expectForbidden
+          response.headers should not contain varyHeader
       }
     }
 
@@ -150,6 +158,7 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
         val expected = resource1Response(1, 5)
         response.status shouldEqual StatusCodes.OK
         filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
+        response.headers should contain(varyHeader)
       }
     }
 
@@ -158,6 +167,7 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
         val expected = SimpleResource.sourcePayload(resource1Id, 5)
         response.status shouldEqual StatusCodes.OK
         json should equalIgnoreArrayOrder(expected)
+        response.headers should contain(varyHeader)
       }
     }
 
@@ -167,6 +177,7 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
           response.status shouldEqual StatusCodes.OK
           val expected = resource1AnnotatedSource(1, 5)
           filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
+          response.headers should contain(varyHeader)
       }
     }
 
@@ -179,6 +190,7 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
              }
         _ <- deltaClient.get[Json](s"/resources/$id1/_/42/source?annotate=true", Morty) { (json, response) =>
                response.status shouldEqual StatusCodes.OK
+               response.headers should contain(varyHeader)
                json should have(`@id`(s"42"))
              }
       } yield succeed
@@ -198,6 +210,7 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
         _ <- deltaClient.get[Json](s"/resources/$id1/_/${UrlUtils.encode(generatedId)}/source?annotate=true", Morty) {
                (json, response) =>
                  response.status shouldEqual StatusCodes.OK
+                 response.headers should contain(varyHeader)
                  json should have(`@id`(generatedId))
              }
       } yield succeed
@@ -207,6 +220,7 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
       deltaClient.get[Json](s"/resources/$id1/test-schema/does-not-exist-resource:1/source?annotate=true", Morty) {
         (_, response) =>
           response.status shouldEqual StatusCodes.NotFound
+          response.headers should not contain varyHeader
       }
     }
 
@@ -215,6 +229,7 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
 
       deltaClient.put[Json](s"/resources/$id2/test-schema/test-resource:1", payload, Rick) { (_, response) =>
         response.status shouldEqual StatusCodes.NotFound
+        response.headers should not contain varyHeader
       }
     }
 
@@ -225,6 +240,7 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
 
       deltaClient.put[Json](s"/resources/$id2/_/test-resource:1", payload, Rick) { (_, response) =>
         response.status shouldEqual StatusCodes.BadRequest
+        response.headers should not contain varyHeader
       }
     }
   }
