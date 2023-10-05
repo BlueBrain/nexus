@@ -23,8 +23,9 @@ class ResourceSerializationSuite extends SerializationSuite with ResourceInstanc
   val instant: Instant = Instant.EPOCH
   val realm: Label     = Label.unsafe("myrealm")
   val subject: Subject = User("username", realm)
+  val tag: UserTag     = UserTag.unsafe("mytag")
 
-  private val created    =
+  private val created        =
     ResourceCreated(
       myId,
       projectRef,
@@ -37,9 +38,11 @@ class ResourceSerializationSuite extends SerializationSuite with ResourceInstanc
       remoteContextRefs,
       1,
       instant,
-      subject
+      subject,
+      None
     )
-  private val updated    =
+  private val createdWithTag = created.copy(tag = Some(tag))
+  private val updated        =
     ResourceUpdated(
       myId,
       projectRef,
@@ -54,7 +57,7 @@ class ResourceSerializationSuite extends SerializationSuite with ResourceInstanc
       instant,
       subject
     )
-  private val refreshed  = ResourceRefreshed(
+  private val refreshed      = ResourceRefreshed(
     myId,
     projectRef,
     Revision(schemas.resources, 1),
@@ -67,7 +70,7 @@ class ResourceSerializationSuite extends SerializationSuite with ResourceInstanc
     instant,
     subject
   )
-  private val tagged     =
+  private val tagged         =
     ResourceTagAdded(
       myId,
       projectRef,
@@ -78,7 +81,7 @@ class ResourceSerializationSuite extends SerializationSuite with ResourceInstanc
       instant,
       subject
     )
-  private val deprecated =
+  private val deprecated     =
     ResourceDeprecated(
       myId,
       projectRef,
@@ -87,7 +90,7 @@ class ResourceSerializationSuite extends SerializationSuite with ResourceInstanc
       instant,
       subject
     )
-  private val tagDeleted =
+  private val tagDeleted     =
     ResourceTagDeleted(
       myId,
       projectRef,
@@ -100,6 +103,7 @@ class ResourceSerializationSuite extends SerializationSuite with ResourceInstanc
 
   private val resourcesMapping = List(
     (created, loadEvents("resources", "resource-created.json"), Created),
+    (createdWithTag, loadEvents("resources", "resource-created-tagged.json"), Created),
     (updated, loadEvents("resources", "resource-updated.json"), Updated),
     (refreshed, loadEvents("resources", "resource-refreshed.json"), Refreshed),
     (tagged, loadEvents("resources", "resource-tagged.json"), Tagged),

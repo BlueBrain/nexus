@@ -19,7 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef, ResourceRef}
 import io.circe.generic.extras.Configuration
-import io.circe.generic.extras.semiauto.{deriveConfiguredCodec, deriveConfiguredEncoder}
+import io.circe.generic.extras.semiauto.{deriveConfiguredDecoder, deriveConfiguredEncoder}
 import io.circe.syntax._
 import io.circe._
 
@@ -94,7 +94,8 @@ object ResourceEvent {
       remoteContexts: Set[RemoteContextRef] = Set.empty,
       rev: Int,
       instant: Instant,
-      subject: Subject
+      subject: Subject,
+      tag: Option[UserTag]
   ) extends ResourceEvent
 
   /**
@@ -276,7 +277,9 @@ object ResourceEvent {
     //  when deserializing an event that has none. Remove it after 1.10 migration.
     implicit val configuration: Configuration = Serializer.circeConfiguration.withDefaults
 
-    implicit val coder: Codec.AsObject[ResourceEvent] = deriveConfiguredCodec[ResourceEvent]
+    implicit val enc: Encoder.AsObject[ResourceEvent] =
+      deriveConfiguredEncoder[ResourceEvent].mapJsonObject(dropNullValues)
+    implicit val coder: Codec.AsObject[ResourceEvent] = Codec.AsObject.from(deriveConfiguredDecoder[ResourceEvent], enc)
     Serializer()
   }
 
@@ -336,8 +339,8 @@ object ResourceEvent {
       implicit val subjectEncoder: Encoder[Subject]       = IriEncoder.jsonEncoder[Subject]
       implicit val projectRefEncoder: Encoder[ProjectRef] = IriEncoder.jsonEncoder[ProjectRef]
       Encoder.encodeJsonObject.contramapObject { event =>
-        deriveConfiguredEncoder[ResourceEvent]
-          .encodeObject(event)
+        val obj = deriveConfiguredEncoder[ResourceEvent].encodeObject(event)
+        dropNullValues(obj)
           .remove("compacted")
           .remove("expanded")
           .remove("remoteContexts")
@@ -345,4 +348,6 @@ object ResourceEvent {
       }
     }
   }
+
+  private def dropNullValues(j: JsonObject): JsonObject = j.filter { case (_, v) => !v.isNull }
 }

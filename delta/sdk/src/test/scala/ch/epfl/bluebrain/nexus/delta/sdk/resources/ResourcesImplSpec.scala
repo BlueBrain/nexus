@@ -126,7 +126,7 @@ class ResourcesImplSpec
         forAll(List(myId -> resourceSchema, myId2 -> Latest(schema1.id))) { case (id, schemaRef) =>
           val sourceWithId = source deepMerge json"""{"@id": "$id"}"""
           val expectedData = ResourceGen.resource(id, projectRef, sourceWithId, Revision(schemaRef.iri, 1))
-          val resource     = resources.create(projectRef, schemaRef, sourceWithId).accepted
+          val resource     = resources.create(projectRef, schemaRef, sourceWithId, None).accepted
           resource shouldEqual ResourceGen.resourceFor(
             expectedData,
             types = types,
@@ -144,7 +144,7 @@ class ResourcesImplSpec
         forAll(list) { case (id, schemaSegment, schemaRef) =>
           val sourceWithId = source deepMerge json"""{"@id": "$id"}"""
           val expectedData = ResourceGen.resource(id, projectRef, sourceWithId, Revision(schemaRef.iri, 1))
-          val resource     = resources.create(id, projectRef, schemaSegment, sourceWithId).accepted
+          val resource     = resources.create(id, projectRef, schemaSegment, sourceWithId, None).accepted
           resource shouldEqual ResourceGen.resourceFor(
             expectedData,
             types = types,
@@ -165,7 +165,7 @@ class ResourcesImplSpec
             ResourceGen
               .resource(iri, projectRef, sourceWithId, Revision(schemaRef.iri, 1))
               .copy(source = sourceWithoutId)
-          val resource        = resources.create(segment, projectRef, schemaRef, sourceWithoutId).accepted
+          val resource        = resources.create(segment, projectRef, schemaRef, sourceWithoutId, None).accepted
           resource shouldEqual ResourceGen.resourceFor(
             expectedData,
             types = types,
@@ -182,7 +182,7 @@ class ResourcesImplSpec
         val expectedData   =
           ResourceGen.resource(myId7, projectRef, payloadWithCtx, schemaRev).copy(source = payload)
 
-        resources.create(myId7, projectRef, schemas.resources, payload).accepted shouldEqual
+        resources.create(myId7, projectRef, schemas.resources, payload, None).accepted shouldEqual
           ResourceGen.resourceFor(expectedData, subject = subject)
       }
 
@@ -192,7 +192,7 @@ class ResourcesImplSpec
         val schemaRev    = Revision(resourceSchema.iri, 1)
         val expectedData =
           ResourceGen.resource(myId8, projectRef, sourceMyId8, schemaRev)(resolverContextResolution(projectRef))
-        val resource     = resources.create(projectRef, resourceSchema, sourceMyId8).accepted
+        val resource     = resources.create(projectRef, resourceSchema, sourceMyId8, None).accepted
         resource shouldEqual ResourceGen.resourceFor(
           expectedData,
           types = types,
@@ -205,7 +205,7 @@ class ResourcesImplSpec
         val schemaRev    = Revision(resourceSchema.iri, 1)
         val expectedData =
           ResourceGen.resource(myId9, projectRef, sourceMyId9, schemaRev)(resolverContextResolution(projectRef))
-        val resource     = resources.create(projectRef, resourceSchema, sourceMyId9).accepted
+        val resource     = resources.create(projectRef, resourceSchema, sourceMyId9, None).accepted
         resource shouldEqual ResourceGen.resourceFor(
           expectedData,
           types = types,
@@ -215,12 +215,12 @@ class ResourcesImplSpec
 
       "reject with different ids on the payload and passed" in {
         val otherId = nxv + "other"
-        resources.create(otherId, projectRef, schemas.resources, source).rejected shouldEqual
+        resources.create(otherId, projectRef, schemas.resources, source, None).rejected shouldEqual
           UnexpectedResourceId(id = otherId, payloadId = myId)
       }
 
       "reject if the id is blank" in {
-        resources.create(projectRef, schemas.resources, sourceWithBlankId).rejected shouldEqual
+        resources.create(projectRef, schemas.resources, sourceWithBlankId, None).rejected shouldEqual
           BlankResourceId
       }
 
@@ -228,16 +228,16 @@ class ResourcesImplSpec
         forAll(List(Latest(schemas.resources), Latest(schema1.id))) { schemaRef =>
           val myId                 = contexts + "some.json"
           val sourceWithReservedId = source deepMerge json"""{"@id": "$myId"}"""
-          resources.create(myId, projectRef, schemaRef, sourceWithReservedId).rejectedWith[ReservedResourceId]
+          resources.create(myId, projectRef, schemaRef, sourceWithReservedId, None).rejectedWith[ReservedResourceId]
         }
       }
 
       "reject if it already exists" in {
-        resources.create(myId, projectRef, schemas.resources, source).rejected shouldEqual
+        resources.create(myId, projectRef, schemas.resources, source, None).rejected shouldEqual
           ResourceAlreadyExists(myId, projectRef)
 
         resources
-          .create("nxv:myid", projectRef, schemas.resources, source)
+          .create("nxv:myid", projectRef, schemas.resources, source, None)
           .rejected shouldEqual
           ResourceAlreadyExists(myId, projectRef)
       }
@@ -245,14 +245,14 @@ class ResourcesImplSpec
       "reject if it does not validate against its schema" in {
         val otherId     = nxv + "other"
         val wrongSource = source deepMerge json"""{"@id": "$otherId", "number": "wrong"}"""
-        resources.create(otherId, projectRef, schema1.id, wrongSource).rejectedWith[InvalidResource]
+        resources.create(otherId, projectRef, schema1.id, wrongSource, None).rejectedWith[InvalidResource]
       }
 
       "reject if the validated schema is deprecated" in {
         val otherId    = nxv + "other"
         val noIdSource = source.removeKeys(keywords.id)
         forAll(List[IdSegment](schema2.id, "Person")) { segment =>
-          resources.create(otherId, projectRef, segment, noIdSource).rejected shouldEqual
+          resources.create(otherId, projectRef, segment, noIdSource, None).rejected shouldEqual
             SchemaIsDeprecated(schema2.id)
 
         }
@@ -261,7 +261,7 @@ class ResourcesImplSpec
       "reject if the validated schema does not exists" in {
         val otherId    = nxv + "other"
         val noIdSource = source.removeKeys(keywords.id)
-        resources.create(otherId, projectRef, "nxv:notExist", noIdSource).rejected shouldEqual
+        resources.create(otherId, projectRef, "nxv:notExist", noIdSource, None).rejected shouldEqual
           InvalidSchemaRejection(
             Latest(nxv + "notExist"),
             project.ref,
@@ -276,15 +276,17 @@ class ResourcesImplSpec
 
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
-        resources.create(projectRef, schemas.resources, source).rejectedWith[ProjectContextRejection]
+        resources.create(projectRef, schemas.resources, source, None).rejectedWith[ProjectContextRejection]
 
-        resources.create(myId, projectRef, schemas.resources, source).rejectedWith[ProjectContextRejection]
+        resources.create(myId, projectRef, schemas.resources, source, None).rejectedWith[ProjectContextRejection]
       }
 
       "reject if project is deprecated" in {
-        resources.create(projectDeprecated.ref, schemas.resources, source).rejectedWith[ProjectContextRejection]
+        resources.create(projectDeprecated.ref, schemas.resources, source, None).rejectedWith[ProjectContextRejection]
 
-        resources.create(myId, projectDeprecated.ref, schemas.resources, source).rejectedWith[ProjectContextRejection]
+        resources
+          .create(myId, projectDeprecated.ref, schemas.resources, source, None)
+          .rejectedWith[ProjectContextRejection]
       }
 
       "reject if part of the context can't be resolved" in {
@@ -292,7 +294,7 @@ class ResourcesImplSpec
         val unknownResource = nxv + "fail"
         val sourceMyIdX     =
           source.addContext(contexts.metadata).addContext(unknownResource) deepMerge json"""{"@id": "$myIdX"}"""
-        resources.create(projectRef, resourceSchema, sourceMyIdX).rejectedWith[InvalidJsonLdFormat]
+        resources.create(projectRef, resourceSchema, sourceMyIdX, None).rejectedWith[InvalidJsonLdFormat]
       }
 
       "reject for an incorrect payload" in {
@@ -301,7 +303,7 @@ class ResourcesImplSpec
           source.addContext(
             contexts.metadata
           ) deepMerge json"""{"other": {"@id": " http://nexus.example.com/myid"}}""" deepMerge json"""{"@id": "$myIdX"}"""
-        resources.create(projectRef, resourceSchema, sourceMyIdX).rejectedWith[InvalidJsonLdFormat]
+        resources.create(projectRef, resourceSchema, sourceMyIdX, None).rejectedWith[InvalidJsonLdFormat]
       }
     }
 

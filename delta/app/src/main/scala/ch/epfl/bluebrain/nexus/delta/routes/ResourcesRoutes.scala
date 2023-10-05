@@ -26,6 +26,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resources.NexusSource.DecodingOption
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{InvalidJsonLdFormat, InvalidSchemaRejection, ResourceNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{Resource, ResourceRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.{NexusSource, Resources}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.{Json, Printer}
 import monix.bio.IO
@@ -79,26 +80,27 @@ final class ResourcesRoutes(
           resolveProjectRef.apply { ref =>
             concat(
               // Create a resource without schema nor id segment
-              (post & pathEndOrSingleSlash & noParameter("rev") & entity(as[NexusSource]) & indexingMode) {
-                (source, mode) =>
-                  authorizeFor(ref, Write).apply {
-                    emit(
-                      Created,
-                      resources.create(ref, resourceSchema, source.value).tapEval(indexUIO(ref, _, mode)).map(_.void)
-                    )
-                  }
+              (post & pathEndOrSingleSlash & noParameter("rev") & entity(as[NexusSource]) & indexingMode & parameter(
+                "tag".as[UserTag].?
+              )) { (source, mode, tag) =>
+                authorizeFor(ref, Write).apply {
+                  emit(
+                    Created,
+                    resources.create(ref, resourceSchema, source.value, tag).tapEval(indexUIO(ref, _, mode)).map(_.void)
+                  )
+                }
               },
               (idSegment & indexingMode) { (schema, mode) =>
                 val schemaOpt = underscoreToOption(schema)
                 concat(
                   // Create a resource with schema but without id segment
-                  (post & pathEndOrSingleSlash & noParameter("rev")) {
+                  (post & pathEndOrSingleSlash & noParameter("rev") & parameter("tag".as[UserTag].?)) { tag =>
                     authorizeFor(ref, Write).apply {
                       entity(as[NexusSource]) { source =>
                         emit(
                           Created,
                           resources
-                            .create(ref, schema, source.value)
+                            .create(ref, schema, source.value, tag)
                             .tapEval(indexUIO(ref, _, mode))
                             .map(_.void)
                             .rejectWhen(wrongJsonOrNotFound)
@@ -113,27 +115,32 @@ final class ResourcesRoutes(
                           // Create or update a resource
                           put {
                             authorizeFor(ref, Write).apply {
-                              (parameter("rev".as[Int].?) & pathEndOrSingleSlash & entity(as[NexusSource])) {
-                                case (None, source)      =>
+                              concat(
+                                (noParameter("rev") & pathEndOrSingleSlash & parameter("tag".as[UserTag].?) & entity(
+                                  as[NexusSource]
+                                )) { (tag, source) =>
                                   // Create a resource with schema and id segments
                                   emit(
                                     Created,
                                     resources
-                                      .create(id, ref, schema, source.value)
+                                      .create(id, ref, schema, source.value, tag)
                                       .tapEval(indexUIO(ref, _, mode))
                                       .map(_.void)
                                       .rejectWhen(wrongJsonOrNotFound)
                                   )
-                                case (Some(rev), source) =>
-                                  // Update a resource
-                                  emit(
-                                    resources
-                                      .update(id, ref, schemaOpt, rev, source.value)
-                                      .tapEval(indexUIO(ref, _, mode))
-                                      .map(_.void)
-                                      .rejectWhen(wrongJsonOrNotFound)
-                                  )
-                              }
+                                },
+                                (pathEndOrSingleSlash & parameter("rev".as[Int]) & entity(as[NexusSource])) {
+                                  (rev, source) =>
+                                    // Update a resource
+                                    emit(
+                                      resources
+                                        .update(id, ref, schemaOpt, rev, source.value)
+                                        .tapEval(indexUIO(ref, _, mode))
+                                        .map(_.void)
+                                        .rejectWhen(wrongJsonOrNotFound)
+                                    )
+                                }
+                              )
                             }
                           },
                           // Deprecate a resource

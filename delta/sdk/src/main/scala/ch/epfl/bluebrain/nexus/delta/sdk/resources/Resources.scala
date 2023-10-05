@@ -42,7 +42,8 @@ trait Resources {
   def create(
       projectRef: ProjectRef,
       schema: IdSegment,
-      source: Json
+      source: Json,
+      tag: Option[UserTag]
   )(implicit caller: Caller): IO[ResourceRejection, DataResource]
 
   /**
@@ -61,7 +62,8 @@ trait Resources {
       id: IdSegment,
       projectRef: ProjectRef,
       schema: IdSegment,
-      source: Json
+      source: Json,
+      tag: Option[UserTag]
   )(implicit caller: Caller): IO[ResourceRejection, DataResource]
 
   /**
@@ -261,10 +263,12 @@ object Resources {
 
   private[delta] def next(state: Option[ResourceState], event: ResourceEvent): Option[ResourceState] = {
     // format: off
-    def created(e: ResourceCreated): Option[ResourceState] =
+    def created(e: ResourceCreated): Option[ResourceState] = {
+      val tags = e.tag.fold(Tags.empty)(t => Tags(t -> e.rev))
       Option.when(state.isEmpty){
-        ResourceState(e.id, e.project, e.schemaProject, e.source, e.compacted, e.expanded, e.remoteContexts, e.rev, deprecated = false, e.schema, e.types, Tags.empty, e.instant, e.subject, e.instant, e.subject)
+        ResourceState(e.id, e.project, e.schemaProject, e.source, e.compacted, e.expanded, e.remoteContexts, e.rev, deprecated = false, e.schema, e.types, tags, e.instant, e.subject, e.instant, e.subject)
       }
+    }
 
     def updated(e: ResourceUpdated): Option[ResourceState] = state.map {
       _.copy(rev = e.rev, types = e.types, source = e.source, compacted = e.compacted, expanded = e.expanded, remoteContexts = e.remoteContexts, updatedAt = e.instant, updatedBy = e.subject)
@@ -324,7 +328,7 @@ object Resources {
           for {
             (schemaRev, schemaProject) <- validate(c.id, expanded, c.schema, c.project, c.caller)
             t                          <- IOUtils.instant
-          } yield ResourceCreated(c.id, c.project, schemaRev, schemaProject, types, c.source, compacted, expanded, remoteContextRefs, 1, t, c.subject)
+          } yield ResourceCreated(c.id, c.project, schemaRev, schemaProject, types, c.source, compacted, expanded, remoteContextRefs, 1, t, c.subject, c.tag)
           // format: on
 
         case _ => IO.raiseError(ResourceAlreadyExists(c.id, c.project))

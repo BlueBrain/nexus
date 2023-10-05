@@ -36,13 +36,14 @@ final class ResourcesImpl private (
   override def create(
       projectRef: ProjectRef,
       schema: IdSegment,
-      source: Json
+      source: Json,
+      tag: Option[UserTag]
   )(implicit caller: Caller): IO[ResourceRejection, DataResource] = {
     for {
       projectContext <- fetchContext.onCreate(projectRef)
       schemeRef      <- expandResourceRef(schema, projectContext)
       jsonld         <- sourceParser(projectRef, projectContext, source)
-      res            <- eval(CreateResource(jsonld.iri, projectRef, schemeRef, source, jsonld, caller))
+      res            <- eval(CreateResource(jsonld.iri, projectRef, schemeRef, source, jsonld, caller, tag))
     } yield res
   }.span("createResource")
 
@@ -50,14 +51,15 @@ final class ResourcesImpl private (
       id: IdSegment,
       projectRef: ProjectRef,
       schema: IdSegment,
-      source: Json
+      source: Json,
+      tag: Option[UserTag]
   )(implicit caller: Caller): IO[ResourceRejection, DataResource] = {
     for {
       projectContext <- fetchContext.onCreate(projectRef)
       iri            <- expandIri(id, projectContext)
       schemeRef      <- expandResourceRef(schema, projectContext)
       jsonld         <- sourceParser(projectRef, projectContext, iri, source)
-      res            <- eval(CreateResource(iri, projectRef, schemeRef, source, jsonld, caller))
+      res            <- eval(CreateResource(iri, projectRef, schemeRef, source, jsonld, caller, tag))
     } yield res
   }.span("createResource")
 

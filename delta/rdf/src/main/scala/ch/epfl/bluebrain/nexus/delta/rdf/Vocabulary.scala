@@ -174,6 +174,9 @@ object Vocabulary {
     val originalSource        = Metadata("original_source")
     val effectiveApiMappings  = Metadata("effectiveApiMappings")
 
+    // TODO already added in another ticket, remove here after rebase
+    val tag = Metadata("tag")
+
     val defaultResolver = nxv + "defaultInProject"
 
     // Resource types
