@@ -24,19 +24,19 @@ import scala.collection.immutable.VectorMap
 
 class SchemaImportsSuite extends CatsEffectSuite with TestHelpers with CirceLiteral with Fixtures {
 
-  private val alice = User("alice", Label.unsafe("wonderland"))
+  private val alice                = User("alice", Label.unsafe("wonderland"))
   implicit val aliceCaller: Caller = Caller(alice, Set(alice))
 
-  private val neuroshapes = "https://neuroshapes.org"
+  private val neuroshapes       = "https://neuroshapes.org"
   private val parcellationlabel = iri"$neuroshapes/dash/parcellationlabel"
-  private val json = jsonContentOf("schemas/parcellationlabel.json")
-  val projectRef = ProjectRef.unsafe("org", "proj")
+  private val json              = jsonContentOf("schemas/parcellationlabel.json")
+  val projectRef                = ProjectRef.unsafe("org", "proj")
 
   val entitySource = jsonContentOf("schemas/entity.json")
 
-  val entityExpandedSchema = ExpandedJsonLd(jsonContentOf("schemas/entity-expanded.json")).accepted
-  val identifierExpandedSchema = ExpandedJsonLd(jsonContentOf("schemas/identifier-expanded.json")).accepted
-  val licenseExpandedSchema = ExpandedJsonLd(jsonContentOf("schemas/license-expanded.json")).accepted
+  val entityExpandedSchema        = ExpandedJsonLd(jsonContentOf("schemas/entity-expanded.json")).accepted
+  val identifierExpandedSchema    = ExpandedJsonLd(jsonContentOf("schemas/identifier-expanded.json")).accepted
+  val licenseExpandedSchema       = ExpandedJsonLd(jsonContentOf("schemas/license-expanded.json")).accepted
   val propertyValueExpandedSchema = ExpandedJsonLd(jsonContentOf("schemas/property-value-expanded.json")).accepted
 
   val expandedSchemaMap = Map(
@@ -65,13 +65,13 @@ class SchemaImportsSuite extends CatsEffectSuite with TestHelpers with CirceLite
 
   val errorReport = ResourceResolutionReport()
 
-  val fetchSchema: Resolve[Schema] = {
+  val fetchSchema: Resolve[Schema]     = {
     case (ref, `projectRef`, _) => IO.pure(expandedSchemaMap.get(ref.iri).toRight(errorReport))
-    case (_, _, _) => IO.pure(Left(errorReport))
+    case (_, _, _)              => IO.pure(Left(errorReport))
   }
   val fetchResource: Resolve[Resource] = {
     case (ref, `projectRef`, _) => IO.pure(resourceMap.get(ref.iri).toRight(errorReport))
-    case (_, _, _) => IO.pure(Left(errorReport))
+    case (_, _, _)              => IO.pure(Left(errorReport))
   }
 
   private def toExpanded(json: Json) = toCatsIO(ExpandedJsonLd(json))
@@ -81,7 +81,7 @@ class SchemaImportsSuite extends CatsEffectSuite with TestHelpers with CirceLite
   test("Resolve all the imports") {
     for {
       expanded <- toExpanded(json)
-      result <- imports.resolve(parcellationlabel, projectRef, expanded)
+      result   <- imports.resolve(parcellationlabel, projectRef, expanded)
     } yield {
       val expected = (resourceMap.take(1).values.map(_.expanded).toSet ++ Set(
         entityExpandedSchema,
@@ -94,15 +94,16 @@ class SchemaImportsSuite extends CatsEffectSuite with TestHelpers with CirceLite
   }
 
   test("Fail to resolve an import if it is not found") {
-    val other = iri"$neuroshapes/other"
-    val other2 = iri"$neuroshapes/other2"
+    val other        = iri"$neuroshapes/other"
+    val other2       = iri"$neuroshapes/other2"
     val parcellation = json deepMerge json"""{"imports": ["$neuroshapes/commons/entity", "$other", "$other2"]}"""
 
     val expectedError = InvalidSchemaResolution(
       parcellationlabel,
       schemaImports = Map(ResourceRef(other) -> errorReport, ResourceRef(other2) -> errorReport),
       resourceImports = Map(ResourceRef(other) -> errorReport, ResourceRef(other2) -> errorReport),
-      nonOntologyResources = Set.empty)
+      nonOntologyResources = Set.empty
+    )
 
     toExpanded(parcellation).flatMap { expanded =>
       imports.resolve(parcellationlabel, projectRef, expanded).intercept(expectedError)
@@ -110,14 +111,15 @@ class SchemaImportsSuite extends CatsEffectSuite with TestHelpers with CirceLite
   }
 
   test("Fail to resolve an import if it is a resource without owl:Ontology type") {
-    val wrong = iri"$neuroshapes/wrong/vocabulary"
+    val wrong        = iri"$neuroshapes/wrong/vocabulary"
     val parcellation = json deepMerge json"""{"imports": ["$neuroshapes/commons/entity", "$wrong"]}"""
 
     val expectedError = InvalidSchemaResolution(
       parcellationlabel,
       schemaImports = Map(ResourceRef(wrong) -> errorReport),
       resourceImports = Map.empty,
-      nonOntologyResources = Set(ResourceRef(wrong)))
+      nonOntologyResources = Set(ResourceRef(wrong))
+    )
 
     toExpanded(parcellation).flatMap { expanded =>
       imports.resolve(parcellationlabel, projectRef, expanded).intercept(expectedError)
