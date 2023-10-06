@@ -112,6 +112,10 @@ class ResourcesImplSpec
     val myId7 = nxv + "myid7" // Resource created against the resource schema with id passed explicitly and with payload without @context
     val myId8  = nxv + "myid8" // Resource created against the resource schema with id present on the payload and having its context pointing on metadata and myId1 and myId2
     val myId9  = nxv + "myid9" // Resource created against the resource schema with id present on the payload and having its context pointing on metadata and myId8 so therefore myId1 and myId2
+    val myId10 = nxv + "myid10"
+    val myId11 = nxv + "myid11"
+    val myId12 = nxv + "myid12"
+    val myId13 = nxv + "myid13"
 
     // format: on
     val resourceSchema    = Latest(schemas.resources)
@@ -135,6 +139,20 @@ class ResourcesImplSpec
         }
       }
 
+      "succeed and tag with the id present on the payload" in {
+        forAll(List(myId10 -> resourceSchema, myId11 -> Latest(schema1.id))) { case (id, schemaRef) =>
+          val sourceWithId = source deepMerge json"""{"@id": "$id"}"""
+          val expectedData =
+            ResourceGen.resource(id, projectRef, sourceWithId, Revision(schemaRef.iri, 1), Tags(tag -> 1))
+          val resource     = resources.create(projectRef, schemaRef, sourceWithId, Some(tag)).accepted
+          resource shouldEqual ResourceGen.resourceFor(
+            expectedData,
+            types = types,
+            subject = subject
+          )
+        }
+      }
+
       "succeed with the id present on the payload and passed" in {
         val list =
           List(
@@ -145,6 +163,25 @@ class ResourcesImplSpec
           val sourceWithId = source deepMerge json"""{"@id": "$id"}"""
           val expectedData = ResourceGen.resource(id, projectRef, sourceWithId, Revision(schemaRef.iri, 1))
           val resource     = resources.create(id, projectRef, schemaSegment, sourceWithId, None).accepted
+          resource shouldEqual ResourceGen.resourceFor(
+            expectedData,
+            types = types,
+            subject = subject
+          )
+        }
+      }
+
+      "succeed and tag with the id present on the payload and passed" in {
+        val list =
+          List(
+            (myId12, "_", resourceSchema),
+            (myId13, "myschema", Latest(schema1.id))
+          )
+        forAll(list) { case (id, schemaSegment, schemaRef) =>
+          val sourceWithId = source deepMerge json"""{"@id": "$id"}"""
+          val expectedData =
+            ResourceGen.resource(id, projectRef, sourceWithId, Revision(schemaRef.iri, 1), Tags(tag -> 1))
+          val resource     = resources.create(id, projectRef, schemaSegment, sourceWithId, Some(tag)).accepted
           resource shouldEqual ResourceGen.resourceFor(
             expectedData,
             types = types,

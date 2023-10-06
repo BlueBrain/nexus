@@ -181,7 +181,6 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap {
           response.asJson shouldEqual
             resourceMetadata(projectRef, id, schema, (nxv + "Custom").toString, createdBy = alice, updatedBy = alice)
         }
-
       }
     }
 
@@ -197,7 +196,6 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap {
           response.asJson shouldEqual
             resourceMetadata(projectRef, id, schema, (nxv + "Custom").toString, createdBy = alice, updatedBy = alice)
         }
-
       }
     }
 
