@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
 import akka.http.scaladsl.model.MediaTypes.`text/html`
-import akka.http.scaladsl.model.headers.{Accept, Location, OAuth2BearerToken}
+import akka.http.scaladsl.model.headers.{Accept, Location, OAuth2BearerToken, RawHeader}
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
@@ -118,6 +118,8 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap {
   private val payloadUpdated = payload deepMerge json"""{"name": "Alice", "address": null}"""
 
   private val payloadUpdatedWithMetdata = payloadWithMetadata deepMerge json"""{"name": "Alice", "address": null}"""
+
+  private val varyHeader = RawHeader("Vary", "Accept,Accept-Encoding")
 
   "A resource route" should {
 
@@ -359,6 +361,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap {
         status shouldEqual StatusCodes.OK
         val meta = resourceMetadata(projectRef, myId, schemas.resources, "Custom", deprecated = true, rev = 10)
         response.asJson shouldEqual payloadUpdated.dropNullValues.deepMerge(meta).deepMerge(resourceCtx)
+        response.headers should contain(varyHeader)
       }
     }
 
@@ -376,6 +379,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap {
         Get(endpoint) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           response.asJson shouldEqual payload.deepMerge(meta).deepMerge(resourceCtx)
+          response.headers should contain(varyHeader)
         }
       }
     }
@@ -440,6 +444,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap {
             "id"   -> "https://bluebrain.github.io/nexus/vocabulary/wrongid",
             "proj" -> "myorg/myproject"
           )
+          response.headers should not contain varyHeader
         }
       }
     }
@@ -448,6 +453,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap {
       Get("/v1/resources/myorg/myproject/_/myid/source?annotate=true") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual payloadUpdatedWithMetdata
+        response.headers should contain(varyHeader)
       }
     }
 
@@ -468,6 +474,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap {
         Get(endpoint) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           response.asJson shouldEqual payload.deepMerge(meta)
+          response.headers should contain(varyHeader)
         }
       }
     }
@@ -485,6 +492,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap {
         Get(endpoint) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           response.asJson shouldEqual payload
+          response.headers should contain(varyHeader)
         }
       }
     }

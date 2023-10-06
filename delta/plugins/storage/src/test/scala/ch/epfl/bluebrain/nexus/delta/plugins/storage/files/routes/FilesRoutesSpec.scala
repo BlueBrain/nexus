@@ -4,7 +4,7 @@ import akka.actor.typed
 import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
 import akka.http.scaladsl.model.MediaRanges._
 import akka.http.scaladsl.model.MediaTypes.`text/html`
-import akka.http.scaladsl.model.headers.{Accept, Location, OAuth2BearerToken}
+import akka.http.scaladsl.model.headers.{Accept, Location, OAuth2BearerToken, RawHeader}
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
@@ -125,6 +125,8 @@ class FilesRoutesSpec
 
   private val diskIdRev = ResourceRef.Revision(dId, 1)
   private val s3IdRev   = ResourceRef.Revision(s3Id, 2)
+
+  private val varyHeader = RawHeader("Vary", "Accept,Accept-Encoding")
 
   "File routes" should {
 
@@ -310,6 +312,7 @@ class FilesRoutesSpec
         Get(s"/v1/files/org/proj/file1$suffix") ~> Accept(`*/*`) ~> routes ~> check {
           response.status shouldEqual StatusCodes.Forbidden
           response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+          response.headers should not contain varyHeader
         }
       }
     }
@@ -320,6 +323,7 @@ class FilesRoutesSpec
         Get(s"/v1/files/org/proj/file1$suffix") ~> Accept(`video/*`) ~> routes ~> check {
           response.status shouldEqual StatusCodes.NotAcceptable
           response.asJson shouldEqual jsonContentOf("errors/content-type.json", "expected" -> "text/plain")
+          response.headers should not contain varyHeader
         }
       }
     }
@@ -336,6 +340,7 @@ class FilesRoutesSpec
             header("Content-Disposition").value.value() shouldEqual
               s"""attachment; filename="=?UTF-8?B?$filename64?=""""
             response.asString shouldEqual content
+            response.headers should contain(varyHeader)
           }
         }
       }
@@ -362,6 +367,7 @@ class FilesRoutesSpec
             header("Content-Disposition").value.value() shouldEqual
               s"""attachment; filename="=?UTF-8?B?$filename64?=""""
             response.asString shouldEqual content
+            response.headers should contain(varyHeader)
           }
         }
       }
@@ -375,6 +381,7 @@ class FilesRoutesSpec
           Get(s"$endpoint$suffix") ~> Accept(`application/ld+json`) ~> routes ~> check {
             response.status shouldEqual StatusCodes.Forbidden
             response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+            response.headers should not contain varyHeader
           }
         }
       }
@@ -386,6 +393,7 @@ class FilesRoutesSpec
         status shouldEqual StatusCodes.OK
         val attr = attributes("file-idx-1.txt")
         response.asJson shouldEqual fileMetadata(projectRef, file1, attr, diskIdRev, rev = 4, createdBy = alice)
+        response.headers should contain(varyHeader)
       }
     }
 
@@ -406,6 +414,7 @@ class FilesRoutesSpec
             status shouldEqual StatusCodes.OK
             response.asJson shouldEqual
               fileMetadata(projectRef, file1, attr, s3IdRev, createdBy = alice, updatedBy = alice)
+            response.headers should contain(varyHeader)
           }
         }
       }

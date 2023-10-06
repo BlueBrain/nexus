@@ -184,7 +184,7 @@ final class FilesRoutes(
     }
 
   def fetch(id: IdSegmentRef, ref: ProjectRef)(implicit caller: Caller): Route =
-    headerValueByType(Accept) {
+    (headerValueByType(Accept) & varyAcceptHeaders) {
       case accept if accept.mediaRanges.exists(metadataMediaRanges.contains) =>
         emit(fetchMetadata(id, ref).rejectOn[FileNotFound])
       case _                                                                 =>
