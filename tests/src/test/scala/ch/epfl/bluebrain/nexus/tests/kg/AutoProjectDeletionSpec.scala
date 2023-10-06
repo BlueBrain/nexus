@@ -4,7 +4,6 @@ import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.tests.BaseSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.projects.Bojack
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Events, Organizations, Projects, Resources}
-import monix.execution.Scheduler.Implicits.global
 import io.circe.Json
 
 import scala.concurrent.duration._
@@ -40,7 +39,7 @@ class AutoProjectDeletionSpec extends BaseSpec {
       _ <- deltaClient.get[Json](s"/projects/$ref1", Bojack)(expect(StatusCodes.OK))
     } yield succeed
 
-    setup.void.runSyncUnsafe()
+    setup.void.unsafeRunSync()
   }
 
   "eventually return a not found when attempting to fetch the project" in eventually {

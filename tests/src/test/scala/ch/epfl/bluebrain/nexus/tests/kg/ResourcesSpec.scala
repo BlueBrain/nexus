@@ -16,7 +16,6 @@ import ch.epfl.bluebrain.nexus.tests.resources.SimpleResource
 import ch.epfl.bluebrain.nexus.tests.{BaseSpec, Optics, SchemaPayload}
 import io.circe.Json
 import io.circe.optics.JsonPath.root
-import monix.execution.Scheduler.Implicits.global
 import monocle.Optional
 import org.scalatest.matchers.{HavePropertyMatchResult, HavePropertyMatcher}
 
@@ -287,7 +286,7 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
       for {
         _ <- deltaClient.get[Json](s"/schemas/$id1/test-schema", Rick) { (json, response1) =>
                response1.status shouldEqual StatusCodes.OK
-               runTask {
+               runIO {
                  for {
                    _ <- deltaClient.get[Json](s"/resolvers/$id2/_/test-schema", Rick) { (jsonResolved, response2) =>
                           response2.status shouldEqual StatusCodes.OK

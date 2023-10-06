@@ -6,7 +6,6 @@ import ch.epfl.bluebrain.nexus.tests.Identity.orgs.{Fry, Leela}
 import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.{BaseSpec, ExpectedResponse}
 import io.circe.Json
-import monix.execution.Scheduler.Implicits.global
 
 class OrgsSpec extends BaseSpec with EitherValuable {
 
@@ -110,7 +109,7 @@ class OrgsSpec extends BaseSpec with EitherValuable {
 
     "fetch organization by UUID" in {
       deltaClient.get[Json](s"/orgs/$id", Leela) { (jsonById, _) =>
-        runTask {
+        runIO {
           val orgUuid = _uuid.getOption(jsonById).value
 
           deltaClient.get[Json](s"/orgs/$orgUuid", Leela) { (jsonByUuid, response) =>
@@ -223,7 +222,7 @@ class OrgsSpec extends BaseSpec with EitherValuable {
                2
              )
         _ <- deltaClient.get[Json](s"/orgs/$id", Leela) { (lastVersion, response) =>
-               runTask {
+               runIO {
                  response.status shouldEqual StatusCodes.OK
                  admin.validate(lastVersion, "Organization", "orgs", id, updatedName2, 3, id)
                  deltaClient.get[Json](s"/orgs/$id?rev=3", Leela) { (thirdVersion, response) =>

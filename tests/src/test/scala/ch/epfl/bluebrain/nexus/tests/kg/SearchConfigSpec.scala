@@ -1,12 +1,12 @@
 package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.StatusCodes
+import cats.effect.IO
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.tests.BaseSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.resources.Rick
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Organizations, Resources}
 import io.circe.Json
-import monix.bio.Task
 import org.scalatest.Assertion
 
 import java.time.Instant
@@ -794,7 +794,7 @@ class SearchConfigSpec extends BaseSpec {
     jsonContentOf("/kg/search/id-query.json", "id" -> id, "field" -> field)
 
   /** Post a resource across all defined projects in the suite */
-  private def postResource(resourcePath: String): Task[List[Assertion]] = {
+  private def postResource(resourcePath: String): IO[List[Assertion]] = {
     val json = jsonContentOf(resourcePath)
     projects.parTraverse { project =>
       for {
@@ -809,7 +809,7 @@ class SearchConfigSpec extends BaseSpec {
     * Queries ES using the provided query. Asserts that there is only on result in _source. Runs the provided assertion
     * on the _source.
     */
-  private def assertOneSource(query: Json)(assertion: Json => Assertion): Task[Assertion] =
+  private def assertOneSource(query: Json)(assertion: Json => Assertion): IO[Assertion] =
     eventually {
       deltaClient.post[Json]("/search/query", query, Rick) { (body, response) =>
         response.status shouldEqual StatusCodes.OK
@@ -822,7 +822,7 @@ class SearchConfigSpec extends BaseSpec {
       }
     }
 
-  private def assertEmpty(query: Json): Task[Assertion] =
+  private def assertEmpty(query: Json): IO[Assertion] =
     assertOneSource(query)(j => assert(j == json"""{ }"""))
 
   /** Check that a given field in the json can be parsed as [[Instant]] */

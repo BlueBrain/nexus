@@ -2,21 +2,19 @@ package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.StatusCodes
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.tests.BaseSpec
 import ch.epfl.bluebrain.nexus.tests.HttpClient._
 import ch.epfl.bluebrain.nexus.tests.Identity.compositeviews.Jerry
 import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Events, Organizations, Views}
 import ch.epfl.bluebrain.nexus.tests.kg.CompositeViewsSpec.{albumQuery, bandQuery}
-import com.typesafe.scalalogging.Logger
 import io.circe.Json
 import io.circe.optics.JsonPath._
-import monix.bio.Task
-import monix.execution.Scheduler.Implicits.global
 
 class CompositeViewsSpec extends BaseSpec {
 
-  private val logger = Logger[this.type]
+  private val logger = Logger.cats[this.type]
 
   case class Stats(totalEvents: Long, remainingEvents: Long)
 
@@ -45,13 +43,11 @@ class CompositeViewsSpec extends BaseSpec {
       val projectPayload = jsonContentOf("/kg/views/composite/project.json")
       for {
         _ <- adminDsl.createOrganization(orgId, orgId, Jerry)
-        _ <- Task.sequence(
-               List(
-                 adminDsl.createProject(orgId, bandsProject, projectPayload, Jerry),
-                 adminDsl.createProject(orgId, albumsProject, projectPayload, Jerry),
-                 adminDsl.createProject(orgId, songsProject, projectPayload, Jerry)
-               )
-             )
+        _ <- List(
+               adminDsl.createProject(orgId, bandsProject, projectPayload, Jerry),
+               adminDsl.createProject(orgId, albumsProject, projectPayload, Jerry),
+               adminDsl.createProject(orgId, songsProject, projectPayload, Jerry)
+             ).sequence
       } yield succeed
     }
 
@@ -314,32 +310,29 @@ class CompositeViewsSpec extends BaseSpec {
 
   private def waitForView(viewId: String = "composite") = {
     eventually {
-      deltaClient.get[Json](s"/views/$orgId/bands/$viewId/projections/_/statistics", Jerry) { (json, response) =>
-        val stats = root._results.each.as[Stats].getAll(json)
-        logger.debug(s"Response: ${response.status} with ${stats.size} stats")
-        stats.foreach { stat =>
-          logger.debug(s"totalEvents: ${stat.totalEvents}, remainingEvents: ${stat.remainingEvents}")
-          stat.totalEvents should be > 0L
-          stat.remainingEvents shouldEqual 0
+      logger.info("Waiting for view to be indexed") >>
+        deltaClient.get[Json](s"/views/$orgId/bands/$viewId/projections/_/statistics", Jerry) { (json, response) =>
+          val stats = root._results.each.as[Stats].getAll(json)
+          stats.foreach { stat =>
+            stat.totalEvents should be > 0L
+            stat.remainingEvents shouldEqual 0
+          }
+          response.status shouldEqual StatusCodes.OK
         }
-        response.status shouldEqual StatusCodes.OK
-      }
     }
     succeed
   }
 
-  private def resetView(viewId: String) =
-    deltaClient.delete[Json](s"/views/$orgId/bands/$viewId/projections/_/offset", Jerry) { (_, response) =>
-      logger.info(s"Resetting view responded with ${response.status}")
-      response.status shouldEqual StatusCodes.OK
-    }
+  private def resetView(viewId: String) = {
+    logger.info("Resetting offsets") >>
+      deltaClient.delete[Json](s"/views/$orgId/bands/$viewId/projections/_/offset", Jerry) { (_, response) =>
+        response.status shouldEqual StatusCodes.OK
+      }
+  }
 
   private def resetAndWait(viewId: String = "composite") = {
-    logger.info("Waiting for view to be indexed")
     waitForView(viewId)
-    logger.info("Resetting offsets")
-    resetView(viewId).runSyncUnsafe()
-    logger.info("Waiting for view to be indexed again")
+    resetView(viewId).unsafeRunSync()
     waitForView(viewId)
   }
 

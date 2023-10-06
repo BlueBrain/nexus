@@ -4,7 +4,6 @@ import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.testkit.EitherValuable
 import ch.epfl.bluebrain.nexus.tests.{BaseSpec, Identity}
 import io.circe.Json
-import monix.execution.Scheduler.Implicits.global
 
 class ErrorsSpec extends BaseSpec with EitherValuable {
 
