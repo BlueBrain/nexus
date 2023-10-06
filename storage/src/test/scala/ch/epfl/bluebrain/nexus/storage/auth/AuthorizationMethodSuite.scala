@@ -21,7 +21,7 @@ class AuthorizationMethodSuite extends FunSuite {
     val config = parseConfig(
       """
         |authorization {
-        |  method = anonymous
+        |  type = anonymous
         |}
         |""".stripMargin
     )
@@ -35,7 +35,7 @@ class AuthorizationMethodSuite extends FunSuite {
     val config = parseConfig(
       s"""
         |authorization {
-        |  method = verify-token
+        |  type = verify-token
         |  issuer = bbp
         |  subject = admin
         |  audiences = [dev, staging]
@@ -57,7 +57,7 @@ class AuthorizationMethodSuite extends FunSuite {
     val config = parseConfig(
       s"""
          |authorization {
-         |  method = verify-token
+         |  type = verify-token
          |  issuer = bbp
          |  subject = admin
          |  keys = [ "${key1.toJSONString}" ]
@@ -78,7 +78,7 @@ class AuthorizationMethodSuite extends FunSuite {
     val config = parseConfig(
       s"""
          |authorization {
-         |  method = verify-token
+         |  type = verify-token
          |  subject = admin
          |  keys = [ "${key1.toJSONString}" ]
          |}
@@ -94,7 +94,7 @@ class AuthorizationMethodSuite extends FunSuite {
     val config = parseConfig(
       s"""
          |authorization {
-         |  method = verify-token
+         |  type = verify-token
          |  issuer = bbp
          |  keys = [ "${key1.toJSONString}" ]
          |}
@@ -108,7 +108,7 @@ class AuthorizationMethodSuite extends FunSuite {
     val config = parseConfig(
       s"""
          |authorization {
-         |  method = verify-token
+         |  type = verify-token
          |  issuer = bbp
          |  subject = admin
          |  keys = [ "xxx" ]
@@ -123,7 +123,7 @@ class AuthorizationMethodSuite extends FunSuite {
     val config = parseConfig(
       s"""
          |authorization {
-         |  method = verify-token
+         |  type = verify-token
          |  issuer = bbp
          |  subject = admin
          |  keys = [ ]
@@ -132,17 +132,6 @@ class AuthorizationMethodSuite extends FunSuite {
     )
 
     assert(config.isLeft, "Parsing must fail without a key")
-  }
-
-  test("Fail to parse the config with an invalid method") {
-    val config = parseConfig(
-      """
-        |authorization {
-        |  method = xxx
-        |}
-        |""".stripMargin
-    )
-    assert(config.isLeft, "Parsing must fail with an invalid method")
   }
 
 }

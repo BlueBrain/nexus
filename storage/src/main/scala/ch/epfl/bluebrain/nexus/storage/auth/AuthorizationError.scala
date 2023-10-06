@@ -2,9 +2,8 @@ package ch.epfl.bluebrain.nexus.storage.auth
 
 import ch.epfl.bluebrain.nexus.delta.kernel.jwt.TokenRejection
 
-sealed abstract class AuthorizationError(message: String) extends Exception with Product with Serializable {
+sealed abstract class AuthorizationError(message: String) extends Exception(message) with Product with Serializable {
   override def fillInStackTrace(): AuthorizationError = this
-  override def getMessage: String                     = message
 }
 
 object AuthorizationError {

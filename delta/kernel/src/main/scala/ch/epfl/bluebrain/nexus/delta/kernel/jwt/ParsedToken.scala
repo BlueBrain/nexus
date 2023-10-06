@@ -58,9 +58,9 @@ object ParsedToken {
 
     def claims(jwt: SignedJWT): Either[TokenRejection, JWTClaimsSet] =
       Either
-        .catchNonFatal(jwt.getJWTClaimsSet)
+        .catchNonFatal(Option(jwt.getJWTClaimsSet))
         .leftMap { e => InvalidAccessTokenFormat(e.getMessage) }
-        .filterOrElse(_ != null, InvalidAccessTokenFormat("No claim is defined."))
+        .flatMap { _.toRight(InvalidAccessTokenFormat("No claim is defined."))}
 
     def subject(claimsSet: JWTClaimsSet) = {
       val preferredUsername = Try(claimsSet.getStringClaim("preferred_username"))

@@ -73,7 +73,7 @@ class AuthDirectivesSpec
         )
         .value
 
-    implicit val anonymousMethod: AuthorizationMethod =
+    implicit val verifyTokenMethod: AuthorizationMethod =
       VerifyToken(validIssuer, validSubject, None, new JWKSet(rsaKey.toPublicJWK))
 
     "Succeed with a valid token" in {
@@ -98,7 +98,7 @@ class AuthDirectivesSpec
     }
 
     "Fail with a token signed with another key" in {
-      val anotherKey: RSAKey = new RSAKeyGenerator(2048).keyID(genString()).generate()
+      val anotherKey: RSAKey = generateKey
       val token              = generateToken(validSubject, validIssuer, anotherKey)
       Get("/").addCredentials(OAuth2BearerToken(token)) ~> validateRoute ~> check {
         status shouldEqual StatusCodes.Unauthorized

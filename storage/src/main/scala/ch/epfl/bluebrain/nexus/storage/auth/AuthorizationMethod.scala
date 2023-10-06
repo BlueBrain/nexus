@@ -6,7 +6,6 @@ import ch.epfl.bluebrain.nexus.delta.kernel.jwt.{AuthToken, ParsedToken}
 import ch.epfl.bluebrain.nexus.storage.auth.AuthorizationError._
 import com.nimbusds.jose.jwk.{JWK, JWKSet}
 import pureconfig.ConfigReader
-import pureconfig.error.{CannotConvert, ConfigReaderFailures, ConvertFailure}
 import pureconfig.generic.semiauto.deriveReader
 import pureconfig.module.cats._
 
@@ -56,35 +55,14 @@ object AuthorizationMethod {
 
   @nowarn("cat=unused")
   implicit val authorizationMethodConfigReader: ConfigReader[AuthorizationMethod] = {
-    implicit val jwk: ConfigReader[JWK]                 = ConfigReader.fromStringTry { s => Try(JWK.parse(s)) }
-    implicit val jwkSet: ConfigReader[JWKSet]           = ConfigReader[NonEmptyList[JWK]].map { l => new JWKSet(l.toList.asJava) }
+    implicit val jwkReader: ConfigReader[JWK]           = ConfigReader.fromStringTry { s => Try(JWK.parse(s)) }
+    implicit val jwkSetReader: ConfigReader[JWKSet]     = ConfigReader[NonEmptyList[JWK]].map { l =>
+      new JWKSet(l.toList.asJava)
+    }
+    implicit val anonymousReader                        = deriveReader[Anonymous.type]
     implicit val verifyToken: ConfigReader[VerifyToken] = deriveReader[VerifyToken]
 
-    ConfigReader.fromCursor { cursor =>
-      for {
-        obj           <- cursor.asObjectCursor
-        mc            <- obj.atKey("method")
-        discriminator <- ConfigReader[String].from(mc)
-        method        <- discriminator match {
-                           case "anonymous"    => Right(Anonymous)
-                           case "verify-token" => verifyToken.from(obj)
-                           case other          =>
-                             Left(
-                               ConfigReaderFailures(
-                                 ConvertFailure(
-                                   CannotConvert(
-                                     other,
-                                     "string",
-                                     "'method' value must be one of ('anonymous', 'verify-token')"
-                                   ),
-                                   obj
-                                 )
-                               )
-                             )
-                         }
-      } yield method
-    }
-
+    deriveReader[AuthorizationMethod]
   }
 
 }
