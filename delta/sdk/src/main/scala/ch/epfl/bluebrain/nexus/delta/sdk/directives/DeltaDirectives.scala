@@ -110,13 +110,6 @@ trait DeltaDirectives extends UriDirectives {
       }
     }
 
-  /** Injects a `Vary: Accept,Accept-Encoding` into the response */
-  def varyAcceptHeaders: Directive0 =
-    vary(Set(Accept.name, `Accept-Encoding`.name))
-
-  private def vary(headers: Set[String]): Directive0 =
-    respondWithHeader(RawHeader("Vary", headers.mkString(",")))
-
   /**
     * If the `Accept` header is set to `text/html`, redirect to the matching resource page in fusion if the feature is
     * enabled
@@ -186,4 +179,19 @@ trait DeltaDirectives extends UriDirectives {
   /** The URI of fusion's main login page */
   def fusionLoginUri(implicit config: FusionConfig): UIO[Uri] =
     UIO.pure { config.base / "login" }
+
+  /** Injects a `Vary: Accept,Accept-Encoding` into the response */
+  def varyAcceptHeaders: Directive0 =
+    vary(Set(Accept.name, `Accept-Encoding`.name))
+
+  private def vary(headers: Set[String]): Directive0 =
+    respondWithHeader(RawHeader("Vary", headers.mkString(",")))
+
+  private def respondWithHeader(responseHeader: HttpHeader): Directive0 =
+    mapSuccessResponse(r => r.withHeaders(r.headers :+ responseHeader))
+
+  private def mapSuccessResponse(f: HttpResponse => HttpResponse): Directive0 =
+    mapRouteResultPF {
+      case RouteResult.Complete(response) if response.status.isSuccess => RouteResult.Complete(f(response))
+    }
 }
