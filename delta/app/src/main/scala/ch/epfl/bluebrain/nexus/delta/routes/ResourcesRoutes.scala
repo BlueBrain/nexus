@@ -80,21 +80,20 @@ final class ResourcesRoutes(
           resolveProjectRef.apply { ref =>
             concat(
               // Create a resource without schema nor id segment
-              (post & pathEndOrSingleSlash & noParameter("rev") & entity(as[NexusSource]) & indexingMode & parameter(
-                "tag".as[UserTag].?
-              )) { (source, mode, tag) =>
-                authorizeFor(ref, Write).apply {
-                  emit(
-                    Created,
-                    resources.create(ref, resourceSchema, source.value, tag).tapEval(indexUIO(ref, _, mode)).map(_.void)
-                  )
-                }
+              (post & pathEndOrSingleSlash & noParameter("rev") & entity(as[NexusSource]) & indexingMode & tagParam) {
+                (source, mode, tag) =>
+                  authorizeFor(ref, Write).apply {
+                    emit(
+                      Created,
+                      resources.create(ref, resourceSchema, source.value, tag).tapEval(indexUIO(ref, _, mode)).map(_.void)
+                    )
+                  }
               },
               (idSegment & indexingMode) { (schema, mode) =>
                 val schemaOpt = underscoreToOption(schema)
                 concat(
                   // Create a resource with schema but without id segment
-                  (post & pathEndOrSingleSlash & noParameter("rev") & parameter("tag".as[UserTag].?)) { tag =>
+                  (post & pathEndOrSingleSlash & noParameter("rev") & tagParam) { tag =>
                     authorizeFor(ref, Write).apply {
                       entity(as[NexusSource]) { source =>
                         emit(
@@ -115,10 +114,8 @@ final class ResourcesRoutes(
                           // Create or update a resource
                           put {
                             authorizeFor(ref, Write).apply {
-                              concat(
-                                (noParameter("rev") & pathEndOrSingleSlash & parameter("tag".as[UserTag].?) & entity(
-                                  as[NexusSource]
-                                )) { (tag, source) =>
+                              (parameter("rev".as[Int].?) & pathEndOrSingleSlash & entity(as[NexusSource]) & tagParam) {
+                                case (None, source, tag)    =>
                                   // Create a resource with schema and id segments
                                   emit(
                                     Created,
@@ -128,19 +125,16 @@ final class ResourcesRoutes(
                                       .map(_.void)
                                       .rejectWhen(wrongJsonOrNotFound)
                                   )
-                                },
-                                (pathEndOrSingleSlash & parameter("rev".as[Int]) & entity(as[NexusSource])) {
-                                  (rev, source) =>
-                                    // Update a resource
-                                    emit(
-                                      resources
-                                        .update(id, ref, schemaOpt, rev, source.value)
-                                        .tapEval(indexUIO(ref, _, mode))
-                                        .map(_.void)
-                                        .rejectWhen(wrongJsonOrNotFound)
-                                    )
-                                }
-                              )
+                                case (Some(rev), source, _) =>
+                                  // Update a resource
+                                  emit(
+                                    resources
+                                      .update(id, ref, schemaOpt, rev, source.value)
+                                      .tapEval(indexUIO(ref, _, mode))
+                                      .map(_.void)
+                                      .rejectWhen(wrongJsonOrNotFound)
+                                  )
+                              }
                             }
                           },
                           // Deprecate a resource

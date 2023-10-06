@@ -62,13 +62,17 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap {
   private val schema1      = SchemaGen.schema(nxv + "myschema", project.value.ref, schemaSource.removeKeys(keywords.id))
   private val schema2      = SchemaGen.schema(schema.Person, project.value.ref, schemaSource.removeKeys(keywords.id))
 
-  private val myId                        = nxv + "myid"  // Resource created against no schema with id present on the payload
-  private val myId2                       = nxv + "myid2" // Resource created against schema1 with id present on the payload
-  private val myId3                       = nxv + "myid3" // Resource created against no schema with id passed and present on the payload
-  private val myId4                       = nxv + "myid4" // Resource created against schema1 with id passed and present on the payload
-  private val myId5                       = nxv + "myid5" // Resource created against schema1 with id passed and present on the payload
-  private val myId6                       = nxv + "myid6" // Resource created and tagged, against no schema with id present on the payload
-  private val myId7                       = nxv + "myid7" // Resource created and tagged, against schema1 with id present on the payload
+  private val myId  = nxv + "myid"  // Resource created against no schema with id present on the payload
+  private val myId2 = nxv + "myid2" // Resource created against schema1 with id present on the payload
+  private val myId3 = nxv + "myid3" // Resource created against no schema with id passed and present on the payload
+  private val myId4 = nxv + "myid4" // Resource created against schema1 with id passed and present on the payload
+  private val myId5 = nxv + "myid5" // Resource created against schema1 with id passed and present on the payload
+  private val myId6 = nxv + "myid6" // Resource created and tagged against no schema with id present on the payload
+  private val myId7 = nxv + "myid7" // Resource created and tagged against no schema with id present on the payload
+  private val myId8 =
+    nxv + "myid8" // Resource created and tagged against no schema with id passed and present on the payload
+  private val myId9 =
+    nxv + "myid9" // Resource created and tagged against schema1 with id passed and present on the payload
   private val myIdEncoded                 = UrlUtils.encode(myId.toString)
   private val myId2Encoded                = UrlUtils.encode(myId2.toString)
   private val payload                     = jsonContentOf("resources/resource.json", "id" -> myId)
@@ -151,7 +155,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap {
       }
     }
 
-    "create a resource with a tag" in {
+    "create a tagged resource" in {
       val endpoints = List(
         ("/v1/resources/myorg/myproject?tag=mytag", myId6, schemas.resources),
         ("/v1/resources/myorg/myproject/myschema?tag=mytag", myId7, schema1.id)
@@ -169,6 +173,22 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap {
       val endpoints = List(
         ("/v1/resources/myorg/myproject/_/myid3", myId3, schemas.resources),
         ("/v1/resources/myorg/myproject/myschema/myid4", myId4, schema1.id)
+      )
+      forAll(endpoints) { case (endpoint, id, schema) =>
+        val payload = jsonContentOf("resources/resource.json", "id" -> id)
+        Put(endpoint, payload.toEntity) ~> asAlice ~> routes ~> check {
+          status shouldEqual StatusCodes.Created
+          response.asJson shouldEqual
+            resourceMetadata(projectRef, id, schema, (nxv + "Custom").toString, createdBy = alice, updatedBy = alice)
+        }
+
+      }
+    }
+
+    "create a tagged resource with an authenticated user and provided id" in {
+      val endpoints = List(
+        ("/v1/resources/myorg/myproject/_/myid8?tag=mytag", myId8, schemas.resources),
+        ("/v1/resources/myorg/myproject/myschema/myid9?tag=mytag", myId9, schema1.id)
       )
       forAll(endpoints) { case (endpoint, id, schema) =>
         val payload = jsonContentOf("resources/resource.json", "id" -> id)

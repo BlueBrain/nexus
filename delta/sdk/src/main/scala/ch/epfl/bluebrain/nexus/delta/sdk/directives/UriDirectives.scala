@@ -170,6 +170,11 @@ trait UriDirectives extends QueryParamsUnmarshalling {
       )
   }
 
+  /**
+    * Creates optional [[UserTag]] from `tag` query param.
+    */
+  val tagParam: Directive1[Option[UserTag]] = parameter("tag".as[UserTag].?)
+
   def timeRange(paramName: String): Directive1[TimeRange] = parameter(paramName.as[String].?).flatMap {
     case None        => provide(TimeRange.default)
     case Some(value) =>
