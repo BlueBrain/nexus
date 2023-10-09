@@ -106,12 +106,9 @@ object ResponseToJsonLd extends FileBytesInstances {
       override def apply(statusOverride: Option[StatusCode]): Route = {
         val flattened = io.flatMap { fr => fr.content.attempt.map(_.map { s => fr.metadata -> s }) }.attempt
         onSuccess(flattened.runToFuture) {
-          case Left(complete: Complete[E]) => emit(complete)
-          case Left(reject: Reject[E])     => emit(reject)
-          case Right(Left(c))              =>
-            implicit val valueEncoder = c.value.encoder
-            emit(c.value.value)
-
+          case Left(complete: Complete[E])       => emit(complete)
+          case Left(reject: Reject[E])           => emit(reject)
+          case Right(Left(c))                    => emit(c)
           case Right(Right((metadata, content))) =>
             headerValueByType(Accept) { accept =>
               if (accept.mediaRanges.exists(_.matches(metadata.contentType.mediaType))) {

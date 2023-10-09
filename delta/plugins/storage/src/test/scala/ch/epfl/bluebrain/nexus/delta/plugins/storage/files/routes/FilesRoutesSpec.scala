@@ -5,38 +5,42 @@ import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
 import akka.http.scaladsl.model.MediaRanges._
 import akka.http.scaladsl.model.MediaTypes.`text/html`
 import akka.http.scaladsl.model.headers.{Accept, Location, OAuth2BearerToken, RawHeader}
-import akka.http.scaladsl.model.{StatusCodes, Uri}
+import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutesSpec.fileMetadata
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts => fileContexts, permissions, FileFixtures, Files, FilesConfig}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts => fileContexts, permissions, FileFixtures, FileResource, Files, FilesConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{StorageRejection, StorageStatEntry, StorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{contexts => storageContexts, permissions => storagesPermissions, StorageFixtures, Storages, StoragesConfig, StoragesStatistics}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{contexts => storageContexts, permissions => storagesPermissions, StorageFixtures, Storages, StoragesConfig}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes.`application/ld+json`
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.auth.{AuthTokenProvider, Credentials}
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.{DeltaSchemeDirectives, FileResponse}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{Caller, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceUris}
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, IdSegmentRef, ResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.{BaseRouteSpec, RouteFixtures}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject, User}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef, Tag}
+import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.testkit._
 import ch.epfl.bluebrain.nexus.testkit.bio.IOFromMap
 import io.circe.Json
@@ -53,8 +57,6 @@ class FilesRoutesSpec
   import akka.actor.typed.scaladsl.adapter._
   implicit val typedSystem: typed.ActorSystem[Nothing] = system.toTyped
   val httpClient: HttpClient                           = HttpClient()(httpClientConfig, system, s)
-  val authTokenProvider: AuthTokenProvider             = AuthTokenProvider.anonymousForTest
-  val remoteDiskStorageClient                          = new RemoteDiskStorageClient(httpClient, authTokenProvider, Credentials.Anonymous)
 
   // TODO: sort out how we handle this in tests
   implicit override def rcr: RemoteContextResolution =
@@ -70,7 +72,6 @@ class FilesRoutesSpec
 
   implicit private val caller: Caller =
     Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
-  private val identities              = IdentitiesDummy(caller)
 
   private val asAlice = addCredentials(OAuth2BearerToken("alice"))
 
@@ -94,9 +95,6 @@ class FilesRoutesSpec
 
   private val stCfg = config.copy(disk = config.disk.copy(defaultMaxFileSize = 1000, allowedVolumes = Set(path)))
 
-  private val storagesStatistics: StoragesStatistics =
-    (_, _) => IO.pure { StorageStatEntry(0, 0) }
-
   private val aclCheck        = AclSimpleCheck().accepted
   lazy val storages: Storages = Storages(
     fetchContext.mapRejection(StorageRejection.ProjectContextRejection),
@@ -107,21 +105,100 @@ class FilesRoutesSpec
     StoragesConfig(eventLogConfig, pagination, stCfg),
     ServiceAccount(User("nexus-sa", Label.unsafe("sa")))
   ).accepted
-  lazy val files: Files       = Files(
-    fetchContext.mapRejection(FileRejection.ProjectContextRejection),
-    aclCheck,
-    storages,
-    storagesStatistics,
-    xas,
-    config,
-    FilesConfig(eventLogConfig, MediaTypeDetectorConfig.Empty),
-    remoteDiskStorageClient
-  )
-  private val groupDirectives =
-    DeltaSchemeDirectives(fetchContext, ioFromMap(uuid -> projectRef.organization), ioFromMap(uuid -> projectRef))
 
-  private lazy val routes     =
-    Route.seal(FilesRoutes(stCfg, identities, aclCheck, files, groupDirectives, IndexingAction.noop))
+  private def createFiles() = {
+    Files(
+      fetchContext.mapRejection(FileRejection.ProjectContextRejection),
+      aclCheck,
+      storages,
+      (_, _) =>
+        IO.pure {
+          StorageStatEntry(0, 0)
+        },
+      xas,
+      config,
+      FilesConfig(eventLogConfig, MediaTypeDetectorConfig.Empty),
+      new RemoteDiskStorageClient(httpClient, AuthTokenProvider.anonymousForTest, Credentials.Anonymous)
+    )
+  }
+
+  private lazy val routes =
+    createRoutes(createFiles())
+
+  private def filesWithErrorInFileContents[E: JsonLdEncoder: HttpResponseFields](error: E): Files = {
+    new Files {
+      override def create(storageId: Option[IdSegment], projectRef: ProjectRef, entity: HttpEntity)(implicit
+          caller: Caller
+      ): IO[FileRejection, FileResource]                                                         = ???
+      override def create(id: IdSegment, storageId: Option[IdSegment], projectRef: ProjectRef, entity: HttpEntity)(
+          implicit caller: Caller
+      ): IO[FileRejection, FileResource]                                                         = ???
+      override def createLink(
+          storageId: Option[IdSegment],
+          projectRef: ProjectRef,
+          filename: Option[String],
+          mediaType: Option[ContentType],
+          path: Uri.Path
+      )(implicit caller: Caller): IO[FileRejection, FileResource]                                = ???
+      override def createLink(
+          id: IdSegment,
+          storageId: Option[IdSegment],
+          projectRef: ProjectRef,
+          filename: Option[String],
+          mediaType: Option[ContentType],
+          path: Uri.Path
+      )(implicit caller: Caller): IO[FileRejection, FileResource]                                = ???
+      override def update(
+          id: IdSegment,
+          storageId: Option[IdSegment],
+          projectRef: ProjectRef,
+          rev: Int,
+          entity: HttpEntity
+      )(implicit caller: Caller): IO[FileRejection, FileResource]                                = ???
+      override def updateLink(
+          id: IdSegment,
+          storageId: Option[IdSegment],
+          projectRef: ProjectRef,
+          filename: Option[String],
+          mediaType: Option[ContentType],
+          path: Uri.Path,
+          rev: Int
+      )(implicit caller: Caller): IO[FileRejection, FileResource]                                = ???
+      override def tag(id: IdSegment, projectRef: ProjectRef, tag: Tag.UserTag, tagRev: Int, rev: Int)(implicit
+          subject: Subject
+      ): IO[FileRejection, FileResource]                                                         = ???
+      override def deleteTag(id: IdSegment, projectRef: ProjectRef, tag: Tag.UserTag, rev: Int)(implicit
+          subject: Subject
+      ): IO[FileRejection, FileResource]                                                         = ???
+      override def deprecate(id: IdSegment, projectRef: ProjectRef, rev: Int)(implicit
+          subject: Subject
+      ): IO[FileRejection, FileResource]                                                         = ???
+      override def fetchContent(id: IdSegmentRef, project: ProjectRef)(implicit
+          caller: Caller
+      ): IO[FileRejection, FileResponse]                                                         = IO.pure(
+        FileResponse(
+          "file.name",
+          ContentTypes.`text/plain(UTF-8)`,
+          1024,
+          IO.raiseError(error)
+        )
+      )
+      override def fetch(id: IdSegmentRef, project: ProjectRef): IO[FileRejection, FileResource] = ???
+      override private[files] def attributesUpdateStream(offset: Offset)                         = ???
+      override private[files] def updateAttributes(iri: Iri, project: ProjectRef)                = ???
+    }
+  }
+
+  private def createRoutes(files: Files) = Route.seal(
+    FilesRoutes(
+      stCfg,
+      IdentitiesDummy(caller),
+      aclCheck,
+      files,
+      DeltaSchemeDirectives(fetchContext, ioFromMap(uuid -> projectRef.organization), ioFromMap(uuid -> projectRef)),
+      IndexingAction.noop
+    )
+  )
 
   private val diskIdRev = ResourceRef.Revision(dId, 1)
   private val s3IdRev   = ResourceRef.Revision(s3Id, 2)
@@ -471,6 +548,17 @@ class FilesRoutesSpec
       Get("/v1/files/org/project/file1") ~> Accept(`text/html`) ~> routes ~> check {
         response.status shouldEqual StatusCodes.SeeOther
         response.header[Location].value.uri shouldEqual Uri("https://bbp.epfl.ch/nexus/web/org/project/resources/file1")
+      }
+    }
+
+    "fail when auth fails" in {
+      val mockRoutes = createRoutes(filesWithErrorInFileContents[ResourceRejection](ResourceRejection.BlankResourceId))
+      Get("/v1/files/org/proj/file1") ~> Accept(`*/*`) ~> mockRoutes ~> check {
+        contentType.value shouldEqual `application/ld+json`.value
+        response.asJson shouldEqual jsonContentOf(
+          "/files/errors/blank-id.json"
+        )
+        status shouldEqual StatusCodes.BadRequest
       }
     }
   }
