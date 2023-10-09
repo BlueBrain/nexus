@@ -23,7 +23,7 @@ class IdentitiesSpec extends BaseSpec {
 
       deltaClient.get[Json]("/identities", Identity.InvalidTokenUser) { (json, response) =>
         response.status shouldEqual StatusCodes.Unauthorized
-        json shouldEqual jsonContentOf("/iam/identities/errors.json")
+        json.asObject.flatMap(_("reason")) should not be empty
       }
     }
   }

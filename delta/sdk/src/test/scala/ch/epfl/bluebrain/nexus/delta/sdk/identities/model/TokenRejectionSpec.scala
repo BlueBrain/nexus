@@ -1,13 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.identities.model
 
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.TokenRejection._
+import ch.epfl.bluebrain.nexus.delta.kernel.jwt.TokenRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.Fixtures
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestHelpers}
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+import ch.epfl.bluebrain.nexus.delta.sdk.error.IdentityError._
 
 class TokenRejectionSpec
     extends AnyWordSpecLike
@@ -20,7 +21,7 @@ class TokenRejectionSpec
 
   "A TokenRejection" should {
 
-    val invalidFormat = InvalidAccessTokenFormat
+    val invalidFormat = InvalidAccessTokenFormat("Details")
     val noIssuer      = AccessTokenDoesNotContainSubject
 
     "be converted to compacted JSON-LD" in {

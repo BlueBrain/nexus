@@ -118,6 +118,7 @@ lazy val monixEval          = "io.monix"                     %% "monix-eval"    
 lazy val munit              = "org.scalameta"                %% "munit"                    % munitVersion
 lazy val nimbusJoseJwt      = "com.nimbusds"                  % "nimbus-jose-jwt"          % nimbusJoseJwtVersion
 lazy val pureconfig         = "com.github.pureconfig"        %% "pureconfig"               % pureconfigVersion
+lazy val pureconfigCats     =  "com.github.pureconfig"       %% "pureconfig-cats"          % pureconfigVersion
 lazy val scalaLogging       = "com.typesafe.scala-logging"   %% "scala-logging"            % scalaLoggingVersion
 lazy val scalaTest          = "org.scalatest"                %% "scalatest"                % scalaTestVersion
 lazy val scalaXml           = "org.scala-lang.modules"       %% "scala-xml"                % scalaXmlVersion
@@ -207,14 +208,17 @@ lazy val kernel = project
       akkaActorTyped, // Needed to create content type
       akkaHttpCore,
       caffeine,
+      catsCore,
       catsRetry,
       circeCore,
       circeParser,
       handleBars,
       monixBio,
+      nimbusJoseJwt,
       kamonCore,
       log4cats,
       pureconfig,
+      pureconfigCats,
       scalaLogging,
       munit     % Test,
       scalaTest % Test
@@ -257,7 +261,6 @@ lazy val sourcingPsql = project
   .settings(shared, compilation, assertJavaVersion, coverage, release)
   .settings(
     libraryDependencies ++= Seq(
-      catsCore,
       circeCore,
       circeGenericExtras,
       circeParser,
@@ -324,7 +327,6 @@ lazy val sdk = project
       distageCore,
       fs2,
       monixBio,
-      nimbusJoseJwt,
       akkaTestKitTyped % Test,
       akkaHttpTestKit  % Test,
       munit            % Test,
@@ -735,7 +737,7 @@ lazy val storage = project
     servicePackaging,
     coverageMinimumStmtTotal := 75
   )
-  .dependsOn(kernel)
+  .dependsOn(kernel, testkit % "test->compile")
   .settings(cargo := {
     import scala.sys.process._
 

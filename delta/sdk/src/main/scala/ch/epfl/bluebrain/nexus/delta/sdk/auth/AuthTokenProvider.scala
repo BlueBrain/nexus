@@ -4,10 +4,9 @@ import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.LocalCache
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.MigrateEffectSyntax
+import ch.epfl.bluebrain.nexus.delta.kernel.jwt.{AuthToken, ParsedToken}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant
 import ch.epfl.bluebrain.nexus.delta.sdk.auth.Credentials.ClientCredentials
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.ParsedToken
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.AuthToken
 import monix.bio
 
 import java.time.{Duration, Instant}

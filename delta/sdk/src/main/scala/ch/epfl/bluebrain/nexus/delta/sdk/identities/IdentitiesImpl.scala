@@ -2,30 +2,27 @@ package ch.epfl.bluebrain.nexus.delta.sdk.identities
 
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{HttpRequest, StatusCodes, Uri}
-import cats.data.{NonEmptySet, OptionT}
+import cats.data.OptionT
 import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.{CacheConfig, LocalCache}
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
+import ch.epfl.bluebrain.nexus.delta.kernel.jwt.TokenRejection.{GetGroupsFromOidcError, InvalidAccessToken, UnknownAccessTokenIssuer}
+import ch.epfl.bluebrain.nexus.delta.kernel.jwt.{AuthToken, ParsedToken}
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesImpl.{extractGroups, logger, GroupsCache, RealmCache}
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.TokenRejection.{GetGroupsFromOidcError, InvalidAccessToken, UnknownAccessTokenIssuer}
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{AuthToken, Caller}
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.RealmSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.Realms
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.Realm
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, User}
-import com.nimbusds.jose.JWSAlgorithm
-import com.nimbusds.jose.jwk.source.ImmutableJWKSet
 import com.nimbusds.jose.jwk.{JWK, JWKSet}
-import com.nimbusds.jose.proc.{JWSVerificationKeySelector, SecurityContext}
-import com.nimbusds.jwt.proc.{DefaultJWTClaimsVerifier, DefaultJWTProcessor}
 import io.circe.{Decoder, HCursor, Json}
 
 import scala.util.Try
@@ -48,22 +45,8 @@ class IdentitiesImpl private[identities] (
       new JWKSet(jwks.toList.asJava)
     }
 
-    def validate(audiences: Option[NonEmptySet[String]], token: ParsedToken, keySet: JWKSet) = {
-      val proc        = new DefaultJWTProcessor[SecurityContext]
-      val keySelector = new JWSVerificationKeySelector(JWSAlgorithm.RS256, new ImmutableJWKSet[SecurityContext](keySet))
-      proc.setJWSKeySelector(keySelector)
-      audiences.foreach { aud =>
-        proc.setJWTClaimsSetVerifier(new DefaultJWTClaimsVerifier(aud.toSet.asJava, null, null, null))
-      }
-      IO.fromEither(
-        Either
-          .catchNonFatal(proc.process(token.jwtToken, null))
-          .leftMap(err => InvalidAccessToken(token.subject, token.issuer, err.getMessage))
-      )
-    }
-
     def fetchRealm(parsedToken: ParsedToken): IO[Realm] = {
-      val getRealm = realm.getOrElseAttemptUpdate(parsedToken.rawToken, findActiveRealm(parsedToken.issuer))
+      val getRealm = realm.getOrElseAttemptUpdate(parsedToken.issuer, findActiveRealm(parsedToken.issuer))
       OptionT(getRealm).getOrRaise(UnknownAccessTokenIssuer)
     }
 
@@ -85,7 +68,7 @@ class IdentitiesImpl private[identities] (
     val result = for {
       parsedToken <- IO.fromEither(ParsedToken.fromToken(token))
       activeRealm <- fetchRealm(parsedToken)
-      _           <- validate(activeRealm.acceptedAudiences, parsedToken, realmKeyset(activeRealm))
+      _           <- IO.fromEither(parsedToken.validate(activeRealm.acceptedAudiences, realmKeyset(activeRealm)))
       groups      <- fetchGroups(parsedToken, activeRealm)
     } yield {
       val user = User(parsedToken.subject, activeRealm.label)

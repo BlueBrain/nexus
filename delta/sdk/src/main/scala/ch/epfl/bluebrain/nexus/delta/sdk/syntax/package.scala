@@ -21,5 +21,4 @@ package object syntax
     with ClassTagSyntax
     with IOSyntax
     with InstantSyntax
-    with NonEmptySetSyntax
     with ProjectionErrorsSyntax

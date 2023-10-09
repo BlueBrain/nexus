@@ -12,18 +12,17 @@ import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
-import ch.epfl.bluebrain.nexus.storage.DeltaIdentitiesClient.Caller
-import ch.epfl.bluebrain.nexus.storage.DeltaIdentitiesClient.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.storage.File.{Digest, FileAttributes}
 import ch.epfl.bluebrain.nexus.storage.Rejection.PathNotFound
 import ch.epfl.bluebrain.nexus.storage.StorageError.InternalError
 import ch.epfl.bluebrain.nexus.storage.Storages.BucketExistence.{BucketDoesNotExist, BucketExists}
 import ch.epfl.bluebrain.nexus.storage.Storages.PathExistence.{PathDoesNotExist, PathExists}
+import ch.epfl.bluebrain.nexus.storage.auth.AuthorizationMethod
 import ch.epfl.bluebrain.nexus.storage.config.{AppConfig, Settings}
 import ch.epfl.bluebrain.nexus.storage.jsonld.JsonLdContext.addContext
 import ch.epfl.bluebrain.nexus.storage.routes.instances._
 import ch.epfl.bluebrain.nexus.storage.utils.{Randomness, Resources}
-import ch.epfl.bluebrain.nexus.storage.{AkkaSource, DeltaIdentitiesClient, Storages}
+import ch.epfl.bluebrain.nexus.storage.{AkkaSource, Storages}
 import io.circe.Json
 import monix.eval.Task
 import org.mockito.{ArgumentMatchersSugar, IdiomaticMockito}
@@ -49,12 +48,10 @@ class StorageRoutesSpec
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(3.second, 15.milliseconds)
 
-  implicit val appConfig: AppConfig                         = Settings(system).appConfig
-  implicit val deltaIdentities: DeltaIdentitiesClient[Task] = mock[DeltaIdentitiesClient[Task]]
-  val storages: Storages[Task, AkkaSource]                  = mock[Storages[Task, AkkaSource]]
-  val route: Route                                          = Routes(storages)
-
-  deltaIdentities()(None) shouldReturn Task(Caller(Anonymous, Set.empty))
+  implicit val appConfig: AppConfig                     = Settings(system).appConfig
+  implicit val authorizationMethod: AuthorizationMethod = AuthorizationMethod.Anonymous
+  val storages: Storages[Task, AkkaSource]              = mock[Storages[Task, AkkaSource]]
+  val route: Route                                      = Routes(storages)
 
   trait Ctx {
     val name        = genString()

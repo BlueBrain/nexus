@@ -10,6 +10,7 @@ import akka.util.Timeout
 import cats.effect.Effect
 import ch.epfl.bluebrain.nexus.storage.Storages.DiskStorage
 import ch.epfl.bluebrain.nexus.storage.attributes.{AttributesCache, ContentTypeDetector}
+import ch.epfl.bluebrain.nexus.storage.auth.AuthorizationMethod
 import ch.epfl.bluebrain.nexus.storage.config.{AppConfig, Settings}
 import ch.epfl.bluebrain.nexus.storage.config.AppConfig._
 import ch.epfl.bluebrain.nexus.storage.routes.Routes
@@ -53,13 +54,13 @@ object Main {
 
     implicit val appConfig: AppConfig = Settings(config).appConfig
 
-    implicit val as: ActorSystem                              = ActorSystem(appConfig.description.fullName, config)
-    implicit val ec: ExecutionContext                         = as.dispatcher
-    implicit val eff: Effect[Task]                            = Task.catsEffect(Scheduler.global)
-    implicit val deltaIdentities: DeltaIdentitiesClient[Task] = new DeltaIdentitiesClient[Task](appConfig.delta)
-    implicit val timeout                                      = Timeout(1.minute)
-    implicit val clock                                        = Clock.systemUTC
-    implicit val contentTypeDetector                          = new ContentTypeDetector(appConfig.mediaTypeDetector)
+    implicit val as: ActorSystem                          = ActorSystem(appConfig.description.fullName, config)
+    implicit val ec: ExecutionContext                     = as.dispatcher
+    implicit val eff: Effect[Task]                        = Task.catsEffect(Scheduler.global)
+    implicit val authorizationMethod: AuthorizationMethod = appConfig.authorization
+    implicit val timeout                                  = Timeout(1.minute)
+    implicit val clock                                    = Clock.systemUTC
+    implicit val contentTypeDetector                      = new ContentTypeDetector(appConfig.mediaTypeDetector)
 
     val storages: Storages[Task, AkkaSource] =
       new DiskStorage(appConfig.storage, contentTypeDetector, appConfig.digest, AttributesCache[Task, AkkaSource])
@@ -67,6 +68,11 @@ object Main {
     val logger: LoggingAdapter = Logging(as, getClass)
 
     logger.info("==== Cluster is Live ====")
+
+    if (authorizationMethod == AuthorizationMethod.Anonymous) {
+      logger.warning("The application has been configured with anonymous, the caller will not be verified !")
+    }
+
     val routes: Route = Routes(storages)
 
     val httpBinding: Future[Http.ServerBinding] = {
