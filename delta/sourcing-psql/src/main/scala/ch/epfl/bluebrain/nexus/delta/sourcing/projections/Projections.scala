@@ -43,6 +43,14 @@ trait Projections {
   def save(metadata: ProjectionMetadata, progress: ProjectionProgress): UIO[Unit]
 
   /**
+    * Resets the progress of a projection to 0, and the instants (createdAt, updatedAt) to the time of the reset
+    *
+    * @param name
+    *   the name of the projection to reset
+    */
+  def reset(name: String): UIO[Unit]
+
+  /**
     * Deletes a projection offset if found.
     *
     * @param name
@@ -103,6 +111,8 @@ object Projections {
 
       override def save(metadata: ProjectionMetadata, progress: ProjectionProgress): UIO[Unit] =
         projectionStore.save(metadata, progress)
+
+      override def reset(name: String): UIO[Unit] = projectionStore.reset(name)
 
       override def delete(name: String): UIO[Unit] = projectionStore.delete(name)
 
