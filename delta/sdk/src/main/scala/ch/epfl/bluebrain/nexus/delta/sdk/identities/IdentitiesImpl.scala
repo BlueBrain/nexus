@@ -46,7 +46,7 @@ class IdentitiesImpl private[identities] (
     }
 
     def fetchRealm(parsedToken: ParsedToken): IO[Realm] = {
-      val getRealm = realm.getOrElseAttemptUpdate(parsedToken.rawToken, findActiveRealm(parsedToken.issuer))
+      val getRealm = realm.getOrElseAttemptUpdate(parsedToken.issuer, findActiveRealm(parsedToken.issuer))
       OptionT(getRealm).getOrRaise(UnknownAccessTokenIssuer)
     }
 
