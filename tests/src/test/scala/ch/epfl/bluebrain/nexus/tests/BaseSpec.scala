@@ -6,8 +6,12 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.util.ByteString
-import cats.implicits._
+import cats.effect.concurrent.Ref
+import cats.effect.{ContextShift, IO}
+import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.testkit._
+import ch.epfl.bluebrain.nexus.testkit.ce.CatsIOValues
 import ch.epfl.bluebrain.nexus.tests.BaseSpec._
 import ch.epfl.bluebrain.nexus.tests.HttpClient._
 import ch.epfl.bluebrain.nexus.tests.Identity.{allUsers, testClient, testRealm, _}
@@ -19,16 +23,14 @@ import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Organizations
 import ch.epfl.bluebrain.nexus.tests.iam.{AclDsl, PermissionDsl}
 import ch.epfl.bluebrain.nexus.tests.kg.{ElasticSearchViewsDsl, KgDsl}
 import com.typesafe.config.ConfigFactory
-import com.typesafe.scalalogging.Logger
 import io.circe.Json
-import monix.bio.Task
-import monix.execution.Scheduler.Implicits.global
 import org.scalactic.source.Position
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpecLike
 import org.scalatest.{Assertion, BeforeAndAfterAll, OptionValues}
 
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
 trait BaseSpec
@@ -42,12 +44,14 @@ trait BaseSpec
     with TestHelpers
     with ScalatestRouteTest
     with Eventually
-    with IOValues
+    with CatsIOValues
     with OptionValues
     with ScalaFutures
     with Matchers {
 
-  private val logger = Logger[this.type]
+  implicit val contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
+
+  private val logger = Logger.cats[this.type]
 
   implicit val config: TestsConfig = load[TestsConfig](ConfigFactory.load(), "tests")
 
@@ -67,15 +71,10 @@ trait BaseSpec
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(config.patience, 300.millis)
 
-  def eventually(t: Task[Assertion])(implicit pos: Position): Assertion =
-    eventually {
-      t.runSyncUnsafe()
-    }
+  def eventually(io: IO[Assertion])(implicit pos: Position): Assertion =
+    eventually { io.unsafeRunSync() }
 
-  def runTask[A](t: Task[A]): Assertion =
-    t.map { _ =>
-      succeed
-    }.runSyncUnsafe()
+  def runIO[A](io: IO[A]): Assertion = io.map { _ => succeed }.unsafeRunSync()
 
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -102,32 +101,28 @@ trait BaseSpec
 
     val allTasks = for {
       isSetupCompleted <- setupCompleted.get
-      _                <- Task.unless(isSetupCompleted)(setup)
+      _                <- IO.unlessA(isSetupCompleted)(setup)
       _                <- setupCompleted.set(true)
       _                <- aclDsl.cleanAclsAnonymous
     } yield ()
 
-    allTasks.runSyncUnsafe()
-
+    allTasks.unsafeRunSync()
   }
 
   override def afterAll(): Unit =
-    Task.when(config.cleanUp)(elasticsearchDsl.deleteAllIndices().void).runSyncUnsafe()
+    IO.whenA(config.cleanUp)(elasticsearchDsl.deleteAllIndices().void).unsafeRunSync()
 
   protected def toAuthorizationHeader(token: String) =
-    Authorization(
-      HttpCredentials.createOAuth2BearerToken(token)
-    )
+    Authorization(HttpCredentials.createOAuth2BearerToken(token))
 
-  private[tests] def authenticateUser(user: UserCredentials, client: ClientCredentials): Task[Unit] = {
-    keycloakDsl.userToken(user, client).map { token =>
-      logger.info(s"Token for user ${user.name} is: $token")
-      tokensMap.put(user, toAuthorizationHeader(token))
-      ()
-    }
-  }
+  private[tests] def authenticateUser(user: UserCredentials, client: ClientCredentials): IO[Unit] =
+    for {
+      token <- keycloakDsl.userToken(user, client)
+      _     <- logger.info(s"Token for user ${user.name} is: $token")
+      _     <- IO(tokensMap.put(user, toAuthorizationHeader(token)))
+    } yield ()
 
-  private[tests] def authenticateClient(client: ClientCredentials): Task[Unit] = {
+  private[tests] def authenticateClient(client: ClientCredentials): IO[Unit] = {
     keycloakDsl.serviceAccountToken(client).map { token =>
       tokensMap.put(client, toAuthorizationHeader(token))
       ()
@@ -152,35 +147,29 @@ trait BaseSpec
       identity: Identity,
       client: ClientCredentials,
       users: List[UserCredentials]
-  ): Task[Unit] = {
-    def createRealmInDelta: Task[Assertion] =
+  ): IO[Unit] = {
+    def createRealmInDelta: IO[Assertion] =
       deltaClient.get[Json](s"/realms/${realm.name}", identity) { (json, response) =>
-        runTask {
+        runIO {
           response.status match {
             case StatusCodes.NotFound                   =>
-              logger.info(s"Realm ${realm.name} is absent, we create it")
               val body =
                 jsonContentOf(
                   "/iam/realms/create.json",
                   "realm" -> s"${config.realmSuffix(realm)}"
                 )
               for {
-                _ <- deltaClient.put[Json](s"/realms/${realm.name}", body, identity) { (_, response) =>
-                       response.status shouldEqual StatusCodes.Created
-                     }
-                _ <- deltaClient.get[Json](s"/realms/${realm.name}", Identity.ServiceAccount) { (_, response) =>
-                       response.status shouldEqual StatusCodes.OK
-                     }
+                _ <- logger.info(s"Realm ${realm.name} is absent, we create it")
+                _ <- deltaClient.put[Json](s"/realms/${realm.name}", body, identity) { expectCreated }
+                _ <- deltaClient.get[Json](s"/realms/${realm.name}", Identity.ServiceAccount) { expectOk }
               } yield ()
             case StatusCodes.Forbidden | StatusCodes.OK =>
-              logger.info(s"Realm ${realm.name} has already been created, we got status ${response.status}")
-              deltaClient.get[Json](s"/realms/${realm.name}", Identity.ServiceAccount) { (_, response) =>
-                response.status shouldEqual StatusCodes.OK
-              }
+              for {
+                _ <- logger.info(s"Realm ${realm.name} has already been created, we got status ${response.status}")
+                _ <- deltaClient.get[Json](s"/realms/${realm.name}", Identity.ServiceAccount) { expectOk }
+              } yield ()
             case s                                      =>
-              Task(
-                fail(s"$s wasn't expected here and we got this response: $json")
-              )
+              IO(fail(s"$s wasn't expected here and we got this response: $json"))
           }
         }
       }
@@ -189,12 +178,10 @@ trait BaseSpec
       // Create the realm in Keycloak
       _ <- keycloakDsl.importRealm(realm, client, users)
       // Get the tokens and cache them in the map
-      _ <- users.parTraverse { user =>
-             authenticateUser(user, client)
-           }
+      _ <- users.parTraverse { user => authenticateUser(user, client) }
       _ <- authenticateClient(client)
       // Creating the realm in delta
-      _ <- Task { logger.info(s"Creating realm ${realm.name} in the delta instance") }
+      _ <- logger.info(s"Creating realm ${realm.name} in the delta instance")
       _ <- createRealmInDelta
     } yield ()
   }
@@ -202,11 +189,11 @@ trait BaseSpec
   /**
     * Create projects and the parent organization for the provided user
     */
-  def createProjects(user: Authenticated, org: String, projects: String*): Task[Unit] =
+  def createProjects(user: Authenticated, org: String, projects: String*): IO[Unit] =
     for {
       _ <- aclDsl.addPermission("/", user, Organizations.Create)
       _ <- adminDsl.createOrganization(org, org, user, ignoreConflict = true)
-      _ <- projects.traverse { project =>
+      _ <- projects.toList.traverse { project =>
              val projectRef = s"$org/$project"
              adminDsl.createProject(org, project, kgDsl.projectJson(name = projectRef), user)
            }
@@ -230,7 +217,7 @@ trait BaseSpec
     response.header[`Content-Encoding`].value.encodings
 
   private[tests] def decodeGzip(input: ByteString): String =
-    Coders.Gzip.decode(input).map(_.utf8String)(global).futureValue
+    Coders.Gzip.decode(input).map(_.utf8String).futureValue
 
   private[tests] def genId(length: Int = 15): String =
     genString(length = length, Vector.range('a', 'z') ++ Vector.range('0', '9'))
@@ -251,6 +238,6 @@ trait BaseSpec
 
 object BaseSpec {
 
-  val setupCompleted: IORef[Boolean] = IORef.unsafe(false)
+  val setupCompleted: Ref[IO, Boolean] = Ref.unsafe(false)
 
 }

@@ -1,27 +1,27 @@
 package ch.epfl.bluebrain.nexus.tests.iam
 
 import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
+import cats.effect.{ContextShift, IO}
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
 import ch.epfl.bluebrain.nexus.tests.Identity.Authenticated
 import ch.epfl.bluebrain.nexus.tests.Optics.error
 import ch.epfl.bluebrain.nexus.tests.iam.types.{AclEntry, AclListing, Anonymous, Permission, User}
 import ch.epfl.bluebrain.nexus.tests.{CirceUnmarshalling, HttpClient, Identity}
-import com.typesafe.scalalogging.Logger
 import io.circe.Json
-import monix.bio.Task
-import monix.execution.Scheduler.Implicits.global
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{Assertion, OptionValues}
+
 import scala.jdk.CollectionConverters._
 
 class AclDsl(cl: HttpClient) extends TestHelpers with CirceUnmarshalling with OptionValues with Matchers {
 
-  private val logger = Logger[this.type]
+  private val logger = Logger.cats[this.type]
 
   def fetch(path: String, identity: Identity, self: Boolean = true, ancestors: Boolean = false)(
       assertAcls: AclListing => Assertion
-  ): Task[Assertion] = {
+  ): IO[Assertion] = {
     path should not startWith "/acls"
     cl.get[AclListing](s"/acls$path?ancestors=$ancestors&self=$self", identity) { (acls, response) =>
       response.status shouldEqual StatusCodes.OK
@@ -29,10 +29,10 @@ class AclDsl(cl: HttpClient) extends TestHelpers with CirceUnmarshalling with Op
     }
   }
 
-  def addPermission(path: String, target: Authenticated, permission: Permission): Task[Assertion] =
+  def addPermission(path: String, target: Authenticated, permission: Permission): IO[Assertion] =
     addPermissions(path, target, Set(permission))
 
-  def addPermissions(path: String, target: Authenticated, permissions: Set[Permission]): Task[Assertion] = {
+  def addPermissions(path: String, target: Authenticated, permissions: Set[Permission]): IO[Assertion] = {
     val json = jsonContentOf(
       "/iam/add.json",
       "realm" -> target.realm.name,
@@ -43,10 +43,10 @@ class AclDsl(cl: HttpClient) extends TestHelpers with CirceUnmarshalling with Op
     addPermissions(path, json, target.name)
   }
 
-  def addPermissionAnonymous(path: String, permission: Permission): Task[Assertion] =
+  def addPermissionAnonymous(path: String, permission: Permission): IO[Assertion] =
     addPermissionsAnonymous(path, Set(permission))
 
-  def addPermissionsAnonymous(path: String, permissions: Set[Permission]): Task[Assertion] = {
+  def addPermissionsAnonymous(path: String, permissions: Set[Permission]): IO[Assertion] = {
     val json = jsonContentOf(
       "/iam/add_annon.json",
       "perms" -> permissions.asJava
@@ -55,41 +55,37 @@ class AclDsl(cl: HttpClient) extends TestHelpers with CirceUnmarshalling with Op
     addPermissions(path, json, "Anonymous")
   }
 
-  def addPermissions(path: String, payload: Json, targetName: String): Task[Assertion] = {
-    logger.info(s"Addings permissions to $path for $targetName")
+  def addPermissions(path: String, payload: Json, targetName: String): IO[Assertion] = {
 
     def assertResponse(json: Json, response: HttpResponse) =
       response.status match {
         case StatusCodes.Created | StatusCodes.OK =>
-          logger.info(s"Permissions has been successfully added for $targetName on $path")
           succeed
         case StatusCodes.BadRequest               =>
           val errorType = error.`@type`.getOption(json)
-          logger.warn(
-            s"We got a bad request when adding permissions for $targetName on $path with error type $errorType"
-          )
           errorType.value shouldBe "NothingToBeUpdated"
         case s                                    => fail(s"We were not expecting $s when setting acls on $path for $targetName")
       }
 
-    fetch(path, Identity.ServiceAccount) { acls =>
-      {
-        val rev = acls._results.headOption
-        rev match {
-          case Some(r) =>
-            cl.patch[Json](s"/acls$path?rev=${r._rev}", payload, Identity.ServiceAccount) {
-              assertResponse
-            }
-          case None    =>
-            cl.patch[Json](s"/acls$path", payload, Identity.ServiceAccount) {
-              assertResponse
-            }
-        }
-      }.runSyncUnsafe()
-    }
+    logger.info(s"Addings permissions to $path for $targetName") >>
+      fetch(path, Identity.ServiceAccount) { acls =>
+        {
+          val rev = acls._results.headOption
+          rev match {
+            case Some(r) =>
+              cl.patch[Json](s"/acls$path?rev=${r._rev}", payload, Identity.ServiceAccount) {
+                assertResponse
+              }
+            case None    =>
+              cl.patch[Json](s"/acls$path", payload, Identity.ServiceAccount) {
+                assertResponse
+              }
+          }
+        }.unsafeRunSync()
+      }
   }
 
-  def cleanAcls(target: Authenticated): Task[Assertion] =
+  def cleanAcls(target: Authenticated)(implicit contextShift: ContextShift[IO]): IO[Assertion] =
     fetch(s"/*/*", Identity.ServiceAccount, ancestors = true, self = false) { acls =>
       val permissions = acls._results
         .map { acls =>
@@ -114,10 +110,10 @@ class AclDsl(cl: HttpClient) extends TestHelpers with CirceUnmarshalling with Op
           }
         }
         .map(_ => succeed)
-        .runSyncUnsafe()
+        .unsafeRunSync()
     }
 
-  def cleanAclsAnonymous: Task[Assertion] =
+  def cleanAclsAnonymous(implicit contextShift: ContextShift[IO]): IO[Assertion] =
     fetch(s"/*/*", Identity.ServiceAccount, ancestors = true, self = false) { acls =>
       val permissions = acls._results
         .map { acls =>
@@ -140,23 +136,23 @@ class AclDsl(cl: HttpClient) extends TestHelpers with CirceUnmarshalling with Op
           }
         }
         .map(_ => succeed)
-        .runSyncUnsafe()
+        .unsafeRunSync()
     }
 
-  def deletePermission(path: String, target: Authenticated, permission: Permission): Task[Assertion] =
+  def deletePermission(path: String, target: Authenticated, permission: Permission): IO[Assertion] =
     deletePermissions(path, target, Set(permission))
 
-  def deletePermissions(path: String, target: Authenticated, permissions: Set[Permission]): Task[Assertion] =
+  def deletePermissions(path: String, target: Authenticated, permissions: Set[Permission]): IO[Assertion] =
     fetch(path, Identity.ServiceAccount) { acls =>
       deletePermissions(
         path,
         target,
         acls._results.head._rev,
         permissions
-      ).runSyncUnsafe()
+      ).unsafeRunSync()
     }
 
-  def deletePermission(path: String, target: Authenticated, rev: Int, permission: Permission): Task[Assertion] = {
+  def deletePermission(path: String, target: Authenticated, rev: Int, permission: Permission): IO[Assertion] = {
     deletePermissions(path, target, rev, Set(permission))
   }
 
@@ -165,7 +161,7 @@ class AclDsl(cl: HttpClient) extends TestHelpers with CirceUnmarshalling with Op
       target: Authenticated,
       rev: Int,
       permissions: Set[Permission]
-  ): Task[Assertion] = {
+  ): IO[Assertion] = {
     val body = jsonContentOf(
       "/iam/subtract-permissions.json",
       "realm" -> target.realm.name,
@@ -177,13 +173,13 @@ class AclDsl(cl: HttpClient) extends TestHelpers with CirceUnmarshalling with Op
     }
   }
 
-  def checkAdminAcls(path: String, authenticated: Authenticated): Task[Assertion] = {
-    logger.info(s"Gettings acls for $path using ${authenticated.name}")
-    fetch(path, authenticated) { acls =>
-      val acl   = acls._results.headOption.value
-      val entry = acl.acl.headOption.value
-      entry.permissions shouldEqual Permission.adminPermissions
-    }
+  def checkAdminAcls(path: String, authenticated: Authenticated): IO[Assertion] = {
+    logger.info(s"Gettings acls for $path using ${authenticated.name}") >>
+      fetch(path, authenticated) { acls =>
+        val acl   = acls._results.headOption.value
+        val entry = acl.acl.headOption.value
+        entry.permissions shouldEqual Permission.adminPermissions
+      }
   }
 
 }

@@ -11,7 +11,6 @@ import ch.epfl.bluebrain.nexus.tests.Identity.resources.Rick
 import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.{BaseSpec, ExpectedResponse, Identity}
 import io.circe.Json
-import monix.execution.Scheduler.Implicits.global
 
 class ProjectsSpec extends BaseSpec {
 
@@ -143,10 +142,10 @@ class ProjectsSpec extends BaseSpec {
 
     "fetch project by UUID" in {
       deltaClient.get[Json](s"/orgs/$orgId", Identity.ServiceAccount) { (orgJson, _) =>
-        runTask {
+        runIO {
           val orgUuid = _uuid.getOption(orgJson).value
           deltaClient.get[Json](s"/projects/$id", Bojack) { (projectJson, _) =>
-            runTask {
+            runIO {
               val projectUuid = _uuid.getOption(projectJson).value
               deltaClient.get[Json](s"/projects/$orgUuid/$projectUuid", Bojack) { (json, response) =>
                 response.status shouldEqual StatusCodes.OK

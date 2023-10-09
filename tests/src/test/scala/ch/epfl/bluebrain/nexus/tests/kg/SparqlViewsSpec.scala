@@ -9,7 +9,6 @@ import ch.epfl.bluebrain.nexus.tests.Identity.views.ScoobyDoo
 import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Organizations, Views}
 import io.circe.Json
-import monix.execution.Scheduler.Implicits.global
 
 class SparqlViewsSpec extends BaseSpec with EitherValuable with CirceEq {
 
