@@ -335,7 +335,7 @@ class IdentitiesImplSuite extends CatsEffectSuite with TestHelpers with IOFromMa
       _           <- realm.get(parsedToken.rawToken).assertNone
       _           <- groups.get(parsedToken.rawToken).assertNone
       _           <- identitiesFromCaches(realm, groups)(findActiveRealm).exchange(token)
-      _           <- realm.get(parsedToken.rawToken).assertSome(github)
+      _           <- realm.get(parsedToken.issuer).assertSome(github)
       _           <- groups.get(parsedToken.rawToken).assertSome(Set(group3, group4))
     } yield ()
   }
