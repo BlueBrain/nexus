@@ -7,7 +7,6 @@ import ch.epfl.bluebrain.nexus.tests.kg.VersionSpec.VersionBundle
 import ch.epfl.bluebrain.nexus.tests.{BaseSpec, Identity}
 import io.circe.generic.semiauto.deriveDecoder
 import io.circe.{Decoder, Json}
-import monix.execution.Scheduler.Implicits.global
 
 class VersionSpec extends BaseSpec with EitherValuable {
 
@@ -19,7 +18,7 @@ class VersionSpec extends BaseSpec with EitherValuable {
     }
 
     "return the dependencies and plugin versions" in {
-      aclDsl.addPermissionAnonymous("/", Permission.Version.Read).runSyncUnsafe()
+      aclDsl.addPermissionAnonymous("/", Permission.Version.Read).unsafeRunSync()
 
       deltaClient.get[Json]("/version", Identity.Anonymous) { (json, response) =>
         response.status shouldEqual StatusCodes.OK

@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.{ContentTypes, HttpCharsets, MediaTypes, StatusCodes}
 import akka.util.ByteString
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.tests.HttpClient._
 import ch.epfl.bluebrain.nexus.tests.Identity.storages.Coyote
 import ch.epfl.bluebrain.nexus.tests.Optics.{filterKey, filterMetadataKeys, projections}
@@ -10,7 +11,6 @@ import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Supervision
 import io.circe.generic.semiauto.deriveDecoder
 import io.circe.syntax.KeyOps
 import io.circe.{Decoder, Json}
-import monix.bio.Task
 import org.scalactic.source.Position
 import org.scalatest.Assertion
 
@@ -60,7 +60,7 @@ class RemoteStorageSpec extends StorageSpec {
       ): _*
     )
 
-  override def createStorages: Task[Assertion] = {
+  override def createStorages: IO[Assertion] = {
     val payload = jsonContentOf(
       "/kg/storages/remote-disk.json",
       "endpoint" -> externalEndpoint,
@@ -191,7 +191,7 @@ class RemoteStorageSpec extends StorageSpec {
     }
   }
 
-  def createFile(filename: String) = Task.delay {
+  def createFile(filename: String) = IO.delay {
     val createFile = s"echo 'file content' > /tmp/$remoteFolder/$filename"
     s"docker exec nexus-storage-service bash -c \"$createFile\"".!
   }

@@ -1,12 +1,13 @@
 package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.StatusCodes
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
 import ch.epfl.bluebrain.nexus.tests.{CirceUnmarshalling, HttpClient, Identity}
 import io.circe.Json
-import monix.bio.Task
 import org.scalatest.Assertion
 import org.scalatest.matchers.should.Matchers
+
 import scala.jdk.CollectionConverters._
 
 final class ElasticSearchViewsDsl(deltaClient: HttpClient)
@@ -18,7 +19,7 @@ final class ElasticSearchViewsDsl(deltaClient: HttpClient)
   /**
     * Create an aggregate view and expects it to succeed
     */
-  def aggregate(id: String, projectRef: String, identity: Identity, views: (String, String)*): Task[Assertion] = {
+  def aggregate(id: String, projectRef: String, identity: Identity, views: (String, String)*): IO[Assertion] = {
     val payload = jsonContentOf(
       "/kg/views/elasticsearch/aggregate.json",
       "views" -> views.map { case ((project, view)) =>

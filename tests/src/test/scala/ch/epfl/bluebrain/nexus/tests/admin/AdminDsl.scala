@@ -1,21 +1,21 @@
 package ch.epfl.bluebrain.nexus.tests.admin
 
 import akka.http.scaladsl.model.StatusCodes
+import cats.effect.IO
+import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
 import ch.epfl.bluebrain.nexus.tests.Identity.Authenticated
 import ch.epfl.bluebrain.nexus.tests.Optics.{filterMetadataKeys, _}
 import ch.epfl.bluebrain.nexus.tests.config.TestsConfig
 import ch.epfl.bluebrain.nexus.tests.{CirceUnmarshalling, ExpectedResponse, HttpClient, Identity}
-import com.typesafe.scalalogging.Logger
 import io.circe.Json
-import monix.bio.Task
-import monix.execution.Scheduler.Implicits.global
 import org.scalatest.Assertion
 import org.scalatest.matchers.should.Matchers
 
 class AdminDsl(cl: HttpClient, config: TestsConfig) extends TestHelpers with CirceUnmarshalling with Matchers {
 
-  private val logger = Logger[this.type]
+  private val logger = Logger.cats[this.type]
 
   def orgPayload(description: String = genString()): Json =
     jsonContentOf("/admin/orgs/payload.json", "description" -> description)
@@ -84,7 +84,7 @@ class AdminDsl(cl: HttpClient, config: TestsConfig) extends TestHelpers with Cir
       authenticated: Authenticated,
       expectedResponse: Option[ExpectedResponse] = None,
       ignoreConflict: Boolean = false
-  ): Task[Assertion] =
+  ): IO[Assertion] =
     updateOrganization(id, description, authenticated, 0, expectedResponse, ignoreConflict)
 
   def updateOrganization(
@@ -94,7 +94,7 @@ class AdminDsl(cl: HttpClient, config: TestsConfig) extends TestHelpers with Cir
       rev: Int,
       expectedResponse: Option[ExpectedResponse] = None,
       ignoreConflict: Boolean = false
-  ): Task[Assertion] = {
+  ): IO[Assertion] = {
     cl.put[Json](s"/orgs/$id${queryParams(rev)}", orgPayload(description), authenticated) { (json, response) =>
       expectedResponse match {
         case Some(e) =>
@@ -122,7 +122,7 @@ class AdminDsl(cl: HttpClient, config: TestsConfig) extends TestHelpers with Cir
     }
   }
 
-  def deprecateOrganization(id: String, authenticated: Authenticated): Task[Assertion] =
+  def deprecateOrganization(id: String, authenticated: Authenticated): IO[Assertion] =
     cl.get[Json](s"/orgs/$id", authenticated) { (json, response) =>
       response.status shouldEqual StatusCodes.OK
       val rev = admin._rev.getOption(json).value
@@ -137,7 +137,7 @@ class AdminDsl(cl: HttpClient, config: TestsConfig) extends TestHelpers with Cir
           "organizations",
           deprecated = true
         )
-      }.runSyncUnsafe()
+      }.unsafeRunSync()
     }
 
   private[tests] val startPool = Vector.range('a', 'z')
@@ -168,7 +168,7 @@ class AdminDsl(cl: HttpClient, config: TestsConfig) extends TestHelpers with Cir
       json: Json,
       authenticated: Authenticated,
       expectedResponse: Option[ExpectedResponse] = None
-  ): Task[Assertion] =
+  ): IO[Assertion] =
     updateProject(orgId, projectId, json, authenticated, 0, expectedResponse)
 
   def updateProject(
@@ -178,30 +178,30 @@ class AdminDsl(cl: HttpClient, config: TestsConfig) extends TestHelpers with Cir
       authenticated: Authenticated,
       rev: Int,
       expectedResponse: Option[ExpectedResponse] = None
-  ): Task[Assertion] =
-    cl.put[Json](s"/projects/$orgId/$projectId${queryParams(rev)}", payload, authenticated) { (json, response) =>
-      logger.info(s"Creating/updating project $orgId/$projectId at revision $rev")
-      expectedResponse match {
-        case Some(e) =>
-          response.status shouldEqual e.statusCode
-          json shouldEqual e.json
-        case None    =>
-          if (rev == 0)
-            response.status shouldEqual StatusCodes.Created
-          else
-            response.status shouldEqual StatusCodes.OK
-          filterProjectMetadataKeys(json) shouldEqual createProjectRespJson(
-            projectId,
-            orgId,
-            rev + 1,
-            authenticated = authenticated,
-            schema = "projects"
-          )
+  ): IO[Assertion] =
+    logger.info(s"Creating/updating project $orgId/$projectId at revision $rev") >>
+      cl.put[Json](s"/projects/$orgId/$projectId${queryParams(rev)}", payload, authenticated) { (json, response) =>
+        expectedResponse match {
+          case Some(e) =>
+            response.status shouldEqual e.statusCode
+            json shouldEqual e.json
+          case None    =>
+            if (rev == 0)
+              response.status shouldEqual StatusCodes.Created
+            else
+              response.status shouldEqual StatusCodes.OK
+            filterProjectMetadataKeys(json) shouldEqual createProjectRespJson(
+              projectId,
+              orgId,
+              rev + 1,
+              authenticated = authenticated,
+              schema = "projects"
+            )
+        }
+
       }
 
-    }
-
-  def getUuids(orgId: String, projectId: String, identity: Identity): Task[(String, String)] =
+  def getUuids(orgId: String, projectId: String, identity: Identity): IO[(String, String)] =
     for {
       orgUuid     <- cl.getJson[Json](s"/orgs/$orgId", identity)
       projectUuid <- cl.getJson[Json](s"/projects/$orgId/$projectId", identity)
