@@ -27,7 +27,7 @@ final case class ParsedToken private (
     jwtToken: SignedJWT
 ) {
 
-  def validate(audiences: Option[NonEmptySet[String]], keySet: JWKSet): Either[InvalidAccessToken, JWTClaimsSet] = {
+  def validate(audiences: Option[NonEmptySet[String]], keySet: JWKSet): Either[InvalidAccessToken, Unit] = {
     val proc        = new DefaultJWTProcessor[SecurityContext]
     val keySelector = new JWSVerificationKeySelector(JWSAlgorithm.RS256, new ImmutableJWKSet[SecurityContext](keySet))
     proc.setJWSKeySelector(keySelector)
@@ -36,7 +36,10 @@ final case class ParsedToken private (
     }
     Either
       .catchNonFatal(proc.process(jwtToken, null))
-      .leftMap(err => InvalidAccessToken(subject, issuer, err.getMessage))
+      .bimap(
+        err => InvalidAccessToken(subject, issuer, err.getMessage),
+        _ => ()
+      )
   }
 
 }
