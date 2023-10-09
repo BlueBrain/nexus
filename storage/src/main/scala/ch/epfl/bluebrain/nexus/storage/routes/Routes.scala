@@ -90,7 +90,7 @@ object Routes {
     wrap {
       concat(
         AppInfoRoutes(config.description).routes,
-        (pathPrefix(config.http.prefix) & validateUser) {
+        (pathPrefix(config.http.prefix) & validUser) {
           StorageRoutes(storages).routes
         }
       )

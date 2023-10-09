@@ -15,7 +15,7 @@ object AuthDirectives {
   /**
     * Extracts the credentials from the HTTP Authorization Header and builds the [[AccessToken]]
     */
-  def validateUser(implicit authorizationMethod: AuthorizationMethod): Directive0 = {
+  def validUser(implicit authorizationMethod: AuthorizationMethod): Directive0 = {
     def validate(token: Option[AuthToken]): Directive0 =
       authorizationMethod.validate(token) match {
         case Left(error) =>

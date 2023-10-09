@@ -60,7 +60,7 @@ object ParsedToken {
       Either
         .catchNonFatal(Option(jwt.getJWTClaimsSet))
         .leftMap { e => InvalidAccessTokenFormat(e.getMessage) }
-        .flatMap { _.toRight(InvalidAccessTokenFormat("No claim is defined."))}
+        .flatMap { _.toRight(InvalidAccessTokenFormat("No claim is defined.")) }
 
     def subject(claimsSet: JWTClaimsSet) = {
       val preferredUsername = Try(claimsSet.getStringClaim("preferred_username"))

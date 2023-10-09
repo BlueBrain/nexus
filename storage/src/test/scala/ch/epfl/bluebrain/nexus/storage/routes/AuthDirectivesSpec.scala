@@ -30,7 +30,7 @@ class AuthDirectivesSpec
 
   implicit private val hc: HttpConfig = Settings(system).appConfig.http
 
-  def validateRoute(implicit authorizationMethod: AuthorizationMethod) = Routes.wrap(validateUser.apply {
+  def validateRoute(implicit authorizationMethod: AuthorizationMethod) = Routes.wrap(validUser.apply {
     complete("")
   })
 
