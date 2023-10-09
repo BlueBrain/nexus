@@ -90,6 +90,7 @@ final class CompositeProgressStore(xas: Transactors)(implicit clock: Clock[UIO])
          |  processed  = ${reset.processed},
          |  discarded  = ${reset.discarded},
          |  failed     = ${reset.failed},
+         |  created_at = $instant,
          |  updated_at = $instant
          |$where
          |""".stripMargin.update.run
