@@ -1,14 +1,14 @@
 package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.StatusCodes
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, IOValues}
+import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable}
 import ch.epfl.bluebrain.nexus.tests.BaseSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.supervision.Mickey
 import ch.epfl.bluebrain.nexus.tests.Optics.{filterKeys, projections}
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Events, Organizations, Supervision}
 import io.circe._
 
-class SupervisionSpec extends BaseSpec with EitherValuable with CirceLiteral with IOValues {
+class SupervisionSpec extends BaseSpec with EitherValuable with CirceLiteral {
 
   "The supervision endpoint" should {
     s"reject calls without ${Supervision.Read.value} permission" in {

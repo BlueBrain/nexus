@@ -6,14 +6,19 @@ import akka.http.scaladsl.model.HttpMethods.GET
 import akka.http.scaladsl.model.headers.Accept
 import akka.http.scaladsl.model.{HttpRequest, MediaRange, MediaType}
 import akka.stream.Materializer
+import cats.effect.{ContextShift, IO}
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
 import io.circe.optics.JsonPath.root
-import monix.bio.Task
-import monix.execution.Scheduler.Implicits.global
 import org.scalatest.matchers.should.Matchers
 
-class BlazegraphDsl(implicit as: ActorSystem, materializer: Materializer)
-    extends TestHelpers
+import scala.concurrent.ExecutionContext
+
+class BlazegraphDsl(implicit
+    as: ActorSystem,
+    materializer: Materializer,
+    contextShift: ContextShift[IO],
+    ec: ExecutionContext
+) extends TestHelpers
     with CirceLiteral
     with CirceUnmarshalling
     with Matchers {
@@ -39,17 +44,14 @@ class BlazegraphDsl(implicit as: ActorSystem, materializer: Materializer)
       all should not contain allElementsOf(namespaces)
     }
 
-  def allNamespaces: Task[List[String]] = {
+  def allNamespaces: IO[List[String]] = {
     blazegraphClient(
       HttpRequest(
         method = GET,
         uri = s"$blazegraphUrl/blazegraph/namespace?describe-each-named-graph=false"
       ).addHeader(Accept(sparqlJsonRange))
     ).flatMap { res =>
-      Task
-        .deferFuture {
-          jsonUnmarshaller(res.entity)(global, materializer)
-        }
+      IO.fromFuture(IO(jsonUnmarshaller(res.entity)))
         .map { json =>
           root.results.bindings.each.filter(filterNamespaces).`object`.value.string.getAll(json)
         }

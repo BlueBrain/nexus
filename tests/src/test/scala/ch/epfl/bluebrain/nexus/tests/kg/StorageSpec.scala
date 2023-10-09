@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.tests.kg
 import akka.http.scaladsl.model.headers.{ContentDispositionTypes, HttpEncodings}
 import akka.http.scaladsl.model._
 import akka.util.ByteString
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.testkit.CirceEq
 import ch.epfl.bluebrain.nexus.tests.BaseSpec
 import ch.epfl.bluebrain.nexus.tests.HttpClient._
@@ -14,8 +15,6 @@ import ch.epfl.bluebrain.nexus.tests.iam.types.Permission
 import com.typesafe.config.ConfigFactory
 import io.circe.Json
 import io.circe.optics.JsonPath.root
-import monix.bio.Task
-import monix.execution.Scheduler.Implicits.global
 import org.apache.commons.codec.Charsets
 import org.scalatest.Assertion
 
@@ -41,7 +40,7 @@ abstract class StorageSpec extends BaseSpec with CirceEq {
 
   def locationPrefix: Option[String]
 
-  def createStorages: Task[Assertion]
+  def createStorages: IO[Assertion]
 
   protected def fileSelf(project: String, id: String): String = {
     val uri = Uri(s"${config.deltaUri}/files/$project")
@@ -226,7 +225,7 @@ abstract class StorageSpec extends BaseSpec with CirceEq {
 
     val textFileContent = "text file"
 
-    def uploadStorageWithCustomPermissions: ((Json, HttpResponse) => Assertion) => Task[Assertion] =
+    def uploadStorageWithCustomPermissions: ((Json, HttpResponse) => Assertion) => IO[Assertion] =
       deltaClient.uploadFile[Json](
         s"/files/$projectRef/attachment3?storage=nxv:${storageId}2",
         textFileContent,
@@ -348,7 +347,7 @@ abstract class StorageSpec extends BaseSpec with CirceEq {
   "Upload files with the .custom extension" should {
     val fileContent = "file content"
 
-    def uploadCustomFile(id: String, contentType: ContentType): ((Json, HttpResponse) => Assertion) => Task[Assertion] =
+    def uploadCustomFile(id: String, contentType: ContentType): ((Json, HttpResponse) => Assertion) => IO[Assertion] =
       deltaClient.uploadFile[Json](
         s"/files/$projectRef/$id?storage=nxv:$storageId",
         fileContent,

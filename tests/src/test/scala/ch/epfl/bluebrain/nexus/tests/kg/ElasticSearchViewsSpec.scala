@@ -9,7 +9,6 @@ import ch.epfl.bluebrain.nexus.tests.Identity.views.ScoobyDoo
 import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Organizations, Views}
 import io.circe.{ACursor, Json}
-import monix.execution.Scheduler.Implicits.global
 
 class ElasticSearchViewsSpec extends BaseSpec with EitherValuable with CirceEq {
 
@@ -217,7 +216,7 @@ class ElasticSearchViewsSpec extends BaseSpec with EitherValuable with CirceEq {
             .post[Json](s"/views/$fullId/test-resource:cell-view/_search", matchAll, ScoobyDoo) { (json2, _) =>
               filterKey("took")(json2) shouldEqual filterKey("took")(json)
             }
-            .runSyncUnsafe()
+            .unsafeRunSync()
       }
     }
 
@@ -241,7 +240,7 @@ class ElasticSearchViewsSpec extends BaseSpec with EitherValuable with CirceEq {
             .post[Json](s"/views/$fullId2/test-resource:cell-view/_search", matchAll, ScoobyDoo) { (json2, _) =>
               filterKey("took")(json2) shouldEqual filterKey("took")(json)
             }
-            .runSyncUnsafe()
+            .unsafeRunSync()
       }
     }
 
@@ -385,7 +384,7 @@ class ElasticSearchViewsSpec extends BaseSpec with EitherValuable with CirceEq {
             .post[Json](s"/views/$fullId/test-resource:cell-view/_search", matchAll, ScoobyDoo) { (json2, _) =>
               filterKey("took")(json2) shouldEqual filterKey("took")(json)
             }
-            .runSyncUnsafe()
+            .unsafeRunSync()
       }
     }
 
@@ -410,7 +409,7 @@ class ElasticSearchViewsSpec extends BaseSpec with EitherValuable with CirceEq {
             .post[Json](s"/views/$fullId/test-resource:cell-view/_search", matchAll, ScoobyDoo) { (json2, _) =>
               filterKey("took")(json2) shouldEqual filterKey("took")(json)
             }
-            .runSyncUnsafe()
+            .unsafeRunSync()
       }
     }
 

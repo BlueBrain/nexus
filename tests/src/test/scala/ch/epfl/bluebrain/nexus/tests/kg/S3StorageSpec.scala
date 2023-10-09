@@ -1,12 +1,12 @@
 package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.StatusCodes
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.tests.Identity.storages.Coyote
 import ch.epfl.bluebrain.nexus.tests.Optics.filterMetadataKeys
 import ch.epfl.bluebrain.nexus.tests.config.S3Config
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission
 import io.circe.Json
-import monix.bio.Task
 import org.scalatest.Assertion
 import software.amazon.awssdk.auth.credentials.{AnonymousCredentialsProvider, AwsBasicCredentials, StaticCredentialsProvider}
 import software.amazon.awssdk.regions.Region
@@ -82,7 +82,7 @@ class S3StorageSpec extends StorageSpec {
       ): _*
     )
 
-  override def createStorages: Task[Assertion] = {
+  override def createStorages: IO[Assertion] = {
     val payload = jsonContentOf(
       "/kg/storages/s3.json",
       "storageId" -> s"https://bluebrain.github.io/nexus/vocabulary/$storageId",

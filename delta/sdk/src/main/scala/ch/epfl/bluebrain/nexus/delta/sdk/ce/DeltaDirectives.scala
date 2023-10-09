@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.ce
 import akka.http.scaladsl.model.MediaTypes.{`application/json`, `text/html`}
 import akka.http.scaladsl.model.StatusCodes.{Redirection, SeeOther}
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept}
+import akka.http.scaladsl.model.headers.{`Accept-Encoding`, `Last-Event-ID`, Accept, RawHeader}
 import akka.http.scaladsl.server.ContentNegotiator.Alternative
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
@@ -163,5 +163,20 @@ trait DeltaDirectives extends UriDirectives {
           case Some(o) => provide(Offset.at(o))
         }
       case None        => provide(Offset.Start)
+    }
+
+  /** Injects a `Vary: Accept,Accept-Encoding` into the response */
+  def varyAcceptHeaders: Directive0 =
+    vary(Set(Accept.name, `Accept-Encoding`.name))
+
+  private def vary(headers: Set[String]): Directive0 =
+    respondWithHeader(RawHeader("Vary", headers.mkString(",")))
+
+  private def respondWithHeader(responseHeader: HttpHeader): Directive0 =
+    mapSuccessResponse(r => r.withHeaders(r.headers :+ responseHeader))
+
+  private def mapSuccessResponse(f: HttpResponse => HttpResponse): Directive0 =
+    mapRouteResultPF {
+      case RouteResult.Complete(response) if response.status.isSuccess => RouteResult.Complete(f(response))
     }
 }
