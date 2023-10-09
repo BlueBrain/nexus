@@ -125,69 +125,34 @@ class FilesRoutesSpec
   private lazy val routes =
     createRoutes(createFiles())
 
+  // format: off
   private def filesWithErrorInFileContents[E: JsonLdEncoder: HttpResponseFields](error: E): Files = {
     new Files {
-      override def create(storageId: Option[IdSegment], projectRef: ProjectRef, entity: HttpEntity)(implicit
-          caller: Caller
-      ): IO[FileRejection, FileResource]                                                         = ???
-      override def create(id: IdSegment, storageId: Option[IdSegment], projectRef: ProjectRef, entity: HttpEntity)(
-          implicit caller: Caller
-      ): IO[FileRejection, FileResource]                                                         = ???
-      override def createLink(
-          storageId: Option[IdSegment],
-          projectRef: ProjectRef,
-          filename: Option[String],
-          mediaType: Option[ContentType],
-          path: Uri.Path
-      )(implicit caller: Caller): IO[FileRejection, FileResource]                                = ???
-      override def createLink(
-          id: IdSegment,
-          storageId: Option[IdSegment],
-          projectRef: ProjectRef,
-          filename: Option[String],
-          mediaType: Option[ContentType],
-          path: Uri.Path
-      )(implicit caller: Caller): IO[FileRejection, FileResource]                                = ???
-      override def update(
-          id: IdSegment,
-          storageId: Option[IdSegment],
-          projectRef: ProjectRef,
-          rev: Int,
-          entity: HttpEntity
-      )(implicit caller: Caller): IO[FileRejection, FileResource]                                = ???
-      override def updateLink(
-          id: IdSegment,
-          storageId: Option[IdSegment],
-          projectRef: ProjectRef,
-          filename: Option[String],
-          mediaType: Option[ContentType],
-          path: Uri.Path,
-          rev: Int
-      )(implicit caller: Caller): IO[FileRejection, FileResource]                                = ???
-      override def tag(id: IdSegment, projectRef: ProjectRef, tag: Tag.UserTag, tagRev: Int, rev: Int)(implicit
-          subject: Subject
-      ): IO[FileRejection, FileResource]                                                         = ???
-      override def deleteTag(id: IdSegment, projectRef: ProjectRef, tag: Tag.UserTag, rev: Int)(implicit
-          subject: Subject
-      ): IO[FileRejection, FileResource]                                                         = ???
-      override def deprecate(id: IdSegment, projectRef: ProjectRef, rev: Int)(implicit
-          subject: Subject
-      ): IO[FileRejection, FileResource]                                                         = ???
-      override def fetchContent(id: IdSegmentRef, project: ProjectRef)(implicit
-          caller: Caller
-      ): IO[FileRejection, FileResponse]                                                         = IO.pure(
-        FileResponse(
-          "file.name",
-          ContentTypes.`text/plain(UTF-8)`,
-          1024,
-          IO.raiseError(error)
+      override def create(storageId: Option[IdSegment], projectRef: ProjectRef, entity: HttpEntity)(implicit caller: Caller): IO[FileRejection, FileResource] = ???
+      override def create(id: IdSegment, storageId: Option[IdSegment], projectRef: ProjectRef, entity: HttpEntity)(implicit caller: Caller): IO[FileRejection, FileResource] = ???
+      override def createLink(storageId: Option[IdSegment], projectRef: ProjectRef, filename: Option[String], mediaType: Option[ContentType], path: Uri.Path)(implicit caller: Caller): IO[FileRejection, FileResource] = ???
+      override def createLink(id: IdSegment, storageId: Option[IdSegment], projectRef: ProjectRef, filename: Option[String], mediaType: Option[ContentType], path: Uri.Path)(implicit caller: Caller): IO[FileRejection, FileResource] = ???
+      override def update(id: IdSegment, storageId: Option[IdSegment], projectRef: ProjectRef, rev: Int, entity: HttpEntity)(implicit caller: Caller): IO[FileRejection, FileResource] = ???
+      override def updateLink(id: IdSegment, storageId: Option[IdSegment], projectRef: ProjectRef, filename: Option[String], mediaType: Option[ContentType], path: Uri.Path, rev: Int)(implicit caller: Caller): IO[FileRejection, FileResource] = ???
+      override def tag(id: IdSegment, projectRef: ProjectRef, tag: Tag.UserTag, tagRev: Int, rev: Int)(implicit subject: Subject): IO[FileRejection, FileResource] = ???
+      override def deleteTag(id: IdSegment, projectRef: ProjectRef, tag: Tag.UserTag, rev: Int)(implicit subject: Subject): IO[FileRejection, FileResource] = ???
+      override def deprecate(id: IdSegment, projectRef: ProjectRef, rev: Int)(implicit subject: Subject): IO[FileRejection, FileResource] = ???
+      override def fetchContent(id: IdSegmentRef, project: ProjectRef)(implicit caller: Caller): IO[FileRejection, FileResponse] = {
+        IO.pure(
+          FileResponse(
+            "file.name",
+            ContentTypes.`text/plain(UTF-8)`,
+            1024,
+            IO.raiseError(error)
+          )
         )
-      )
+      }
       override def fetch(id: IdSegmentRef, project: ProjectRef): IO[FileRejection, FileResource] = ???
-      override private[files] def attributesUpdateStream(offset: Offset)                         = ???
-      override private[files] def updateAttributes(iri: Iri, project: ProjectRef)                = ???
+      override private[files] def attributesUpdateStream(offset: Offset) = ???
+      override private[files] def updateAttributes(iri: Iri, project: ProjectRef) = ???
     }
   }
+  // format: on
 
   private def createRoutes(files: Files) = Route.seal(
     FilesRoutes(
