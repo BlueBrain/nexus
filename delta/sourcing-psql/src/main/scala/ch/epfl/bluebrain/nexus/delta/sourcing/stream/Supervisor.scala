@@ -341,7 +341,7 @@ object Supervisor {
                               _      <- log.info(s"Restarting '${metadata.module}/${metadata.name}'...")
                               _      <- stopProjection(s)
                               _      <- Task.when(s.executionStrategy == PersistentSingleNode)(
-                                          projections.save(metadata, ProjectionProgress.NoProgress)
+                                          projections.reset(metadata.name)
                                         )
                               _      <- Supervisor.restartProjection(s, mapRef)
                               status <- s.control.status

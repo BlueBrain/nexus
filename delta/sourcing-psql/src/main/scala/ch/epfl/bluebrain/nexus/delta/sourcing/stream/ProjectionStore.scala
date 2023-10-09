@@ -32,6 +32,8 @@ trait ProjectionStore {
     */
   def save(metadata: ProjectionMetadata, progress: ProjectionProgress): UIO[Unit]
 
+  def reset(name: String): UIO[Unit]
+
   /**
     * Retrieves a projection offset if found.
     *
@@ -78,6 +80,22 @@ object ProjectionStore {
                |  failed = EXCLUDED.failed,
                |  updated_at = EXCLUDED.updated_at;
                |""".stripMargin.update.run
+            .transact(xas.write)
+            .void
+            .hideErrors
+        }
+
+      override def reset(name: String): UIO[Unit] =
+        IOUtils.instant.flatMap { instant =>
+          sql"""UPDATE projection_offsets
+                SET ordering   = 0,
+                    processed  = 0,
+                    discarded  = 0,
+                    failed     = 0,
+                    created_at = $instant,
+                    updated_at = $instant
+                WHERE name = $name
+             """.stripMargin.update.run
             .transact(xas.write)
             .void
             .hideErrors

@@ -42,6 +42,8 @@ trait Projections {
     */
   def save(metadata: ProjectionMetadata, progress: ProjectionProgress): UIO[Unit]
 
+  def reset(name: String): UIO[Unit]
+
   /**
     * Deletes a projection offset if found.
     *
@@ -103,6 +105,8 @@ object Projections {
 
       override def save(metadata: ProjectionMetadata, progress: ProjectionProgress): UIO[Unit] =
         projectionStore.save(metadata, progress)
+
+      override def reset(name: String): UIO[Unit] = projectionStore.reset(name)
 
       override def delete(name: String): UIO[Unit] = projectionStore.delete(name)
 
