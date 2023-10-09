@@ -1,11 +1,18 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.identities
+package ch.epfl.bluebrain.nexus.delta.kernel.jwt
 
-import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{AuthToken, TokenRejection}
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.TokenRejection._
+import cats.data.NonEmptySet
+import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.jwt.TokenRejection._
+import com.nimbusds.jose.JWSAlgorithm
+import com.nimbusds.jose.jwk.JWKSet
+import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
+import com.nimbusds.jose.jwk.source.ImmutableJWKSet
+import com.nimbusds.jose.proc.{JWSVerificationKeySelector, SecurityContext}
+import com.nimbusds.jwt.proc.{DefaultJWTClaimsVerifier, DefaultJWTProcessor}
 import com.nimbusds.jwt.{JWTClaimsSet, SignedJWT}
 
 import java.time.Instant
+import scala.jdk.CollectionConverters._
 import scala.util.Try
 
 /**
@@ -18,7 +25,24 @@ final case class ParsedToken private (
     expirationTime: Instant,
     groups: Option[Set[String]],
     jwtToken: SignedJWT
-)
+) {
+
+  def validate(audiences: Option[NonEmptySet[String]], keySet: JWKSet): Either[InvalidAccessToken, Unit] = {
+    val proc        = new DefaultJWTProcessor[SecurityContext]
+    val keySelector = new JWSVerificationKeySelector(JWSAlgorithm.RS256, new ImmutableJWKSet[SecurityContext](keySet))
+    proc.setJWSKeySelector(keySelector)
+    audiences.foreach { aud =>
+      proc.setJWTClaimsSetVerifier(new DefaultJWTClaimsVerifier(aud.toSet.asJava, null, null, null))
+    }
+    Either
+      .catchNonFatal(proc.process(jwtToken, null))
+      .bimap(
+        err => InvalidAccessToken(subject, issuer, err.getMessage),
+        _ => ()
+      )
+  }
+
+}
 
 object ParsedToken {
 
@@ -33,13 +57,13 @@ object ParsedToken {
     def parseJwt: Either[TokenRejection, SignedJWT] =
       Either
         .catchNonFatal(SignedJWT.parse(token.value))
-        .leftMap(_ => InvalidAccessTokenFormat)
+        .leftMap { e => InvalidAccessTokenFormat(e.getMessage) }
 
     def claims(jwt: SignedJWT): Either[TokenRejection, JWTClaimsSet] =
       Either
-        .catchNonFatal(jwt.getJWTClaimsSet)
-        .filterOrElse(_ != null, InvalidAccessTokenFormat)
-        .leftMap(_ => InvalidAccessTokenFormat)
+        .catchNonFatal(Option(jwt.getJWTClaimsSet))
+        .leftMap { e => InvalidAccessTokenFormat(e.getMessage) }
+        .flatMap { _.toRight(InvalidAccessTokenFormat("No claim is defined.")) }
 
     def subject(claimsSet: JWTClaimsSet) = {
       val preferredUsername = Try(claimsSet.getStringClaim("preferred_username"))

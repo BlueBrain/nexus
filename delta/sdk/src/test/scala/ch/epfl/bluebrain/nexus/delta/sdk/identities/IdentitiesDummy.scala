@@ -1,8 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.identities
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.TokenRejection.InvalidAccessToken
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{AuthToken, Caller}
+import ch.epfl.bluebrain.nexus.delta.kernel.jwt.AuthToken
+import ch.epfl.bluebrain.nexus.delta.kernel.jwt.TokenRejection.InvalidAccessToken
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 
 /**

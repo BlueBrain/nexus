@@ -1,12 +1,12 @@
 package ch.epfl.bluebrain.nexus.storage.config
 
-import java.nio.file.Path
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
-import ch.epfl.bluebrain.nexus.storage.DeltaIdentitiesClient.Identity.{Anonymous, Subject, User}
 import ch.epfl.bluebrain.nexus.storage.JsonLdCirceSupport.OrderedKeys
+import ch.epfl.bluebrain.nexus.storage.auth.AuthorizationMethod
 import ch.epfl.bluebrain.nexus.storage.config.AppConfig._
 
+import java.nio.file.Path
 import scala.concurrent.duration.FiniteDuration
 
 /**
@@ -18,10 +18,10 @@ import scala.concurrent.duration.FiniteDuration
   *   http interface configuration
   * @param storage
   *   storages configuration
-  * @param subject
-  *   allowed subject to perform calls to this service
-  * @param delta
-  *   delta client configuration
+  * @param authorization
+  *   authorization configuration
+  * @param mediaTypeDetector
+  *   media type configuration
   * @param digest
   *   the digest configuration
   */
@@ -29,8 +29,7 @@ final case class AppConfig(
     description: Description,
     http: HttpConfig,
     storage: StorageConfig,
-    subject: SubjectConfig,
-    delta: DeltaClientConfig,
+    authorization: AuthorizationMethod,
     mediaTypeDetector: MediaTypeDetectorConfig,
     digest: DigestConfig
 )
@@ -94,33 +93,6 @@ object AppConfig {
   )
 
   /**
-    * Allowed subject to perform calls to this service
-    *
-    * @param anonymous
-    *   flag to decide whether or not the allowed subject is Anonymous or a User
-    * @param realm
-    *   the user realm. It must be present when anonymous = false and it must be removed when anonymous = true
-    * @param name
-    *   the user name. It must be present when anonymous = false and it must be removed when anonymous = true
-    */
-  final case class SubjectConfig(anonymous: Boolean, realm: Option[String], name: Option[String]) {
-    // $COVERAGE-OFF$
-    val subjectValue: Subject = (anonymous, realm, name) match {
-      case (false, Some(r), Some(s)) => User(s, r)
-      case (false, _, _)             =>
-        throw new IllegalArgumentException(
-          "subject configuration is wrong. When anonymous is set to false, a realm and a subject must be provided"
-        )
-      case (true, None, None)        => Anonymous
-      case _                         =>
-        throw new IllegalArgumentException(
-          "subject configuration is wrong. When anonymous is set to true, a realm and a subject should not be present"
-        )
-    }
-    // $COVERAGE-ON$
-  }
-
-  /**
     * The digest configuration.
     *
     * @param algorithm
@@ -142,10 +114,9 @@ object AppConfig {
       retriggerAfter: FiniteDuration
   )
 
-  implicit def toStorage(implicit config: AppConfig): StorageConfig   = config.storage
-  implicit def toHttp(implicit config: AppConfig): HttpConfig         = config.http
-  implicit def toDelta(implicit config: AppConfig): DeltaClientConfig = config.delta
-  implicit def toDigest(implicit config: AppConfig): DigestConfig     = config.digest
+  implicit def toStorage(implicit config: AppConfig): StorageConfig = config.storage
+  implicit def toHttp(implicit config: AppConfig): HttpConfig       = config.http
+  implicit def toDigest(implicit config: AppConfig): DigestConfig   = config.digest
 
   val orderedKeys: OrderedKeys = OrderedKeys(
     List(
