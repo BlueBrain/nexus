@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.tests.kg
 
 import cats.data.NonEmptyMap
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.tests.BaseSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.compositeviews.Jerry
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Events, Organizations, Views}
@@ -11,8 +12,6 @@ import io.circe.{Decoder, Json}
 import org.scalactic.source.Position
 
 final class CompositeViewsLifeCycleSpec extends BaseSpec {
-
-  implicit private val classLoader: ClassLoader = getClass.getClassLoader
 
   private val orgId   = genId()
   private val projId  = genId()
@@ -40,12 +39,14 @@ final class CompositeViewsLifeCycleSpec extends BaseSpec {
       "proj"  -> proj2Id,
       "query" -> query
     ) ++ includeCrossProjectOpt ++ includeSparqlProjectionOpt
-    ioJsonContentOf(
-      "/kg/views/composite/composite-view-lifecycle.json",
-      replacements(
-        Jerry,
-        values: _*
-      ): _*
+    IO(
+      jsonContentOf(
+        "/kg/views/composite/composite-view-lifecycle.json",
+        replacements(
+          Jerry,
+          values: _*
+        ): _*
+      )
     )
   }
 

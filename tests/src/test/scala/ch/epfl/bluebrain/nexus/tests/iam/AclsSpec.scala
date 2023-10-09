@@ -5,7 +5,6 @@ import ch.epfl.bluebrain.nexus.tests.Identity.acls.Marge
 import ch.epfl.bluebrain.nexus.tests.Identity.testRealm
 import ch.epfl.bluebrain.nexus.tests.iam.types.{AclEntry, AclListing, Permission, User}
 import ch.epfl.bluebrain.nexus.tests.{BaseSpec, Identity}
-import monix.execution.Scheduler.Implicits.global
 
 class AclsSpec extends BaseSpec {
 

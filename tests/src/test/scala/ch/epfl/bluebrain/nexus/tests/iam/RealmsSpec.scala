@@ -4,7 +4,6 @@ import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.{BaseSpec, Identity, Realm}
 import io.circe.Json
-import monix.execution.Scheduler.Implicits.global
 
 class RealmsSpec extends BaseSpec {
 
@@ -25,7 +24,7 @@ class RealmsSpec extends BaseSpec {
       _ <- authenticateClient(testClient)
     } yield ()
 
-    setup.runSyncUnsafe()
+    setup.unsafeRunSync()
   }
 
   "manage realms" should {

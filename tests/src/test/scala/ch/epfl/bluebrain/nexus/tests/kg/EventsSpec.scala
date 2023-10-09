@@ -1,14 +1,13 @@
 package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.tests.BaseSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.events.BugsBunny
 import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Events, Organizations, Resources}
 import ch.epfl.bluebrain.nexus.tests.resources.SimpleResource
 import io.circe.Json
-import monix.bio.Task
-import monix.execution.Scheduler.Implicits.global
 import org.scalatest.Inspectors
 
 class EventsSpec extends BaseSpec with Inspectors {
@@ -246,43 +245,41 @@ class EventsSpec extends BaseSpec with Inspectors {
 
     "fetch global events" in {
       // TODO: find a way to get the current event sequence in postgres
-      Task
-        .when(initialEventId.isDefined) {
-          for {
-            uuids  <- adminDsl.getUuids(orgId, projId, BugsBunny)
-            uuids2 <- adminDsl.getUuids(orgId2, projId, BugsBunny)
-            _      <- deltaClient.sseEvents(s"/resources/events", BugsBunny, initialEventId, take = 21) { seq =>
-                        val projectEvents = seq.drop(14)
-                        projectEvents.size shouldEqual 7
-                        projectEvents.flatMap(_._1) should contain theSameElementsInOrderAs List(
-                          "ResourceCreated",
-                          "ResourceCreated",
-                          "ResourceUpdated",
-                          "ResourceTagAdded",
-                          "ResourceDeprecated",
-                          "FileCreated",
-                          "FileUpdated"
-                        )
-                        val json          = Json.arr(projectEvents.flatMap(_._2.map(events.filterFields)): _*)
-                        json shouldEqual jsonContentOf(
-                          "/kg/events/events-multi-project.json",
-                          replacements(
-                            BugsBunny,
-                            "resources"         -> s"${config.deltaUri}/resources/$id",
-                            "organizationUuid"  -> uuids._1,
-                            "projectUuid"       -> uuids._2,
-                            "organization2Uuid" -> uuids2._1,
-                            "project2Uuid"      -> uuids2._2,
-                            "project"           -> s"${config.deltaUri}/projects/$orgId/$projId",
-                            "project2"          -> s"${config.deltaUri}/projects/$orgId2/$projId",
-                            "schemaProject"     -> s"${config.deltaUri}/projects/$orgId/$projId",
-                            "schemaProject2"    -> s"${config.deltaUri}/projects/$orgId2/$projId"
-                          ): _*
-                        )
-                      }
-          } yield ()
-        }
-        .as(succeed)
+      IO.whenA(initialEventId.isDefined) {
+        for {
+          uuids  <- adminDsl.getUuids(orgId, projId, BugsBunny)
+          uuids2 <- adminDsl.getUuids(orgId2, projId, BugsBunny)
+          _      <- deltaClient.sseEvents(s"/resources/events", BugsBunny, initialEventId, take = 21) { seq =>
+                      val projectEvents = seq.drop(14)
+                      projectEvents.size shouldEqual 7
+                      projectEvents.flatMap(_._1) should contain theSameElementsInOrderAs List(
+                        "ResourceCreated",
+                        "ResourceCreated",
+                        "ResourceUpdated",
+                        "ResourceTagAdded",
+                        "ResourceDeprecated",
+                        "FileCreated",
+                        "FileUpdated"
+                      )
+                      val json          = Json.arr(projectEvents.flatMap(_._2.map(events.filterFields)): _*)
+                      json shouldEqual jsonContentOf(
+                        "/kg/events/events-multi-project.json",
+                        replacements(
+                          BugsBunny,
+                          "resources"         -> s"${config.deltaUri}/resources/$id",
+                          "organizationUuid"  -> uuids._1,
+                          "projectUuid"       -> uuids._2,
+                          "organization2Uuid" -> uuids2._1,
+                          "project2Uuid"      -> uuids2._2,
+                          "project"           -> s"${config.deltaUri}/projects/$orgId/$projId",
+                          "project2"          -> s"${config.deltaUri}/projects/$orgId2/$projId",
+                          "schemaProject"     -> s"${config.deltaUri}/projects/$orgId/$projId",
+                          "schemaProject2"    -> s"${config.deltaUri}/projects/$orgId2/$projId"
+                        ): _*
+                      )
+                    }
+        } yield ()
+      }.as(succeed)
     }
   }
 }

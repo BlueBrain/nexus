@@ -1,10 +1,10 @@
 package ch.epfl.bluebrain.nexus.tests.iam
 
 import akka.http.scaladsl.model.StatusCodes
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.tests.iam.types.{Permission, Permissions}
 import ch.epfl.bluebrain.nexus.tests.{BaseSpec, Identity}
 import io.circe.Json
-import monix.bio.Task
 
 class PermissionsSpec extends BaseSpec {
 
@@ -14,10 +14,10 @@ class PermissionsSpec extends BaseSpec {
 
     "clear permissions" in {
       deltaClient.get[Permissions]("/permissions", Identity.ServiceAccount) { (permissions, response) =>
-        runTask {
+        runIO {
           response.status shouldEqual StatusCodes.OK
           if (permissions.permissions == Permission.minimalPermissions)
-            Task(succeed)
+            IO.pure(succeed)
           else
             deltaClient.delete[Json](s"/permissions?rev=${permissions._rev}", Identity.ServiceAccount) {
               (_, response) =>
@@ -43,7 +43,7 @@ class PermissionsSpec extends BaseSpec {
 
     "subtract permissions" in {
       deltaClient.get[Permissions]("/permissions", Identity.ServiceAccount) { (permissions, response) =>
-        runTask {
+        runIO {
           response.status shouldEqual StatusCodes.OK
           val body = jsonContentOf(
             "/iam/permissions/subtract.json",
@@ -66,7 +66,7 @@ class PermissionsSpec extends BaseSpec {
 
     "replace permissions" in {
       deltaClient.get[Permissions]("/permissions", Identity.ServiceAccount) { (permissions, response) =>
-        runTask {
+        runIO {
           response.status shouldEqual StatusCodes.OK
           val body =
             jsonContentOf(
@@ -92,7 +92,7 @@ class PermissionsSpec extends BaseSpec {
 
     "reject subtracting minimal permission" in {
       deltaClient.get[Permissions]("/permissions", Identity.ServiceAccount) { (permissions, response) =>
-        runTask {
+        runIO {
           response.status shouldEqual StatusCodes.OK
           val body = jsonContentOf(
             "/iam/permissions/subtract.json",
@@ -110,7 +110,7 @@ class PermissionsSpec extends BaseSpec {
 
     "reject replacing minimal permission" in {
       deltaClient.get[Permissions]("/permissions", Identity.ServiceAccount) { (permissions, response) =>
-        runTask {
+        runIO {
           response.status shouldEqual StatusCodes.OK
           val body = jsonContentOf(
             "/iam/permissions/replace.json",

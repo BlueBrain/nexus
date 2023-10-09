@@ -7,26 +7,26 @@ import cats.effect.IO
 import cats.effect.concurrent.Ref
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.LocalCache
+import ch.epfl.bluebrain.nexus.delta.kernel.jwt.{AuthToken, ParsedToken}
+import ch.epfl.bluebrain.nexus.delta.kernel.jwt.TokenRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{RealmGen, WellKnownGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpUnexpectedError
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesImpl.{GroupsCache, RealmCache}
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.TokenRejection.{AccessTokenDoesNotContainAnIssuer, AccessTokenDoesNotContainSubject, GetGroupsFromOidcError, InvalidAccessToken, InvalidAccessTokenFormat, UnknownAccessTokenIssuer}
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{AuthToken, Caller}
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.Realm
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.ce.{CatsEffectSuite, IOFromMap}
+import ch.epfl.bluebrain.nexus.testkit.jwt.TokenGenerator
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
 import com.nimbusds.jose.crypto.RSASSASigner
 import com.nimbusds.jose.jwk.RSAKey
 import com.nimbusds.jose.jwk.gen.RSAKeyGenerator
-import com.nimbusds.jose.{JWSAlgorithm, JWSHeader}
-import com.nimbusds.jwt.{JWTClaimsSet, PlainJWT, SignedJWT}
+import com.nimbusds.jwt.{JWTClaimsSet, PlainJWT}
 import io.circe.{parser, Json}
 
 import java.time.Instant
 import java.util.Date
-import scala.jdk.CollectionConverters._
 
 class IdentitiesImplSuite extends CatsEffectSuite with TestHelpers with IOFromMap with CirceLiteral {
 
@@ -58,35 +58,17 @@ class IdentitiesImplSuite extends CatsEffectSuite with TestHelpers with IOFromMa
       groups: Option[Set[String]] = None,
       useCommas: Boolean = false,
       preferredUsername: Option[String] = None
-  ): AuthToken = {
-    val csb = new JWTClaimsSet.Builder()
-      .issuer(issuer.value)
-      .subject(subject)
-      .expirationTime(Date.from(expires))
-      .notBeforeTime(Date.from(notBefore))
-
-    groups.foreach { set =>
-      if (useCommas) csb.claim("groups", set.mkString(","))
-      else csb.claim("groups", set.toArray)
-    }
-
-    aud.foreach(audiences => csb.audience(audiences.toList.asJava))
-
-    preferredUsername.foreach(pu => csb.claim("preferred_username", pu))
-
-    toSignedJwt(csb, rsaKey)
-  }
-
-  private def toSignedJwt(builder: JWTClaimsSet.Builder, rsaKey: RSAKey = rsaKey): AuthToken = {
-    val jwt = new SignedJWT(
-      new JWSHeader.Builder(JWSAlgorithm.RS256)
-        .keyID(rsaKey.getKeyID)
-        .build(),
-      builder.build()
-    )
-    jwt.sign(signer)
-    AuthToken(jwt.serialize())
-  }
+  ): AuthToken = TokenGenerator.generateToken(
+    subject,
+    issuer.value,
+    rsaKey,
+    expires,
+    notBefore,
+    aud,
+    groups,
+    useCommas,
+    preferredUsername
+  )
 
   private val githubLabel                = Label.unsafe("github")
   private val githubLabel2               = Label.unsafe("github2")
@@ -236,7 +218,7 @@ class IdentitiesImplSuite extends CatsEffectSuite with TestHelpers with IOFromMa
   }
 
   test("Fail when the token is invalid") {
-    identities.exchange(AuthToken(genString())).intercept(InvalidAccessTokenFormat)
+    identities.exchange(AuthToken(genString())).intercept[InvalidAccessTokenFormat]
   }
 
   test("Fail when the token is not signed") {
@@ -245,7 +227,7 @@ class IdentitiesImplSuite extends CatsEffectSuite with TestHelpers with IOFromMa
       .expirationTime(Date.from(nowPlus1h))
 
     val token = AuthToken(new PlainJWT(csb.build()).serialize())
-    identities.exchange(token).intercept(InvalidAccessTokenFormat)
+    identities.exchange(token).intercept[InvalidAccessTokenFormat]
   }
 
   test("Fail when the token doesn't contain an issuer") {
@@ -253,7 +235,7 @@ class IdentitiesImplSuite extends CatsEffectSuite with TestHelpers with IOFromMa
       .subject("subject")
       .expirationTime(Date.from(nowPlus1h))
 
-    val token = toSignedJwt(csb)
+    val token = TokenGenerator.toSignedJwt(csb, rsaKey, signer)
     identities.exchange(token).intercept(AccessTokenDoesNotContainAnIssuer)
   }
 
@@ -262,7 +244,7 @@ class IdentitiesImplSuite extends CatsEffectSuite with TestHelpers with IOFromMa
       .issuer(githubLabel.value)
       .expirationTime(Date.from(nowPlus1h))
 
-    val token = toSignedJwt(csb)
+    val token = TokenGenerator.toSignedJwt(csb, rsaKey, signer)
     identities.exchange(token).intercept(AccessTokenDoesNotContainSubject)
   }
 
@@ -353,7 +335,7 @@ class IdentitiesImplSuite extends CatsEffectSuite with TestHelpers with IOFromMa
       _           <- realm.get(parsedToken.rawToken).assertNone
       _           <- groups.get(parsedToken.rawToken).assertNone
       _           <- identitiesFromCaches(realm, groups)(findActiveRealm).exchange(token)
-      _           <- realm.get(parsedToken.rawToken).assertSome(github)
+      _           <- realm.get(parsedToken.issuer).assertSome(github)
       _           <- groups.get(parsedToken.rawToken).assertSome(Set(group3, group4))
     } yield ()
   }

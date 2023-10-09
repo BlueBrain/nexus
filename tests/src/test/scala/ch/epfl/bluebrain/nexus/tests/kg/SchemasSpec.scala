@@ -8,7 +8,6 @@ import ch.epfl.bluebrain.nexus.tests.Identity.resources.Rick
 import ch.epfl.bluebrain.nexus.tests.builders.SchemaPayloads._
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Organizations
 import io.circe.Json
-import monix.execution.Scheduler.Implicits.global
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.LoneElement._
 

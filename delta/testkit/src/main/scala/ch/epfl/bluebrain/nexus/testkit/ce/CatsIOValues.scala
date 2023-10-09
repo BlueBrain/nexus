@@ -5,9 +5,17 @@ import org.scalactic.source
 import org.scalatest.Assertion
 import org.scalatest.Assertions._
 
+import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.ClassTag
 
-trait CatsIOValues {
+trait CatsIOValues extends CatsIOValuesLowPrio {
+
+  implicit def ioToFutureAssertion(io: IO[Assertion]): Future[Assertion] = io.unsafeToFuture()
+
+  implicit def futureListToFutureAssertion(future: Future[List[Assertion]])(implicit
+      ec: ExecutionContext
+  ): Future[Assertion] =
+    future.map(_ => succeed)
 
   implicit final class CatsIOValuesOps[A](private val io: IO[A]) {
     def accepted: A = io.unsafeRunSync()
@@ -30,4 +38,9 @@ trait CatsIOValues {
     }
   }
 
+}
+
+trait CatsIOValuesLowPrio {
+  implicit def ioListToFutureAssertion(io: IO[List[Assertion]])(implicit ec: ExecutionContext): Future[Assertion] =
+    io.unsafeToFuture().map(_ => succeed)
 }

@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.syntax
+package ch.epfl.bluebrain.nexus.delta.kernel.syntax
 
 import cats.data.NonEmptySet
 
