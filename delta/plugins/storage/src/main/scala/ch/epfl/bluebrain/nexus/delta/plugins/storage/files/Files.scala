@@ -54,7 +54,27 @@ import java.util.UUID
 /**
   * Operations for handling files
   */
-trait Files {
+final class Files(
+    formDataExtractor: FormDataExtractor,
+    log: FilesLog,
+    aclCheck: AclCheck,
+    fetchContext: FetchContext[FileRejection],
+    storages: Storages,
+    storagesStatistics: StoragesStatistics,
+    remoteDiskStorageClient: RemoteDiskStorageClient,
+    config: StorageTypeConfig
+)(implicit
+    uuidF: UUIDF,
+    system: ClassicActorSystem
+) {
+
+  implicit private val kamonComponent: KamonMetricComponent = KamonMetricComponent(entityType.value)
+
+  // format: off
+  private val testStorageRef = ResourceRef.Revision(iri"http://localhost/test", 1)
+  private val testStorageType = StorageType.DiskStorage
+  private val testAttributes = FileAttributes(UUID.randomUUID(), "http://localhost", Uri.Path.Empty, "", None, 0, ComputedDigest(DigestAlgorithm.default, "value"), Client)
+  // format: on
 
   /**
     * Create a new file where the id is self generated
@@ -70,7 +90,16 @@ trait Files {
       storageId: Option[IdSegment],
       projectRef: ProjectRef,
       entity: HttpEntity
-  )(implicit caller: Caller): IO[FileRejection, FileResource]
+  )(implicit caller: Caller): IO[FileRejection, FileResource] = {
+    for {
+      pc                    <- fetchContext.onCreate(projectRef)
+      iri                   <- generateId(pc)
+      _                     <- test(CreateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, caller.subject))
+      (storageRef, storage) <- fetchActiveStorage(storageId, projectRef, pc)
+      attributes            <- extractFileAttributes(iri, entity, storage)
+      res                   <- eval(CreateFile(iri, projectRef, storageRef, storage.tpe, attributes, caller.subject))
+    } yield res
+  }.span("createFile")
 
   /**
     * Create a new file with the provided id
@@ -89,7 +118,16 @@ trait Files {
       storageId: Option[IdSegment],
       projectRef: ProjectRef,
       entity: HttpEntity
-  )(implicit caller: Caller): IO[FileRejection, FileResource]
+  )(implicit caller: Caller): IO[FileRejection, FileResource] = {
+    for {
+      pc                    <- fetchContext.onCreate(projectRef)
+      iri                   <- expandIri(id, pc)
+      _                     <- test(CreateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, caller.subject))
+      (storageRef, storage) <- fetchActiveStorage(storageId, projectRef, pc)
+      attributes            <- extractFileAttributes(iri, entity, storage)
+      res                   <- eval(CreateFile(iri, projectRef, storageRef, storage.tpe, attributes, caller.subject))
+    } yield res
+  }.span("createFile")
 
   /**
     * Create a new file linking where the id is self generated
@@ -111,7 +149,13 @@ trait Files {
       filename: Option[String],
       mediaType: Option[ContentType],
       path: Uri.Path
-  )(implicit caller: Caller): IO[FileRejection, FileResource]
+  )(implicit caller: Caller): IO[FileRejection, FileResource] = {
+    for {
+      pc  <- fetchContext.onCreate(projectRef)
+      iri <- generateId(pc)
+      res <- createLink(iri, projectRef, pc, storageId, filename, mediaType, path)
+    } yield res
+  }.span("createLink")
 
   /**
     * Create a new file linking it from an existing file in a storage
@@ -136,7 +180,13 @@ trait Files {
       filename: Option[String],
       mediaType: Option[ContentType],
       path: Uri.Path
-  )(implicit caller: Caller): IO[FileRejection, FileResource]
+  )(implicit caller: Caller): IO[FileRejection, FileResource] = {
+    for {
+      pc  <- fetchContext.onCreate(projectRef)
+      iri <- expandIri(id, pc)
+      res <- createLink(iri, projectRef, pc, storageId, filename, mediaType, path)
+    } yield res
+  }.span("createLink")
 
   /**
     * Update an existing file
@@ -158,7 +208,16 @@ trait Files {
       projectRef: ProjectRef,
       rev: Int,
       entity: HttpEntity
-  )(implicit caller: Caller): IO[FileRejection, FileResource]
+  )(implicit caller: Caller): IO[FileRejection, FileResource] = {
+    for {
+      pc                    <- fetchContext.onModify(projectRef)
+      iri                   <- expandIri(id, pc)
+      _                     <- test(UpdateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, rev, caller.subject))
+      (storageRef, storage) <- fetchActiveStorage(storageId, projectRef, pc)
+      attributes            <- extractFileAttributes(iri, entity, storage)
+      res                   <- eval(UpdateFile(iri, projectRef, storageRef, storage.tpe, attributes, rev, caller.subject))
+    } yield res
+  }.span("updateFile")
 
   /**
     * Update a new file linking it from an existing file in a storage
@@ -186,7 +245,20 @@ trait Files {
       mediaType: Option[ContentType],
       path: Uri.Path,
       rev: Int
-  )(implicit caller: Caller): IO[FileRejection, FileResource]
+  )(implicit caller: Caller): IO[FileRejection, FileResource] = {
+    for {
+      pc                    <- fetchContext.onModify(projectRef)
+      iri                   <- expandIri(id, pc)
+      _                     <- test(UpdateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, rev, caller.subject))
+      (storageRef, storage) <- fetchActiveStorage(storageId, projectRef, pc)
+      resolvedFilename      <- IO.fromOption(filename.orElse(path.lastSegment), InvalidFileLink(iri))
+      description           <- FileDescription(resolvedFilename, mediaType)
+      attributes            <- LinkFile(storage, remoteDiskStorageClient, config)
+                                 .apply(path, description)
+                                 .mapError(LinkRejection(iri, storage.id, _))
+      res                   <- eval(UpdateFile(iri, projectRef, storageRef, storage.tpe, attributes, rev, caller.subject))
+    } yield res
+  }.span("updateLink")
 
   /**
     * Add a tag to an existing file
@@ -208,7 +280,13 @@ trait Files {
       tag: UserTag,
       tagRev: Int,
       rev: Int
-  )(implicit subject: Subject): IO[FileRejection, FileResource]
+  )(implicit subject: Subject): IO[FileRejection, FileResource] = {
+    for {
+      pc  <- fetchContext.onModify(projectRef)
+      iri <- expandIri(id, pc)
+      res <- eval(TagFile(iri, projectRef, tagRev, tag, rev, subject))
+    } yield res
+  }.span("tagFile")
 
   /**
     * Delete a tag on an existing file.
@@ -227,7 +305,13 @@ trait Files {
       projectRef: ProjectRef,
       tag: UserTag,
       rev: Int
-  )(implicit subject: Subject): IO[FileRejection, FileResource]
+  )(implicit subject: Subject): IO[FileRejection, FileResource] = {
+    for {
+      pc  <- fetchContext.onModify(projectRef)
+      iri <- expandIri(id, pc)
+      res <- eval(DeleteFileTag(iri, projectRef, tag, rev, subject))
+    } yield res
+  }.span("deleteFileTag")
 
   /**
     * Deprecate an existing file
@@ -243,7 +327,13 @@ trait Files {
       id: IdSegment,
       projectRef: ProjectRef,
       rev: Int
-  )(implicit subject: Subject): IO[FileRejection, FileResource]
+  )(implicit subject: Subject): IO[FileRejection, FileResource] = {
+    for {
+      pc  <- fetchContext.onModify(projectRef)
+      iri <- expandIri(id, pc)
+      res <- eval(DeprecateFile(iri, projectRef, rev, subject))
+    } yield res
+  }.span("deprecateFile")
 
   /**
     * Fetch the last version of a file content
@@ -253,196 +343,7 @@ trait Files {
     * @param project
     *   the project where the storage belongs
     */
-  def fetchContent(id: IdSegmentRef, project: ProjectRef)(implicit caller: Caller): IO[FileRejection, FileResponse]
-
-  /**
-    * Fetch the last version of a file
-    *
-    * @param id
-    *   the identifier that will be expanded to the Iri of the file with its optional rev/tag
-    * @param project
-    *   the project where the storage belongs
-    */
-  def fetch(id: IdSegmentRef, project: ProjectRef): IO[FileRejection, FileResource]
-
-  /**
-    * Starts a stream that attempts to update file attributes asynchronously for linked files in remote storages
-    *
-    * @param offset
-    *   the offset to start from
-    * @return
-    */
-  private[files] def attributesUpdateStream(offset: Offset): ElemStream[Unit]
-
-  private[files] def updateAttributes(iri: Iri, project: ProjectRef): IO[FileRejection, Unit]
-}
-
-final private class FilesImpl(
-    formDataExtractor: FormDataExtractor,
-    log: FilesLog,
-    aclCheck: AclCheck,
-    fetchContext: FetchContext[FileRejection],
-    storages: Storages,
-    storagesStatistics: StoragesStatistics,
-    remoteDiskStorageClient: RemoteDiskStorageClient,
-    config: StorageTypeConfig
-)(implicit
-    uuidF: UUIDF,
-    system: ClassicActorSystem
-) extends Files {
-
-  implicit private val kamonComponent: KamonMetricComponent = KamonMetricComponent(entityType.value)
-
-  private val logger: Logger = Logger[Files]
-
-  // format: off
-  private val testStorageRef = ResourceRef.Revision(iri"http://localhost/test", 1)
-  private val testStorageType = StorageType.DiskStorage
-  private val testAttributes = FileAttributes(UUID.randomUUID(), "http://localhost", Uri.Path.Empty, "", None, 0, ComputedDigest(DigestAlgorithm.default, "value"), Client)
-  // format: on
-
-  override def create(
-      storageId: Option[IdSegment],
-      projectRef: ProjectRef,
-      entity: HttpEntity
-  )(implicit caller: Caller): IO[FileRejection, FileResource] = {
-    for {
-      pc                    <- fetchContext.onCreate(projectRef)
-      iri                   <- generateId(pc)
-      _                     <- test(CreateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, caller.subject))
-      (storageRef, storage) <- fetchActiveStorage(storageId, projectRef, pc)
-      attributes            <- extractFileAttributes(iri, entity, storage)
-      res                   <- eval(CreateFile(iri, projectRef, storageRef, storage.tpe, attributes, caller.subject))
-    } yield res
-  }.span("createFile")
-
-  override def create(
-      id: IdSegment,
-      storageId: Option[IdSegment],
-      projectRef: ProjectRef,
-      entity: HttpEntity
-  )(implicit caller: Caller): IO[FileRejection, FileResource] = {
-    for {
-      pc                    <- fetchContext.onCreate(projectRef)
-      iri                   <- expandIri(id, pc)
-      _                     <- test(CreateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, caller.subject))
-      (storageRef, storage) <- fetchActiveStorage(storageId, projectRef, pc)
-      attributes            <- extractFileAttributes(iri, entity, storage)
-      res                   <- eval(CreateFile(iri, projectRef, storageRef, storage.tpe, attributes, caller.subject))
-    } yield res
-  }.span("createFile")
-
-  override def createLink(
-      storageId: Option[IdSegment],
-      projectRef: ProjectRef,
-      filename: Option[String],
-      mediaType: Option[ContentType],
-      path: Uri.Path
-  )(implicit caller: Caller): IO[FileRejection, FileResource] = {
-    for {
-      pc  <- fetchContext.onCreate(projectRef)
-      iri <- generateId(pc)
-      res <- createLink(iri, projectRef, pc, storageId, filename, mediaType, path)
-    } yield res
-  }.span("createLink")
-
-  override def createLink(
-      id: IdSegment,
-      storageId: Option[IdSegment],
-      projectRef: ProjectRef,
-      filename: Option[String],
-      mediaType: Option[ContentType],
-      path: Uri.Path
-  )(implicit caller: Caller): IO[FileRejection, FileResource] = {
-    for {
-      pc  <- fetchContext.onCreate(projectRef)
-      iri <- expandIri(id, pc)
-      res <- createLink(iri, projectRef, pc, storageId, filename, mediaType, path)
-    } yield res
-  }.span("createLink")
-
-  override def update(
-      id: IdSegment,
-      storageId: Option[IdSegment],
-      projectRef: ProjectRef,
-      rev: Int,
-      entity: HttpEntity
-  )(implicit caller: Caller): IO[FileRejection, FileResource] = {
-    for {
-      pc                    <- fetchContext.onModify(projectRef)
-      iri                   <- expandIri(id, pc)
-      _                     <- test(UpdateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, rev, caller.subject))
-      (storageRef, storage) <- fetchActiveStorage(storageId, projectRef, pc)
-      attributes            <- extractFileAttributes(iri, entity, storage)
-      res                   <- eval(UpdateFile(iri, projectRef, storageRef, storage.tpe, attributes, rev, caller.subject))
-    } yield res
-  }.span("updateFile")
-
-  override def updateLink(
-      id: IdSegment,
-      storageId: Option[IdSegment],
-      projectRef: ProjectRef,
-      filename: Option[String],
-      mediaType: Option[ContentType],
-      path: Uri.Path,
-      rev: Int
-  )(implicit caller: Caller): IO[FileRejection, FileResource] = {
-    for {
-      pc                    <- fetchContext.onModify(projectRef)
-      iri                   <- expandIri(id, pc)
-      _                     <- test(UpdateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, rev, caller.subject))
-      (storageRef, storage) <- fetchActiveStorage(storageId, projectRef, pc)
-      resolvedFilename      <- IO.fromOption(filename.orElse(path.lastSegment), InvalidFileLink(iri))
-      description           <- FileDescription(resolvedFilename, mediaType)
-      attributes            <- LinkFile(storage, remoteDiskStorageClient, config)
-                                 .apply(path, description)
-                                 .mapError(LinkRejection(iri, storage.id, _))
-      res                   <- eval(UpdateFile(iri, projectRef, storageRef, storage.tpe, attributes, rev, caller.subject))
-    } yield res
-  }.span("updateLink")
-
-  override def tag(
-      id: IdSegment,
-      projectRef: ProjectRef,
-      tag: UserTag,
-      tagRev: Int,
-      rev: Int
-  )(implicit subject: Subject): IO[FileRejection, FileResource] = {
-    for {
-      pc  <- fetchContext.onModify(projectRef)
-      iri <- expandIri(id, pc)
-      res <- eval(TagFile(iri, projectRef, tagRev, tag, rev, subject))
-    } yield res
-  }.span("tagFile")
-
-  override def deleteTag(
-      id: IdSegment,
-      projectRef: ProjectRef,
-      tag: UserTag,
-      rev: Int
-  )(implicit subject: Subject): IO[FileRejection, FileResource] = {
-    for {
-      pc  <- fetchContext.onModify(projectRef)
-      iri <- expandIri(id, pc)
-      res <- eval(DeleteFileTag(iri, projectRef, tag, rev, subject))
-    } yield res
-  }.span("deleteFileTag")
-
-  override def deprecate(
-      id: IdSegment,
-      projectRef: ProjectRef,
-      rev: Int
-  )(implicit subject: Subject): IO[FileRejection, FileResource] = {
-    for {
-      pc  <- fetchContext.onModify(projectRef)
-      iri <- expandIri(id, pc)
-      res <- eval(DeprecateFile(iri, projectRef, rev, subject))
-    } yield res
-  }.span("deprecateFile")
-
-  override def fetchContent(id: IdSegmentRef, project: ProjectRef)(implicit
-      caller: Caller
-  ): IO[FileRejection, FileResponse] = {
+  def fetchContent(id: IdSegmentRef, project: ProjectRef)(implicit caller: Caller): IO[FileRejection, FileResponse] = {
     for {
       file      <- fetch(id, project)
       attributes = file.value.attributes
@@ -457,7 +358,15 @@ final private class FilesImpl(
     } yield FileResponse(attributes.filename, mediaType, attributes.bytes, s)
   }.span("fetchFileContent")
 
-  override def fetch(id: IdSegmentRef, project: ProjectRef): IO[FileRejection, FileResource] = {
+  /**
+    * Fetch the last version of a file
+    *
+    * @param id
+    *   the identifier that will be expanded to the Iri of the file with its optional rev/tag
+    * @param project
+    *   the project where the storage belongs
+    */
+  def fetch(id: IdSegmentRef, project: ProjectRef): IO[FileRejection, FileResource] = {
     for {
       pc      <- fetchContext.onRead(project)
       iri     <- expandIri(id.value, pc)
@@ -539,7 +448,13 @@ final private class FilesImpl(
   private def generateId(pc: ProjectContext)(implicit uuidF: UUIDF): UIO[Iri] =
     uuidF().map(uuid => pc.base.iri / uuid.toString)
 
-  override private[files] def attributesUpdateStream(offset: Offset): ElemStream[Unit] = {
+  /**
+    * Starts a stream that attempts to update file attributes asynchronously for linked files in remote storages
+    * @param offset
+    *   the offset to start from
+    * @return
+    */
+  private[files] def attributesUpdateStream(offset: Offset): ElemStream[Unit] = {
     for {
       // The stream will start only if remote storage is enabled
       retryStrategy <- Stream.iterable(config.remoteDisk).map { c =>
@@ -600,7 +515,7 @@ final private class FilesImpl(
     } yield stream
   }
 
-  override private[files] def updateAttributes(iri: Iri, project: ProjectRef): IO[FileRejection, Unit] =
+  private[files] def updateAttributes(iri: Iri, project: ProjectRef): IO[FileRejection, Unit] =
     for {
       f       <- log.stateOr(project, iri, FileNotFound(iri, project))
       storage <- storages
@@ -627,6 +542,8 @@ final private class FilesImpl(
 }
 
 object Files {
+
+  private val logger: Logger = Logger[Files]
 
   /**
     * The file entity type.
@@ -802,7 +719,7 @@ object Files {
       as: ActorSystem[Nothing]
   ): Files = {
     implicit val classicAs: ClassicActorSystem = as.classicSystem
-    new FilesImpl(
+    new Files(
       FormDataExtractor(config.mediaTypeDetector),
       ScopedEventLog(definition, config.eventLog, xas),
       aclCheck,
