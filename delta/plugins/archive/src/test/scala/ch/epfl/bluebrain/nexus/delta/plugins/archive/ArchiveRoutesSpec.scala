@@ -8,6 +8,7 @@ import akka.http.scaladsl.model.{ContentTypes, StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils.encode
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{StatefulUUIDF, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.FileSelf.ParsingError.InvalidPath
@@ -41,25 +42,31 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EphemeralLogConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.execution.EvaluationExecution
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.testkit.archive.ArchiveHelpers
+import ch.epfl.bluebrain.nexus.testkit.ce.{CatsIOValues, IOFixedClock}
 import io.circe.Json
 import io.circe.syntax.EncoderOps
-import monix.bio.{IO, UIO}
-import monix.execution.Scheduler
 import org.scalatest.TryValues
 
 import java.util.UUID
 import scala.concurrent.duration._
 
-class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with TryValues with ArchiveHelpers {
-
-  implicit private val scheduler: Scheduler = Scheduler.global
+class ArchiveRoutesSpec
+    extends BaseRouteSpec
+    with StorageFixtures
+    with IOFixedClock
+    with TryValues
+    with ArchiveHelpers
+    with CatsIOValues {
 
   private val uuid                          = UUID.fromString("8249ba90-7cc6-4de5-93a1-802c04200dcc")
   implicit private val uuidF: StatefulUUIDF = UUIDF.stateful(uuid).accepted
+
+  implicit private val ee: EvaluationExecution = EvaluationExecution(timer, contextShift)
 
   implicit override def rcr: RemoteContextResolution = RemoteContextResolutionFixture.rcr
 
@@ -90,7 +97,7 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with TryValue
   private val acceptAll     = Accept(`*/*`)
 
   private val fetchContext    = FetchContextDummy(List(project))
-  private val groupDirectives = DeltaSchemeDirectives(fetchContext, _ => UIO.none, _ => UIO.none)
+  private val groupDirectives = DeltaSchemeDirectives(fetchContext)
 
   private val storageRef = ResourceRef.Revision(iri"http://localhost/${genString()}", 5)
 
@@ -116,14 +123,14 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with TryValue
 
   private val generatedId = project.base.iri / uuid.toString
 
-  val fetchResource: (Iri, ProjectRef) => UIO[Option[JsonLdContent[_, _]]] = {
+  val fetchResource: (Iri, ProjectRef) => IO[Option[JsonLdContent[_, _]]] = {
     case (`fileId`, `projectRef`) =>
-      UIO.some(JsonLdContent(file, file.value.asJson, None))
+      IO.pure(Some(JsonLdContent(file, file.value.asJson, None)))
     case _                        =>
-      UIO.none
+      IO.none
   }
 
-  val fetchFileContent: (Iri, ProjectRef, Caller) => IO[FileRejection, FileResponse] = (id, p, c) => {
+  val fetchFileContent: (Iri, ProjectRef, Caller) => IO[FileResponse] = (id, p, c) => {
     val s = c.subject
     (id, p, s) match {
       case (_, _, `subjectNoFilePerms`) =>
@@ -290,7 +297,7 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with TryValue
       ) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         header[`Content-Type`].value.value() shouldEqual `application/zip`.value
-        val result = fromZip(responseEntity.dataBytes)
+        val result = fromZip(responseEntity.dataBytes)(materializer, executor)
 
         result.keySet shouldEqual Set(
           s"${project.ref}/file/file.txt",

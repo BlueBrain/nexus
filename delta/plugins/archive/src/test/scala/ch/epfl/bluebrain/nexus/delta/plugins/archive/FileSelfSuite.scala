@@ -11,10 +11,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ResourceRef}
-import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
-import monix.bio.UIO
+import ch.epfl.bluebrain.nexus.testkit.ce.CatsEffectSuite
 
-class FileSelfSuite extends BioSuite {
+class FileSelfSuite extends CatsEffectSuite {
 
   implicit private val baseUri: BaseUri = BaseUri("http://bbp.epfl.ch", Label.unsafe("v1"))
 
@@ -34,46 +33,46 @@ class FileSelfSuite extends BioSuite {
 
   test("An expanded self should be parsed") {
     val input = iri"http://bbp.epfl.ch/v1/files/$org/$project/${encode(expandedResourceId)}"
-    fileSelf.parse(input).tapError { p => UIO.delay(println(p)) }.assert((projectRef, latestRef))
+    fileSelf.parse(input).assertEquals((projectRef, latestRef))
   }
 
   test("An expanded self with a revision should be parsed") {
     val input = iri"http://bbp.epfl.ch/v1/files/$org/$project/${encode(expandedResourceId)}?rev=$rev"
-    fileSelf.parse(input).tapError { p => UIO.delay(println(p)) }.assert((projectRef, revisionRef))
+    fileSelf.parse(input).assertEquals((projectRef, revisionRef))
   }
 
   test("An expanded self with a tag should be parsed") {
     val input = iri"http://bbp.epfl.ch/v1/files/$org/$project/${encode(expandedResourceId)}?tag=${tag.value}"
-    fileSelf.parse(input).tapError { p => UIO.delay(println(p)) }.assert((projectRef, tagRef))
+    fileSelf.parse(input).assertEquals((projectRef, tagRef))
   }
 
   test("A curie self should be parsed") {
     val input = iri"http://bbp.epfl.ch/v1/files/$org/$project/nxv:$compactResourceId"
-    fileSelf.parse(input).assert((projectRef, latestRef))
+    fileSelf.parse(input).assertEquals((projectRef, latestRef))
   }
 
   test("A relative self should not be parsed") {
     val input = iri"/$org/$project/$compactResourceId"
-    fileSelf.parse(input).error(NonAbsoluteLink(input))
+    fileSelf.parse(input).intercept(NonAbsoluteLink(input))
   }
 
   test("A self from an external website should not be parsed") {
     val input = iri"http://localhost/v1/files/$org/$project/$compactResourceId"
-    fileSelf.parse(input).error(ExternalLink(input))
+    fileSelf.parse(input).intercept(ExternalLink(input))
   }
 
   test("A self with an incorrect path should not be parsed") {
     val input = iri"http://bbp.epfl.ch/v1/files/$org/$project/$compactResourceId/extra"
-    fileSelf.parse(input).error(InvalidPath(input))
+    fileSelf.parse(input).intercept(InvalidPath(input))
   }
 
   test("A self with an incorrect project label should not be parsed") {
     val input = iri"http://bbp.epfl.ch/v1/files/%illegal/$project/$compactResourceId"
-    fileSelf.parse(input).error(InvalidProject(input))
+    fileSelf.parse(input).intercept(InvalidProject(input))
   }
 
   test("A self with an incorrect id should not resolve") {
     val input = iri"""http://bbp.epfl.ch/v1/files/$org/$project/badcurie:$compactResourceId")}"""
-    fileSelf.parse(input).error(InvalidFileId(input))
+    fileSelf.parse(input).intercept(InvalidFileId(input))
   }
 }

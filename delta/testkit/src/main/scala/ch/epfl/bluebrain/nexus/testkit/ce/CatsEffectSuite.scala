@@ -22,14 +22,12 @@ abstract class CatsEffectSuite
   protected val ioTimeout: FiniteDuration = 45.seconds
 
   implicit val contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
+  implicit val timer: Timer[IO]               = IO.timer(ExecutionContext.global)
 
   override def munitValueTransforms: List[ValueTransform] =
     super.munitValueTransforms ++ List(munitIOTransform, munitBIOTransform)
 
   private val munitIOTransform: ValueTransform = {
-    implicit val contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
-    implicit val timer: Timer[IO]               = IO.timer(ExecutionContext.global)
-
     new ValueTransform(
       "IO",
       { case io: IO[_] =>

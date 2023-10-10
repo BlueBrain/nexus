@@ -1,9 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.archive.model
 
 import akka.NotUsed
-import akka.http.scaladsl.model.{ContentType, HttpRequest, MediaTypes}
-import akka.stream.alpakka.file.scaladsl.Archive
+import akka.http.scaladsl.model.{ContentType, MediaTypes}
+import akka.http.scaladsl.server.Directive
+import akka.http.scaladsl.server.Directives.extractRequest
 import akka.stream.alpakka.file.ArchiveMetadata
+import akka.stream.alpakka.file.scaladsl.Archive
 import akka.stream.scaladsl.{Flow, Source}
 import akka.util.ByteString
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.HeadersUtils
@@ -25,5 +27,9 @@ object Zip {
 
   def metadata(filename: String): ArchiveMetadata = ArchiveMetadata.create(filename)
 
-  def checkHeader(req: HttpRequest): Boolean = HeadersUtils.matches(req.headers, Zip.contentType.mediaType)
+  def checkZipHeader: Directive[Tuple1[Boolean]] =
+    extractRequest.map { req =>
+      HeadersUtils.matches(req.headers, Zip.contentType.mediaType)
+    }
+
 }

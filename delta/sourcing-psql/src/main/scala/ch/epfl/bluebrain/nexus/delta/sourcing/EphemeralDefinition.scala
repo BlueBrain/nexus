@@ -1,26 +1,30 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.sourcing.EvaluationError.EvaluationTimeout
+import ch.epfl.bluebrain.nexus.delta.sourcing.execution.EvaluationExecution
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
+import ch.epfl.bluebrain.nexus.delta.sourcing.rejection.Rejection
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.EphemeralState
-import monix.bio.IO
 
 import scala.concurrent.duration.FiniteDuration
 
-final case class EphemeralDefinition[Id, S <: EphemeralState, Command, Rejection](
+final case class EphemeralDefinition[Id, S <: EphemeralState, Command, +R <: Rejection](
     tpe: EntityType,
-    evaluate: Command => IO[Rejection, S],
+    evaluate: Command => IO[S],
     stateSerializer: Serializer[Id, S],
-    onUniqueViolation: (Id, Command) => Rejection
+    onUniqueViolation: (Id, Command) => R
 ) {
 
   /**
     * Fetches the current state and attempt to apply an incoming command on it
     */
-  def evaluate(command: Command, maxDuration: FiniteDuration): IO[Rejection, S] =
+  def evaluate(command: Command, maxDuration: FiniteDuration)(implicit execution: EvaluationExecution): IO[S] =
     evaluate(command).attempt
-      .timeoutWith(maxDuration, EvaluationTimeout(command, maxDuration))
-      .hideErrors
+      .timeoutTo(maxDuration, IO.raiseError(EvaluationTimeout(command, maxDuration)))(
+        execution.timer,
+        execution.contextShift
+      )
       .flatMap(IO.fromEither)
 
 }

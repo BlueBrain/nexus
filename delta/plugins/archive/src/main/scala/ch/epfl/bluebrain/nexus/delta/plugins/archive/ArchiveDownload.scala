@@ -1,14 +1,18 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.archive
 
+import akka.stream.alpakka.file.ArchiveMetadata
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
-import cats.implicits._
+import cats.effect.{ContextShift, IO}
+import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
+import ch.epfl.bluebrain.nexus.delta.plugins.archive.FileSelf.ParsingError
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.{FileReference, FileSelfReference, ResourceReference}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRepresentation._
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
@@ -22,20 +26,18 @@ import ch.epfl.bluebrain.nexus.delta.sdk.error.SDKError
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.AnnotatedSource
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceRepresentation}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRepresentation._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef, ResourceRepresentation}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources
-import ch.epfl.bluebrain.nexus.delta.sdk.stream.StreamConverter
-import ch.epfl.bluebrain.nexus.delta.sdk.{AkkaSource, JsonLdValue}
+import ch.epfl.bluebrain.nexus.delta.sdk.stream.CatsStreamConverter
+import ch.epfl.bluebrain.nexus.delta.sdk.{AkkaSource, JsonLdValue, ResourceShifts}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
-import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import io.circe.{Json, Printer}
-import monix.bio.{IO, Task, UIO}
-import monix.execution.Scheduler
+import monix.bio.{Task, UIO}
 
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
-import akka.stream.alpakka.file.ArchiveMetadata
 
 /**
   * Archive download functionality.
@@ -60,13 +62,13 @@ trait ArchiveDownload {
       value: ArchiveValue,
       project: ProjectRef,
       ignoreNotFound: Boolean
-  )(implicit caller: Caller, scheduler: Scheduler): IO[ArchiveRejection, AkkaSource]
+  )(implicit caller: Caller): IO[AkkaSource]
 
 }
 
 object ArchiveDownload {
 
-  implicit private val logger: Logger = Logger[ArchiveDownload]
+  private val logger = Logger.cats[ArchiveDownload]
 
   case class ArchiveDownloadError(filename: String, response: Complete[JsonLdValue]) extends SDKError {
     override def getMessage: String = {
@@ -86,10 +88,15 @@ object ArchiveDownload {
     */
   def apply(
       aclCheck: AclCheck,
-      fetchResource: (ResourceRef, ProjectRef) => UIO[Option[JsonLdContent[_, _]]],
-      fetchFileContent: (ResourceRef, ProjectRef, Caller) => IO[FileRejection, FileResponse],
+      fetchResource: (ResourceRef, ProjectRef) => IO[Option[JsonLdContent[_, _]]],
+      fetchFileContent: (ResourceRef, ProjectRef, Caller) => IO[FileResponse],
       fileSelf: FileSelf
-  )(implicit sort: JsonKeyOrdering, baseUri: BaseUri, rcr: RemoteContextResolution): ArchiveDownload =
+  )(implicit
+      sort: JsonKeyOrdering,
+      baseUri: BaseUri,
+      rcr: RemoteContextResolution,
+      contextShift: ContextShift[IO]
+  ): ArchiveDownload =
     new ArchiveDownload {
 
       implicit private val api: JsonLdApi = JsonLdJavaApi.lenient
@@ -100,17 +107,17 @@ object ArchiveDownload {
           value: ArchiveValue,
           project: ProjectRef,
           ignoreNotFound: Boolean
-      )(implicit caller: Caller, scheduler: Scheduler): IO[ArchiveRejection, AkkaSource] = {
+      )(implicit caller: Caller): IO[AkkaSource] = {
         for {
           references    <- value.resources.toList.traverse(toFullReference)
           _             <- checkResourcePermissions(references, project)
           contentStream <- resolveReferencesAsStream(references, project, ignoreNotFound)
         } yield {
-          Source.fromGraph(StreamConverter(contentStream)).via(Zip.writeFlow)
+          Source.fromGraph(CatsStreamConverter(contentStream)).via(Zip.writeFlow)
         }
       }
 
-      private def toFullReference(archiveReference: ArchiveReference): IO[ArchiveRejection, FullArchiveReference] = {
+      private def toFullReference(archiveReference: ArchiveReference): IO[FullArchiveReference] = {
         archiveReference match {
           case reference: FullArchiveReference => IO.pure(reference)
           case reference: FileSelfReference    =>
@@ -119,7 +126,9 @@ object ArchiveDownload {
               .map { case (projectRef, resourceRef) =>
                 FileReference(resourceRef, Some(projectRef), reference.path)
               }
-              .mapError(InvalidFileSelf)
+              .adaptError { case e: ParsingError =>
+                InvalidFileSelf(e)
+              }
         }
       }
 
@@ -127,7 +136,7 @@ object ArchiveDownload {
           references: List[FullArchiveReference],
           project: ProjectRef,
           ignoreNotFound: Boolean
-      )(implicit caller: Caller): IO[ArchiveRejection, Stream[Task, (ArchiveMetadata, AkkaSource)]] = {
+      )(implicit caller: Caller): IO[Stream[IO, (ArchiveMetadata, AkkaSource)]] = {
         references
           .traverseFilter {
             case ref: FileReference     => fileEntry(ref, project, ignoreNotFound)
@@ -137,12 +146,12 @@ object ArchiveDownload {
           .map(asStream)
       }
 
-      private def sortWith(list: List[(ArchiveMetadata, Task[AkkaSource])]): List[(ArchiveMetadata, Task[AkkaSource])] =
+      private def sortWith(list: List[(ArchiveMetadata, IO[AkkaSource])]): List[(ArchiveMetadata, IO[AkkaSource])] =
         list.sortBy { case (entry, _) => entry }(Zip.ordering)
 
       private def asStream(
-          list: List[(ArchiveMetadata, Task[AkkaSource])]
-      ): Stream[Task, (ArchiveMetadata, AkkaSource)]                                                                   =
+          list: List[(ArchiveMetadata, IO[AkkaSource])]
+      ): Stream[IO, (ArchiveMetadata, AkkaSource)]                                                                 =
         Stream.iterable(list).evalMap { case (metadata, source) =>
           source.map(metadata -> _)
         }
@@ -150,15 +159,16 @@ object ArchiveDownload {
       private def checkResourcePermissions(
           refs: List[FullArchiveReference],
           project: ProjectRef
-      )(implicit caller: Caller): IO[AuthorizationFailed, Unit] =
+      )(implicit caller: Caller): IO[Unit] = toCatsIO {
         aclCheck
           .mapFilterOrRaise(
             refs,
             (a: FullArchiveReference) => AclAddress.Project(a.project.getOrElse(project)) -> resources.read,
             identity[ArchiveReference],
-            address => IO.raiseError(AuthorizationFailed(address, resources.read))
+            address => Task.raiseError(AuthorizationFailed(address, resources.read))
           )
           .void
+      }
 
       private def fileEntry(
           ref: FileReference,
@@ -166,32 +176,30 @@ object ArchiveDownload {
           ignoreNotFound: Boolean
       )(implicit
           caller: Caller
-      ): IO[ArchiveRejection, Option[(ArchiveMetadata, Task[AkkaSource])]] = {
+      ): IO[Option[(ArchiveMetadata, IO[AkkaSource])]] = {
         val refProject = ref.project.getOrElse(project)
         // the required permissions are checked for each file content fetch
         val entry      = fetchFileContent(ref.ref, refProject, caller)
-          .mapError {
+          .adaptError {
             case _: FileRejection.FileNotFound                 => ResourceNotFound(ref.ref, project)
             case _: FileRejection.TagNotFound                  => ResourceNotFound(ref.ref, project)
             case _: FileRejection.RevisionNotFound             => ResourceNotFound(ref.ref, project)
             case FileRejection.AuthorizationFailed(addr, perm) => AuthorizationFailed(addr, perm)
-            case other                                         => WrappedFileRejection(other)
+            case other: FileRejection                          => WrappedFileRejection(other)
           }
           .map { case FileResponse(fileMetadata, content) =>
-            val path                          = pathOf(ref, project, fileMetadata.filename)
-            val archiveMetadata               = Zip.metadata(path)
-            val contentTask: Task[AkkaSource] = content
+            val path                        = pathOf(ref, project, fileMetadata.filename)
+            val archiveMetadata             = Zip.metadata(path)
+            val contentTask: IO[AkkaSource] = content
               .tapError(response =>
-                UIO.delay(
-                  logger
-                    .error(s"Error streaming file '${fileMetadata.filename}' for archive: ${response.value.value}")
-                )
+                logger
+                  .error(s"Error streaming file '${fileMetadata.filename}' for archive: ${response.value.value}")
+                  .toUIO
               )
               .mapError(response => ArchiveDownloadError(fileMetadata.filename, response))
-            Some((archiveMetadata, contentTask))
-
+            Option((archiveMetadata, contentTask))
           }
-        if (ignoreNotFound) entry.onErrorRecover { case _: ResourceNotFound => None }
+        if (ignoreNotFound) entry.recover { case _: ResourceNotFound => None }
         else entry
       }
 
@@ -209,34 +217,34 @@ object ArchiveDownload {
           ref: ResourceReference,
           project: ProjectRef,
           ignoreNotFound: Boolean
-      ): IO[ArchiveRejection, Option[(ArchiveMetadata, Task[AkkaSource])]] = {
+      ): IO[Option[(ArchiveMetadata, IO[AkkaSource])]] = {
         val archiveEntry = resourceRefToByteString(ref, project).map { content =>
           val path     = pathOf(ref, project)
           val metadata = Zip.metadata(path)
-          Some((metadata, Task.pure(Source.single(content))))
+          Option((metadata, IO.pure(Source.single(content))))
         }
-        if (ignoreNotFound) archiveEntry.onErrorHandle { _: ResourceNotFound => None }
+        if (ignoreNotFound) archiveEntry.recover { _: ResourceNotFound => None }
         else archiveEntry
       }
 
       private def resourceRefToByteString(
           ref: ResourceReference,
           project: ProjectRef
-      ): IO[ResourceNotFound, ByteString] = {
+      ): IO[ByteString] = {
         val p = ref.project.getOrElse(project)
         for {
           valueOpt <- fetchResource(ref.ref, p)
-          value    <- IO.fromOption(valueOpt, ResourceNotFound(ref.ref, project))
-          bytes    <- valueToByteString(value, ref.representationOrDefault).logAndDiscardErrors(
-                        "serialize resource to ByteString"
-                      )
+          value    <- IO.fromOption(valueOpt)(ResourceNotFound(ref.ref, project))
+          bytes    <- valueToByteString(value, ref.representationOrDefault).onError { error =>
+                        logger.error(error)(s"Serializing resource '$ref' to ByteString failed.")
+                      }
         } yield bytes
       }
 
       private def valueToByteString[A](
           value: JsonLdContent[A, _],
           repr: ResourceRepresentation
-      ): IO[RdfError, ByteString] = {
+      ): IO[ByteString] = toCatsIO {
         implicit val encoder: JsonLdEncoder[A] = value.encoder
         repr match {
           case SourceJson          => UIO.pure(ByteString(prettyPrintSource(value.source)))
@@ -264,5 +272,18 @@ object ArchiveDownload {
           s"$p/${ref.representationOrDefault}/${ref.defaultFileName}"
         }
     }
+
+  def apply(aclCheck: AclCheck, shifts: ResourceShifts, files: Files, fileSelf: FileSelf)(implicit
+      sort: JsonKeyOrdering,
+      baseUri: BaseUri,
+      rcr: RemoteContextResolution,
+      contextShift: ContextShift[IO]
+  ): ArchiveDownload =
+    ArchiveDownload(
+      aclCheck,
+      shifts.fetch,
+      (id: ResourceRef, project: ProjectRef, caller: Caller) => files.fetchContent(IdSegmentRef(id), project)(caller),
+      fileSelf
+    )
 
 }
