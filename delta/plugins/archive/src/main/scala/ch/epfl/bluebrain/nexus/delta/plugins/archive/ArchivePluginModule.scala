@@ -21,6 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.execution.EvaluationExecution
 import com.typesafe.config.Config
 import izumi.distage.model.definition.{Id, ModuleDef}
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 
 /**
   * Archive plugin wiring.
@@ -28,7 +29,7 @@ import izumi.distage.model.definition.{Id, ModuleDef}
 object ArchivePluginModule extends ModuleDef {
   implicit private val classLoader: ClassLoader = getClass.getClassLoader
 
-  make[ArchivePluginConfig].fromEffect { cfg: Config => ArchivePluginConfig.load(cfg) }
+  make[ArchivePluginConfig].fromEffect { cfg: Config => ArchivePluginConfig.load(cfg).toUIO }
 
   make[ArchiveDownload].from {
     (

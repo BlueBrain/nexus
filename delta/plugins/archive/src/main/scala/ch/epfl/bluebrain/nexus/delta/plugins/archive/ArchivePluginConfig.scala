@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.archive
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EphemeralLogConfig
 import com.typesafe.config.Config
-import monix.bio.UIO
 import pureconfig.generic.semiauto.deriveReader
 import pureconfig.{ConfigReader, ConfigSource}
 
@@ -23,8 +23,8 @@ object ArchivePluginConfig {
   /**
     * Converts a [[Config]] into an [[ArchivePluginConfig]]
     */
-  def load(config: Config): UIO[ArchivePluginConfig] =
-    UIO.delay {
+  def load(config: Config): IO[ArchivePluginConfig] =
+    IO.delay {
       ConfigSource
         .fromConfig(config)
         .at("plugins.archive")
