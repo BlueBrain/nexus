@@ -36,11 +36,9 @@ class ResponseToJsonLdSpec extends RouteHelpers with JsonSyntax with RouteConcat
   implicit val jo: JsonKeyOrdering          = JsonKeyOrdering.default()
 
   private def responseWithSourceError[E: JsonLdEncoder: HttpResponseFields](error: E) = {
-    IO.pure(
-      responseWith(
-        `text/plain(UTF-8)`,
-        IO.raiseError(error)
-      )
+    responseWith(
+      `text/plain(UTF-8)`,
+      IO.raiseError(error)
     )
   }
 
@@ -58,19 +56,25 @@ class ResponseToJsonLdSpec extends RouteHelpers with JsonSyntax with RouteConcat
       contentType: ContentType,
       contents: IO[E, AkkaSource]
   ) = {
-    FileResponse(
-      "file.name",
-      contentType,
-      1024,
-      contents
+    IO.pure(
+      FileResponse(
+        "file.name",
+        contentType,
+        1024,
+        contents
+      )
     )
+  }
+
+  private def request = {
+    Get() ~> Accept(`*/*`)
   }
 
   "ResponseToJsonLd file handling" should {
 
     "Return the contents of a file" in {
-      Get() ~> Accept(`*/*`) ~> emit(
-        IO.pure(responseWith(`text/plain(UTF-8)`, fileSourceOfString(FileContents)))
+      request ~> emit(
+        responseWith(`text/plain(UTF-8)`, fileSourceOfString(FileContents))
       ) ~> check {
         status shouldEqual StatusCodes.OK
         contentType shouldEqual `text/plain(UTF-8)`
@@ -79,8 +83,8 @@ class ResponseToJsonLdSpec extends RouteHelpers with JsonSyntax with RouteConcat
     }
 
     "Return an error from a file content IO" in {
-      Get() ~> emit(responseWithSourceError[ResourceRejection](BlankResourceId)) ~> check {
-        status shouldEqual StatusCodes.BadRequest
+      request ~> emit(responseWithSourceError[ResourceRejection](BlankResourceId)) ~> check {
+        status shouldEqual StatusCodes.BadRequest // BlankResourceId is supposed to result in BadRequest
         contentType.mediaType shouldEqual `application/ld+json`
         response.asJson shouldEqual expectedBlankIdErrorResponse
       }
