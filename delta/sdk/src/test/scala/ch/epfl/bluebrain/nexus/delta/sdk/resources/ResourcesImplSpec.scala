@@ -7,7 +7,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, sche
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
-import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen, ResourceResolutionGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, IdSegmentRef, Tags}
@@ -18,9 +17,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.{FetchReso
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport.ResolverReport
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{ResolverResolutionRejection, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.NexusSource.DecodingOption
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.Resource
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{BlankResourceId, IncorrectRev, InvalidJsonLdFormat, InvalidResource, InvalidSchemaRejection, ProjectContextRejection, ReservedResourceId, ResourceAlreadyExists, ResourceIsDeprecated, ResourceNotFound, RevisionNotFound, SchemaIsDeprecated, TagNotFound, UnexpectedResourceId, UnexpectedResourceSchema}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, DataResource}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
@@ -125,31 +126,31 @@ class ResourcesImplSpec
     def sourceWithBlankId = source deepMerge json"""{"@id": ""}"""
     val tag               = UserTag.unsafe("tag")
 
+    def mkResource(res: Resource): DataResource =
+      ResourceGen.resourceFor(res, types = types, subject = subject)
+
     "creating a resource" should {
       "succeed with the id present on the payload" in {
         forAll(List(myId -> resourceSchema, myId2 -> Latest(schema1.id))) { case (id, schemaRef) =>
           val sourceWithId = source deepMerge json"""{"@id": "$id"}"""
           val expectedData = ResourceGen.resource(id, projectRef, sourceWithId, Revision(schemaRef.iri, 1))
           val resource     = resources.create(projectRef, schemaRef, sourceWithId, None).accepted
-          resource shouldEqual ResourceGen.resourceFor(
-            expectedData,
-            types = types,
-            subject = subject
-          )
+          resource shouldEqual mkResource(expectedData)
         }
       }
 
       "succeed and tag with the id present on the payload" in {
         forAll(List(myId10 -> resourceSchema, myId11 -> Latest(schema1.id))) { case (id, schemaRef) =>
-          val sourceWithId = source deepMerge json"""{"@id": "$id"}"""
-          val expectedData =
+          val sourceWithId     = source deepMerge json"""{"@id": "$id"}"""
+          val expectedData     =
             ResourceGen.resource(id, projectRef, sourceWithId, Revision(schemaRef.iri, 1), Tags(tag -> 1))
-          val resource     = resources.create(projectRef, schemaRef, sourceWithId, Some(tag)).accepted
-          resource shouldEqual ResourceGen.resourceFor(
-            expectedData,
-            types = types,
-            subject = subject
-          )
+          val expectedResource = mkResource(expectedData)
+
+          val resource = resources.create(projectRef, schemaRef, sourceWithId, Some(tag)).accepted
+
+          val resourceByTag = resources.fetch(IdSegmentRef(id, tag), projectRef, Some(schemaRef)).accepted
+          resource shouldEqual expectedResource
+          resourceByTag shouldEqual expectedResource
         }
       }
 
@@ -163,11 +164,7 @@ class ResourcesImplSpec
           val sourceWithId = source deepMerge json"""{"@id": "$id"}"""
           val expectedData = ResourceGen.resource(id, projectRef, sourceWithId, Revision(schemaRef.iri, 1))
           val resource     = resources.create(id, projectRef, schemaSegment, sourceWithId, None).accepted
-          resource shouldEqual ResourceGen.resourceFor(
-            expectedData,
-            types = types,
-            subject = subject
-          )
+          resource shouldEqual mkResource(expectedData)
         }
       }
 
@@ -178,15 +175,16 @@ class ResourcesImplSpec
             (myId13, "myschema", Latest(schema1.id))
           )
         forAll(list) { case (id, schemaSegment, schemaRef) =>
-          val sourceWithId = source deepMerge json"""{"@id": "$id"}"""
-          val expectedData =
+          val sourceWithId     = source deepMerge json"""{"@id": "$id"}"""
+          val expectedData     =
             ResourceGen.resource(id, projectRef, sourceWithId, Revision(schemaRef.iri, 1), Tags(tag -> 1))
-          val resource     = resources.create(id, projectRef, schemaSegment, sourceWithId, Some(tag)).accepted
-          resource shouldEqual ResourceGen.resourceFor(
-            expectedData,
-            types = types,
-            subject = subject
-          )
+          val expectedResource = mkResource(expectedData)
+
+          val resource = resources.create(id, projectRef, schemaSegment, sourceWithId, Some(tag)).accepted
+
+          val resourceByTag = resources.fetch(IdSegmentRef(id, tag), projectRef, Some(schemaRef)).accepted
+          resource shouldEqual expectedResource
+          resourceByTag shouldEqual expectedResource
         }
       }
 
@@ -203,11 +201,7 @@ class ResourcesImplSpec
               .resource(iri, projectRef, sourceWithId, Revision(schemaRef.iri, 1))
               .copy(source = sourceWithoutId)
           val resource        = resources.create(segment, projectRef, schemaRef, sourceWithoutId, None).accepted
-          resource shouldEqual ResourceGen.resourceFor(
-            expectedData,
-            types = types,
-            subject = subject
-          )
+          resource shouldEqual mkResource(expectedData)
         }
       }
 
@@ -230,11 +224,7 @@ class ResourcesImplSpec
         val expectedData =
           ResourceGen.resource(myId8, projectRef, sourceMyId8, schemaRev)(resolverContextResolution(projectRef))
         val resource     = resources.create(projectRef, resourceSchema, sourceMyId8, None).accepted
-        resource shouldEqual ResourceGen.resourceFor(
-          expectedData,
-          types = types,
-          subject = subject
-        )
+        resource shouldEqual mkResource(expectedData)
       }
 
       "succeed when pointing to another resource which itself points to other resources in its context" in {
@@ -243,11 +233,7 @@ class ResourcesImplSpec
         val expectedData =
           ResourceGen.resource(myId9, projectRef, sourceMyId9, schemaRev)(resolverContextResolution(projectRef))
         val resource     = resources.create(projectRef, resourceSchema, sourceMyId9, None).accepted
-        resource shouldEqual ResourceGen.resourceFor(
-          expectedData,
-          types = types,
-          subject = subject
-        )
+        resource shouldEqual mkResource(expectedData)
       }
 
       "reject with different ids on the payload and passed" in {
@@ -350,24 +336,14 @@ class ResourcesImplSpec
         val updated      = source.removeKeys(keywords.id) deepMerge json"""{"number": 60}"""
         val expectedData = ResourceGen.resource(myId2, projectRef, updated, Revision(schema1.id, 1))
         resources.update(myId2, projectRef, Some(schema1.id), 1, updated).accepted shouldEqual
-          ResourceGen.resourceFor(
-            expectedData,
-            types = types,
-            subject = subject,
-            rev = 2
-          )
+          mkResource(expectedData).copy(rev = 2)
       }
 
       "succeed without specifying the schema" in {
         val updated      = source.removeKeys(keywords.id) deepMerge json"""{"number": 65}"""
         val expectedData = ResourceGen.resource(myId2, projectRef, updated, Revision(schema1.id, 1))
         resources.update("nxv:myid2", projectRef, None, 2, updated).accepted shouldEqual
-          ResourceGen.resourceFor(
-            expectedData,
-            types = types,
-            subject = subject,
-            rev = 3
-          )
+          mkResource(expectedData).copy(rev = 3)
       }
 
       "reject if it doesn't exists" in {
@@ -419,12 +395,7 @@ class ResourcesImplSpec
         val expectedData =
           ResourceGen.resource(myId6, projectRef, source.removeKeys(keywords.id), Revision(schema1.id, 1))
         resources.refresh(myId6, projectRef, Some(schema1.id)).accepted shouldEqual
-          ResourceGen.resourceFor(
-            expectedData,
-            types = types,
-            subject = subject,
-            rev = 2
-          )
+          mkResource(expectedData).copy(rev = 2)
       }
 
       "succeed without specifying the schema" in {
@@ -475,17 +446,25 @@ class ResourcesImplSpec
     "tagging a resource" should {
 
       "succeed" in {
-        val schemaRev    = Revision(resourceSchema.iri, 1)
-        val expectedData = ResourceGen.resource(myId, projectRef, source, schemaRev, tags = Tags(tag -> 1))
-        val resource     =
+        val schemaRev          = Revision(resourceSchema.iri, 1)
+        val expectedData       = ResourceGen.resource(myId, projectRef, source, schemaRev, tags = Tags(tag -> 1))
+        val expectedLatestRev  = mkResource(expectedData).copy(rev = 2)
+        val expectedTaggedData = expectedData.copy(tags = Tags.empty)
+        val expectedTaggedRev  = mkResource(expectedTaggedData).copy(rev = 1)
+
+        val resource =
           resources.tag(myId, projectRef, Some(schemas.resources), tag, 1, 1).accepted
-        resource shouldEqual
-          ResourceGen.resourceFor(
-            expectedData,
-            types = types,
-            subject = subject,
-            rev = 2
-          )
+
+        // Lookup by tag should return the tagged rev but have no tags in the data
+        val taggedRevision =
+          resources.fetch(IdSegmentRef(myId, tag), projectRef, Some(schemas.resources)).accepted
+        // Lookup by latest revision should return rev 2 with tags in the data
+        val latestRevision =
+          resources.fetch(ResourceRef(myId), projectRef).accepted
+
+        resource shouldEqual expectedLatestRev
+        latestRevision shouldEqual expectedLatestRev
+        taggedRevision shouldEqual expectedTaggedRev
       }
 
       "reject if it doesn't exists" in {
@@ -531,14 +510,7 @@ class ResourcesImplSpec
         val sourceWithId = source deepMerge json"""{"@id": "$myId4"}"""
         val expectedData = ResourceGen.resource(myId4, projectRef, sourceWithId, Revision(schema1.id, 1))
         val resource     = resources.deprecate(myId4, projectRef, Some(schema1.id), 1).accepted
-        resource shouldEqual
-          ResourceGen.resourceFor(
-            expectedData,
-            types = types,
-            subject = subject,
-            rev = 2,
-            deprecated = true
-          )
+        resource shouldEqual mkResource(expectedData).copy(rev = 2, deprecated = true)
       }
 
       "reject if it doesn't exists" in {
@@ -579,34 +551,21 @@ class ResourcesImplSpec
       "succeed" in {
         forAll(List[Option[IdSegment]](None, Some(schemas.resources))) { schema =>
           resources.fetch(myId, projectRef, schema).accepted shouldEqual
-            ResourceGen.resourceFor(
-              expectedDataLatest,
-              types = types,
-              subject = subject,
-              rev = 2
-            )
+            mkResource(expectedDataLatest).copy(rev = 2)
         }
       }
 
       "succeed by tag" in {
         forAll(List[Option[IdSegment]](None, Some(schemas.resources))) { schema =>
           resources.fetch(IdSegmentRef("nxv:myid", tag), projectRef, schema).accepted shouldEqual
-            ResourceGen.resourceFor(
-              expectedData,
-              types = types,
-              subject = subject
-            )
+            mkResource(expectedData)
         }
       }
 
       "succeed by rev" in {
         forAll(List[Option[IdSegment]](None, Some(schemas.resources))) { schema =>
           resources.fetch(IdSegmentRef(myId, 1), projectRef, schema).accepted shouldEqual
-            ResourceGen.resourceFor(
-              expectedData,
-              types = types,
-              subject = subject
-            )
+            mkResource(expectedData)
         }
       }
 
@@ -654,13 +613,7 @@ class ResourcesImplSpec
         val expectedData = ResourceGen.resource(myId, projectRef, source, schemaRev)
         val resource     =
           resources.deleteTag(myId, projectRef, Some(schemas.resources), tag, 2).accepted
-        resource shouldEqual
-          ResourceGen.resourceFor(
-            expectedData,
-            types = types,
-            subject = subject,
-            rev = 3
-          )
+        resource shouldEqual mkResource(expectedData).copy(rev = 3)
       }
 
       "reject if the resource doesn't exists" in {

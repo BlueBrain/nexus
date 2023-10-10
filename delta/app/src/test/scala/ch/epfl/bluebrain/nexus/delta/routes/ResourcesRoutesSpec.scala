@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceResolut
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceUris, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegmentRef, ResourceUris, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{events, resources}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
@@ -213,7 +213,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap {
     }
 
     def resourceTags(resources: Resources, id: Iri): Tags =
-      resources.fetch(ResourceRef(id), projectRef).accepted.value.tags
+      resources.fetch(IdSegmentRef(id, tag), projectRef, None).accepted.value.tags
 
     "reject the creation of a resource which already exists" in {
       Put("/v1/resources/myorg/myproject/_/myid", payload.toEntity) ~> routes ~> check {

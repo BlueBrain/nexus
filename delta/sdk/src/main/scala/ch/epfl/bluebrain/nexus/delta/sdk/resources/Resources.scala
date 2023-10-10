@@ -437,6 +437,7 @@ object Resources {
       ResourceState.serializer,
       Tagger[ResourceEvent](
         {
+          case r: ResourceCreated  => r.tag.flatMap(t => Some(t -> r.rev))
           case r: ResourceTagAdded => Some(r.tag -> r.targetRev)
           case _                   => None
         },
