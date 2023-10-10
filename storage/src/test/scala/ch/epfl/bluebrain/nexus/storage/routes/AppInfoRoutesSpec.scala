@@ -3,13 +3,13 @@ package ch.epfl.bluebrain.nexus.storage.routes
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.storage.auth.AuthorizationMethod
 import ch.epfl.bluebrain.nexus.storage.config.{AppConfig, Settings}
 import ch.epfl.bluebrain.nexus.storage.routes.instances._
 import ch.epfl.bluebrain.nexus.storage.utils.Resources
 import ch.epfl.bluebrain.nexus.storage.{AkkaSource, Storages}
 import io.circe.Json
-import monix.eval.Task
 import org.mockito.IdiomaticMockito
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -27,7 +27,7 @@ class AppInfoRoutesSpec
 
     implicit val config: AppConfig                        = Settings(system).appConfig
     implicit val authorizationMethod: AuthorizationMethod = AuthorizationMethod.Anonymous
-    val route: Route                                      = Routes(mock[Storages[Task, AkkaSource]])
+    val route: Route                                      = Routes(mock[Storages[IO, AkkaSource]])
 
     "return application information" in {
       Get("/") ~> route ~> check {
