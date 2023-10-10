@@ -57,6 +57,8 @@ final class AggregationsSpec extends BaseSpec with Inspectors with EitherValuabl
 
   "Aggregating resources within a project" should {
 
+    List("resources", "files", "schemas", "storages", "views")
+
     "get an error if the user has no access" in {
 
       deltaClient.get[Json](s"/resources/$ref11?aggregations=true", Rose) { (_, response) =>
@@ -71,6 +73,54 @@ final class AggregationsSpec extends BaseSpec with Inspectors with EitherValuabl
         "project" -> proj11
       )
       deltaClient.get[Json](s"/resources/$ref11?aggregations=true", Charlie) { (json, response) =>
+        response.status shouldEqual StatusCodes.OK
+        json should equalIgnoreArrayOrder(expected)
+      }
+    }
+
+    "aggregate resolvers" in {
+      val expected = jsonContentOf(
+        "/kg/aggregations/resolvers-aggregation.json",
+        "org"     -> org1,
+        "project" -> proj11
+      )
+      deltaClient.get[Json](s"/resolvers/$ref11?aggregations=true", Charlie) { (json, response) =>
+        response.status shouldEqual StatusCodes.OK
+        json should equalIgnoreArrayOrder(expected)
+      }
+    }
+
+    "aggregate views" in {
+      val expected = jsonContentOf(
+        "/kg/aggregations/views-aggregation.json",
+        "org"     -> org1,
+        "project" -> proj11
+      )
+      deltaClient.get[Json](s"/views/$ref11?aggregations=true", Charlie) { (json, response) =>
+        response.status shouldEqual StatusCodes.OK
+        json should equalIgnoreArrayOrder(expected)
+      }
+    }
+
+    "aggregate schemas" in {
+      val expected = jsonContentOf(
+        "/kg/aggregations/schemas-aggregation.json",
+        "org"     -> org1,
+        "project" -> proj11
+      )
+      deltaClient.get[Json](s"/schemas/$ref11?aggregations=true", Charlie) { (json, response) =>
+        response.status shouldEqual StatusCodes.OK
+        json should equalIgnoreArrayOrder(expected)
+      }
+    }
+
+    "aggregate storages" in {
+      val expected = jsonContentOf(
+        "/kg/aggregations/storages-aggregation.json",
+        "org"     -> org1,
+        "project" -> proj11
+      )
+      deltaClient.get[Json](s"/storages/$ref11?aggregations=true", Charlie) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
         json should equalIgnoreArrayOrder(expected)
       }
