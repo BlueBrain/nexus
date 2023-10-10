@@ -27,6 +27,7 @@ class ProjectionStoreSuite extends BioSuite with IOFixedClock with Doobie.Fixtur
   private val metadata    = ProjectionMetadata("test", name, Some(project), Some(resource))
   private val progress    = ProjectionProgress(Offset.At(42L), Instant.EPOCH, 5, 2, 1)
   private val newProgress = progress.copy(offset = Offset.At(100L), processed = 100L)
+  private val noProgress  = ProjectionProgress.NoProgress
 
   test("Return an empty offset when not found") {
     store.offset("not found").assertNone
@@ -71,4 +72,30 @@ class ProjectionStoreSuite extends BioSuite with IOFixedClock with Doobie.Fixtur
       _       <- store.offset(name).assertNone
     } yield ()
   }
+
+  test("Reset an offset") {
+    val later      = Instant.EPOCH.plusSeconds(1000)
+    val storeLater = ProjectionStore(xas, QueryConfig(10, RefreshStrategy.Stop))(ioClock(later))
+
+    for {
+      _ <- store.save(metadata, progress)
+      _ <- assertProgressAndInstants(metadata.name, progress, Instant.EPOCH, Instant.EPOCH)(store)
+      _ <- storeLater.reset(metadata.name)
+      _ <- assertProgressAndInstants(metadata.name, noProgress.copy(instant = later), later, later)(store)
+    } yield ()
+  }
+
+  private def assertProgressAndInstants(
+      name: String,
+      progress: ProjectionProgress,
+      createdAt: Instant,
+      updatedAt: Instant
+  )(
+      store: ProjectionStore
+  ) =
+    for {
+      entries <- store.entries.compile.toList
+      r        = entries.assertOneElem
+      _        = assertEquals((r.name, r.progress, r.createdAt, r.updatedAt), (name, progress, createdAt, updatedAt))
+    } yield ()
 }
