@@ -116,12 +116,9 @@ object CatsResponseToJsonLd extends FileBytesInstances {
         }
 
         onSuccess(flattened.unsafeToFuture()) {
-          case Left(complete: Complete[E]) => emit(complete)
-          case Left(reject: Reject[E])     => emit(reject)
-          case Right(Left(c))              =>
-            implicit val valueEncoder = c.value.encoder
-            emit(c.value.value)
-
+          case Left(complete: Complete[E])       => emit(complete)
+          case Left(reject: Reject[E])           => emit(reject)
+          case Right(Left(c))                    => emit(c)
           case Right(Right((metadata, content))) =>
             headerValueByType(Accept) { accept =>
               if (accept.mediaRanges.exists(_.matches(metadata.contentType.mediaType))) {

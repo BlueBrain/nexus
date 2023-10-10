@@ -28,12 +28,6 @@ object AuthTokenError {
       extends AuthTokenError(s"Auth token not found in auth response: ${failure.reason}")
 
   /**
-    * Signals that the expiry was missing from the authentication response
-    */
-  final case class ExpiryNotFoundInResponse(failure: DecodingFailure)
-      extends AuthTokenError(s"Expiry not found in auth response: ${failure.reason}")
-
-  /**
     * Signals that the realm specified for authentication is deprecated
     */
   final case class RealmIsDeprecated(realm: Realm)
@@ -45,8 +39,6 @@ object AuthTokenError {
         JsonObject(keywords.tpe := "AuthTokenHttpError", "reason" := r.reason)
       case AuthTokenNotFoundInResponse(r) =>
         JsonObject(keywords.tpe -> "AuthTokenNotFoundInResponse".asJson, "reason" := r.message)
-      case ExpiryNotFoundInResponse(r)    =>
-        JsonObject(keywords.tpe -> "ExpiryNotFoundInResponse".asJson, "reason" := r.message)
       case r: RealmIsDeprecated           =>
         JsonObject(keywords.tpe := "RealmIsDeprecated", "reason" := r.getMessage)
     }
