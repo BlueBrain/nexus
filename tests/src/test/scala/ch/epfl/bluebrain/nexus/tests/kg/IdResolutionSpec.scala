@@ -36,6 +36,10 @@ class IdResolutionSpec extends BaseSpec {
   private val uniqueResourcePayload = resource(uniqueId)
   private val reusedResourcePayload = resource(reusedId)
 
+  private val neurosciencegraphSegment   = "segment"
+  private val neurosciencegraphId        = s"https://bbp.epfl.ch/neurosciencegraph/data/$neurosciencegraphSegment"
+  private val encodedNeurosciencegraphId = UrlUtils.encode(neurosciencegraphId)
+
   private val unauthorizedAccessErrorPayload =
     jsonContentOf("iam/errors/unauthorized-access.json")
 
@@ -110,6 +114,20 @@ class IdResolutionSpec extends BaseSpec {
 
     "redirect to fusion resource selection page if text/html accept header is present (multiple result)" in { pending }
 
+    "redirect to delta resolve if the request comes to the proxy endpoint" in {
+      deltaClient.get[String](s"/resolve-proxy-pass/$neurosciencegraphSegment", Bob) { (_, response) =>
+        response.status shouldEqual StatusCodes.SeeOther
+        locationHeaderOf(response) shouldEqual deltaResolveEndpoint(encodedNeurosciencegraphId)
+      }(PredefinedFromEntityUnmarshallers.stringUnmarshaller)
+    }
+
+    "redirect to fusion resolve if the request comes to the proxy endpoint with text/html accept header is present" in {
+      deltaClient.get[String](s"/resolve-proxy-pass/$neurosciencegraphSegment", Bob, acceptTextHtml) { (_, response) =>
+        response.status shouldEqual StatusCodes.SeeOther
+        locationHeaderOf(response) shouldEqual fusionResolveEndpoint(neurosciencegraphId)
+      }(PredefinedFromEntityUnmarshallers.stringUnmarshaller)
+    }
+
   }
 
   private def locationHeaderOf(response: HttpResponse) =
@@ -118,5 +136,9 @@ class IdResolutionSpec extends BaseSpec {
     List(Accept(MediaRange.One(`text/html`, 1f)))
   private def fusionResourcePageFor(encodedId: String) =
     s"https://bbp.epfl.ch/nexus/web/$ref11/resources/$encodedId".replace("%3A", ":")
+  private def fusionResolveEndpoint(id: String)        =
+    s"https://bbp.epfl.ch/nexus/web/resolve/$id".replace("%3A", ":")
+  private def deltaResolveEndpoint(encodedId: String)  =
+    s"http://delta:8080/v1/resolve/$encodedId".replace("%3A", ":")
 
 }
