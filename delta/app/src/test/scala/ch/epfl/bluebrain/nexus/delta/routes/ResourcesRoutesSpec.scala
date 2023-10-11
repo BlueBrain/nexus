@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceResolut
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegmentRef, ResourceUris, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegmentRef, ResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{events, resources}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
@@ -175,7 +175,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap {
         Post(endpoint, payload.toEntity) ~> routes ~> check {
           status shouldEqual StatusCodes.Created
           response.asJson shouldEqual resourceMetadata(projectRef, id, schema, (nxv + "Custom").toString)
-          resourceTags(resources, id).contains(tag) shouldBe true
+          lookupResourceByTag(resources, id) should contain(tag)
         }
       }
     }
@@ -207,13 +207,13 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap {
           status shouldEqual StatusCodes.Created
           response.asJson shouldEqual
             resourceMetadata(projectRef, id, schema, (nxv + "Custom").toString, createdBy = alice, updatedBy = alice)
-          resourceTags(resources, id).contains(tag) shouldBe true
+          lookupResourceByTag(resources, id) should contain(tag)
         }
       }
     }
 
-    def resourceTags(resources: Resources, id: Iri): Tags =
-      resources.fetch(IdSegmentRef(id, tag), projectRef, None).accepted.value.tags
+    def lookupResourceByTag(resources: Resources, id: Iri): List[UserTag] =
+      resources.fetch(IdSegmentRef(id, tag), projectRef, None).accepted.value.tags.value.keys.toList
 
     "reject the creation of a resource which already exists" in {
       Put("/v1/resources/myorg/myproject/_/myid", payload.toEntity) ~> routes ~> check {
