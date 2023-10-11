@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
 
 import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.{Directive, Directive1, MalformedQueryParamRejection}
+import akka.http.scaladsl.server.{Directive, Directive0, Directive1, MalformedQueryParamRejection}
 import akka.http.scaladsl.unmarshalling.{FromStringUnmarshaller, Unmarshaller}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.TypeOperator.Or
@@ -45,8 +45,11 @@ trait ElasticSearchViewsDirectives extends UriDirectives {
   /**
     * Matches only if the ''aggregations'' parameter is set to ''true''
     */
-  def aggregated: Directive1[Option[Boolean]] =
-    parameter("aggregations".as[Boolean].?).filter(_.contains(true))
+  def aggregated: Directive0 =
+    parameter("aggregations".as[Boolean].?).flatMap {
+      case Some(true) => pass
+      case _          => reject
+    }
 
   /**
     * Extract the ''sort'' query parameter(s) and provide a [[SortList]]
