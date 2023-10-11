@@ -258,6 +258,24 @@ class SparqlViewsSpec extends BaseSpec with EitherValuable with CirceEq {
       }
     }
 
+    val byTagQuery =
+      """
+        |prefix nxv: <https://bluebrain.github.io/nexus/vocabulary/>
+        |
+        |select ?s where {
+        |  ?s nxv:tags "one"
+        |}
+        |order by ?s
+      """.stripMargin
+
+    "search by tag in SPARQL endpoint in project 1 with default view" in eventually {
+      deltaClient.sparqlQuery[Json](s"/views/$fullId/nxv:defaultSparqlIndex/sparql", byTagQuery, ScoobyDoo) {
+        (json, response) =>
+          response.status shouldEqual StatusCodes.OK
+          json shouldEqual jsonContentOf("/kg/views/sparql-search-response-tagged.json")
+      }
+    }
+
     "search instances in SPARQL endpoint in project 1 with custom SparqlView after tags added" in {
       eventually {
         deltaClient.sparqlQuery[Json](s"/views/$fullId/test-resource:cell-view/sparql", query, ScoobyDoo) {
