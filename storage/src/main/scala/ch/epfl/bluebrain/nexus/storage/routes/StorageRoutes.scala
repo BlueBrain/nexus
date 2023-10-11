@@ -49,7 +49,7 @@ class StorageRoutes()(implicit storages: Storages[IO, AkkaSource], hc: HttpConfi
                   // Link file/dir
                   entity(as[LinkFile]) { case LinkFile(source) =>
                     validatePath(name, source) {
-                      complete(storages.moveFile(name, source, path).unsafeToFuture())
+                      complete(storages.moveFile(name, source, path).runWithStatus(OK))
                     }
                   }
                 },
