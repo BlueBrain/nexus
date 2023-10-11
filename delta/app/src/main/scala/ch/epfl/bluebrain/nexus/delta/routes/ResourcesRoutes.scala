@@ -4,13 +4,13 @@ import akka.http.scaladsl.model.StatusCodes.{Created, OK}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.ResourcesRoutes.asSourceWithMetadata
 import ch.epfl.bluebrain.nexus.delta.sdk._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
@@ -26,7 +26,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resources.NexusSource.DecodingOption
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{InvalidJsonLdFormat, InvalidSchemaRejection, ResourceNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{Resource, ResourceRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.{NexusSource, Resources}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.{Json, Printer}
 import monix.bio.IO
@@ -85,7 +84,10 @@ final class ResourcesRoutes(
                   authorizeFor(ref, Write).apply {
                     emit(
                       Created,
-                      resources.create(ref, resourceSchema, source.value, tag).tapEval(indexUIO(ref, _, mode)).map(_.void)
+                      resources
+                        .create(ref, resourceSchema, source.value, tag)
+                        .tapEval(indexUIO(ref, _, mode))
+                        .map(_.void)
                     )
                   }
               },
