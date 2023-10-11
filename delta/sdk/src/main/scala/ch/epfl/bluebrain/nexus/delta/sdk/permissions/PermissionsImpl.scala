@@ -17,7 +17,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 final class PermissionsImpl private (
     override val minimum: Set[Permission],
     log: PermissionsLog
-) extends Permissions with MigrateEffectSyntax {
+) extends Permissions
+    with MigrateEffectSyntax {
 
   implicit private val kamonComponent: KamonMetricComponent = KamonMetricComponent(entityType.value)
 
@@ -25,7 +26,8 @@ final class PermissionsImpl private (
 
   override def fetch: IO[PermissionsResource] =
     log
-      .stateOr[PermissionsRejection](labelId, UnexpectedState).toCatsIO
+      .stateOr[PermissionsRejection](labelId, UnexpectedState)
+      .toCatsIO
       .handleErrorWith(_ => IO.pure(initial))
       .map(_.toResource(minimum))
       .span("fetchPermissions")
@@ -37,7 +39,8 @@ final class PermissionsImpl private (
         rev,
         UnexpectedState,
         RevisionNotFound
-      ).toCatsIO
+      )
+      .toCatsIO
       .map(_.toResource(minimum))
       .span("fetchPermissionsAt")
 
@@ -63,9 +66,11 @@ final class PermissionsImpl private (
     eval(DeletePermissions(rev, caller)).span("deletePermissions")
 
   private def eval(cmd: PermissionsCommand): IO[PermissionsResource] =
-    log.evaluate(labelId, cmd).toCatsIO
-      .map {
-        case (_, state) => state.toResource(minimum)
+    log
+      .evaluate(labelId, cmd)
+      .toCatsIO
+      .map { case (_, state) =>
+        state.toResource(minimum)
       }
 }
 

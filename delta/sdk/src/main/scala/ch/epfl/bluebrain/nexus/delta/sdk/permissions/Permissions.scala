@@ -314,7 +314,8 @@ object Permissions {
       entityType,
       StateMachine(
         Some(initial),
-        (state: Option[PermissionsState], cmd: PermissionsCommand) => evaluate(minimum)(state.getOrElse(initial), cmd).toBIO[PermissionsRejection],
+        (state: Option[PermissionsState], cmd: PermissionsCommand) =>
+          evaluate(minimum)(state.getOrElse(initial), cmd).toBIO[PermissionsRejection],
         (state: Option[PermissionsState], event: PermissionsEvent) =>
           Some(next(minimum)(state.getOrElse(initial), event))
       ),

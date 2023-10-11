@@ -25,7 +25,7 @@ class PermissionsImplSpec
 
   implicit def subject: Subject = Identity.User("user", Label.unsafe("realm"))
 
-  implicit val baseUri: BaseUri     = BaseUri("http://localhost", Label.unsafe("v1"))
+  implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
 
   private val eventLogConfig = EventLogConfig(QueryConfig(5, RefreshStrategy.Delay(100.millis)), 100.millis)
 
