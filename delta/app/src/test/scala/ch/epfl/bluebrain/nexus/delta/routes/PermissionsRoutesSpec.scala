@@ -9,15 +9,16 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{events, orgs, permissions => permissionsPerms, realms}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{events, orgs, realms, permissions => permissionsPerms}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.{Permissions, PermissionsConfig, PermissionsImpl}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.testkit.ce.{CatsIOValues, IOFixedClock}
 import io.circe.Json
 
-class PermissionsRoutesSpec extends BaseRouteSpec {
+class PermissionsRoutesSpec extends BaseRouteSpec with IOFixedClock with CatsIOValues {
 
   implicit private val caller: Subject = Identity.Anonymous
 

@@ -23,6 +23,8 @@ trait CatsIOValues extends CatsIOValuesLowPrio {
   implicit final class CatsIOValuesOps[A](private val io: IO[A]) {
     def accepted: A = io.unsafeRunSync()
 
+    def rejected2(implicit pos: source.Position): Throwable = rejectedWith[Throwable]
+
     def rejected[E](expected: E)(implicit pos: source.Position, EE: ClassTag[E]): Assertion =
       assertResult(expected)(rejectedWith[E])
 

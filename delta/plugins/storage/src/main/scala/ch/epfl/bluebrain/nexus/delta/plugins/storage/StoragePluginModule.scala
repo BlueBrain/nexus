@@ -23,6 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.auth.{AuthTokenProvider, Credentials}
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.ProjectDeletionTask
@@ -82,7 +83,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         Storages(
           fetchContext.mapRejection(StorageRejection.ProjectContextRejection),
           contextResolution,
-          permissions.fetchPermissionSet,
+          permissions.fetchPermissionSet.toUIO,
           StorageAccess.apply(_, _, remoteDiskStorageClient, storageTypeConfig),
           xas,
           cfg.storages,
