@@ -114,7 +114,6 @@ lazy val logback            = "ch.qos.logback"                % "logback-classic
 lazy val magnolia           = "com.softwaremill.magnolia1_2" %% "magnolia"                 % magnoliaVersion
 lazy val mockito            = "org.mockito"                  %% "mockito-scala"            % mockitoVersion
 lazy val monixBio           = "io.monix"                     %% "monix-bio"                % monixBioVersion
-lazy val monixEval          = "io.monix"                     %% "monix-eval"               % monixVersion
 lazy val munit              = "org.scalameta"                %% "munit"                    % munitVersion
 lazy val nimbusJoseJwt      = "com.nimbusds"                  % "nimbus-jose-jwt"          % nimbusJoseJwtVersion
 lazy val pureconfig         = "com.github.pureconfig"        %% "pureconfig"               % pureconfigVersion
@@ -769,7 +768,6 @@ lazy val storage = project
       circeCore,
       circeGenericExtras,
       logback,
-      monixEval,
       pureconfig,
       scalaLogging,
       akkaHttpTestKit % Test,

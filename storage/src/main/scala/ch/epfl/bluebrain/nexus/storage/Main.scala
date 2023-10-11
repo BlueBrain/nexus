@@ -7,7 +7,7 @@ import akka.event.{Logging, LoggingAdapter}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Route
 import akka.util.Timeout
-import cats.effect.Effect
+import cats.effect.{Effect, IO}
 import ch.epfl.bluebrain.nexus.storage.Storages.DiskStorage
 import ch.epfl.bluebrain.nexus.storage.attributes.{AttributesCache, ContentTypeDetector}
 import ch.epfl.bluebrain.nexus.storage.auth.AuthorizationMethod
@@ -16,8 +16,6 @@ import ch.epfl.bluebrain.nexus.storage.config.AppConfig._
 import ch.epfl.bluebrain.nexus.storage.routes.Routes
 import com.typesafe.config.{Config, ConfigFactory}
 import kamon.Kamon
-import monix.eval.Task
-import monix.execution.Scheduler
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -56,14 +54,14 @@ object Main {
 
     implicit val as: ActorSystem                          = ActorSystem(appConfig.description.fullName, config)
     implicit val ec: ExecutionContext                     = as.dispatcher
-    implicit val eff: Effect[Task]                        = Task.catsEffect(Scheduler.global)
+    implicit val eff: Effect[IO]                          = IO.ioEffect
     implicit val authorizationMethod: AuthorizationMethod = appConfig.authorization
     implicit val timeout                                  = Timeout(1.minute)
     implicit val clock                                    = Clock.systemUTC
     implicit val contentTypeDetector                      = new ContentTypeDetector(appConfig.mediaTypeDetector)
 
-    val storages: Storages[Task, AkkaSource] =
-      new DiskStorage(appConfig.storage, contentTypeDetector, appConfig.digest, AttributesCache[Task, AkkaSource])
+    val storages: Storages[IO, AkkaSource] =
+      new DiskStorage(appConfig.storage, contentTypeDetector, appConfig.digest, AttributesCache[IO, AkkaSource])
 
     val logger: LoggingAdapter = Logging(as, getClass)
 
