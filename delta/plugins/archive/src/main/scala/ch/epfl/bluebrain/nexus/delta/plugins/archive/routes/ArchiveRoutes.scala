@@ -90,13 +90,13 @@ class ArchiveRoutes(
   }
 
   private def emitCreatedArchive(io: IO[ArchiveResource]): Route =
-    Zip.checkZipHeader {
+    Zip.checkHeader {
       case true  => emitRedirect(SeeOther, io.map(_.uris.accessUri).attemptNarrow[ArchiveRejection])
       case false => emitMetadata(Created, io)
     }
 
   private def emitArchiveDownload(id: IdSegment, project: ProjectRef)(implicit caller: Caller): Route =
-    Zip.checkZipHeader {
+    Zip.checkHeader {
       case true  =>
         parameter("ignoreNotFound".as[Boolean] ? false) { ignoreNotFound =>
           emitArchiveFile(archives.download(id, project, ignoreNotFound))

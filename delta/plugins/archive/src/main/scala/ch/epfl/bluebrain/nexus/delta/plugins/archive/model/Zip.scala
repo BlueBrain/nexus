@@ -27,7 +27,7 @@ object Zip {
 
   def metadata(filename: String): ArchiveMetadata = ArchiveMetadata.create(filename)
 
-  def checkZipHeader: Directive[Tuple1[Boolean]] =
+  def checkHeader: Directive[Tuple1[Boolean]] =
     extractRequest.map { req =>
       HeadersUtils.matches(req.headers, Zip.contentType.mediaType)
     }

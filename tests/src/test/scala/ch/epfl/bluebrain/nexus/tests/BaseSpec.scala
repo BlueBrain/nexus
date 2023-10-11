@@ -6,8 +6,8 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.util.ByteString
+import cats.effect.IO
 import cats.effect.concurrent.Ref
-import cats.effect.{ContextShift, IO}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.testkit._
@@ -30,7 +30,6 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpecLike
 import org.scalatest.{Assertion, BeforeAndAfterAll, OptionValues}
 
-import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
 trait BaseSpec
@@ -48,8 +47,6 @@ trait BaseSpec
     with OptionValues
     with ScalaFutures
     with Matchers {
-
-  implicit val contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
 
   private val logger = Logger.cats[this.type]
 
