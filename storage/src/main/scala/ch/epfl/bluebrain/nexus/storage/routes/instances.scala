@@ -4,6 +4,7 @@ import akka.http.scaladsl.marshalling.GenericMarshallers.eitherMarshaller
 import akka.http.scaladsl.marshalling._
 import akka.http.scaladsl.model.MediaTypes._
 import akka.http.scaladsl.model._
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.storage.JsonLdCirceSupport.sortKeys
 import ch.epfl.bluebrain.nexus.storage.JsonLdCirceSupport.OrderedKeys
 import ch.epfl.bluebrain.nexus.storage.Rejection
@@ -11,8 +12,6 @@ import ch.epfl.bluebrain.nexus.storage.config.AppConfig._
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
 import io.circe._
 import io.circe.syntax._
-import monix.eval.Task
-import monix.execution.Scheduler
 import ch.epfl.bluebrain.nexus.storage.MediaTypes.`application/ld+json`
 
 import scala.collection.immutable.Seq
@@ -48,9 +47,9 @@ object instances extends LowPriority {
       statusFrom(value) -> value.asJson
     }
 
-  implicit final class EitherFSyntax[A](f: Task[Either[Rejection, A]])(implicit scheduler: Scheduler) {
+  implicit final class EitherFSyntax[A](f: IO[Either[Rejection, A]]) {
     def runWithStatus(code: StatusCode): Future[Either[Rejection, (StatusCode, A)]] =
-      f.map(_.map(code -> _)).runToFuture
+      f.map(_.map(code -> _)).unsafeToFuture()
   }
 
 }
