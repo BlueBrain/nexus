@@ -128,10 +128,16 @@ class ElasticSearchQueryRoutesSpec extends ElasticSearchViewsRoutesFixtures with
   }
 
   List(
-    ("aggregate at project level", "/v1/resources/myorg/myproject?aggregations=true"),
-    ("aggregate at project level with schema", "/v1/resources/myorg/myproject/schema?aggregations=true"),
-    ("aggregate at org level", "/v1/resources/myorg?aggregations=true"),
-    ("aggregate at root level", "/v1/resources?aggregations=true")
+    ("aggregate generic resources at project level", "/v1/resources/myorg/myproject?aggregations=true"),
+    (
+      "aggregate generic resources at project level with schema",
+      "/v1/resources/myorg/myproject/schema?aggregations=true"
+    ),
+    ("aggregate generic resources at org level", "/v1/resources/myorg?aggregations=true"),
+    ("aggregate generic resources at root level", "/v1/resources?aggregations=true"),
+    ("aggregate views at root level", "/v1/views?aggregations=true"),
+    ("aggregate views at org level", "/v1/views/myorg?aggregations=true"),
+    ("aggregate views at project level", "/v1/views/myorg/myproject?aggregations=true")
   ).foreach { case (testName, path) =>
     testName in {
       Get(path) ~> routes ~> check {

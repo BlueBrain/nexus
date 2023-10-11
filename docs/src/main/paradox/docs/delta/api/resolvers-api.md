@@ -302,6 +302,7 @@ GET /v1/resolvers/{org_label}/{project_label}?from={from}
                                              &updatedBy={updatedBy}
                                              &q={search}
                                              &sort={sort}
+                                             &aggregations={aggregations}
 ```
 
 ### Within an organization
@@ -318,6 +319,7 @@ GET /v1/resolvers/{org_label}?from={from}
                              &updatedBy={updatedBy}
                              &q={search}
                              &sort={sort}
+                             &aggregations={aggregations}
 ```
 
 ### Within all projects
@@ -334,6 +336,7 @@ GET /v1/resolvers?from={from}
                  &updatedBy={updatedBy}
                  &q={search}
                  &sort={sort}
+                 &aggregations={aggregations}
 ```
 
 ### Parameter description
@@ -350,6 +353,7 @@ GET /v1/resolvers?from={from}
   matching (containing) the provided string
 - `{sort}`: String - can be used to sort resolvers based on a payloads' field. This parameter can appear multiple times 
   to enable sorting by multiple fields. The default is done by `_createdBy` and `@id`.
+- `{aggregations}`: Boolean - if `true` then the response will only contain aggregations of the `@type` and `_project` fields; defaults to `false`. See @ref:[Aggregations](resources-api.md#aggregations).
 
 **Example**
 

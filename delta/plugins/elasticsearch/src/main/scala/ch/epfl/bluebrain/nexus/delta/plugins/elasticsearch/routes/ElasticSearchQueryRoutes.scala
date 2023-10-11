@@ -52,13 +52,13 @@ class ElasticSearchQueryRoutes(
               // List/aggregate all resources
               pathEndOrSingleSlash {
                 concat(
-                  aggregated { _ => aggregate(RootSearch(params)) },
+                  aggregate(RootSearch(params)),
                   list(RootSearch(params, page, sort))
                 )
               },
               (label & pathEndOrSingleSlash) { org =>
                 concat(
-                  aggregated { _ => aggregate(OrgSearch(org, params)) },
+                  aggregate(OrgSearch(org, params)),
                   list(OrgSearch(org, params, page, sort))
                 )
               }
@@ -71,7 +71,7 @@ class ElasticSearchQueryRoutes(
                   // List/aggregate all resources inside a project
                   pathEndOrSingleSlash {
                     concat(
-                      aggregated { _ => aggregate(ProjectSearch(ref, params)) },
+                      aggregate(ProjectSearch(ref, params)),
                       list(ProjectSearch(ref, params, page, sort))
                     )
                   },
@@ -81,12 +81,12 @@ class ElasticSearchQueryRoutes(
                       underscoreToOption(schema) match {
                         case None        =>
                           concat(
-                            aggregated { _ => aggregate(ProjectSearch(ref, params)) },
+                            aggregate(ProjectSearch(ref, params)),
                             list(ProjectSearch(ref, params, page, sort))
                           )
                         case Some(value) =>
                           concat(
-                            aggregated { _ => aggregate(ProjectSearch(ref, params, value)(fetchContext)) },
+                            aggregate(ProjectSearch(ref, params, value)(fetchContext)),
                             list(ProjectSearch(ref, params, page, sort, value)(fetchContext))
                           )
                       }
@@ -110,12 +110,18 @@ class ElasticSearchQueryRoutes(
                 // List all resources of type resourceSegment
                 pathEndOrSingleSlash {
                   val request = DefaultSearchRequest.RootSearch(params, page, sort, resourceSchema)(fetchContext)
-                  list(request)
+                  concat(
+                    aggregate(request),
+                    list(request)
+                  )
                 },
                 // List all resources of type resourceSegment inside an organization
                 (label & pathEndOrSingleSlash) { org =>
                   val request = DefaultSearchRequest.OrgSearch(org, params, page, sort, resourceSchema)(fetchContext)
-                  list(request)
+                  concat(
+                    aggregate(request),
+                    list(request)
+                  )
                 }
               )
             },
@@ -125,7 +131,10 @@ class ElasticSearchQueryRoutes(
                 (searchParametersInProject & paginated & pathEndOrSingleSlash) { (params, sort, page) =>
                   val request =
                     DefaultSearchRequest.ProjectSearch(ref, params, page, sort, resourceSchema)(fetchContext)
-                  list(request)
+                  concat(
+                    aggregate(request),
+                    list(request)
+                  )
                 }
               }
             }
@@ -149,7 +158,7 @@ class ElasticSearchQueryRoutes(
     aggregate(IO.pure(request))
 
   private def aggregate(request: IO[ElasticSearchQueryError, DefaultSearchRequest])(implicit caller: Caller): Route =
-    get {
+    (get & aggregated) {
       implicit val searchJsonLdEncoder: JsonLdEncoder[AggregationResult] =
         aggregationResultJsonLdEncoder(ContextValue(contexts.aggregations))
 
