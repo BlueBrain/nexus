@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
 import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.permissions.{read => Read, write => Write}
@@ -20,6 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.{Json, JsonObject}
 import monix.execution.Scheduler
 
@@ -59,6 +61,9 @@ final class ElasticSearchViewsRoutes(
 
   import schemeDirectives._
 
+  private def indexUIO(project: ProjectRef, resource: ResourceF[ElasticSearchView], mode: IndexingMode) =
+    index(project, resource, mode).toUIO
+
   def routes: Route =
     pathPrefix("views") {
       extractCaller { implicit caller =>
@@ -72,7 +77,7 @@ final class ElasticSearchViewsRoutes(
                     Created,
                     views
                       .create(ref, source)
-                      .tapEval(index(ref, _, mode))
+                      .tapEval(indexUIO(ref, _, mode))
                       .mapValue(_.metadata)
                       .rejectWhen(decodingFailedOrViewNotFound)
                   )
@@ -93,7 +98,7 @@ final class ElasticSearchViewsRoutes(
                               Created,
                               views
                                 .create(id, ref, source)
-                                .tapEval(index(ref, _, mode))
+                                .tapEval(indexUIO(ref, _, mode))
                                 .mapValue(_.metadata)
                                 .rejectWhen(decodingFailedOrViewNotFound)
                             )
@@ -102,7 +107,7 @@ final class ElasticSearchViewsRoutes(
                             emit(
                               views
                                 .update(id, ref, rev, source)
-                                .tapEval(index(ref, _, mode))
+                                .tapEval(indexUIO(ref, _, mode))
                                 .mapValue(_.metadata)
                                 .rejectWhen(decodingFailedOrViewNotFound)
                             )
@@ -115,7 +120,7 @@ final class ElasticSearchViewsRoutes(
                         emit(
                           views
                             .deprecate(id, ref, rev)
-                            .tapEval(index(ref, _, mode))
+                            .tapEval(indexUIO(ref, _, mode))
                             .mapValue(_.metadata)
                             .rejectWhen(decodingFailedOrViewNotFound)
                         )
@@ -159,7 +164,7 @@ final class ElasticSearchViewsRoutes(
                             Created,
                             views
                               .tag(id, ref, tag, tagRev, rev)
-                              .tapEval(index(ref, _, mode))
+                              .tapEval(indexUIO(ref, _, mode))
                               .mapValue(_.metadata)
                               .rejectWhen(decodingFailedOrViewNotFound)
                           )

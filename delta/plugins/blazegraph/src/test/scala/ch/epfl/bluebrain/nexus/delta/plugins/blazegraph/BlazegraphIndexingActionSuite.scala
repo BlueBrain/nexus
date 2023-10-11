@@ -20,13 +20,15 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionErr.CouldNotFindPipeErr
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{NoopSink, PipeChain, PipeRef}
-import ch.epfl.bluebrain.nexus.testkit.bio.{BioSuite, PatienceConfig}
+import ch.epfl.bluebrain.nexus.testkit.bio.PatienceConfig
+import ch.epfl.bluebrain.nexus.testkit.ce.CatsEffectSuite
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import fs2.Stream
 
 import java.time.Instant
 import scala.concurrent.duration._
 
-class BlazegraphIndexingActionSuite extends BioSuite with Fixtures {
+class BlazegraphIndexingActionSuite extends CatsEffectSuite with Fixtures {
 
   implicit private val patienceConfig: PatienceConfig = PatienceConfig(5.seconds, 10.millis)
 
@@ -162,6 +164,7 @@ class BlazegraphIndexingActionSuite extends BioSuite with Fixtures {
 
     indexingAction
       .projections(project, elem)
+      .translate(taskToIoK)
       .fold(emptyAcc) {
         case (acc, s: SuccessElem[_]) => acc.success(s.id)
         case (acc, d: DroppedElem)    => acc.drop(d.id)
@@ -169,11 +172,11 @@ class BlazegraphIndexingActionSuite extends BioSuite with Fixtures {
       }
       .compile
       .lastOrError
-      .assert(expected)
+      .assertEquals(expected)
   }
 
   test("A valid elem should be indexed") {
-    indexingAction.apply(project, elem).assert(List.empty)
+    indexingAction.apply(project, elem).assertEquals(List.empty)
   }
 
   test("A failed elem should be returned") {
@@ -187,7 +190,7 @@ class BlazegraphIndexingActionSuite extends BioSuite with Fixtures {
       rev = 1
     )
 
-    indexingAction.apply(project, failed).assert(List(failed))
+    indexingAction.apply(project, failed).assertEquals(List(failed))
   }
 
 }
