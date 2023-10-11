@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.storage.routes
 import akka.http.scaladsl.model.headers.{`WWW-Authenticate`, HttpChallenges}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.storage.StorageError._
 import ch.epfl.bluebrain.nexus.storage.auth.AuthorizationMethod
 import ch.epfl.bluebrain.nexus.storage.config.AppConfig
@@ -12,7 +13,6 @@ import ch.epfl.bluebrain.nexus.storage.routes.PrefixDirectives._
 import ch.epfl.bluebrain.nexus.storage.routes.instances._
 import ch.epfl.bluebrain.nexus.storage.{AkkaSource, Rejection, StorageError, Storages}
 import com.typesafe.scalalogging.Logger
-import monix.eval.Task
 
 import scala.util.control.NonFatal
 
@@ -84,7 +84,7 @@ object Routes {
     *   the storages operations
     */
   def apply(
-      storages: Storages[Task, AkkaSource]
+      storages: Storages[IO, AkkaSource]
   )(implicit config: AppConfig, authorizationMethod: AuthorizationMethod): Route =
     //TODO: Fetch Bearer token and verify identity
     wrap {

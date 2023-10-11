@@ -12,6 +12,7 @@ import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.storage.File.{Digest, FileAttributes}
 import ch.epfl.bluebrain.nexus.storage.Rejection.PathNotFound
 import ch.epfl.bluebrain.nexus.storage.StorageError.InternalError
@@ -24,7 +25,6 @@ import ch.epfl.bluebrain.nexus.storage.routes.instances._
 import ch.epfl.bluebrain.nexus.storage.utils.{Randomness, Resources}
 import ch.epfl.bluebrain.nexus.storage.{AkkaSource, Storages}
 import io.circe.Json
-import monix.eval.Task
 import org.mockito.{ArgumentMatchersSugar, IdiomaticMockito}
 import org.scalatest.OptionValues
 import org.scalatest.concurrent.ScalaFutures
@@ -50,7 +50,7 @@ class StorageRoutesSpec
 
   implicit val appConfig: AppConfig                     = Settings(system).appConfig
   implicit val authorizationMethod: AuthorizationMethod = AuthorizationMethod.Anonymous
-  val storages: Storages[Task, AkkaSource]              = mock[Storages[Task, AkkaSource]]
+  val storages: Storages[IO, AkkaSource]                = mock[Storages[IO, AkkaSource]]
   val route: Route                                      = Routes(storages)
 
   trait Ctx {
@@ -149,7 +149,7 @@ class StorageRoutesSpec
           eqTo(BucketExists),
           eqTo(PathDoesNotExist)
         ) shouldReturn
-          Task.raiseError(InternalError("something went wrong"))
+          IO.raiseError(InternalError("something went wrong"))
 
         Put(s"/v1/buckets/$name/files/path/to/file/$filename", multipartForm) ~> route ~> check {
           status shouldEqual InternalServerError
@@ -176,7 +176,7 @@ class StorageRoutesSpec
         storages.createFile(eqTo(name), eqTo(filePathUri), any[AkkaSource])(
           eqTo(BucketExists),
           eqTo(PathDoesNotExist)
-        ) shouldReturn Task(
+        ) shouldReturn IO(
           attributes
         )
 
@@ -223,7 +223,7 @@ class StorageRoutesSpec
         val source = "source/dir"
         val dest   = "dest/dir"
         storages.moveFile(name, Uri.Path(source), Uri.Path(dest))(BucketExists) shouldReturn
-          Task.raiseError(InternalError("something went wrong"))
+          IO.raiseError(InternalError("something went wrong"))
 
         val json = jsonContentOf("/file-link.json", Map(quote("{source}") -> source))
 
@@ -268,7 +268,7 @@ class StorageRoutesSpec
         val dest       = "dest/dir"
         val attributes = FileAttributes(s"file://some/prefix/$dest", 12L, Digest.empty, `application/octet-stream`)
         storages.moveFile(name, Uri.Path(source), Uri.Path(dest))(BucketExists) shouldReturn
-          Task.pure(Right(attributes))
+          IO.pure(Right(attributes))
 
         val json = jsonContentOf("/file-link.json", Map(quote("{source}") -> source))
 
@@ -390,7 +390,7 @@ class StorageRoutesSpec
         storages.exists(name) shouldReturn BucketExists
         val attributes  =
           FileAttributes(s"file://$filePathUri", genInt().toLong, Digest("SHA-256", genString()), `image/jpeg`)
-        storages.getAttributes(name, filePathUri) shouldReturn Task(attributes)
+        storages.getAttributes(name, filePathUri) shouldReturn IO(attributes)
         storages.pathExists(name, filePathUri) shouldReturn PathExists
 
         Get(s"/v1/buckets/$name/attributes/$filename") ~> Accept(`*/*`) ~> route ~> check {
@@ -416,7 +416,7 @@ class StorageRoutesSpec
       "return empty attributes" in new RandomFile {
         val filePathUri = Uri.Path(s"$filename")
         storages.exists(name) shouldReturn BucketExists
-        storages.getAttributes(name, filePathUri) shouldReturn Task(
+        storages.getAttributes(name, filePathUri) shouldReturn IO(
           FileAttributes(s"file://$filePathUri", 0L, Digest.empty, `application/octet-stream`)
         )
         storages.pathExists(name, filePathUri) shouldReturn PathExists
