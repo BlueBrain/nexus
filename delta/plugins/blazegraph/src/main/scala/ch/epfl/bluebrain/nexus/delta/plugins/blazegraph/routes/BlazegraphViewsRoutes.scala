@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive0, Route}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.permissions.{read => Read, write => Write}
@@ -13,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction
+import ch.epfl.bluebrain.nexus.delta.sdk.{IndexingAction, IndexingMode}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaDirectives, DeltaSchemeDirectives}
@@ -25,7 +26,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.Json
 import monix.execution.Scheduler
@@ -66,6 +67,9 @@ class BlazegraphViewsRoutes(
 
   import schemeDirectives._
 
+  private def indexUIO(project: ProjectRef, resource: ResourceF[BlazegraphView], mode: IndexingMode) =
+    index(project, resource, mode).toUIO
+
   def routes: Route =
     concat(
       pathPrefix("views") {
@@ -79,7 +83,7 @@ class BlazegraphViewsRoutes(
                     Created,
                     views
                       .create(ref, source)
-                      .tapEval(index(ref, _, mode))
+                      .tapEval(indexUIO(ref, _, mode))
                       .mapValue(_.metadata)
                       .rejectWhen(decodingFailedOrViewNotFound)
                   )
@@ -98,7 +102,7 @@ class BlazegraphViewsRoutes(
                                 Created,
                                 views
                                   .create(id, ref, source)
-                                  .tapEval(index(ref, _, mode))
+                                  .tapEval(indexUIO(ref, _, mode))
                                   .mapValue(_.metadata)
                                   .rejectWhen(decodingFailedOrViewNotFound)
                               )
@@ -107,7 +111,7 @@ class BlazegraphViewsRoutes(
                               emit(
                                 views
                                   .update(id, ref, rev, source)
-                                  .tapEval(index(ref, _, mode))
+                                  .tapEval(indexUIO(ref, _, mode))
                                   .mapValue(_.metadata)
                                   .rejectWhen(decodingFailedOrViewNotFound)
                               )
@@ -120,7 +124,7 @@ class BlazegraphViewsRoutes(
                           emit(
                             views
                               .deprecate(id, ref, rev)
-                              .tapEval(index(ref, _, mode))
+                              .tapEval(indexUIO(ref, _, mode))
                               .mapValue(_.metadata)
                               .rejectOn[ViewNotFound]
                           )
@@ -163,7 +167,7 @@ class BlazegraphViewsRoutes(
                               Created,
                               views
                                 .tag(id, ref, tag, tagRev, rev)
-                                .tapEval(index(ref, _, mode))
+                                .tapEval(indexUIO(ref, _, mode))
                                 .mapValue(_.metadata)
                                 .rejectOn[ViewNotFound]
                             )

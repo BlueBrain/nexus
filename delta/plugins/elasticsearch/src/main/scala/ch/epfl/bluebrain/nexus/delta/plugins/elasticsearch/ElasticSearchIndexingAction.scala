@@ -32,11 +32,10 @@ final class ElasticSearchIndexingAction(
     compilePipeChain: PipeChain => Either[ProjectionErr, Operation],
     sink: ActiveViewDef => Sink,
     override val timeout: FiniteDuration
-) extends IndexingAction {
+)(implicit cr: RemoteContextResolution)
+    extends IndexingAction {
 
-  private def compile(view: IndexingViewDef, elem: Elem[GraphResource])(implicit
-      cr: RemoteContextResolution
-  ): Task[Option[CompiledProjection]] = view match {
+  private def compile(view: IndexingViewDef, elem: Elem[GraphResource]): Task[Option[CompiledProjection]] = view match {
     // Synchronous indexing only applies to views that index the latest version
     case active: ActiveViewDef if active.selectFilter.tag == Tag.latest =>
       IndexingViewDef
@@ -51,9 +50,7 @@ final class ElasticSearchIndexingAction(
     case _: DeprecatedViewDef                                           => UIO.none
   }
 
-  def projections(project: ProjectRef, elem: Elem[GraphResource])(implicit
-      cr: RemoteContextResolution
-  ): ElemStream[CompiledProjection] =
+  def projections(project: ProjectRef, elem: Elem[GraphResource]): ElemStream[CompiledProjection] =
     fetchCurrentViews(project).evalMap { _.evalMapFilter(compile(_, elem)) }
 }
 object ElasticSearchIndexingAction {
@@ -64,7 +61,7 @@ object ElasticSearchIndexingAction {
       client: ElasticSearchClient,
       timeout: FiniteDuration,
       syncIndexingRefresh: Refresh
-  ): ElasticSearchIndexingAction = {
+  )(implicit cr: RemoteContextResolution): ElasticSearchIndexingAction = {
     val batchConfig = BatchConfig.individual
     new ElasticSearchIndexingAction(
       views.currentIndexingViews,

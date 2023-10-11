@@ -6,6 +6,7 @@ import akka.http.scaladsl.model.headers.Accept
 import akka.http.scaladsl.model.{ContentType, MediaRange}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{File, FileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.permissions.{read => Read, write => Write}
@@ -24,7 +25,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, IdSegmentRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, IdSegmentRef, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.Decoder
 import io.circe.generic.extras.Configuration
@@ -68,6 +69,9 @@ final class FilesRoutes(
   import baseUri.prefixSegment
   import schemeDirectives._
 
+  private def indexUIO(project: ProjectRef, resource: ResourceF[File], mode: IndexingMode) =
+    index(project, resource, mode).toUIO
+
   def routes: Route =
     (baseUriPrefix(baseUri.prefix) & replaceUri("files", schemas.files)) {
       pathPrefix("files") {
@@ -83,12 +87,12 @@ final class FilesRoutes(
                     entity(as[LinkFile]) { case LinkFile(filename, mediaType, path) =>
                       emit(
                         Created,
-                        files.createLink(storage, ref, filename, mediaType, path).tapEval(index(ref, _, mode))
+                        files.createLink(storage, ref, filename, mediaType, path).tapEval(indexUIO(ref, _, mode))
                       )
                     },
                     // Create a file without id segment
                     extractRequestEntity { entity =>
-                      emit(Created, files.create(storage, ref, entity).tapEval(index(ref, _, mode)))
+                      emit(Created, files.create(storage, ref, entity).tapEval(indexUIO(ref, _, mode)))
                     }
                   )
                 }
@@ -108,12 +112,12 @@ final class FilesRoutes(
                                     Created,
                                     files
                                       .createLink(id, storage, ref, filename, mediaType, path)
-                                      .tapEval(index(ref, _, mode))
+                                      .tapEval(indexUIO(ref, _, mode))
                                   )
                                 },
                                 // Create a file with id segment
                                 extractRequestEntity { entity =>
-                                  emit(Created, files.create(id, storage, ref, entity).tapEval(index(ref, _, mode)))
+                                  emit(Created, files.create(id, storage, ref, entity).tapEval(indexUIO(ref, _, mode)))
                                 }
                               )
                             case (Some(rev), storage) =>
@@ -123,12 +127,12 @@ final class FilesRoutes(
                                   emit(
                                     files
                                       .updateLink(id, storage, ref, filename, mediaType, path, rev)
-                                      .tapEval(index(ref, _, mode))
+                                      .tapEval(indexUIO(ref, _, mode))
                                   )
                                 },
                                 // Update a file
                                 extractRequestEntity { entity =>
-                                  emit(files.update(id, storage, ref, rev, entity).tapEval(index(ref, _, mode)))
+                                  emit(files.update(id, storage, ref, rev, entity).tapEval(indexUIO(ref, _, mode)))
                                 }
                               )
                           }
@@ -136,7 +140,7 @@ final class FilesRoutes(
                         // Deprecate a file
                         (delete & parameter("rev".as[Int])) { rev =>
                           authorizeFor(ref, Write).apply {
-                            emit(files.deprecate(id, ref, rev).tapEval(index(ref, _, mode)).rejectOn[FileNotFound])
+                            emit(files.deprecate(id, ref, rev).tapEval(indexUIO(ref, _, mode)).rejectOn[FileNotFound])
                           }
                         },
                         // Fetch a file
@@ -161,7 +165,7 @@ final class FilesRoutes(
                         (post & parameter("rev".as[Int]) & pathEndOrSingleSlash) { rev =>
                           authorizeFor(ref, Write).apply {
                             entity(as[Tag]) { case Tag(tagRev, tag) =>
-                              emit(Created, files.tag(id, ref, tag, tagRev, rev).tapEval(index(ref, _, mode)))
+                              emit(Created, files.tag(id, ref, tag, tagRev, rev).tapEval(indexUIO(ref, _, mode)))
                             }
                           }
                         },
@@ -170,7 +174,9 @@ final class FilesRoutes(
                           ref,
                           Write
                         )) { (tag, rev) =>
-                          emit(files.deleteTag(id, ref, tag, rev).tapEval(index(ref, _, mode)).rejectOn[FileNotFound])
+                          emit(
+                            files.deleteTag(id, ref, tag, rev).tapEval(indexUIO(ref, _, mode)).rejectOn[FileNotFound]
+                          )
                         }
                       )
                     }

@@ -17,7 +17,7 @@ final case class BatchConfig(maxElements: Int, maxInterval: FiniteDuration)
 
 object BatchConfig {
 
-  val individual = BatchConfig(1, 5.millis)
+  val individual = BatchConfig(1, 200.millis)
 
   implicit final val batchConfigReader: ConfigReader[BatchConfig] =
     deriveReader[BatchConfig]

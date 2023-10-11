@@ -16,6 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
+import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction.AggregateIndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.ProjectDeletionTask
@@ -171,7 +172,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         aclCheck: AclCheck,
         views: ElasticSearchViews,
         schemeDirectives: DeltaSchemeDirectives,
-        indexingAction: IndexingAction @Id("aggregate"),
+        indexingAction: AggregateIndexingAction,
         viewsQuery: ElasticSearchViewsQuery,
         shift: ElasticSearchView.Shift,
         baseUri: BaseUri,
@@ -186,7 +187,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         views,
         viewsQuery,
         schemeDirectives,
-        indexingAction(_, _, _)(shift, cr)
+        indexingAction(_, _, _)(shift)
       )(
         baseUri,
         s,
@@ -371,9 +372,10 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         views: ElasticSearchViews,
         registry: ReferenceRegistry,
         client: ElasticSearchClient,
-        config: ElasticSearchViewsConfig
+        config: ElasticSearchViewsConfig,
+        cr: RemoteContextResolution @Id("aggregate")
     ) =>
-      ElasticSearchIndexingAction(views, registry, client, config.syncIndexingTimeout, config.syncIndexingRefresh)
+      ElasticSearchIndexingAction(views, registry, client, config.syncIndexingTimeout, config.syncIndexingRefresh)(cr)
   }
 
   make[ElasticSearchView.Shift].fromEffect { (views: ElasticSearchViews, base: BaseUri) =>
