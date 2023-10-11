@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
-import cats.effect.{Clock, Sync}
+import cats.effect.{Clock, IO, Sync, Timer}
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceShifts
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{ProjectionConfig, QueryConfig}
@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes._
 import ch.epfl.bluebrain.nexus.delta.sourcing.{DeleteExpired, PurgeElemFailures, Transactors}
 import izumi.distage.model.definition.ModuleDef
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import monix.bio.{Task, UIO}
 
 /**
@@ -55,8 +56,8 @@ object StreamModule extends ModuleDef {
   }
 
   make[DeleteExpired].fromEffect {
-    (supervisor: Supervisor, config: ProjectionConfig, xas: Transactors, clock: Clock[UIO]) =>
-      DeleteExpired(supervisor, config, xas)(clock)
+    (supervisor: Supervisor, config: ProjectionConfig, xas: Transactors, clock: Clock[IO], timer: Timer[IO]) =>
+      DeleteExpired(supervisor, config, xas)(clock, timer).toUIO
   }
 
   make[PurgeElemFailures].fromEffect {

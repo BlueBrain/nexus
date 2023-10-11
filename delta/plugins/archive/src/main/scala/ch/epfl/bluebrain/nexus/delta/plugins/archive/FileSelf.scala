@@ -1,15 +1,17 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.archive
 
 import akka.http.scaladsl.model.Uri
+import cats.effect.IO
+import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
-import ch.epfl.bluebrain.nexus.delta.plugins.archive.FileSelf.ParsingError
-import ch.epfl.bluebrain.nexus.delta.plugins.archive.FileSelf.ParsingError.{ExternalLink, InvalidFileId, InvalidPath, InvalidProject, InvalidProjectContext}
+import ch.epfl.bluebrain.nexus.delta.plugins.archive.FileSelf.ParsingError._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.error.SDKError
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
-import monix.bio.IO
 
 /**
   * Attempts to parse an incoming iri/uri as in order to extract file identifiers if it is a valid file "_self".
@@ -18,10 +20,10 @@ import monix.bio.IO
   */
 trait FileSelf {
 
-  def parse(input: Uri): IO[ParsingError, (ProjectRef, ResourceRef)] =
+  def parse(input: Uri): IO[(ProjectRef, ResourceRef)] =
     parse(input.toIri)
 
-  def parse(input: Iri): IO[ParsingError, (ProjectRef, ResourceRef)]
+  def parse(input: Iri): IO[(ProjectRef, ResourceRef)]
 }
 
 object FileSelf {
@@ -29,8 +31,10 @@ object FileSelf {
   /**
     * Enumeration of errors that can be raised while attempting to resolve a self
     */
-  sealed trait ParsingError extends Product with Serializable {
+  sealed trait ParsingError extends SDKError {
     def message: String
+
+    override def getMessage: String = message
   }
 
   object ParsingError {
@@ -83,7 +87,7 @@ object FileSelf {
     val filePrefixIri = baseUri.iriEndpoint / "files" / ""
 
     new FileSelf {
-      override def parse(input: Iri): IO[ParsingError, (ProjectRef, ResourceRef)] =
+      override def parse(input: Iri): IO[(ProjectRef, ResourceRef)] =
         validateSelfPrefix(input) >> parseSelf(input)
 
       private def validateSelfPrefix(self: Iri) =
@@ -92,18 +96,18 @@ object FileSelf {
         else
           IO.raiseError(ParsingError.NonAbsoluteLink(self))
 
-      private def parseSelf(self: Iri): IO[ParsingError, (ProjectRef, ResourceRef)] =
+      private def parseSelf(self: Iri): IO[(ProjectRef, ResourceRef)] =
         self.stripPrefix(filePrefixIri).split('/') match {
           case Array(org, project, id) =>
             for {
-              project        <- IO.fromEither(ProjectRef.parse(org, project)).mapError(_ => InvalidProject(self))
-              projectContext <- fetchContext.onRead(project).mapError { _ => InvalidProjectContext(self, project) }
+              project        <- IO.fromEither(ProjectRef.parse(org, project).leftMap(_ => InvalidProject(self)))
+              projectContext <- toCatsIO(
+                                  fetchContext.onRead(project).mapError { _ => InvalidProjectContext(self, project) }
+                                )
               decodedId       = UrlUtils.decode(id)
-              resourceRef    <-
-                IO.fromOption(
-                  IdSegment(decodedId).toIri(projectContext.apiMappings, projectContext.base).map(ResourceRef(_)),
-                  InvalidFileId(self)
-                )
+              iriOption       =
+                IdSegment(decodedId).toIri(projectContext.apiMappings, projectContext.base).map(ResourceRef(_))
+              resourceRef    <- IO.fromOption(iriOption)(InvalidFileId(self))
             } yield {
               (project, resourceRef)
             }

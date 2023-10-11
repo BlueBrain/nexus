@@ -5,7 +5,6 @@ import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
-import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -13,8 +12,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.ce.CatsResponseToJsonLd
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import monix.bio.{IO => BIO, UIO}
 import monix.execution.Scheduler
-
-import scala.reflect.ClassTag
 
 /**
   * Redirection response magnet.
@@ -52,12 +49,12 @@ object ResponseToRedirect {
         }
     }
 
-  implicit def ioRedirectWithError[E <: Throwable: ClassTag: JsonLdEncoder: HttpResponseFields](
-      io: IO[Uri]
+  implicit def ioRedirectWithError[E <: Throwable: JsonLdEncoder: HttpResponseFields](
+      io: IO[Either[E, Uri]]
   )(implicit cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToRedirect =
     new ResponseToRedirect {
       override def apply(redirection: Redirection): Route =
-        onSuccess(io.attemptNarrow[E].unsafeToFuture()) {
+        onSuccess(io.unsafeToFuture()) {
           case Left(value)     => CatsResponseToJsonLd.valueWithHttpResponseFields[E](value).apply(None)
           case Right(location) => redirect(location, redirection)
         }

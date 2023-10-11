@@ -19,6 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.rejection.Rejection
 import io.circe.syntax.EncoderOps
 import io.circe.{Encoder, JsonObject}
 
@@ -28,7 +29,7 @@ import io.circe.{Encoder, JsonObject}
   * @param reason
   *   a descriptive message as to why the rejection occurred
   */
-sealed abstract class ArchiveRejection(val reason: String) extends Product with Serializable
+sealed abstract class ArchiveRejection(val reason: String) extends Rejection
 
 object ArchiveRejection {
 

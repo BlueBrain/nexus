@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.testkit.ce
 
-import cats.effect.IO
+import cats.effect.{ContextShift, IO, Timer}
 import org.scalactic.source
 import org.scalatest.Assertion
 import org.scalatest.Assertions._
@@ -9,6 +9,9 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.ClassTag
 
 trait CatsIOValues extends CatsIOValuesLowPrio {
+
+  implicit val contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
+  implicit val timer: Timer[IO]               = IO.timer(ExecutionContext.global)
 
   implicit def ioToFutureAssertion(io: IO[Assertion]): Future[Assertion] = io.unsafeToFuture()
 

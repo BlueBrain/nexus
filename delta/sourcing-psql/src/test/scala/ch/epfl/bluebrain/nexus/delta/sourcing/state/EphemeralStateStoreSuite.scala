@@ -6,16 +6,15 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.{DeleteExpired, Message}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Message.MessageState
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.testkit.IOFixedClock
-import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
+import ch.epfl.bluebrain.nexus.testkit.ce.{CatsEffectSuite, IOFixedClock}
 import doobie.implicits._
 import munit.AnyFixture
 
 import java.time.Instant
 import scala.concurrent.duration._
 
-class EphemeralStateStoreSuite extends BioSuite with Doobie.Fixture with Doobie.Assertions {
+class EphemeralStateStoreSuite extends CatsEffectSuite with Doobie.Fixture with Doobie.Assertions {
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 
   private lazy val xas = doobie()
@@ -37,12 +36,12 @@ class EphemeralStateStoreSuite extends BioSuite with Doobie.Fixture with Doobie.
   private val m2       = nxv + "m2"
   private val message2 = MessageState(m2, project1, "Bye !", alice, Instant.EPOCH.plusSeconds(60L), Anonymous)
 
-  private lazy val deleteExpired = new DeleteExpired(xas)(IOFixedClock.ioClock(Instant.EPOCH.plusSeconds(6L)))
+  private lazy val deleteExpired = new DeleteExpired(xas)(IOFixedClock.ceClock(Instant.EPOCH.plusSeconds(6L)))
 
   test("save the states") {
     for {
-      _ <- store.save(message1).transact(xas.write).assert(())
-      _ <- store.save(message2).transact(xas.write).assert(())
+      _ <- store.save(message1).transact(xas.writeCE).assert
+      _ <- store.save(message2).transact(xas.writeCE).assert
     } yield ()
   }
 

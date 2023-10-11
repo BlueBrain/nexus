@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.archive
 
-import cats.effect.Clock
+import cats.effect.{Clock, ContextShift, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.contexts
@@ -13,17 +13,15 @@ import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef, MetadataContextValue}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, MetadataContextValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.execution.EvaluationExecution
 import com.typesafe.config.Config
 import izumi.distage.model.definition.{Id, ModuleDef}
-import monix.bio.UIO
-import monix.execution.Scheduler
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 
 /**
   * Archive plugin wiring.
@@ -31,24 +29,20 @@ import monix.execution.Scheduler
 object ArchivePluginModule extends ModuleDef {
   implicit private val classLoader: ClassLoader = getClass.getClassLoader
 
-  make[ArchivePluginConfig].fromEffect { cfg: Config => ArchivePluginConfig.load(cfg) }
+  make[ArchivePluginConfig].fromEffect { cfg: Config => ArchivePluginConfig.load(cfg).toUIO }
 
   make[ArchiveDownload].from {
     (
         aclCheck: AclCheck,
         shifts: ResourceShifts,
         files: Files,
+        fileSelf: FileSelf,
         sort: JsonKeyOrdering,
         baseUri: BaseUri,
         rcr: RemoteContextResolution @Id("aggregate"),
-        fileSelf: FileSelf
+        contextShift: ContextShift[IO]
     ) =>
-      ArchiveDownload(
-        aclCheck,
-        shifts.fetch,
-        (id: ResourceRef, project: ProjectRef, caller: Caller) => files.fetchContent(IdSegmentRef(id), project)(caller),
-        fileSelf
-      )(sort, baseUri, rcr)
+      ArchiveDownload(aclCheck, shifts, files, fileSelf)(sort, baseUri, rcr, contextShift)
   }
 
   make[FileSelf].from { (fetchContext: FetchContext[ContextRejection], baseUri: BaseUri) =>
@@ -64,13 +58,15 @@ object ArchivePluginModule extends ModuleDef {
         api: JsonLdApi,
         uuidF: UUIDF,
         rcr: RemoteContextResolution @Id("aggregate"),
-        clock: Clock[UIO]
+        clock: Clock[IO],
+        ec: EvaluationExecution
     ) =>
       Archives(fetchContext.mapRejection(ProjectContextRejection), archiveDownload, cfg, xas)(
         api,
         uuidF,
         rcr,
-        clock
+        clock,
+        ec
       )
   }
 
@@ -82,10 +78,9 @@ object ArchivePluginModule extends ModuleDef {
         schemeDirectives: DeltaSchemeDirectives,
         baseUri: BaseUri,
         rcr: RemoteContextResolution @Id("aggregate"),
-        jko: JsonKeyOrdering,
-        sc: Scheduler
+        jko: JsonKeyOrdering
     ) =>
-      new ArchiveRoutes(archives, identities, aclCheck, schemeDirectives)(baseUri, rcr, jko, sc)
+      new ArchiveRoutes(archives, identities, aclCheck, schemeDirectives)(baseUri, rcr, jko)
   }
 
   many[PriorityRoute].add { (cfg: ArchivePluginConfig, routes: ArchiveRoutes) =>

@@ -30,6 +30,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.plugin.PluginDef
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{OwnerPermissionsScopeInitialization, ProjectsConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{DatabaseConfig, ProjectionConfig, QueryConfig}
+import ch.epfl.bluebrain.nexus.delta.sourcing.execution.EvaluationExecution
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import com.typesafe.config.Config
 import izumi.distage.model.definition.{Id, ModuleDef}
@@ -106,6 +107,7 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
   make[Clock[IO]].from(Clock.create[IO])
   make[Timer[IO]].from(IO.timer(ExecutionContext.global))
   make[ContextShift[IO]].from(IO.contextShift(ExecutionContext.global))
+  make[EvaluationExecution].from(EvaluationExecution(_, _))
   make[UUIDF].from(UUIDF.random)
   make[Scheduler].from(scheduler)
   make[JsonKeyOrdering].from(

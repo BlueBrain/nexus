@@ -7,16 +7,16 @@ import akka.stream.scaladsl.Source
 import akka.testkit.TestKit
 import akka.util.ByteString
 import cats.data.NonEmptySet
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils.encode
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.FileSelf.ParsingError
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.{FileReference, FileSelfReference, ResourceReference}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.{AuthorizationFailed, InvalidFileSelf, ResourceNotFound}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRepresentation.{CompactedJsonLd, Dot, ExpandedJsonLd, NQuads, NTriples, SourceJson}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.{ArchiveRejection, ArchiveValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.RemoteContextResolutionFixture
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.FileNotFound
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{Digest, FileAttributes, FileRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{Digest, FileAttributes}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{schemas, FileGen}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.AbsolutePath
@@ -32,16 +32,16 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRepresentation.{CompactedJsonLd, Dot, ExpandedJsonLd, NQuads, NTriples, SourceJson}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.testkit.archive.ArchiveHelpers
-import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOValues, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.ce.CatsIOValues
+import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, TestHelpers}
 import io.circe.syntax.EncoderOps
-import monix.bio.{IO, UIO}
-import monix.execution.Scheduler.Implicits.global
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{Inspectors, OptionValues}
@@ -55,7 +55,7 @@ class ArchiveDownloadSpec
     with AnyWordSpecLike
     with Inspectors
     with EitherValuable
-    with IOValues
+    with CatsIOValues
     with OptionValues
     with TestHelpers
     with StorageFixtures
@@ -109,13 +109,13 @@ class ArchiveDownloadSpec
     val file2                = FileGen.resourceFor(id2, projectRef, storageRef, fileAttributes(file2Name, file2Size))
     val file2Content: String = "file content 2"
 
-    val fetchResource: (Iri, ProjectRef) => UIO[Option[JsonLdContent[_, _]]] = {
+    val fetchResource: (Iri, ProjectRef) => IO[Option[JsonLdContent[_, _]]] = {
       case (`id1`, `projectRef`) =>
-        UIO.some(JsonLdContent(file1, file1.value.asJson, None))
+        IO.pure(Some(JsonLdContent(file1, file1.value.asJson, None)))
       case (`id2`, `projectRef`) =>
-        UIO.some(JsonLdContent(file2, file2.value.asJson, None))
+        IO.pure(Some(JsonLdContent(file2, file2.value.asJson, None)))
       case _                     =>
-        UIO.none
+        IO.none
     }
 
     val file1SelfIri: Iri  = file1Self.toIri
@@ -124,7 +124,7 @@ class ArchiveDownloadSpec
       case other          => IO.raiseError(ParsingError.InvalidPath(other))
     }
 
-    val fetchFileContent: (Iri, ProjectRef) => IO[FileRejection, FileResponse] = {
+    val fetchFileContent: (Iri, ProjectRef) => IO[FileResponse] = {
       case (`id1`, `projectRef`) =>
         IO.pure(
           FileResponse(file1Name, ContentTypes.`text/plain(UTF-8)`, file1Size, Source.single(ByteString(file1Content)))
@@ -154,7 +154,7 @@ class ArchiveDownloadSpec
 
     def rejectedAccess(value: ArchiveValue) = {
       archiveDownload
-        .apply(value, project.ref, ignoreNotFound = true)(Caller.Anonymous, global)
+        .apply(value, project.ref, ignoreNotFound = true)(Caller.Anonymous)
         .rejectedWith[AuthorizationFailed]
     }
 
