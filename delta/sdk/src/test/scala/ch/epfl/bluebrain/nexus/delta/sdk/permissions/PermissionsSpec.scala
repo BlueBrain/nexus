@@ -80,49 +80,49 @@ class PermissionsSpec extends AnyWordSpecLike with Matchers with CatsIOValues wi
         val state    = initial
         val cmd      = ReplacePermissions(1, appended, subjectNext)
         val expected = IncorrectRev(1, 0)
-        eval(state, cmd).rejected2 shouldEqual expected
+        eval(state, cmd).rejected shouldEqual expected
       }
       "state is initial and command is AppendPermissions" in {
         val state    = initial
         val cmd      = AppendPermissions(1, appended, subjectNext)
         val expected = IncorrectRev(1, 0)
-        eval(state, cmd).rejected2 shouldEqual expected
+        eval(state, cmd).rejected shouldEqual expected
       }
       "state is initial and command is SubtractPermissions" in {
         val state    = initial
         val cmd      = SubtractPermissions(1, subtracted, subjectNext)
         val expected = IncorrectRev(1, 0)
-        eval(state, cmd).rejected2 shouldEqual expected
+        eval(state, cmd).rejected shouldEqual expected
       }
       "state is initial and command is DeletePermissions" in {
         val state    = initial
         val cmd      = DeletePermissions(1, subjectNext)
         val expected = IncorrectRev(1, 0)
-        eval(state, cmd).rejected2 shouldEqual expected
+        eval(state, cmd).rejected shouldEqual expected
       }
       "state is current and command is ReplacePermissions" in {
         val state    = PermissionsState(1, minimum, epoch, subject, epoch, subject)
         val cmd      = ReplacePermissions(2, appended, subjectNext)
         val expected = IncorrectRev(2, 1)
-        eval(state, cmd).rejected2 shouldEqual expected
+        eval(state, cmd).rejected shouldEqual expected
       }
       "state is current and command is AppendPermissions" in {
         val state    = PermissionsState(1, minimum, epoch, subject, epoch, subject)
         val cmd      = AppendPermissions(2, appended, subjectNext)
         val expected = IncorrectRev(2, 1)
-        eval(state, cmd).rejected2 shouldEqual expected
+        eval(state, cmd).rejected shouldEqual expected
       }
       "state is current and command is SubtractPermissions" in {
         val state    = PermissionsState(1, minimum, epoch, subject, epoch, subject)
         val cmd      = SubtractPermissions(2, subtracted, subjectNext)
         val expected = IncorrectRev(2, 1)
-        eval(state, cmd).rejected2 shouldEqual expected
+        eval(state, cmd).rejected shouldEqual expected
       }
       "state is current and command is DeletePermissions" in {
         val state    = PermissionsState(1, minimum, epoch, subject, epoch, subject)
         val cmd      = DeletePermissions(2, subjectNext)
         val expected = IncorrectRev(2, 1)
-        eval(state, cmd).rejected2 shouldEqual expected
+        eval(state, cmd).rejected shouldEqual expected
       }
     }
 
@@ -130,12 +130,12 @@ class PermissionsSpec extends AnyWordSpecLike with Matchers with CatsIOValues wi
       "the provided permission set is empty" in {
         val state = PermissionsState(1, minimum, epoch, subject, epoch, subject)
         val cmd   = ReplacePermissions(1, Set.empty, subjectNext)
-        eval(state, cmd).rejected2 shouldEqual CannotReplaceWithEmptyCollection
+        eval(state, cmd).rejected shouldEqual CannotReplaceWithEmptyCollection
       }
       "the provided permission set is minimum" in {
         val state = PermissionsState(1, minimum, epoch, subject, epoch, subject)
         val cmd   = ReplacePermissions(1, minimum, subjectNext)
-        eval(state, cmd).rejected2 shouldEqual CannotReplaceWithEmptyCollection
+        eval(state, cmd).rejected shouldEqual CannotReplaceWithEmptyCollection
       }
     }
 
@@ -143,22 +143,22 @@ class PermissionsSpec extends AnyWordSpecLike with Matchers with CatsIOValues wi
       "the provided permission set is empty" in {
         val state = PermissionsState(1, minimum, epoch, subject, epoch, subject)
         val cmd   = AppendPermissions(1, Set.empty, subjectNext)
-        eval(state, cmd).rejected2 shouldEqual CannotAppendEmptyCollection
+        eval(state, cmd).rejected shouldEqual CannotAppendEmptyCollection
       }
       "the provided permission set is minimum while state is initial" in {
         val state = initial
         val cmd   = AppendPermissions(0, minimum, subjectNext)
-        eval(state, cmd).rejected2 shouldEqual CannotAppendEmptyCollection
+        eval(state, cmd).rejected shouldEqual CannotAppendEmptyCollection
       }
       "the provided permission set is minimum while state is current" in {
         val state = PermissionsState(1, minimum, epoch, subject, epoch, subject)
         val cmd   = AppendPermissions(1, minimum, subjectNext)
-        eval(state, cmd).rejected2 shouldEqual CannotAppendEmptyCollection
+        eval(state, cmd).rejected shouldEqual CannotAppendEmptyCollection
       }
       "the provided permission set is a subset of the current permissions" in {
         val state = PermissionsState(1, minimum ++ appended, epoch, subject, epoch, subject)
         val cmd   = AppendPermissions(1, appended, subjectNext)
-        eval(state, cmd).rejected2 shouldEqual CannotAppendEmptyCollection
+        eval(state, cmd).rejected shouldEqual CannotAppendEmptyCollection
       }
     }
 
@@ -166,7 +166,7 @@ class PermissionsSpec extends AnyWordSpecLike with Matchers with CatsIOValues wi
       "the provided permission set is empty" in {
         val state = PermissionsState(1, minimum, epoch, subject, epoch, subject)
         val cmd   = SubtractPermissions(1, Set.empty, subjectNext)
-        eval(state, cmd).rejected2 shouldEqual CannotSubtractEmptyCollection
+        eval(state, cmd).rejected shouldEqual CannotSubtractEmptyCollection
       }
     }
 
@@ -174,17 +174,17 @@ class PermissionsSpec extends AnyWordSpecLike with Matchers with CatsIOValues wi
       "the provided permission set is minimum and state is initial" in {
         val state = initial
         val cmd   = SubtractPermissions(0, minimum, subjectNext)
-        eval(state, cmd).rejected2 shouldEqual CannotSubtractFromMinimumCollection(minimum)
+        eval(state, cmd).rejected shouldEqual CannotSubtractFromMinimumCollection(minimum)
       }
       "the provided permission set is minimum and state has more permissions" in {
         val state = PermissionsState(1, minimum ++ appended, epoch, subject, epoch, subject)
         val cmd   = SubtractPermissions(1, minimum, subjectNext)
-        eval(state, cmd).rejected2 shouldEqual CannotSubtractFromMinimumCollection(minimum)
+        eval(state, cmd).rejected shouldEqual CannotSubtractFromMinimumCollection(minimum)
       }
       "the provided permission set is minimum" in {
         val state = PermissionsState(1, minimum, epoch, subject, epoch, subject)
         val cmd   = SubtractPermissions(1, minimum, subjectNext)
-        eval(state, cmd).rejected2 shouldEqual CannotSubtractFromMinimumCollection(minimum)
+        eval(state, cmd).rejected shouldEqual CannotSubtractFromMinimumCollection(minimum)
       }
     }
 
@@ -192,7 +192,7 @@ class PermissionsSpec extends AnyWordSpecLike with Matchers with CatsIOValues wi
       "the provided permissions are not included in the set" in {
         val state = PermissionsState(1, minimum ++ appended, epoch, subject, epoch, subject)
         val cmd   = SubtractPermissions(1, minimum ++ subtracted ++ unknown, subjectNext)
-        eval(state, cmd).rejected2 shouldEqual CannotSubtractUndefinedPermissions(unknown)
+        eval(state, cmd).rejected shouldEqual CannotSubtractUndefinedPermissions(unknown)
       }
     }
 
@@ -200,12 +200,12 @@ class PermissionsSpec extends AnyWordSpecLike with Matchers with CatsIOValues wi
       "the state is initial" in {
         val state = initial
         val cmd   = DeletePermissions(0, subjectNext)
-        eval(state, cmd).rejected2 shouldEqual CannotDeleteMinimumCollection
+        eval(state, cmd).rejected shouldEqual CannotDeleteMinimumCollection
       }
       "the current permission set is the minimum" in {
         val state = PermissionsState(1, minimum, epoch, subject, epoch, subject)
         val cmd   = DeletePermissions(1, subjectNext)
-        eval(state, cmd).rejected2 shouldEqual CannotDeleteMinimumCollection
+        eval(state, cmd).rejected shouldEqual CannotDeleteMinimumCollection
       }
     }
 
