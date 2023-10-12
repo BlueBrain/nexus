@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
 import akka.actor.typed.ActorSystem
 import cats.effect.Clock
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.DeltaClient
@@ -103,7 +104,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
       ValidateCompositeView(
         aclCheck,
         projects,
-        permissions.fetchPermissionSet,
+        permissions.fetchPermissionSet.toUIO,
         client,
         deltaClient,
         config.prefix,

@@ -19,6 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import monix.execution.Scheduler
 
 /**
@@ -36,7 +37,7 @@ object AclsModule extends ModuleDef {
         clock: Clock[UIO]
     ) =>
       acls.AclsImpl(
-        permissions.fetchPermissionSet,
+        permissions.fetchPermissionSet.toUIO,
         AclsImpl.findUnknownRealms(xas),
         permissions.minimum,
         config.acls,

@@ -23,6 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
@@ -103,7 +104,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         xas: Transactors
     ) =>
       ValidateBlazegraphView(
-        permissions.fetchPermissionSet,
+        permissions.fetchPermissionSet.toUIO,
         config.maxViewRefs,
         xas
       )

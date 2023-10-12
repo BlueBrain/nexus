@@ -13,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.error.{AuthTokenError, IdentityError, ServiceError}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.PermissionsRejection
 import com.typesafe.scalalogging.Logger
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
@@ -32,11 +33,12 @@ object RdfExceptionHandler {
       base: BaseUri
   ): ExceptionHandler =
     ExceptionHandler {
-      case err: IdentityError  => discardEntityAndForceEmit(err)
-      case err: AuthTokenError => discardEntityAndForceEmit(err)
-      case AuthorizationFailed => discardEntityAndForceEmit(AuthorizationFailed: ServiceError)
-      case err: RdfError       => discardEntityAndForceEmit(err)
-      case err: Throwable      =>
+      case err: IdentityError        => discardEntityAndForceEmit(err)
+      case err: PermissionsRejection => discardEntityAndForceEmit(err)
+      case err: AuthTokenError       => discardEntityAndForceEmit(err)
+      case AuthorizationFailed       => discardEntityAndForceEmit(AuthorizationFailed: ServiceError)
+      case err: RdfError             => discardEntityAndForceEmit(err)
+      case err: Throwable            =>
         logger.error(s"An exception was thrown while evaluating a Route'", err)
         discardEntityAndForceEmit(UnexpectedError)
     }
