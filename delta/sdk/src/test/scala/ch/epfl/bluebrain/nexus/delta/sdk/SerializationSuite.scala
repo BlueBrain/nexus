@@ -30,8 +30,8 @@ abstract class SerializationSuite
 
   implicit def res: RemoteContextResolution =
     RemoteContextResolution.fixed(
-      contexts.shacl           -> ContextValue.fromFile("contexts/shacl.json").runSyncUnsafe(),
-      contexts.schemasMetadata -> ContextValue.fromFile("contexts/schemas-metadata.json").runSyncUnsafe()
+      contexts.shacl           -> ContextValue.fromFile("contexts/shacl.json").unsafeRunSync(),
+      contexts.schemasMetadata -> ContextValue.fromFile("contexts/schemas-metadata.json").unsafeRunSync()
     )
 
   def loadEvents[E](module: String, eventsToFile: (E, String)*): Map[E, (Json, JsonObject)] =

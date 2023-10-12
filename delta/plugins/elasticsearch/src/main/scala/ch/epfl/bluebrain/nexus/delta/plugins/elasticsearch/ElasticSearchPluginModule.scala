@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 import akka.actor.typed.ActorSystem
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.deletion.{ElasticSearchDeletionTask, EventMetricsDeletionTask}
@@ -90,14 +91,16 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         clock: Clock[UIO],
         uuidF: UUIDF
     ) =>
-      ElasticSearchViews(
-        fetchContext.mapRejection(ProjectContextRejection),
-        contextResolution,
-        validateElasticSearchView,
-        config.eventLog,
-        config.prefix,
-        xas
-      )(api, clock, uuidF)
+      toCatsIO(
+        ElasticSearchViews(
+          fetchContext.mapRejection(ProjectContextRejection),
+          contextResolution,
+          validateElasticSearchView,
+          config.eventLog,
+          config.prefix,
+          xas
+        )(api, clock, uuidF)
+      )
   }
 
   make[ElasticSearchCoordinator].fromEffect {
@@ -110,14 +113,16 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         config: ElasticSearchViewsConfig,
         cr: RemoteContextResolution @Id("aggregate")
     ) =>
-      ElasticSearchCoordinator(
-        views,
-        graphStream,
-        registry,
-        supervisor,
-        client,
-        config
-      )(cr)
+      toCatsIO(
+        ElasticSearchCoordinator(
+          views,
+          graphStream,
+          registry,
+          supervisor,
+          client,
+          config
+        )(cr)
+      )
   }
 
   make[EventMetricsProjection].fromEffect {
@@ -128,14 +133,16 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         client: ElasticSearchClient,
         config: ElasticSearchViewsConfig
     ) =>
-      EventMetricsProjection(
-        metricEncoders,
-        supervisor,
-        client,
-        xas,
-        config.batch,
-        config.metricsQuery,
-        config.prefix
+      toCatsIO(
+        EventMetricsProjection(
+          metricEncoders,
+          supervisor,
+          client,
+          xas,
+          config.batch,
+          config.metricsQuery,
+          config.prefix
+        )
       )
   }
 
@@ -379,10 +386,12 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
   }
 
   make[ElasticSearchView.Shift].fromEffect { (views: ElasticSearchViews, base: BaseUri) =>
-    for {
-      defaultMapping  <- defaultElasticsearchMapping
-      defaultSettings <- defaultElasticsearchSettings
-    } yield ElasticSearchView.shift(views, defaultMapping, defaultSettings)(base)
+    toCatsIO(
+      for {
+        defaultMapping  <- defaultElasticsearchMapping
+        defaultSettings <- defaultElasticsearchSettings
+      } yield ElasticSearchView.shift(views, defaultMapping, defaultSettings)(base)
+    )
   }
 
   many[ResourceShift[_, _, _]].ref[ElasticSearchView.Shift]

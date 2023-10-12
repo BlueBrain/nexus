@@ -5,6 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.{ElemRoutes, EventsRoutes}
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
@@ -32,13 +33,15 @@ object EventsModule extends ModuleDef {
         xas: Transactors,
         jo: JsonKeyOrdering
     ) =>
-      SseEventLog(
-        sseEncoders,
-        organizations.fetch(_).void,
-        projects.fetch(_).map { p => (p.value.organizationUuid, p.value.uuid) },
-        config.sse,
-        xas
-      )(jo)
+      toCatsIO(
+        SseEventLog(
+          sseEncoders,
+          organizations.fetch(_).void,
+          projects.fetch(_).map { p => (p.value.organizationUuid, p.value.uuid) },
+          config.sse,
+          xas
+        )(jo)
+      )
   }
 
   make[SseElemStream].from { (qc: QueryConfig, xas: Transactors) =>

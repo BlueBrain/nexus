@@ -1,8 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model
 
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceError
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
-import monix.bio.IO
 
 /**
   * A [[ContextValue]] that is specialized for metadata
@@ -29,6 +28,6 @@ object MetadataContextValue {
   /**
     * Loads a [[MetadataContextValue]] form the passed ''resourcePath''
     */
-  final def fromFile(resourcePath: String)(implicit cl: ClassLoader): IO[ClasspathResourceError, MetadataContextValue] =
+  final def fromFile(resourcePath: String)(implicit cl: ClassLoader): IO[MetadataContextValue] =
     ContextValue.fromFile(resourcePath).map(MetadataContextValue.apply)
 }

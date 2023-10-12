@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.search
 
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeProjectionLifeCycle
@@ -20,7 +19,7 @@ import izumi.distage.model.definition.Id
 
 class SearchPluginModule(priority: Int) extends ModuleDef {
 
-  make[SearchConfig].fromEffect { (cfg: Config) => SearchConfig.load(cfg).toUIO }
+  make[SearchConfig].fromEffect { (cfg: Config) => SearchConfig.load(cfg) }
 
   make[Search].from {
     (

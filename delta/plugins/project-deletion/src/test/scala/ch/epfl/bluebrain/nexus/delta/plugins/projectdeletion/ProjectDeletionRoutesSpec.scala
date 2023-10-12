@@ -24,8 +24,8 @@ class ProjectDeletionRoutesSpec
   implicit private val cl: ClassLoader              = getClass.getClassLoader
   implicit private val ordering: JsonKeyOrdering    = JsonKeyOrdering.default()
   implicit private val baseUri: BaseUri             = BaseUri("http://localhost", Label.unsafe("v1"))
-  implicit private val rcr: RemoteContextResolution = RemoteContextResolution.fixed(
-    contexts.projectDeletion -> ContextValue.fromFile("contexts/project-deletion.json").accepted
+  implicit private val rcr: RemoteContextResolution = RemoteContextResolution.fixedIO(
+    contexts.projectDeletion -> ContextValue.fromFile("contexts/project-deletion.json")
   )
 
   "A ProjectDeletionRoutes" should {

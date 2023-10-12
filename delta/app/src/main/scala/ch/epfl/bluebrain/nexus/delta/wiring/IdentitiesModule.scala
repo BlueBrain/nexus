@@ -16,7 +16,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.{Identities, IdentitiesImpl}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.Realms
 import izumi.distage.model.definition.{Id, ModuleDef}
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 
 /**
   * Identities module wiring config.
@@ -28,7 +27,7 @@ object IdentitiesModule extends ModuleDef {
   make[CacheConfig].from((cfg: AppConfig) => cfg.identities)
 
   make[Identities].fromEffect { (realms: Realms, hc: HttpClient @Id("realm"), config: CacheConfig) =>
-    IdentitiesImpl(realms, hc, config).toUIO
+    IdentitiesImpl(realms, hc, config)
   }
 
   make[OpenIdAuthService].from { (httpClient: HttpClient @Id("realm"), realms: Realms) =>

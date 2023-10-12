@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
-import cats.effect.Clock
+import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.ProjectsRoutes
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.{AclCheck, Acls}
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.{ProjectDeletionCoordinator, ProjectDeletionTask}
@@ -28,7 +29,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Supervisor
 import izumi.distage.model.definition.{Id, ModuleDef}
-import monix.bio.{Task, UIO}
+import monix.bio.UIO
 import monix.execution.Scheduler
 
 /**
@@ -58,7 +59,7 @@ object ProjectsModule extends ModuleDef {
         clock: Clock[UIO],
         uuidF: UUIDF
     ) =>
-      Task.pure(
+      IO.pure(
         ProjectsImpl(
           organizations.fetchActiveOrganization(_).mapError(WrappedOrganizationRejection),
           ValidateProjectDeletion(xas, config.projects.deletion.enabled),
@@ -71,7 +72,7 @@ object ProjectsModule extends ModuleDef {
   }
 
   make[ProjectsStatistics].fromEffect { (xas: Transactors) =>
-    ProjectsStatistics(xas)
+    toCatsIO(ProjectsStatistics(xas))
   }
 
   make[ProjectProvisioning].from {
@@ -79,9 +80,8 @@ object ProjectsModule extends ModuleDef {
       ProjectProvisioning(acls, projects, config.automaticProvisioning, serviceAccount)
   }
 
-  make[FetchContext[ContextRejection]].fromEffect {
-    (organizations: Organizations, projects: Projects, quotas: Quotas) =>
-      Task.pure(FetchContext(organizations, projects, quotas))
+  make[FetchContext[ContextRejection]].from { (organizations: Organizations, projects: Projects, quotas: Quotas) =>
+    FetchContext(organizations, projects, quotas)
   }
 
   make[ProjectDeletionCoordinator].fromEffect {
@@ -94,18 +94,20 @@ object ProjectsModule extends ModuleDef {
         xas: Transactors,
         clock: Clock[UIO]
     ) =>
-      ProjectDeletionCoordinator(
-        projects,
-        deletionTasks,
-        config.projects.deletion,
-        serviceAccount,
-        supervisor,
-        xas
-      )(clock)
+      toCatsIO(
+        ProjectDeletionCoordinator(
+          projects,
+          deletionTasks,
+          config.projects.deletion,
+          serviceAccount,
+          supervisor,
+          xas
+        )(clock)
+      )
   }
 
   make[UUIDCache].fromEffect { (config: AppConfig, xas: Transactors) =>
-    UUIDCache(config.projects.cache, config.organizations.cache, xas)
+    toCatsIO(UUIDCache(config.projects.cache, config.organizations.cache, xas))
   }
 
   make[DeltaSchemeDirectives].from {
