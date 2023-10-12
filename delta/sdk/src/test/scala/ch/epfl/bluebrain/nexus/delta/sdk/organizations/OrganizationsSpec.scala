@@ -2,14 +2,14 @@ package ch.epfl.bluebrain.nexus.delta.sdk.organizations
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.OrganizationGen
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations.{evaluate, next}
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection._
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations.{evaluate, next}
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationState
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, IOFixedClock, IOValues}
-import monix.execution.Scheduler
+import ch.epfl.bluebrain.nexus.testkit.ce.{CatsIOValues, IOFixedClock}
+import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{Inspectors, OptionValues}
@@ -22,12 +22,11 @@ class OrganizationsSpec
     with EitherValuable
     with OptionValues
     with Inspectors
+    with CatsIOValues
     with IOFixedClock
-    with IOValues
     with CirceLiteral {
 
   "The Organizations state machine" when {
-    implicit val sc: Scheduler     = Scheduler.global
     val epoch: Instant             = Instant.EPOCH
     val time2: Instant             = Instant.ofEpochMilli(10L)
     val state: OrganizationState   = OrganizationGen.state("org", 1, description = Some("desc"))
