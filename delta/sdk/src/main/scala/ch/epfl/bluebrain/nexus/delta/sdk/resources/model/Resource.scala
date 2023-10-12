@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.resources.model
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
@@ -10,9 +11,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.ResourceShift
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.Resource.Metadata
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
-import io.circe.Json
+import io.circe.syntax.EncoderOps
+import io.circe.{Encoder, Json}
 import monix.bio.IO
 
 /**
@@ -41,9 +45,13 @@ final case class Resource(
     source: Json,
     compacted: CompactedJsonLd,
     expanded: ExpandedJsonLd
-)
+) {
+  def metadata: Metadata = Metadata(tags.tags)
+}
 
 object Resource {
+
+  final case class Metadata(tags: List[UserTag])
 
   implicit val resourceJsonLdEncoder: JsonLdEncoder[Resource] =
     new JsonLdEncoder[Resource] {
@@ -62,13 +70,20 @@ object Resource {
         value.source.topContextValueOrEmpty
     }
 
-  type Shift = ResourceShift[ResourceState, Resource, Nothing]
+  implicit private val fileMetadataEncoder: Encoder[Metadata] = { m =>
+    Json.obj("_tags" -> m.tags.asJson)
+  }
+
+  implicit val fileMetadataJsonLdEncoder: JsonLdEncoder[Metadata] =
+    JsonLdEncoder.computeFromCirce(ContextValue(contexts.metadata))
+
+  type Shift = ResourceShift[ResourceState, Resource, Metadata]
 
   def shift(resources: Resources)(implicit baseUri: BaseUri): Shift =
-    ResourceShift.apply[ResourceState, Resource](
+    ResourceShift.withMetadata[ResourceState, Resource, Metadata](
       Resources.entityType,
       (ref, project) => resources.fetch(IdSegmentRef(ref), project, None),
       state => state.toResource,
-      value => JsonLdContent(value, value.value.source, None)
+      value => JsonLdContent(value, value.value.source, Some(value.value.metadata))
     )
 }
