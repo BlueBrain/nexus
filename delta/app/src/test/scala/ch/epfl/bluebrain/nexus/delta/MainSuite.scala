@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta
 
 import akka.http.scaladsl.server.Route
-import cats.effect.Resource
+import cats.effect.{IO, Resource}
 import ch.epfl.bluebrain.nexus.delta.plugin.PluginsLoader.PluginLoaderConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.PluginDef
 import ch.epfl.bluebrain.nexus.delta.wiring.DeltaModule
@@ -42,7 +42,7 @@ class MainSuite extends BioSuite with MainSuite.Fixture {
     val modules: Module          = (DeltaModule(cfg, config, cl) :: pluginsInfoModule :: pDefs.map(_.module)).merge
 
     PlanVerifier()
-      .verify[Task](
+      .verify[IO](
         bindings = modules,
         roots = Roots.Everything,
         providedKeys = Set.empty,

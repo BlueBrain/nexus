@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion
 
 import cats.effect.{Clock, IO, Timer}
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion.model.{contexts, ProjectDeletionConfig}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -42,6 +41,6 @@ class ProjectDeletionModule(priority: Int) extends ModuleDef {
         supervisor: Supervisor,
         clock: Clock[IO],
         timer: Timer[IO]
-    ) => ProjectDeletionRunner.start(projects, config, projectStatistics, supervisor)(clock, timer).toUIO
+    ) => ProjectDeletionRunner.start(projects, config, projectStatistics, supervisor)(clock, timer)
   }
 }

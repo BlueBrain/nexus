@@ -11,14 +11,14 @@ trait Fixtures extends IOValues {
   implicit val api: JsonLdApi = JsonLdJavaApi.strict
 
   implicit val rcr: RemoteContextResolution =
-    RemoteContextResolution.fixed(
-      contexts.shacl           -> ContextValue.fromFile("contexts/shacl.json").accepted,
-      contexts.schemasMetadata -> ContextValue.fromFile("contexts/schemas-metadata.json").accepted,
-      contexts.error           -> ContextValue.fromFile(("contexts/error.json")).accepted,
-      contexts.metadata        -> ContextValue.fromFile(("contexts/metadata.json")).accepted,
-      contexts.permissions     -> ContextValue.fromFile(("contexts/permissions.json")).accepted,
-      contexts.organizations   -> ContextValue.fromFile(("contexts/organizations.json")).accepted,
-      contexts.resolvers       -> ContextValue.fromFile(("contexts/resolvers.json")).accepted
+    RemoteContextResolution.fixedIO(
+      contexts.shacl           -> ContextValue.fromFile("contexts/shacl.json"),
+      contexts.schemasMetadata -> ContextValue.fromFile("contexts/schemas-metadata.json"),
+      contexts.error           -> ContextValue.fromFile("contexts/error.json"),
+      contexts.metadata        -> ContextValue.fromFile("contexts/metadata.json"),
+      contexts.permissions     -> ContextValue.fromFile("contexts/permissions.json"),
+      contexts.organizations   -> ContextValue.fromFile("contexts/organizations.json"),
+      contexts.resolvers       -> ContextValue.fromFile("contexts/resolvers.json")
     )
 
 }

@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.{ConversionError, SparqlConstr
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple.{obj, predicate, subject, Triple}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.rdf
 import ch.epfl.bluebrain.nexus.delta.rdf._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph.{fakeId, rdfType}
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jena.writer.DotWriter._
@@ -214,6 +215,7 @@ final case class Graph private (rootNode: IriOrBNode, value: DatasetGraph) { sel
       ctx          = dotContext(rootResource, resolvedCtx)
       string      <-
         ioTryOrRdfError(RDFWriter.create().lang(DOT).source(collapseGraphs).context(ctx).asString(), DOT.getName)
+          .toBIO[RdfError]
     } yield Dot(string, rootNode)
 
   /**

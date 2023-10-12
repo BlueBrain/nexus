@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.GraphAnalytic
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.routes.GraphAnalyticsRoutes
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
@@ -48,7 +49,9 @@ class GraphAnalyticsPluginModule(priority: Int) extends ModuleDef {
         client: ElasticSearchClient,
         config: GraphAnalyticsConfig
     ) =>
-      GraphAnalyticsCoordinator(projects, analyticsStream, supervisor, client, config)
+      toCatsIO(
+        GraphAnalyticsCoordinator(projects, analyticsStream, supervisor, client, config)
+      )
   }
 
   make[GraphAnalyticsViewsQuery].from { (client: ElasticSearchClient, config: GraphAnalyticsConfig) =>

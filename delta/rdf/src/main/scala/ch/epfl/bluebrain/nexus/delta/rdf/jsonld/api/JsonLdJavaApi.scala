@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api
-import cats.implicits._
+import cats.effect.{ContextShift, IO}
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.{ExplainResult, RdfError}
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.{ConversionError, RemoteContextCircularDependency, RemoteContextError, UnexpectedJsonLd, UnexpectedJsonLdContext}
@@ -13,27 +14,27 @@ import com.github.jsonldjava.core.{Context, DocumentLoader, JsonLdError, JsonLdO
 import com.github.jsonldjava.utils.JsonUtils
 import io.circe.syntax._
 import io.circe.{parser, Json, JsonObject}
-import monix.bio.IO
 import org.apache.jena.query.DatasetFactory
 import org.apache.jena.riot.RDFFormat.{JSONLD_EXPAND_FLAT => EXPAND}
 import org.apache.jena.riot.system.ErrorHandlerFactory
 import org.apache.jena.riot._
 import org.apache.jena.sparql.core.DatasetGraph
 
+import scala.concurrent.ExecutionContext
 import scala.jdk.CollectionConverters._
 import scala.util.Try
 
 /**
   * Json-LD high level API implementation by Json-LD Java library
   */
-final class JsonLdJavaApi(config: JsonLdApiConfig) extends JsonLdApi {
+final class JsonLdJavaApi(config: JsonLdApiConfig)(implicit contextShift: ContextShift[IO]) extends JsonLdApi {
 
   System.setProperty(DocumentLoader.DISALLOW_REMOTE_CONTEXT_LOADING, "true")
 
   override private[rdf] def compact(
       input: Json,
       ctx: ContextValue
-  )(implicit opts: JsonLdOptions, rcr: RemoteContextResolution): IO[RdfError, JsonObject] =
+  )(implicit opts: JsonLdOptions, rcr: RemoteContextResolution): IO[JsonObject] =
     for {
       obj          <- ioTryOrRdfError(JsonUtils.fromString(input.noSpaces), "building input")
       ctxObj       <- ioTryOrRdfError(JsonUtils.fromString(ctx.toString), "building context")
@@ -44,12 +45,12 @@ final class JsonLdJavaApi(config: JsonLdApiConfig) extends JsonLdApi {
 
   override private[rdf] def expand(
       input: Json
-  )(implicit opts: JsonLdOptions, rcr: RemoteContextResolution): IO[RdfError, Seq[JsonObject]] =
+  )(implicit opts: JsonLdOptions, rcr: RemoteContextResolution): IO[Seq[JsonObject]] =
     explainExpand(input).map(_.value)
 
   override private[rdf] def explainExpand(
       input: Json
-  )(implicit opts: JsonLdOptions, rcr: RemoteContextResolution): IO[RdfError, ExplainResult[Seq[JsonObject]]] =
+  )(implicit opts: JsonLdOptions, rcr: RemoteContextResolution): IO[ExplainResult[Seq[JsonObject]]] =
     for {
       obj            <- ioTryOrRdfError(JsonUtils.fromString(input.noSpaces), "building input")
       remoteContexts <- remoteContexts(input)
@@ -61,7 +62,7 @@ final class JsonLdJavaApi(config: JsonLdApiConfig) extends JsonLdApi {
   override private[rdf] def frame(
       input: Json,
       frame: Json
-  )(implicit opts: JsonLdOptions, rcr: RemoteContextResolution): IO[RdfError, JsonObject] =
+  )(implicit opts: JsonLdOptions, rcr: RemoteContextResolution): IO[JsonObject] =
     for {
       obj       <- ioTryOrRdfError(JsonUtils.fromString(input.noSpaces), "building input")
       ff        <- ioTryOrRdfError(JsonUtils.fromString(frame.noSpaces), "building frame")
@@ -104,31 +105,30 @@ final class JsonLdJavaApi(config: JsonLdApiConfig) extends JsonLdApi {
 
   override private[rdf] def context(
       value: ContextValue
-  )(implicit opts: JsonLdOptions, rcr: RemoteContextResolution): IO[RdfError, JsonLdContext] =
+  )(implicit opts: JsonLdOptions, rcr: RemoteContextResolution): IO[JsonLdContext] =
     for {
       dl     <- documentLoader(value.contextObj.asJson)
       jOpts   = toOpts(dl)
       ctx    <- IO.fromTry(Try(new Context(jOpts).parse(JsonUtils.fromString(value.toString))))
-                  .mapError(err => UnexpectedJsonLdContext(err.getMessage))
+                  .adaptError { err => UnexpectedJsonLdContext(err.getMessage) }
       pm      = ctx.getPrefixes(true).asScala.toMap.map { case (k, v) => k -> iri"$v" }
       aliases = (ctx.getPrefixes(false).asScala.toMap -- pm.keySet).map { case (k, v) => k -> iri"$v" }
     } yield JsonLdContext(value, getIri(ctx, keywords.base), getIri(ctx, keywords.vocab), aliases, pm)
 
   private def remoteContexts(
       jsons: Json*
-  )(implicit rcr: RemoteContextResolution): IO[RemoteContextError, Map[Iri, RemoteContext]] =
-    IO.parTraverseUnordered(jsons)(rcr(_))
-      .bimap(
-        RemoteContextError,
-        _.foldLeft(Map.empty[Iri, RemoteContext])(_ ++ _)
-      )
+  )(implicit rcr: RemoteContextResolution): IO[Map[Iri, RemoteContext]] =
+    jsons
+      .parTraverse(rcr(_))
+      .adaptError { case r: RemoteContextResolutionError => RemoteContextError(r) }
+      .map(_.foldLeft(Map.empty[Iri, RemoteContext])(_ ++ _))
 
   private def documentLoader(remoteContexts: Map[Iri, RemoteContext]): DocumentLoader =
     remoteContexts.foldLeft(new DocumentLoader()) { case (dl, (iri, ctx)) =>
       dl.addInjectedDoc(iri.toString, ctx.value.contextObj.asJson.noSpaces)
     }
 
-  private def documentLoader(jsons: Json*)(implicit rcr: RemoteContextResolution): IO[RdfError, DocumentLoader] =
+  private def documentLoader(jsons: Json*)(implicit rcr: RemoteContextResolution): IO[DocumentLoader] =
     remoteContexts(jsons: _*).map(documentLoader)
 
   private def toOpts(dl: DocumentLoader = new DocumentLoader)(implicit options: JsonLdOptions): JsonLdJavaOptions = {
@@ -176,18 +176,20 @@ object JsonLdJavaApi {
   /**
     * Creates an API with a config with strict values
     */
-  val strict: JsonLdApi = new JsonLdJavaApi(
-    JsonLdApiConfig(strict = true, extraChecks = true, errorHandling = ErrorHandling.Strict)
-  )
+  def strict(implicit contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)): JsonLdApi =
+    new JsonLdJavaApi(
+      JsonLdApiConfig(strict = true, extraChecks = true, errorHandling = ErrorHandling.Strict)
+    )
 
   /**
     * Creates an API with a config with lenient values
     */
-  val lenient: JsonLdApi = new JsonLdJavaApi(
-    JsonLdApiConfig(strict = false, extraChecks = false, errorHandling = ErrorHandling.NoWarning)
-  )
+  def lenient(implicit contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)): JsonLdApi =
+    new JsonLdJavaApi(
+      JsonLdApiConfig(strict = false, extraChecks = false, errorHandling = ErrorHandling.NoWarning)
+    )
 
-  private[rdf] def ioTryOrRdfError[A](value: => A, stage: String): IO[RdfError, A] =
+  private[rdf] def ioTryOrRdfError[A](value: => A, stage: String): IO[A] =
     IO.fromEither(tryOrRdfError(value, stage))
 
   private[rdf] def tryOrRdfError[A](value: => A, stage: String): Either[RdfError, A] =

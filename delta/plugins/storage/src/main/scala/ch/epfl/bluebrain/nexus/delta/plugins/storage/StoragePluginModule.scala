@@ -2,7 +2,8 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage
 
 import akka.actor
 import akka.actor.typed.ActorSystem
-import cats.effect.Clock
+import cats.effect.{Clock, IO}
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
@@ -46,7 +47,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Supervisor
 import com.typesafe.config.Config
 import izumi.distage.model.definition.{Id, ModuleDef}
-import monix.bio.{Task, UIO}
+import monix.bio.UIO
 import monix.execution.Scheduler
 
 /**
@@ -81,18 +82,20 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
       ) =>
         implicit val classicAs: actor.ActorSystem         = as.classicSystem
         implicit val storageTypeConfig: StorageTypeConfig = cfg.storages.storageTypeConfig
-        Storages(
-          fetchContext.mapRejection(StorageRejection.ProjectContextRejection),
-          contextResolution,
-          permissions.fetchPermissionSet.toUIO,
-          StorageAccess.apply(_, _, remoteDiskStorageClient, storageTypeConfig),
-          xas,
-          cfg.storages,
-          serviceAccount
-        )(
-          api,
-          clock,
-          uuidF
+        toCatsIO(
+          Storages(
+            fetchContext.mapRejection(StorageRejection.ProjectContextRejection),
+            contextResolution,
+            permissions.fetchPermissionSet.toUIO,
+            StorageAccess.apply(_, _, remoteDiskStorageClient, storageTypeConfig),
+            xas,
+            cfg.storages,
+            serviceAccount
+          )(
+            api,
+            clock,
+            uuidF
+          )
         )
     }
 
@@ -169,7 +172,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           remoteDiskStorageClient: RemoteDiskStorageClient,
           scheduler: Scheduler
       ) =>
-        Task
+        IO
           .delay(
             Files(
               fetchContext.mapRejection(FileRejection.ProjectContextRejection),
@@ -187,8 +190,8 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
               as
             )
           )
-          .tapEval { files =>
-            Files.startDigestStream(files, supervisor, storageTypeConfig)
+          .flatTap { files =>
+            toCatsIO(Files.startDigestStream(files, supervisor, storageTypeConfig))
           }
     }
 

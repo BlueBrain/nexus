@@ -17,8 +17,8 @@ class ProjectDeletionConfigSpec extends AnyWordSpecLike with Matchers with IOVal
   implicit private val cl: ClassLoader = getClass.getClassLoader
   implicit private val api: JsonLdApi  = JsonLdJavaApi.strict
 
-  implicit private val rcr: RemoteContextResolution = RemoteContextResolution.fixed(
-    contexts.projectDeletion -> ContextValue.fromFile("contexts/project-deletion.json").accepted
+  implicit private val rcr: RemoteContextResolution = RemoteContextResolution.fixedIO(
+    contexts.projectDeletion -> ContextValue.fromFile("contexts/project-deletion.json")
   )
 
   "A ProjectDeletionConfig" should {
