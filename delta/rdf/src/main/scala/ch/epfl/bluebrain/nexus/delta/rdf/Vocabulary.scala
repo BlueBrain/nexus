@@ -160,7 +160,6 @@ object Vocabulary {
     val score                 = Metadata("score")
     val self                  = Metadata("self")
     val source                = Metadata("source")
-    val tags                  = Metadata("tags")
     val tokenEndpoint         = Metadata("tokenEndpoint")
     val total                 = Metadata("total")
     val types                 = Metadata("types")
@@ -173,9 +172,6 @@ object Vocabulary {
     val outgoing              = Metadata("outgoing")
     val originalSource        = Metadata("original_source")
     val effectiveApiMappings  = Metadata("effectiveApiMappings")
-
-    // TODO already added in another ticket, remove here after rebase
-    val tag = Metadata("tag")
 
     val defaultResolver = nxv + "defaultInProject"
 
