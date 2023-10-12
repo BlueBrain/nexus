@@ -6,14 +6,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.PermissionsEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.PermissionsRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label}
-import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues}
-import monix.execution.Scheduler
+import ch.epfl.bluebrain.nexus.testkit.ce.{CatsIOValues, IOFixedClock}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
 import java.time.Instant
 
-class PermissionsSpec extends AnyWordSpecLike with Matchers with IOValues with IOFixedClock {
+class PermissionsSpec extends AnyWordSpecLike with Matchers with CatsIOValues with IOFixedClock {
 
   "The Permissions next function" should {
     val minimum     = Set(permissions.write, permissions.read)
@@ -24,8 +23,6 @@ class PermissionsSpec extends AnyWordSpecLike with Matchers with IOValues with I
     val instantNext = epoch.plusMillis(1L)
     val subject     = Identity.User("user", Label.unsafe("realm"))
     val subjectNext = Identity.User("next-user", Label.unsafe("realm"))
-
-    implicit val scheduler: Scheduler = Scheduler.global
 
     val initial = PermissionsState.initial(minimum)
     val next    = Permissions.next(minimum) _

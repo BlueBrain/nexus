@@ -12,9 +12,9 @@ import ch.epfl.bluebrain.nexus.delta.routes.PermissionsRoutes.PatchPermissions._
 import ch.epfl.bluebrain.nexus.delta.routes.PermissionsRoutes._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
+import ch.epfl.bluebrain.nexus.delta.sdk.ce.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
@@ -26,7 +26,6 @@ import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
 import io.circe.syntax._
 import io.circe.{Decoder, Json}
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
-import monix.execution.Scheduler
 
 import scala.annotation.nowarn
 
@@ -42,7 +41,6 @@ import scala.annotation.nowarn
   */
 final class PermissionsRoutes(identities: Identities, permissions: Permissions, aclCheck: AclCheck)(implicit
     baseUri: BaseUri,
-    s: Scheduler,
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering
 ) extends AuthDirectives(identities, aclCheck)
@@ -125,7 +123,6 @@ object PermissionsRoutes {
     */
   def apply(identities: Identities, permissions: Permissions, aclCheck: AclCheck)(implicit
       baseUri: BaseUri,
-      s: Scheduler,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering
   ): Route =
