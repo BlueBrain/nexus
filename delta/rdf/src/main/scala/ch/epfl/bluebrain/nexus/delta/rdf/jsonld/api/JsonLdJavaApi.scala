@@ -118,7 +118,7 @@ final class JsonLdJavaApi(config: JsonLdApiConfig)(implicit contextShift: Contex
   private def remoteContexts(
       jsons: Json*
   )(implicit rcr: RemoteContextResolution): IO[Map[Iri, RemoteContext]] =
-    jsons.toList
+    jsons
       .parTraverse(rcr(_))
       .adaptError { case r: RemoteContextResolutionError => RemoteContextError(r) }
       .map(_.foldLeft(Map.empty[Iri, RemoteContext])(_ ++ _))
