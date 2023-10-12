@@ -80,8 +80,9 @@ object ProjectsModule extends ModuleDef {
       ProjectProvisioning(acls, projects, config.automaticProvisioning, serviceAccount)
   }
 
-  make[FetchContext[ContextRejection]].from { (organizations: Organizations, projects: Projects, quotas: Quotas) =>
-    FetchContext(organizations, projects, quotas)
+  make[FetchContext[ContextRejection]].fromEffect {
+    (organizations: Organizations, projects: Projects, quotas: Quotas) =>
+      IO.pure(FetchContext(organizations, projects, quotas))
   }
 
   make[ProjectDeletionCoordinator].fromEffect {
