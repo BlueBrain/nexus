@@ -119,7 +119,7 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
       case false =>
         client(Put(endpoint / index.value, payload).withHttpCredentials) {
           case resp if resp.status.isSuccess() => discardEntity(resp) >> IO.pure(true)
-        }
+        }.tapError { e => UIO.pure(println(e)) }
       case true  =>
         IO.pure(false)
     }
