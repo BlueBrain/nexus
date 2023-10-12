@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.ResolversRoutes
+import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction.AggregateIndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
@@ -70,7 +71,7 @@ object ResolversModule extends ModuleDef {
         aclCheck: AclCheck,
         resolvers: Resolvers,
         schemeDirectives: DeltaSchemeDirectives,
-        indexingAction: IndexingAction @Id("aggregate"),
+        indexingAction: AggregateIndexingAction,
         shift: Resolver.Shift,
         multiResolution: MultiResolution,
         baseUri: BaseUri,
@@ -84,7 +85,7 @@ object ResolversModule extends ModuleDef {
         resolvers,
         multiResolution,
         schemeDirectives,
-        indexingAction(_, _, _)(shift, cr)
+        indexingAction(_, _, _)(shift)
       )(
         baseUri,
         cr,

@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.IndexingViewDef.{ActiveViewDef, DeprecatedViewDef}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.{BlazegraphSink, IndexingViewDef}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
@@ -49,9 +48,7 @@ final class BlazegraphIndexingAction(
     case _: DeprecatedViewDef                                           => UIO.none
   }
 
-  def projections(project: ProjectRef, elem: Elem[GraphResource])(implicit
-      cr: RemoteContextResolution
-  ): ElemStream[CompiledProjection] =
+  def projections(project: ProjectRef, elem: Elem[GraphResource]): ElemStream[CompiledProjection] =
     fetchCurrentViews(project).evalMap { _.evalMapFilter(compile(_, elem)) }
 }
 

@@ -22,6 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageDeletionTa
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
+import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction.AggregateIndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
@@ -119,7 +120,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         storages: Storages,
         storagesStatistics: StoragesStatistics,
         schemeDirectives: DeltaSchemeDirectives,
-        indexingAction: IndexingAction @Id("aggregate"),
+        indexingAction: AggregateIndexingAction,
         shift: Storage.Shift,
         baseUri: BaseUri,
         s: Scheduler,
@@ -134,7 +135,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           storages,
           storagesStatistics,
           schemeDirectives,
-          indexingAction(_, _, _)(shift, cr)
+          indexingAction(_, _, _)(shift)
         )(
           baseUri,
           s,
@@ -198,7 +199,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         aclCheck: AclCheck,
         files: Files,
         schemeDirectives: DeltaSchemeDirectives,
-        indexingAction: IndexingAction @Id("aggregate"),
+        indexingAction: AggregateIndexingAction,
         shift: File.Shift,
         baseUri: BaseUri,
         s: Scheduler,
@@ -207,7 +208,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         fusionConfig: FusionConfig
     ) =>
       val storageConfig = cfg.storages.storageTypeConfig
-      new FilesRoutes(identities, aclCheck, files, schemeDirectives, indexingAction(_, _, _)(shift, cr))(
+      new FilesRoutes(identities, aclCheck, files, schemeDirectives, indexingAction(_, _, _)(shift))(
         baseUri,
         storageConfig,
         s,

@@ -10,6 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.ResourcesRoutes.asSourceWithMetadata
 import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
@@ -25,6 +26,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resources.NexusSource.DecodingOption
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{InvalidJsonLdFormat, InvalidSchemaRejection, ResourceNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{Resource, ResourceRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.{NexusSource, Resources}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.{Json, Printer}
 import monix.bio.IO
 import monix.execution.Scheduler
@@ -67,6 +69,9 @@ final class ResourcesRoutes(
   implicit private def resourceFAJsonLdEncoder[A: JsonLdEncoder]: JsonLdEncoder[ResourceF[A]] =
     ResourceF.resourceFAJsonLdEncoder(ContextValue.empty)
 
+  private def indexUIO(project: ProjectRef, resource: ResourceF[Resource], mode: IndexingMode) =
+    index(project, resource, mode).toUIO
+
   def routes: Route =
     baseUriPrefix(baseUri.prefix) {
       pathPrefix("resources") {
@@ -79,7 +84,7 @@ final class ResourcesRoutes(
                   authorizeFor(ref, Write).apply {
                     emit(
                       Created,
-                      resources.create(ref, resourceSchema, source.value).tapEval(index(ref, _, mode)).map(_.void)
+                      resources.create(ref, resourceSchema, source.value).tapEval(indexUIO(ref, _, mode)).map(_.void)
                     )
                   }
               },
@@ -94,7 +99,7 @@ final class ResourcesRoutes(
                           Created,
                           resources
                             .create(ref, schema, source.value)
-                            .tapEval(index(ref, _, mode))
+                            .tapEval(indexUIO(ref, _, mode))
                             .map(_.void)
                             .rejectWhen(wrongJsonOrNotFound)
                         )
@@ -115,7 +120,7 @@ final class ResourcesRoutes(
                                     Created,
                                     resources
                                       .create(id, ref, schema, source.value)
-                                      .tapEval(index(ref, _, mode))
+                                      .tapEval(indexUIO(ref, _, mode))
                                       .map(_.void)
                                       .rejectWhen(wrongJsonOrNotFound)
                                   )
@@ -124,7 +129,7 @@ final class ResourcesRoutes(
                                   emit(
                                     resources
                                       .update(id, ref, schemaOpt, rev, source.value)
-                                      .tapEval(index(ref, _, mode))
+                                      .tapEval(indexUIO(ref, _, mode))
                                       .map(_.void)
                                       .rejectWhen(wrongJsonOrNotFound)
                                   )
@@ -137,7 +142,7 @@ final class ResourcesRoutes(
                               emit(
                                 resources
                                   .deprecate(id, ref, schemaOpt, rev)
-                                  .tapEval(index(ref, _, mode))
+                                  .tapEval(indexUIO(ref, _, mode))
                                   .map(_.void)
                                   .rejectWhen(wrongJsonOrNotFound)
                               )
@@ -166,7 +171,7 @@ final class ResourcesRoutes(
                             OK,
                             resources
                               .refresh(id, ref, schemaOpt)
-                              .tapEval(index(ref, _, mode))
+                              .tapEval(indexUIO(ref, _, mode))
                               .map(_.void)
                               .rejectWhen(wrongJsonOrNotFound)
                           )
@@ -214,7 +219,7 @@ final class ResourcesRoutes(
                                   Created,
                                   resources
                                     .tag(id, ref, schemaOpt, tag, tagRev, rev)
-                                    .tapEval(index(ref, _, mode))
+                                    .tapEval(indexUIO(ref, _, mode))
                                     .map(_.void)
                                     .rejectWhen(wrongJsonOrNotFound)
                                 )
@@ -229,7 +234,7 @@ final class ResourcesRoutes(
                             emit(
                               resources
                                 .deleteTag(id, ref, schemaOpt, tag, rev)
-                                .tapEval(index(ref, _, mode))
+                                .tapEval(indexUIO(ref, _, mode))
                                 .map(_.void)
                                 .rejectOn[ResourceNotFound]
                             )

@@ -12,7 +12,7 @@ import io.circe.Json
 import monix.bio.{IO, Task, UIO}
 
 /**
-  * Aggregates the different [[ResourceShift]] to perform operations on resources indepently of their types
+  * Aggregates the different [[ResourceShift]] to perform operations on resources independently of their types
   */
 trait ResourceShifts {
 
