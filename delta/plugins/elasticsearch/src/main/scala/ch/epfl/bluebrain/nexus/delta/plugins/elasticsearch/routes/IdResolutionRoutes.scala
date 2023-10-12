@@ -3,11 +3,11 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.IdResolutionResponse.{MultipleResults, SingleResult}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.ElasticSearchQueryError
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{IdResolution, IdResolutionResponse}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.syntax.uriSyntax
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
@@ -22,13 +22,14 @@ class IdResolutionRoutes(
     identities: Identities,
     aclCheck: AclCheck,
     idResolution: IdResolution,
+    proxyIdBase: Uri,
     baseUri: BaseUri
 )(implicit s: Scheduler, jko: JsonKeyOrdering, rcr: RemoteContextResolution, fusionConfig: FusionConfig)
     extends AuthDirectives(identities, aclCheck) {
 
   def routes: Route = concat(resolutionRoute, proxyRoute)
 
-  def resolutionRoute: Route =
+  private def resolutionRoute: Route =
     pathPrefix("resolve") {
       extractCaller { implicit caller =>
         (get & iriSegment & pathEndOrSingleSlash) { iri =>
@@ -42,11 +43,11 @@ class IdResolutionRoutes(
       }
     }
 
-  def proxyRoute: Route = {
+  private def proxyRoute: Route =
     pathPrefix("resolve-proxy-pass") {
-      pathPrefix(Segment) { segment =>
+      extractUnmatchedPath { path =>
         get {
-          val resourceId = neurosciencegraph(segment)
+          val resourceId = proxyIdBase / path
           emitOrFusionRedirect(
             fusionResolveUri(resourceId),
             redirect(deltaResolveEndpoint(resourceId), StatusCodes.SeeOther)
@@ -54,7 +55,6 @@ class IdResolutionRoutes(
         }
       }
     }
-  }
 
   private def fusionUri(
       resolved: IO[ElasticSearchQueryError, IdResolutionResponse.Result]
@@ -66,10 +66,7 @@ class IdResolutionRoutes(
       }
       .onErrorHandleWith { _ => fusionLoginUri }
 
-  private def deltaResolveEndpoint(id: String) =
-    s"$baseUri/resolve/${UrlUtils.encode(id)}"
-
-  private def neurosciencegraph(segment: String) =
-    s"https://bbp.epfl.ch/neurosciencegraph/data/$segment"
+  private def deltaResolveEndpoint(id: Uri): Uri =
+    baseUri.endpoint / "resolve" / id.toString
 
 }

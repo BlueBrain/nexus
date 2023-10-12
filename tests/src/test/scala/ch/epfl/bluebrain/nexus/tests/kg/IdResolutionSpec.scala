@@ -36,8 +36,8 @@ class IdResolutionSpec extends BaseSpec {
   private val uniqueResourcePayload = resource(uniqueId)
   private val reusedResourcePayload = resource(reusedId)
 
-  private val neurosciencegraphSegment   = "segment"
-  private val neurosciencegraphId        = s"https://bbp.epfl.ch/neurosciencegraph/data/$neurosciencegraphSegment"
+  private val neurosciencegraphSegment   = "neurosciencegraph/data/segment"
+  private val neurosciencegraphId        = s"https://bbp.epfl.ch/$neurosciencegraphSegment"
   private val encodedNeurosciencegraphId = UrlUtils.encode(neurosciencegraphId)
 
   private val unauthorizedAccessErrorPayload =
@@ -124,7 +124,7 @@ class IdResolutionSpec extends BaseSpec {
     "redirect to fusion resolve if the request comes to the proxy endpoint with text/html accept header is present" in {
       deltaClient.get[String](s"/resolve-proxy-pass/$neurosciencegraphSegment", Bob, acceptTextHtml) { (_, response) =>
         response.status shouldEqual StatusCodes.SeeOther
-        locationHeaderOf(response) shouldEqual fusionResolveEndpoint(neurosciencegraphId)
+        locationHeaderOf(response) shouldEqual fusionResolveEndpoint(encodedNeurosciencegraphId)
       }(PredefinedFromEntityUnmarshallers.stringUnmarshaller)
     }
 
@@ -136,8 +136,8 @@ class IdResolutionSpec extends BaseSpec {
     List(Accept(MediaRange.One(`text/html`, 1f)))
   private def fusionResourcePageFor(encodedId: String) =
     s"https://bbp.epfl.ch/nexus/web/$ref11/resources/$encodedId".replace("%3A", ":")
-  private def fusionResolveEndpoint(id: String)        =
-    s"https://bbp.epfl.ch/nexus/web/resolve/$id".replace("%3A", ":")
+  private def fusionResolveEndpoint(encodedId: String) =
+    s"https://bbp.epfl.ch/nexus/web/resolve/$encodedId".replace("%3A", ":")
   private def deltaResolveEndpoint(encodedId: String)  =
     s"http://delta:8080/v1/resolve/$encodedId".replace("%3A", ":")
 
