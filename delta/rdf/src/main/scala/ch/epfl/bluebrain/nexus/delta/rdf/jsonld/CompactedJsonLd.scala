@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.rdf.jsonld
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context._
@@ -95,9 +96,12 @@ object CompactedJsonLd {
       contextValue: ContextValue,
       input: Json
   )(implicit api: JsonLdApi, rcr: RemoteContextResolution, opts: JsonLdOptions): IO[RdfError, CompactedJsonLd] =
-    api.compact(input, contextValue).map { compacted =>
-      CompactedJsonLd(rootId, contextValue, compacted.remove(keywords.context))
-    }
+    api
+      .compact(input, contextValue)
+      .map { compacted =>
+        CompactedJsonLd(rootId, contextValue, compacted.remove(keywords.context))
+      }
+      .toBIO[RdfError]
 
   /**
     * Creates a [[CompactedJsonLd]] document framed on the passed ''rootId''.
@@ -116,9 +120,12 @@ object CompactedJsonLd {
   )(implicit api: JsonLdApi, rcr: RemoteContextResolution, opts: JsonLdOptions): IO[RdfError, CompactedJsonLd] =
     rootId.asIri.map(iri => contextValue.contextObj deepMerge JsonObject(keywords.id -> iri.asJson)) match {
       case Some(frame) =>
-        api.frame(input, frame.asJson).map { compacted =>
-          CompactedJsonLd(rootId, contextValue, compacted.remove(keywords.context))
-        }
+        api
+          .frame(input, frame.asJson)
+          .map { compacted =>
+            CompactedJsonLd(rootId, contextValue, compacted.remove(keywords.context))
+          }
+          .toBIO[RdfError]
       case _           => apply(rootId, contextValue, input)
     }
 

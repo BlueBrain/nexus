@@ -124,16 +124,18 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         uuidF: UUIDF,
         clock: Clock[UIO]
     ) =>
-      CompositeViews(
-        fetchContext.mapRejection(ProjectContextRejection),
-        contextResolution,
-        validate,
-        config,
-        xas
-      )(
-        api,
-        clock,
-        uuidF
+      toCatsIO(
+        CompositeViews(
+          fetchContext.mapRejection(ProjectContextRejection),
+          contextResolution,
+          validate,
+          config,
+          xas
+        )(
+          api,
+          clock,
+          uuidF
+        )
       )
   }
 
@@ -155,9 +157,11 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
           config.restartCheckInterval
         )(clock)
 
-      CompositeRestartStore
-        .deleteExpired(compositeRestartStore, supervisor, projectionConfig)(clock)
-        .as(compositeProjections)
+      toCatsIO(
+        CompositeRestartStore
+          .deleteExpired(compositeRestartStore, supervisor, projectionConfig)(clock)
+          .as(compositeProjections)
+      )
   }
 
   make[CompositeSpaces].from {
@@ -189,9 +193,11 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         api: JsonLdApi,
         cr: RemoteContextResolution @Id("aggregate")
     ) =>
-      JsonLdContext(listingsMetadataCtx.value)(api, cr, JsonLdOptions.defaults)
-        .map(_.aliasesInv.keySet.map(Triple.predicate))
-        .map(MetadataPredicates)
+      toCatsIO(
+        JsonLdContext(listingsMetadataCtx.value)(api, cr, JsonLdOptions.defaults)
+          .map(_.aliasesInv.keySet.map(Triple.predicate))
+          .map(MetadataPredicates)
+      )
   }
 
   make[RemoteGraphStream].from {
@@ -234,13 +240,15 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         config: CompositeViewsConfig,
         xas: Transactors
     ) =>
-      Task.when(isCompositeMigrationRunning)(new MigrateCompositeViews(xas).run.void) >>
-        CompositeViewsCoordinator(
-          compositeViews,
-          supervisor,
-          lifecycle,
-          config
-        )
+      toCatsIO(
+        Task.when(isCompositeMigrationRunning)(new MigrateCompositeViews(xas).run.void) >>
+          CompositeViewsCoordinator(
+            compositeViews,
+            supervisor,
+            lifecycle,
+            config
+          )
+      )
   }
 
   many[ProjectDeletionTask].add { (views: CompositeViews) => CompositeViewsDeletionTask(views) }

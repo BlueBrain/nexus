@@ -3,11 +3,9 @@ package ch.epfl.bluebrain.nexus.delta.sdk.resolvers
 import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution.Result
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolutionError.RemoteContextNotAccessible
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContext, RemoteContextResolution, RemoteContextResolutionError}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContext, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
@@ -38,11 +36,12 @@ final class ResolverContextResolution(val rcr: RemoteContextResolution, resolveR
       // The instance is living inside the scope of a request so we can cache the resolutions
       private val cache: concurrent.Map[Iri, RemoteContext] = new concurrent.TrieMap
 
-      override def resolve(iri: Iri): Result[RemoteContext] = {
+      override def resolve(iri: Iri): IO[RemoteContext] = {
         IO.pure(cache.get(iri)).flatMap {
           case Some(s) => IO.pure(s)
           case None    =>
-            toCatsIO(rcr.resolve(iri))
+            rcr
+              .resolve(iri)
               .handleErrorWith(_ =>
                 resolveResource(ResourceRef(iri), projectRef, caller).flatMap {
                   case Left(report)    =>
@@ -61,7 +60,7 @@ final class ResolverContextResolution(val rcr: RemoteContextResolution, resolveR
                   logger.debug(s"Iri $iri has been resolved for project $projectRef and caller $caller.subject")
               }
         }
-      }.toBIO[RemoteContextResolutionError]
+      }
     }
 }
 

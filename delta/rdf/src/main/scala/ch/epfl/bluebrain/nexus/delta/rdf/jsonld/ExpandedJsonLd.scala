@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.rdf.jsonld
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.{InvalidIri, UnexpectedJsonLd}
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
@@ -192,21 +193,24 @@ object ExpandedJsonLd {
       resolution: RemoteContextResolution,
       opts: JsonLdOptions
   ): IO[RdfError, ExplainResult[ExpandedJsonLd]] =
-    api.explainExpand(input).flatMap {
-      case explain if explain.value.isEmpty =>
-        // try to add a predicate and value in order for the expanded jsonld to at least detect the @id
-        for {
-          fallback <- api.explainExpand(input deepMerge Json.obj(fakeKey -> "fake".asJson))
-          result   <- fallback.evalMap { value => IO.fromEither(expanded(value).map(_.copy(obj = JsonObject.empty))) }
-        } yield result
-      case explain                          =>
-        explain.evalMap { value =>
-          expandedWithGraphSupport(value).map {
-            case (result, isGraph) if isGraph => ExpandedJsonLd(bNode, result.obj.remove(keywords.id))
-            case (result, _)                  => result
+    api
+      .explainExpand(input)
+      .flatMap {
+        case explain if explain.value.isEmpty =>
+          // try to add a predicate and value in order for the expanded jsonld to at least detect the @id
+          for {
+            fallback <- api.explainExpand(input deepMerge Json.obj(fakeKey -> "fake".asJson))
+            result   <- fallback.evalMap { value => IO.fromEither(expanded(value).map(_.copy(obj = JsonObject.empty))) }
+          } yield result
+        case explain                          =>
+          explain.evalMap { value =>
+            expandedWithGraphSupport(value).map {
+              case (result, isGraph) if isGraph => ExpandedJsonLd(bNode, result.obj.remove(keywords.id))
+              case (result, _)                  => result
+            }
           }
-        }
-    }
+      }
+      .toBIO[RdfError]
 
   /**
     * Construct an [[ExpandedJsonLd]] from an existing sequence of [[ExpandedJsonLd]] merging the overriding fields.
@@ -237,7 +241,10 @@ object ExpandedJsonLd {
     for {
       (expandedSeqFinal, isGraph) <-
         if (expandedSeq.size > 1)
-          api.expand(Json.obj(keywords.id -> graphId.asJson, keywords.graph -> expandedSeq.asJson)).map(_ -> true)
+          api
+            .expand(Json.obj(keywords.id -> graphId.asJson, keywords.graph -> expandedSeq.asJson))
+            .map(_ -> true)
+            .toBIO[RdfError]
         else
           UIO.pure((expandedSeq, false))
       result                      <- IO.fromEither(expanded(expandedSeqFinal))

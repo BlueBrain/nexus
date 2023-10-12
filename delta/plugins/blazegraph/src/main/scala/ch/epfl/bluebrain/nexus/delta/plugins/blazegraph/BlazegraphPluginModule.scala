@@ -15,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction.AggregateIndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.ProjectDeletionTask
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
@@ -23,7 +24,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
@@ -62,11 +62,13 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
 
   make[BlazegraphSlowQueryDeleter].fromEffect {
     (supervisor: Supervisor, store: BlazegraphSlowQueryStore, cfg: BlazegraphViewsConfig) =>
-      BlazegraphSlowQueryDeleter.start(
-        supervisor,
-        store,
-        cfg.slowQueries.logTtl,
-        cfg.slowQueries.deleteExpiredLogsEvery
+      toCatsIO(
+        BlazegraphSlowQueryDeleter.start(
+          supervisor,
+          store,
+          cfg.slowQueries.logTtl,
+          cfg.slowQueries.deleteExpiredLogsEvery
+        )
       )
   }
 
@@ -123,15 +125,17 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
           clock: Clock[UIO],
           uuidF: UUIDF
       ) =>
-        BlazegraphViews(
-          fetchContext.mapRejection(ProjectContextRejection),
-          contextResolution,
-          validate,
-          client,
-          config.eventLog,
-          config.prefix,
-          xas
-        )(api, clock, uuidF)
+        toCatsIO(
+          BlazegraphViews(
+            fetchContext.mapRejection(ProjectContextRejection),
+            contextResolution,
+            validate,
+            client,
+            config.eventLog,
+            config.prefix,
+            xas
+          )(api, clock, uuidF)
+        )
     }
 
   make[BlazegraphCoordinator].fromEffect {
@@ -144,14 +148,16 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         config: BlazegraphViewsConfig,
         baseUri: BaseUri
     ) =>
-      BlazegraphCoordinator(
-        views,
-        graphStream,
-        registry,
-        supervisor,
-        client,
-        config
-      )(baseUri)
+      toCatsIO(
+        BlazegraphCoordinator(
+          views,
+          graphStream,
+          registry,
+          supervisor,
+          client,
+          config
+        )(baseUri)
+      )
   }
 
   make[BlazegraphViewsQuery].fromEffect {
@@ -164,14 +170,16 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         cfg: BlazegraphViewsConfig,
         xas: Transactors
     ) =>
-      BlazegraphViewsQuery(
-        aclCheck,
-        fetchContext.mapRejection(ProjectContextRejection),
-        views,
-        client,
-        slowQueryLogger,
-        cfg.prefix,
-        xas
+      toCatsIO(
+        BlazegraphViewsQuery(
+          aclCheck,
+          fetchContext.mapRejection(ProjectContextRejection),
+          views,
+          client,
+          slowQueryLogger,
+          cfg.prefix,
+          xas
+        )
       )
   }
 

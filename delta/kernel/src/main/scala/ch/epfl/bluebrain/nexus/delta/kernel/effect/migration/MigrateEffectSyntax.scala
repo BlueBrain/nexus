@@ -16,6 +16,7 @@ trait MigrateEffectSyntax {
 
   val taskToIoK: Task ~> IO = λ[Task ~> IO](toCatsIO(_))
   val ioToUioK: IO ~> UIO   = λ[IO ~> UIO](_.toUIO)
+  val ioToTaskK: IO ~> Task = λ[IO ~> Task](Task.from(_))
 
 }
 

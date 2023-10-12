@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config
 
 import akka.http.scaladsl.model.Uri
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.config.BlazegraphViewsConfig.Credentials
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig.SinkConfig.SinkConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig.{BlazegraphAccess, RemoteSourceClientConfig, SourcesConfig}
@@ -10,7 +11,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{BatchConfig, EventLogConfig}
 import com.typesafe.config.Config
-import monix.bio.UIO
 import pureconfig.error.CannotConvert
 import pureconfig.generic.auto._
 import pureconfig.generic.semiauto.deriveReader
@@ -136,8 +136,8 @@ object CompositeViewsConfig {
   /**
     * Converts a [[Config]] into an [[CompositeViewsConfig]]
     */
-  def load(config: Config): UIO[CompositeViewsConfig] =
-    UIO.delay {
+  def load(config: Config): IO[CompositeViewsConfig] =
+    IO.delay {
       ConfigSource
         .fromConfig(config)
         .at("plugins.composite-views")

@@ -1,11 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage
 
+import cats.effect.IO
+import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.FilesConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.Defaults
 import com.typesafe.config.Config
-import com.typesafe.scalalogging.Logger
-import monix.bio.UIO
 import pureconfig.generic.semiauto.deriveReader
 import pureconfig.{ConfigReader, ConfigSource}
 
@@ -17,25 +18,25 @@ final case class StoragePluginConfig(
 
 object StoragePluginConfig {
 
-  private val logger: Logger = Logger[StoragePluginConfig]
+  private val logger = Logger.cats[StoragePluginConfig]
 
   /**
     * Converts a [[Config]] into an [[StoragePluginConfig]]
     */
-  def load(config: Config): UIO[StoragePluginConfig] =
-    UIO
+  def load(config: Config): IO[StoragePluginConfig] =
+    IO
       .delay {
         ConfigSource
           .fromConfig(config)
           .at("plugins.storage")
           .loadOrThrow[StoragePluginConfig]
       }
-      .tapEval { config =>
-        UIO.when(config.storages.storageTypeConfig.amazon.isDefined) {
-          UIO.delay(logger.info("Amazon S3 storage is enabled"))
+      .flatTap { config =>
+        IO.whenA(config.storages.storageTypeConfig.amazon.isDefined) {
+          logger.info("Amazon S3 storage is enabled")
         } >>
-          UIO.when(config.storages.storageTypeConfig.remoteDisk.isDefined) {
-            UIO.delay(logger.info("Remote-disk storage is enabled"))
+          IO.whenA(config.storages.storageTypeConfig.remoteDisk.isDefined) {
+            logger.info("Remote-disk storage is enabled")
           }
       }
 
