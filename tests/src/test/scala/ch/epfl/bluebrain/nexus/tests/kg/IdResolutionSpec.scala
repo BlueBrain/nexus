@@ -10,6 +10,7 @@ import ch.epfl.bluebrain.nexus.tests.BaseSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.listings.{Alice, Bob}
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Organizations
 import io.circe.Json
+import org.scalatest.Assertion
 
 class IdResolutionSpec extends BaseSpec {
 
@@ -98,18 +99,16 @@ class IdResolutionSpec extends BaseSpec {
     }
 
     "redirect to fusion login when if text/html accept header is present (no results)" in {
-      val expectedRedirectUrl = "https://bbp.epfl.ch/nexus/web/login"
+      val fusionLoginPage = "https://bbp.epfl.ch/nexus/web/login"
 
       deltaClient.get[String]("/resolve/unknownId", Bob, acceptTextHtml) { (_, response) =>
-        response.status shouldEqual StatusCodes.SeeOther
-        locationHeaderOf(response) shouldEqual expectedRedirectUrl
+        response isRedirectTo fusionLoginPage
       }(PredefinedFromEntityUnmarshallers.stringUnmarshaller)
     }
 
     "redirect to fusion resource page if text/html accept header is present (single result)" in {
       deltaClient.get[String](s"/resolve/$encodedUniqueId", Bob, acceptTextHtml) { (_, response) =>
-        response.status shouldEqual StatusCodes.SeeOther
-        locationHeaderOf(response) shouldEqual fusionResourcePageFor(encodedUniqueId)
+        response isRedirectTo fusionResourcePageFor(encodedUniqueId)
       }(PredefinedFromEntityUnmarshallers.stringUnmarshaller)
     }
 
@@ -117,20 +116,24 @@ class IdResolutionSpec extends BaseSpec {
 
     "redirect to delta resolve if the request comes to the proxy endpoint" in {
       deltaClient.get[String](s"/resolve-proxy-pass/$neurosciencegraphSegment", Bob) { (_, response) =>
-        response.status shouldEqual StatusCodes.SeeOther
-        locationHeaderOf(response) shouldEqual deltaResolveEndpoint(encodedNeurosciencegraphId)
+        response isRedirectTo deltaResolveEndpoint(encodedNeurosciencegraphId)
       }(PredefinedFromEntityUnmarshallers.stringUnmarshaller)
     }
 
     "redirect to fusion resolve if the request comes to the proxy endpoint with text/html accept header is present" in {
       deltaClient.get[String](s"/resolve-proxy-pass/$neurosciencegraphSegment", Bob, acceptTextHtml) { (_, response) =>
-        response.status shouldEqual StatusCodes.SeeOther
-        locationHeaderOf(response) shouldEqual fusionResolveEndpoint(encodedNeurosciencegraphId)
+        response isRedirectTo fusionResolveEndpoint(encodedNeurosciencegraphId)
       }(PredefinedFromEntityUnmarshallers.stringUnmarshaller)
     }
 
   }
 
+  implicit class HttpResponseOps(response: HttpResponse) {
+    def isRedirectTo(uri: String): Assertion = {
+      response.status shouldEqual StatusCodes.SeeOther
+      locationHeaderOf(response) shouldEqual uri
+    }
+  }
   private def locationHeaderOf(response: HttpResponse) =
     response.header[Location].value.uri.toString()
   private def acceptTextHtml                           =
