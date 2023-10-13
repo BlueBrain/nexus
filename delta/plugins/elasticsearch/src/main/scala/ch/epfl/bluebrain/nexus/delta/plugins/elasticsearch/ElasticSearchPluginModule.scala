@@ -23,7 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.ProjectDeletionTask
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
+import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
@@ -53,8 +53,8 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
   make[ElasticSearchViewsConfig].from { ElasticSearchViewsConfig.load(_) }
 
   make[HttpClient].named("elasticsearch-client").from {
-    (cfg: ElasticSearchViewsConfig, as: ActorSystem[Nothing], sc: Scheduler) =>
-      HttpClient()(cfg.client, as.classicSystem, sc)
+    val httpConfig = HttpClientConfig.noRetry(true)
+    (as: ActorSystem[Nothing], sc: Scheduler) => HttpClient()(httpConfig, as.classicSystem, sc)
   }
 
   make[ElasticSearchClient].from {
