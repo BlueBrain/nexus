@@ -6,6 +6,7 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{ExceptionHandler, Route}
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.jwt.AuthToken
+import ch.epfl.bluebrain.nexus.delta.kernel.jwt.TokenRejection.InvalidAccessToken
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -13,20 +14,21 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller.Anonymous
-import ch.epfl.bluebrain.nexus.delta.kernel.jwt.TokenRejection.InvalidAccessToken
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfExceptionHandler
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.TestHelpers
+import ch.epfl.bluebrain.nexus.testkit.ce.CatsIOValues
 import monix.execution.Scheduler.Implicits.global
 import org.scalatest.matchers.should.Matchers
 
-class AuthDirectivesSpec extends RouteHelpers with TestHelpers with Matchers with IOValues {
+class AuthDirectivesSpec extends RouteHelpers with TestHelpers with Matchers with CatsIOValues {
 
   implicit private val cl: ClassLoader = getClass.getClassLoader
 
@@ -57,9 +59,7 @@ class AuthDirectivesSpec extends RouteHelpers with TestHelpers with Matchers wit
     }
   }
 
-  val aclCheck = AclSimpleCheck(
-    (user, AclAddress.Root, Set(permission))
-  ).accepted
+  val aclCheck = toCatsIO(AclSimpleCheck((user, AclAddress.Root, Set(permission)))).accepted
 
   val directives = new AuthDirectives(identities, aclCheck) {}
 

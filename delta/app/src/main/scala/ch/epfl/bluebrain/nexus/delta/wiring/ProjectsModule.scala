@@ -1,13 +1,16 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
-import cats.effect.Clock
+import cats.effect.{Clock, IO}
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.toMonixBIOOps
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.ProjectsRoutes
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.{AclCheck, Acls}
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.{ProjectDeletionCoordinator, ProjectDeletionTask}
@@ -18,17 +21,18 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.WrappedOrganizationRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, Project, ProjectEvent}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, Project, ProjectEvent, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.provisioning.ProjectProvisioning
 import ch.epfl.bluebrain.nexus.delta.sdk.quotas.Quotas
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Supervisor
 import izumi.distage.model.definition.{Id, ModuleDef}
-import monix.bio.{Task, UIO}
+import monix.bio.UIO
 import monix.execution.Scheduler
 
 /**
@@ -58,9 +62,14 @@ object ProjectsModule extends ModuleDef {
         clock: Clock[UIO],
         uuidF: UUIDF
     ) =>
-      Task.pure(
+      IO.pure(
         ProjectsImpl(
-          organizations.fetchActiveOrganization(_).mapError(WrappedOrganizationRejection),
+          organizations
+            .fetchActiveOrganization(_)
+            .adaptError { case e: OrganizationRejection =>
+              WrappedOrganizationRejection(e)
+            }
+            .toBIO[ProjectRejection],
           ValidateProjectDeletion(xas, config.projects.deletion.enabled),
           scopeInitializations,
           mappings.merge,
@@ -71,7 +80,7 @@ object ProjectsModule extends ModuleDef {
   }
 
   make[ProjectsStatistics].fromEffect { (xas: Transactors) =>
-    ProjectsStatistics(xas)
+    toCatsIO(ProjectsStatistics(xas))
   }
 
   make[ProjectProvisioning].from {
@@ -81,7 +90,7 @@ object ProjectsModule extends ModuleDef {
 
   make[FetchContext[ContextRejection]].fromEffect {
     (organizations: Organizations, projects: Projects, quotas: Quotas) =>
-      Task.pure(FetchContext(organizations, projects, quotas))
+      IO.pure(FetchContext(organizations, projects, quotas))
   }
 
   make[ProjectDeletionCoordinator].fromEffect {
@@ -94,18 +103,20 @@ object ProjectsModule extends ModuleDef {
         xas: Transactors,
         clock: Clock[UIO]
     ) =>
-      ProjectDeletionCoordinator(
-        projects,
-        deletionTasks,
-        config.projects.deletion,
-        serviceAccount,
-        supervisor,
-        xas
-      )(clock)
+      toCatsIO(
+        ProjectDeletionCoordinator(
+          projects,
+          deletionTasks,
+          config.projects.deletion,
+          serviceAccount,
+          supervisor,
+          xas
+        )(clock)
+      )
   }
 
   make[UUIDCache].fromEffect { (config: AppConfig, xas: Transactors) =>
-    UUIDCache(config.projects.cache, config.organizations.cache, xas)
+    toCatsIO(UUIDCache(config.projects.cache, config.organizations.cache, xas))
   }
 
   make[DeltaSchemeDirectives].from {

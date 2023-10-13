@@ -5,6 +5,7 @@ import akka.actor.typed.scaladsl.LoggerOps
 import akka.actor.typed.scaladsl.adapter._
 import akka.actor.{ActorSystem => ActorSystemClassic}
 import akka.http.scaladsl.Http
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route, RouteResult}
 import cats.effect.{ExitCode, Resource}
 import ch.epfl.bluebrain.nexus.delta.config.{AppConfig, BuildInfo}
@@ -56,7 +57,7 @@ object Main extends BIOApp {
       (cfg, config, cl, pluginDefs) <- Resource.eval(loadPluginsAndConfig(loaderConfig))
       _                             <- Resource.eval(KamonMonitoring.initialize(config))
       modules                        = DeltaModule(cfg, config, cl)
-      (plugins, locator)            <- WiringInitializer(modules, pluginDefs)
+      (plugins, locator)            <- WiringInitializer(modules, pluginDefs).mapK(ioToTaskK)
       _                             <- bootstrap(locator, plugins)
     } yield locator
 

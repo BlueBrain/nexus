@@ -52,6 +52,10 @@
       "type": "long",
       "copy_to": "_all_fields"
     },
+    "_tags": {
+      "type": "text",
+      "copy_to": "_all_fields"
+    },
     "_deprecated": {
       "type": "boolean",
       "copy_to": "_all_fields"

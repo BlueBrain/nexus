@@ -11,6 +11,7 @@ import cats.data.NonEmptyList
 import cats.effect.{Clock, ContextShift, IO, Resource, Sync, Timer}
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
@@ -34,7 +35,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.execution.EvaluationExecution
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import com.typesafe.config.Config
 import izumi.distage.model.definition.{Id, ModuleDef}
-import monix.bio.{Task, UIO}
+import monix.bio.UIO
 import monix.execution.Scheduler
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -50,7 +51,7 @@ import scala.concurrent.duration.DurationInt
   *   the raw merged and resolved configuration
   */
 class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: ClassLoader) extends ModuleDef {
-  addImplicit[Sync[Task]]
+  addImplicit[Sync[IO]]
 
   make[AppConfig].from(appCfg)
   make[Config].from(config)
@@ -66,15 +67,16 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
   implicit val scheduler: Scheduler = Scheduler.global
 
   make[Transactors].fromResource {
-    Transactors.init(appCfg.database)
+    Transactors.init(appCfg.database).mapK(taskToIoK)
   }
 
   make[List[PluginDescription]].from { (pluginsDef: List[PluginDef]) => pluginsDef.map(_.info) }
 
   many[MetadataContextValue].addEffect(MetadataContextValue.fromFile("contexts/metadata.json"))
 
-  make[IndexingAction].named("aggregate").from { (internal: Set[IndexingAction]) =>
-    AggregateIndexingAction(NonEmptyList.fromListUnsafe(internal.toList))
+  make[AggregateIndexingAction].from {
+    (internal: Set[IndexingAction], contextShift: ContextShift[IO], cr: RemoteContextResolution @Id("aggregate")) =>
+      AggregateIndexingAction(NonEmptyList.fromListUnsafe(internal.toList))(contextShift, cr)
   }
 
   make[RemoteContextResolution].named("aggregate").fromEffect { (otherCtxResolutions: Set[RemoteContextResolution]) =>
@@ -101,7 +103,9 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
       .merge(otherCtxResolutions.toSeq: _*)
   }
 
-  make[JsonLdApi].fromValue(new JsonLdJavaApi(appCfg.jsonLdApi))
+  make[JsonLdApi].from { contextShift: ContextShift[IO] =>
+    new JsonLdJavaApi(appCfg.jsonLdApi)(contextShift)
+  }
 
   make[Clock[UIO]].from(Clock[UIO])
   make[Clock[IO]].from(Clock.create[IO])
@@ -115,17 +119,19 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
       List("@context", "@id", "@type", "reason", "details", "sourceId", "projectionId", "_total", "_results")
     )
   )
-  make[ActorSystem[Nothing]].fromResource {
-    val make    = Task.delay(
+  make[ActorSystem[Nothing]].fromResource { (timer: Timer[IO], contextShift: ContextShift[IO]) =>
+    implicit val t: Timer[IO]         = timer
+    implicit val cs: ContextShift[IO] = contextShift
+    val make                          = IO.delay(
       ActorSystem[Nothing](
         Behaviors.empty,
         appCfg.description.fullName,
         BootstrapSetup().withConfig(config).withClassloader(classLoader)
       )
     )
-    val release = (as: ActorSystem[Nothing]) => {
+    val release                       = (as: ActorSystem[Nothing]) => {
       import akka.actor.typed.scaladsl.adapter._
-      Task.deferFuture(as.toClassic.terminate()).timeout(15.seconds).void
+      IO.fromFuture(IO(as.toClassic.terminate()).timeout(15.seconds)).void
     }
     Resource.make(make)(release)
   }

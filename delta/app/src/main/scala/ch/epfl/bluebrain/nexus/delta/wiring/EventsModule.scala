@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.wiring
 
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.{ElemRoutes, EventsRoutes}
@@ -11,6 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.{SseElemStream, SseEncoder, SseEventLog}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
@@ -32,13 +34,15 @@ object EventsModule extends ModuleDef {
         xas: Transactors,
         jo: JsonKeyOrdering
     ) =>
-      SseEventLog(
-        sseEncoders,
-        organizations.fetch(_).void,
-        projects.fetch(_).map { p => (p.value.organizationUuid, p.value.uuid) },
-        config.sse,
-        xas
-      )(jo)
+      toCatsIO(
+        SseEventLog(
+          sseEncoders,
+          organizations.fetch(_).void.toBIO[OrganizationRejection],
+          projects.fetch(_).map { p => (p.value.organizationUuid, p.value.uuid) },
+          config.sse,
+          xas
+        )(jo)
+      )
   }
 
   make[SseElemStream].from { (qc: QueryConfig, xas: Transactors) =>

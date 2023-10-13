@@ -2,7 +2,8 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage
 
 import akka.actor
 import akka.actor.typed.ActorSystem
-import cats.effect.Clock
+import cats.effect.{Clock, IO}
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
@@ -22,7 +23,9 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageDeletionTa
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
+import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction.AggregateIndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.auth.{AuthTokenProvider, Credentials}
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.ProjectDeletionTask
@@ -44,7 +47,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Supervisor
 import com.typesafe.config.Config
 import izumi.distage.model.definition.{Id, ModuleDef}
-import monix.bio.{Task, UIO}
+import monix.bio.UIO
 import monix.execution.Scheduler
 
 /**
@@ -79,18 +82,20 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
       ) =>
         implicit val classicAs: actor.ActorSystem         = as.classicSystem
         implicit val storageTypeConfig: StorageTypeConfig = cfg.storages.storageTypeConfig
-        Storages(
-          fetchContext.mapRejection(StorageRejection.ProjectContextRejection),
-          contextResolution,
-          permissions.fetchPermissionSet,
-          StorageAccess.apply(_, _, remoteDiskStorageClient, storageTypeConfig),
-          xas,
-          cfg.storages,
-          serviceAccount
-        )(
-          api,
-          clock,
-          uuidF
+        toCatsIO(
+          Storages(
+            fetchContext.mapRejection(StorageRejection.ProjectContextRejection),
+            contextResolution,
+            permissions.fetchPermissionSet.toUIO,
+            StorageAccess.apply(_, _, remoteDiskStorageClient, storageTypeConfig),
+            xas,
+            cfg.storages,
+            serviceAccount
+          )(
+            api,
+            clock,
+            uuidF
+          )
         )
     }
 
@@ -118,7 +123,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         storages: Storages,
         storagesStatistics: StoragesStatistics,
         schemeDirectives: DeltaSchemeDirectives,
-        indexingAction: IndexingAction @Id("aggregate"),
+        indexingAction: AggregateIndexingAction,
         shift: Storage.Shift,
         baseUri: BaseUri,
         s: Scheduler,
@@ -133,7 +138,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           storages,
           storagesStatistics,
           schemeDirectives,
-          indexingAction(_, _, _)(shift, cr)
+          indexingAction(_, _, _)(shift)
         )(
           baseUri,
           s,
@@ -167,7 +172,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           remoteDiskStorageClient: RemoteDiskStorageClient,
           scheduler: Scheduler
       ) =>
-        Task
+        IO
           .delay(
             Files(
               fetchContext.mapRejection(FileRejection.ProjectContextRejection),
@@ -185,8 +190,8 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
               as
             )
           )
-          .tapEval { files =>
-            Files.startDigestStream(files, supervisor, storageTypeConfig)
+          .flatTap { files =>
+            toCatsIO(Files.startDigestStream(files, supervisor, storageTypeConfig))
           }
     }
 
@@ -197,7 +202,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         aclCheck: AclCheck,
         files: Files,
         schemeDirectives: DeltaSchemeDirectives,
-        indexingAction: IndexingAction @Id("aggregate"),
+        indexingAction: AggregateIndexingAction,
         shift: File.Shift,
         baseUri: BaseUri,
         s: Scheduler,
@@ -206,7 +211,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         fusionConfig: FusionConfig
     ) =>
       val storageConfig = cfg.storages.storageTypeConfig
-      new FilesRoutes(identities, aclCheck, files, schemeDirectives, indexingAction(_, _, _)(shift, cr))(
+      new FilesRoutes(identities, aclCheck, files, schemeDirectives, indexingAction(_, _, _)(shift))(
         baseUri,
         storageConfig,
         s,

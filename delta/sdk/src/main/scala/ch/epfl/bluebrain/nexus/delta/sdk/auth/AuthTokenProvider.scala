@@ -3,11 +3,9 @@ package ch.epfl.bluebrain.nexus.delta.sdk.auth
 import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.LocalCache
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.MigrateEffectSyntax
 import ch.epfl.bluebrain.nexus.delta.kernel.jwt.{AuthToken, ParsedToken}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant
 import ch.epfl.bluebrain.nexus.delta.sdk.auth.Credentials.ClientCredentials
-import monix.bio
 
 import java.time.{Duration, Instant}
 
@@ -19,10 +17,9 @@ trait AuthTokenProvider {
 }
 
 object AuthTokenProvider {
-  def apply(authService: OpenIdAuthService)(implicit clock: Clock[IO]): bio.UIO[AuthTokenProvider] = {
+  def apply(authService: OpenIdAuthService)(implicit clock: Clock[IO]): IO[AuthTokenProvider] = {
     LocalCache[ClientCredentials, ParsedToken]()
       .map(cache => new CachingOpenIdAuthTokenProvider(authService, cache))
-      .toBIO
   }
   def anonymousForTest: AuthTokenProvider            = new AnonymousAuthTokenProvider
   def fixedForTest(token: String): AuthTokenProvider = new AuthTokenProvider {
@@ -43,8 +40,7 @@ private class CachingOpenIdAuthTokenProvider(
     cache: LocalCache[ClientCredentials, ParsedToken]
 )(implicit
     clock: Clock[IO]
-) extends AuthTokenProvider
-    with MigrateEffectSyntax {
+) extends AuthTokenProvider {
 
   private val logger = Logger.cats[CachingOpenIdAuthTokenProvider]
 

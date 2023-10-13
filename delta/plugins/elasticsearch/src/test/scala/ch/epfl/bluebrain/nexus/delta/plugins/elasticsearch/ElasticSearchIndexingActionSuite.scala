@@ -14,6 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestState
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestState.PullRequestActive
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
@@ -21,14 +22,15 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedEl
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionErr.CouldNotFindPipeErr
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{NoopSink, PipeChain, PipeRef}
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
-import ch.epfl.bluebrain.nexus.testkit.bio.{BioSuite, PatienceConfig}
+import ch.epfl.bluebrain.nexus.testkit.bio.PatienceConfig
+import ch.epfl.bluebrain.nexus.testkit.ce.CatsEffectSuite
 import fs2.Stream
 import io.circe.Json
 
 import java.time.Instant
 import scala.concurrent.duration._
 
-class ElasticSearchIndexingActionSuite extends BioSuite with CirceLiteral with Fixtures {
+class ElasticSearchIndexingActionSuite extends CatsEffectSuite with CirceLiteral with Fixtures {
 
   implicit private val patienceConfig: PatienceConfig = PatienceConfig(5.seconds, 10.millis)
 
@@ -174,6 +176,7 @@ class ElasticSearchIndexingActionSuite extends BioSuite with CirceLiteral with F
 
     indexingAction
       .projections(project, elem)
+      .translate(taskToIoK)
       .fold(emptyAcc) {
         case (acc, s: SuccessElem[_]) => acc.success(s.id)
         case (acc, d: DroppedElem)    => acc.drop(d.id)
@@ -181,11 +184,11 @@ class ElasticSearchIndexingActionSuite extends BioSuite with CirceLiteral with F
       }
       .compile
       .lastOrError
-      .assert(expected)
+      .assertEquals(expected)
   }
 
   test("A valid elem should be indexed") {
-    indexingAction.apply(project, elem).assert(List.empty)
+    indexingAction.apply(project, elem).assertEquals(List.empty)
   }
 
   test("A failed elem should be returned") {
@@ -199,7 +202,7 @@ class ElasticSearchIndexingActionSuite extends BioSuite with CirceLiteral with F
       rev = 1
     )
 
-    indexingAction.apply(project, failed).assert(List(failed))
+    indexingAction.apply(project, failed).assertEquals(List(failed))
   }
 
 }

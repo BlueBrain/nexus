@@ -5,11 +5,10 @@ import akka.http.scaladsl.model.headers.BasicHttpCredentials
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
 import ch.epfl.bluebrain.nexus.delta.sdk.Defaults
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{BatchConfig, EventLogConfig, QueryConfig}
 import com.typesafe.config.Config
-import pureconfig.error.{CannotConvert, FailureReason}
+import pureconfig.error.CannotConvert
 import pureconfig.generic.semiauto.deriveReader
 import pureconfig.{ConfigReader, ConfigSource}
 
@@ -23,8 +22,6 @@ import scala.concurrent.duration._
   *   the base uri to the Elasticsearch HTTP endpoint
   * @param credentials
   *   the credentials to authenticate to the Elasticsearch endpoint
-  * @param client
-  *   configuration of the Elasticsearch client
   * @param eventLog
   *   configuration of the event log
   * @param pagination
@@ -35,8 +32,6 @@ import scala.concurrent.duration._
   *   prefix for indices
   * @param maxViewRefs
   *   configuration of the maximum number of view references allowed on an aggregated view
-  * @param idleTimeout
-  *   the maximum idle duration in between events on the indexing stream after which the stream will be stopped
   * @param syncIndexingTimeout
   *   the maximum duration for synchronous indexing to complete
   * @param syncIndexingRefresh
@@ -55,13 +50,11 @@ import scala.concurrent.duration._
 final case class ElasticSearchViewsConfig(
     base: Uri,
     credentials: Option[BasicHttpCredentials],
-    client: HttpClientConfig,
     eventLog: EventLogConfig,
     pagination: PaginationConfig,
     batch: BatchConfig,
     prefix: String,
     maxViewRefs: Int,
-    idleTimeout: Duration,
     syncIndexingTimeout: FiniteDuration,
     syncIndexingRefresh: Refresh,
     maxIndexPathLength: Int,
@@ -98,11 +91,5 @@ object ElasticSearchViewsConfig {
   }
 
   implicit final val elasticSearchViewsConfigReader: ConfigReader[ElasticSearchViewsConfig] =
-    deriveReader[ElasticSearchViewsConfig].emap { c =>
-      Either.cond(
-        c.idleTimeout.gteq(10.minutes),
-        c,
-        new FailureReason { override def description: String = "'idle-timeout' must be greater than 10 minutes" }
-      )
-    }
+    deriveReader[ElasticSearchViewsConfig]
 }

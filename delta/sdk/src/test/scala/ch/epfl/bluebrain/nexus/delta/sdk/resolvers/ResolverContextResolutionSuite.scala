@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resolvers
 
 import akka.http.scaladsl.model.Uri
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
@@ -75,8 +74,7 @@ class ResolverContextResolutionSuite extends CatsEffectSuite with TestHelpers {
 
   private val resolverContextResolution = ResolverContextResolution(rcr, resourceResolution)
 
-  private def resolve(iri: Iri) =
-    toCatsIO(resolverContextResolution(project).resolve(iri))
+  private def resolve(iri: Iri) = resolverContextResolution(project).resolve(iri)
 
   test("Resolve correctly static contexts") {
     val expected = StaticContext(contexts.metadata, metadataContext)

@@ -12,6 +12,7 @@ final case class Tags(value: Map[UserTag, Int]) extends AnyVal {
   def contains(tag: UserTag): Boolean = value.contains(tag)
   def +(tag: (UserTag, Int)): Tags    = Tags(value + tag)
   def -(tag: UserTag): Tags           = Tags(value - tag)
+  def tags: List[UserTag]             = value.keys.toList
 }
 
 object Tags {

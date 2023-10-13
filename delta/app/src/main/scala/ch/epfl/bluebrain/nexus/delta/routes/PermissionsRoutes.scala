@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.routes
 
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{MalformedRequestContentRejection, Route}
+import cats.effect.IO
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -10,23 +11,23 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.PermissionsRoutes.PatchPermissions._
 import ch.epfl.bluebrain.nexus.delta.routes.PermissionsRoutes._
+import ch.epfl.bluebrain.nexus.delta.sdk.PermissionsResource
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
+import ch.epfl.bluebrain.nexus.delta.sdk.ce.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{permissions => permissionsPerms}
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.{Permission, PermissionsRejection}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
 import io.circe.syntax._
 import io.circe.{Decoder, Json}
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
-import monix.execution.Scheduler
 
 import scala.annotation.nowarn
 
@@ -42,7 +43,6 @@ import scala.annotation.nowarn
   */
 final class PermissionsRoutes(identities: Identities, permissions: Permissions, aclCheck: AclCheck)(implicit
     baseUri: BaseUri,
-    s: Scheduler,
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering
 ) extends AuthDirectives(identities, aclCheck)
@@ -65,8 +65,8 @@ final class PermissionsRoutes(identities: Identities, permissions: Permissions, 
                   get {
                     authorizeFor(AclAddress.Root, permissionsPerms.read).apply {
                       parameter("rev".as[Int].?) {
-                        case Some(rev) => emit(permissions.fetchAt(rev))
-                        case None      => emit(permissions.fetch)
+                        case Some(rev) => emitPermissions(permissions.fetchAt(rev))
+                        case None      => emitPermissions(permissions.fetch)
                       }
                     }
                   },
@@ -74,7 +74,7 @@ final class PermissionsRoutes(identities: Identities, permissions: Permissions, 
                   (put & parameter("rev" ? 0)) { rev =>
                     authorizeFor(AclAddress.Root, permissionsPerms.write).apply {
                       entity(as[PatchPermissions]) {
-                        case Replace(set) => emit(permissions.replace(set, rev).map(_.void))
+                        case Replace(set) => emitVoid(permissions.replace(set, rev))
                         case _            =>
                           reject(
                             malformedContent(s"Value for field '${keywords.tpe}' must be 'Replace' when using 'PUT'.")
@@ -86,8 +86,8 @@ final class PermissionsRoutes(identities: Identities, permissions: Permissions, 
                   (patch & parameter("rev" ? 0)) { rev =>
                     authorizeFor(AclAddress.Root, permissionsPerms.write).apply {
                       entity(as[PatchPermissions]) {
-                        case Append(set)   => emit(permissions.append(set, rev).map(_.void))
-                        case Subtract(set) => emit(permissions.subtract(set, rev).map(_.void))
+                        case Append(set)   => emitVoid(permissions.append(set, rev))
+                        case Subtract(set) => emitVoid(permissions.subtract(set, rev))
                         case _             =>
                           reject(
                             malformedContent(
@@ -101,7 +101,7 @@ final class PermissionsRoutes(identities: Identities, permissions: Permissions, 
                   delete {
                     authorizeFor(AclAddress.Root, permissionsPerms.write).apply {
                       parameter("rev".as[Int]) { rev =>
-                        emit(permissions.delete(rev).map(_.void))
+                        emitVoid(permissions.delete(rev))
                       }
                     }
                   }
@@ -112,6 +112,14 @@ final class PermissionsRoutes(identities: Identities, permissions: Permissions, 
         }
       }
     }
+
+  private def emitVoid(value: IO[PermissionsResource]) = {
+    emit(value.map(_.void).attemptNarrow[PermissionsRejection])
+  }
+
+  private def emitPermissions(value: IO[PermissionsResource]) = {
+    emit(value.attemptNarrow[PermissionsRejection])
+  }
 
   private def malformedContent(field: String) =
     MalformedRequestContentRejection(field, new IllegalArgumentException())
@@ -125,7 +133,6 @@ object PermissionsRoutes {
     */
   def apply(identities: Identities, permissions: Permissions, aclCheck: AclCheck)(implicit
       baseUri: BaseUri,
-      s: Scheduler,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering
   ): Route =

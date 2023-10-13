@@ -14,6 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeChain, ProjectionErr}
 import io.circe.JsonObject
 import monix.bio.{IO, UIO}
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 
 import java.util.UUID
 
@@ -39,7 +40,7 @@ object ValidateElasticSearchView {
   ): ValidateElasticSearchView =
     apply(
       validatePipeChain,
-      permissions.fetchPermissionSet,
+      permissions.fetchPermissionSet.toUIO,
       client.createIndex(_, _, _).void,
       prefix,
       maxViewRefs,

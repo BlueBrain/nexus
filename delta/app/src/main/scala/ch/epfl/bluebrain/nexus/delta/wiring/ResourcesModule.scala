@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.ResourcesRoutes
+import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction.AggregateIndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
@@ -81,7 +82,7 @@ object ResourcesModule extends ModuleDef {
         aclCheck: AclCheck,
         resources: Resources,
         schemeDirectives: DeltaSchemeDirectives,
-        indexingAction: IndexingAction @Id("aggregate"),
+        indexingAction: AggregateIndexingAction,
         shift: Resource.Shift,
         baseUri: BaseUri,
         s: Scheduler,
@@ -95,7 +96,7 @@ object ResourcesModule extends ModuleDef {
         aclCheck,
         resources,
         schemeDirectives,
-        indexingAction(_, _, _)(shift, cr)
+        indexingAction(_, _, _)(shift)
       )(
         baseUri,
         s,

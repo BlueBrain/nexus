@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.routes
 
 import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.server.Directives._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import akka.http.scaladsl.server._
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages._
@@ -10,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, St
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions.{read => Read, write => Write}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction
+import ch.epfl.bluebrain.nexus.delta.sdk.{IndexingAction, IndexingMode}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
@@ -19,8 +20,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.Json
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.execution.Scheduler
@@ -59,6 +61,9 @@ final class StoragesRoutes(
   import baseUri.prefixSegment
   import schemeDirectives._
 
+  private def indexUIO(project: ProjectRef, resource: ResourceF[Storage], mode: IndexingMode) =
+    index(project, resource, mode).toUIO
+
   def routes: Route =
     (baseUriPrefix(baseUri.prefix) & replaceUri("storages", schemas.storage)) {
       pathPrefix("storages") {
@@ -71,7 +76,7 @@ final class StoragesRoutes(
                   authorizeFor(ref, Write).apply {
                     emit(
                       Created,
-                      storages.create(ref, source).tapEval(index(ref, _, mode)).mapValue(_.metadata)
+                      storages.create(ref, source).tapEval(indexUIO(ref, _, mode)).mapValue(_.metadata)
                     )
                   }
                 }
@@ -91,7 +96,7 @@ final class StoragesRoutes(
                                   Created,
                                   storages
                                     .create(id, ref, source)
-                                    .tapEval(index(ref, _, mode))
+                                    .tapEval(indexUIO(ref, _, mode))
                                     .mapValue(_.metadata)
                                 )
                               case (Some(rev), source) =>
@@ -99,7 +104,7 @@ final class StoragesRoutes(
                                 emit(
                                   storages
                                     .update(id, ref, rev, source)
-                                    .tapEval(index(ref, _, mode))
+                                    .tapEval(indexUIO(ref, _, mode))
                                     .mapValue(_.metadata)
                                 )
                             }
@@ -111,7 +116,7 @@ final class StoragesRoutes(
                             emit(
                               storages
                                 .deprecate(id, ref, rev)
-                                .tapEval(index(ref, _, mode))
+                                .tapEval(indexUIO(ref, _, mode))
                                 .mapValue(_.metadata)
                                 .rejectOn[StorageNotFound]
                             )
@@ -162,7 +167,7 @@ final class StoragesRoutes(
                                 Created,
                                 storages
                                   .tag(id, ref, tag, tagRev, rev)
-                                  .tapEval(index(ref, _, mode))
+                                  .tapEval(indexUIO(ref, _, mode))
                                   .mapValue(_.metadata)
                               )
                             }

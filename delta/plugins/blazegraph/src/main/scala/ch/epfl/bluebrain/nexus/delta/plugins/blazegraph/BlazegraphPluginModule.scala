@@ -13,7 +13,9 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries.{BlazegraphS
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
+import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction.AggregateIndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.ProjectDeletionTask
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
@@ -60,11 +62,13 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
 
   make[BlazegraphSlowQueryDeleter].fromEffect {
     (supervisor: Supervisor, store: BlazegraphSlowQueryStore, cfg: BlazegraphViewsConfig) =>
-      BlazegraphSlowQueryDeleter.start(
-        supervisor,
-        store,
-        cfg.slowQueries.logTtl,
-        cfg.slowQueries.deleteExpiredLogsEvery
+      toCatsIO(
+        BlazegraphSlowQueryDeleter.start(
+          supervisor,
+          store,
+          cfg.slowQueries.logTtl,
+          cfg.slowQueries.deleteExpiredLogsEvery
+        )
       )
   }
 
@@ -102,7 +106,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         xas: Transactors
     ) =>
       ValidateBlazegraphView(
-        permissions.fetchPermissionSet,
+        permissions.fetchPermissionSet.toUIO,
         config.maxViewRefs,
         xas
       )
@@ -121,15 +125,17 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
           clock: Clock[UIO],
           uuidF: UUIDF
       ) =>
-        BlazegraphViews(
-          fetchContext.mapRejection(ProjectContextRejection),
-          contextResolution,
-          validate,
-          client,
-          config.eventLog,
-          config.prefix,
-          xas
-        )(api, clock, uuidF)
+        toCatsIO(
+          BlazegraphViews(
+            fetchContext.mapRejection(ProjectContextRejection),
+            contextResolution,
+            validate,
+            client,
+            config.eventLog,
+            config.prefix,
+            xas
+          )(api, clock, uuidF)
+        )
     }
 
   make[BlazegraphCoordinator].fromEffect {
@@ -142,14 +148,16 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         config: BlazegraphViewsConfig,
         baseUri: BaseUri
     ) =>
-      BlazegraphCoordinator(
-        views,
-        graphStream,
-        registry,
-        supervisor,
-        client,
-        config
-      )(baseUri)
+      toCatsIO(
+        BlazegraphCoordinator(
+          views,
+          graphStream,
+          registry,
+          supervisor,
+          client,
+          config
+        )(baseUri)
+      )
   }
 
   make[BlazegraphViewsQuery].fromEffect {
@@ -162,14 +170,16 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         cfg: BlazegraphViewsConfig,
         xas: Transactors
     ) =>
-      BlazegraphViewsQuery(
-        aclCheck,
-        fetchContext.mapRejection(ProjectContextRejection),
-        views,
-        client,
-        slowQueryLogger,
-        cfg.prefix,
-        xas
+      toCatsIO(
+        BlazegraphViewsQuery(
+          aclCheck,
+          fetchContext.mapRejection(ProjectContextRejection),
+          views,
+          client,
+          slowQueryLogger,
+          cfg.prefix,
+          xas
+        )
       )
   }
 
@@ -180,7 +190,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         views: BlazegraphViews,
         viewsQuery: BlazegraphViewsQuery,
         schemeDirectives: DeltaSchemeDirectives,
-        indexingAction: IndexingAction @Id("aggregate"),
+        indexingAction: AggregateIndexingAction,
         shift: BlazegraphView.Shift,
         baseUri: BaseUri,
         cfg: BlazegraphViewsConfig,
@@ -195,7 +205,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         identities,
         aclCheck,
         schemeDirectives,
-        indexingAction(_, _, _)(shift, cr)
+        indexingAction(_, _, _)(shift)
       )(
         baseUri,
         s,

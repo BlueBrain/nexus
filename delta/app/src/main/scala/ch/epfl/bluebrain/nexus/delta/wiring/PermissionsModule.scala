@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
-import cats.effect.Clock
+import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
@@ -16,8 +16,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.{Permissions, PermissionsIm
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import izumi.distage.model.definition.{Id, ModuleDef}
-import monix.bio.UIO
-import monix.execution.Scheduler
 
 /**
   * Permissions module wiring config.
@@ -26,7 +24,7 @@ import monix.execution.Scheduler
 object PermissionsModule extends ModuleDef {
   implicit private val classLoader: ClassLoader = getClass.getClassLoader
 
-  make[Permissions].from { (cfg: AppConfig, xas: Transactors, clock: Clock[UIO]) =>
+  make[Permissions].from { (cfg: AppConfig, xas: Transactors, clock: Clock[IO]) =>
     PermissionsImpl(
       cfg.permissions,
       xas
@@ -39,10 +37,9 @@ object PermissionsModule extends ModuleDef {
         permissions: Permissions,
         aclCheck: AclCheck,
         baseUri: BaseUri,
-        s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
-    ) => new PermissionsRoutes(identities, permissions, aclCheck)(baseUri, s, cr, ordering)
+    ) => new PermissionsRoutes(identities, permissions, aclCheck)(baseUri, cr, ordering)
   }
 
   many[SseEncoder[_]].add { base: BaseUri => PermissionsEvent.sseEncoder(base) }
