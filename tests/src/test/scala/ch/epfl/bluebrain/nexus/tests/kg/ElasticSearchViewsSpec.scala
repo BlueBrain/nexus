@@ -85,17 +85,18 @@ class ElasticSearchViewsSpec extends BaseSpec with EitherValuable with CirceEq {
     }
 
     "fail to create a view with an invalid mapping" in {
-      val invalidMapping =
+      val invalidMapping            =
         json"""{"mapping": "fail"}"""
-      val payload        = json"""{ "@type": "ElasticSearchView", "mapping": $invalidMapping }"""
-      deltaClient.put[Json](s"/views/$fullId/invalid", payload, ScoobyDoo) { expectBadRequest }
+      val payloadWithInvalidMapping = json"""{ "@type": "ElasticSearchView", "mapping": $invalidMapping }"""
+      deltaClient.put[Json](s"/views/$fullId/invalid", payloadWithInvalidMapping, ScoobyDoo) { expectBadRequest }
     }
 
     "fail to create a view with invalid settings" in {
-      val invalidSettings =
+      val invalidSettings            =
         json"""{"analysis": "fail"}"""
-      val payload         = json"""{ "@type": "ElasticSearchView", "mapping": { }, "settings": $invalidSettings }"""
-      deltaClient.put[Json](s"/views/$fullId/invalid", payload, ScoobyDoo) { expectBadRequest }
+      val payloadWithInvalidSettings =
+        json"""{ "@type": "ElasticSearchView", "mapping": { }, "settings": $invalidSettings }"""
+      deltaClient.put[Json](s"/views/$fullId/invalid", payloadWithInvalidSettings, ScoobyDoo) { expectBadRequest }
     }
 
     "create people view in project 2" in {
