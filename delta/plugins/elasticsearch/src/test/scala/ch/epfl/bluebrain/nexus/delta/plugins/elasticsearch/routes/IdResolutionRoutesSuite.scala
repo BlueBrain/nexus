@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
 
 import akka.http.scaladsl.model.headers.Location
-import akka.http.scaladsl.model.{HttpResponse, StatusCodes, Uri}
+import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.IdResolution
@@ -45,7 +45,7 @@ class IdResolutionRoutesSuite extends ElasticSearchViewsRoutesFixtures {
 
   private val idResolution = new IdResolution(dummyDefaultViewsQuery, fetchResource)
   private val route        =
-    Route.seal(new IdResolutionRoutes(identities, aclCheck, idResolution, Uri("https://bbp.epfl.ch"), baseUri).routes)
+    Route.seal(new IdResolutionRoutes(identities, aclCheck, idResolution, baseUri).routes)
 
   "The IdResolution route" should {
 
