@@ -4,13 +4,13 @@ import akka.http.scaladsl.model.StatusCodes.{Created, OK}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.ResourcesRoutes.asSourceWithMetadata
 import ch.epfl.bluebrain.nexus.delta.sdk._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
@@ -79,12 +79,15 @@ final class ResourcesRoutes(
           resolveProjectRef.apply { ref =>
             concat(
               // Create a resource without schema nor id segment
-              (post & pathEndOrSingleSlash & noParameter("rev") & entity(as[NexusSource]) & indexingMode) {
-                (source, mode) =>
+              (post & pathEndOrSingleSlash & noParameter("rev") & entity(as[NexusSource]) & indexingMode & tagParam) {
+                (source, mode, tag) =>
                   authorizeFor(ref, Write).apply {
                     emit(
                       Created,
-                      resources.create(ref, resourceSchema, source.value).tapEval(indexUIO(ref, _, mode)).map(_.void)
+                      resources
+                        .create(ref, resourceSchema, source.value, tag)
+                        .tapEval(indexUIO(ref, _, mode))
+                        .map(_.void)
                     )
                   }
               },
@@ -92,13 +95,13 @@ final class ResourcesRoutes(
                 val schemaOpt = underscoreToOption(schema)
                 concat(
                   // Create a resource with schema but without id segment
-                  (post & pathEndOrSingleSlash & noParameter("rev")) {
+                  (post & pathEndOrSingleSlash & noParameter("rev") & tagParam) { tag =>
                     authorizeFor(ref, Write).apply {
                       entity(as[NexusSource]) { source =>
                         emit(
                           Created,
                           resources
-                            .create(ref, schema, source.value)
+                            .create(ref, schema, source.value, tag)
                             .tapEval(indexUIO(ref, _, mode))
                             .map(_.void)
                             .rejectWhen(wrongJsonOrNotFound)
@@ -113,18 +116,18 @@ final class ResourcesRoutes(
                           // Create or update a resource
                           put {
                             authorizeFor(ref, Write).apply {
-                              (parameter("rev".as[Int].?) & pathEndOrSingleSlash & entity(as[NexusSource])) {
-                                case (None, source)      =>
+                              (parameter("rev".as[Int].?) & pathEndOrSingleSlash & entity(as[NexusSource]) & tagParam) {
+                                case (None, source, tag)    =>
                                   // Create a resource with schema and id segments
                                   emit(
                                     Created,
                                     resources
-                                      .create(id, ref, schema, source.value)
+                                      .create(id, ref, schema, source.value, tag)
                                       .tapEval(indexUIO(ref, _, mode))
                                       .map(_.void)
                                       .rejectWhen(wrongJsonOrNotFound)
                                   )
-                                case (Some(rev), source) =>
+                                case (Some(rev), source, _) =>
                                   // Update a resource
                                   emit(
                                     resources

@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceResolut
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceUris
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegmentRef, ResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{events, resources}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
@@ -29,6 +29,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resources.{Resources, ResourcesConfig, 
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.testkit.bio.IOFromMap
 import io.circe.{Json, Printer}
@@ -61,12 +62,19 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap {
   private val schemaSource = jsonContentOf("resources/schema.json").addContext(contexts.shacl, contexts.schemasMetadata)
   private val schema1      = SchemaGen.schema(nxv + "myschema", project.value.ref, schemaSource.removeKeys(keywords.id))
   private val schema2      = SchemaGen.schema(schema.Person, project.value.ref, schemaSource.removeKeys(keywords.id))
+  private val tag          = UserTag.unsafe("mytag")
 
-  private val myId                        = nxv + "myid"  // Resource created against no schema with id present on the payload
-  private val myId2                       = nxv + "myid2" // Resource created against schema1 with id present on the payload
-  private val myId3                       = nxv + "myid3" // Resource created against no schema with id passed and present on the payload
-  private val myId4                       = nxv + "myid4" // Resource created against schema1 with id passed and present on the payload
-  private val myId5                       = nxv + "myid5" // Resource created against schema1 with id passed and present on the payload
+  private val myId  = nxv + "myid"  // Resource created against no schema with id present on the payload
+  private val myId2 = nxv + "myid2" // Resource created against schema1 with id present on the payload
+  private val myId3 = nxv + "myid3" // Resource created against no schema with id passed and present on the payload
+  private val myId4 = nxv + "myid4" // Resource created against schema1 with id passed and present on the payload
+  private val myId5 = nxv + "myid5" // Resource created against schema1 with id passed and present on the payload
+  private val myId6 = nxv + "myid6" // Resource created and tagged against no schema with id present on the payload
+  private val myId7 = nxv + "myid7" // Resource created and tagged against no schema with id present on the payload
+  private val myId8 =
+    nxv + "myid8" // Resource created and tagged against no schema with id passed and present on the payload
+  private val myId9 =
+    nxv + "myid9" // Resource created and tagged against schema1 with id passed and present on the payload
   private val myIdEncoded                 = UrlUtils.encode(myId.toString)
   private val myId2Encoded                = UrlUtils.encode(myId2.toString)
   private val payload                     = jsonContentOf("resources/resource.json", "id" -> myId)
@@ -94,7 +102,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap {
   private val fetchContext                                         = FetchContextDummy(List(project.value), ProjectContextRejection)
   private val resolverContextResolution: ResolverContextResolution = ResolverContextResolution(rcr)
 
-  private def routesWithDecodingOption(implicit decodingOption: DecodingOption) = {
+  private def routesWithDecodingOption(implicit decodingOption: DecodingOption): (Route, Resources) = {
     val resources = ResourcesImpl(
       validator,
       fetchContext,
@@ -102,18 +110,25 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap {
       ResourcesConfig(eventLogConfig, decodingOption),
       xas
     )
-    Route.seal(
-      ResourcesRoutes(
-        IdentitiesDummy(caller),
-        aclCheck,
-        resources,
-        DeltaSchemeDirectives(fetchContext, ioFromMap(uuid -> projectRef.organization), ioFromMap(uuid -> projectRef)),
-        IndexingAction.noop
-      )
+    (
+      Route.seal(
+        ResourcesRoutes(
+          IdentitiesDummy(caller),
+          aclCheck,
+          resources,
+          DeltaSchemeDirectives(
+            fetchContext,
+            ioFromMap(uuid -> projectRef.organization),
+            ioFromMap(uuid -> projectRef)
+          ),
+          IndexingAction.noop
+        )
+      ),
+      resources
     )
   }
 
-  private lazy val routes = routesWithDecodingOption(DecodingOption.Strict)
+  private lazy val routes = routesWithDecodingOption(DecodingOption.Strict)._1
 
   private val payloadUpdated = payload deepMerge json"""{"name": "Alice", "address": null}"""
 
@@ -149,6 +164,22 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap {
       }
     }
 
+    "create a tagged resource" in {
+      val endpoints           = List(
+        ("/v1/resources/myorg/myproject?tag=mytag", myId6, schemas.resources),
+        ("/v1/resources/myorg/myproject/myschema?tag=mytag", myId7, schema1.id)
+      )
+      val (routes, resources) = routesWithDecodingOption(DecodingOption.Strict)
+      forAll(endpoints) { case (endpoint, id, schema) =>
+        val payload = jsonContentOf("resources/resource.json", "id" -> id)
+        Post(endpoint, payload.toEntity) ~> routes ~> check {
+          status shouldEqual StatusCodes.Created
+          response.asJson shouldEqual resourceMetadata(projectRef, id, schema, (nxv + "Custom").toString)
+          lookupResourceByTag(resources, id) should contain(tag)
+        }
+      }
+    }
+
     "create a resource with an authenticated user and provided id" in {
       val endpoints = List(
         ("/v1/resources/myorg/myproject/_/myid3", myId3, schemas.resources),
@@ -161,9 +192,28 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap {
           response.asJson shouldEqual
             resourceMetadata(projectRef, id, schema, (nxv + "Custom").toString, createdBy = alice, updatedBy = alice)
         }
-
       }
     }
+
+    "create a tagged resource with an authenticated user and provided id" in {
+      val endpoints           = List(
+        ("/v1/resources/myorg/myproject/_/myid8?tag=mytag", myId8, schemas.resources),
+        ("/v1/resources/myorg/myproject/myschema/myid9?tag=mytag", myId9, schema1.id)
+      )
+      val (routes, resources) = routesWithDecodingOption(DecodingOption.Strict)
+      forAll(endpoints) { case (endpoint, id, schema) =>
+        val payload = jsonContentOf("resources/resource.json", "id" -> id)
+        Put(endpoint, payload.toEntity) ~> asAlice ~> routes ~> check {
+          status shouldEqual StatusCodes.Created
+          response.asJson shouldEqual
+            resourceMetadata(projectRef, id, schema, (nxv + "Custom").toString, createdBy = alice, updatedBy = alice)
+          lookupResourceByTag(resources, id) should contain(tag)
+        }
+      }
+    }
+
+    def lookupResourceByTag(resources: Resources, id: Iri): List[UserTag] =
+      resources.fetch(IdSegmentRef(id, tag), projectRef, None).accepted.value.tags.value.keys.toList
 
     "reject the creation of a resource which already exists" in {
       Put("/v1/resources/myorg/myproject/_/myid", payload.toEntity) ~> routes ~> check {
@@ -210,7 +260,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap {
     }
 
     "succeed if underscore fields are present but the decoding is set to lenient" in {
-      val lenientDecodingRoutes = routesWithDecodingOption(DecodingOption.Lenient)
+      val lenientDecodingRoutes = routesWithDecodingOption(DecodingOption.Lenient)._1
 
       Post("/v1/resources/myorg/myproject/_/", payloadWithUnderscoreFields.toEntity) ~> lenientDecodingRoutes ~> check {
         response.status shouldEqual StatusCodes.Created

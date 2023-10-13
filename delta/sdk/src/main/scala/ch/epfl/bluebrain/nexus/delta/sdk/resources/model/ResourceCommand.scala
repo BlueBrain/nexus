@@ -70,7 +70,8 @@ object ResourceCommand {
       schema: ResourceRef,
       source: Json,
       jsonld: JsonLdResult,
-      caller: Caller
+      caller: Caller,
+      tag: Option[UserTag]
   ) extends ResourceCommand {
 
     override def rev: Int = 0
