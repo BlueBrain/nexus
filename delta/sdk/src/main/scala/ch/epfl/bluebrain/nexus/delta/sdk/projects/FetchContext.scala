@@ -14,6 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import io.circe.{Encoder, JsonObject}
 import monix.bio.{IO, UIO}
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 
 import scala.collection.concurrent
 
@@ -144,7 +145,12 @@ object FetchContext {
     * Create a fetch context instance from an [[Organizations]], [[Projects]] and [[Quotas]] instances
     */
   def apply(organizations: Organizations, projects: Projects, quotas: Quotas): FetchContext[ContextRejection] =
-    apply(organizations.fetchActiveOrganization(_).void, projects.defaultApiMappings, projects.fetch, quotas)
+    apply(
+      organizations.fetchActiveOrganization(_).void.toBIO[OrganizationRejection],
+      projects.defaultApiMappings,
+      projects.fetch,
+      quotas
+    )
 
   def apply(
       fetchActiveOrganization: Label => IO[OrganizationRejection, Unit],

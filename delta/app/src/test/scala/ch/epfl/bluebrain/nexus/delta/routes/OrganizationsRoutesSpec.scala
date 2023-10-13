@@ -29,10 +29,11 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.bio.IOFromMap
 import io.circe.Json
 import cats.effect.IO
+import ch.epfl.bluebrain.nexus.testkit.ce.{CatsIOValues, IOFixedClock}
 
 import java.util.UUID
 
-class OrganizationsRoutesSpec extends BaseRouteSpec with IOFromMap {
+class OrganizationsRoutesSpec extends BaseRouteSpec with IOFromMap with IOFixedClock with CatsIOValues {
 
   private val fixedUuid             = UUID.randomUUID()
   implicit private val uuidF: UUIDF = UUIDF.fixed(fixedUuid)
