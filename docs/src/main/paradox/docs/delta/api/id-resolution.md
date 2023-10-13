@@ -60,7 +60,7 @@ This will allow to "inject" the user's token in a subsequent @ref:[resolve](#res
 
 * `app.fusion.base`: String - base URL for Nexus Fusion
 * `app.fusion.enable-redirects`: Boolean - needs to be `true` in order for redirects to work (defaults to `false`)
-* `plugins.elasticsearch.proxy-id-base`: String - base URL to use when reconstructing the resource identifier in the
+* `app.fusion.proxy-id-base`: String - base URL to use when reconstructing the resource identifier in the
   proxy pass endpoint
 
 ### Redirection
@@ -82,7 +82,7 @@ All calls to the `/v1/resolve-proxy-pass` endpoint lead to
 
 The example below assumes that:
 
-* `{fusionBaseUrl}` = `https://localhost:8080/fusion`
+* `{fusionBaseUrl}` = `http://localhost:8080/fusion`
 * `{segment}` = `nexus/data/identifier`
 * `{proxyIdBase}` = `https://example.com`
 

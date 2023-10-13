@@ -271,11 +271,10 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         s: Scheduler,
         ordering: JsonKeyOrdering,
         rcr: RemoteContextResolution @Id("aggregate"),
-        esConfig: ElasticSearchViewsConfig,
         fusionConfig: FusionConfig,
         baseUri: BaseUri
     ) =>
-      new IdResolutionRoutes(identities, aclCheck, idResolution, esConfig.proxyIdBase, baseUri)(
+      new IdResolutionRoutes(identities, aclCheck, idResolution, baseUri)(
         s,
         ordering,
         rcr,

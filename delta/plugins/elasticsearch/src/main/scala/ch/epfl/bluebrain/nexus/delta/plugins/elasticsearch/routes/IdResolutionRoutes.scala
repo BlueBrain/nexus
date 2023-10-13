@@ -22,7 +22,6 @@ class IdResolutionRoutes(
     identities: Identities,
     aclCheck: AclCheck,
     idResolution: IdResolution,
-    proxyIdBase: Uri,
     baseUri: BaseUri
 )(implicit s: Scheduler, jko: JsonKeyOrdering, rcr: RemoteContextResolution, fusionConfig: FusionConfig)
     extends AuthDirectives(identities, aclCheck) {
@@ -47,7 +46,7 @@ class IdResolutionRoutes(
     pathPrefix("resolve-proxy-pass") {
       extractUnmatchedPath { path =>
         get {
-          val resourceId = proxyIdBase / path
+          val resourceId = fusionConfig.proxyIdBase / path
           emitOrFusionRedirect(
             fusionResolveUri(resourceId),
             redirect(deltaResolveEndpoint(resourceId), StatusCodes.SeeOther)

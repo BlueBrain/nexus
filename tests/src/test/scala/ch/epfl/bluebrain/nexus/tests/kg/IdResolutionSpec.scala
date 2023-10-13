@@ -37,7 +37,8 @@ class IdResolutionSpec extends BaseSpec {
   private val reusedResourcePayload = resource(reusedId)
 
   private val neurosciencegraphSegment   = "neurosciencegraph/data/segment"
-  private val neurosciencegraphId        = s"https://bbp.epfl.ch/$neurosciencegraphSegment"
+  private val proxyIdBase                = "http://localhost:8081"
+  private val neurosciencegraphId        = s"$proxyIdBase/$neurosciencegraphSegment"
   private val encodedNeurosciencegraphId = UrlUtils.encode(neurosciencegraphId)
 
   private val unauthorizedAccessErrorPayload =

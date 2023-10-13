@@ -51,8 +51,6 @@ import scala.concurrent.duration._
   *   the maximum number of terms returned by a term aggregation for listing aggregations
   * @param indexingEnabled
   *   if false, disables Elasticsearch indexing
-  * @param proxyIdBase
-  *   base to use to reconstruct resource identifiers in the proxy pass
   */
 final case class ElasticSearchViewsConfig(
     base: Uri,
@@ -70,8 +68,7 @@ final case class ElasticSearchViewsConfig(
     defaults: Defaults,
     metricsQuery: QueryConfig,
     listingBucketSize: Int,
-    indexingEnabled: Boolean,
-    proxyIdBase: Uri
+    indexingEnabled: Boolean
 )
 
 object ElasticSearchViewsConfig {
