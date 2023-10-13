@@ -48,6 +48,7 @@ class ResourcesSpec
     val time2   = Instant.ofEpochMilli(10L)
     val subject = User("myuser", Label.unsafe("myrealm"))
     val caller  = Caller(subject, Set.empty)
+    val tag     = UserTag.unsafe("mytag")
 
     val jsonld = JsonLdResult(myId, compacted, expanded, remoteContexts)
 
@@ -62,7 +63,7 @@ class ResourcesSpec
           val schemaRev = Revision(schemaRef.iri, 1)
           eval(
             None,
-            CreateResource(myId, projectRef, schemaRef, source, jsonld, caller)
+            CreateResource(myId, projectRef, schemaRef, source, jsonld, caller, Some(tag))
           ).accepted shouldEqual
             ResourceCreated(
               myId,
@@ -76,7 +77,8 @@ class ResourcesSpec
               remoteContextRefs,
               1,
               epoch,
-              subject
+              subject,
+              Some(tag)
             )
         }
       }
@@ -252,7 +254,8 @@ class ResourcesSpec
             remoteContexts,
             1,
             epoch,
-            subject
+            subject,
+            Some(tag)
           )
         ).value shouldEqual
           current.copy(
@@ -261,7 +264,7 @@ class ResourcesSpec
             createdBy = subject,
             updatedAt = epoch,
             updatedBy = subject,
-            tags = Tags.empty
+            tags = Tags(tag -> schemaRev.rev)
           )
 
         next(
@@ -278,7 +281,8 @@ class ResourcesSpec
             remoteContexts,
             1,
             time2,
-            subject
+            subject,
+            Some(tag)
           )
         ) shouldEqual None
       }
