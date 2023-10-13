@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
-import cats.effect.Clock
+import cats.effect.{Clock, ContextShift, IO}
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
@@ -14,13 +14,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, MetadataContextValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationEvent
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.{Organizations, OrganizationsImpl}
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.{OrganizationDeleter, Organizations, OrganizationsImpl}
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import izumi.distage.model.definition.{Id, ModuleDef}
-import monix.bio.UIO
-import monix.execution.Scheduler
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.OrganizationDeleter
 
 /**
   * Organizations module wiring config.
@@ -33,15 +30,16 @@ object OrganizationsModule extends ModuleDef {
     (
         config: AppConfig,
         scopeInitializations: Set[ScopeInitialization],
-        clock: Clock[UIO],
+        clock: Clock[IO],
         uuidF: UUIDF,
-        xas: Transactors
+        xas: Transactors,
+        contextShift: ContextShift[IO]
     ) =>
       OrganizationsImpl(
         scopeInitializations,
         config.organizations,
         xas
-      )(clock, uuidF)
+      )(clock, uuidF, contextShift)
   }
 
   make[OrganizationDeleter].from { (xas: Transactors) =>
@@ -56,14 +54,12 @@ object OrganizationsModule extends ModuleDef {
         cfg: AppConfig,
         aclCheck: AclCheck,
         schemeDirectives: DeltaSchemeDirectives,
-        s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
     ) =>
       new OrganizationsRoutes(identities, organizations, orgDeleter, aclCheck, schemeDirectives)(
         cfg.http.baseUri,
         cfg.organizations.pagination,
-        s,
         cr,
         ordering
       )

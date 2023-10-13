@@ -1,6 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.organizations
 
+import cats.effect.IO
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclsImpl
@@ -16,23 +18,22 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.{ProjectsConfig, ProjectsFixtu
 import ch.epfl.bluebrain.nexus.delta.sourcing.PartitionInit
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.testkit.IOFixedClock
-import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
+import ch.epfl.bluebrain.nexus.testkit.ce.{CatsEffectSuite, IOFixedClock}
 import doobie.implicits._
-import monix.bio.{IO, Task, UIO}
+import monix.bio.{IO => BIO}
 import munit.AnyFixture
 
 import java.util.UUID
 
-class OrganizationDeleterSuite extends BioSuite with IOFixedClock with ConfigFixtures {
+class OrganizationDeleterSuite extends CatsEffectSuite with IOFixedClock with ConfigFixtures {
 
   private val org1 = Label.unsafe("org1")
   private val org2 = Label.unsafe("org2")
 
   private def fetchOrg: FetchOrganization = {
-    case `org1` => UIO.pure(Organization(org1, UUID.randomUUID(), None))
-    case `org2` => UIO.pure(Organization(org2, UUID.randomUUID(), None))
-    case other  => IO.raiseError(WrappedOrganizationRejection(OrganizationNotFound(other)))
+    case `org1` => BIO.pure(Organization(org1, UUID.randomUUID(), None))
+    case `org2` => BIO.pure(Organization(org2, UUID.randomUUID(), None))
+    case other  => BIO.raiseError(WrappedOrganizationRejection(OrganizationNotFound(other)))
   }
 
   private val config              = ProjectsConfig(eventLogConfig, pagination, cacheConfig, deletionConfig)
@@ -47,7 +48,7 @@ class OrganizationDeleterSuite extends BioSuite with IOFixedClock with ConfigFix
   private val fields               = ProjectFields(None, ApiMappings.empty, None, None)
   private lazy val orgs            = OrganizationsImpl(Set(), orgConfig, xas)
   private val permission           = Permissions.resources.read
-  private lazy val acls            = AclsImpl(UIO.pure(Set(permission)), _ => IO.unit, Set(), aclsConfig, xas)
+  private lazy val acls            = AclsImpl(BIO.pure(Set(permission)), _ => BIO.unit, Set(), aclsConfig, xas)
 
   implicit val subject: Subject = Identity.User("Bob", Label.unsafe("realm"))
   implicit val uuidF: UUIDF     = UUIDF.fixed(UUID.randomUUID())
@@ -69,20 +70,20 @@ class OrganizationDeleterSuite extends BioSuite with IOFixedClock with ConfigFix
     } yield ()
   }
 
-  def createOrgAndAcl(org: Label) = for {
-    _ <- acls.replace(Acl(AclAddress.fromOrg(org), subject -> Set(permission)), 0)
+  def createOrgAndAcl(org: Label): IO[Unit] = for {
+    _ <- acls.replace(Acl(AclAddress.fromOrg(org), subject -> Set(permission)), 0).toCatsIO
     _ <- orgs.create(org, None)
   } yield ()
 
-  def createProj() = projects.create(projRef, fields)
+  def createProj() = projects.create(projRef, fields).toCatsIO
 
-  def deleteOrg(org: Label): UIO[Either[OrganizationNonEmpty, Unit]] =
-    IO.from(orgDeleter.delete(org).attemptNarrow[OrganizationNonEmpty]).hideErrors
+  def deleteOrg(org: Label): IO[Either[OrganizationNonEmpty, Unit]] =
+    orgDeleter.delete(org).attemptNarrow[OrganizationNonEmpty]
 
   def assertDeletionFailed(result: Either[OrganizationNonEmpty, Unit]) = for {
     eventPartitionDeleted <- orgPartitionIsDeleted("scoped_events", org1)
     statePartitionDeleted <- orgPartitionIsDeleted("scoped_states", org1)
-    fetchedProject        <- projects.fetch(projRef)
+    fetchedProject        <- projects.fetch(projRef).toCatsIO
     orgResult             <- orgs.fetch(org1).map(_.value.label)
     aclExists             <- acls.fetch(AclAddress.fromOrg(org1)).attempt.map(_.isRight)
   } yield {
@@ -107,10 +108,10 @@ class OrganizationDeleterSuite extends BioSuite with IOFixedClock with ConfigFix
     assertEquals(aclDeleted, true)
   }
 
-  def orgPartitionIsDeleted(table: String, org: Label): Task[Boolean] =
+  def orgPartitionIsDeleted(table: String, org: Label): IO[Boolean] =
     queryPartitions(table).map(!_.contains(PartitionInit.orgPartition(table, org)))
 
-  def queryPartitions(table: String): Task[List[String]] =
+  def queryPartitions(table: String): IO[List[String]] =
     sql"""SELECT inhrelid::regclass AS child
           FROM   pg_catalog.pg_inherits
           WHERE  inhparent = $table::regclass

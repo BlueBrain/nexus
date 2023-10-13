@@ -1,45 +1,45 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.organizations
 
-import cats.effect.Clock
+import cats.effect.IO._
+import cats.effect.{Clock, ContextShift, IO}
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.sdk.OrganizationResource
-import ch.epfl.bluebrain.nexus.delta.sdk.ScopeInitialization
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
+import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{SearchParams, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations.entityType
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.OrganizationsImpl.OrganizationsLog
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationCommand
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationCommand._
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationEvent
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection._
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationState
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.{OrganizationCommand, OrganizationEvent, OrganizationRejection, OrganizationState}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.{OrganizationResource, ScopeInitialization}
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import monix.bio.IO
-import monix.bio.UIO
 
 final class OrganizationsImpl private (
     log: OrganizationsLog,
     scopeInitializations: Set[ScopeInitialization]
-) extends Organizations {
+)(implicit contextShift: ContextShift[IO])
+    extends Organizations {
 
   implicit private val kamonComponent: KamonMetricComponent = KamonMetricComponent(entityType.value)
 
   override def create(
       label: Label,
       description: Option[String]
-  )(implicit caller: Subject): IO[OrganizationRejection, OrganizationResource] =
+  )(implicit caller: Subject): IO[OrganizationResource] =
     for {
       resource <- eval(CreateOrganization(label, description, caller)).span("createOrganization")
-      _        <- IO.parTraverseUnordered(scopeInitializations)(_.onOrganizationCreation(resource.value, caller).toUIO)
+      _        <- scopeInitializations
+                    .parUnorderedTraverse(_.onOrganizationCreation(resource.value, caller))
                     .void
-                    .mapError(OrganizationInitializationFailed)
+                    .adaptError { case e: ScopeInitializationFailed =>
+                      OrganizationInitializationFailed(e)
+                    }
                     .span("initializeOrganization")
     } yield resource
 
@@ -47,33 +47,33 @@ final class OrganizationsImpl private (
       label: Label,
       description: Option[String],
       rev: Int
-  )(implicit caller: Subject): IO[OrganizationRejection, OrganizationResource] =
+  )(implicit caller: Subject): IO[OrganizationResource] =
     eval(UpdateOrganization(label, rev, description, caller)).span("updateOrganization")
 
   override def deprecate(
       label: Label,
       rev: Int
-  )(implicit caller: Subject): IO[OrganizationRejection, OrganizationResource] =
+  )(implicit caller: Subject): IO[OrganizationResource] =
     eval(DeprecateOrganization(label, rev, caller)).span("deprecateOrganization")
 
-  override def fetch(label: Label): IO[OrganizationNotFound, OrganizationResource] =
+  override def fetch(label: Label): IO[OrganizationResource] =
     log.stateOr(label, OrganizationNotFound(label)).map(_.toResource).span("fetchOrganization")
 
-  override def fetchAt(label: Label, rev: Int): IO[OrganizationRejection.NotFound, OrganizationResource] = {
+  override def fetchAt(label: Label, rev: Int): IO[OrganizationResource] = {
     log
       .stateOr(label, rev, OrganizationNotFound(label), RevisionNotFound)
       .map(_.toResource)
       .span("fetchOrganizationAt")
   }
 
-  private def eval(cmd: OrganizationCommand): IO[OrganizationRejection, OrganizationResource] =
+  private def eval(cmd: OrganizationCommand): IO[OrganizationResource] =
     log.evaluate(cmd.label, cmd).map(_._2.toResource)
 
   override def list(
       pagination: Pagination.FromPagination,
       params: SearchParams.OrganizationSearchParams,
       ordering: Ordering[OrganizationResource]
-  ): UIO[SearchResults.UnscoredSearchResults[OrganizationResource]] =
+  ): IO[SearchResults.UnscoredSearchResults[OrganizationResource]] =
     SearchResults(
       log
         .currentStates(_.toResource)
@@ -93,8 +93,9 @@ object OrganizationsImpl {
       config: OrganizationsConfig,
       xas: Transactors
   )(implicit
-      clock: Clock[UIO] = IO.clock,
-      uuidf: UUIDF
+      clock: Clock[IO],
+      uuidf: UUIDF,
+      contextShift: ContextShift[IO]
   ): Organizations =
     new OrganizationsImpl(
       GlobalEventLog(Organizations.definition, config.eventLog, xas),
