@@ -46,7 +46,7 @@ class IdResolutionRoutes(
     pathPrefix("resolve-proxy-pass") {
       extractUnmatchedPath { path =>
         get {
-          val resourceId = fusionConfig.proxyIdBase / path
+          val resourceId = fusionConfig.resolveBase / path
           emitOrFusionRedirect(
             fusionResolveUri(resourceId),
             redirect(deltaResolveEndpoint(resourceId), StatusCodes.SeeOther)

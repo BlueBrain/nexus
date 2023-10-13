@@ -60,14 +60,14 @@ This will allow to "inject" the user's token in a subsequent @ref:[resolve](#res
 
 * `app.fusion.base`: String - base URL for Nexus Fusion
 * `app.fusion.enable-redirects`: Boolean - needs to be `true` in order for redirects to work (defaults to `false`)
-* `app.fusion.proxy-id-base`: String - base URL to use when reconstructing the resource identifier in the
+* `app.fusion.resolve-base`: String - base URL to use when reconstructing the resource identifier in the
   proxy pass endpoint
 
 ### Redirection
 
 1. The client calls `/v1/resolve-proxy-pass/{segment}`
 2. Nexus Delta reconstructs the resource identifier
-    * `{resourceId}` = `{proxyIdBase}/{segment}`
+    * `{resourceId}` = `{resolveBase}/{segment}`
 3. Nexus Delta redirects the client to...
     * the `{fusionBaseUrl}/resolve/{resourceId}` Fusion endpoint if the `Accept: text/html` header is present
     * the `/v1/resolve/{resourceId}` Delta endpoint otherwise
@@ -84,7 +84,7 @@ The example below assumes that:
 
 * `{fusionBaseUrl}` = `http://localhost:8080/fusion`
 * `{segment}` = `nexus/data/identifier`
-* `{proxyIdBase}` = `https://example.com`
+* `{resolveBase}` = `https://example.com`
 
 Request
 :   @@snip [request.sh](assets/id-resolution/proxy-request.sh)
