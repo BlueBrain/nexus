@@ -56,7 +56,8 @@ trait RouteFixtures {
 
   implicit val baseUri: BaseUri                   = BaseUri("http://localhost", Label.unsafe("v1"))
   implicit val paginationConfig: PaginationConfig = PaginationConfig(5, 10, 5)
-  implicit val f: FusionConfig                    = FusionConfig(Uri("https://bbp.epfl.ch/nexus/web/"), enableRedirects = true)
+  implicit val f: FusionConfig                    =
+    FusionConfig(Uri("https://bbp.epfl.ch/nexus/web/"), enableRedirects = true, Uri("https://bbp.epfl.ch"))
   implicit val s: Scheduler                       = Scheduler.global
   implicit val rejectionHandler: RejectionHandler = RdfRejectionHandler.apply
   implicit val exceptionHandler: ExceptionHandler = RdfExceptionHandler.apply

@@ -33,7 +33,8 @@ trait ConfigFixtures {
   def httpClientConfig: HttpClientConfig =
     HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never, false)
 
-  def fusionConfig: FusionConfig = FusionConfig(Uri("https://bbp.epfl.ch/nexus/web/"), enableRedirects = true)
+  def fusionConfig: FusionConfig =
+    FusionConfig(Uri("https://bbp.epfl.ch/nexus/web/"), enableRedirects = true, Uri("https://bbp.epfl.ch"))
 
   def deletionConfig: ProjectsConfig.DeletionConfig = ProjectsConfig.DeletionConfig(
     enabled = true,
