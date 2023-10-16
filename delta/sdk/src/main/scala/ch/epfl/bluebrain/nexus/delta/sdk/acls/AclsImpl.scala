@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.acls
 
 import cats.effect.Clock
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.Acls.entityType
@@ -96,13 +97,19 @@ object AclsImpl {
 
   type AclsLog = GlobalEventLog[AclAddress, AclState, AclCommand, AclEvent, AclRejection]
 
-  def findUnknownRealms(xas: Transactors)(labels: Set[Label]): IO[UnknownRealms, Unit] =
-    GlobalStateStore.listIds(Realms.entityType, xas.read).compile.toList.hideErrors.flatMap { existing =>
-      val unknown = labels.filterNot { l =>
-        existing.contains(Realms.encodeId(l))
+  def findUnknownRealms(xas: Transactors)(labels: Set[Label]): IO[UnknownRealms, Unit] = {
+    GlobalStateStore
+      .listIds(Realms.entityType, xas.readCE)
+      .compile
+      .toList
+      .toBIO
+      .flatMap { existing =>
+        val unknown = labels.filterNot { l =>
+          existing.contains(Realms.encodeId(l))
+        }
+        IO.raiseWhen(unknown.nonEmpty)(UnknownRealms(unknown))
       }
-      IO.raiseWhen(unknown.nonEmpty)(UnknownRealms(unknown))
-    }
+  }
 
   /**
     * Constructs an [[AclsImpl]] instance.

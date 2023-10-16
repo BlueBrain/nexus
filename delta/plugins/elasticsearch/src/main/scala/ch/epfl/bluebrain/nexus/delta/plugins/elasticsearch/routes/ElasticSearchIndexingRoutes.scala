@@ -2,6 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
 
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
+import cats.effect.{ContextShift, IO => CIO}
+import cats.implicits.catsSyntaxApplicativeError
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViewsQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.IndexingViewDef.ActiveViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection._
@@ -62,6 +65,7 @@ final class ElasticSearchIndexingRoutes(
     baseUri: BaseUri,
     paginationConfig: PaginationConfig,
     s: Scheduler,
+    c: ContextShift[CIO],
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering
 ) extends AuthDirectives(identities, aclCheck)
@@ -99,10 +103,11 @@ final class ElasticSearchIndexingRoutes(
                     concat(
                       (pathPrefix("sse") & lastEventId) { offset =>
                         emit(
-                          fetch(id, ref)
+                          fetch(id, ref).toCatsIO
                             .map { view =>
                               projectionErrors.sses(view.ref.project, view.ref.viewId, offset)
                             }
+                            .attemptNarrow[ElasticSearchViewRejection]
                         )
                       },
                       (fromPaginated & timeRange("instant") & extractUri & pathEndOrSingleSlash) {
@@ -174,6 +179,7 @@ object ElasticSearchIndexingRoutes {
       baseUri: BaseUri,
       paginationConfig: PaginationConfig,
       s: Scheduler,
+      c: ContextShift[CIO],
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering
   ): Route =

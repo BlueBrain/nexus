@@ -4,12 +4,13 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.StatusCodes.OK
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
+import cats.effect.{ContextShift, IO}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.{emit, lastEventId}
+import ch.epfl.bluebrain.nexus.delta.sdk.ce.DeltaDirectives.{emit, lastEventId}
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.UriDirectives.baseUriPrefix
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
@@ -24,7 +25,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.RemainingElems
 import io.circe.syntax.EncoderOps
 import io.circe.{Encoder, JsonObject}
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
-import monix.execution.Scheduler
 
 import java.time.Instant
 
@@ -40,9 +40,9 @@ class ElemRoutes(
     schemeDirectives: DeltaSchemeDirectives
 )(implicit
     baseUri: BaseUri,
-    s: Scheduler,
     cr: RemoteContextResolution,
-    ordering: JsonKeyOrdering
+    ordering: JsonKeyOrdering,
+    contextShift: ContextShift[IO]
 ) extends AuthDirectives(identities, aclCheck: AclCheck) {
   import baseUri.prefixSegment
   import schemeDirectives._

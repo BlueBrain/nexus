@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.headers.{`Last-Event-ID`, OAuth2BearerToken}
 import akka.http.scaladsl.model.sse.ServerSentEvent
 import akka.http.scaladsl.model.{MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.Route
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
@@ -20,13 +21,13 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.RemainingElems
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import ch.epfl.bluebrain.nexus.testkit.bio.IOFromMap
+import ch.epfl.bluebrain.nexus.testkit.ce.CatsIOValues
 import fs2.Stream
-import monix.bio.{Task, UIO}
 
 import java.time.Instant
 import java.util.UUID
 
-class ElemRoutesSpec extends BaseRouteSpec with CirceLiteral with IOFromMap {
+class ElemRoutesSpec extends BaseRouteSpec with CirceLiteral with IOFromMap with CatsIOValues {
 
   private val aclCheck = AclSimpleCheck().accepted
 
@@ -45,7 +46,7 @@ class ElemRoutesSpec extends BaseRouteSpec with CirceLiteral with IOFromMap {
 
   private val sseElemStream = new SseElemStream {
 
-    private val stream = Stream.emits(List(elem1, elem2, elem3)).covary[Task]
+    private val stream = Stream.emits(List(elem1, elem2, elem3)).covary[IO]
 
     override def continuous(project: ProjectRef, selectFilter: SelectFilter, start: Offset): ServerSentEventStream =
       stream
@@ -56,8 +57,8 @@ class ElemRoutesSpec extends BaseRouteSpec with CirceLiteral with IOFromMap {
         project: ProjectRef,
         selectFilter: SelectFilter,
         start: Offset
-    ): UIO[Option[RemainingElems]]                                                                               =
-      UIO.some(RemainingElems(999L, Instant.EPOCH))
+    ): IO[Option[RemainingElems]]                                                                                =
+      IO.pure(Some(RemainingElems(999L, Instant.EPOCH)))
   }
 
   private val routes = Route.seal(

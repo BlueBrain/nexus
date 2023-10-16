@@ -2,6 +2,8 @@ package ch.epfl.bluebrain.nexus.delta.kernel
 
 import com.typesafe.scalalogging.{Logger => ScalaLoggingLogger}
 import monix.bio.{IO, UIO}
+import cats.effect.{IO => CIO}
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.toMonixBIOOps
 import pureconfig.ConfigReader
 import pureconfig.error.{CannotConvert, ConfigReaderFailures, ConvertFailure}
 import pureconfig.generic.semiauto._
@@ -52,6 +54,18 @@ object RetryStrategy {
     case (err, GivingUp(totalRetries, _))                     =>
       val message = s"""Error $err while $action, giving up (total retries: $totalRetries)"""
       UIO.delay(logger.error(message))
+  }
+
+  /**
+    * Log errors when retrying
+    */
+  def logError[E](logger: org.typelevel.log4cats.Logger[CIO], action: String): (E, RetryDetails) => CIO[Unit] = {
+    case (err, WillDelayAndRetry(nextDelay, retriesSoFar, _)) =>
+      val message = s"""Error $err while $action: retrying in ${nextDelay.toMillis}ms (retries so far: $retriesSoFar)"""
+      logger.warn(message)
+    case (err, GivingUp(totalRetries, _))                     =>
+      val message = s"""Error $err while $action, giving up (total retries: $totalRetries)"""
+      logger.error(message)
   }
 
   /**
@@ -123,6 +137,17 @@ object RetryStrategy {
       config,
       (t: Throwable) => NonFatal(t),
       (t: Throwable, d: RetryDetails) => logError(logger, action)(t, d)
+    )
+
+  def retryOnNonFatal(
+      config: RetryStrategyConfig,
+      logger: org.typelevel.log4cats.Logger[CIO],
+      action: String
+  ): RetryStrategy[Throwable] =
+    RetryStrategy(
+      config,
+      (t: Throwable) => NonFatal(t),
+      (t: Throwable, d: RetryDetails) => logError(logger, action)(t, d).toBIO[Throwable]
     )
 
 }

@@ -7,6 +7,7 @@ import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept}
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes}
 import akka.stream.alpakka.sse.scaladsl.EventSource
+import cats.effect.ContextShift
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.MigrateEffectSyntax
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.RemoteProjectSource
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.CompositeBranch
@@ -27,6 +28,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, RemainingElems}
 import com.typesafe.scalalogging.Logger
 import io.circe.parser.decode
 import fs2._
+import cats.effect.{IO => CIO}
 import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
 
@@ -87,7 +89,8 @@ object DeltaClient {
       retryDelay: FiniteDuration
   )(implicit
       as: ActorSystem[Nothing],
-      scheduler: Scheduler
+      scheduler: Scheduler,
+      c: ContextShift[CIO]
   ) extends DeltaClient
       with MigrateEffectSyntax {
 
@@ -151,6 +154,7 @@ object DeltaClient {
               Stream.empty
           }
         }
+        .translate(ioToTaskK)
     }
 
     private def typeQuery(types: Set[Iri])               =
@@ -187,7 +191,8 @@ object DeltaClient {
       retryDelay: FiniteDuration
   )(implicit
       as: ActorSystem[Nothing],
-      sc: Scheduler
+      sc: Scheduler,
+      c: ContextShift[CIO]
   ): DeltaClient =
     new DeltaClientImpl(client, authTokenProvider, credentials, retryDelay)
 }

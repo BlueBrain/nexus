@@ -2,7 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.routes
 
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
+import cats.effect.ContextShift
 import cats.syntax.all._
+import cats.effect.{IO => CIO}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.BlazegraphViewsDirectives
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef.ActiveViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection._
@@ -29,6 +31,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{FailedElemLogRow, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionErrors
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import monix.bio.IO
 import monix.execution.Scheduler
 class CompositeViewsIndexingRoutes(
@@ -44,6 +47,7 @@ class CompositeViewsIndexingRoutes(
     baseUri: BaseUri,
     paginationConfig: PaginationConfig,
     s: Scheduler,
+    c: ContextShift[CIO],
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering
 ) extends AuthDirectives(identities, aclCheck)
@@ -98,10 +102,11 @@ class CompositeViewsIndexingRoutes(
                   concat(
                     (pathPrefix("sse") & lastEventId) { offset =>
                       emit(
-                        fetchView(id, ref)
+                        fetchView(id, ref).toCatsIO
                           .map { view =>
                             projectionErrors.sses(view.project, view.id, offset)
                           }
+                          .attemptNarrow[CompositeViewRejection]
                       )
                     },
                     (fromPaginated & timeRange("instant") & extractUri & pathEndOrSingleSlash) {
@@ -262,6 +267,7 @@ object CompositeViewsIndexingRoutes {
       baseUri: BaseUri,
       paginationConfig: PaginationConfig,
       s: Scheduler,
+      c: ContextShift[CIO],
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering
   ): Route =

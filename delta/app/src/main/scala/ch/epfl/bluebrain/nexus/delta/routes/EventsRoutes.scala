@@ -3,6 +3,8 @@ package ch.epfl.bluebrain.nexus.delta.routes
 import akka.http.scaladsl.model.StatusCodes.OK
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive1, Route}
+import cats.effect.{ContextShift, IO}
+import cats.implicits.catsSyntaxApplicativeError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
@@ -12,11 +14,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.UriDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
-import monix.execution.Scheduler
 
 /**
   * The global events route.
@@ -37,7 +40,7 @@ class EventsRoutes(
     schemeDirectives: DeltaSchemeDirectives
 )(implicit
     baseUri: BaseUri,
-    s: Scheduler,
+    c: ContextShift[IO],
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering
 ) extends AuthDirectives(identities, aclCheck: AclCheck) {
@@ -100,7 +103,7 @@ class EventsRoutes(
                   operationName(s"$prefixSegment/$selector/{org}/events") {
                     concat(
                       authorizeFor(org, events.read).apply {
-                        emit(sseEventLog.streamBy(selector, org, offset))
+                        emit(sseEventLog.streamBy(selector, org, offset).attemptNarrow[OrganizationRejection])
                       },
                       (head & authorizeFor(org, events.read)) {
                         complete(OK)
@@ -114,7 +117,7 @@ class EventsRoutes(
                     concat(
                       operationName(s"$prefixSegment/$selector/{org}/{proj}/events") {
                         authorizeFor(projectRef, events.read).apply {
-                          emit(sseEventLog.streamBy(selector, projectRef, offset))
+                          emit(sseEventLog.streamBy(selector, projectRef, offset).attemptNarrow[ProjectRejection])
                         }
                       },
                       (head & authorizeFor(projectRef, events.read)) {
@@ -144,7 +147,7 @@ object EventsRoutes {
       schemeDirectives: DeltaSchemeDirectives
   )(implicit
       baseUri: BaseUri,
-      s: Scheduler,
+      c: ContextShift[IO],
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering
   ): Route = new EventsRoutes(identities, aclCheck, sseEventLog, schemeDirectives).routes

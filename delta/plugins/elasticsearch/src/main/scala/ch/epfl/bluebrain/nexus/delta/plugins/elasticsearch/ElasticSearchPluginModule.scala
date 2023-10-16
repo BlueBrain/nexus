@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import akka.actor.typed.ActorSystem
-import cats.effect.Clock
+import cats.effect.{Clock, ContextShift, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
@@ -245,6 +245,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         schemeDirectives: DeltaSchemeDirectives,
         baseUri: BaseUri,
         s: Scheduler,
+        c: ContextShift[IO],
         cr: RemoteContextResolution @Id("aggregate"),
         esConfig: ElasticSearchViewsConfig,
         ordering: JsonKeyOrdering,
@@ -262,6 +263,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         baseUri,
         esConfig.pagination,
         s,
+        c,
         cr,
         ordering
       )
