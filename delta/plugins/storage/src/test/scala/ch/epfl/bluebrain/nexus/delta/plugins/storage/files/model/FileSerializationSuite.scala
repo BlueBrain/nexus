@@ -48,7 +48,8 @@ class FileSerializationSuite extends SerializationSuite with StorageFixtures {
     )
     
   // format: off
-  private val created = FileCreated(fileId, projectRef, storageRef, DiskStorageType, attributes.copy(digest = NotComputedDigest), 1, instant, subject)
+  private val created = FileCreated(fileId, projectRef, storageRef, DiskStorageType, attributes.copy(digest = NotComputedDigest), 1, instant, subject, None)
+  private val createdTagged = created.copy(tag = Some(tag))
   private val updated = FileUpdated(fileId, projectRef, storageRef, DiskStorageType, attributes, 2, instant, subject)
   private val updatedAttr = FileAttributesUpdated(fileId, projectRef, storageRef, DiskStorageType, Some(`text/plain(UTF-8)`), 12, digest, 3, instant, subject)
   private val tagged = FileTagAdded(fileId, projectRef, storageRef, DiskStorageType, targetRev = 1, tag, 4, instant, subject)
@@ -72,6 +73,12 @@ class FileSerializationSuite extends SerializationSuite with StorageFixtures {
       loadEvents("files", "file-created.json"),
       Created,
       expected(created, Json.fromInt(1), Json.Null, Json.Null, Json.fromString("Client"))
+    ),
+    (
+      createdTagged,
+      loadEvents("files", "file-created-tagged.json"),
+      Created,
+      expected(createdTagged, Json.fromInt(1), Json.Null, Json.Null, Json.fromString("Client"))
     ),
     (
       updated,

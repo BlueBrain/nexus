@@ -81,6 +81,8 @@ object FileEvent {
     *   the instant this event was created
     * @param subject
     *   the subject which created this event
+    * @param tag
+    *   an optional tag attached at creation
     */
   final case class FileCreated(
       id: Iri,
@@ -90,7 +92,8 @@ object FileEvent {
       attributes: FileAttributes,
       rev: Int,
       instant: Instant,
-      subject: Subject
+      subject: Subject,
+      tag: Option[UserTag]
   ) extends FileEvent
 
   /**
