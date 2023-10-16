@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
+import cats.effect.{ContextShift, IO}
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
@@ -18,7 +19,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.sse.{SseElemStream, SseEncoder, SseEven
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import izumi.distage.model.definition.{Id, ModuleDef}
-import monix.execution.Scheduler
 
 /**
   * Events wiring
@@ -34,15 +34,13 @@ object EventsModule extends ModuleDef {
         xas: Transactors,
         jo: JsonKeyOrdering
     ) =>
-      toCatsIO(
-        SseEventLog(
-          sseEncoders,
-          organizations.fetch(_).void.toBIO[OrganizationRejection],
-          projects.fetch(_).map { p => (p.value.organizationUuid, p.value.uuid) },
-          config.sse,
-          xas
-        )(jo)
-      )
+      SseEventLog(
+        sseEncoders,
+        organizations.fetch(_).void.toBIO[OrganizationRejection],
+        projects.fetch(_).map { p => (p.value.organizationUuid, p.value.uuid) },
+        config.sse,
+        xas
+      )(jo)
   }
 
   make[SseElemStream].from { (qc: QueryConfig, xas: Transactors) =>
@@ -56,11 +54,11 @@ object EventsModule extends ModuleDef {
         sseEventLog: SseEventLog,
         schemeDirectives: DeltaSchemeDirectives,
         baseUri: BaseUri,
-        s: Scheduler,
+        c: ContextShift[IO],
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
     ) =>
-      new EventsRoutes(identities, aclCheck, sseEventLog, schemeDirectives)(baseUri, s, cr, ordering)
+      new EventsRoutes(identities, aclCheck, sseEventLog, schemeDirectives)(baseUri, c, cr, ordering)
   }
 
   many[PriorityRoute].add { (route: EventsRoutes) =>
@@ -74,11 +72,11 @@ object EventsModule extends ModuleDef {
         sseElemStream: SseElemStream,
         schemeDirectives: DeltaSchemeDirectives,
         baseUri: BaseUri,
-        s: Scheduler,
+        contextShift: ContextShift[IO],
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
     ) =>
-      new ElemRoutes(identities, aclCheck, sseElemStream, schemeDirectives)(baseUri, s, cr, ordering)
+      new ElemRoutes(identities, aclCheck, sseElemStream, schemeDirectives)(baseUri, cr, ordering, contextShift)
   }
 
   many[PriorityRoute].add { (route: ElemRoutes) =>

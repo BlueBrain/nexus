@@ -2,12 +2,14 @@ package ch.epfl.bluebrain.nexus.delta.sdk.syntax
 
 import akka.http.scaladsl.model.sse.ServerSentEvent
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.kernel.search.TimeRange
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
+import ch.epfl.bluebrain.nexus.delta.sdk.sse.ServerSentEventStream
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax.ProjectionErrorsSyntax.ProjectionErrorsOps
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.FailedElemLogRow.FailedElemData
@@ -15,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionErrors
 import io.circe.Printer
-import monix.bio.{Task, UIO}
+import monix.bio.UIO
 
 /**
   * Allows to extend the methods from [[ProjectionErrors]] by adding higher-level methods
@@ -47,15 +49,16 @@ object ProjectionErrorsSyntax {
       */
     def sses(projectionProject: ProjectRef, projectionId: Iri, offset: Offset)(implicit
         rcr: RemoteContextResolution
-    ): fs2.Stream[Task, ServerSentEvent] =
-      projectionErrors.failedElemEntries(projectionProject, projectionId, offset).evalMap { felem =>
-        felem.failedElemData.toCompactedJsonLd.map { compactJson =>
-          ServerSentEvent(
-            defaultPrinter.print(compactJson.json),
-            "IndexingFailure",
-            felem.ordering.value.toString
-          )
-        }
+    ): ServerSentEventStream =
+      projectionErrors.failedElemEntries(projectionProject, projectionId, offset).translate(taskToIoK).evalMap {
+        felem =>
+          felem.failedElemData.toCompactedJsonLd.toCatsIO.map { compactJson =>
+            ServerSentEvent(
+              defaultPrinter.print(compactJson.json),
+              "IndexingFailure",
+              felem.ordering.value.toString
+            )
+          }
       }
 
     /**

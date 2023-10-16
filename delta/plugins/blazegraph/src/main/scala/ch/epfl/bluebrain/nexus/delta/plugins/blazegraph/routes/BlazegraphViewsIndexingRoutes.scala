@@ -2,6 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes
 
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
+import cats.effect.{ContextShift, IO}
+import cats.implicits.catsSyntaxApplicativeError
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.IndexingViewDef.ActiveViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
@@ -29,7 +32,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionErrors, Pro
 import io.circe.Encoder
 import io.circe.generic.semiauto.deriveEncoder
 import io.circe.syntax._
-import monix.bio.IO
+import monix.bio.{IO => BIO}
 import monix.execution.Scheduler
 class BlazegraphViewsIndexingRoutes(
     fetch: FetchIndexingView,
@@ -41,6 +44,7 @@ class BlazegraphViewsIndexingRoutes(
 )(implicit
     baseUri: BaseUri,
     s: Scheduler,
+    c: ContextShift[IO],
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering,
     pc: PaginationConfig
@@ -80,10 +84,11 @@ class BlazegraphViewsIndexingRoutes(
                   concat(
                     (pathPrefix("sse") & lastEventId) { offset =>
                       emit(
-                        fetch(id, ref)
+                        fetch(id, ref).toCatsIO
                           .map { view =>
                             projectionErrors.sses(view.ref.project, view.ref.viewId, offset)
                           }
+                          .attemptNarrow[BlazegraphViewRejection]
                       )
                     },
                     (fromPaginated & timeRange("instant") & extractUri & pathEndOrSingleSlash) {
@@ -132,7 +137,7 @@ class BlazegraphViewsIndexingRoutes(
 
 object BlazegraphViewsIndexingRoutes {
 
-  type FetchIndexingView = (IdSegment, ProjectRef) => IO[BlazegraphViewRejection, ActiveViewDef]
+  type FetchIndexingView = (IdSegment, ProjectRef) => BIO[BlazegraphViewRejection, ActiveViewDef]
 
   /**
     * @return
@@ -148,6 +153,7 @@ object BlazegraphViewsIndexingRoutes {
   )(implicit
       baseUri: BaseUri,
       s: Scheduler,
+      c: ContextShift[IO],
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering,
       pc: PaginationConfig

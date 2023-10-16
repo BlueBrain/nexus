@@ -54,6 +54,11 @@ trait DeltaDirectives extends UriDirectives {
     response(Some(status))
 
   /**
+    * Completes the current Route with the provided conversion to SSEs
+    */
+  def emit(response: ResponseToSse): Route = response()
+
+  /**
     * Completes the current Route with the provided conversion to Json-LD
     */
   def emit(status: StatusCode, response: CatsResponseToJsonLd): Route =
