@@ -2,9 +2,8 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.routes
 
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import cats.effect.ContextShift
+import cats.effect.{ContextShift, IO}
 import cats.syntax.all._
-import cats.effect.{IO => CIO}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.BlazegraphViewsDirectives
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef.ActiveViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection._
@@ -32,7 +31,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{FailedElemLogRow, ProjectRe
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionErrors
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
-import monix.bio.IO
+import monix.bio.{IO => BIO}
 import monix.execution.Scheduler
 class CompositeViewsIndexingRoutes(
     identities: Identities,
@@ -47,7 +46,7 @@ class CompositeViewsIndexingRoutes(
     baseUri: BaseUri,
     paginationConfig: PaginationConfig,
     s: Scheduler,
-    c: ContextShift[CIO],
+    c: ContextShift[IO],
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering
 ) extends AuthDirectives(identities, aclCheck)
@@ -238,12 +237,12 @@ class CompositeViewsIndexingRoutes(
 
   private def fetchProjection(view: ActiveViewDef, projectionId: IdSegment) =
     expandId(projectionId, view.project).flatMap { id =>
-      IO.fromEither(view.projection(id))
+      BIO.fromEither(view.projection(id))
     }
 
   private def fetchSource(view: ActiveViewDef, sourceId: IdSegment) =
     expandId(sourceId, view.project).flatMap { id =>
-      IO.fromEither(view.source(id))
+      BIO.fromEither(view.source(id))
     }
 
 }
@@ -267,7 +266,7 @@ object CompositeViewsIndexingRoutes {
       baseUri: BaseUri,
       paginationConfig: PaginationConfig,
       s: Scheduler,
-      c: ContextShift[CIO],
+      c: ContextShift[IO],
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering
   ): Route =

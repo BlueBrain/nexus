@@ -7,7 +7,7 @@ import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept}
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes}
 import akka.stream.alpakka.sse.scaladsl.EventSource
-import cats.effect.ContextShift
+import cats.effect.{ContextShift, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.MigrateEffectSyntax
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.RemoteProjectSource
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.CompositeBranch
@@ -28,8 +28,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, RemainingElems}
 import com.typesafe.scalalogging.Logger
 import io.circe.parser.decode
 import fs2._
-import cats.effect.{IO => CIO}
-import monix.bio.{IO, UIO}
+import monix.bio.{IO => BIO, UIO}
 import monix.execution.Scheduler
 
 import scala.concurrent.Future
@@ -90,7 +89,7 @@ object DeltaClient {
   )(implicit
       as: ActorSystem[Nothing],
       scheduler: Scheduler,
-      c: ContextShift[CIO]
+      c: ContextShift[IO]
   ) extends DeltaClient
       with MigrateEffectSyntax {
 
@@ -122,7 +121,7 @@ object DeltaClient {
       for {
         authToken <- authTokenProvider(credentials).toBIO
         result    <- client(Head(elemAddress(source)).withCredentials(authToken)) {
-                       case resp if resp.status.isSuccess() => UIO.delay(resp.discardEntityBytes()) >> IO.unit
+                       case resp if resp.status.isSuccess() => UIO.delay(resp.discardEntityBytes()) >> BIO.unit
                      }
       } yield result
     }
@@ -136,7 +135,7 @@ object DeltaClient {
       def send(request: HttpRequest): Future[HttpResponse] = {
         (for {
           authToken <- authTokenProvider(credentials).toBIO
-          result    <- client[HttpResponse](request.withCredentials(authToken))(IO.pure(_))
+          result    <- client[HttpResponse](request.withCredentials(authToken))(BIO.pure(_))
         } yield result).runToFuture
       }
 
@@ -192,7 +191,7 @@ object DeltaClient {
   )(implicit
       as: ActorSystem[Nothing],
       sc: Scheduler,
-      c: ContextShift[CIO]
+      c: ContextShift[IO]
   ): DeltaClient =
     new DeltaClientImpl(client, authTokenProvider, credentials, retryDelay)
 }

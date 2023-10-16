@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes
 
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import cats.effect.{ContextShift, IO => CIO}
+import cats.effect.{ContextShift, IO}
 import cats.implicits.catsSyntaxApplicativeError
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.IndexingViewDef.ActiveViewDef
@@ -32,7 +32,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionErrors, Pro
 import io.circe.Encoder
 import io.circe.generic.semiauto.deriveEncoder
 import io.circe.syntax._
-import monix.bio.IO
+import monix.bio.{IO => BIO}
 import monix.execution.Scheduler
 class BlazegraphViewsIndexingRoutes(
     fetch: FetchIndexingView,
@@ -44,7 +44,7 @@ class BlazegraphViewsIndexingRoutes(
 )(implicit
     baseUri: BaseUri,
     s: Scheduler,
-    c: ContextShift[CIO],
+    c: ContextShift[IO],
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering,
     pc: PaginationConfig
@@ -137,7 +137,7 @@ class BlazegraphViewsIndexingRoutes(
 
 object BlazegraphViewsIndexingRoutes {
 
-  type FetchIndexingView = (IdSegment, ProjectRef) => IO[BlazegraphViewRejection, ActiveViewDef]
+  type FetchIndexingView = (IdSegment, ProjectRef) => BIO[BlazegraphViewRejection, ActiveViewDef]
 
   /**
     * @return
@@ -153,7 +153,7 @@ object BlazegraphViewsIndexingRoutes {
   )(implicit
       baseUri: BaseUri,
       s: Scheduler,
-      c: ContextShift[CIO],
+      c: ContextShift[IO],
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering,
       pc: PaginationConfig
