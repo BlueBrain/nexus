@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
 import akka.actor.typed.ActorSystem
-import cats.effect.Clock
+import cats.effect.{Clock, ContextShift, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
@@ -57,10 +57,15 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         cfg: CompositeViewsConfig,
         as: ActorSystem[Nothing],
         sc: Scheduler,
+        c: ContextShift[IO],
         authTokenProvider: AuthTokenProvider
     ) =>
       val httpClient = HttpClient()(cfg.remoteSourceClient.http, as.classicSystem, sc)
-      DeltaClient(httpClient, authTokenProvider, cfg.remoteSourceCredentials, cfg.remoteSourceClient.retryDelay)(as, sc)
+      DeltaClient(httpClient, authTokenProvider, cfg.remoteSourceCredentials, cfg.remoteSourceClient.retryDelay)(
+        as,
+        sc,
+        c
+      )
   }
 
   make[BlazegraphClient].named("blazegraph-composite-indexing-client").from {
@@ -315,6 +320,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         baseUri: BaseUri,
         config: CompositeViewsConfig,
         s: Scheduler,
+        c: ContextShift[IO],
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
     ) =>
@@ -327,7 +333,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         projections,
         projectionErrors,
         schemeDirectives
-      )(baseUri, config.pagination, s, cr, ordering)
+      )(baseUri, config.pagination, s, c, cr, ordering)
   }
 
   make[CompositeView.Shift].from { (views: CompositeViews, base: BaseUri) =>

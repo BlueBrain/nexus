@@ -23,12 +23,13 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.FailedElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionProgress
 import ch.epfl.bluebrain.nexus.testkit.bio.IOFromMap
+import ch.epfl.bluebrain.nexus.testkit.ce.CatsIOValues
 import monix.bio.IO
 
 import java.time.Instant
 import scala.concurrent.duration._
 
-class BlazegraphViewsIndexingRoutesSpec extends BlazegraphViewRoutesFixtures with IOFromMap {
+class BlazegraphViewsIndexingRoutesSpec extends BlazegraphViewRoutesFixtures with IOFromMap with CatsIOValues {
 
   private lazy val projections      = Projections(xas, queryConfig, 1.hour)
   private lazy val projectionErrors = ProjectionErrors(xas, queryConfig)

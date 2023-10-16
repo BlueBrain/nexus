@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
 import akka.actor.typed.ActorSystem
-import cats.effect.Clock
+import cats.effect.{Clock, ContextShift, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.config.BlazegraphViewsConfig
@@ -227,6 +227,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         baseUri: BaseUri,
         cfg: BlazegraphViewsConfig,
         s: Scheduler,
+        c: ContextShift[IO],
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
     ) =>
@@ -240,6 +241,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
       )(
         baseUri,
         s,
+        c,
         cr,
         ordering,
         cfg.pagination
