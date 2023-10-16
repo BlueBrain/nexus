@@ -4,7 +4,6 @@
     "https://bluebrain.github.io/nexus/contexts/files.json"
   ],
   "@type": "FileCreated",
-  "tag": null,
   "_attributes": {
     "_bytes": 12,
     "_digest": {
