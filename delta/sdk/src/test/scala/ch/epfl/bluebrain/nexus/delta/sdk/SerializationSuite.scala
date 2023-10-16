@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.testkit.bio.{EitherAssertions, JsonAssertions}
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
 import io.circe.parser._
 import io.circe.{Json, JsonObject}
+import monix.execution.Scheduler
 import munit.{Assertions, FunSuite, Location}
 
 import scala.collection.immutable.VectorMap
@@ -22,6 +23,8 @@ abstract class SerializationSuite
     with TestHelpers {
 
   implicit private val cl: ClassLoader = getClass.getClassLoader
+
+  implicit private val s: Scheduler = Scheduler.global
 
   implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
 

@@ -7,7 +7,6 @@ import akka.http.scaladsl.model.headers.{BasicHttpCredentials, HttpCredentials, 
 import akka.http.scaladsl.model.{HttpEntity, HttpHeader, Uri}
 import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
 import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers.stringUnmarshaller
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient.timeoutHeader
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClientError.{InvalidCountRequest, WrappedHttpClientError}
@@ -41,7 +40,7 @@ class BlazegraphClient(
 
   // TODODODODODO Sort out memoization - maybe inject in files values?
   private val defaultProperties =
-    ClasspathResourceUtils.ioPropertiesOf("blazegraph/index.properties")
+    ClasspathResourceUtils.ioPropertiesOf("blazegraph/index.properties").hideErrors.memoizeOnSuccess
 
   override def query[R <: SparqlQueryResponse](
       indices: Iterable[String],

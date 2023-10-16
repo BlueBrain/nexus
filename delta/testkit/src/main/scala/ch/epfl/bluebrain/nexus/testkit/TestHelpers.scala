@@ -1,8 +1,9 @@
 package ch.epfl.bluebrain.nexus.testkit
 
-import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceError, ClasspathResourceUtils}
 import io.circe.{Json, JsonObject}
+import monix.bio.IO
+import monix.execution.Scheduler
 
 import java.io.InputStream
 import scala.annotation.tailrec
@@ -41,7 +42,7 @@ trait TestHelpers extends ClasspathResourceUtils {
     * @return
     *   the content of the referenced resource as an [[InputStream]]
     */
-  final def streamOf(resourcePath: String): InputStream =
+  final def streamOf(resourcePath: String)(implicit s: Scheduler = Scheduler.global): InputStream =
     runAcceptOrThrow(ioStreamOf(resourcePath))
 
   /**
@@ -56,7 +57,7 @@ trait TestHelpers extends ClasspathResourceUtils {
   final def contentOf(
       resourcePath: String,
       attributes: (String, Any)*
-  ): String =
+  )(implicit s: Scheduler = Scheduler.global): String =
     runAcceptOrThrow(ioContentOf(resourcePath, attributes: _*))
 
   /**
@@ -71,7 +72,7 @@ trait TestHelpers extends ClasspathResourceUtils {
   final def jsonObjectContentOf(
       resourcePath: String,
       attributes: (String, Any)*
-  ): JsonObject =
+  )(implicit s: Scheduler = Scheduler.global): JsonObject =
     runAcceptOrThrow(ioJsonObjectContentOf(resourcePath, attributes: _*))
 
   /**
@@ -86,7 +87,7 @@ trait TestHelpers extends ClasspathResourceUtils {
   final def jsonContentOf(
       resourcePath: String,
       attributes: (String, Any)*
-  ): Json =
+  )(implicit s: Scheduler = Scheduler.global): Json =
     runAcceptOrThrow(ioJsonContentOf(resourcePath, attributes: _*))
 
   /**
@@ -98,11 +99,11 @@ trait TestHelpers extends ClasspathResourceUtils {
     * @return
     *   the content of the referenced resource as a map of properties
     */
-  final def propertiesOf(resourcePath: String): Map[String, String] =
+  final def propertiesOf(resourcePath: String)(implicit s: Scheduler = Scheduler.global): Map[String, String] =
     runAcceptOrThrow(ioPropertiesOf(resourcePath))
 
-  private def runAcceptOrThrow[A](io: IO[A]): A =
-    io.attempt.unsafeRunSync() match {
+  private def runAcceptOrThrow[A](io: IO[ClasspathResourceError, A])(implicit s: Scheduler): A =
+    io.attempt.runSyncUnsafe() match {
       case Left(value)  => throw new IllegalArgumentException(value.toString)
       case Right(value) => value
     }

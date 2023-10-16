@@ -1,14 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.shacl
 
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.toCatsIO
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
-import ch.epfl.bluebrain.nexus.testkit.ce.CatsIOValues
-import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOValues, TestHelpers}
 import io.circe.Json
 import io.circe.syntax._
 import org.apache.jena.query.DatasetFactory
@@ -23,7 +21,7 @@ class ValidationReportSpec
     with TestHelpers
     with EitherValuable
     with OptionValues
-    with CatsIOValues {
+    with IOValues {
 
   implicit val api: JsonLdApi = JsonLdJavaApi.strict
 
@@ -33,7 +31,7 @@ class ValidationReportSpec
     RemoteContextResolution.fixed(contexts.shacl -> shaclResolvedCtx)
 
   private def resource(json: Json): Resource = {
-    val g = Graph(toCatsIO(ExpandedJsonLd(json)).accepted).rightValue.value
+    val g = Graph(ExpandedJsonLd(json).accepted).rightValue.value
     DatasetFactory.wrap(g).getDefaultModel.createResource()
   }
 

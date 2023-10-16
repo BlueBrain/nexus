@@ -1,14 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resources
 
-import cats.implicits.catsSyntaxMonadError
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
-import ch.epfl.bluebrain.nexus.delta.rdf.shacl.{ShaclEngine, ValidationReport}
+import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclEngine
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.ResourceResolution
@@ -101,14 +100,9 @@ object ValidateResource {
       private def toGraph(id: Iri, expanded: ExpandedJsonLd): IO[ResourceRejection, Graph] =
         IO.fromEither(expanded.toGraph).mapError(err => InvalidJsonLdFormat(Some(id), err))
 
-      private def shaclValidate(
-          resourceId: Iri,
-          graph: Graph,
-          schemaRef: ResourceRef,
-          schema: ResourceF[Schema]
-      ): IO[ResourceRejection, ValidationReport] = {
+      private def shaclValidate(resourceId: Iri, graph: Graph, schemaRef: ResourceRef, schema: ResourceF[Schema]) = {
         ShaclEngine(graph ++ schema.value.ontologies, schema.value.shapes, reportDetails = true, validateShapes = false)
-          .adaptError(e => ResourceShaclEngineRejection(resourceId, schemaRef, e.toString))
+          .mapError(ResourceShaclEngineRejection(resourceId, schemaRef, _))
       }
 
       private def assertNotDeprecated(schema: ResourceF[Schema]) = {

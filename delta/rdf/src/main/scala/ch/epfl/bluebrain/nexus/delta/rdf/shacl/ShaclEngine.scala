@@ -1,11 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.shacl
 
-import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.ioStreamOf
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxsh
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
+import monix.bio.IO
 import org.apache.jena.graph.Factory.createDefaultGraph
 import org.apache.jena.query.{Dataset, DatasetFactory}
 import org.apache.jena.rdf.model._
@@ -15,9 +15,9 @@ import org.topbraid.shacl.arq.SHACLFunctions
 import org.topbraid.shacl.engine.{Constraint, ShapesGraph}
 import org.topbraid.shacl.validation.{ValidationEngine, ValidationEngineConfiguration, ValidationUtil}
 
-import java.io.InputStream
 import java.net.URI
 import java.util
+import scala.util.{Failure, Success, Try}
 
 /**
   * Extend the [[ValidationEngine]] form TopQuadrant in order to add triples to the report with the number of
@@ -51,21 +51,19 @@ final class ShaclEngine private (dataset: Dataset, shapesGraphURI: URI, shapesGr
 
 object ShaclEngine {
   implicit private val classLoader: ClassLoader = getClass.getClassLoader
-
-  // TODO memoization requires either an impure hack or refactor to do properly (using Deferred)
-  private val shaclGraphIO: IO[Graph] =
-    ioStreamOf("shacl-shacl.ttl").flatMap(createSchaclModelAndGraph)
-
-  private def createSchaclModelAndGraph(is: InputStream): IO[Graph] =
-    IO {
-      val model            = ModelFactory
-        .createModelForGraph(createDefaultGraph())
-        .read(is, "http://www.w3.org/ns/shacl-shacl#", FileUtils.langTurtle)
-      val finalShapesModel = ValidationUtil.ensureToshTriplesExist(model)
-      // Make sure all sh:Functions are registered
-      SHACLFunctions.registerFunctions(finalShapesModel)
-      Graph.unsafe(DatasetFactory.create(finalShapesModel).asDatasetGraph())
-    }
+  private val shaclGraphIO: IO[String, Graph]   =
+    ioStreamOf("shacl-shacl.ttl")
+      .mapError(_.toString)
+      .map { is =>
+        val model            = ModelFactory
+          .createModelForGraph(createDefaultGraph())
+          .read(is, "http://www.w3.org/ns/shacl-shacl#", FileUtils.langTurtle)
+        val finalShapesModel = ValidationUtil.ensureToshTriplesExist(model)
+        // Make sure all sh:Functions are registered
+        SHACLFunctions.registerFunctions(finalShapesModel)
+        Graph.unsafe(DatasetFactory.create(finalShapesModel).asDatasetGraph())
+      }
+      .memoize
 
   /**
     * Validates a given graph against the SHACL shapes spec.
@@ -80,7 +78,7 @@ object ShaclEngine {
   def apply(
       shapesGraph: Graph,
       reportDetails: Boolean
-  )(implicit api: JsonLdApi): IO[ValidationReport] =
+  )(implicit api: JsonLdApi): IO[String, ValidationReport] =
     for {
       shaclGraph <- shaclGraphIO
       shapes      = ShaclShapesGraph(shaclGraph)
@@ -103,7 +101,7 @@ object ShaclEngine {
       dataGraph: Graph,
       shapesGraph: Graph,
       reportDetails: Boolean
-  )(implicit api: JsonLdApi): IO[ValidationReport] =
+  )(implicit api: JsonLdApi): IO[String, ValidationReport] =
     apply(dataGraph, ShaclShapesGraph(shapesGraph), validateShapes = false, reportDetails)
 
   /**
@@ -125,7 +123,7 @@ object ShaclEngine {
       shapesGraph: ShaclShapesGraph,
       validateShapes: Boolean,
       reportDetails: Boolean
-  )(implicit api: JsonLdApi): IO[ValidationReport] =
+  )(implicit api: JsonLdApi): IO[String, ValidationReport] =
     apply(DatasetFactory.wrap(graph.value), shapesGraph, validateShapes, reportDetails)
 
   private def apply(
@@ -133,25 +131,20 @@ object ShaclEngine {
       shapesGraph: ShaclShapesGraph,
       validateShapes: Boolean,
       reportDetails: Boolean
-  )(implicit api: JsonLdApi): IO[ValidationReport] =
+  )(implicit api: JsonLdApi): IO[String, ValidationReport] = {
     // Create Dataset that contains both the data model and the shapes model
     // (here, using a temporary URI for the shapes graph)
-    for {
-      _        <- IO(dataset.addNamedModel(shapesGraph.uri.toString, shapesGraph.model))
-      resource <- mkRdfResource(dataset, shapesGraph, validateShapes, reportDetails)
-      report   <- ValidationReport(resource)
-    } yield report
-
-  private def mkRdfResource(
-      dataset: Dataset,
-      shapesGraph: ShaclShapesGraph,
-      validateShapes: Boolean,
-      reportDetails: Boolean
-  ): IO[Resource] = IO {
+    dataset.addNamedModel(shapesGraph.uri.toString, shapesGraph.model)
     val engine = new ShaclEngine(dataset, shapesGraph.uri, shapesGraph.value)
-    val config = new ValidationEngineConfiguration().setReportDetails(reportDetails).setValidateShapes(validateShapes)
-    engine.setConfiguration(config)
-    engine.applyEntailments()
-    engine.validateAll()
+    engine.setConfiguration(
+      new ValidationEngineConfiguration().setReportDetails(reportDetails).setValidateShapes(validateShapes)
+    )
+    Try {
+      engine.applyEntailments()
+      engine.validateAll()
+    } match {
+      case Failure(ex)       => IO.raiseError(ex.getMessage)
+      case Success(resource) => ValidationReport(resource)
+    }
   }
 }

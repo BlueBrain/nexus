@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resolvers
 
 import cats.effect.IO
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -40,7 +41,7 @@ class ResolverScopeInitialization(createResolver: CreateResolver, defaults: Defa
         case rej                        =>
           val str =
             s"Failed to create the default InProject resolver for project '${project.ref}' due to '${rej.getMessage}'."
-          logger.error(str) *> IO.raiseError(ScopeInitializationFailed(str))
+          logger.error(str) >> IO.raiseError(ScopeInitializationFailed(str))
       }
       .span("createDefaultResolver")
 

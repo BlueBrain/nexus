@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.migration
 
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.migration.MigrateCompositeViews.{eventsToMigrate, statesToMigrate}
@@ -21,7 +20,7 @@ import doobie.Get
 import doobie.implicits._
 import io.circe.JsonObject
 import io.circe.syntax.EncoderOps
-import monix.bio.{IO, UIO}
+import monix.bio.IO
 import munit.{AnyFixture, Location}
 
 import java.time.Instant
@@ -112,7 +111,7 @@ object MigrateCompositeViewsSuite extends ClasspathResourceUtils {
     } yield (project, id, rev)
   }
 
-  def loadEvent(jsonPath: String)(implicit xas: Transactors, classLoader: ClassLoader): IO[Unit, Unit] = {
+  def loadEvent(jsonPath: String)(implicit xas: Transactors, classLoader: ClassLoader) = {
     def insert(project: ProjectRef, id: String, rev: Int, json: JsonObject) =
       sql"""
            | INSERT INTO scoped_events (
@@ -132,17 +131,17 @@ object MigrateCompositeViewsSuite extends ClasspathResourceUtils {
            |  $rev,
            |  ${json.asJson},
            |  ${Instant.EPOCH}
-           | )""".stripMargin.update.run.void.transact(xas.write).hideErrors
+           | )""".stripMargin.update.run.void.transact(xas.write)
 
     for {
-      json               <- ioJsonObjectContentOf(jsonPath): UIO[JsonObject]
+      json               <- ioJsonObjectContentOf(jsonPath)
       (project, id, rev) <- extractIdentifiers(json)
       _                  <- insert(project, id, rev, json)
     } yield ()
   }
 
   def loadState(tag: Tag, jsonPath: String)(implicit xas: Transactors, classLoader: ClassLoader) = {
-    def insert(project: ProjectRef, id: String, rev: Int, json: JsonObject): UIO[Unit] =
+    def insert(project: ProjectRef, id: String, rev: Int, json: JsonObject) =
       sql"""
            | INSERT INTO scoped_states (
            |  type,
@@ -165,10 +164,10 @@ object MigrateCompositeViewsSuite extends ClasspathResourceUtils {
            |  ${json.asJson},
            |  ${false},
            |  ${Instant.EPOCH}
-           | )""".stripMargin.update.run.void.transact(xas.write).hideErrors
+           | )""".stripMargin.update.run.void.transact(xas.write)
 
     for {
-      json               <- ioJsonObjectContentOf(jsonPath): UIO[JsonObject]
+      json               <- ioJsonObjectContentOf(jsonPath)
       (project, id, rev) <- extractIdentifiers(json)
       _                  <- insert(project, id, rev, json)
     } yield ()
