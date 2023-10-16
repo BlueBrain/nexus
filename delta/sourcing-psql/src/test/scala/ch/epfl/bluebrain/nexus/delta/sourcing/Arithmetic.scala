@@ -10,6 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.GlobalEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.rejection.Rejection
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.GlobalState
 import io.circe.Codec
 import io.circe.generic.extras.Configuration
@@ -87,7 +88,9 @@ object Arithmetic {
     }
   }
 
-  sealed trait ArithmeticRejection extends Product with Serializable
+  sealed trait ArithmeticRejection extends Rejection with Product with Serializable {
+    override def reason: String = this.toString
+  }
 
   object ArithmeticRejection {
     final case object NotFound                                          extends ArithmeticRejection

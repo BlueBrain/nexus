@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import cats.effect.Clock
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.ioToTaskK
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews._
@@ -326,7 +327,7 @@ final class ElasticSearchViews private (
     * Return the existing indexing views in a project in a finite stream
     */
   def currentIndexingViews(project: ProjectRef): ElemStream[IndexingViewDef] =
-    log.currentStates(Scope.Project(project)).evalMapFilter { envelope =>
+    log.currentStates(Scope.Project(project)).translate(ioToTaskK).evalMapFilter { envelope =>
       Task.pure(toIndexViewDef(envelope))
     }
 
@@ -334,7 +335,7 @@ final class ElasticSearchViews private (
     * Return all existing indexing views in a finite stream
     */
   def currentIndexingViews: ElemStream[IndexingViewDef] =
-    log.currentStates(Scope.Root).evalMapFilter { envelope =>
+    log.currentStates(Scope.Root).translate(ioToTaskK).evalMapFilter { envelope =>
       Task.pure(toIndexViewDef(envelope))
     }
 
@@ -342,7 +343,7 @@ final class ElasticSearchViews private (
     * Return the indexing views in a non-ending stream
     */
   def indexingViews(start: Offset): ElemStream[IndexingViewDef] =
-    log.states(Scope.Root, start).evalMapFilter { envelope =>
+    log.states(Scope.Root, start).translate(ioToTaskK).evalMapFilter { envelope =>
       Task.pure(toIndexViewDef(envelope))
     }
 

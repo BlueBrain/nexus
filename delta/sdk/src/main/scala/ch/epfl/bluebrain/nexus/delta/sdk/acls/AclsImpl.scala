@@ -30,6 +30,7 @@ final class AclsImpl private (
   override def fetch(address: AclAddress): IO[AclNotFound, AclResource] =
     log
       .stateOr(address, AclNotFound(address))
+      .toBIO[AclNotFound]
       .onErrorRecover {
         case AclNotFound(a) if a == AclAddress.Root => AclState.initial(minimum)
       }
@@ -42,6 +43,7 @@ final class AclsImpl private (
   override def fetchAt(address: AclAddress, rev: Int): IO[AclRejection.NotFound, AclResource] =
     log
       .stateOr(address, rev, AclNotFound(address), RevisionNotFound)
+      .toBIO[AclRejection.NotFound]
       .onErrorRecover {
         case AclNotFound(a) if a == AclAddress.Root && rev == 0 => AclState.initial(minimum)
       }
@@ -51,6 +53,7 @@ final class AclsImpl private (
   override def list(filter: AclAddressFilter): UIO[AclCollection] = {
     log
       .currentStates(_.toResource)
+      .translate(ioToTaskK)
       .filter { a =>
         filter.matches(a.value.address)
       }
@@ -88,9 +91,10 @@ final class AclsImpl private (
   override def delete(address: AclAddress, rev: Int)(implicit caller: Subject): IO[AclRejection, AclResource] =
     eval(DeleteAcl(address, rev, caller)).span("deleteAcls")
 
-  private def eval(cmd: AclCommand): IO[AclRejection, AclResource] = log.evaluate(cmd.address, cmd).map(_._2.toResource)
+  private def eval(cmd: AclCommand): IO[AclRejection, AclResource] =
+    log.evaluate(cmd.address, cmd).toBIO[AclRejection].map(_._2.toResource)
 
-  override def purge(project: AclAddress): UIO[Unit] = log.delete(project)
+  override def purge(project: AclAddress): UIO[Unit] = log.delete(project).toBIO
 }
 
 object AclsImpl {

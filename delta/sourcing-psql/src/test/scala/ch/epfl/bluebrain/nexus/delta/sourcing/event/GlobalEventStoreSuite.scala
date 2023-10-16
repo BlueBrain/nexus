@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.event
 
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic
@@ -10,16 +11,16 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Envelope, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
-import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
+import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
+import ch.epfl.bluebrain.nexus.testkit.ce.CatsEffectSuite
 import doobie.implicits._
 import munit.AnyFixture
 
 import java.time.Instant
 import scala.concurrent.duration._
 
-class GlobalEventStoreSuite extends BioSuite with Doobie.Fixture with Doobie.Assertions {
+class GlobalEventStoreSuite extends CatsEffectSuite with Doobie.Fixture with Doobie.Assertions {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 
@@ -46,18 +47,20 @@ class GlobalEventStoreSuite extends BioSuite with Doobie.Fixture with Doobie.Ass
   private val envelope3 = Envelope(Arithmetic.entityType, id, 3, event3, Instant.EPOCH, Offset.at(3L))
   private val envelope4 = Envelope(Arithmetic.entityType, id2, 1, event4, Instant.EPOCH, Offset.at(4L))
 
-  private def assertCount = sql"select count(*) from global_events".query[Int].unique.transact(xas.read).assert(4)
+  private def assertCount =
+    sql"select count(*) from global_events".query[Int].unique.transact(xas.readCE).assertEquals(4)
 
   test("Save events successfully") {
     for {
-      _ <- List(event1, event2, event3, event4).traverse(store.save).transact(xas.write)
+      _ <- List(event1, event2, event3, event4).traverse(store.save).transact(xas.writeCE)
       _ <- assertCount
     } yield ()
   }
 
   test("Fail when the PK already exists") {
     for {
-      _ <- store.save(Plus(id, 2, 5, Instant.EPOCH, Anonymous)).transact(xas.write).expectUniqueViolation
+      _ <-
+        store.save(Plus(id, 2, 5, Instant.EPOCH, Anonymous)).transact(xas.writeCE).toUIO.expectUniqueViolation.toCatsIO
       _ <- assertCount
     } yield ()
   }
@@ -92,7 +95,7 @@ class GlobalEventStoreSuite extends BioSuite with Doobie.Fixture with Doobie.Ass
 
   test(s"Delete events for $id") {
     for {
-      _ <- store.delete(id).transact(xas.write)
+      _ <- store.delete(id).transact(xas.writeCE)
       _ <- store.history(id).assertSize(0)
     } yield ()
   }

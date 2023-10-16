@@ -12,17 +12,17 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.event.EventStreamingSuite.IdRev
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Arithmetic, MultiDecoder, PullRequest, Scope}
-import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
-import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
+import ch.epfl.bluebrain.nexus.testkit.ce.CatsEffectSuite
 import doobie.implicits._
 import io.circe.Decoder
 import munit.AnyFixture
 
 import java.time.Instant
 
-class EventStreamingSuite extends BioSuite with Doobie.Fixture with Doobie.Assertions {
+class EventStreamingSuite extends CatsEffectSuite with Doobie.Fixture with Doobie.Assertions {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 

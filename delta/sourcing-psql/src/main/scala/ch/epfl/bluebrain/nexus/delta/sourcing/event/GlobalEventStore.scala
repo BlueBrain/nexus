@@ -1,6 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.event
 
+import cats.effect.IO
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.taskToIoK
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Serializer, Transactors}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.GlobalEvent
@@ -13,7 +15,6 @@ import doobie.implicits._
 import doobie.postgres.implicits._
 import fs2.Stream
 import io.circe.Decoder
-import monix.bio.Task
 
 /**
   * Allows to save and fetch [[GlobalEvent]] s from the database
@@ -33,17 +34,17 @@ trait GlobalEventStore[Id, E <: GlobalEvent] {
   /**
     * Fetches the history for the global event up to the provided revision
     */
-  def history(id: Id, to: Option[Int]): Stream[Task, E]
+  def history(id: Id, to: Option[Int]): Stream[IO, E]
 
   /**
     * Fetches the history for the global event up to the provided revision
     */
-  def history(id: Id, to: Int): Stream[Task, E] = history(id, Some(to))
+  def history(id: Id, to: Int): Stream[IO, E] = history(id, Some(to))
 
   /**
     * Fetches the history for the global event up to the last existing revision
     */
-  def history(id: Id): Stream[Task, E] = history(id, None)
+  def history(id: Id): Stream[IO, E] = history(id, None)
 
   /**
     * Fetches events from the given type from the provided offset.
@@ -105,16 +106,16 @@ object GlobalEventStore {
       def delete(id: Id): ConnectionIO[Unit] =
         sql"""DELETE FROM global_events where type = $tpe and id = $id""".update.run.void
 
-      override def history(id: Id, to: Option[Int]): Stream[Task, E] = {
+      override def history(id: Id, to: Option[Int]): Stream[IO, E] = {
         val select =
           fr"SELECT value FROM public.global_events" ++
             Fragments.whereAndOpt(Some(fr"type = $tpe"), Some(fr"id = $id"), to.map { t => fr" rev <= $t" }) ++
             fr"ORDER BY rev"
 
-        select.query[E].streamWithChunkSize(config.batchSize).transact(xas.read)
+        select.query[E].streamWithChunkSize(config.batchSize).transact(xas.readCE)
       }
 
-      private def events(offset: Offset, strategy: RefreshStrategy): Stream[Task, Envelope[E]] =
+      private def events(offset: Offset, strategy: RefreshStrategy): Stream[IO, Envelope[E]] =
         StreamingQuery[Envelope[E]](
           offset,
           offset => sql"""SELECT type, id, value, rev, instant, ordering FROM public.global_events
@@ -124,11 +125,11 @@ object GlobalEventStore {
           _.offset,
           config.copy(refreshStrategy = strategy),
           xas
-        )
+        ).translate(taskToIoK)
 
-      override def currentEvents(offset: Offset): Stream[Task, Envelope[E]] = events(offset, RefreshStrategy.Stop)
+      override def currentEvents(offset: Offset): Stream[IO, Envelope[E]] = events(offset, RefreshStrategy.Stop)
 
-      override def events(offset: Offset): Stream[Task, Envelope[E]] = events(offset, config.refreshStrategy)
+      override def events(offset: Offset): Stream[IO, Envelope[E]] = events(offset, config.refreshStrategy)
     }
 
 }

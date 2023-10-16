@@ -1,9 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.kernel
 
 import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.toMonixBIOOps
 import com.typesafe.scalalogging.{Logger => ScalaLoggingLogger}
 import monix.bio.{IO => BIO, UIO}
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.toMonixBIOOps
 import pureconfig.ConfigReader
 import pureconfig.error.{CannotConvert, ConfigReaderFailures, ConvertFailure}
 import pureconfig.generic.semiauto._
@@ -147,7 +147,7 @@ object RetryStrategy {
     RetryStrategy(
       config,
       (t: Throwable) => NonFatal(t),
-      (t: Throwable, d: RetryDetails) => logError(logger, action)(t, d).toBIO[Throwable]
+      (t: Throwable, d: RetryDetails) => logError[Throwable](logger, action)(t, d).toBIO
     )
 
 }
