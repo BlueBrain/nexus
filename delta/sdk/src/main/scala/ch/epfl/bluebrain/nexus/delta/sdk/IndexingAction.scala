@@ -98,7 +98,7 @@ object IndexingAction {
           for {
             _               <- logger.debug(s"Synchronous indexing of resource '$project/${res.id}' has been requested.")
             // We create the GraphResource wrapped in an `Elem`
-            elem            <- toCatsIO(shift.toGraphResourceElem(project, res))
+            elem            <- shift.toGraphResourceElem(project, res)
             errorsPerAction <- internal.traverse(_.apply(project, elem))
             errors           = errorsPerAction.toList.flatMap(_.map(_.throwable))
             _               <- IO.raiseWhen(errors.nonEmpty)(IndexingFailed(res.void, errors))
