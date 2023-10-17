@@ -18,6 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Sort, SortList}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestHelpers, TestMatchers}
 import io.circe.generic.extras.Configuration
@@ -93,6 +94,7 @@ class ElasticSearchViewsDirectivesSpec
       val createdAtEncoded = UrlUtils.encode(s"*..${createdAt.value}")
       val updatedAt        = TimeRange.Between(Instant.EPOCH, Instant.EPOCH.plusSeconds(5L))
       val updatedAtEncoded = UrlUtils.encode(s"${updatedAt.start}..${updatedAt.end}")
+      val tag              = UserTag.unsafe("mytag")
 
       val query    = List(
         "locate"     -> "self",
@@ -108,7 +110,8 @@ class ElasticSearchViewsDirectivesSpec
         "type"       -> "B",
         "type"       -> "-C",
         "schema"     -> "mySchema",
-        "q"          -> "something"
+        "q"          -> "something",
+        "tag"        -> tag.value
       ).map { case (k, v) => s"$k=$v" }.mkString("&")
 
       val expected = ResourcesSearchParams(
@@ -126,7 +129,8 @@ class ElasticSearchViewsDirectivesSpec
           ExcludedType(iri"${vocab}C")
         ),
         schema = Some(ResourceRef.Latest(iri"${base}mySchema")),
-        q = Some("something")
+        q = Some("something"),
+        tag = Some(tag)
       )
 
       Get(s"/search/org/project?$query") ~> Accept(`*/*`) ~> route ~> check {

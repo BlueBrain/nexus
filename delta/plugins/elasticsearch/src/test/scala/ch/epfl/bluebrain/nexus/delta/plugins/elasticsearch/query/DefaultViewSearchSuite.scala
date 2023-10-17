@@ -17,9 +17,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.DataResource
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ResourceGen
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject, User}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
@@ -46,6 +47,7 @@ class DefaultViewSearchSuite
   private def epochPlus(plus: Long) = Instant.EPOCH.plusSeconds(plus)
   private val realm                 = Label.unsafe("myrealm")
   private val alice                 = User("Alice", realm)
+  private val myTag                 = UserTag.unsafe("mytag")
 
   private val orgType                 = nxv + "Organization"
   private val orgSchema               = ResourceRef.Latest(nxv + "org")
@@ -58,7 +60,8 @@ class DefaultViewSearchSuite
       orgSchema,
       createdAt = epochPlus(5L),
       updatedAt = epochPlus(10L),
-      createdBy = alice
+      createdBy = alice,
+      tag = myTag.some
     )
   private val epfl                    =
     Sample(
@@ -184,6 +187,7 @@ class DefaultViewSearchSuite
   private val byId           = ResourcesSearchParams(id = Some(bbpResource.id))
   private val byLocatingId   = ResourcesSearchParams(locate = Some(bbpResource.id))
   private val byLocatingSelf = ResourcesSearchParams(locate = Some(bbpResource.self))
+  private val byTag          = ResourcesSearchParams(tag = myTag.some)
 
   // Action / params / matching resources
 
@@ -204,7 +208,8 @@ class DefaultViewSearchSuite
     ("resources updated before 12", byUpdated_Before_12, updatedBefore_12),
     (s"resources with id ${bbpResource.id}", byId, List(bbp)),
     (s"resources by locating id ${bbpResource.id}", byLocatingId, List(bbp)),
-    (s"resources by locating self ${bbpResource.self}", byLocatingSelf, List(bbp))
+    (s"resources by locating self ${bbpResource.self}", byLocatingSelf, List(bbp)),
+    (s"resources with tag ${myTag.value}", byTag, List(bbp))
   ).foreach { case (testName, params, expected) =>
     test(s"Search: $testName") {
       search(params).map(Ids.extractAll).assert(expected.map(_.id))
@@ -265,13 +270,15 @@ object DefaultViewSearchSuite {
       createdAt: Instant,
       updatedAt: Instant,
       createdBy: Subject = Anonymous,
-      updatedBy: Subject = Anonymous
+      updatedBy: Subject = Anonymous,
+      tag: Option[UserTag] = None
   ) {
 
     def id: Iri = nxv + suffix
 
     def asResourceF(implicit rcr: RemoteContextResolution): DataResource = {
-      val resource = ResourceGen.resource(id, project, Json.obj())
+      val tags     = tag.map(t => Tags(t -> rev)).getOrElse(Tags.empty)
+      val resource = ResourceGen.resource(id, project, Json.obj(), tags = tags)
       ResourceGen
         .resourceFor(resource, types = types, rev = rev, deprecated = deprecated)
         .copy(

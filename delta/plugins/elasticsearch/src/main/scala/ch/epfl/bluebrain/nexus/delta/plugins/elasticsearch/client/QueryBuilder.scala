@@ -80,7 +80,8 @@ final case class QueryBuilder private[client] (private val query: JsonObject) {
           params.createdBy.map(term(nxv.createdBy.prefix, _)) ++
           range(nxv.createdAt.prefix, params.createdAt) ++
           params.updatedBy.map(term(nxv.updatedBy.prefix, _)) ++
-          range(nxv.updatedAt.prefix, params.updatedAt),
+          range(nxv.updatedAt.prefix, params.updatedAt) ++
+          params.tag.map(term(nxv.tags.prefix, _)),
         mustNotTerms = typesTerms(params.typeOperator.negate, excludeTypes),
         withScore = params.q.isDefined
       )
