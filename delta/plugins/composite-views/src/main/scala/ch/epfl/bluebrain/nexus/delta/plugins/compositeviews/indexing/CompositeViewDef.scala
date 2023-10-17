@@ -189,7 +189,7 @@ object CompositeViewDef {
     val fetchProgress: UIO[CompositeProgress] = compositeProjections.progress(view.indexingRef)
 
     def compileSource =
-      CompositeViewDef.compileSource(view.ref.project, compilePipeChain, graphStream, sinks.commonSink(view))(_)
+      CompositeViewDef.compileSource(view.ref.project, compilePipeChain, graphStream, sinks.commonSink(view))(_, _)
 
     def compileTarget = CompositeViewDef.compileTarget(compilePipeChain, sinks.projectionSink(view, _))(_)
 
@@ -246,7 +246,7 @@ object CompositeViewDef {
   def compile(
       view: ActiveViewDef,
       fetchProgress: UIO[CompositeProgress],
-      compileSource: CompositeViewSource => Task[(Iri, Source, Source, Operation)],
+      compileSource: (CompositeViewSource, Set[Iri]) => Task[(Iri, Source, Source, Operation)],
       compileTarget: CompositeViewProjection => Task[(Iri, Operation)],
       rebuild: ElemPipe[Unit, Unit],
       restarts: ElemPipe[Unit, Unit],
@@ -271,8 +271,12 @@ object CompositeViewDef {
         logger.debug(s"Cancelled '$branch' branch for source '$sourceId' of composite view '${view.ref}'.")
     }
 
+    val projectionTypes =
+      if (targets.exists(_.resourceTypes.isEmpty)) Set.empty[Iri]
+      else targets.foldLeft(Set.empty[Iri]) { _ ++ _.resourceTypes }
+
     for {
-      compiledSources  <- sources.traverse(compileSource)
+      compiledSources  <- sources.traverse(compileSource(_, projectionTypes))
       targetOperations <- targets.traverse(compileTarget)
       // Main branches
       mains             = compiledSources.reduceMap { case (sourceId, sourceMain, _, sourceOperation) =>
@@ -515,20 +519,21 @@ object CompositeViewDef {
       compilePipeChain: PipeChain.Compile,
       graphStream: CompositeGraphStream,
       sink: Sink
-  )(source: CompositeViewSource): Task[(Iri, Source, Source, Operation)] = Task.fromEither {
-    for {
-      pipes        <- source.pipeChain.traverse(compilePipeChain)
-      // We apply `Operation.tap` as we want to keep the GraphResource for the rest of the stream
-      tail         <- Operation.merge(GraphResourceToNTriples, sink).map(_.tap)
-      chain         = pipes.fold(NonEmptyChain.one(tail))(NonEmptyChain(_, tail))
-      operation    <- Operation.merge(chain)
-      // We create the elem stream for the two types of branch
-      // The main source produces an infinite stream and waits for new elements
-      mainSource    = graphStream.main(source, project)
-      // The rebuild one a finite one with only the current elements
-      rebuildSource = graphStream.rebuild(source, project)
-    } yield (source.id, mainSource, rebuildSource, operation)
-  }
+  )(source: CompositeViewSource, projectionTypes: Set[Iri]): Task[(Iri, Source, Source, Operation)] =
+    Task.fromEither {
+      for {
+        pipes        <- source.pipeChain.traverse(compilePipeChain)
+        // We apply `Operation.tap` as we want to keep the GraphResource for the rest of the stream
+        tail         <- Operation.merge(GraphResourceToNTriples, sink).map(_.tap)
+        chain         = pipes.fold(NonEmptyChain.one(tail))(NonEmptyChain(_, tail))
+        operation    <- Operation.merge(chain)
+        // We create the elem stream for the two types of branch
+        // The main source produces an infinite stream and waits for new elements
+        mainSource    = graphStream.main(source, project)
+        // The rebuild one a finite one with only the current elements
+        rebuildSource = graphStream.rebuild(source, project)(projectionTypes)
+      } yield (source.id, mainSource, rebuildSource, operation)
+    }
 
   /**
     * Compiles a composite projection into an operation

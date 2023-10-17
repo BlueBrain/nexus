@@ -5,6 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViewsFixtur
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.{Interval, RebuildStrategy}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.CompositeGraphStream
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.NTriples
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef}
@@ -36,7 +37,10 @@ class CompositeViewDefSuite extends BioSuite with CompositeViewsFixture {
 
     val graphStream = new CompositeGraphStream {
       override def main(source: CompositeViewSource, project: ProjectRef): Source                                     = makeSource("main")
-      override def rebuild(source: CompositeViewSource, project: ProjectRef): Source                                  = makeSource("rebuild")
+      override def rebuild(
+          source: CompositeViewSource,
+          project: ProjectRef
+      ): Set[Iri] => Source                                                                                           = _ => makeSource("rebuild")
       override def remaining(source: CompositeViewSource, project: ProjectRef): Offset => UIO[Option[RemainingElems]] =
         _ => UIO.none
     }
@@ -47,7 +51,7 @@ class CompositeViewDefSuite extends BioSuite with CompositeViewsFixture {
         _ => Right(FilterDeprecated.withConfig(())),
         graphStream,
         new NoopSink[NTriples]()
-      )(projectSource)
+      )(projectSource, Set.empty)
       .foreachL { case (id, mainSource, rebuildSource, operation) =>
         assertEquals(id, projectSource.id)
         assertEquals(mainSource.name, "main")

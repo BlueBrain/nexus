@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream
 
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.{CrossProjectSource, ProjectSource, RemoteProjectSource}
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemPipe, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
@@ -31,7 +32,7 @@ trait CompositeGraphStream {
     * @param project
     *   the enclosing project
     */
-  def rebuild(source: CompositeViewSource, project: ProjectRef): Source
+  def rebuild(source: CompositeViewSource, project: ProjectRef): Set[Iri] => Source
 
   /**
     * Get information about the remaining elements
@@ -62,13 +63,19 @@ object CompositeGraphStream {
       }
     }
 
-    override def rebuild(source: CompositeViewSource, project: ProjectRef): Source = {
+    override def rebuild(
+        source: CompositeViewSource,
+        project: ProjectRef
+    ): Set[Iri] => Source = { projectionTypes =>
       source match {
         case p: ProjectSource       =>
-          Source(local.currents(project, p.selectFilter, _).through(drainSource))
+          val filter = p.selectFilter.copy(types = p.selectFilter.types ++ projectionTypes)
+          Source(local.currents(project, filter, _).through(drainSource))
         case c: CrossProjectSource  =>
-          Source(local.currents(c.project, c.selectFilter, _).through(drainSource))
-        case r: RemoteProjectSource => remote.rebuild(r)
+          val filter = c.selectFilter.copy(types = c.selectFilter.types ++ projectionTypes)
+          Source(local.currents(c.project, filter, _).through(drainSource))
+        case r: RemoteProjectSource =>
+          remote.rebuild(r)
       }
     }
 
