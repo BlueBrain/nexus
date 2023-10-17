@@ -12,7 +12,7 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration}
   * Adapted from:
   * https://github.com/typelevel/munit-cats-effect/blob/main/core/src/main/scala/munit/CatsEffectSuite.scala
   */
-abstract class CatsEffectSuite
+trait CatsEffectSuite
     extends NexusSuite
     with CatsEffectAssertions
     with StreamAssertions

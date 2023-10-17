@@ -1,24 +1,63 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
 import cats.data.NonEmptyChain
+import cats.effect.{Concurrent, ContextShift, ExitCase, Fiber, IO, Timer}
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ElemPipe
+import cats.~>
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ElemPipeF
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.OperationF.{PipeF, SinkF}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionErr.{LeapingNotAllowedErr, OperationInOutMatchErr}
 import com.typesafe.scalalogging.Logger
 import fs2.{Chunk, Pipe, Pull, Stream}
 import monix.bio.Task
 import shapeless.Typeable
 
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
 
-/**
-  * Operations represent individual steps in a [[Projection]] where [[Elem]] values are processed.
-  *
-  * They are ultimately chained and attached to sources to complete the underlying projection [[Stream]] that is run.
-  */
-sealed trait Operation { self =>
+sealed trait OperationF[F[_]] { self =>
+
+  implicit def timer: Timer[F]
+  implicit def concurrent: Concurrent[F]
+
+//  def mapK[G[_]](f: F ~> G, g: G ~> F): OperationF[G] = new OperationF[G] {
+//    override implicit def timer: Timer[G] = self.timer.mapK(f)
+//
+//    override implicit def concurrent: Concurrent[G] = new Concurrent[G] {
+//      override def start[A](fa: G[A]): G[Fiber[G, A]] = ???
+//
+//      override def racePair[A, B](fa: G[A], fb: G[B]): G[Either[(A, Fiber[G, B]), (Fiber[G, A], B)]] = ???
+//
+//      override def async[A](k: (Either[Throwable, A] => Unit) => Unit): G[A] = ???
+//
+//      override def asyncF[A](k: (Either[Throwable, A] => Unit) => G[Unit]): G[A] = ???
+//
+//      override def suspend[A](thunk: => G[A]): G[A] = ???
+//
+//      override def bracketCase[A, B](acquire: G[A])(use: A => G[B])(release: (A, ExitCase[Throwable]) => G[Unit]): G[B] = ???
+//
+//      override def raiseError[A](e: Throwable): G[A] = ???
+//
+//      override def handleErrorWith[A](fa: G[A])(f: Throwable => G[A]): G[A] = ???
+//
+//      override def flatMap[A, B](fa: G[A])(f: A => G[B]): G[B] = ???
+//
+//      override def tailRecM[A, B](a: A)(f: A => G[Either[A, B]]): G[B] = ???
+//
+//      override def pure[A](x: A): G[A] = ???
+//    }
+//
+//    override type In = self.In
+//    override type Out = self.Out
+//
+//    override def inType: Typeable[In] = self.inType
+//    override def outType: Typeable[Out] = self.outType
+//
+//    override protected[stream] def asFs2: Pipe[G, Elem[In], Elem[Out]] =
+//      inputStream => self.asFs2(inputStream.translate(g)).translate(f)
+//  }
 
   /**
     * The underlying element type accepted by the Operation.
@@ -48,18 +87,21 @@ sealed trait Operation { self =>
     */
   def outType: Typeable[Out]
 
-  protected[stream] def asFs2: fs2.Pipe[Task, Elem[In], Elem[Out]]
+  protected[stream] def asFs2: fs2.Pipe[F, Elem[In], Elem[Out]]
 
-  private[stream] def andThen(that: Operation): Either[OperationInOutMatchErr, Operation] =
+  private[stream] def andThen(that: OperationF[F]): Either[OperationInOutMatchErr[F], OperationF[F]] =
     Either.cond(
       self.outType.describe == that.inType.describe,
-      new Operation {
+      new OperationF[F] {
+        implicit val timer: Timer[F]           = self.timer
+        implicit val concurrent: Concurrent[F] = self.concurrent
+
         override type In  = self.In
         override type Out = that.Out
         override def inType: Typeable[self.In]   = self.inType
         override def outType: Typeable[that.Out] = that.outType
 
-        override protected[stream] def asFs2: Pipe[Task, Elem[Operation.this.In], Elem[that.Out]] = { stream =>
+        override protected[stream] def asFs2: Pipe[F, Elem[OperationF.this.In], Elem[that.Out]] = { stream =>
           stream
             .through(self.asFs2)
             .map {
@@ -74,7 +116,10 @@ sealed trait Operation { self =>
   /**
     * Send the values through the operation while returning original values
     */
-  def tap: Operation = new Operation {
+  def tap: OperationF[F] = new OperationF[F] {
+    implicit val timer: Timer[F]           = self.timer
+    implicit val concurrent: Concurrent[F] = self.concurrent
+
     override type In  = self.In
     override type Out = self.In
 
@@ -82,7 +127,7 @@ sealed trait Operation { self =>
 
     override def outType: Typeable[Out] = self.inType
 
-    override protected[stream] def asFs2: Pipe[Task, Elem[Operation.this.In], Elem[this.Out]] =
+    override protected[stream] def asFs2: Pipe[F, Elem[OperationF.this.In], Elem[this.Out]] =
       _.chunks
         .evalTap { chunk =>
           Stream.chunk(chunk).through(self.asFs2).compile.drain
@@ -98,7 +143,10 @@ sealed trait Operation { self =>
   def debug(
       formatter: Elem[Out] => String = (elem: Elem[Out]) => elem.toString,
       logger: String => Unit = println(_)
-  ): Operation = new Operation {
+  ): OperationF[F] = new OperationF[F] {
+    implicit val timer: Timer[F]           = self.timer
+    implicit val concurrent: Concurrent[F] = self.concurrent
+
     override type In  = self.In
     override type Out = self.Out
 
@@ -106,7 +154,7 @@ sealed trait Operation { self =>
 
     override def outType: Typeable[Out] = self.outType
 
-    override protected[stream] def asFs2: Pipe[Task, Elem[Operation.this.In], Elem[this.Out]] =
+    override protected[stream] def asFs2: Pipe[F, Elem[OperationF.this.In], Elem[this.Out]] =
       _.through(self.asFs2).debug(formatter, logger)
 
   }
@@ -118,8 +166,11 @@ sealed trait Operation { self =>
     * @param mapSkip
     *   the function to apply when skipping an element
     */
-  def leap[A](offset: Offset, mapSkip: self.In => A)(implicit ta: Typeable[A]): Either[ProjectionErr, Operation] = {
-    val pipe = new Operation {
+  def leap[A](offset: Offset, mapSkip: self.In => A)(implicit ta: Typeable[A]): Either[ProjectionErr, OperationF[F]] = {
+    val pipe = new OperationF[F] {
+      implicit val timer: Timer[F]           = self.timer
+      implicit val concurrent: Concurrent[F] = self.concurrent
+
       override type In  = self.In
       override type Out = self.Out
 
@@ -129,8 +180,8 @@ sealed trait Operation { self =>
 
       override def outType: Typeable[Out] = self.outType
 
-      override protected[stream] def asFs2: Pipe[Task, Elem[Operation.this.In], Elem[this.Out]] = {
-        def go(s: fs2.Stream[Task, Elem[In]]): Pull[Task, Elem[this.Out], Unit] = {
+      override protected[stream] def asFs2: Pipe[F, Elem[OperationF.this.In], Elem[this.Out]] = {
+        def go(s: fs2.Stream[F, Elem[In]]): Pull[F, Elem[this.Out], Unit] = {
           s.pull.peek.flatMap {
             case Some((chunk, stream)) =>
               val (before, after) = chunk.partitionEither { e =>
@@ -154,7 +205,7 @@ sealed trait Operation { self =>
     Either.cond(
       ta.describe == self.outType.describe,
       pipe,
-      LeapingNotAllowedErr(self, ta)
+      LeapingNotAllowedErr[F, A](self, ta)
     )
   }
 
@@ -163,30 +214,40 @@ sealed trait Operation { self =>
     * @param offset
     *   the offset to reach before applying the operation
     */
-  def identityLeap(offset: Offset): Either[ProjectionErr, Operation] = leap(offset, identity[self.In])(inType)
+  def identityLeap(offset: Offset): Either[ProjectionErr, OperationF[F]] = leap(offset, identity[self.In])(inType)
 }
 
-object Operation {
+/**
+  * Operations represent individual steps in a [[Projection]] where [[Elem]] values are processed.
+  *
+  * They are ultimately chained and attached to sources to complete the underlying projection [[Stream]] that is run.
+  */
+object OperationF {
 
   /**
     * Creates an operation from an fs2 Pipe
     * @param elemPipe
     *   fs2 pipe
     */
-  def fromFs2Pipe[I: Typeable](elemPipe: ElemPipe[I, Unit]): Operation = new Operation {
+  def fromFs2Pipe[F[_], I: Typeable](
+      elemPipe: ElemPipeF[F, I, Unit]
+  )(implicit t: Timer[F], c: Concurrent[F]): OperationF[F] = new OperationF[F] {
+    implicit val timer: Timer[F]           = t
+    implicit val concurrent: Concurrent[F] = c
+
     override type In  = I
     override type Out = Unit
     override def inType: Typeable[In]   = Typeable[In]
     override def outType: Typeable[Out] = Typeable[Out]
 
-    override protected[stream] def asFs2: fs2.Pipe[Task, Elem[In], Elem[Out]] = elemPipe
+    override protected[stream] def asFs2: fs2.Pipe[F, Elem[In], Elem[Out]] = elemPipe
   }
 
-  def merge(first: Operation, others: Operation*): Either[ProjectionErr, Operation] =
+  def merge[F[_]](first: OperationF[F], others: OperationF[F]*): Either[ProjectionErr, OperationF[F]] =
     merge(NonEmptyChain(first, others: _*))
 
-  def merge(operations: NonEmptyChain[Operation]): Either[ProjectionErr, Operation] =
-    operations.tail.foldLeftM[Either[ProjectionErr, *], Operation](operations.head) { case (acc, e) =>
+  def merge[F[_]](operations: NonEmptyChain[OperationF[F]]): Either[ProjectionErr, OperationF[F]] =
+    operations.tail.foldLeftM[Either[ProjectionErr, *], OperationF[F]](operations.head) { case (acc, e) =>
       acc.andThen(e)
     }
 
@@ -200,7 +261,7 @@ object Operation {
     *
     * They are ultimately chained and attached to sources to complete the underlying projection [[Stream]] that is run.
     */
-  trait Pipe extends Operation {
+  trait PipeF[F[_]] extends OperationF[F] {
 
     /**
       * @return
@@ -218,7 +279,7 @@ object Operation {
       * @return
       *   a new element (possibly failed, dropped) of type Out
       */
-    def apply(element: SuccessElem[In]): Task[Elem[Out]]
+    def apply(element: SuccessElem[In]): F[Elem[Out]]
 
     /**
       * Checks if the provided envelope has a successful element value of type `I`. If true, it will return it in Right.
@@ -233,8 +294,8 @@ object Operation {
         case _: FailedElem | _: DroppedElem => Left(element.asInstanceOf[Elem[O]])
       }
 
-    protected[stream] def asFs2: fs2.Pipe[Task, Elem[In], Elem[Out]] = {
-      def go(s: fs2.Stream[Task, Elem[In]]): Pull[Task, Elem[Out], Unit] = {
+    protected[stream] def asFs2: fs2.Pipe[F, Elem[In], Elem[Out]] = {
+      def go(s: fs2.Stream[F, Elem[In]]): Pull[F, Elem[Out], Unit] = {
         s.pull.uncons1.flatMap {
           case Some((head, tail)) =>
             partitionSuccess(head) match {
@@ -242,8 +303,8 @@ object Operation {
                 Pull
                   .eval(
                     apply(value)
-                      .onErrorHandleWith { err =>
-                        Task
+                      .handleErrorWith { err =>
+                        Concurrent[F]
                           .delay(
                             logger.error(s"Error while applying pipe $name on element ${value.id}", err)
                           )
@@ -261,12 +322,15 @@ object Operation {
     }
   }
 
-  object Pipe {
+  object PipeF {
 
     /**
       * Create an identity pipe that just pass along the elem
       */
-    def identity[A: Typeable]: Pipe = new Pipe {
+    def identity[F[_], A: Typeable](implicit t: Timer[F], c: Concurrent[F]): PipeF[F] = new PipeF[F] {
+      implicit val timer: Timer[F]           = t
+      implicit val concurrent: Concurrent[F] = c
+
       override def ref: PipeRef = PipeRef.unsafe("identity")
 
       override type In  = A
@@ -275,23 +339,69 @@ object Operation {
       override def inType: Typeable[In]   = Typeable[In]
       override def outType: Typeable[Out] = Typeable[Out]
 
-      override def apply(element: SuccessElem[In]): Task[Elem[Out]] = Task.pure(element)
+      override def apply(element: SuccessElem[In]): F[Elem[Out]] = c.pure(element)
     }
 
   }
 
-  trait Sink extends Operation {
+  trait SinkF[F[_]] extends OperationF[F] { self =>
 
     type Out = Unit
+
+    def mapK[G[_]](f: F ~> G): SinkF[G] = new SinkF[G] {
+      override def chunkSize: Int = self.chunkSize
+
+      override def maxWindow: FiniteDuration = self.maxWindow
+
+      override def apply(elements: Chunk[Elem[In]]): G[Chunk[Elem[Unit]]] =
+        f(self.apply(elements))
+
+      implicit override def timer: Timer[G] = self.timer.mapK(f)
+
+      implicit override def concurrent: Concurrent[G] = new Concurrent[G] {
+        override def start[A](fa: G[A]): G[Fiber[G, A]] = ???
+
+        override def racePair[A, B](fa: G[A], fb: G[B]): G[Either[(A, Fiber[G, B]), (Fiber[G, A], B)]] = ???
+
+        override def async[A](k: (Either[Throwable, A] => Unit) => Unit): G[A] = ???
+
+        override def asyncF[A](k: (Either[Throwable, A] => Unit) => G[Unit]): G[A] = ???
+
+        override def suspend[A](thunk: => G[A]): G[A] = ???
+
+        override def bracketCase[A, B](acquire: G[A])(use: A => G[B])(
+            release: (A, ExitCase[Throwable]) => G[Unit]
+        ): G[B] = ???
+
+        override def raiseError[A](e: Throwable): G[A] = ???
+
+        override def handleErrorWith[A](fa: G[A])(f: Throwable => G[A]): G[A] = ???
+
+        override def flatMap[A, B](fa: G[A])(f: A => G[B]): G[B] = ???
+
+        override def tailRecM[A, B](a: A)(f: A => G[Either[A, B]]): G[B] = ???
+
+        override def pure[A](x: A): G[A] = ???
+      }
+
+      override type In = self.In
+
+      /**
+        * @return
+        *   the Typeable instance for the accepted element type
+        */
+      override def inType: Typeable[In] = self.inType
+    }
+
     def outType: Typeable[Out] = Typeable[Unit]
 
     def chunkSize: Int
 
     def maxWindow: FiniteDuration
 
-    def apply(elements: Chunk[Elem[In]]): Task[Chunk[Elem[Unit]]]
+    def apply(elements: Chunk[Elem[In]]): F[Chunk[Elem[Unit]]]
 
-    protected[stream] def asFs2: fs2.Pipe[Task, Elem[In], Elem[Unit]] =
+    protected[stream] def asFs2: fs2.Pipe[F, Elem[In], Elem[Unit]] =
       _.groupWithin(chunkSize, maxWindow)
         .evalMap { chunk =>
           apply(chunk)
@@ -299,8 +409,38 @@ object Operation {
         .flatMap(Stream.chunk)
   }
 
-  type Aux[I, O] = Operation {
+  type Aux[F[_], I, O] = OperationF[F] {
     type In  = I
     type Out = O
   }
+}
+
+object Operation {
+
+  trait SinkTask extends SinkF[Task] {
+    implicit val timer: Timer[Task]           = monix.bio.IO.timer
+    implicit val concurrent: Concurrent[Task] = monix.bio.IO.catsAsync
+  }
+
+  type Sink = SinkTask
+
+  trait PipeTask extends PipeF[Task] {
+    implicit val timer: Timer[Task]           = monix.bio.IO.timer
+    implicit val concurrent: Concurrent[Task] = monix.bio.IO.catsAsync
+  }
+
+  type Pipe = PipeTask
+
+  trait SinkCatsEffect extends SinkF[IO] {
+    implicit val cs: ContextShift[IO]       = IO.contextShift(ExecutionContext.global)
+    implicit val timer: Timer[IO]           = IO.timer(ExecutionContext.global)
+    implicit val concurrent: Concurrent[IO] = IO.ioConcurrentEffect
+  }
+
+  trait PipeCatsEffect extends PipeF[IO] {
+    implicit val cs: ContextShift[IO]       = IO.contextShift(ExecutionContext.global)
+    implicit val timer: Timer[IO]           = IO.timer(ExecutionContext.global)
+    implicit val concurrent: Concurrent[IO] = IO.ioConcurrentEffect
+  }
+
 }

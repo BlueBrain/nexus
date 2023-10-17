@@ -3,6 +3,8 @@ package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics
 import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.MigrateEffectSyntax
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.GraphAnalytics.{index, projectionName}
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.config.GraphAnalyticsConfig
@@ -11,9 +13,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.SinkCatsEffect
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration
 import fs2.Stream
 import org.typelevel.log4cats.{Logger => Log4CatsLogger}
 
@@ -46,10 +47,11 @@ object GraphAnalyticsCoordinator {
       fetchProjects: Offset => Stream[IO, Elem[ProjectDef]],
       analyticsStream: GraphAnalyticsStream,
       supervisor: Supervisor,
-      sink: ProjectRef => Sink,
+      sink: ProjectRef => SinkCatsEffect,
       createIndex: ProjectRef => IO[Unit],
       deleteIndex: ProjectRef => IO[Unit]
-  ) extends GraphAnalyticsCoordinator {
+  ) extends GraphAnalyticsCoordinator
+      with MigrateEffectSyntax {
 
     def run(offset: Offset): Stream[IO, Elem[Unit]]                  =
       fetchProjects(offset).evalMap {
@@ -63,8 +65,8 @@ object GraphAnalyticsCoordinator {
         CompiledProjection.compile(
           analyticsMetadata(project),
           ExecutionStrategy.PersistentSingleNode,
-          Source(analyticsStream(project, _)),
-          sink(project)
+          Source(analyticsStream(project, _).translate(ioToTaskK)),
+          sink(project).mapK(ioToTaskK)
         )
       )
     // Start the analysis projection for the given project
@@ -162,7 +164,7 @@ object GraphAnalyticsCoordinator {
       fetchProjects: Offset => Stream[IO, Elem[ProjectDef]],
       analyticsStream: GraphAnalyticsStream,
       supervisor: Supervisor,
-      sink: ProjectRef => Sink,
+      sink: ProjectRef => SinkCatsEffect,
       createIndex: ProjectRef => IO[Unit],
       deleteIndex: ProjectRef => IO[Unit]
   ): IO[GraphAnalyticsCoordinator] = {

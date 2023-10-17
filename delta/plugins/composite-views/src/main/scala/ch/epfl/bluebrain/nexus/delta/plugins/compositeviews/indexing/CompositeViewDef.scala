@@ -493,7 +493,7 @@ object CompositeViewDef {
   ): Either[ProjectionErr, Operation] = {
     //TODO Add leap on target
     val branchProgress = progress.branches.get(branch)
-    Operation
+    OperationF
       .merge(operation, closeBranch(branch, branchProgress.getOrElse(ProjectionProgress.NoProgress)))
   }
 
@@ -519,9 +519,9 @@ object CompositeViewDef {
     for {
       pipes        <- source.pipeChain.traverse(compilePipeChain)
       // We apply `Operation.tap` as we want to keep the GraphResource for the rest of the stream
-      tail         <- Operation.merge(GraphResourceToNTriples, sink).map(_.tap)
+      tail         <- OperationF.merge(GraphResourceToNTriples, sink).map(_.tap)
       chain         = pipes.fold(NonEmptyChain.one(tail))(NonEmptyChain(_, tail))
-      operation    <- Operation.merge(chain)
+      operation    <- OperationF.merge(chain)
       // We create the elem stream for the two types of branch
       // The main source produces an infinite stream and waits for new elements
       mainSource    = graphStream.main(source, project)
@@ -550,7 +550,7 @@ object CompositeViewDef {
     for {
       pipes  <- target.pipeChain.traverse(compilePipeChain)
       chain   = pipes.fold(tail)(NonEmptyChain.one(_) ++ tail)
-      result <- Operation.merge(chain)
+      result <- OperationF.merge(chain)
     } yield target.id -> result
   }
 

@@ -1,5 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing
 
+import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.toCatsIO
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax.kamonSyntax
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
@@ -9,12 +11,11 @@ import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.GraphAnaly
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.SinkCatsEffect
 import fs2.Chunk
 import io.circe.JsonObject
 import io.circe.literal._
 import io.circe.syntax.EncoderOps
-import monix.bio.Task
 import shapeless.Typeable
 
 import scala.concurrent.duration.FiniteDuration
@@ -35,7 +36,7 @@ final class GraphAnalyticsSink(
     override val chunkSize: Int,
     override val maxWindow: FiniteDuration,
     index: IndexLabel
-) extends Sink {
+) extends SinkCatsEffect {
 
   implicit private val kamonComponent: KamonMetricComponent =
     KamonMetricComponent("graph-analytics")
@@ -71,7 +72,7 @@ final class GraphAnalyticsSink(
   private def documentId[A](elem: Elem[A]) = elem.id.toString
 
   // TODO: depends on Operation.Sink in the sourcing module being moved to CE
-  override def apply(elements: Chunk[Elem[GraphAnalyticsResult]]): Task[Chunk[Elem[Unit]]] = {
+  override def apply(elements: Chunk[Elem[GraphAnalyticsResult]]): IO[Chunk[Elem[Unit]]] = {
     val result = elements.foldLeft(GraphAnalyticsSink.empty) {
       case (acc, success: SuccessElem[GraphAnalyticsResult]) =>
         success.value match {
@@ -86,8 +87,10 @@ final class GraphAnalyticsSink(
       case (acc, _: FailedElem)                              => acc
     }
 
-    client.bulk(result.bulk, Refresh.True).map(ElasticSearchSink.markElems(_, elements, documentId)) <*
-      client.updateByQuery(relationshipsQuery(result.updates), Set(index.value))
+    toCatsIO(for {
+      elems <- client.bulk(result.bulk, Refresh.True).map(ElasticSearchSink.markElems(_, elements, documentId))
+      _     <- client.updateByQuery(relationshipsQuery(result.updates), Set(index.value))
+    } yield elems)
   }.span("graphAnalyticsSink")
 }
 

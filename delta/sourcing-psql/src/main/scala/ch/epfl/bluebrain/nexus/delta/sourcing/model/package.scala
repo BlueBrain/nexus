@@ -12,7 +12,9 @@ package object model {
 
   type ElemStream[Value] = Stream[Task, Elem[Value]]
 
-  type ElemPipe[In, Out] = Pipe[Task, Elem[In], Elem[Out]]
+  type ElemPipe[In, Out] = ElemPipeF[Task, In, Out]
+
+  type ElemPipeF[F[_], In, Out] = Pipe[F, Elem[In], Elem[Out]]
 
   type ElemStreamCats[Value] = Stream[IO, Elem[Value]]
 

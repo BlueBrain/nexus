@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
 import cats.data.NonEmptyChain
+import cats.effect.Concurrent
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ElemStream
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
@@ -18,7 +19,9 @@ import shapeless.Typeable
   * A [[Projection]] may make use of multiple [[Source]] s (at least one) that will be further chained with
   * [[Operation]] s and ultimately merged together.
   */
-trait Source { self =>
+trait SourceF[F[_]] { self =>
+
+  implicit def concurrent: Concurrent[F]
 
   /**
     * The underlying element type emitted by the Source.
@@ -46,16 +49,17 @@ trait Source { self =>
     * @return
     *   an [[fs2.Stream]] of elements of this Source's Out type
     */
-  def apply(offset: Offset): Stream[Task, Elem[Out]]
+  def apply(offset: Offset): Stream[F, Elem[Out]]
 
-  def through(operation: Operation): Either[SourceOutPipeInMatchErr, Source] =
+  def through(operation: OperationF[F]): Either[SourceOutPipeInMatchErr[F], SourceF[F]] =
     Either.cond(
       outType.describe == operation.inType.describe,
-      new Source {
+      new SourceF[F] {
+        implicit def concurrent: Concurrent[F] = self.concurrent
         override type Out = operation.Out
         override def outType: Typeable[operation.Out] = operation.outType
 
-        override def apply(offset: Offset): Stream[Task, Elem[operation.Out]] =
+        override def apply(offset: Offset): Stream[F, Elem[operation.Out]] =
           self
             .apply(offset)
             .map {
@@ -71,14 +75,15 @@ trait Source { self =>
       SourceOutPipeInMatchErr(self, operation)
     )
 
-  private[stream] def merge(that: Source): Either[SourceOutMatchErr, Source] =
+  private[stream] def merge(that: SourceF[F]): Either[SourceOutMatchErr[F], SourceF[F]] =
     Either.cond(
       self.outType.describe == that.outType.describe,
-      new Source {
+      new SourceF[F] {
+        implicit def concurrent: Concurrent[F] = self.concurrent
         override type Out = self.Out
         override def outType: Typeable[self.Out] = self.outType
 
-        override def apply(offset: Offset): Stream[Task, Elem[Out]] =
+        override def apply(offset: Offset): Stream[F, Elem[Out]] =
           self
             .apply(offset)
             .merge(that.apply(offset).map {
@@ -94,28 +99,47 @@ trait Source { self =>
     )
 
   def broadcastThrough(
-      operations: NonEmptyChain[Operation]
-  ): Either[SourceOutPipeInMatchErr, Source.Aux[Unit]] =
+      operations: NonEmptyChain[OperationF[F]]
+  ): Either[SourceOutPipeInMatchErr[F], SourceF.Aux[F, Unit]] =
     operations
       .traverse { operation =>
         Either.cond(
           self.outType.describe == operation.inType.describe,
-          operation.asInstanceOf[Operation.Aux[self.Out, Unit]],
+          operation.asInstanceOf[OperationF.Aux[F, self.Out, Unit]],
           SourceOutPipeInMatchErr(self, operation)
         )
       }
       .map { verified =>
-        new Source {
+        new SourceF[F] {
+          implicit def concurrent: Concurrent[F] = self.concurrent
           override type Out = Unit
           override def outType: Typeable[Unit] = Typeable[Unit]
 
-          override def apply(offset: Offset): Stream[Task, Elem[Unit]] =
+          override def apply(offset: Offset): Stream[F, Elem[Unit]] =
             self
               .apply(offset)
               .broadcastThrough(verified.toList.map { _.asFs2 }: _*)
         }
       }
 
+}
+
+object SourceF {
+
+  type Aux[F[_], O] = SourceF[F] {
+    type Out = O
+  }
+
+  def apply[F[_], A: Typeable](stream: Offset => Stream[F, Elem[A]])(implicit c: Concurrent[F]): SourceF[F] =
+    new SourceF[F] {
+      override type Out = A
+
+      override def outType: Typeable[A] = Typeable[A]
+
+      override def apply(offset: Offset): Stream[F, Elem[A]] = stream(offset)
+
+      implicit override def concurrent: Concurrent[F] = c
+    }
 }
 
 object Source {
@@ -131,5 +155,7 @@ object Source {
       override def outType: Typeable[A] = Typeable[A]
 
       override def apply(offset: Offset): Stream[Task, Elem[A]] = stream(offset)
+
+      implicit override def concurrent: Concurrent[Task] = monix.bio.IO.catsAsync
     }
 }

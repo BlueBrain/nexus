@@ -28,7 +28,7 @@ object ProjectionErr {
     * @param that
     *   the source being merged with self
     */
-  final case class SourceOutMatchErr(self: Source, that: Source) extends ProjectionErr {
+  final case class SourceOutMatchErr[F[_]](self: SourceF[F], that: SourceF[F]) extends ProjectionErr {
     override def reason: String =
       s"Unable to match Out type '${self.outType.describe}' of source '${self.name}' to the Out type '${that.outType.describe}' of source '${that.name}'"
   }
@@ -41,7 +41,7 @@ object ProjectionErr {
     * @param that
     *   the operation to attach to the source
     */
-  final case class SourceOutPipeInMatchErr(self: Source, that: Operation) extends ProjectionErr {
+  final case class SourceOutPipeInMatchErr[F[_]](self: SourceF[F], that: OperationF[F]) extends ProjectionErr {
     override def reason: String =
       s"Unable to match Out type '${self.outType.describe}' of source '${self.name}' to the In type '${that.inType.describe}' of pipe '${that.name}'"
   }
@@ -76,7 +76,7 @@ object ProjectionErr {
     * @param that
     *   the operation being merged with self
     */
-  final case class OperationInOutMatchErr(self: Operation, that: Operation) extends ProjectionErr {
+  final case class OperationInOutMatchErr[F[_]](self: OperationF[F], that: OperationF[F]) extends ProjectionErr {
     override def reason: String =
       s"Unable to match Out type '${self.outType.describe}' of operation '${self.name}' to the In type '${that.inType.describe}' of operation '${that.name}'"
   }
@@ -84,7 +84,7 @@ object ProjectionErr {
   /**
     * Leaping is only possible for an operation when we provide a skip function that aligns to the out type
     */
-  final case class LeapingNotAllowedErr[A](self: Operation, skip: Typeable[A]) extends ProjectionErr {
+  final case class LeapingNotAllowedErr[F[_], A](self: OperationF[F], skip: Typeable[A]) extends ProjectionErr {
     override def reason: String =
       s"Unable to leap on operation '${self.name}' as skip type  '${skip.describe}' does not match Out type '${self.outType.describe}'."
   }

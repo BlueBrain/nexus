@@ -76,7 +76,7 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
   )
 
   private val aggregate = AggregateElasticSearchViewValue(NonEmptySet.of(viewRef))
-  private val sink      = CacheSink.states[Json]
+  private val sink      = CacheSink2.states[Json]
 
   private val indexingRev = IndexingRev.init
   private val rev         = 2
@@ -212,7 +212,7 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
     for {
       compiled   <- IndexingViewDef.compile(
                       v,
-                      _ => Operation.merge(FilterDeprecated.withConfig(()), FilterByType.withConfig(filterByTypeConfig)),
+                      _ => OperationF.merge(FilterDeprecated.withConfig(()), FilterByType.withConfig(filterByTypeConfig)),
                       GraphResourceStream.unsafeFromStream(PullRequestStream.generate(projectRef)),
                       sink
                     )

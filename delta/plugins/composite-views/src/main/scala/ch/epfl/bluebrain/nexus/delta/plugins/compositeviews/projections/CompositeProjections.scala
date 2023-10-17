@@ -110,7 +110,7 @@ object CompositeProjections {
           branch: CompositeBranch,
           progress: ProjectionProgress
       ): Operation =
-        Operation.fromFs2Pipe[Unit](
+        OperationF.fromFs2Pipe[Task, Unit](
           Projection.persist(
             progress,
             compositeProgressStore.save(view.indexingRef, branch, _),

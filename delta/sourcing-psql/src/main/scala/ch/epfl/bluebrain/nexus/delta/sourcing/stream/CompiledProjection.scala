@@ -4,6 +4,7 @@ import cats.data.NonEmptyChain
 import cats.effect.concurrent.Ref
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.OperationF.SinkF
 import fs2.Stream
 import fs2.concurrent.SignallingRef
 import monix.bio.Task
@@ -51,7 +52,7 @@ object CompiledProjection {
       metadata: ProjectionMetadata,
       executionStrategy: ExecutionStrategy,
       source: Source,
-      sink: Sink
+      sink: SinkF[Task]
   ): Either[ProjectionErr, CompiledProjection] =
     source.through(sink).map { p =>
       CompiledProjection(metadata, executionStrategy, offset => _ => _ => p.apply(offset).map(_.void))
@@ -68,7 +69,7 @@ object CompiledProjection {
       sink: Sink
   ): Either[ProjectionErr, CompiledProjection] =
     for {
-      operations <- Operation.merge(chain ++ NonEmptyChain.one(sink))
+      operations <- OperationF.merge(chain ++ NonEmptyChain.one(sink))
       result     <- source.through(operations)
     } yield CompiledProjection(metadata, executionStrategy, offset => _ => _ => result.apply(offset).map(_.void))
 

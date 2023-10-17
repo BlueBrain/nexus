@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceState
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, EntityType, ProjectRef, Tag}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStreamCats, EntityType, ProjectRef, Tag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.{SelectFilter, StreamingQuery}
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
@@ -30,7 +30,7 @@ trait GraphAnalyticsStream {
     * @param start
     *   the offset to start with
     */
-  def apply(project: ProjectRef, start: Offset): ElemStream[GraphAnalyticsResult]
+  def apply(project: ProjectRef, start: Offset): ElemStreamCats[GraphAnalyticsResult]
 
 }
 
@@ -102,7 +102,9 @@ object GraphAnalyticsStream {
         case _                    => IO.pure(Noop)
       }
 
-    StreamingQuery.elems(project, start, SelectFilter.latest, qc, xas, (a, b) => ioToTaskK.apply(decode(a, b)))
+    StreamingQuery
+      .elems(project, start, SelectFilter.latest, qc, xas, (a, b) => ioToTaskK.apply(decode(a, b)))
+      .translate(taskToIoK)
   }
   // $COVERAGE-ON$
 

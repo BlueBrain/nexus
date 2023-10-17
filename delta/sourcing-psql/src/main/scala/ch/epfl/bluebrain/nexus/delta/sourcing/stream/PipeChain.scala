@@ -36,7 +36,7 @@ object PipeChain {
       configured <- pipeChain.pipes.traverse { case (ref, cfg) =>
                       registry.lookup(ref).flatMap(_.withJsonLdConfig(cfg))
                     }
-      chained    <- Operation.merge(configured)
+      chained    <- OperationF.merge(configured)
     } yield chained
 
   def validate(pipeChain: PipeChain, registry: ReferenceRegistry): Either[ProjectionErr, Unit] =

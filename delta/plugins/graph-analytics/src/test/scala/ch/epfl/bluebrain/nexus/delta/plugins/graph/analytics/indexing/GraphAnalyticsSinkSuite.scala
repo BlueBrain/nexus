@@ -1,7 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.toCatsIO
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.CatsEffectsClasspathResourceUtils.ioJsonContentOf
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchClientSetup
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.GraphAnalyticsResult.Index
@@ -16,8 +17,9 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{FailedElem, SuccessElem}
+import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import ch.epfl.bluebrain.nexus.testkit.bio.{BioSuite, PatienceConfig}
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.ce.CatsEffectSuite
 import fs2.Chunk
 import io.circe.Json
 import munit.AnyFixture
@@ -27,9 +29,10 @@ import scala.concurrent.duration._
 
 class GraphAnalyticsSinkSuite
     extends BioSuite
+    with CatsEffectSuite
     with ElasticSearchClientSetup.Fixture
-    with CirceLiteral
-    with TestHelpers {
+    with CirceLiteral {
+  override val ioTimeout: FiniteDuration = 45.seconds
 
   implicit private val patienceConfig: PatienceConfig = PatienceConfig(5.seconds, 50.millis)
 
@@ -89,9 +92,9 @@ class GraphAnalyticsSinkSuite
   test("Create the update script and the index") {
     for {
       script  <- scriptContent
-      _       <- client.createScript(updateRelationshipsScriptId, script)
+      _       <- toCatsIO(client.createScript(updateRelationshipsScriptId, script))
       mapping <- graphAnalyticsMappings
-      _       <- client.createIndex(index, Some(mapping), None).assert(true)
+      _       <- toCatsIO(client.createIndex(index, Some(mapping), None)).assert
     } yield ()
   }
 
@@ -124,12 +127,12 @@ class GraphAnalyticsSinkSuite
       deprecated          = indexDeprecated(deprecatedResource, deprecatedResourceTypes)
       chunk               = Chunk.seq(List(active1, active2, discarded, deprecated))
       // We expect no error
-      _                  <- sink(chunk).assert(chunk.map(_.void))
+      _                  <- sink(chunk).assertEquals(chunk.map(_.void))
       // 3 documents should have been indexed correctly:
       // - `resource1` with the relationship to `resource3` resolved
       // - `resource2` with no reference resolved
       // - `deprecatedResource` with only metadata, resolution is skipped
-      _                  <- client.count(index.value).eventually(3L)
+      _                  <- toCatsIO(client.count(index.value).eventually(3L))
       expected1          <- ioJsonContentOf("result/resource1.json")
       expected2          <- ioJsonContentOf("result/resource2.json")
       expectedDeprecated <- ioJsonContentOf("result/resource_deprecated.json")
@@ -158,15 +161,15 @@ class GraphAnalyticsSinkSuite
     )
 
     for {
-      _         <- sink(chunk).assert(chunk.map(_.void))
+      _         <- sink(chunk).assertEquals(chunk.map(_.void))
       // The reference to file1 should have been resolved and introduced as a relationship
       // The update query should not have an effect on the other resource
-      _         <- client.refresh(index)
+      _         <- toCatsIO(client.refresh(index))
       expected1 <- ioJsonContentOf("result/resource1_updated.json")
       expected2 <- ioJsonContentOf("result/resource2.json")
-      _         <- client.count(index.value).eventually(3L)
-      _         <- client.getSource[Json](index, resource1.toString).eventually(expected1)
-      _         <- client.getSource[Json](index, resource2.toString).eventually(expected2)
+      _         <- toCatsIO(client.count(index.value).eventually(3L))
+      _         <- toCatsIO(client.getSource[Json](index, resource1.toString).eventually(expected1))
+      _         <- toCatsIO(client.getSource[Json](index, resource2.toString).eventually(expected2))
     } yield ()
   }
 

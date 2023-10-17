@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.metrics
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.metrics.MetricsStream._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{EventMetricsProjection, Fixtures}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{CacheSink, ProjectionProgress, SupervisorSetup}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{CacheSink2, ProjectionProgress, SupervisorSetup}
 import ch.epfl.bluebrain.nexus.testkit.bio.{BioSuite, PatienceConfig}
 import io.circe.Json
 import io.circe.syntax.EncoderOps
@@ -20,7 +20,7 @@ class EventMetricsProjectionSuite extends BioSuite with SupervisorSetup.Fixture 
   implicit private val patienceConfig: PatienceConfig = PatienceConfig(2.seconds, 10.millis)
 
   private lazy val sv = supervisor().supervisor
-  private val sink    = CacheSink.events[Json]
+  private val sink    = CacheSink2.events[Json]
 
   test("Start the metrics projection") {
     for {

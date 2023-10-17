@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing
 
+import cats.effect.Concurrent
 import cats.effect.concurrent.Ref
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViewsFixture
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.{Interval, RebuildStrategy}
@@ -11,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.FilterDeprecated
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{NoopSink, RemainingElems, Source}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{NoopSink, RemainingElems, Source, SourceF}
 import ch.epfl.bluebrain.nexus.testkit.bio.{BioSuite, PatienceConfig}
 import fs2.Stream
 import monix.bio.{Task, UIO}
@@ -27,11 +28,13 @@ class CompositeViewDefSuite extends BioSuite with CompositeViewsFixture {
 
   test("Compile correctly the source") {
 
-    def makeSource(nameValue: String): Source = new Source {
+    def makeSource(nameValue: String): Source = new SourceF[Task] {
       override type Out = Unit
       override def outType: Typeable[Unit]                 = Typeable[Unit]
       override def apply(offset: Offset): ElemStream[Unit] = Stream.empty[Task]
       override def name: String                            = nameValue
+
+      implicit override def concurrent: Concurrent[Task] = monix.bio.IO.catsAsync
     }
 
     val graphStream = new CompositeGraphStream {
