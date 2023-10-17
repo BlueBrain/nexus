@@ -31,8 +31,10 @@ trait CompositeGraphStream {
     *   the composite view source
     * @param project
     *   the enclosing project
+    * @param projectionTypes
+    *   the projection resource types to use to filter the stream
     */
-  def rebuild(source: CompositeViewSource, project: ProjectRef): Set[Iri] => Source
+  def rebuild(source: CompositeViewSource, project: ProjectRef, projectionTypes: Set[Iri]): Source
 
   /**
     * Get information about the remaining elements
@@ -65,8 +67,9 @@ object CompositeGraphStream {
 
     override def rebuild(
         source: CompositeViewSource,
-        project: ProjectRef
-    ): Set[Iri] => Source = { projectionTypes =>
+        project: ProjectRef,
+        projectionTypes: Set[Iri]
+    ): Source = {
       source match {
         case p: ProjectSource       =>
           val filter = p.selectFilter.copy(types = p.selectFilter.types ++ projectionTypes)

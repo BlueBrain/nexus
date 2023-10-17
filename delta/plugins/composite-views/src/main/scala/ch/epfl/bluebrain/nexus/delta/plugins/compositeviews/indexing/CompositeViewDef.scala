@@ -189,7 +189,13 @@ object CompositeViewDef {
     val fetchProgress: UIO[CompositeProgress] = compositeProjections.progress(view.indexingRef)
 
     def compileSource =
-      CompositeViewDef.compileSource(view.ref.project, compilePipeChain, graphStream, sinks.commonSink(view))(_, _)
+      CompositeViewDef.compileSource(
+        view.ref.project,
+        compilePipeChain,
+        graphStream,
+        sinks.commonSink(view),
+        projectionTypes(view)
+      )(_)
 
     def compileTarget = CompositeViewDef.compileTarget(compilePipeChain, sinks.projectionSink(view, _))(_)
 
@@ -246,7 +252,7 @@ object CompositeViewDef {
   def compile(
       view: ActiveViewDef,
       fetchProgress: UIO[CompositeProgress],
-      compileSource: (CompositeViewSource, Set[Iri]) => Task[(Iri, Source, Source, Operation)],
+      compileSource: CompositeViewSource => Task[(Iri, Source, Source, Operation)],
       compileTarget: CompositeViewProjection => Task[(Iri, Operation)],
       rebuild: ElemPipe[Unit, Unit],
       restarts: ElemPipe[Unit, Unit],
@@ -271,12 +277,8 @@ object CompositeViewDef {
         logger.debug(s"Cancelled '$branch' branch for source '$sourceId' of composite view '${view.ref}'.")
     }
 
-    val projectionTypes =
-      if (targets.exists(_.resourceTypes.isEmpty)) Set.empty[Iri]
-      else targets.foldLeft(Set.empty[Iri]) { _ ++ _.resourceTypes }
-
     for {
-      compiledSources  <- sources.traverse(compileSource(_, projectionTypes))
+      compiledSources  <- sources.traverse(compileSource)
       targetOperations <- targets.traverse(compileTarget)
       // Main branches
       mains             = compiledSources.reduceMap { case (sourceId, sourceMain, _, sourceOperation) =>
@@ -513,13 +515,16 @@ object CompositeViewDef {
     *   generates the element stream for the source in the context of a branch
     * @param sink
     *   the sink for the common space
+    * @param projectionTypes
+    *   the view's projection resource types to use to filter the rebuild stream
     */
   def compileSource(
       project: ProjectRef,
       compilePipeChain: PipeChain.Compile,
       graphStream: CompositeGraphStream,
-      sink: Sink
-  )(source: CompositeViewSource, projectionTypes: Set[Iri]): Task[(Iri, Source, Source, Operation)] =
+      sink: Sink,
+      projectionTypes: Set[Iri]
+  )(source: CompositeViewSource): Task[(Iri, Source, Source, Operation)] =
     Task.fromEither {
       for {
         pipes        <- source.pipeChain.traverse(compilePipeChain)
@@ -531,7 +536,7 @@ object CompositeViewDef {
         // The main source produces an infinite stream and waits for new elements
         mainSource    = graphStream.main(source, project)
         // The rebuild one a finite one with only the current elements
-        rebuildSource = graphStream.rebuild(source, project)(projectionTypes)
+        rebuildSource = graphStream.rebuild(source, project, projectionTypes)
       } yield (source.id, mainSource, rebuildSource, operation)
     }
 
@@ -557,6 +562,13 @@ object CompositeViewDef {
       chain   = pipes.fold(tail)(NonEmptyChain.one(_) ++ tail)
       result <- Operation.merge(chain)
     } yield target.id -> result
+  }
+
+  /** Union of all resourceTypes specified in the view's projections */
+  private def projectionTypes(view: ActiveViewDef): Set[Iri] = {
+    val targets = view.value.projections
+    if (targets.exists(_.resourceTypes.isEmpty)) Set.empty[Iri]
+    else targets.foldLeft(Set.empty[Iri])(_ ++ _.resourceTypes)
   }
 
 }
