@@ -37,10 +37,8 @@ class CompositeViewDefSuite extends BioSuite with CompositeViewsFixture {
 
     val graphStream = new CompositeGraphStream {
       override def main(source: CompositeViewSource, project: ProjectRef): Source                                     = makeSource("main")
-      override def rebuild(
-          source: CompositeViewSource,
-          project: ProjectRef
-      ): Set[Iri] => Source                                                                                           = _ => makeSource("rebuild")
+      override def rebuild(source: CompositeViewSource, project: ProjectRef, projectionTypes: Set[Iri]): Source       =
+        makeSource("rebuild")
       override def remaining(source: CompositeViewSource, project: ProjectRef): Offset => UIO[Option[RemainingElems]] =
         _ => UIO.none
     }
@@ -50,8 +48,9 @@ class CompositeViewDefSuite extends BioSuite with CompositeViewsFixture {
         project.ref,
         _ => Right(FilterDeprecated.withConfig(())),
         graphStream,
-        new NoopSink[NTriples]()
-      )(projectSource, Set.empty)
+        new NoopSink[NTriples](),
+        Set.empty
+      )(projectSource)
       .foreachL { case (id, mainSource, rebuildSource, operation) =>
         assertEquals(id, projectSource.id)
         assertEquals(mainSource.name, "main")
