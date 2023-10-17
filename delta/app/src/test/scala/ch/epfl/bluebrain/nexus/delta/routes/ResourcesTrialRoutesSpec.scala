@@ -102,7 +102,7 @@ class ResourcesTrialRoutesSpec extends BaseRouteSpec with ResourceInstanceFixtur
         // Returns no validation result for myId for `schemas.resources`
         case (StringSegment("myId") | IriSegment(`myId`), Some(IriSegment(schemas.resources))) =>
           UIO.pure(NoValidation(projectRef))
-        case (IriSegment(iri), None)                                                           => IO.raiseError(ResourceNotFound(iri, project, None))
+        case (IriSegment(iri), None)                                                           => IO.raiseError(ResourceNotFound(iri, project))
         case _                                                                                 => IO.terminate(new IllegalStateException("Should not happen !"))
       }
   }
