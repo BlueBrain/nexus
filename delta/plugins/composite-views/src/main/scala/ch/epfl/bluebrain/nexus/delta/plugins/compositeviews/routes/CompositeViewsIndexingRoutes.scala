@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.routes
 
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
+import cats.effect.{ContextShift, IO}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.BlazegraphViewsDirectives
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef.ActiveViewDef
@@ -29,7 +30,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{FailedElemLogRow, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionErrors
-import monix.bio.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
+import monix.bio.{IO => BIO}
 import monix.execution.Scheduler
 class CompositeViewsIndexingRoutes(
     identities: Identities,
@@ -44,6 +46,7 @@ class CompositeViewsIndexingRoutes(
     baseUri: BaseUri,
     paginationConfig: PaginationConfig,
     s: Scheduler,
+    c: ContextShift[IO],
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering
 ) extends AuthDirectives(identities, aclCheck)
@@ -98,10 +101,11 @@ class CompositeViewsIndexingRoutes(
                   concat(
                     (pathPrefix("sse") & lastEventId) { offset =>
                       emit(
-                        fetchView(id, ref)
+                        fetchView(id, ref).toCatsIO
                           .map { view =>
                             projectionErrors.sses(view.project, view.id, offset)
                           }
+                          .attemptNarrow[CompositeViewRejection]
                       )
                     },
                     (fromPaginated & timeRange("instant") & extractUri & pathEndOrSingleSlash) {
@@ -233,12 +237,12 @@ class CompositeViewsIndexingRoutes(
 
   private def fetchProjection(view: ActiveViewDef, projectionId: IdSegment) =
     expandId(projectionId, view.project).flatMap { id =>
-      IO.fromEither(view.projection(id))
+      BIO.fromEither(view.projection(id))
     }
 
   private def fetchSource(view: ActiveViewDef, sourceId: IdSegment) =
     expandId(sourceId, view.project).flatMap { id =>
-      IO.fromEither(view.source(id))
+      BIO.fromEither(view.source(id))
     }
 
 }
@@ -262,6 +266,7 @@ object CompositeViewsIndexingRoutes {
       baseUri: BaseUri,
       paginationConfig: PaginationConfig,
       s: Scheduler,
+      c: ContextShift[IO],
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering
   ): Route =

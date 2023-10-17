@@ -1,12 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.sse
 
 import akka.http.scaladsl.model.sse.ServerSentEvent
-import ch.epfl.bluebrain.nexus.delta.kernel.cache.KeyValueStore
+import cats.effect.IO
+import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
+import ch.epfl.bluebrain.nexus.delta.kernel.cache.LocalCache
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.taskToIoK
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.UnknownSseLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling.defaultPrinter
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder.SseData
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.EventStreaming
@@ -14,10 +16,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset.{At, Start}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{MultiDecoder, Scope, Transactors}
-import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import io.circe.syntax.EncoderOps
-import monix.bio.{IO, Task, UIO}
 
 import java.util.UUID
 
@@ -57,7 +57,7 @@ trait SseEventLog {
   def stream(
       org: Label,
       offset: Offset
-  ): IO[OrganizationRejection, ServerSentEventStream]
+  ): IO[ServerSentEventStream]
 
   /**
     * Get stream of server sent events inside an organization
@@ -70,7 +70,7 @@ trait SseEventLog {
     * @param offset
     *   the offset to start from
     */
-  def streamBy(selector: Label, org: Label, offset: Offset): IO[OrganizationRejection, ServerSentEventStream]
+  def streamBy(selector: Label, org: Label, offset: Offset): IO[ServerSentEventStream]
 
   /**
     * Get stream of server sent events inside an project
@@ -83,7 +83,7 @@ trait SseEventLog {
   def stream(
       project: ProjectRef,
       offset: Offset
-  ): IO[ProjectRejection, ServerSentEventStream]
+  ): IO[ServerSentEventStream]
 
   /**
     * Get stream of server sent events inside an project
@@ -95,7 +95,7 @@ trait SseEventLog {
     * @param offset
     *   the offset to start from
     */
-  def streamBy(selector: Label, project: ProjectRef, offset: Offset): IO[ProjectRejection, ServerSentEventStream]
+  def streamBy(selector: Label, project: ProjectRef, offset: Offset): IO[ServerSentEventStream]
 
   /**
     * Return all SSE selectors
@@ -110,15 +110,15 @@ trait SseEventLog {
 
 object SseEventLog {
 
-  private val logger: Logger = Logger[SseEventLog]
+  private val logger = Logger.cats[SseEventLog]
 
   private[sse] def toServerSentEvent(
       envelope: Envelope[SseData],
-      fetchUuids: ProjectRef => UIO[Option[(UUID, UUID)]]
-  )(implicit jo: JsonKeyOrdering): UIO[ServerSentEvent] = {
+      fetchUuids: ProjectRef => IO[Option[(UUID, UUID)]]
+  )(implicit jo: JsonKeyOrdering): IO[ServerSentEvent] = {
     val data = envelope.value.data
     envelope.value.project
-      .fold(UIO.pure(data)) { ref =>
+      .fold(IO.pure(data)) { ref =>
         fetchUuids(ref).map {
           _.fold(data) { case (orgUuid, projUuid) =>
             data.add("_organizationUuid", orgUuid.asJson).add("_projectUuid", projUuid.asJson)
@@ -135,13 +135,13 @@ object SseEventLog {
 
   def apply(
       sseEncoders: Set[SseEncoder[_]],
-      fetchOrg: Label => IO[OrganizationRejection, Unit],
-      fetchProject: ProjectRef => IO[ProjectRejection, (UUID, UUID)],
+      fetchOrg: Label => IO[Unit],
+      fetchProject: ProjectRef => IO[(UUID, UUID)],
       config: SseConfig,
       xas: Transactors
-  )(implicit jo: JsonKeyOrdering): UIO[SseEventLog] =
-    KeyValueStore
-      .localLRU[ProjectRef, (UUID, UUID)](config.cache)
+  )(implicit jo: JsonKeyOrdering): IO[SseEventLog] =
+    LocalCache
+      .lru[ProjectRef, (UUID, UUID)](config.cache)
       .map { cache =>
         new SseEventLog {
           implicit private val multiDecoder: MultiDecoder[SseData]        =
@@ -161,9 +161,9 @@ object SseEventLog {
           private def fetchUuids(ref: ProjectRef) =
             cache.getOrElseUpdate(ref, fetchProject(ref)).attempt.map(_.toOption)
 
-          private def stream(scope: Scope, selector: Option[Label], offset: Offset): Stream[Task, ServerSentEvent] = {
+          private def stream(scope: Scope, selector: Option[Label], offset: Offset): Stream[IO, ServerSentEvent] = {
             Stream
-              .fromEither[Task](
+              .fromEither[IO](
                 selector
                   .map { l =>
                     entityTypesBySelector.get(l).toRight(UnknownSseLabel(l))
@@ -179,33 +179,31 @@ object SseEventLog {
                     config.query,
                     xas
                   )
+                  .translate(taskToIoK)
                   .evalMap(toServerSentEvent(_, fetchUuids))
               }
           }
 
-          override def stream(offset: Offset): Stream[Task, ServerSentEvent] = stream(Scope.root, None, offset)
+          override def stream(offset: Offset): Stream[IO, ServerSentEvent] = stream(Scope.root, None, offset)
 
-          override def streamBy(selector: Label, offset: Offset): Stream[Task, ServerSentEvent] =
+          override def streamBy(selector: Label, offset: Offset): Stream[IO, ServerSentEvent] =
             stream(Scope.root, Some(selector), offset)
 
-          override def stream(org: Label, offset: Offset): IO[OrganizationRejection, Stream[Task, ServerSentEvent]] =
+          override def stream(org: Label, offset: Offset): IO[Stream[IO, ServerSentEvent]] =
             fetchOrg(org).as(stream(Scope.Org(org), None, offset))
 
-          override def streamBy(selector: Label, org: Label, offset: Offset)
-              : IO[OrganizationRejection, Stream[Task, ServerSentEvent]] =
+          override def streamBy(selector: Label, org: Label, offset: Offset): IO[Stream[IO, ServerSentEvent]] =
             fetchOrg(org).as(stream(Scope.Org(org), Some(selector), offset))
 
-          override def stream(project: ProjectRef, offset: Offset)
-              : IO[ProjectRejection, Stream[Task, ServerSentEvent]] =
+          override def stream(project: ProjectRef, offset: Offset): IO[Stream[IO, ServerSentEvent]] =
             fetchProject(project).as(stream(Scope.Project(project), None, offset))
 
-          override def streamBy(selector: Label, project: ProjectRef, offset: Offset)
-              : IO[ProjectRejection, Stream[Task, ServerSentEvent]] =
+          override def streamBy(selector: Label, project: ProjectRef, offset: Offset): IO[Stream[IO, ServerSentEvent]] =
             fetchProject(project).as(stream(Scope.Project(project), Some(selector), offset))
         }
       }
-      .tapEval { sseLog =>
-        UIO.delay(logger.info(s"SseLog is configured with selectors: ${sseLog.allSelectors.mkString("'", "','", "'")}"))
+      .flatTap { sseLog =>
+        logger.info(s"SseLog is configured with selectors: ${sseLog.allSelectors.mkString("'", "','", "'")}")
       }
 
 }

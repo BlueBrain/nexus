@@ -14,6 +14,7 @@ import doobie.postgres.sqlstate
 import fs2.Stream
 import monix.bio.Cause.{Error, Termination}
 import monix.bio.{IO, Task, UIO}
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -150,7 +151,7 @@ object GlobalEventLog {
       xas: Transactors
   ): GlobalEventLog[Id, S, Command, E, Rejection] = new GlobalEventLog[Id, S, Command, E, Rejection] {
 
-    override def stateOr[R <: Rejection](id: Id, notFound: => R): IO[R, S] = stateStore.get(id).flatMap {
+    override def stateOr[R <: Rejection](id: Id, notFound: => R): IO[R, S] = stateStore.get(id).toUIO.flatMap {
       IO.fromOption(_, notFound)
     }
 
@@ -162,7 +163,7 @@ object GlobalEventLog {
       }
 
     override def evaluate(id: Id, command: Command): IO[Rejection, (E, S)] =
-      stateStore.get(id).flatMap { current =>
+      stateStore.get(id).toUIO.flatMap { current =>
         stateMachine
           .evaluate(current, command, maxDuration)
           .tapEval { case (event, state) =>
@@ -185,7 +186,7 @@ object GlobalEventLog {
       }
 
     override def dryRun(id: Id, command: Command): IO[Rejection, (E, S)] =
-      stateStore.get(id).flatMap { current =>
+      stateStore.get(id).toUIO.flatMap { current =>
         stateMachine.evaluate(current, command, maxDuration)
       }
 
