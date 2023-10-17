@@ -88,7 +88,7 @@ object Arithmetic {
     }
   }
 
-  sealed trait ArithmeticRejection extends Rejection with Product with Serializable {
+  sealed trait ArithmeticRejection extends Rejection {
     override def reason: String = this.toString
   }
 
