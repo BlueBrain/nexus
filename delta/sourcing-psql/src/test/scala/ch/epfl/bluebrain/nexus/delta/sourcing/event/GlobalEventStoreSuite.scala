@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.event
 
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic
@@ -60,7 +59,7 @@ class GlobalEventStoreSuite extends CatsEffectSuite with Doobie.Fixture with Doo
   test("Fail when the PK already exists") {
     for {
       _ <-
-        store.save(Plus(id, 2, 5, Instant.EPOCH, Anonymous)).transact(xas.writeCE).toUIO.expectUniqueViolation.toCatsIO
+        store.save(Plus(id, 2, 5, Instant.EPOCH, Anonymous)).transact(xas.writeCE).expectUniqueViolation
       _ <- assertCount
     } yield ()
   }
