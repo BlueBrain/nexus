@@ -85,7 +85,7 @@ object ResourcesTrial {
     ): IO[ResourceGenerationResult] = {
       for {
         projectContext <- fetchContext.onRead(project).toCatsIO
-        schemaRef      <- Resources.expandResourceRef(schema, projectContext).toCatsIO
+        schemaRef      <- Resources.expandResourceRef(schema, projectContext)
         jsonld         <- sourceParser(project, projectContext, source.value).toCatsIO
         validation     <- validateResource(jsonld.iri, jsonld.expanded, schemaRef, project, caller).toCatsIO
         result         <- toResourceF(project, jsonld, source, validation)
@@ -112,7 +112,7 @@ object ResourcesTrial {
     ): IO[ValidationResult] = {
       for {
         projectContext <- fetchContext.onRead(project).toCatsIO
-        schemaRefOpt   <- expandResourceRef(schemaOpt, projectContext).toCatsIO
+        schemaRefOpt   <- expandResourceRef(schemaOpt, projectContext)
         resource       <- fetchResource(id, project)
         report         <- validateResource(
                             resource.id,

@@ -84,7 +84,6 @@ final class ResourcesRoutes(
                       Created,
                       resources
                         .create(ref, resourceSchema, source.value, tag)
-                        .toCatsIO
                         .flatTap(indexUIO(ref, _, mode))
                         .map(_.void)
                         .attemptNarrow[ResourceRejection]
@@ -102,7 +101,6 @@ final class ResourcesRoutes(
                           Created,
                           resources
                             .create(ref, schema, source.value, tag)
-                            .toCatsIO
                             .flatTap(indexUIO(ref, _, mode))
                             .map(_.void)
                             .attemptNarrow[ResourceRejection]
@@ -125,7 +123,6 @@ final class ResourcesRoutes(
                                     Created,
                                     resources
                                       .create(id, ref, schema, source.value, tag)
-                                      .toCatsIO
                                       .flatTap(indexUIO(ref, _, mode))
                                       .map(_.void)
                                       .attemptNarrow[ResourceRejection]
@@ -136,7 +133,6 @@ final class ResourcesRoutes(
                                   emit(
                                     resources
                                       .update(id, ref, schemaOpt, rev, source.value)
-                                      .toCatsIO
                                       .flatTap(indexUIO(ref, _, mode))
                                       .map(_.void)
                                       .attemptNarrow[ResourceRejection]
@@ -151,7 +147,6 @@ final class ResourcesRoutes(
                               emit(
                                 resources
                                   .deprecate(id, ref, schemaOpt, rev)
-                                  .toCatsIO
                                   .flatTap(indexUIO(ref, _, mode))
                                   .map(_.void)
                                   .attemptNarrow[ResourceRejection]
@@ -168,7 +163,6 @@ final class ResourcesRoutes(
                                 emit(
                                   resources
                                     .fetch(id, ref, schemaOpt)
-                                    .toCatsIO
                                     .attemptNarrow[ResourceRejection]
                                     .rejectWhen(wrongJsonOrNotFound)
                                 )
@@ -183,7 +177,6 @@ final class ResourcesRoutes(
                             OK,
                             resources
                               .refresh(id, ref, schemaOpt)
-                              .toCatsIO
                               .flatTap(indexUIO(ref, _, mode))
                               .map(_.void)
                               .attemptNarrow[ResourceRejection]
@@ -200,7 +193,6 @@ final class ResourcesRoutes(
                               emit(
                                 resources
                                   .fetch(id, ref, schemaOpt)
-                                  .toCatsIO
                                   .flatMap(asSourceWithMetadata)
                                   .attemptNarrow[ResourceRejection]
                               )
@@ -208,7 +200,6 @@ final class ResourcesRoutes(
                               emit(
                                 resources
                                   .fetch(id, ref, schemaOpt)
-                                  .toCatsIO
                                   .map(_.value.source)
                                   .attemptNarrow[ResourceRejection]
                                   .rejectWhen(wrongJsonOrNotFound)
@@ -223,7 +214,6 @@ final class ResourcesRoutes(
                           emit(
                             resources
                               .fetchState(id, ref, schemaOpt)
-                              .toCatsIO
                               .map(_.remoteContexts)
                               .attemptNarrow[ResourceRejection]
                           )
@@ -237,7 +227,6 @@ final class ResourcesRoutes(
                             emit(
                               resources
                                 .fetch(id, ref, schemaOpt)
-                                .toCatsIO
                                 .map(_.value.tags)
                                 .attemptNarrow[ResourceRejection]
                                 .rejectWhen(wrongJsonOrNotFound)
@@ -251,7 +240,6 @@ final class ResourcesRoutes(
                                   Created,
                                   resources
                                     .tag(id, ref, schemaOpt, tag, tagRev, rev)
-                                    .toCatsIO
                                     .flatTap(indexUIO(ref, _, mode))
                                     .map(_.void)
                                     .attemptNarrow[ResourceRejection]
@@ -268,7 +256,6 @@ final class ResourcesRoutes(
                             emit(
                               resources
                                 .deleteTag(id, ref, schemaOpt, tag, rev)
-                                .toCatsIO
                                 .flatTap(indexUIO(ref, _, mode))
                                 .map(_.void)
                                 .attemptNarrow[ResourceRejection]

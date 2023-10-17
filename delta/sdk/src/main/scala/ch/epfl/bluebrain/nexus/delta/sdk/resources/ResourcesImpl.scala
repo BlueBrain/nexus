@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resources
 
-import cats.effect.Clock
+import cats.effect.{Clock, IO}
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -16,14 +17,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources.{entityType, expandIri, expandResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.ResourcesImpl.ResourcesLog
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceCommand._
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{ProjectContextRejection, ResourceFetchRejection, ResourceNotFound, RevisionNotFound, TagNotFound}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{ProjectContextRejection, ResourceNotFound, RevisionNotFound, TagNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{ResourceCommand, ResourceEvent, ResourceRejection, ResourceState}
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.Json
-import monix.bio.{IO, UIO}
 
 final class ResourcesImpl private (
     log: ResourcesLog,
@@ -38,11 +38,11 @@ final class ResourcesImpl private (
       schema: IdSegment,
       source: Json,
       tag: Option[UserTag]
-  )(implicit caller: Caller): IO[ResourceRejection, DataResource] = {
+  )(implicit caller: Caller): IO[DataResource] = {
     for {
-      projectContext <- fetchContext.onCreate(projectRef)
+      projectContext <- fetchContext.onCreate(projectRef).toCatsIO
       schemeRef      <- expandResourceRef(schema, projectContext)
-      jsonld         <- sourceParser(projectRef, projectContext, source)
+      jsonld         <- sourceParser(projectRef, projectContext, source).toCatsIO
       res            <- eval(CreateResource(jsonld.iri, projectRef, schemeRef, source, jsonld, caller, tag))
     } yield res
   }.span("createResource")
@@ -53,12 +53,12 @@ final class ResourcesImpl private (
       schema: IdSegment,
       source: Json,
       tag: Option[UserTag]
-  )(implicit caller: Caller): IO[ResourceRejection, DataResource] = {
+  )(implicit caller: Caller): IO[DataResource] = {
     for {
-      projectContext <- fetchContext.onCreate(projectRef)
-      iri            <- expandIri(id, projectContext)
+      projectContext <- fetchContext.onCreate(projectRef).toCatsIO
+      iri            <- expandIri(id, projectContext).toCatsIO
       schemeRef      <- expandResourceRef(schema, projectContext)
-      jsonld         <- sourceParser(projectRef, projectContext, iri, source)
+      jsonld         <- sourceParser(projectRef, projectContext, iri, source).toCatsIO
       res            <- eval(CreateResource(iri, projectRef, schemeRef, source, jsonld, caller, tag))
     } yield res
   }.span("createResource")
@@ -69,12 +69,12 @@ final class ResourcesImpl private (
       schemaOpt: Option[IdSegment],
       rev: Int,
       source: Json
-  )(implicit caller: Caller): IO[ResourceRejection, DataResource] = {
+  )(implicit caller: Caller): IO[DataResource] = {
     for {
-      projectContext <- fetchContext.onModify(projectRef)
-      iri            <- expandIri(id, projectContext)
+      projectContext <- fetchContext.onModify(projectRef).toCatsIO
+      iri            <- expandIri(id, projectContext).toCatsIO
       schemeRefOpt   <- expandResourceRef(schemaOpt, projectContext)
-      jsonld         <- sourceParser(projectRef, projectContext, iri, source)
+      jsonld         <- sourceParser(projectRef, projectContext, iri, source).toCatsIO
       res            <- eval(UpdateResource(iri, projectRef, schemeRefOpt, source, jsonld, rev, caller))
     } yield res
   }.span("updateResource")
@@ -83,13 +83,13 @@ final class ResourcesImpl private (
       id: IdSegment,
       projectRef: ProjectRef,
       schemaOpt: Option[IdSegment]
-  )(implicit caller: Caller): IO[ResourceRejection, DataResource] = {
+  )(implicit caller: Caller): IO[DataResource] = {
     for {
-      projectContext <- fetchContext.onModify(projectRef)
-      iri            <- expandIri(id, projectContext)
+      projectContext <- fetchContext.onModify(projectRef).toCatsIO
+      iri            <- expandIri(id, projectContext).toCatsIO
       schemaRefOpt   <- expandResourceRef(schemaOpt, projectContext)
-      resource       <- log.stateOr(projectRef, iri, ResourceNotFound(iri, projectRef))
-      jsonld         <- sourceParser(projectRef, projectContext, iri, resource.source)
+      resource       <- log.stateOr(projectRef, iri, ResourceNotFound(iri, projectRef)).toCatsIO
+      jsonld         <- sourceParser(projectRef, projectContext, iri, resource.source).toCatsIO
       res            <- eval(RefreshResource(iri, projectRef, schemaRefOpt, jsonld, resource.rev, caller))
     } yield res
   }.span("refreshResource")
@@ -101,10 +101,10 @@ final class ResourcesImpl private (
       tag: UserTag,
       tagRev: Int,
       rev: Int
-  )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
+  )(implicit caller: Subject): IO[DataResource] =
     (for {
-      projectContext <- fetchContext.onModify(projectRef)
-      iri            <- expandIri(id, projectContext)
+      projectContext <- fetchContext.onModify(projectRef).toCatsIO
+      iri            <- expandIri(id, projectContext).toCatsIO
       schemeRefOpt   <- expandResourceRef(schemaOpt, projectContext)
       res            <- eval(TagResource(iri, projectRef, schemeRefOpt, tagRev, tag, rev, caller))
     } yield res).span("tagResource")
@@ -115,10 +115,10 @@ final class ResourcesImpl private (
       schemaOpt: Option[IdSegment],
       tag: UserTag,
       rev: Int
-  )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
+  )(implicit caller: Subject): IO[DataResource] =
     (for {
-      projectContext <- fetchContext.onModify(projectRef)
-      iri            <- expandIri(id, projectContext)
+      projectContext <- fetchContext.onModify(projectRef).toCatsIO
+      iri            <- expandIri(id, projectContext).toCatsIO
       schemeRefOpt   <- expandResourceRef(schemaOpt, projectContext)
       res            <- eval(DeleteResourceTag(iri, projectRef, schemeRefOpt, tag, rev, caller))
     } yield res).span("deleteResourceTag")
@@ -128,10 +128,10 @@ final class ResourcesImpl private (
       projectRef: ProjectRef,
       schemaOpt: Option[IdSegment],
       rev: Int
-  )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
+  )(implicit caller: Subject): IO[DataResource] =
     (for {
-      projectContext <- fetchContext.onModify(projectRef)
-      iri            <- expandIri(id, projectContext)
+      projectContext <- fetchContext.onModify(projectRef).toCatsIO
+      iri            <- expandIri(id, projectContext).toCatsIO
       schemeRefOpt   <- expandResourceRef(schemaOpt, projectContext)
       res            <- eval(DeprecateResource(iri, projectRef, schemeRefOpt, rev, caller))
     } yield res).span("deprecateResource")
@@ -140,18 +140,18 @@ final class ResourcesImpl private (
       id: IdSegmentRef,
       projectRef: ProjectRef,
       schemaOpt: Option[IdSegment]
-  ): IO[ResourceFetchRejection, ResourceState] = {
+  ): IO[ResourceState] = {
     for {
-      pc           <- fetchContext.onRead(projectRef)
-      iri          <- expandIri(id.value, pc)
+      pc           <- fetchContext.onRead(projectRef).toCatsIO
+      iri          <- expandIri(id.value, pc).toCatsIO
       schemaRefOpt <- expandResourceRef(schemaOpt, pc)
       notFound      = ResourceNotFound(iri, projectRef)
       state        <- id match {
-                        case Latest(_)        => log.stateOr(projectRef, iri, notFound)
+                        case Latest(_)        => log.stateOr(projectRef, iri, notFound).toCatsIO
                         case Revision(_, rev) =>
-                          log.stateOr(projectRef, iri, rev, notFound, RevisionNotFound)
+                          log.stateOr(projectRef, iri, rev, notFound, RevisionNotFound).toCatsIO
                         case Tag(_, tag)      =>
-                          log.stateOr(projectRef, iri, tag, notFound, TagNotFound(tag))
+                          log.stateOr(projectRef, iri, tag, notFound, TagNotFound(tag)).toCatsIO
                       }
       _            <- IO.raiseWhen(schemaRefOpt.exists(_.iri != state.schema.iri))(notFound)
     } yield state
@@ -161,9 +161,9 @@ final class ResourcesImpl private (
       id: IdSegmentRef,
       projectRef: ProjectRef,
       schemaOpt: Option[IdSegment]
-  ): IO[ResourceFetchRejection, DataResource] = fetchState(id, projectRef, schemaOpt).map(_.toResource)
+  ): IO[DataResource] = fetchState(id, projectRef, schemaOpt).map(_.toResource)
 
-  private def eval(cmd: ResourceCommand): IO[ResourceRejection, DataResource] =
+  private def eval(cmd: ResourceCommand): IO[DataResource] =
     log.evaluate(cmd.project, cmd.id, cmd).map(_._2.toResource)
 }
 
@@ -192,7 +192,7 @@ object ResourcesImpl {
       contextResolution: ResolverContextResolution,
       config: ResourcesConfig,
       xas: Transactors
-  )(implicit api: JsonLdApi, clock: Clock[UIO], uuidF: UUIDF = UUIDF.random): Resources =
+  )(implicit api: JsonLdApi, clock: Clock[IO], uuidF: UUIDF = UUIDF.random): Resources =
     new ResourcesImpl(
       ScopedEventLog(Resources.definition(validateResource), config.eventLog, xas),
       fetchContext,

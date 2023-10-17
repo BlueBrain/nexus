@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.wiring
 
 import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMinPriority
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
@@ -38,7 +37,7 @@ object ResourcesTrialModule extends ModuleDef {
         uuidF: UUIDF
     ) =>
       ResourcesTrial(
-        resources.fetch(_, _, None).toCatsIO,
+        resources.fetch(_, _, None),
         validate,
         fetchContext.mapRejection(ProjectContextRejection),
         contextResolution
