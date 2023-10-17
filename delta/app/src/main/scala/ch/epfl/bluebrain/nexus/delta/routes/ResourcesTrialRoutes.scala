@@ -29,7 +29,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
 import io.circe.{Decoder, Json}
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 
 import scala.annotation.nowarn
 
@@ -95,7 +94,7 @@ final class ResourcesTrialRoutes(
         emit(
           resourcesTrial
             .generate(project, schemaId, input.resource)
-            .flatMap(_.asJson.toCatsIO)
+            .flatMap(_.asJson)
         )
       case NewSchema(schemaSource)  =>
         emit(
@@ -103,7 +102,7 @@ final class ResourcesTrialRoutes(
             .flatMap { schema =>
               resourcesTrial
                 .generate(project, schema, input.resource)
-                .flatMap(_.asJson.toCatsIO)
+                .flatMap(_.asJson)
             }
             .attemptNarrow[SchemaRejection]
         )
