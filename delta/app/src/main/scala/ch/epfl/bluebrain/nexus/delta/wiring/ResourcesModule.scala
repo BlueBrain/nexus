@@ -30,7 +30,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
-import monix.execution.Scheduler
 
 /**
   * Resources wiring
@@ -85,7 +84,6 @@ object ResourcesModule extends ModuleDef {
         indexingAction: AggregateIndexingAction,
         shift: Resource.Shift,
         baseUri: BaseUri,
-        s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering,
         fusionConfig: FusionConfig,
@@ -99,7 +97,6 @@ object ResourcesModule extends ModuleDef {
         indexingAction(_, _, _)(shift)
       )(
         baseUri,
-        s,
         cr,
         ordering,
         fusionConfig,

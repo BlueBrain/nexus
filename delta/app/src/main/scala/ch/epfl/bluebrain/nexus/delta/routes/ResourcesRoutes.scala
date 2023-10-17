@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.routes
 import akka.http.scaladsl.model.StatusCodes.{Created, OK}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
+import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
@@ -13,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.routes.ResourcesRoutes.asSourceWithMetadata
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
+import ch.epfl.bluebrain.nexus.delta.sdk.ce.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
@@ -28,8 +29,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{Resource, ResourceReje
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.{NexusSource, Resources}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.{Json, Printer}
-import monix.bio.IO
-import monix.execution.Scheduler
 
 /**
   * The resource routes
@@ -53,7 +52,6 @@ final class ResourcesRoutes(
     index: IndexingAction.Execute[Resource]
 )(implicit
     baseUri: BaseUri,
-    s: Scheduler,
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering,
     fusionConfig: FusionConfig,
@@ -86,8 +84,10 @@ final class ResourcesRoutes(
                       Created,
                       resources
                         .create(ref, resourceSchema, source.value, tag)
-                        .tapEval(indexUIO(ref, _, mode))
+                        .toCatsIO
+                        .flatTap(indexUIO(ref, _, mode))
                         .map(_.void)
+                        .attemptNarrow[ResourceRejection]
                     )
                   }
               },
@@ -102,8 +102,10 @@ final class ResourcesRoutes(
                           Created,
                           resources
                             .create(ref, schema, source.value, tag)
-                            .tapEval(indexUIO(ref, _, mode))
+                            .toCatsIO
+                            .flatTap(indexUIO(ref, _, mode))
                             .map(_.void)
+                            .attemptNarrow[ResourceRejection]
                             .rejectWhen(wrongJsonOrNotFound)
                         )
                       }
@@ -123,8 +125,10 @@ final class ResourcesRoutes(
                                     Created,
                                     resources
                                       .create(id, ref, schema, source.value, tag)
-                                      .tapEval(indexUIO(ref, _, mode))
+                                      .toCatsIO
+                                      .flatTap(indexUIO(ref, _, mode))
                                       .map(_.void)
+                                      .attemptNarrow[ResourceRejection]
                                       .rejectWhen(wrongJsonOrNotFound)
                                   )
                                 case (Some(rev), source, _) =>
@@ -132,8 +136,10 @@ final class ResourcesRoutes(
                                   emit(
                                     resources
                                       .update(id, ref, schemaOpt, rev, source.value)
-                                      .tapEval(indexUIO(ref, _, mode))
+                                      .toCatsIO
+                                      .flatTap(indexUIO(ref, _, mode))
                                       .map(_.void)
+                                      .attemptNarrow[ResourceRejection]
                                       .rejectWhen(wrongJsonOrNotFound)
                                   )
                               }
@@ -145,8 +151,10 @@ final class ResourcesRoutes(
                               emit(
                                 resources
                                   .deprecate(id, ref, schemaOpt, rev)
-                                  .tapEval(indexUIO(ref, _, mode))
+                                  .toCatsIO
+                                  .flatTap(indexUIO(ref, _, mode))
                                   .map(_.void)
+                                  .attemptNarrow[ResourceRejection]
                                   .rejectWhen(wrongJsonOrNotFound)
                               )
                             }
@@ -160,7 +168,8 @@ final class ResourcesRoutes(
                                 emit(
                                   resources
                                     .fetch(id, ref, schemaOpt)
-                                    .leftWiden[ResourceRejection]
+                                    .toCatsIO
+                                    .attemptNarrow[ResourceRejection]
                                     .rejectWhen(wrongJsonOrNotFound)
                                 )
                               }
@@ -174,8 +183,10 @@ final class ResourcesRoutes(
                             OK,
                             resources
                               .refresh(id, ref, schemaOpt)
-                              .tapEval(indexUIO(ref, _, mode))
+                              .toCatsIO
+                              .flatTap(indexUIO(ref, _, mode))
                               .map(_.void)
+                              .attemptNarrow[ResourceRejection]
                               .rejectWhen(wrongJsonOrNotFound)
                           )
                         }
@@ -189,12 +200,19 @@ final class ResourcesRoutes(
                               emit(
                                 resources
                                   .fetch(id, ref, schemaOpt)
+                                  .toCatsIO
                                   .flatMap(asSourceWithMetadata)
+                                  .attemptNarrow[ResourceRejection]
                               )
                             } else {
-                              val sourceIO = resources.fetch(id, ref, schemaOpt).map(_.value.source)
-                              val value    = sourceIO.leftWiden[ResourceRejection]
-                              emit(value.rejectWhen(wrongJsonOrNotFound))
+                              emit(
+                                resources
+                                  .fetch(id, ref, schemaOpt)
+                                  .toCatsIO
+                                  .map(_.value.source)
+                                  .attemptNarrow[ResourceRejection]
+                                  .rejectWhen(wrongJsonOrNotFound)
+                              )
                             }
                           }
                         }
@@ -202,8 +220,13 @@ final class ResourcesRoutes(
                       // Get remote contexts
                       pathPrefix("remote-contexts") {
                         (get & idSegmentRef(id) & pathEndOrSingleSlash & authorizeFor(ref, Read)) { id =>
-                          val remoteContextsIO = resources.fetchState(id, ref, schemaOpt).map(_.remoteContexts)
-                          emit(remoteContextsIO.leftWiden[ResourceRejection])
+                          emit(
+                            resources
+                              .fetchState(id, ref, schemaOpt)
+                              .toCatsIO
+                              .map(_.remoteContexts)
+                              .attemptNarrow[ResourceRejection]
+                          )
                         }
                       },
                       // Tag a resource
@@ -211,8 +234,14 @@ final class ResourcesRoutes(
                         concat(
                           // Fetch a resource tags
                           (get & idSegmentRef(id) & pathEndOrSingleSlash & authorizeFor(ref, Read)) { id =>
-                            val tagsIO = resources.fetch(id, ref, schemaOpt).map(_.value.tags)
-                            emit(tagsIO.leftWiden[ResourceRejection].rejectWhen(wrongJsonOrNotFound))
+                            emit(
+                              resources
+                                .fetch(id, ref, schemaOpt)
+                                .toCatsIO
+                                .map(_.value.tags)
+                                .attemptNarrow[ResourceRejection]
+                                .rejectWhen(wrongJsonOrNotFound)
+                            )
                           },
                           // Tag a resource
                           (post & parameter("rev".as[Int]) & pathEndOrSingleSlash) { rev =>
@@ -222,8 +251,10 @@ final class ResourcesRoutes(
                                   Created,
                                   resources
                                     .tag(id, ref, schemaOpt, tag, tagRev, rev)
-                                    .tapEval(indexUIO(ref, _, mode))
+                                    .toCatsIO
+                                    .flatTap(indexUIO(ref, _, mode))
                                     .map(_.void)
+                                    .attemptNarrow[ResourceRejection]
                                     .rejectWhen(wrongJsonOrNotFound)
                                 )
                               }
@@ -237,8 +268,10 @@ final class ResourcesRoutes(
                             emit(
                               resources
                                 .deleteTag(id, ref, schemaOpt, tag, rev)
-                                .tapEval(indexUIO(ref, _, mode))
+                                .toCatsIO
+                                .flatTap(indexUIO(ref, _, mode))
                                 .map(_.void)
+                                .attemptNarrow[ResourceRejection]
                                 .rejectOn[ResourceNotFound]
                             )
                           }
@@ -274,7 +307,6 @@ object ResourcesRoutes {
       index: IndexingAction.Execute[Resource]
   )(implicit
       baseUri: BaseUri,
-      s: Scheduler,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering,
       fusionConfig: FusionConfig,
@@ -283,7 +315,7 @@ object ResourcesRoutes {
 
   def asSourceWithMetadata(
       resource: ResourceF[Resource]
-  )(implicit baseUri: BaseUri, cr: RemoteContextResolution): IO[ResourceRejection, Json] =
+  )(implicit baseUri: BaseUri, cr: RemoteContextResolution): IO[Json] =
     AnnotatedSource(resource, resource.value.source).mapError(e => InvalidJsonLdFormat(Some(resource.id), e))
 
 }
