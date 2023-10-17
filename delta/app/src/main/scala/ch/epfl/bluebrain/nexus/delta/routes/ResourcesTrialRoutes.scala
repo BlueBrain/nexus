@@ -4,7 +4,6 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -30,6 +29,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
 import io.circe.{Decoder, Json}
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 
 import scala.annotation.nowarn
 
@@ -67,7 +67,6 @@ final class ResourcesTrialRoutes(
               emit(
                 resourcesTrial
                   .validate(id, project, schemaOpt)
-                  .toCatsIO
                   .attemptNarrow[ResourceRejection]
               )
             }
@@ -96,8 +95,7 @@ final class ResourcesTrialRoutes(
         emit(
           resourcesTrial
             .generate(project, schemaId, input.resource)
-            .toCatsIO
-            .flatMap(_.asJson)
+            .flatMap(_.asJson.toCatsIO)
         )
       case NewSchema(schemaSource)  =>
         emit(
@@ -105,7 +103,6 @@ final class ResourcesTrialRoutes(
             .flatMap { schema =>
               resourcesTrial
                 .generate(project, schema, input.resource)
-                .toCatsIO
                 .flatMap(_.asJson.toCatsIO)
             }
             .attemptNarrow[SchemaRejection]
@@ -164,7 +161,7 @@ object ResourcesTrialRoutes {
     new ResourcesTrialRoutes(
       identities,
       aclCheck,
-      (project, source, caller) => schemas.createDryRun(project, source)(caller).toBIO[SchemaRejection],
+      (project, source, caller) => schemas.createDryRun(project, source)(caller),
       resourcesTrial,
       schemeDirectives
     )

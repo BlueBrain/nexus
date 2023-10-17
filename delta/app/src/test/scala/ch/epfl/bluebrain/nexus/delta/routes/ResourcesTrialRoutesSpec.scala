@@ -22,14 +22,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resources.NexusSource.DecodingOption
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.ValidationResult._
 import ch.epfl.bluebrain.nexus.delta.sdk.resources._
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{ProjectContextRejection, ReservedResourceId, ResourceNotFound}
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{ResourceGenerationResult, ResourceRejection, ResourceState}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{ResourceGenerationResult, ResourceState}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Revision
-import monix.bio.{IO => BIO, UIO}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 
 import java.time.Instant
 
@@ -76,17 +75,17 @@ class ResourcesTrialRoutesSpec extends BaseRouteSpec with ResourceInstanceFixtur
   private val resourcesTrial = new ResourcesTrial {
     override def generate(project: ProjectRef, schema: IdSegment, source: NexusSource)(implicit
         caller: Caller
-    ): UIO[ResourceGenerationResult] =
+    ): IO[ResourceGenerationResult] =
       generate(source, None)
 
     override def generate(project: ProjectRef, schema: ResourceF[Schema], source: NexusSource)(implicit
         caller: Caller
-    ): UIO[ResourceGenerationResult] =
+    ): IO[ResourceGenerationResult] =
       generate(source, Some(schema))
 
     // Successfully generates a resource if `validSource` is passed, fails otherwise
-    private def generate(source: NexusSource, schemaOpt: Option[ResourceF[Schema]]): UIO[ResourceGenerationResult] =
-      UIO.pure {
+    private def generate(source: NexusSource, schemaOpt: Option[ResourceF[Schema]]): IO[ResourceGenerationResult] =
+      IO.pure {
         source match {
           case NexusSource(`validSource`) => ResourceGenerationResult(schemaOpt, Right(resourceF))
           case _                          => ResourceGenerationResult(schemaOpt, Left(expectedError))
@@ -95,16 +94,16 @@ class ResourcesTrialRoutesSpec extends BaseRouteSpec with ResourceInstanceFixtur
 
     override def validate(id: IdSegmentRef, project: ProjectRef, schemaOpt: Option[IdSegment])(implicit
         caller: Caller
-    ): BIO[ResourceRejection, ValidationResult] =
+    ): IO[ValidationResult] =
       (id.value, schemaOpt) match {
         // Returns a validated result for myId when no schema is provided
         case (StringSegment("myId") | IriSegment(`myId`), None)                                =>
-          UIO.pure(Validated(projectRef, ResourceRef.Revision(schemaId, defaultSchemaRevision), defaultReport))
+          IO.pure(Validated(projectRef, ResourceRef.Revision(schemaId, defaultSchemaRevision), defaultReport))
         // Returns no validation result for myId for `schemas.resources`
         case (StringSegment("myId") | IriSegment(`myId`), Some(IriSegment(schemas.resources))) =>
-          UIO.pure(NoValidation(projectRef))
-        case (IriSegment(iri), None)                                                           => BIO.raiseError(ResourceNotFound(iri, project))
-        case _                                                                                 => BIO.terminate(new IllegalStateException("Should not happen !"))
+          IO.pure(NoValidation(projectRef))
+        case (IriSegment(iri), None)                                                           => IO.raiseError(ResourceNotFound(iri, project))
+        case _                                                                                 => IO.raiseError(new IllegalStateException("Should not happen !"))
       }
   }
 

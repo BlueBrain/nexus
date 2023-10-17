@@ -1,7 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.generators
 
+import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
@@ -18,7 +19,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.testkit.IOValues
 import io.circe.Json
-import monix.bio
 
 import java.time.Instant
 
@@ -75,10 +75,10 @@ object ResourceGen extends IOValues {
       source: Json,
       schema: ResourceRef = Latest(schemas.resources),
       tags: Tags = Tags.empty
-  )(implicit resolution: RemoteContextResolution): bio.IO[RdfError, Resource] = {
+  )(implicit resolution: RemoteContextResolution): IO[Resource] = {
     for {
-      expanded  <- ExpandedJsonLd(source).map(_.replaceId(id))
-      compacted <- expanded.toCompacted(source.topContextValueOrEmpty)
+      expanded  <- ExpandedJsonLd(source).toCatsIO.map(_.replaceId(id))
+      compacted <- expanded.toCompacted(source.topContextValueOrEmpty).toCatsIO
     } yield {
       Resource(id, project, tags, schema, source, compacted, expanded)
     }

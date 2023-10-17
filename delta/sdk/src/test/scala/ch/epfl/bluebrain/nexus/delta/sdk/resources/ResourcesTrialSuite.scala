@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resources
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
@@ -16,14 +17,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{Inva
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{Resource, ResourceGenerationResult, ResourceRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Revision
-import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
-import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, TestHelpers}
-import monix.bio.{IO, UIO}
+import ch.epfl.bluebrain.nexus.testkit.TestHelpers
+import ch.epfl.bluebrain.nexus.testkit.ce.{CatsEffectSuite, IOFixedClock}
 import munit.Location
 
 import java.util.UUID
 
-class ResourcesTrialSuite extends BioSuite with ValidateResourceFixture with TestHelpers with IOFixedClock {
+class ResourcesTrialSuite extends CatsEffectSuite with ValidateResourceFixture with TestHelpers with IOFixedClock {
 
   private val uuid                  = UUID.randomUUID()
   implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
@@ -39,7 +39,7 @@ class ResourcesTrialSuite extends BioSuite with ValidateResourceFixture with Tes
       contexts.schemasMetadata -> ContextValue.fromFile("contexts/schemas-metadata.json")
     )
 
-  private val fetchResourceFail = IO.terminate(new IllegalStateException("Should not be attempt to fetch a resource"))
+  private val fetchResourceFail = IO.raiseError(new IllegalStateException("Should not be attempt to fetch a resource"))
 
   private val resolverContextResolution: ResolverContextResolution = ResolverContextResolution(res)
 
@@ -58,7 +58,7 @@ class ResourcesTrialSuite extends BioSuite with ValidateResourceFixture with Tes
   private val source         = NexusSource(jsonContentOf("resources/resource.json", "id" -> id))
   private val resourceSchema = nxv + "schema"
 
-  private def assertSuccessSync(
+  private def assertSuccess(
       result: ResourceGenerationResult
   )(schema: Option[SchemaResource], expected: Resource)(implicit loc: Location) = {
     assertEquals(result.schema, schema)
@@ -66,7 +66,7 @@ class ResourcesTrialSuite extends BioSuite with ValidateResourceFixture with Tes
   }
 
   private def assertError(
-      io: UIO[ResourceGenerationResult]
+      io: IO[ResourceGenerationResult]
   )(schema: Option[SchemaResource], error: ResourceRejection)(implicit loc: Location) =
     io.map { generated =>
       assertEquals(generated.schema, schema)
@@ -85,7 +85,7 @@ class ResourcesTrialSuite extends BioSuite with ValidateResourceFixture with Tes
         ResourceGen.resourceAsync(id, projectRef, source.value, Revision(resourceSchema, defaultSchemaRevision))
       result       <- trial.generate(projectRef, resourceSchema, source)
     } yield {
-      assertSuccessSync(result)(None, expectedData)
+      assertSuccess(result)(None, expectedData)
     }
   }
 
@@ -107,7 +107,7 @@ class ResourcesTrialSuite extends BioSuite with ValidateResourceFixture with Tes
         ResourceGen.resourceAsync(id, projectRef, source.value, Revision(anotherSchema, defaultSchemaRevision))
       result       <- trial.generate(projectRef, schema, source)
     } yield {
-      assertSuccessSync(result)(Some(schema), expectedData)
+      assertSuccess(result)(Some(schema), expectedData)
     }
   }
 
@@ -173,9 +173,9 @@ class ResourcesTrialSuite extends BioSuite with ValidateResourceFixture with Tes
                         fetchContext,
                         resolverContextResolution
                       )
-      result       <- trial.validate(id, projectRef, Some(anotherSchema)).flip
+      result       <- trial.validate(id, projectRef, Some(anotherSchema)).attempt
     } yield {
-      assertEquals(result, expectedError)
+      assertEquals(result, Left(expectedError))
     }
   }
 
