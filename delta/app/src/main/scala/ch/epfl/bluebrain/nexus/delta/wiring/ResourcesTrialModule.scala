@@ -21,7 +21,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas
 import distage.ModuleDef
 import izumi.distage.model.definition.Id
 import monix.bio.UIO
-import monix.execution.Scheduler
 
 /**
   * Resources trial wiring
@@ -54,7 +53,6 @@ object ResourcesTrialModule extends ModuleDef {
         resourcesTrial: ResourcesTrial,
         schemeDirectives: DeltaSchemeDirectives,
         baseUri: BaseUri,
-        s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering,
         config: ResourcesConfig
@@ -67,7 +65,6 @@ object ResourcesTrialModule extends ModuleDef {
         schemeDirectives
       )(
         baseUri,
-        s,
         cr,
         ordering,
         config.decodingOption

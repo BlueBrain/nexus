@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.routes
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.server.Route
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -28,7 +29,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Revision
-import monix.bio.{IO, UIO}
+import monix.bio.{IO => BIO, UIO}
 
 import java.time.Instant
 
@@ -94,7 +95,7 @@ class ResourcesTrialRoutesSpec extends BaseRouteSpec with ResourceInstanceFixtur
 
     override def validate(id: IdSegmentRef, project: ProjectRef, schemaOpt: Option[IdSegment])(implicit
         caller: Caller
-    ): IO[ResourceRejection, ValidationResult] =
+    ): BIO[ResourceRejection, ValidationResult] =
       (id.value, schemaOpt) match {
         // Returns a validated result for myId when no schema is provided
         case (StringSegment("myId") | IriSegment(`myId`), None)                                =>
@@ -102,13 +103,13 @@ class ResourcesTrialRoutesSpec extends BaseRouteSpec with ResourceInstanceFixtur
         // Returns no validation result for myId for `schemas.resources`
         case (StringSegment("myId") | IriSegment(`myId`), Some(IriSegment(schemas.resources))) =>
           UIO.pure(NoValidation(projectRef))
-        case (IriSegment(iri), None)                                                           => IO.raiseError(ResourceNotFound(iri, project))
-        case _                                                                                 => IO.terminate(new IllegalStateException("Should not happen !"))
+        case (IriSegment(iri), None)                                                           => BIO.raiseError(ResourceNotFound(iri, project))
+        case _                                                                                 => BIO.terminate(new IllegalStateException("Should not happen !"))
       }
   }
 
   private val generateSchema: GenerateSchema = {
-    case (_, `schemaSource`, _) => UIO.pure(SchemaGen.resourceFor(schema1))
+    case (_, `schemaSource`, _) => IO.pure(SchemaGen.resourceFor(schema1))
     case _                      => IO.raiseError(SchemaShaclEngineRejection(nxv + "invalid", "Invalid schema"))
   }
 
