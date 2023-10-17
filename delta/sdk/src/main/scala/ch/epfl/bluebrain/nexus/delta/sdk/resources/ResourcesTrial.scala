@@ -87,7 +87,7 @@ object ResourcesTrial {
         projectContext <- fetchContext.onRead(project).toCatsIO
         schemaRef      <- Resources.expandResourceRef(schema, projectContext)
         jsonld         <- sourceParser(project, projectContext, source.value).toCatsIO
-        validation     <- validateResource(jsonld.iri, jsonld.expanded, schemaRef, project, caller).toCatsIO
+        validation     <- validateResource(jsonld.iri, jsonld.expanded, schemaRef, project, caller)
         result         <- toResourceF(project, jsonld, source, validation)
       } yield result
     }.attemptNarrow[ResourceRejection].map { attempt =>
@@ -100,7 +100,7 @@ object ResourcesTrial {
       for {
         projectContext <- fetchContext.onRead(project).toCatsIO
         jsonld         <- sourceParser(project, projectContext, source.value).toCatsIO
-        validation     <- validateResource(jsonld.iri, jsonld.expanded, schema).toCatsIO
+        validation     <- validateResource(jsonld.iri, jsonld.expanded, schema)
         result         <- toResourceF(project, jsonld, source, validation)
       } yield result
     }.attemptNarrow[ResourceRejection].map { attempt =>

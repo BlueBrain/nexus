@@ -319,7 +319,6 @@ object Resources {
     ): IO[(ResourceRef.Revision, ProjectRef)] = {
       validateResource
         .apply(id, expanded, schemaRef, projectRef, caller)
-        .toCatsIO
         .map(result => (result.schema, result.project))
     }
 
