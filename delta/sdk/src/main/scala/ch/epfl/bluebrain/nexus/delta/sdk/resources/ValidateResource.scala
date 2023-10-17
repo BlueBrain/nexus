@@ -116,7 +116,7 @@ object ValidateResource {
           validateShapes = false
         ).toCatsIOEither
           .map(_.leftMap(ResourceShaclEngineRejection(resourceId, schemaRef, _)))
-          .flatMap(IO.fromEither)
+          .rethrow
       }
 
       private def assertNotDeprecated(schema: ResourceF[Schema]) = {
