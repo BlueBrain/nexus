@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.generators
 
 import cats.data.NonEmptyList
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
@@ -13,6 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOValues}
 import io.circe.Json
+import monix.bio.IO
 
 import java.time.Instant
 
@@ -48,9 +50,21 @@ object SchemaGen extends IOValues with EitherValuable {
       source: Json,
       tags: Tags = Tags.empty
   )(implicit resolution: RemoteContextResolution): Schema = {
-    val expanded  = ExpandedJsonLd(source).accepted.replaceId(id)
-    val compacted = expanded.toCompacted(source.topContextValueOrEmpty).accepted
-    Schema(id, project, tags, source, compacted, NonEmptyList.of(expanded))
+    schemaAsync(id, project, source, tags).accepted
+  }
+
+  def schemaAsync(
+      id: Iri,
+      project: ProjectRef,
+      source: Json,
+      tags: Tags = Tags.empty
+  )(implicit resolution: RemoteContextResolution): IO[RdfError, Schema] = {
+    for {
+      expanded  <- ExpandedJsonLd(source).map(_.replaceId(id))
+      compacted <- expanded.toCompacted(source.topContextValueOrEmpty)
+    } yield {
+      Schema(id, project, tags, source, compacted, NonEmptyList.of(expanded))
+    }
   }
 
   def resourceFor(
