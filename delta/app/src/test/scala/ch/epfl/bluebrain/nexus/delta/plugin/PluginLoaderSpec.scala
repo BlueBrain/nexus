@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugin
 
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+import cats.effect.{ContextShift, IO, Timer}
 import ch.epfl.bluebrain.nexus.delta.plugin.PluginsLoader.PluginLoaderConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.PriorityRoute
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
@@ -14,6 +15,8 @@ import monix.execution.Scheduler.Implicits.global
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
+import scala.concurrent.ExecutionContext
+
 class PluginLoaderSpec extends AnyWordSpecLike with ScalatestRouteTest with Matchers with IOValues {
 
   private val baseUri       = BaseUri.withoutPrefix("http://localhost")
@@ -21,6 +24,9 @@ class PluginLoaderSpec extends AnyWordSpecLike with ScalatestRouteTest with Matc
     make[BaseUri].fromValue(baseUri)
     make[Scheduler].from(Scheduler.global)
   }
+
+  implicit val contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
+  implicit val timer: Timer[IO]               = IO.timer(ExecutionContext.global)
 
   "A PluginLoader" should {
     val config = PluginLoaderConfig("../plugins/test-plugin/target")
