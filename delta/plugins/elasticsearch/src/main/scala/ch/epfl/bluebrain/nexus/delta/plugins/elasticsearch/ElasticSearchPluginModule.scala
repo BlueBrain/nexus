@@ -284,7 +284,8 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         fusionConfig: FusionConfig,
         baseUri: BaseUri
     ) =>
-      new IdResolutionRoutes(identities, aclCheck, idResolution, baseUri)(
+      new IdResolutionRoutes(identities, aclCheck, idResolution)(
+        baseUri,
         s,
         ordering,
         rcr,
