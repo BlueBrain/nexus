@@ -15,8 +15,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{SearchResults, SortList}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
 import io.circe.JsonObject
 import monix.bio.{IO, UIO}
@@ -106,14 +108,16 @@ object IdResolutionResponse {
   private val searchJsonLdEncoder: JsonLdEncoder[SearchResults[JsonObject]] =
     searchResultsJsonLdEncoder(ContextValue(contexts.search))
 
-  implicit def resultJsonLdEncoder: JsonLdEncoder[Result] =
+  implicit def resultJsonLdEncoder(implicit baseUri: BaseUri): JsonLdEncoder[Result] =
     new JsonLdEncoder[Result] {
 
-      // helps with type inference
-      private def encoder[A](value: JsonLdContent[A, _]): JsonLdEncoder[A] = value.encoder
+      private def encoder[A](value: JsonLdContent[A, _])(implicit baseUri: BaseUri): JsonLdEncoder[ResourceF[A]] = {
+        implicit val encoder: JsonLdEncoder[A] = value.encoder
+        resourceFAJsonLdEncoder[A](ContextValue.empty)
+      }
 
       override def context(value: Result): ContextValue = value match {
-        case SingleResult(_, _, content)    => encoder(content).context(content.resource.value)
+        case SingleResult(_, _, content)    => encoder(content).context(content.resource)
         case MultipleResults(searchResults) => searchJsonLdEncoder.context(searchResults)
       }
 
@@ -121,7 +125,7 @@ object IdResolutionResponse {
           value: Result
       )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, ExpandedJsonLd] =
         value match {
-          case SingleResult(_, _, content)    => encoder(content).expand(content.resource.value)
+          case SingleResult(_, _, content)    => encoder(content).expand(content.resource)
           case MultipleResults(searchResults) => searchJsonLdEncoder.expand(searchResults)
         }
 
@@ -129,7 +133,7 @@ object IdResolutionResponse {
           value: Result
       )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, CompactedJsonLd] =
         value match {
-          case SingleResult(_, _, content)    => encoder(content).compact(content.resource.value)
+          case SingleResult(_, _, content)    => encoder(content).compact(content.resource)
           case MultipleResults(searchResults) => searchJsonLdEncoder.compact(searchResults)
         }
     }
