@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk.schemas
 
 import cats.data.NonEmptyList
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.sdk.Resolve
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ResourceGen
@@ -74,7 +73,7 @@ class SchemaImportsSuite extends CatsEffectSuite with TestHelpers with CirceLite
     case (_, _, _)              => IO.pure(Left(errorReport))
   }
 
-  private def toExpanded(json: Json) = toCatsIO(ExpandedJsonLd(json))
+  private def toExpanded(json: Json) = ExpandedJsonLd(json)
 
   val imports = new SchemaImports(fetchSchema, fetchResource)
 

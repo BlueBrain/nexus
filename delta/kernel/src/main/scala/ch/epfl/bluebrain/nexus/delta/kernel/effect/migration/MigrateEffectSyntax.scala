@@ -41,4 +41,6 @@ final class CatsIOToBioOps[A](private val io: IO[A]) extends AnyVal {
     }
 
   def toUIO: UIO[A] = BIO.from(io).hideErrors
+
+  def toTask: Task[A] = Task.from(io)
 }

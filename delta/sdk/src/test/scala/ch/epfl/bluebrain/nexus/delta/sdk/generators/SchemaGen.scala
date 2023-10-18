@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.generators
 
 import cats.data.NonEmptyList
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
@@ -12,13 +12,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.{Schema, SchemaState}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOValues}
+import ch.epfl.bluebrain.nexus.testkit.EitherValuable
+import ch.epfl.bluebrain.nexus.testkit.ce.CatsIOValues
 import io.circe.Json
-import monix.bio.IO
 
 import java.time.Instant
 
-object SchemaGen extends IOValues with EitherValuable {
+object SchemaGen extends CatsIOValues with EitherValuable {
   // We put a lenient api for schemas otherwise the api checks data types before the actual schema validation process
   implicit val api: JsonLdApi = JsonLdJavaApi.lenient
 
@@ -58,7 +58,7 @@ object SchemaGen extends IOValues with EitherValuable {
       project: ProjectRef,
       source: Json,
       tags: Tags = Tags.empty
-  )(implicit resolution: RemoteContextResolution): IO[RdfError, Schema] = {
+  )(implicit resolution: RemoteContextResolution): IO[Schema] = {
     for {
       expanded  <- ExpandedJsonLd(source).map(_.replaceId(id))
       compacted <- expanded.toCompacted(source.topContextValueOrEmpty)

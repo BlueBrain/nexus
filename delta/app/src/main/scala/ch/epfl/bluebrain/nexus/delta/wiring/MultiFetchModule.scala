@@ -10,6 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.multifetch.MultiFetch
 import ch.epfl.bluebrain.nexus.delta.sdk.multifetch.model.MultiFetchRequest
 import ch.epfl.bluebrain.nexus.delta.sdk.{PriorityRoute, ResourceShifts}
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import distage.ModuleDef
 import izumi.distage.model.definition.Id
 import monix.execution.Scheduler
@@ -23,7 +24,7 @@ object MultiFetchModule extends ModuleDef {
     ) =>
       MultiFetch(
         aclCheck,
-        (input: MultiFetchRequest.Input) => shifts.fetch(input.id, input.project)
+        (input: MultiFetchRequest.Input) => shifts.fetch(input.id, input.project).toUIO
       )
   }
 

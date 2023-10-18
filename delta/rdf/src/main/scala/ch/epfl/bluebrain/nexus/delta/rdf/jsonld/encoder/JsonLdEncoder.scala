@@ -10,6 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.{IriOrBNode, RdfError}
 import io.circe.{Encoder, Json}
 import io.circe.syntax._
 import monix.bio.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 
 trait JsonLdEncoder[A] {
 
@@ -138,7 +139,7 @@ object JsonLdEncoder {
       )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, CompactedJsonLd] =
         for {
           (expanded, context) <- expandAndExtractContext(value)
-          compacted           <- expanded.toCompacted(context)
+          compacted           <- expanded.toCompacted(context).toBIO[RdfError]
         } yield compacted
 
       override def expand(
@@ -152,6 +153,7 @@ object JsonLdEncoder {
         val json    = value.asJson
         val context = contextFromJson(json)
         ExpandedJsonLd(json.replaceContext(context.contextObj))
+          .toBIO[RdfError]
           .map {
             case expanded if fId(value).isBNode && expanded.rootId.isIri => expanded
             case expanded                                                => expanded.replaceId(fId(value))

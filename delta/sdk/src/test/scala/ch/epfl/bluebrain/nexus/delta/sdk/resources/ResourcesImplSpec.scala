@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk.resources
 
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -27,7 +26,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revisio
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues}
+import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
+import ch.epfl.bluebrain.nexus.testkit.ce.{CatsIOValues, IOFixedClock}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
 
@@ -36,7 +36,7 @@ import java.util.UUID
 class ResourcesImplSpec
     extends DoobieScalaTestFixture
     with Matchers
-    with IOValues
+    with CatsIOValues
     with IOFixedClock
     with CancelAfterFailure
     with CirceLiteral
@@ -91,7 +91,7 @@ class ResourcesImplSpec
 
   private val resolverContextResolution: ResolverContextResolution = new ResolverContextResolution(
     res,
-    (r, p, _) => resources.fetch(r, p).bimap(_ => ResourceResolutionReport(), identity).attempt
+    (r, p, _) => resources.fetch(r, p).attempt.map(_.left.map(_ => ResourceResolutionReport()))
   )
 
   private lazy val resources: Resources = ResourcesImpl(

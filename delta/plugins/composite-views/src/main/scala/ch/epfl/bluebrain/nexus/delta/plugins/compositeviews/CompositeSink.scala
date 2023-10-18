@@ -13,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewP
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.{ElasticSearchSink, GraphResourceToDocument}
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
@@ -24,6 +25,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import fs2.Chunk
 import monix.bio.Task
 import shapeless.Typeable
@@ -124,7 +126,7 @@ final class Batch[SinkFormat](
     fullGraph
       .replaceRootNode(iri"${gr.id}/alias")
       .toCompactedJsonLd(ContextValue.empty)
-      .flatMap(_.toGraph)
+      .flatMap(_.toGraph.toBIO[RdfError])
       .map(g => gr.copy(graph = g.replaceRootNode(gr.id)))
   }
 

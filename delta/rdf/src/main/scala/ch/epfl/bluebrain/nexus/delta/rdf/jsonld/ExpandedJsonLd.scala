@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld
 
+import cats.effect.IO
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.{InvalidIri, UnexpectedJsonLd}
@@ -15,7 +16,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.{ExplainResult, IriOrBNode, RdfError}
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import io.circe.syntax._
 import io.circe.{Decoder, Encoder, Json, JsonObject}
-import monix.bio.{IO, UIO}
 
 import java.util.UUID
 
@@ -42,7 +42,7 @@ final case class ExpandedJsonLd private (rootId: IriOrBNode, obj: JsonObject) ex
       opts: JsonLdOptions,
       api: JsonLdApi,
       resolution: RemoteContextResolution
-  ): IO[RdfError, CompactedJsonLd] =
+  ): IO[CompactedJsonLd] =
     CompactedJsonLd(rootId, contextValue, json)
 
   /**
@@ -185,14 +185,14 @@ object ExpandedJsonLd {
       api: JsonLdApi,
       resolution: RemoteContextResolution,
       opts: JsonLdOptions
-  ): IO[RdfError, ExpandedJsonLd] =
+  ): IO[ExpandedJsonLd] =
     explain(input).map(_.value)
 
   def explain(input: Json)(implicit
       api: JsonLdApi,
       resolution: RemoteContextResolution,
       opts: JsonLdOptions
-  ): IO[RdfError, ExplainResult[ExpandedJsonLd]] =
+  ): IO[ExplainResult[ExpandedJsonLd]] =
     api
       .explainExpand(input)
       .flatMap {
@@ -244,9 +244,8 @@ object ExpandedJsonLd {
           api
             .expand(Json.obj(keywords.id -> graphId.asJson, keywords.graph -> expandedSeq.asJson))
             .map(_ -> true)
-            .toBIO[RdfError]
         else
-          UIO.pure((expandedSeq, false))
+          IO.pure((expandedSeq, false))
       result                      <- IO.fromEither(expanded(expandedSeqFinal))
 
     } yield (result, isGraph)

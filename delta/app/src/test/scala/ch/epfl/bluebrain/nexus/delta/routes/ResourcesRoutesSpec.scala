@@ -32,11 +32,12 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.testkit.bio.IOFromMap
+import ch.epfl.bluebrain.nexus.testkit.ce.{CatsIOValues, IOFixedClock}
 import io.circe.{Json, Printer}
 
 import java.util.UUID
 
-class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap {
+class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap with IOFixedClock with CatsIOValues {
 
   private val uuid                  = UUID.randomUUID()
   implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)

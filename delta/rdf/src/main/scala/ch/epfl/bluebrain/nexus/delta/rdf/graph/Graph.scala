@@ -230,10 +230,13 @@ final case class Graph private (rootNode: IriOrBNode, value: DatasetGraph) { sel
       opts: JsonLdOptions
   ): IO[RdfError, CompactedJsonLd] = {
 
-    def computeCompacted(id: IriOrBNode, input: Json) = {
+    def computeCompacted(id: IriOrBNode, input: Json): IO[RdfError, CompactedJsonLd] = {
       if (triples.isEmpty) UIO.delay(CompactedJsonLd.unsafe(id, contextValue, JsonObject.empty))
-      else if (value.listGraphNodes().asScala.nonEmpty) CompactedJsonLd(id, contextValue, input)
-      else CompactedJsonLd.frame(id, contextValue, input)
+      else if (value.listGraphNodes().asScala.nonEmpty) {
+        CompactedJsonLd(id, contextValue, input).toBIO[RdfError]
+      } else {
+        CompactedJsonLd.frame(id, contextValue, input).toBIO[RdfError]
+      }
     }
 
     if (rootNode.isBNode)
@@ -257,7 +260,7 @@ final case class Graph private (rootNode: IriOrBNode, value: DatasetGraph) { sel
       resolution: RemoteContextResolution,
       opts: JsonLdOptions
   ): IO[RdfError, ExpandedJsonLd] =
-    toCompactedJsonLd(ContextValue.empty).flatMap(_.toExpanded)
+    toCompactedJsonLd(ContextValue.empty).flatMap(_.toExpanded.toBIO[RdfError])
 
   /**
     * Merges the current graph with the passed ''that'' while keeping the current ''rootNode''
