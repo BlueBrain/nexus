@@ -8,6 +8,7 @@ import cats.effect.Clock
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.KeyValueStore
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.ioToTaskK
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files._
@@ -492,6 +493,7 @@ final class Files(
                          )
       stream        <- log
                          .states(Scope.root, offset)
+                         .translate(ioToTaskK)
                          .map { envelope =>
                            envelope.value match {
                              case f

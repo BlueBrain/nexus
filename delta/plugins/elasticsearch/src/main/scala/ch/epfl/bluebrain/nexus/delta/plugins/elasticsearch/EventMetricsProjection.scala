@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import cats.data.NonEmptyChain
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.ioToTaskK
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchSink
@@ -94,7 +95,7 @@ object EventMetricsProjection {
   ): Task[EventMetricsProjection] = {
 
     val source = Source { (offset: Offset) =>
-      metrics(offset).map { e => e.toElem { m => Some(m.project) } }
+      metrics(offset).translate(ioToTaskK).map { e => e.toElem { m => Some(m.project) } }
     }
 
     val compiledProjection =

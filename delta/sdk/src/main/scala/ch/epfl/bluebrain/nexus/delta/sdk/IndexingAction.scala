@@ -48,8 +48,7 @@ trait IndexingAction {
       // We build and start the projections where the resource will apply
       _         <- projections(project, elem)
                      .translate(taskToIoK)
-                     // TODO make this configurable
-                     .parEvalMap(5) {
+                     .evalMap {
                        case s: SuccessElem[CompiledProjection] =>
                          runProjection(s.value, failed => errorsRef.update(_ ++ failed))
                        case _: DroppedElem                     => IO.unit
@@ -61,13 +60,14 @@ trait IndexingAction {
     } yield errors
   }
 
-  private def runProjection(compiled: CompiledProjection, saveFailedElems: List[FailedElem] => IO[Unit]) =
+  private def runProjection(compiled: CompiledProjection, saveFailedElems: List[FailedElem] => IO[Unit]) = toCatsIO {
     for {
       projection <- Projection(compiled, UIO.none, _ => UIO.unit, saveFailedElems(_).toUIO)
       _          <- projection.waitForCompletion(timeout)
       // We stop the projection if it has not complete yet
       _          <- projection.stop()
     } yield ()
+  }
 }
 
 object IndexingAction {
@@ -98,7 +98,7 @@ object IndexingAction {
           for {
             _               <- logger.debug(s"Synchronous indexing of resource '$project/${res.id}' has been requested.")
             // We create the GraphResource wrapped in an `Elem`
-            elem            <- toCatsIO(shift.toGraphResourceElem(project, res))
+            elem            <- shift.toGraphResourceElem(project, res)
             errorsPerAction <- internal.traverse(_.apply(project, elem))
             errors           = errorsPerAction.toList.flatMap(_.map(_.throwable))
             _               <- IO.raiseWhen(errors.nonEmpty)(IndexingFailed(res.void, errors))

@@ -1,15 +1,15 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resources.model
 
+import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.{DataResource, SchemaResource}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
-import io.circe.Json
-import monix.bio.{IO, UIO}
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ResourceGenerationResult._
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceGenerationResult._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.{DataResource, SchemaResource}
+import io.circe.Json
 
 /**
   * Result of the generation of a resource
@@ -23,7 +23,7 @@ final case class ResourceGenerationResult(
     attempt: Either[ResourceRejection, DataResource]
 ) {
 
-  def asJson(implicit base: BaseUri, rcr: RemoteContextResolution): UIO[Json] = {
+  def asJson(implicit base: BaseUri, rcr: RemoteContextResolution): IO[Json] = {
     for {
       schema          <- schema.fold(emptySchema)(toJsonField("schema", _))
       resourceOrError <- attempt.fold(
@@ -31,24 +31,24 @@ final case class ResourceGenerationResult(
                            toJsonField("result", _)
                          )
     } yield schema deepMerge resourceOrError
-  }.hideErrors
+  }
 
   private def toJsonField[A](fieldName: String, value: A)(implicit
       encoder: JsonLdEncoder[A],
       rcr: RemoteContextResolution
   ) =
-    value.toCompactedJsonLd.map { v => v.json }.map { s => Json.obj(fieldName -> s) }
+    value.toCompactedJsonLd.toCatsIO.map { v => v.json }.map { s => Json.obj(fieldName -> s) }
 
   private def toJsonField[A](fieldName: String, value: ResourceF[A])(implicit
       encoder: JsonLdEncoder[A],
       base: BaseUri,
       rcr: RemoteContextResolution
   ) =
-    value.toCompactedJsonLd.map { v => v.json }.map { s => Json.obj(fieldName -> s) }
+    value.toCompactedJsonLd.toCatsIO.map { v => v.json }.map { s => Json.obj(fieldName -> s) }
 }
 
 object ResourceGenerationResult {
   implicit private[model] val api: JsonLdApi = JsonLdJavaApi.lenient
 
-  val emptySchema: IO[RdfError, Json] = IO.pure(Json.obj())
+  val emptySchema: IO[Json] = IO.pure(Json.obj())
 }

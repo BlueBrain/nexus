@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 import cats.effect.Clock
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.ioToTaskK
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages._
@@ -290,7 +291,7 @@ final class Storages private (
     * Return the existing storages in a project in a finite stream
     */
   def currentStorages(project: ProjectRef): ElemStream[StorageState] =
-    log.currentStates(Scope.Project(project)).map {
+    log.currentStates(Scope.Project(project)).translate(ioToTaskK).map {
       _.toElem { s => Some(s.project) }
     }
 

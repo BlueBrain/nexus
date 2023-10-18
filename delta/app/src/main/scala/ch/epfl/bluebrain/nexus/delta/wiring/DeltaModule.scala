@@ -39,7 +39,6 @@ import monix.bio.UIO
 import monix.execution.Scheduler
 import org.slf4j.{Logger, LoggerFactory}
 
-import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.DurationInt
 
 /**
@@ -109,8 +108,6 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
 
   make[Clock[UIO]].from(Clock[UIO])
   make[Clock[IO]].from(Clock.create[IO])
-  make[Timer[IO]].from(IO.timer(ExecutionContext.global))
-  make[ContextShift[IO]].from(IO.contextShift(ExecutionContext.global))
   make[EvaluationExecution].from(EvaluationExecution(_, _))
   make[UUIDF].from(UUIDF.random)
   make[Scheduler].from(scheduler)

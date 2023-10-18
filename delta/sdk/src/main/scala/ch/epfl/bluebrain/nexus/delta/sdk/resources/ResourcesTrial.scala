@@ -1,7 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resources
 
-import cats.effect.Clock
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
+import cats.effect.{Clock, IO}
+import cats.implicits.catsSyntaxApplicativeError
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOInstant, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.sdk.DataResource
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
@@ -11,11 +13,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, IdSegmentRef, Resourc
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources.expandResourceRef
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{ProjectContextRejection, ResourceFetchRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{ResourceGenerationResult, ResourceRejection, ResourceState}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import monix.bio.{IO, UIO}
 
 /**
   * Operations allowing to perform read-only operations on resources
@@ -35,7 +36,7 @@ trait ResourcesTrial {
     */
   def generate(project: ProjectRef, schema: IdSegment, source: NexusSource)(implicit
       caller: Caller
-  ): UIO[ResourceGenerationResult]
+  ): IO[ResourceGenerationResult]
 
   /**
     * Generates the resource and validate it against the provided schema
@@ -51,7 +52,7 @@ trait ResourcesTrial {
     */
   def generate(project: ProjectRef, schema: ResourceF[Schema], source: NexusSource)(implicit
       caller: Caller
-  ): UIO[ResourceGenerationResult]
+  ): IO[ResourceGenerationResult]
 
   /**
     * Validates an existing resource.
@@ -66,51 +67,51 @@ trait ResourcesTrial {
     */
   def validate(id: IdSegmentRef, project: ProjectRef, schemaOpt: Option[IdSegment])(implicit
       caller: Caller
-  ): IO[ResourceRejection, ValidationResult]
+  ): IO[ValidationResult]
 }
 
 object ResourcesTrial {
   def apply(
-      fetchResource: (IdSegmentRef, ProjectRef) => IO[ResourceFetchRejection, DataResource],
+      fetchResource: (IdSegmentRef, ProjectRef) => IO[DataResource],
       validateResource: ValidateResource,
       fetchContext: FetchContext[ProjectContextRejection],
       contextResolution: ResolverContextResolution
-  )(implicit api: JsonLdApi, clock: Clock[UIO], uuidF: UUIDF): ResourcesTrial = new ResourcesTrial {
+  )(implicit api: JsonLdApi, clock: Clock[IO], uuidF: UUIDF): ResourcesTrial = new ResourcesTrial {
 
     private val sourceParser = JsonLdSourceResolvingParser[ResourceRejection](contextResolution, uuidF)
 
     override def generate(project: ProjectRef, schema: IdSegment, source: NexusSource)(implicit
         caller: Caller
-    ): UIO[ResourceGenerationResult] = {
+    ): IO[ResourceGenerationResult] = {
       for {
-        projectContext <- fetchContext.onRead(project)
+        projectContext <- fetchContext.onRead(project).toCatsIO
         schemaRef      <- Resources.expandResourceRef(schema, projectContext)
-        jsonld         <- sourceParser(project, projectContext, source.value)
+        jsonld         <- sourceParser(project, projectContext, source.value).toCatsIO
         validation     <- validateResource(jsonld.iri, jsonld.expanded, schemaRef, project, caller)
         result         <- toResourceF(project, jsonld, source, validation)
       } yield result
-    }.attempt.map { attempt =>
+    }.attemptNarrow[ResourceRejection].map { attempt =>
       ResourceGenerationResult(None, attempt)
     }
 
     override def generate(project: ProjectRef, schema: ResourceF[Schema], source: NexusSource)(implicit
         caller: Caller
-    ): UIO[ResourceGenerationResult] = {
+    ): IO[ResourceGenerationResult] = {
       for {
-        projectContext <- fetchContext.onRead(project)
-        jsonld         <- sourceParser(project, projectContext, source.value)
+        projectContext <- fetchContext.onRead(project).toCatsIO
+        jsonld         <- sourceParser(project, projectContext, source.value).toCatsIO
         validation     <- validateResource(jsonld.iri, jsonld.expanded, schema)
         result         <- toResourceF(project, jsonld, source, validation)
       } yield result
-    }.attempt.map { attempt =>
+    }.attemptNarrow[ResourceRejection].map { attempt =>
       ResourceGenerationResult(Some(schema), attempt)
     }
 
     def validate(id: IdSegmentRef, project: ProjectRef, schemaOpt: Option[IdSegment])(implicit
         caller: Caller
-    ): IO[ResourceRejection, ValidationResult] = {
+    ): IO[ValidationResult] = {
       for {
-        projectContext <- fetchContext.onRead(project)
+        projectContext <- fetchContext.onRead(project).toCatsIO
         schemaRefOpt   <- expandResourceRef(schemaOpt, projectContext)
         resource       <- fetchResource(id, project)
         report         <- validateResource(
@@ -128,8 +129,8 @@ object ResourcesTrial {
         jsonld: JsonLdResult,
         source: NexusSource,
         validation: ValidationResult
-    )(implicit caller: Caller): UIO[DataResource] = {
-      IOUtils.instant.map { now =>
+    )(implicit caller: Caller): IO[DataResource] = {
+      IOInstant.now.map { now =>
         ResourceState(
           id = jsonld.iri,
           project = project,

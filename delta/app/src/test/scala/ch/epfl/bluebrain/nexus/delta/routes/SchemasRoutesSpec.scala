@@ -4,7 +4,6 @@ import akka.http.scaladsl.model.MediaTypes.`text/html`
 import akka.http.scaladsl.model.headers.{Accept, Location, OAuth2BearerToken}
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
-import cats.effect.{ContextShift, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
@@ -33,14 +32,11 @@ import ch.epfl.bluebrain.nexus.testkit.ce.IOFixedClock
 import io.circe.Json
 
 import java.util.UUID
-import scala.concurrent.ExecutionContext
 
 class SchemasRoutesSpec extends BaseRouteSpec with IOFixedClock with IOFromMap {
 
   private val uuid                  = UUID.randomUUID()
   implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
-
-  implicit private val contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
 
   private val caller = Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
 

@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.jsonld
 
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.rdf.ExplainResult
+import ch.epfl.bluebrain.nexus.delta.rdf.{ExplainResult, RdfError}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
@@ -17,6 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
 import monix.bio.{IO, UIO}
@@ -38,10 +39,11 @@ sealed abstract class JsonLdSourceProcessor(implicit api: JsonLdApi) {
     implicit val opts: JsonLdOptions = JsonLdOptions(base = Some(context.base.iri))
     ExpandedJsonLd
       .explain(source)
+      .toBIO[RdfError]
       .flatMap {
         case result if result.value.isEmpty && source.topContextValueOrEmpty.isEmpty =>
           val ctx = defaultCtx(context)
-          ExpandedJsonLd.explain(source.addContext(ctx.contextObj)).map(ctx -> _)
+          ExpandedJsonLd.explain(source.addContext(ctx.contextObj)).map(ctx -> _).toBIO[RdfError]
         case result                                                                  =>
           UIO.pure(source.topContextValueOrEmpty -> result)
       }
@@ -119,7 +121,7 @@ object JsonLdSourceProcessor {
         originalExpanded = result.value
         iri             <- getOrGenerateId(originalExpanded.rootId.asIri, context)
         expanded         = originalExpanded.replaceId(iri)
-        compacted       <- expanded.toCompacted(ctx).mapError(err => InvalidJsonLdFormat(Some(iri), err))
+        compacted       <- expanded.toCompacted(ctx).toBIO[RdfError].mapError(err => InvalidJsonLdFormat(Some(iri), err))
       } yield JsonLdResult(iri, compacted, expanded, result.remoteContexts)
     }.mapError(rejectionMapper.to)
 
@@ -146,7 +148,7 @@ object JsonLdSourceProcessor {
         (ctx, result)   <- expandSource(context, source.addContext(contextIri: _*))
         originalExpanded = result.value
         expanded        <- checkAndSetSameId(iri, originalExpanded)
-        compacted       <- expanded.toCompacted(ctx).mapError(err => InvalidJsonLdFormat(Some(iri), err))
+        compacted       <- expanded.toCompacted(ctx).toBIO[RdfError].mapError(err => InvalidJsonLdFormat(Some(iri), err))
       } yield JsonLdResult(iri, compacted, expanded, result.remoteContexts)
     }.mapError(rejectionMapper.to)
 
