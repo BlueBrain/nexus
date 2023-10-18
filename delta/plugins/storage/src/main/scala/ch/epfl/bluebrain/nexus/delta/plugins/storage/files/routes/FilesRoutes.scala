@@ -7,8 +7,8 @@ import akka.http.scaladsl.model.{ContentType, MediaRange}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{File, FileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{File, FileOptions, FileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.permissions.{read => Read, write => Write}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutes._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{schemas, FileResource, Files}
@@ -88,12 +88,17 @@ final class FilesRoutes(
                     entity(as[LinkFile]) { case LinkFile(filename, mediaType, path) =>
                       emit(
                         Created,
-                        files.createLink(storage, ref, filename, mediaType, path, tag).tapEval(indexUIO(ref, _, mode))
+                        files
+                          .createLink(ref, path, FileOptions(storage, filename, mediaType, tag))
+                          .tapEval(indexUIO(ref, _, mode))
                       )
                     },
                     // Create a file without id segment
                     extractRequestEntity { entity =>
-                      emit(Created, files.create(storage, ref, entity, tag).tapEval(indexUIO(ref, _, mode)))
+                      emit(
+                        Created,
+                        files.create(ref, entity, FileOptions(storage, tag)).tapEval(indexUIO(ref, _, mode))
+                      )
                     }
                   )
                 }
@@ -112,7 +117,7 @@ final class FilesRoutes(
                                   emit(
                                     Created,
                                     files
-                                      .createLink(id, storage, ref, filename, mediaType, path, tag)
+                                      .createLink(id, ref, path, FileOptions(storage, filename, mediaType, tag))
                                       .tapEval(indexUIO(ref, _, mode))
                                   )
                                 },
@@ -120,7 +125,9 @@ final class FilesRoutes(
                                 extractRequestEntity { entity =>
                                   emit(
                                     Created,
-                                    files.create(id, storage, ref, entity, tag).tapEval(indexUIO(ref, _, mode))
+                                    files
+                                      .create(id, ref, entity, FileOptions(storage, tag))
+                                      .tapEval(indexUIO(ref, _, mode))
                                   )
                                 }
                               )
@@ -130,7 +137,7 @@ final class FilesRoutes(
                                 entity(as[LinkFile]) { case LinkFile(filename, mediaType, path) =>
                                   emit(
                                     files
-                                      .updateLink(id, storage, ref, filename, mediaType, path, rev)
+                                      .updateLink(id, ref, path, rev, FileOptions(storage, filename, mediaType))
                                       .tapEval(indexUIO(ref, _, mode))
                                   )
                                 },

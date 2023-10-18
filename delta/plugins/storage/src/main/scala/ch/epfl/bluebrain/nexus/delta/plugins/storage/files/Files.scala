@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 import akka.actor.typed.ActorSystem
 import akka.actor.{ActorSystem => ClassicActorSystem}
 import akka.http.scaladsl.model.ContentTypes.`application/octet-stream`
-import akka.http.scaladsl.model.{ContentType, HttpEntity, Uri}
+import akka.http.scaladsl.model.{HttpEntity, Uri}
 import cats.effect.Clock
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
@@ -80,126 +80,89 @@ final class Files(
   /**
     * Create a new file where the id is self generated
     *
-    * @param storageId
-    *   the optional storage identifier to expand as the id of the storage. When None, the default storage is used
     * @param projectRef
     *   the project where the file will belong
     * @param entity
     *   the http FormData entity
-    * @param tag
-    *   the optional tag this file is being created with, attached to the current revision
+    * @param options
+    *   optional parameters for file creation
     */
   def create(
-      storageId: Option[IdSegment],
       projectRef: ProjectRef,
       entity: HttpEntity,
-      tag: Option[UserTag]
-  )(implicit caller: Caller): IO[FileRejection, FileResource] = {
-    for {
-      pc                    <- fetchContext.onCreate(projectRef)
-      iri                   <- generateId(pc)
-      _                     <- test(CreateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, caller.subject, tag))
-      (storageRef, storage) <- fetchActiveStorage(storageId, projectRef, pc)
-      attributes            <- extractFileAttributes(iri, entity, storage)
-      res                   <- eval(CreateFile(iri, projectRef, storageRef, storage.tpe, attributes, caller.subject, tag))
-    } yield res
-  }.span("createFile")
+      options: FileOptions
+  )(implicit caller: Caller): IO[FileRejection, FileResource] = create(generateId(_), projectRef, entity, options)
 
   /**
     * Create a new file with the provided id
     *
     * @param id
     *   the file identifier to expand as the iri of the file
-    * @param storageId
-    *   the optional storage identifier to expand as the id of the storage. When None, the default storage is used
     * @param projectRef
     *   the project where the file will belong
     * @param entity
     *   the http FormData entity
-    * @param tag
-    *   the optional tag this file is being created with, attached to the current revision
+    * @param options
+    *   optional parameters for file creation
     */
   def create(
       id: IdSegment,
-      storageId: Option[IdSegment],
       projectRef: ProjectRef,
       entity: HttpEntity,
-      tag: Option[UserTag]
+      options: FileOptions
+  )(implicit caller: Caller): IO[FileRejection, FileResource] = create(expandIri(id, _), projectRef, entity, options)
+
+  private def create(
+      mkIri: ProjectContext => IO[FileRejection, Iri],
+      projectRef: ProjectRef,
+      entity: HttpEntity,
+      options: FileOptions
   )(implicit caller: Caller): IO[FileRejection, FileResource] = {
     for {
       pc                    <- fetchContext.onCreate(projectRef)
-      iri                   <- expandIri(id, pc)
-      _                     <- test(CreateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, caller.subject, tag))
-      (storageRef, storage) <- fetchActiveStorage(storageId, projectRef, pc)
+      iri                   <- mkIri(pc)
+      _                     <-
+        test(CreateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, caller.subject, options.tag))
+      (storageRef, storage) <- fetchActiveStorage(options.storageId, projectRef, pc)
       attributes            <- extractFileAttributes(iri, entity, storage)
-      res                   <- eval(CreateFile(iri, projectRef, storageRef, storage.tpe, attributes, caller.subject, tag))
+      res                   <- eval(CreateFile(iri, projectRef, storageRef, storage.tpe, attributes, caller.subject, options.tag))
     } yield res
   }.span("createFile")
 
   /**
     * Create a new file linking where the id is self generated
     *
-    * @param storageId
-    *   the optional storage identifier to expand as the id of the storage. When None, the default storage is used
     * @param projectRef
     *   the project where the file will belong
-    * @param filename
-    *   the optional filename to use
-    * @param mediaType
-    *   the optional media type to use
     * @param path
     *   the path where the file is located inside the storage
-    * @param tag
-    *   the optional tag this file link is being created with, attached to the current revision
+    * @param options
+    *   optional parameters for file link creation
     */
   def createLink(
-      storageId: Option[IdSegment],
       projectRef: ProjectRef,
-      filename: Option[String],
-      mediaType: Option[ContentType],
       path: Uri.Path,
-      tag: Option[UserTag]
-  )(implicit caller: Caller): IO[FileRejection, FileResource] = {
-    for {
-      pc  <- fetchContext.onCreate(projectRef)
-      iri <- generateId(pc)
-      res <- createLink(iri, projectRef, pc, storageId, filename, mediaType, path, tag)
-    } yield res
-  }.span("createLink")
+      options: FileOptions
+  )(implicit caller: Caller): IO[FileRejection, FileResource] = createLink(generateId(_), projectRef, path, options)
 
   /**
     * Create a new file linking it from an existing file in a storage
     *
     * @param id
     *   the file identifier to expand as the iri of the file
-    * @param storageId
-    *   the optional storage identifier to expand as the id of the storage. When None, the default storage is used
     * @param projectRef
     *   the project where the file will belong
-    * @param filename
-    *   the optional filename to use
-    * @param mediaType
-    *   the optional media type to use
     * @param path
     *   the path where the file is located inside the storage
-    * @param tag
-    *   the optional tag this file link is being created with, attached to the current revision
+    * @param options
+    *   optional parameters for file link creation
     */
   def createLink(
       id: IdSegment,
-      storageId: Option[IdSegment],
       projectRef: ProjectRef,
-      filename: Option[String],
-      mediaType: Option[ContentType],
       path: Uri.Path,
-      tag: Option[UserTag]
-  )(implicit caller: Caller): IO[FileRejection, FileResource] = {
-    for {
-      pc  <- fetchContext.onCreate(projectRef)
-      iri <- expandIri(id, pc)
-      res <- createLink(iri, projectRef, pc, storageId, filename, mediaType, path, tag)
-    } yield res
-  }.span("createLink")
+      options: FileOptions
+  )(implicit caller: Caller): IO[FileRejection, FileResource] = createLink(expandIri(id, _), projectRef, path, options)
 
   /**
     * Update an existing file
@@ -237,35 +200,29 @@ final class Files(
     *
     * @param id
     *   the file identifier to expand as the iri of the file
-    * @param storageId
-    *   the optional storage identifier to expand as the id of the storage. When None, the default storage is used
     * @param projectRef
     *   the project where the file will belong
     * @param rev
     *   the current revision of the file
-    * @param filename
-    *   the optional filename to use
-    * @param mediaType
-    *   the optional media type to use
     * @param path
     *   the path where the file is located inside the storage
+    * @param options
+    *   optional parameters for file link updates
     */
   def updateLink(
       id: IdSegment,
-      storageId: Option[IdSegment],
       projectRef: ProjectRef,
-      filename: Option[String],
-      mediaType: Option[ContentType],
       path: Uri.Path,
-      rev: Int
+      rev: Int,
+      options: FileOptions
   )(implicit caller: Caller): IO[FileRejection, FileResource] = {
     for {
       pc                    <- fetchContext.onModify(projectRef)
       iri                   <- expandIri(id, pc)
       _                     <- test(UpdateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, rev, caller.subject))
-      (storageRef, storage) <- fetchActiveStorage(storageId, projectRef, pc)
-      resolvedFilename      <- IO.fromOption(filename.orElse(path.lastSegment), InvalidFileLink(iri))
-      description           <- FileDescription(resolvedFilename, mediaType)
+      (storageRef, storage) <- fetchActiveStorage(options.storageId, projectRef, pc)
+      resolvedFilename      <- IO.fromOption(options.filename.orElse(path.lastSegment), InvalidFileLink(iri))
+      description           <- FileDescription(resolvedFilename, options.mediaType)
       attributes            <- LinkFile(storage, remoteDiskStorageClient, config)
                                  .apply(path, description)
                                  .mapError(LinkRejection(iri, storage.id, _))
@@ -395,25 +352,24 @@ final class Files(
   }.span("fetchFile")
 
   private def createLink(
-      iri: Iri,
+      mkIri: ProjectContext => IO[FileRejection, Iri],
       ref: ProjectRef,
-      pc: ProjectContext,
-      storageId: Option[IdSegment],
-      filename: Option[String],
-      mediaType: Option[ContentType],
       path: Uri.Path,
-      tag: Option[UserTag]
-  )(implicit caller: Caller): IO[FileRejection, FileResource] =
+      options: FileOptions
+  )(implicit caller: Caller): IO[FileRejection, FileResource] = {
     for {
-      _                     <- test(CreateFile(iri, ref, testStorageRef, testStorageType, testAttributes, caller.subject, tag))
-      (storageRef, storage) <- fetchActiveStorage(storageId, ref, pc)
-      resolvedFilename      <- IO.fromOption(filename.orElse(path.lastSegment), InvalidFileLink(iri))
-      description           <- FileDescription(resolvedFilename, mediaType)
+      pc                    <- fetchContext.onCreate(ref)
+      iri                   <- mkIri(pc)
+      _                     <- test(CreateFile(iri, ref, testStorageRef, testStorageType, testAttributes, caller.subject, options.tag))
+      (storageRef, storage) <- fetchActiveStorage(options.storageId, ref, pc)
+      resolvedFilename      <- IO.fromOption(options.filename.orElse(path.lastSegment), InvalidFileLink(iri))
+      description           <- FileDescription(resolvedFilename, options.mediaType)
       attributes            <- LinkFile(storage, remoteDiskStorageClient, config)
                                  .apply(path, description)
                                  .mapError(LinkRejection(iri, storage.id, _))
-      res                   <- eval(CreateFile(iri, ref, storageRef, storage.tpe, attributes, caller.subject, tag))
+      res                   <- eval(CreateFile(iri, ref, storageRef, storage.tpe, attributes, caller.subject, options.tag))
     } yield res
+  }.span("createLink")
 
   private def eval(cmd: FileCommand): IO[FileRejection, FileResource] =
     log.evaluate(cmd.project, cmd.id, cmd).map(_._2.toResource)

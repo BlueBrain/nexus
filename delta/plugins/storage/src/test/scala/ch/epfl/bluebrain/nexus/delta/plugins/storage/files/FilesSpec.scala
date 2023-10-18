@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.RemoteContextResolutionFixt
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.NotComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileOptions, FileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotFound
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.{RemoteDiskStorage => RemoteStorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{StorageRejection, StorageStatEntry, StorageType}
@@ -152,14 +152,14 @@ class FilesSpec(docker: RemoteStorageDocker)
 
       "succeed with the id passed" in {
         val expected = mkResource(file1, projectRef, diskRev, attributes("myfile.txt"))
-        val actual   = files.create("file1", Some(diskId), projectRef, entity("myfile.txt"), None).accepted
+        val actual   = files.create("file1", projectRef, entity("myfile.txt"), FileOptions(diskId)).accepted
         actual shouldEqual expected
       }
 
       "succeed and tag with the id passed" in {
         withUUIDF(uuid2) {
           val file         = files
-            .create("fileTagged", Some(diskId), projectRef, entity("fileTagged.txt"), Some(tag))
+            .create("fileTagged", projectRef, entity("fileTagged.txt"), FileOptions(diskId, tag))
             .accepted
           val attr         = attributes("fileTagged.txt", id = uuid2)
           val expectedData = mkResource(fileTagged, projectRef, diskRev, attr, tags = Tags(tag -> 1))
@@ -172,7 +172,7 @@ class FilesSpec(docker: RemoteStorageDocker)
 
       "succeed with randomly generated id" in {
         val expected = mkResource(generatedId, projectRef, diskRev, attributes("myfile2.txt"))
-        val actual   = files.create(None, projectRef, entity("myfile2.txt"), None).accepted
+        val actual   = files.create(projectRef, entity("myfile2.txt"), FileOptions()).accepted
         val fetched  = files.fetch(actual.id, projectRef).accepted
 
         actual shouldEqual expected
@@ -183,9 +183,7 @@ class FilesSpec(docker: RemoteStorageDocker)
         withUUIDF(uuid2) {
           val attr      = attributes("fileTagged2.txt", id = uuid2)
           val expected  = mkResource(generatedId2, projectRef, diskRev, attr, tags = Tags(tag -> 1))
-          val file      = files
-            .create(None, projectRef, entity("fileTagged2.txt"), Some(tag))
-            .accepted
+          val file      = files.create(projectRef, entity("fileTagged2.txt"), FileOptions(tag)).accepted
           val fileByTag = files.fetch(IdSegmentRef(generatedId2, tag), projectRef).accepted
 
           file shouldEqual expected
@@ -195,12 +193,12 @@ class FilesSpec(docker: RemoteStorageDocker)
 
       "reject if no write permissions" in {
         files
-          .create("file2", Some(remoteId), projectRef, entity(), None)
+          .create("file2", projectRef, entity(), FileOptions(remoteId))
           .rejectedWith[AuthorizationFailed]
       }
 
       "reject if file id already exists" in {
-        files.create("file1", None, projectRef, entity(), None).rejected shouldEqual
+        files.create("file1", projectRef, entity(), FileOptions()).rejected shouldEqual
           ResourceAlreadyExists(file1, projectRef)
       }
 
@@ -208,29 +206,29 @@ class FilesSpec(docker: RemoteStorageDocker)
 
       "reject if the file exceeds max file size for the storage" in {
         files
-          .create("file-too-long", Some(remoteId), projectRef, randomEntity("large_file", 280), None)(aliceCaller)
+          .create("file-too-long", projectRef, randomEntity("large_file", 280), FileOptions(remoteId))(aliceCaller)
           .rejected shouldEqual FileTooLarge(300L, None)
       }
 
       "reject if the file exceeds the remaining available space on the storage" in {
         files
-          .create("file-too-long", Some(diskId), projectRef, randomEntity("large_file", 250), None)
+          .create("file-too-long", projectRef, randomEntity("large_file", 250), FileOptions(diskId))
           .rejected shouldEqual FileTooLarge(300L, Some(220))
       }
 
       "reject if storage does not exist" in {
         val storage = nxv + "other-storage"
-        files.create("file2", Some(storage), projectRef, entity(), None).rejected shouldEqual
+        files.create("file2", projectRef, entity(), FileOptions(storage)).rejected shouldEqual
           WrappedStorageRejection(StorageNotFound(storage, projectRef))
       }
 
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
-        files.create(None, projectRef, entity(), None).rejectedWith[ProjectContextRejection]
+        files.create(projectRef, entity(), FileOptions()).rejectedWith[ProjectContextRejection]
       }
 
       "reject if project is deprecated" in {
-        files.create(Some(diskId), deprecatedProject.ref, entity(), None).rejectedWith[ProjectContextRejection]
+        files.create(deprecatedProject.ref, entity(), FileOptions(diskId)).rejectedWith[ProjectContextRejection]
       }
     }
 
@@ -238,7 +236,7 @@ class FilesSpec(docker: RemoteStorageDocker)
 
       "reject if no write permissions" in {
         files
-          .createLink("file2", Some(remoteId), projectRef, None, None, Uri.Path.Empty, None)
+          .createLink("file2", projectRef, Uri.Path.Empty, FileOptions(remoteId))
           .rejectedWith[AuthorizationFailed]
       }
 
@@ -251,7 +249,7 @@ class FilesSpec(docker: RemoteStorageDocker)
         val expected = mkResource(file2, projectRef, remoteRev, attr, RemoteStorageType, tags = Tags(tag -> 1))
 
         val result    = files
-          .createLink("file2", Some(remoteId), projectRef, Some("myfile.txt"), None, path, Some(tag))
+          .createLink("file2", projectRef, path, FileOptions(remoteId, "myfile.txt", tag))
           .accepted
         val fileByTag = files.fetch(IdSegmentRef("file2", tag), projectRef).accepted
 
@@ -261,13 +259,13 @@ class FilesSpec(docker: RemoteStorageDocker)
 
       "reject if no filename" in {
         files
-          .createLink("file3", Some(remoteId), projectRef, None, None, Uri.Path("a/b/"), None)
+          .createLink("file3", projectRef, Uri.Path("a/b/"), FileOptions(remoteId))
           .rejectedWith[InvalidFileLink]
       }
 
       "reject if file id already exists" in {
         files
-          .createLink("file2", Some(remoteId), projectRef, None, None, Uri.Path.Empty, None)
+          .createLink("file2", projectRef, Uri.Path.Empty, FileOptions(remoteId))
           .rejected shouldEqual
           ResourceAlreadyExists(file2, projectRef)
       }
@@ -275,19 +273,19 @@ class FilesSpec(docker: RemoteStorageDocker)
       "reject if storage does not exist" in {
         val storage = nxv + "other-storage"
         files
-          .createLink("file3", Some(storage), projectRef, None, None, Uri.Path.Empty, None)
+          .createLink("file3", projectRef, Uri.Path.Empty, FileOptions(storage))
           .rejected shouldEqual
           WrappedStorageRejection(StorageNotFound(storage, projectRef))
       }
 
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
-        files.createLink(None, projectRef, None, None, Uri.Path.Empty, None).rejectedWith[ProjectContextRejection]
+        files.createLink(projectRef, Uri.Path.Empty, FileOptions()).rejectedWith[ProjectContextRejection]
       }
 
       "reject if project is deprecated" in {
         files
-          .createLink(Some(remoteId), deprecatedProject.ref, None, None, Uri.Path.Empty, None)
+          .createLink(deprecatedProject.ref, Uri.Path.Empty, FileOptions(remoteId))
           .rejectedWith[ProjectContextRejection]
       }
     }
@@ -346,26 +344,26 @@ class FilesSpec(docker: RemoteStorageDocker)
         val attr     = tempAttr.copy(location = s"file:///app/nexustest/nexus/${tempAttr.path}", origin = Storage)
         val expected = mkResource(file2, projectRef, remoteRev, attr, RemoteStorageType, rev = 3, tags = Tags(tag -> 1))
         files
-          .updateLink("file2", Some(remoteId), projectRef, None, Some(`text/plain(UTF-8)`), path, 2)
+          .updateLink("file2", projectRef, path, 2, FileOptions(remoteId, `text/plain(UTF-8)`))
           .accepted shouldEqual expected
       }
 
       "reject if file doesn't exists" in {
         files
-          .updateLink(nxv + "other", None, projectRef, None, None, Uri.Path.Empty, 1)
+          .updateLink(nxv + "other", projectRef, Uri.Path.Empty, 1, FileOptions())
           .rejectedWith[FileNotFound]
       }
 
       "reject if digest is not computed" in {
         files
-          .updateLink("file2", None, projectRef, None, None, Uri.Path.Empty, 3)
+          .updateLink("file2", projectRef, Uri.Path.Empty, 3, FileOptions())
           .rejectedWith[DigestNotComputed]
       }
 
       "reject if storage does not exist" in {
         val storage = nxv + "other-storage"
         files
-          .updateLink("file1", Some(storage), projectRef, None, None, Uri.Path.Empty, 2)
+          .updateLink("file1", projectRef, Uri.Path.Empty, 2, FileOptions(storage))
           .rejected shouldEqual
           WrappedStorageRejection(StorageNotFound(storage, projectRef))
       }
@@ -373,12 +371,12 @@ class FilesSpec(docker: RemoteStorageDocker)
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
 
-        files.updateLink(file1, None, projectRef, None, None, Uri.Path.Empty, 2).rejectedWith[ProjectContextRejection]
+        files.updateLink(file1, projectRef, Uri.Path.Empty, 2, FileOptions()).rejectedWith[ProjectContextRejection]
       }
 
       "reject if project is deprecated" in {
         files
-          .updateLink(file1, None, deprecatedProject.ref, None, None, Uri.Path.Empty, 2)
+          .updateLink(file1, deprecatedProject.ref, Uri.Path.Empty, 2, FileOptions())
           .rejectedWith[ProjectContextRejection]
       }
     }
