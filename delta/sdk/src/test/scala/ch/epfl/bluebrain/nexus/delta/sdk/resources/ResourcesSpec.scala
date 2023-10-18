@@ -331,7 +331,8 @@ class ResourcesSpec
             source = newSource,
             updatedAt = time2,
             updatedBy = subject,
-            types = newTypes
+            types = newTypes,
+            schema = schemaRev
           )
       }
 
