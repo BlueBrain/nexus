@@ -22,6 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescr
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.blazegraph.BlazegraphDocker
+import ch.epfl.bluebrain.nexus.testkit.ce.CatsIOValues
 import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOValues, TestHelpers, TestMatchers}
 import io.circe.Json
 import monix.execution.Scheduler
@@ -46,7 +47,8 @@ class BlazegraphClientSpec(docker: BlazegraphDocker)
     with Eventually
     with Inspectors
     with TestMatchers
-    with IOValues {
+    with IOValues
+    with CatsIOValues {
 
   implicit private val sc: Scheduler                = Scheduler.global
   implicit private val httpCfg: HttpClientConfig    = httpClientConfig

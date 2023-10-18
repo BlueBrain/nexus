@@ -60,7 +60,7 @@ class SearchSparqlQuerySpec
 
   private def toNTriples(json: Json): NTriples = {
     for {
-      expanded <- toCatsIO(ExpandedJsonLd(json))
+      expanded <- ExpandedJsonLd(json)
       graph    <- IO.fromEither(expanded.toGraph)
       ntriples <- IO.fromEither(graph.toNTriples)
     } yield ntriples

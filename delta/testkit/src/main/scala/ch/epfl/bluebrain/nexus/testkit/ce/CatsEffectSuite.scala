@@ -17,6 +17,7 @@ abstract class CatsEffectSuite
     with CatsRunContext
     with CatsEffectAssertions
     with CatsStreamAssertions
+    with CatsIOValues
     with CollectionAssertions
     with EitherAssertions {
   protected val ioTimeout: FiniteDuration = 45.seconds

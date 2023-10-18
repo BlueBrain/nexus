@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resources
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
@@ -18,8 +19,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Revision
 import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, TestHelpers}
-import monix.bio.{IO, UIO}
 import munit.Location
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 
 import java.util.UUID
 
@@ -39,7 +40,7 @@ class ResourcesTrialSuite extends BioSuite with ValidateResourceFixture with Tes
       contexts.schemasMetadata -> ContextValue.fromFile("contexts/schemas-metadata.json")
     )
 
-  private val fetchResourceFail = IO.terminate(new IllegalStateException("Should not be attempt to fetch a resource"))
+  private val fetchResourceFail = IO.raiseError(new IllegalStateException("Should not be attempt to fetch a resource"))
 
   private val resolverContextResolution: ResolverContextResolution = ResolverContextResolution(res)
 
@@ -66,7 +67,7 @@ class ResourcesTrialSuite extends BioSuite with ValidateResourceFixture with Tes
   }
 
   private def assertError(
-      io: UIO[ResourceGenerationResult]
+      io: IO[ResourceGenerationResult]
   )(schema: Option[SchemaResource], error: ResourceRejection)(implicit loc: Location) =
     io.map { generated =>
       assertEquals(generated.schema, schema)
@@ -75,7 +76,7 @@ class ResourcesTrialSuite extends BioSuite with ValidateResourceFixture with Tes
 
   test("Successfully generates a resource") {
     val trial = ResourcesTrial(
-      (_, _) => fetchResourceFail,
+      (_, _) => fetchResourceFail.toUIO,
       alwaysValidate,
       fetchContext,
       resolverContextResolution
@@ -83,7 +84,7 @@ class ResourcesTrialSuite extends BioSuite with ValidateResourceFixture with Tes
     for {
       expectedData <-
         ResourceGen.resourceAsync(id, projectRef, source.value, Revision(resourceSchema, defaultSchemaRevision))
-      result       <- trial.generate(projectRef, resourceSchema, source)
+      result       <- trial.generate(projectRef, resourceSchema, source).toCatsIO
     } yield {
       assertSuccessSync(result)(None, expectedData)
     }
@@ -91,7 +92,7 @@ class ResourcesTrialSuite extends BioSuite with ValidateResourceFixture with Tes
 
   test("Successfully generates a resource with a new schema") {
     val trial = ResourcesTrial(
-      (_, _) => fetchResourceFail,
+      (_, _) => fetchResourceFail.toUIO,
       alwaysValidate,
       fetchContext,
       resolverContextResolution
@@ -105,7 +106,7 @@ class ResourcesTrialSuite extends BioSuite with ValidateResourceFixture with Tes
                         .map(SchemaGen.resourceFor(_))
       expectedData <-
         ResourceGen.resourceAsync(id, projectRef, source.value, Revision(anotherSchema, defaultSchemaRevision))
-      result       <- trial.generate(projectRef, schema, source)
+      result       <- trial.generate(projectRef, schema, source).toCatsIO
     } yield {
       assertSuccessSync(result)(Some(schema), expectedData)
     }
@@ -114,7 +115,7 @@ class ResourcesTrialSuite extends BioSuite with ValidateResourceFixture with Tes
   test("Fail when validation raises an error") {
     val expectedError = ReservedResourceId(id)
     val trial         = ResourcesTrial(
-      (_, _) => fetchResourceFail,
+      (_, _) => fetchResourceFail.toUIO,
       alwaysFail(expectedError),
       fetchContext,
       resolverContextResolution
@@ -131,7 +132,7 @@ class ResourcesTrialSuite extends BioSuite with ValidateResourceFixture with Tes
                     .resourceAsync(id, projectRef, source.value, Revision(resourceSchema, 1))
                     .map(ResourceGen.resourceFor(_))
       trial     = ResourcesTrial(
-                    (_, _) => IO.pure(resource),
+                    (_, _) => IO.pure(resource).toUIO,
                     alwaysValidate,
                     fetchContext,
                     resolverContextResolution
@@ -148,7 +149,7 @@ class ResourcesTrialSuite extends BioSuite with ValidateResourceFixture with Tes
                     .resourceAsync(id, projectRef, source.value, Revision(resourceSchema, 1))
                     .map(ResourceGen.resourceFor(_))
       trial     = ResourcesTrial(
-                    (_, _) => IO.pure(resource),
+                    (_, _) => IO.pure(resource).toUIO,
                     alwaysValidate,
                     fetchContext,
                     resolverContextResolution
@@ -168,14 +169,14 @@ class ResourcesTrialSuite extends BioSuite with ValidateResourceFixture with Tes
       expectedError =
         InvalidResource(id, Revision(anotherSchema, defaultSchemaRevision), defaultReport, resource.value.expanded)
       trial         = ResourcesTrial(
-                        (_, _) => IO.pure(resource),
+                        (_, _) => IO.pure(resource).toUIO,
                         alwaysFail(expectedError),
                         fetchContext,
                         resolverContextResolution
                       )
-      result       <- trial.validate(id, projectRef, Some(anotherSchema)).flip
+      result       <- trial.validate(id, projectRef, Some(anotherSchema)).attempt
     } yield {
-      assertEquals(result, expectedError)
+      assertEquals(result, Left(expectedError))
     }
   }
 

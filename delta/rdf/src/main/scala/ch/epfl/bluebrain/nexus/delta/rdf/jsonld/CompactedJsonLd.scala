@@ -1,16 +1,15 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld
 
+import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context._
-import ch.epfl.bluebrain.nexus.delta.rdf.{IriOrBNode, RdfError}
 import io.circe.syntax._
-import io.circe.{Decoder, DecodingFailure, Encoder, Json, JsonObject}
-import monix.bio.IO
+import io.circe._
 
 /**
   * Json-LD Compacted Document. CompactedJsonLd specific implementation is entity centric, having always only one root
@@ -29,7 +28,7 @@ final case class CompactedJsonLd private (rootId: IriOrBNode, ctx: ContextValue,
       opts: JsonLdOptions,
       api: JsonLdApi,
       resolution: RemoteContextResolution
-  ): IO[RdfError, ExpandedJsonLd] =
+  ): IO[ExpandedJsonLd] =
     ExpandedJsonLd(json).map(_.replaceId(rootId))
 
   /**
@@ -39,7 +38,7 @@ final case class CompactedJsonLd private (rootId: IriOrBNode, ctx: ContextValue,
       opts: JsonLdOptions,
       api: JsonLdApi,
       resolution: RemoteContextResolution
-  ): IO[RdfError, Graph] =
+  ): IO[Graph] =
     toExpanded.flatMap(expanded => IO.fromEither(expanded.toGraph))
 
   /**
@@ -95,13 +94,12 @@ object CompactedJsonLd {
       rootId: IriOrBNode,
       contextValue: ContextValue,
       input: Json
-  )(implicit api: JsonLdApi, rcr: RemoteContextResolution, opts: JsonLdOptions): IO[RdfError, CompactedJsonLd] =
+  )(implicit api: JsonLdApi, rcr: RemoteContextResolution, opts: JsonLdOptions): IO[CompactedJsonLd] =
     api
       .compact(input, contextValue)
       .map { compacted =>
         CompactedJsonLd(rootId, contextValue, compacted.remove(keywords.context))
       }
-      .toBIO[RdfError]
 
   /**
     * Creates a [[CompactedJsonLd]] document framed on the passed ''rootId''.
@@ -117,7 +115,7 @@ object CompactedJsonLd {
       rootId: IriOrBNode,
       contextValue: ContextValue,
       input: Json
-  )(implicit api: JsonLdApi, rcr: RemoteContextResolution, opts: JsonLdOptions): IO[RdfError, CompactedJsonLd] =
+  )(implicit api: JsonLdApi, rcr: RemoteContextResolution, opts: JsonLdOptions): IO[CompactedJsonLd] =
     rootId.asIri.map(iri => contextValue.contextObj deepMerge JsonObject(keywords.id -> iri.asJson)) match {
       case Some(frame) =>
         api
@@ -125,7 +123,6 @@ object CompactedJsonLd {
           .map { compacted =>
             CompactedJsonLd(rootId, contextValue, compacted.remove(keywords.context))
           }
-          .toBIO[RdfError]
       case _           => apply(rootId, contextValue, input)
     }
 
