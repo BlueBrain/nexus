@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resources
 
 import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
@@ -18,12 +19,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{Resource, ResourceGene
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Revision
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
-import ch.epfl.bluebrain.nexus.testkit.ce.{CatsEffectSuite, IOFixedClock}
+import ch.epfl.bluebrain.nexus.testkit.ce.CatsEffectSuite
 import munit.Location
 
 import java.util.UUID
 
-class ResourcesTrialSuite extends CatsEffectSuite with ValidateResourceFixture with TestHelpers with IOFixedClock {
+class ResourcesTrialSuite extends CatsEffectSuite with ValidateResourceFixture with TestHelpers {
 
   private val uuid                  = UUID.randomUUID()
   implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
@@ -131,7 +132,7 @@ class ResourcesTrialSuite extends CatsEffectSuite with ValidateResourceFixture w
                     .resourceAsync(id, projectRef, source.value, Revision(resourceSchema, 1))
                     .map(ResourceGen.resourceFor(_))
       trial     = ResourcesTrial(
-                    (_, _) => IO.pure(resource),
+                    (_, _) => IO.pure(resource).toUIO,
                     alwaysValidate,
                     fetchContext,
                     resolverContextResolution
@@ -148,7 +149,7 @@ class ResourcesTrialSuite extends CatsEffectSuite with ValidateResourceFixture w
                     .resourceAsync(id, projectRef, source.value, Revision(resourceSchema, 1))
                     .map(ResourceGen.resourceFor(_))
       trial     = ResourcesTrial(
-                    (_, _) => IO.pure(resource),
+                    (_, _) => IO.pure(resource).toUIO,
                     alwaysValidate,
                     fetchContext,
                     resolverContextResolution
@@ -168,7 +169,7 @@ class ResourcesTrialSuite extends CatsEffectSuite with ValidateResourceFixture w
       expectedError =
         InvalidResource(id, Revision(anotherSchema, defaultSchemaRevision), defaultReport, resource.value.expanded)
       trial         = ResourcesTrial(
-                        (_, _) => IO.pure(resource),
+                        (_, _) => IO.pure(resource).toUIO,
                         alwaysFail(expectedError),
                         fetchContext,
                         resolverContextResolution

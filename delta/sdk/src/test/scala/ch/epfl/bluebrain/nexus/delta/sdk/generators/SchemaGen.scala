@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk.generators
 
 import cats.data.NonEmptyList
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
@@ -61,8 +60,8 @@ object SchemaGen extends CatsIOValues with EitherValuable {
       tags: Tags = Tags.empty
   )(implicit resolution: RemoteContextResolution): IO[Schema] = {
     for {
-      expanded  <- ExpandedJsonLd(source).toCatsIO.map(_.replaceId(id))
-      compacted <- expanded.toCompacted(source.topContextValueOrEmpty).toCatsIO
+      expanded  <- ExpandedJsonLd(source).map(_.replaceId(id))
+      compacted <- expanded.toCompacted(source.topContextValueOrEmpty)
     } yield {
       Schema(id, project, tags, source, compacted, NonEmptyList.of(expanded))
     }
