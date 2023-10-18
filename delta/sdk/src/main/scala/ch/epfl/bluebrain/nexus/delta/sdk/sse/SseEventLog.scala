@@ -5,7 +5,6 @@ import cats.effect.IO
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.LocalCache
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.taskToIoK
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.UnknownSseLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling.defaultPrinter
@@ -179,7 +178,6 @@ object SseEventLog {
                     config.query,
                     xas
                   )
-                  .translate(taskToIoK)
                   .evalMap(toServerSentEvent(_, fetchUuids))
               }
           }

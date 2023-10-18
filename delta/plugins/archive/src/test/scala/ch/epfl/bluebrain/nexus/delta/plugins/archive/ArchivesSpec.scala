@@ -23,7 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, TestHelpers}
-import ch.epfl.bluebrain.nexus.testkit.ce.{CatsIOValues, IOFixedClock}
+import ch.epfl.bluebrain.nexus.testkit.ce.{CatsIOValues, CatsRunContext, IOFixedClock}
 import io.circe.literal._
 import org.scalatest.matchers.should.Matchers
 
@@ -37,6 +37,7 @@ class ArchivesSpec
     extends DoobieScalaTestFixture
     with Matchers
     with IOFixedClock
+    with CatsRunContext
     with CatsIOValues
     with EitherValuable
     with TestHelpers

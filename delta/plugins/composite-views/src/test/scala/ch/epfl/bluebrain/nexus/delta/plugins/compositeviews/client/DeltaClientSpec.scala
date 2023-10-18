@@ -26,7 +26,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, RemainingElems}
-import ch.epfl.bluebrain.nexus.testkit.ce.CatsIOValues
+import ch.epfl.bluebrain.nexus.testkit.ce.{CatsIOValues, CatsRunContext}
 import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
 import io.circe.syntax.EncoderOps
 import monix.execution.Scheduler
@@ -46,6 +46,7 @@ class DeltaClientSpec
     with ScalaFutures
     with OptionValues
     with IOValues
+    with CatsRunContext
     with CatsIOValues
     with ConfigFixtures
     with BeforeAndAfterAll

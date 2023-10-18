@@ -16,13 +16,19 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore.StateNotFou
 import ch.epfl.bluebrain.nexus.delta.sourcing.{EntityCheck, PullRequest, Scope}
 import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
+import ch.epfl.bluebrain.nexus.testkit.ce.{CatsRunContext, CatsStreamAssertions}
 import doobie.implicits._
 import munit.AnyFixture
 
 import java.time.Instant
 import scala.concurrent.duration._
 
-class ScopedStateStoreSuite extends BioSuite with Doobie.Fixture with Doobie.Assertions {
+class ScopedStateStoreSuite
+    extends BioSuite
+    with CatsRunContext
+    with CatsStreamAssertions
+    with Doobie.Fixture
+    with Doobie.Assertions {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 
