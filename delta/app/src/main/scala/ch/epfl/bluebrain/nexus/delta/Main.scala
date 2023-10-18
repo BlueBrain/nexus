@@ -132,27 +132,30 @@ object Main extends IOApp {
     implicit val as: ActorSystemClassic = locator.get[ActorSystem[Nothing]].toClassic
     implicit val cfg: AppConfig         = locator.get[AppConfig]
 
-    val acquire = logger.info("Booting up service....") >> IO
-      .fromFuture(
-        IO.delay(
-          Http()
-            .newServerAt(
-              cfg.http.interface,
-              cfg.http.port
-            )
-            .bindFlow(RouteResult.routeToFlow(routes(locator)))
-        )
+    val startHttpServer = IO.fromFuture(
+      IO(
+        Http()
+          .newServerAt(
+            cfg.http.interface,
+            cfg.http.port
+          )
+          .bindFlow(RouteResult.routeToFlow(routes(locator)))
       )
-      .flatMap { binding =>
-        logger.info(s"Bound to ${binding.localAddress.getHostString}:${binding.localAddress.getPort}")
-      }
-      .recoverWith { th =>
-        logger.error(th)(
-          s"Failed to perform an http binding on ${cfg.http.interface}:${cfg.http.port}"
-        ) >> plugins
-          .traverse(_.stop())
-          .timeout(30.seconds) >> KamonMonitoring.terminate
-      }
+    )
+
+    val acquire = {
+      for {
+        _       <- logger.info("Booting up service....")
+        binding <- startHttpServer
+        _       <- logger.info(s"Bound to ${binding.localAddress.getHostString}:${binding.localAddress.getPort}")
+      } yield ()
+    }.recoverWith { th =>
+      logger.error(th)(
+        s"Failed to perform an http binding on ${cfg.http.interface}:${cfg.http.port}"
+      ) >> plugins
+        .traverse(_.stop())
+        .timeout(30.seconds) >> KamonMonitoring.terminate
+    }
 
     val release = IO.fromFuture(IO(as.terminate()))
 
