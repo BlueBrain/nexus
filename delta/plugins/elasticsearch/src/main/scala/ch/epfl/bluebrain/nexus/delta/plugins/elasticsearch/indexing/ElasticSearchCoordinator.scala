@@ -85,21 +85,21 @@ object ElasticSearchCoordinator {
                     cleanupCurrent(cached, deprecated.ref)
                 }
               }
-              .onErrorRecoverWith {
-                // If the current view does not translate to a projection or if there is a problem
-                // with the mapping with the mapping / setting then we mark it as failed and move along
-                case p: ProjectionErr                                                   =>
-                  val message = s"Projection for '${v.ref}' failed for a compilation problem."
-                  logger.error(p)(message).as(elem.failed(p))
-                case http: HttpClientStatusError if http.code == StatusCodes.BadRequest =>
-                  val message =
-                    s"Projection for '${v.ref}' failed at index creation. Please check its mapping/settings."
-                  logger.error(http)(message).as(elem.failed(http))
-                case http: HttpServerStatusError                                        =>
-                  val message =
-                    s"Projection for '${v.ref}' failed at index creation. Please check its mapping/settings."
-                  logger.error(http)(message).as(elem.failed(http))
-              }
+          }
+          .onErrorRecoverWith {
+            // If the current view does not translate to a projection or if there is a problem
+            // with the mapping with the mapping / setting then we mark it as failed and move along
+            case p: ProjectionErr                                                   =>
+              val message = s"Projection for '${elem.project}/${elem.id}' failed for a compilation problem."
+              logger.error(p)(message).as(elem.failed(p))
+            case http: HttpClientStatusError if http.code == StatusCodes.BadRequest =>
+              val message =
+                s"Projection for '${elem.project}/${elem.id}' failed at index creation. Please check its mapping/settings."
+              logger.error(http)(message).as(elem.failed(http))
+            case http: HttpServerStatusError                                        =>
+              val message =
+                s"Projection for '${elem.project}/${elem.id}' failed at index creation. Please check its mapping/settings."
+              logger.error(http)(message).as(elem.failed(http))
           }
           .map(_.void)
       }
