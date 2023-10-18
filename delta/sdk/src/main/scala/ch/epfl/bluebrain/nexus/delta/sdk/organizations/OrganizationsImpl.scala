@@ -77,6 +77,7 @@ final class OrganizationsImpl private (
     SearchResults(
       log
         .currentStates(_.toResource)
+        .translate(ioToTaskK)
         .evalFilter(params.matches),
       pagination,
       ordering

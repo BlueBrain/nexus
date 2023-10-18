@@ -11,7 +11,7 @@ import cats.effect.concurrent.Ref
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.testkit._
-import ch.epfl.bluebrain.nexus.testkit.ce.CatsIOValues
+import ch.epfl.bluebrain.nexus.testkit.ce.{CatsIOValues, CatsRunContext}
 import ch.epfl.bluebrain.nexus.tests.BaseSpec._
 import ch.epfl.bluebrain.nexus.tests.HttpClient._
 import ch.epfl.bluebrain.nexus.tests.Identity.{allUsers, testClient, testRealm, _}
@@ -43,6 +43,7 @@ trait BaseSpec
     with TestHelpers
     with ScalatestRouteTest
     with Eventually
+    with CatsRunContext
     with CatsIOValues
     with OptionValues
     with ScalaFutures

@@ -31,8 +31,9 @@ final case class Transactors(
     cache: PartitionsCache
 )(implicit s: Scheduler) {
 
-  def readCE: Transactor[IO]  = read.mapK(BIO.liftTo)
-  def writeCE: Transactor[IO] = write.mapK(BIO.liftTo)
+  def readCE: Transactor[IO]      = read.mapK(BIO.liftTo)
+  def writeCE: Transactor[IO]     = write.mapK(BIO.liftTo)
+  def streamingCE: Transactor[IO] = streaming.mapK(BIO.liftTo)
 
   def execDDL(ddl: String)(implicit cl: ClassLoader): Task[Unit] =
     ClasspathResourceUtils.ioContentOf(ddl).flatMap(Fragment.const0(_).update.run.transact(write)).void

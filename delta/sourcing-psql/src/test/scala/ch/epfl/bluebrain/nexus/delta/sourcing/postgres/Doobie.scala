@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.postgres
 
-import cats.effect.Resource
+import cats.effect.{IO, Resource}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Execute, Transactors}
@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.testkit.bio.ResourceFixture.TaskFixture
 import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresContainer
 import doobie.implicits._
 import doobie.postgres.sqlstate
-import monix.bio.{IO, Task, UIO}
+import monix.bio.{IO => BIO, Task, UIO}
 import munit.Location
 import org.postgresql.util.PSQLException
 import monix.execution.Scheduler.Implicits.global
@@ -60,8 +60,22 @@ object Doobie {
   }
 
   trait Assertions { self: munit.Assertions =>
-    implicit class DoobieAssertionsOps[E, A](io: IO[E, A])(implicit loc: Location) {
+    implicit class DoobieAssertionsOps[E, A](io: BIO[E, A])(implicit loc: Location) {
       def expectUniqueViolation: UIO[Unit] = io.attempt.map {
+        case Left(p: PSQLException) if p.getSQLState == sqlstate.class23.UNIQUE_VIOLATION.value => ()
+        case Left(p: PSQLException)                                                             =>
+          fail(
+            s"Wrong sql state caught, expected: '${sqlstate.class23.UNIQUE_VIOLATION.value}', actual: '${p.getSQLState}' "
+          )
+        case Left(err)                                                                          =>
+          fail(s"Wrong raised error type caught, expected: 'PSQLException', actual: '${err.getClass.getName}'")
+        case Right(a)                                                                           =>
+          fail(s"Expected raising error, but returned successful response with value '$a'")
+      }
+    }
+
+    implicit class DoobieCatsAssertionsOps[A](io: IO[A])(implicit loc: Location) {
+      def expectUniqueViolation: IO[Unit] = io.attempt.map {
         case Left(p: PSQLException) if p.getSQLState == sqlstate.class23.UNIQUE_VIOLATION.value => ()
         case Left(p: PSQLException)                                                             =>
           fail(
