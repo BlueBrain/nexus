@@ -1,13 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta
 
 import akka.http.scaladsl.server.Route
-import cats.effect.{IO, Resource}
+import cats.effect.{ContextShift, IO, Resource, Timer}
 import ch.epfl.bluebrain.nexus.delta.plugin.PluginsLoader.PluginLoaderConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.PluginDef
-import ch.epfl.bluebrain.nexus.delta.wiring.DeltaModule
-import ch.epfl.bluebrain.nexus.testkit.bio.{BioSuite, ResourceFixture}
-import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchContainer
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie._
+import ch.epfl.bluebrain.nexus.delta.wiring.DeltaModule
+import ch.epfl.bluebrain.nexus.testkit.bio.ResourceFixture
+import ch.epfl.bluebrain.nexus.testkit.ce.CatsEffectSuite
+import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchContainer
 import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresContainer
 import com.typesafe.config.impl.ConfigImpl
 import izumi.distage.model.definition.{Module, ModuleDef}
@@ -24,7 +25,7 @@ import java.nio.file.{Files, Paths}
   *   - HOCON configuration files match their classes counterpart
   *   - Distage wiring is valid
   */
-class MainSuite extends BioSuite with MainSuite.Fixture {
+class MainSuite extends CatsEffectSuite with MainSuite.Fixture {
 
   private val pluginsParentPath  = Paths.get("target/plugins").toAbsolutePath
   private val pluginLoaderConfig = PluginLoaderConfig(pluginsParentPath.toString)
@@ -37,9 +38,14 @@ class MainSuite extends BioSuite with MainSuite.Fixture {
   }
 
   test("yield a correct plan") {
-    val (cfg, config, cl, pDefs) = Main.loadPluginsAndConfig(pluginLoaderConfig).runSyncUnsafe()
+    val catsEffectModule         = new ModuleDef {
+      make[ContextShift[IO]].fromValue(contextShift)
+      make[Timer[IO]].fromValue(timer)
+    }
+    val (cfg, config, cl, pDefs) = Main.loadPluginsAndConfig(pluginLoaderConfig).unsafeRunSync()
     val pluginsInfoModule        = new ModuleDef { make[List[PluginDef]].from(pDefs) }
-    val modules: Module          = (DeltaModule(cfg, config, cl) :: pluginsInfoModule :: pDefs.map(_.module)).merge
+    val modules: Module          =
+      (catsEffectModule :: DeltaModule(cfg, config, cl) :: pluginsInfoModule :: pDefs.map(_.module)).merge
 
     PlanVerifier()
       .verify[IO](
@@ -56,7 +62,7 @@ class MainSuite extends BioSuite with MainSuite.Fixture {
     Main
       .start(pluginLoaderConfig)
       .use { locator =>
-        Task.delay(locator.get[Vector[Route]])
+        IO.delay(locator.get[Vector[Route]])
       }
       .void
   }
@@ -64,7 +70,7 @@ class MainSuite extends BioSuite with MainSuite.Fixture {
 
 object MainSuite {
 
-  trait Fixture { self: BioSuite =>
+  trait Fixture { self: CatsEffectSuite =>
 
     // Overload config via system properties
     private def acquire(postgres: PostgresContainer, elastic: ElasticSearchContainer) = Task.delay {
