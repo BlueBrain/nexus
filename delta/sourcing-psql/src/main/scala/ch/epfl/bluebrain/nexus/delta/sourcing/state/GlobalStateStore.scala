@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.state
 
 import cats.effect.IO
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.taskToIoK
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Serializer, Transactors}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
@@ -132,7 +133,7 @@ object GlobalStateStore {
         _.offset,
         config.copy(refreshStrategy = strategy),
         xas
-      )
+      ).translate(taskToIoK)
 
     override def currentStates(offset: Offset): EnvelopeStream[S] = states(offset, RefreshStrategy.Stop)
 

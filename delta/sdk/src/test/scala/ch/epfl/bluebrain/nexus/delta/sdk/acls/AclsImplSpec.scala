@@ -15,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Group, 
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
+import ch.epfl.bluebrain.nexus.testkit.ce.CatsIOValues
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues}
 import monix.bio.UIO
 import monix.execution.Scheduler
@@ -27,6 +28,7 @@ class AclsImplSpec
     extends DoobieScalaTestFixture
     with IOValues
     with IOFixedClock
+    with CatsIOValues
     with Inspectors
     with Matchers
     with CancelAfterFailure

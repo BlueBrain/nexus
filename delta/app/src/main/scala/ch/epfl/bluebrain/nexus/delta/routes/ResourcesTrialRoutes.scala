@@ -2,8 +2,8 @@ package ch.epfl.bluebrain.nexus.delta.routes
 
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
+import cats.effect.IO
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -11,8 +11,8 @@ import ch.epfl.bluebrain.nexus.delta.routes.ResourcesTrialRoutes.SchemaInput._
 import ch.epfl.bluebrain.nexus.delta.routes.ResourcesTrialRoutes.{GenerateSchema, GenerationInput}
 import ch.epfl.bluebrain.nexus.delta.sdk.SchemaResource
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.ce.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
@@ -29,8 +29,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
 import io.circe.{Decoder, Json}
-import monix.bio.IO
-import monix.execution.Scheduler
 
 import scala.annotation.nowarn
 
@@ -45,7 +43,6 @@ final class ResourcesTrialRoutes(
     schemeDirectives: DeltaSchemeDirectives
 )(implicit
     baseUri: BaseUri,
-    s: Scheduler,
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering,
     decodingOption: DecodingOption
@@ -67,7 +64,9 @@ final class ResourcesTrialRoutes(
             authorizeFor(project, Write).apply {
               val schemaOpt = underscoreToOption(schema)
               emit(
-                resourcesTrial.validate(id, project, schemaOpt).leftWiden[ResourceRejection]
+                resourcesTrial
+                  .validate(id, project, schemaOpt)
+                  .attemptNarrow[ResourceRejection]
               )
             }
           }
@@ -92,19 +91,27 @@ final class ResourcesTrialRoutes(
   private def generate(project: ProjectRef, input: GenerationInput)(implicit caller: Caller) =
     input.schema match {
       case ExistingSchema(schemaId) =>
-        emit(resourcesTrial.generate(project, schemaId, input.resource).flatMap(_.asJson))
+        emit(
+          resourcesTrial
+            .generate(project, schemaId, input.resource)
+            .flatMap(_.asJson)
+        )
       case NewSchema(schemaSource)  =>
         emit(
-          generateSchema(project, schemaSource, caller).flatMap { schema =>
-            resourcesTrial.generate(project, schema, input.resource).flatMap(_.asJson)
-          }
+          generateSchema(project, schemaSource, caller)
+            .flatMap { schema =>
+              resourcesTrial
+                .generate(project, schema, input.resource)
+                .flatMap(_.asJson)
+            }
+            .attemptNarrow[SchemaRejection]
         )
     }
 }
 
 object ResourcesTrialRoutes {
 
-  type GenerateSchema = (ProjectRef, Json, Caller) => IO[SchemaRejection, SchemaResource]
+  type GenerateSchema = (ProjectRef, Json, Caller) => IO[SchemaResource]
 
   sealed private[routes] trait SchemaInput extends Product
 
@@ -146,7 +153,6 @@ object ResourcesTrialRoutes {
       schemeDirectives: DeltaSchemeDirectives
   )(implicit
       baseUri: BaseUri,
-      s: Scheduler,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering,
       decodingOption: DecodingOption
@@ -154,7 +160,7 @@ object ResourcesTrialRoutes {
     new ResourcesTrialRoutes(
       identities,
       aclCheck,
-      (project, source, caller) => schemas.createDryRun(project, source)(caller).toBIO[SchemaRejection],
+      (project, source, caller) => schemas.createDryRun(project, source)(caller),
       resourcesTrial,
       schemeDirectives
     )

@@ -16,6 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.syntax._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import io.circe.{Encoder, Json}
 
 /**
@@ -74,7 +75,7 @@ object File {
   def shift(files: Files)(implicit baseUri: BaseUri, config: StorageTypeConfig): Shift =
     ResourceShift.withMetadata[FileState, File, Metadata](
       Files.entityType,
-      (ref, project) => files.fetch(IdSegmentRef(ref), project),
+      (ref, project) => files.fetch(IdSegmentRef(ref), project).toCatsIO,
       state => state.toResource,
       value => JsonLdContent(value, value.value.asJson, Some(value.value.metadata))
     )

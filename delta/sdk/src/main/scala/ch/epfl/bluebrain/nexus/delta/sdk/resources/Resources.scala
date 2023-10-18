@@ -1,8 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resources
 
-import cats.effect.Clock
+import cats.effect.{Clock, IO}
+import cats.implicits.catsSyntaxMonadError
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
@@ -22,7 +24,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.{ScopedEntityDefinition, StateMachine}
 import io.circe.Json
-import monix.bio.{IO, UIO}
 
 /**
   * Operations pertaining to managing resources.
@@ -44,7 +45,7 @@ trait Resources {
       schema: IdSegment,
       source: Json,
       tag: Option[UserTag]
-  )(implicit caller: Caller): IO[ResourceRejection, DataResource]
+  )(implicit caller: Caller): IO[DataResource]
 
   /**
     * Creates a new resource with the expanded form of the passed id.
@@ -64,7 +65,7 @@ trait Resources {
       schema: IdSegment,
       source: Json,
       tag: Option[UserTag]
-  )(implicit caller: Caller): IO[ResourceRejection, DataResource]
+  )(implicit caller: Caller): IO[DataResource]
 
   /**
     * Updates an existing resource.
@@ -87,7 +88,7 @@ trait Resources {
       schemaOpt: Option[IdSegment],
       rev: Int,
       source: Json
-  )(implicit caller: Caller): IO[ResourceRejection, DataResource]
+  )(implicit caller: Caller): IO[DataResource]
 
   /**
     * Refreshes an existing resource. This is equivalent to posting an update with the latest source. Used for when the
@@ -105,7 +106,7 @@ trait Resources {
       id: IdSegment,
       projectRef: ProjectRef,
       schemaOpt: Option[IdSegment]
-  )(implicit caller: Caller): IO[ResourceRejection, DataResource]
+  )(implicit caller: Caller): IO[DataResource]
 
   /**
     * Adds a tag to an existing resource.
@@ -131,7 +132,7 @@ trait Resources {
       tag: UserTag,
       tagRev: Int,
       rev: Int
-  )(implicit caller: Subject): IO[ResourceRejection, DataResource]
+  )(implicit caller: Subject): IO[DataResource]
 
   /**
     * Delete a tag on an existing resource.
@@ -154,7 +155,7 @@ trait Resources {
       schemaOpt: Option[IdSegment],
       tag: UserTag,
       rev: Int
-  )(implicit caller: Subject): IO[ResourceRejection, DataResource]
+  )(implicit caller: Subject): IO[DataResource]
 
   /**
     * Deprecates an existing resource.
@@ -174,7 +175,7 @@ trait Resources {
       projectRef: ProjectRef,
       schemaOpt: Option[IdSegment],
       rev: Int
-  )(implicit caller: Subject): IO[ResourceRejection, DataResource]
+  )(implicit caller: Subject): IO[DataResource]
 
   /**
     * Fetches a resource state.
@@ -191,7 +192,7 @@ trait Resources {
       id: IdSegmentRef,
       projectRef: ProjectRef,
       schemaOpt: Option[IdSegment]
-  ): IO[ResourceFetchRejection, ResourceState]
+  ): IO[ResourceState]
 
   /**
     * Fetches a resource.
@@ -208,7 +209,7 @@ trait Resources {
       id: IdSegmentRef,
       projectRef: ProjectRef,
       schemaOpt: Option[IdSegment]
-  ): IO[ResourceFetchRejection, DataResource]
+  ): IO[DataResource]
 
   /**
     * Fetch the [[DataResource]] from the provided ''projectRef'' and ''resourceRef''. Return on the error channel if
@@ -219,11 +220,13 @@ trait Resources {
     * @param projectRef
     *   the project reference where the schema belongs
     */
-  def fetch[R](
+  def fetch[R <: Throwable](
       resourceRef: ResourceRef,
       projectRef: ProjectRef
-  )(implicit rejectionMapper: Mapper[ResourceFetchRejection, R]): IO[R, DataResource] =
-    fetch(IdSegmentRef(resourceRef), projectRef, None).mapError(rejectionMapper.to)
+  )(implicit rejectionMapper: Mapper[ResourceFetchRejection, R]): IO[DataResource] =
+    fetch(IdSegmentRef(resourceRef), projectRef, None).adaptError { case e: ResourceFetchRejection =>
+      rejectionMapper.to(e)
+    }
 }
 
 object Resources {
@@ -243,9 +246,8 @@ object Resources {
   /**
     * Expands the segment to a [[ResourceRef]]
     */
-  def expandResourceRef(segment: IdSegment, context: ProjectContext): IO[InvalidResourceId, ResourceRef] =
-    IO.fromOption(
-      segment.toIri(context.apiMappings, context.base).map(ResourceRef(_)),
+  def expandResourceRef(segment: IdSegment, context: ProjectContext): IO[ResourceRef] =
+    IO.fromOption(segment.toIri(context.apiMappings, context.base).map(ResourceRef(_)))(
       InvalidResourceId(segment.asString)
     )
 
@@ -255,7 +257,7 @@ object Resources {
   def expandResourceRef(
       segmentOpt: Option[IdSegment],
       context: ProjectContext
-  ): IO[InvalidResourceId, Option[ResourceRef]] =
+  ): IO[Option[ResourceRef]] =
     segmentOpt match {
       case None         => IO.none
       case Some(schema) => expandResourceRef(schema, context).map(Some.apply)
@@ -305,8 +307,8 @@ object Resources {
   private[delta] def evaluate(
       validateResource: ValidateResource
   )(state: Option[ResourceState], cmd: ResourceCommand)(implicit
-      clock: Clock[UIO]
-  ): IO[ResourceRejection, ResourceEvent] = {
+      clock: Clock[IO]
+  ): IO[ResourceEvent] = {
 
     def validate(
         id: Iri,
@@ -314,7 +316,7 @@ object Resources {
         schemaRef: ResourceRef,
         projectRef: ProjectRef,
         caller: Caller
-    ): IO[ResourceRejection, (ResourceRef.Revision, ProjectRef)] = {
+    ): IO[(ResourceRef.Revision, ProjectRef)] = {
       validateResource
         .apply(id, expanded, schemaRef, projectRef, caller)
         .map(result => (result.schema, result.project))
@@ -327,7 +329,7 @@ object Resources {
           // format: off
           for {
             (schemaRev, schemaProject) <- validate(c.id, expanded, c.schema, c.project, c.caller)
-            t                          <- IOUtils.instant
+            t                          <- IOInstant.now
           } yield ResourceCreated(c.id, c.project, schemaRev, schemaProject, types, c.source, compacted, expanded, remoteContextRefs, 1, t, c.subject, c.tag)
           // format: on
 
@@ -338,7 +340,7 @@ object Resources {
     def stateWhereResourceExists(c: ModifyCommand) = {
       state match {
         case None                                                          =>
-          IO.raiseError(ResourceNotFound(c.id, c.project, c.schemaOpt))
+          IO.raiseError(ResourceNotFound(c.id, c.project))
         case Some(s) if s.rev != c.rev                                     =>
           IO.raiseError(IncorrectRev(c.rev, s.rev))
         case Some(s) if c.schemaOpt.exists(cur => cur.iri != s.schema.iri) =>
@@ -373,7 +375,7 @@ object Resources {
         s                          <- stateWhereResourceIsEditable(u)
         schemaRef = u.schemaOpt.getOrElse(ResourceRef.Latest(s.schema.iri))
         (schemaRev, schemaProject) <- validate(u.id, expanded, schemaRef, s.project, u.caller)
-        time                       <- IOUtils.instant
+        time                       <- IOInstant.now
       } yield ResourceUpdated(u.id, u.project, schemaRev, schemaProject, types, u.source, compacted, expanded, remoteContextRefs, s.rev + 1, time, u.subject)
       // format: on
     }
@@ -384,7 +386,7 @@ object Resources {
       for {
         s                          <- stateWhereResourceIsEditable(c)
         (schemaRev, schemaProject) <- validate(c.id, expanded, c.schemaOpt.getOrElse(s.schema), s.project, c.caller)
-        time                       <- IOUtils.instant
+        time                       <- IOInstant.now
       } yield ResourceRefreshed(c.id, c.project, schemaRev, schemaProject, types, compacted, expanded, remoteContextRefs, s.rev + 1, time, c.subject)
       // format: on
     }
@@ -392,7 +394,7 @@ object Resources {
     def tag(c: TagResource) = {
       for {
         s    <- stateWhereRevisionExists(c, c.targetRev)
-        time <- IOUtils.instant
+        time <- IOInstant.now
       } yield {
         ResourceTagAdded(c.id, c.project, s.types, c.targetRev, c.tag, s.rev + 1, time, c.subject)
       }
@@ -401,14 +403,14 @@ object Resources {
     def deleteTag(c: DeleteResourceTag) = {
       for {
         s    <- stateWhereTagExistsOnResource(c, c.tag)
-        time <- IOUtils.instant
+        time <- IOInstant.now
       } yield ResourceTagDeleted(c.id, c.project, s.types, c.tag, s.rev + 1, time, c.subject)
     }
 
     def deprecate(c: DeprecateResource) = {
       for {
         s    <- stateWhereResourceIsEditable(c)
-        time <- IOUtils.instant
+        time <- IOInstant.now
       } yield ResourceDeprecated(c.id, c.project, s.types, s.rev + 1, time, c.subject)
     }
 
@@ -428,11 +430,11 @@ object Resources {
   def definition(
       resourceValidator: ValidateResource
   )(implicit
-      clock: Clock[UIO]
+      clock: Clock[IO]
   ): ScopedEntityDefinition[Iri, ResourceState, ResourceCommand, ResourceEvent, ResourceRejection] =
     ScopedEntityDefinition(
       entityType,
-      StateMachine(None, evaluate(resourceValidator), next),
+      StateMachine(None, evaluate(resourceValidator)(_, _).toBIO[ResourceRejection], next),
       ResourceEvent.serializer,
       ResourceState.serializer,
       Tagger[ResourceEvent](

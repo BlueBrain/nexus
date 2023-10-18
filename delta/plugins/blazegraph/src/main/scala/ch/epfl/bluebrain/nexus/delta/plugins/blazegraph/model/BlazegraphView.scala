@@ -17,6 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
 
@@ -196,7 +197,7 @@ object BlazegraphView {
   def shift(views: BlazegraphViews)(implicit baseUri: BaseUri): Shift =
     ResourceShift.withMetadata[BlazegraphViewState, BlazegraphView, Metadata](
       BlazegraphViews.entityType,
-      (ref, project) => views.fetch(IdSegmentRef(ref), project),
+      (ref, project) => views.fetch(IdSegmentRef(ref), project).toCatsIO,
       state => state.toResource,
       value => JsonLdContent(value, value.value.source, Some(value.value.metadata))
     )

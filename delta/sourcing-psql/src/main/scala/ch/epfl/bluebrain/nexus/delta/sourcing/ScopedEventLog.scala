@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.ioToTaskK
 import ch.epfl.bluebrain.nexus.delta.sourcing.EvaluationError.{EvaluationFailure, EvaluationTimeout}
 import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
@@ -323,7 +324,7 @@ object ScopedEventLog {
         stateStore.currentStates(scope, offset)
 
       override def currentStates[T](scope: Scope, offset: Offset, f: S => T): Stream[Task, T] =
-        currentStates(scope, offset).map { s =>
+        currentStates(scope, offset).translate(ioToTaskK).map { s =>
           f(s.value)
         }
 

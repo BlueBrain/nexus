@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.metrics
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric.{ProjectScopedMetric, _}
@@ -8,7 +9,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Envelope, Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import fs2.Stream
 import io.circe.{Json, JsonObject}
-import monix.bio.Task
 
 import java.time.Instant
 
@@ -120,7 +120,7 @@ object MetricsStream {
     Envelope(EntityType("entity"), nxv + "6", 1, metric6, Instant.EPOCH, Offset.At(6L))
   )
 
-  val metricsStream: Stream[Task, Envelope[ProjectScopedMetric]] =
+  val metricsStream: Stream[IO, Envelope[ProjectScopedMetric]] =
     Stream.emits(envelopes)
 
 }

@@ -8,10 +8,12 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceShift
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.Resource.Metadata
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.ResourceFetchRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
@@ -82,7 +84,7 @@ object Resource {
   def shift(resources: Resources)(implicit baseUri: BaseUri): Shift =
     ResourceShift.withMetadata[ResourceState, Resource, Metadata](
       Resources.entityType,
-      (ref, project) => resources.fetch(IdSegmentRef(ref), project, None),
+      (ref, project) => resources.fetch(IdSegmentRef(ref), project, None).toBIO[ResourceFetchRejection],
       state => state.toResource,
       value => JsonLdContent(value, value.value.source, Some(value.value.metadata))
     )
