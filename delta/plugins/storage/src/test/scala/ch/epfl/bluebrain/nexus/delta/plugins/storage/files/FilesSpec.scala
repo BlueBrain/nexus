@@ -9,14 +9,15 @@ import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.RemoteContextResolutionFixture
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.NotComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Storage
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotFound
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.{RemoteDiskStorage => RemoteStorageType}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{StorageRejection, StorageStatEntry}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{StorageRejection, StorageStatEntry, StorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageFixtures, Storages, StoragesConfig, StoragesStatistics}
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
@@ -126,6 +127,18 @@ class FilesSpec(docker: RemoteStorageDocker)
       remoteDiskStorageClient
     )
 
+    def mkResource(
+        id: Iri,
+        project: ProjectRef,
+        storage: ResourceRef.Revision,
+        attributes: FileAttributes,
+        storageType: StorageType = StorageType.DiskStorage,
+        rev: Int = 1,
+        deprecated: Boolean = false,
+        tags: Tags = Tags.empty
+    ): FileResource =
+      FileGen.resourceFor(id, project, storage, attributes, storageType, rev, deprecated, tags, bob, bob)
+
     "creating a file" should {
 
       "create storages for files" in {
@@ -138,68 +151,44 @@ class FilesSpec(docker: RemoteStorageDocker)
       }
 
       "succeed with the id passed" in {
-        files
-          .create("file1", Some(diskId), projectRef, entity("myfile.txt"), None)
-          .accepted shouldEqual
-          FileGen.resourceFor(file1, projectRef, diskRev, attributes("myfile.txt"), createdBy = bob, updatedBy = bob)
+        val expected = mkResource(file1, projectRef, diskRev, attributes("myfile.txt"))
+        val actual   = files.create("file1", Some(diskId), projectRef, entity("myfile.txt"), None).accepted
+        actual shouldEqual expected
       }
 
       "succeed and tag with the id passed" in {
         withUUIDF(uuid2) {
-          val file = files
+          val file         = files
             .create("fileTagged", Some(diskId), projectRef, entity("fileTagged.txt"), Some(tag))
             .accepted
-
           val attr         = attributes("fileTagged.txt", id = uuid2)
-          val expectedData =
-            FileGen.resourceFor(
-              fileTagged,
-              projectRef,
-              diskRev,
-              attr,
-              createdBy = bob,
-              updatedBy = bob,
-              tags = Tags(tag -> 1)
-            )
+          val expectedData = mkResource(fileTagged, projectRef, diskRev, attr, tags = Tags(tag -> 1))
+          val fileByTag    = files.fetch(IdSegmentRef("fileTagged", tag), projectRef).accepted
 
-          val fileByTag = files.fetch(IdSegmentRef("fileTagged", tag), projectRef).accepted
           file shouldEqual expectedData
           fileByTag.value.tags.tags should contain(tag)
         }
       }
 
       "succeed with randomly generated id" in {
-        files.create(None, projectRef, entity("myfile2.txt"), None).accepted shouldEqual
-          FileGen.resourceFor(
-            generatedId,
-            projectRef,
-            diskRev,
-            attributes("myfile2.txt"),
-            createdBy = bob,
-            updatedBy = bob
-          )
+        val expected = mkResource(generatedId, projectRef, diskRev, attributes("myfile2.txt"))
+        val actual   = files.create(None, projectRef, entity("myfile2.txt"), None).accepted
+        val fetched  = files.fetch(actual.id, projectRef).accepted
+
+        actual shouldEqual expected
+        fetched shouldEqual expected
       }
 
       "succeed and tag with randomly generated id" in {
         withUUIDF(uuid2) {
-          val file = files
+          val attr      = attributes("fileTagged2.txt", id = uuid2)
+          val expected  = mkResource(generatedId2, projectRef, diskRev, attr, tags = Tags(tag -> 1))
+          val file      = files
             .create(None, projectRef, entity("fileTagged2.txt"), Some(tag))
             .accepted
-
-          val attr         = attributes("fileTagged2.txt", id = uuid2)
-          val expectedData =
-            FileGen.resourceFor(
-              generatedId2,
-              projectRef,
-              diskRev,
-              attr,
-              createdBy = bob,
-              updatedBy = bob,
-              tags = Tags(tag -> 1)
-            )
-
           val fileByTag = files.fetch(IdSegmentRef(generatedId2, tag), projectRef).accepted
-          file shouldEqual expectedData
+
+          file shouldEqual expected
           fileByTag.value.tags.tags should contain(tag)
         }
       }
@@ -259,22 +248,13 @@ class FilesSpec(docker: RemoteStorageDocker)
         val tempAttr = attributes("myfile.txt").copy(digest = NotComputedDigest)
         val attr     =
           tempAttr.copy(location = s"file:///app/nexustest/nexus/${tempAttr.path}", origin = Storage, mediaType = None)
-        val expected = FileGen.resourceFor(
-          file2,
-          projectRef,
-          remoteRev,
-          attr,
-          RemoteStorageType,
-          createdBy = bob,
-          updatedBy = bob,
-          tags = Tags(tag -> 1)
-        )
+        val expected = mkResource(file2, projectRef, remoteRev, attr, RemoteStorageType, tags = Tags(tag -> 1))
 
-        val result = files
+        val result    = files
           .createLink("file2", Some(remoteId), projectRef, Some("myfile.txt"), None, path, Some(tag))
           .accepted
-
         val fileByTag = files.fetch(IdSegmentRef("file2", tag), projectRef).accepted
+
         result shouldEqual expected
         fileByTag.value.tags.tags should contain(tag)
       }
@@ -348,24 +328,13 @@ class FilesSpec(docker: RemoteStorageDocker)
 
       "succeed" in {
         val tempAttr  = attributes("myfile.txt")
-        val attr      =
-          tempAttr.copy(location = s"file:///app/nexustest/nexus/${tempAttr.path}", origin = Storage)
+        val attr      = tempAttr.copy(location = s"file:///app/nexustest/nexus/${tempAttr.path}", origin = Storage)
+        val expected  = mkResource(file2, projectRef, remoteRev, attr, RemoteStorageType, rev = 2, tags = Tags(tag -> 1))
         val updatedF2 = for {
           _ <- files.updateAttributes(file2, projectRef)
           f <- files.fetch(file2, projectRef)
         } yield f
-        updatedF2.accepted shouldEqual
-          FileGen.resourceFor(
-            file2,
-            projectRef,
-            remoteRev,
-            attr,
-            RemoteStorageType,
-            rev = 2,
-            createdBy = bob,
-            updatedBy = bob,
-            tags = Tags(tag -> 1)
-          )
+        updatedF2.accepted shouldEqual expected
       }
     }
 
@@ -374,22 +343,11 @@ class FilesSpec(docker: RemoteStorageDocker)
       "succeed" in {
         val path     = Uri.Path("my/file-4.txt")
         val tempAttr = attributes("file-4.txt").copy(digest = NotComputedDigest)
-        val attr     =
-          tempAttr.copy(location = s"file:///app/nexustest/nexus/${tempAttr.path}", origin = Storage)
+        val attr     = tempAttr.copy(location = s"file:///app/nexustest/nexus/${tempAttr.path}", origin = Storage)
+        val expected = mkResource(file2, projectRef, remoteRev, attr, RemoteStorageType, rev = 3, tags = Tags(tag -> 1))
         files
           .updateLink("file2", Some(remoteId), projectRef, None, Some(`text/plain(UTF-8)`), path, 2)
-          .accepted shouldEqual
-          FileGen.resourceFor(
-            file2,
-            projectRef,
-            remoteRev,
-            attr,
-            RemoteStorageType,
-            rev = 3,
-            createdBy = bob,
-            updatedBy = bob,
-            tags = Tags(tag -> 1)
-          )
+          .accepted shouldEqual expected
       }
 
       "reject if file doesn't exists" in {
@@ -428,17 +386,9 @@ class FilesSpec(docker: RemoteStorageDocker)
     "tagging a file" should {
 
       "succeed" in {
-        files.tag(file1, projectRef, tag, tagRev = 1, 2).accepted shouldEqual
-          FileGen.resourceFor(
-            file1,
-            projectRef,
-            diskRev,
-            attributes(),
-            rev = 3,
-            tags = Tags(tag -> 1),
-            createdBy = bob,
-            updatedBy = bob
-          )
+        val expected = mkResource(file1, projectRef, diskRev, attributes(), rev = 3, tags = Tags(tag -> 1))
+        val actual   = files.tag(file1, projectRef, tag, tagRev = 1, 2).accepted
+        actual shouldEqual expected
       }
 
       "reject if file doesn't exists" in {
@@ -458,16 +408,9 @@ class FilesSpec(docker: RemoteStorageDocker)
 
     "deleting a tag" should {
       "succeed" in {
-        files.deleteTag(file1, projectRef, tag, 3).accepted shouldEqual
-          FileGen.resourceFor(
-            file1,
-            projectRef,
-            diskRev,
-            attributes(),
-            rev = 4,
-            createdBy = bob,
-            updatedBy = bob
-          )
+        val expected = mkResource(file1, projectRef, diskRev, attributes(), rev = 4)
+        val actual   = files.deleteTag(file1, projectRef, tag, 3).accepted
+        actual shouldEqual expected
       }
       "reject if the file doesn't exist" in {
         files.deleteTag(nxv + "other", projectRef, tag, 1).rejectedWith[FileNotFound]
@@ -483,17 +426,9 @@ class FilesSpec(docker: RemoteStorageDocker)
     "deprecating a file" should {
 
       "succeed" in {
-        files.deprecate(file1, projectRef, 4).accepted shouldEqual
-          FileGen.resourceFor(
-            file1,
-            projectRef,
-            diskRev,
-            attributes(),
-            rev = 5,
-            deprecated = true,
-            createdBy = bob,
-            updatedBy = bob
-          )
+        val expected = mkResource(file1, projectRef, diskRev, attributes(), rev = 5, deprecated = true)
+        val actual   = files.deprecate(file1, projectRef, 4).accepted
+        actual shouldEqual expected
       }
 
       "reject if file doesn't exists" in {
@@ -516,48 +451,19 @@ class FilesSpec(docker: RemoteStorageDocker)
       }
 
       "allow tagging after deprecation" in {
-        files.tag(file1, projectRef, tag, tagRev = 4, 5).accepted shouldEqual
-          FileGen.resourceFor(
-            file1,
-            projectRef,
-            diskRev,
-            attributes(),
-            rev = 6,
-            tags = Tags(tag -> 4),
-            createdBy = bob,
-            updatedBy = bob,
-            deprecated = true
-          )
+        val expected =
+          mkResource(file1, projectRef, diskRev, attributes(), rev = 6, tags = Tags(tag -> 4), deprecated = true)
+        val actual   = files.tag(file1, projectRef, tag, tagRev = 4, 5).accepted
+        actual shouldEqual expected
       }
 
     }
 
     "fetching a file" should {
-      val resourceRev1 =
-        FileGen.resourceFor(file1, projectRef, diskRev, attributes("myfile.txt"), createdBy = bob, updatedBy = bob)
-
-      val resourceRev4 = FileGen.resourceFor(
-        file1,
-        projectRef,
-        diskRev,
-        attributes(),
-        rev = 4,
-        tags = Tags.empty,
-        createdBy = bob,
-        updatedBy = bob
-      )
-
-      val resourceRev6 = FileGen.resourceFor(
-        file1,
-        projectRef,
-        diskRev,
-        attributes(),
-        rev = 6,
-        tags = Tags(tag -> 4),
-        deprecated = true,
-        createdBy = bob,
-        updatedBy = bob
-      )
+      val resourceRev1 = mkResource(file1, projectRef, diskRev, attributes("myfile.txt"))
+      val resourceRev4 = mkResource(file1, projectRef, diskRev, attributes(), rev = 4)
+      val resourceRev6 =
+        mkResource(file1, projectRef, diskRev, attributes(), rev = 6, tags = Tags(tag -> 4), deprecated = true)
 
       "succeed" in {
         files.fetch(file1, projectRef).accepted shouldEqual resourceRev6
