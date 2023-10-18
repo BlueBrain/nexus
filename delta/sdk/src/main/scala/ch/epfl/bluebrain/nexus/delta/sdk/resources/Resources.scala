@@ -335,7 +335,7 @@ object Resources {
     def stateWhereResourceExists(c: ModifyCommand) = {
       state match {
         case None                                                          =>
-          IO.raiseError(ResourceNotFound(c.id, c.project, c.schemaOpt))
+          IO.raiseError(ResourceNotFound(c.id, c.project))
         case Some(s) if s.rev != c.rev                                     =>
           IO.raiseError(IncorrectRev(c.rev, s.rev))
         case Some(s) if c.schemaOpt.exists(cur => cur.iri != s.schema.iri) =>

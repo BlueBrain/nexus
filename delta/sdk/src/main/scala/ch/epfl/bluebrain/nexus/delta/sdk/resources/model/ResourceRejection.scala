@@ -97,12 +97,10 @@ object ResourceRejection {
     *   the resource identifier
     * @param project
     *   the project it belongs to
-    * @param schemaOpt
-    *   the optional schema reference
     */
-  final case class ResourceNotFound(id: Iri, project: ProjectRef, schemaOpt: Option[ResourceRef])
+  final case class ResourceNotFound(id: Iri, project: ProjectRef)
       extends ResourceFetchRejection(
-        s"Resource '$id' not found${schemaOpt.fold("")(schema => s" with schema '$schema'")} in project '$project'."
+        s"Resource '$id' not found in project '$project'."
       )
 
   /**
@@ -240,7 +238,7 @@ object ResourceRejection {
   implicit val responseFieldsResources: HttpResponseFields[ResourceRejection] =
     HttpResponseFields {
       case RevisionNotFound(_, _)          => StatusCodes.NotFound
-      case ResourceNotFound(_, _, _)       => StatusCodes.NotFound
+      case ResourceNotFound(_, _)          => StatusCodes.NotFound
       case TagNotFound(_)                  => StatusCodes.NotFound
       case InvalidSchemaRejection(_, _, _) => StatusCodes.NotFound
       case ProjectContextRejection(rej)    => rej.status
