@@ -29,13 +29,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{Caller, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceUris}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef, ResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.{BaseRouteSpec, RouteFixtures}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject, User}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.testkit._
 import ch.epfl.bluebrain.nexus.testkit.bio.IOFromMap
@@ -97,7 +98,8 @@ class FilesRoutesSpec
   private val storagesStatistics: StoragesStatistics =
     (_, _) => IO.pure { StorageStatEntry(0, 0) }
 
-  private val aclCheck        = AclSimpleCheck().accepted
+  private val aclCheck = AclSimpleCheck().accepted
+
   lazy val storages: Storages = Storages(
     fetchContext.mapRejection(StorageRejection.ProjectContextRejection),
     ResolverContextResolution(rcr),
@@ -125,6 +127,7 @@ class FilesRoutesSpec
 
   private val diskIdRev = ResourceRef.Revision(dId, 1)
   private val s3IdRev   = ResourceRef.Revision(s3Id, 2)
+  private val tag       = UserTag.unsafe("mytag")
 
   private val varyHeader = RawHeader("Vary", "Accept,Accept-Encoding")
 
@@ -162,6 +165,19 @@ class FilesRoutesSpec
       }
     }
 
+    "create and tag a file" in {
+      withUUIDF(uuid2) {
+        Post("/v1/files/org/proj?tag=mytag", entity()) ~> routes ~> check {
+          status shouldEqual StatusCodes.Created
+          val attr      = attributes(id = uuid2)
+          val expected  = fileMetadata(projectRef, generatedId2, attr, diskIdRev)
+          val fileByTag = files.fetch(IdSegmentRef(generatedId2, tag), projectRef).accepted
+          response.asJson shouldEqual expected
+          fileByTag.value.tags.tags should contain(tag)
+        }
+      }
+    }
+
     "fail to create a file link using a storage that does not allow it" in {
       val payload = json"""{"filename": "my.txt", "path": "my/file.txt", "mediaType": "text/plain"}"""
       Put("/v1/files/org/proj/file1", payload.toEntity) ~> routes ~> check {
@@ -185,6 +201,22 @@ class FilesRoutesSpec
         val attr = attributes("file2.txt")
         response.asJson shouldEqual
           fileMetadata(projectRef, file1, attr, s3IdRev, createdBy = alice, updatedBy = alice)
+      }
+    }
+
+    "create and tag a file with an authenticated user and provided id" in {
+      withUUIDF(uuid2) {
+        Put(
+          "/v1/files/org/proj/fileTagged?storage=s3-storage&tag=mytag",
+          entity("fileTagged.txt")
+        ) ~> asAlice ~> routes ~> check {
+          status shouldEqual StatusCodes.Created
+          val attr      = attributes("fileTagged.txt", id = uuid2)
+          val expected  = fileMetadata(projectRef, fileTagged, attr, s3IdRev, createdBy = alice, updatedBy = alice)
+          val fileByTag = files.fetch(IdSegmentRef(generatedId2, tag), projectRef).accepted
+          response.asJson shouldEqual expected
+          fileByTag.value.tags.tags should contain(tag)
+        }
       }
     }
 

@@ -5,6 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
+import ch.epfl.bluebrain.nexus.delta.sdk.circe.{dropNullValues, JsonObjOps}
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.IriEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
@@ -340,7 +341,7 @@ object ResourceEvent {
       implicit val projectRefEncoder: Encoder[ProjectRef] = IriEncoder.jsonEncoder[ProjectRef]
       Encoder.encodeJsonObject.contramapObject { event =>
         val obj = deriveConfiguredEncoder[ResourceEvent].encodeObject(event)
-        dropNullValues(obj)
+        obj.dropNulls
           .remove("compacted")
           .remove("expanded")
           .remove("remoteContexts")
@@ -348,6 +349,4 @@ object ResourceEvent {
       }
     }
   }
-
-  private def dropNullValues(j: JsonObject): JsonObject = j.filter { case (_, v) => !v.isNull }
 }
