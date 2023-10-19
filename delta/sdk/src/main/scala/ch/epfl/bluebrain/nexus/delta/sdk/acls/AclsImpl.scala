@@ -94,7 +94,7 @@ final class AclsImpl private (
   private def eval(cmd: AclCommand): IO[AclRejection, AclResource] =
     log.evaluate(cmd.address, cmd).toBIO[AclRejection].map(_._2.toResource)
 
-  override def purge(project: AclAddress): UIO[Unit] = log.delete(project).toBIO
+  override def purge(project: AclAddress): UIO[Unit] = log.delete(project).toBIOUnsafe
 }
 
 object AclsImpl {
@@ -106,7 +106,7 @@ object AclsImpl {
       .listIds(Realms.entityType, xas.readCE)
       .compile
       .toList
-      .toBIO
+      .toBIOUnsafe
       .flatMap { existing =>
         val unknown = labels.filterNot { l =>
           existing.contains(Realms.encodeId(l))

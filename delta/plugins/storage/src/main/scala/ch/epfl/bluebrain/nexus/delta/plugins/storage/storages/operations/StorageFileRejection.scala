@@ -5,7 +5,10 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
 /**
   * Enumeration of Storage rejections related to file operations.
   */
-sealed abstract class StorageFileRejection(val loggedDetails: String) extends Product with Serializable
+sealed abstract class StorageFileRejection(val loggedDetails: String)
+    extends Exception(loggedDetails)
+    with Product
+    with Serializable
 
 object StorageFileRejection {
 

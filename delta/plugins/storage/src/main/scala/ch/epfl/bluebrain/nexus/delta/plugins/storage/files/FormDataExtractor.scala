@@ -8,16 +8,15 @@ import akka.http.scaladsl.server._
 import akka.http.scaladsl.unmarshalling.Unmarshaller.UnsupportedContentTypeException
 import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, MultipartUnmarshallers, Unmarshaller}
 import akka.stream.scaladsl.{Keep, Sink}
+import cats.effect.{ContextShift, IO}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{FileUtils, UUIDF}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileDescription
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.{FileTooLarge, InvalidMultipartFieldName, WrappedAkkaRejection}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileDescription, FileRejection}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import monix.bio.IO
-import monix.execution.Scheduler
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
 sealed trait FormDataExtractor {
@@ -41,7 +40,7 @@ sealed trait FormDataExtractor {
       entity: HttpEntity,
       maxFileSize: Long,
       storageAvailableSpace: Option[Long]
-  ): IO[FileRejection, (FileDescription, BodyPartEntity)]
+  ): IO[(FileDescription, BodyPartEntity)]
 }
 object FormDataExtractor {
 
@@ -65,24 +64,24 @@ object FormDataExtractor {
 
   def apply(
       mediaTypeDetector: MediaTypeDetectorConfig
-  )(implicit uuidF: UUIDF, as: ActorSystem, sc: Scheduler): FormDataExtractor =
+  )(implicit uuidF: UUIDF, as: ActorSystem, cs: ContextShift[IO], ec: ExecutionContext): FormDataExtractor =
     new FormDataExtractor {
       override def apply(
           id: Iri,
           entity: HttpEntity,
           maxFileSize: Long,
           storageAvailableSpace: Option[Long]
-      ): IO[FileRejection, (FileDescription, BodyPartEntity)] = {
+      ): IO[(FileDescription, BodyPartEntity)] = {
         val sizeLimit = Math.min(storageAvailableSpace.getOrElse(Long.MaxValue), maxFileSize)
         for {
           formData <- unmarshall(entity, sizeLimit)
           fileOpt  <- extractFile(formData, maxFileSize, storageAvailableSpace)
-          file     <- IO.fromOption(fileOpt, InvalidMultipartFieldName(id))
+          file     <- IO.fromOption(fileOpt)(InvalidMultipartFieldName(id))
         } yield file
       }
 
       private def unmarshall(entity: HttpEntity, sizeLimit: Long) =
-        IO.deferFuture(um(entity.withSizeLimit(sizeLimit))).mapError(onUnmarshallingError)
+        IO.fromFuture(IO.delay(um(entity.withSizeLimit(sizeLimit)))).adaptError(onUnmarshallingError(_))
 
       private def onUnmarshallingError(th: Throwable) = th match {
         case RejectionError(r)                  =>
@@ -103,15 +102,17 @@ object FormDataExtractor {
           formData: FormData,
           maxFileSize: Long,
           storageAvailableSpace: Option[Long]
-      ): IO[FileRejection, Option[(FileDescription, BodyPartEntity)]] = IO
+      ): IO[Option[(FileDescription, BodyPartEntity)]] = IO
         .fromFuture(
-          formData.parts
-            .mapAsync(parallelism = 1)(extractFile)
-            .collect { case Some(values) => values }
-            .toMat(Sink.headOption)(Keep.right)
-            .run()
+          IO(
+            formData.parts
+              .mapAsync(parallelism = 1)(extractFile)
+              .collect { case Some(values) => values }
+              .toMat(Sink.headOption)(Keep.right)
+              .run()
+          )
         )
-        .mapError {
+        .adaptError {
           case _: EntityStreamSizeException =>
             FileTooLarge(maxFileSize, storageAvailableSpace)
           case th                           =>
@@ -122,7 +123,7 @@ object FormDataExtractor {
         case part if part.name == fieldName =>
           val filename    = part.filename.getOrElse("file")
           val contentType = detectContentType(filename, part.entity.contentType)
-          FileDescription(filename, contentType).runToFuture.map { desc =>
+          FileDescription(filename, contentType).unsafeToFuture().map { desc =>
             Some(desc -> part.entity)
           }
         case part                           =>

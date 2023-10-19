@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage
 
 import akka.actor
 import akka.actor.typed.ActorSystem
-import cats.effect.{Clock, IO}
+import cats.effect.{Clock, ContextShift, IO}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
@@ -49,6 +49,8 @@ import com.typesafe.config.Config
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
 import monix.execution.Scheduler
+
+import scala.concurrent.ExecutionContext
 
 /**
   * Storages and Files wiring
@@ -170,7 +172,8 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           uuidF: UUIDF,
           as: ActorSystem[Nothing],
           remoteDiskStorageClient: RemoteDiskStorageClient,
-          scheduler: Scheduler
+          cs: ContextShift[IO],
+          ec: ExecutionContext
       ) =>
         IO
           .delay(
@@ -186,7 +189,8 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
             )(
               clock,
               uuidF,
-              scheduler,
+              cs,
+              ec,
               as
             )
           )
@@ -205,7 +209,6 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         indexingAction: AggregateIndexingAction,
         shift: File.Shift,
         baseUri: BaseUri,
-        s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering,
         fusionConfig: FusionConfig
@@ -214,7 +217,6 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
       new FilesRoutes(identities, aclCheck, files, schemeDirectives, indexingAction(_, _, _)(shift))(
         baseUri,
         storageConfig,
-        s,
         cr,
         ordering,
         fusionConfig

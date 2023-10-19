@@ -40,6 +40,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.testkit._
 import ch.epfl.bluebrain.nexus.testkit.bio.IOFromMap
+import ch.epfl.bluebrain.nexus.testkit.ce.CatsIOValues
 import io.circe.Json
 import monix.bio.IO
 import org.scalatest._
@@ -49,7 +50,8 @@ class FilesRoutesSpec
     with CancelAfterFailure
     with StorageFixtures
     with FileFixtures
-    with IOFromMap {
+    with IOFromMap
+    with CatsIOValues {
 
   import akka.actor.typed.scaladsl.adapter._
   implicit val typedSystem: typed.ActorSystem[Nothing] = system.toTyped
@@ -109,16 +111,17 @@ class FilesRoutesSpec
     StoragesConfig(eventLogConfig, pagination, stCfg),
     ServiceAccount(User("nexus-sa", Label.unsafe("sa")))
   ).accepted
-  lazy val files: Files       = Files(
-    fetchContext.mapRejection(FileRejection.ProjectContextRejection),
-    aclCheck,
-    storages,
-    storagesStatistics,
-    xas,
-    config,
-    FilesConfig(eventLogConfig, MediaTypeDetectorConfig.Empty),
-    remoteDiskStorageClient
-  )
+  lazy val files: Files       =
+    Files(
+      fetchContext.mapRejection(FileRejection.ProjectContextRejection),
+      aclCheck,
+      storages,
+      storagesStatistics,
+      xas,
+      config,
+      FilesConfig(eventLogConfig, MediaTypeDetectorConfig.Empty),
+      remoteDiskStorageClient
+    )(ioClock, uuidF, contextShift, executor, typedSystem)
   private val groupDirectives =
     DeltaSchemeDirectives(fetchContext, ioFromMap(uuid -> projectRef.organization), ioFromMap(uuid -> projectRef))
 
@@ -323,7 +326,7 @@ class FilesRoutesSpec
       }
     }
 
-    "reject the deprecation of a already deprecated file" in {
+    "reject the deprecation of an already deprecated file" in {
       Delete(s"/v1/files/org/proj/$uuid?rev=2") ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual jsonContentOf("/files/errors/file-deprecated.json", "id" -> generatedId)
