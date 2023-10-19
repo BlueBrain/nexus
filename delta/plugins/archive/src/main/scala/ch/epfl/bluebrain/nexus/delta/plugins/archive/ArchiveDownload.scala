@@ -29,7 +29,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.AnnotatedSource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRepresentation._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef, ResourceRepresentation}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources
-import ch.epfl.bluebrain.nexus.delta.sdk.stream.CatsStreamConverter
+import ch.epfl.bluebrain.nexus.delta.sdk.stream.StreamConverter
 import ch.epfl.bluebrain.nexus.delta.sdk.{AkkaSource, JsonLdValue, ResourceShifts}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import fs2.Stream
@@ -113,7 +113,7 @@ object ArchiveDownload {
           _             <- checkResourcePermissions(references, project)
           contentStream <- resolveReferencesAsStream(references, project, ignoreNotFound)
         } yield {
-          Source.fromGraph(CatsStreamConverter(contentStream)).via(Zip.writeFlow)
+          Source.fromGraph(StreamConverter(contentStream)).via(Zip.writeFlow)
         }
       }
 
