@@ -3,9 +3,9 @@ package ch.epfl.bluebrain.nexus.delta.sdk.acls.model
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress._
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
-import ch.epfl.bluebrain.nexus.testkit.scalatest.DeltaSpec
+import ch.epfl.bluebrain.nexus.testkit.scalatest.BaseSpec
 
-class AclAddressSpec extends DeltaSpec with AclFixtures with TestHelpers {
+class AclAddressSpec extends BaseSpec with AclFixtures with TestHelpers {
 
   "An ACL address" should {
     val orgAddress  = Organization(org)

@@ -8,9 +8,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdOptions
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
-import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsSpec
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 
-class ExpandedJsonLdSpec extends CatsSpec with Fixtures {
+class ExpandedJsonLdSpec extends CatsEffectSpec with Fixtures {
 
   implicit val opts: JsonLdOptions = JsonLdOptions(base = Some(iri"http://default.com/"))
 

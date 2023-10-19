@@ -4,9 +4,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Fixtures
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContext.StaticContext
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolutionError.RemoteContextNotFound
-import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsSpec
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 
-class RemoteContextResolutionSpec extends CatsSpec with Fixtures {
+class RemoteContextResolutionSpec extends CatsEffectSpec with Fixtures {
 
   "A remote context resolution" should {
 

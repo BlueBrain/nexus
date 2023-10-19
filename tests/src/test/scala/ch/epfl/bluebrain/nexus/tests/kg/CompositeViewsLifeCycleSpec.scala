@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.tests.kg
 
 import cats.data.NonEmptyMap
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.tests.BaseSpec
+import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.compositeviews.Jerry
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Events, Organizations, Views}
 import ch.epfl.bluebrain.nexus.tests.kg.CompositeViewsLifeCycleSpec.Spaces.ProjectionSpace
@@ -11,7 +11,7 @@ import io.circe.generic.semiauto.deriveDecoder
 import io.circe.{Decoder, Json}
 import org.scalactic.source.Position
 
-final class CompositeViewsLifeCycleSpec extends BaseSpec {
+final class CompositeViewsLifeCycleSpec extends BaseIntegrationSpec {
 
   private val orgId   = genId()
   private val projId  = genId()

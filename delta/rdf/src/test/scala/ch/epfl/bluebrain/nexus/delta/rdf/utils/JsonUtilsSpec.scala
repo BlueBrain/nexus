@@ -2,11 +2,11 @@ package ch.epfl.bluebrain.nexus.delta.rdf.utils
 
 import ch.epfl.bluebrain.nexus.delta.rdf.Fixtures
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
-import ch.epfl.bluebrain.nexus.testkit.scalatest.DeltaSpec
+import ch.epfl.bluebrain.nexus.testkit.scalatest.BaseSpec
 import io.circe.Json
 import io.circe.syntax._
 
-class JsonUtilsSpec extends DeltaSpec with Fixtures {
+class JsonUtilsSpec extends BaseSpec with Fixtures {
 
   "A Json" should {
 

@@ -1,14 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model
 
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValuable
+import ch.epfl.bluebrain.nexus.testkit.scalatest.BaseSpec
 import com.typesafe.config.ConfigFactory
-import org.scalatest.Inspectors
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
 import pureconfig.ConfigSource
 
-class BaseUriSpec extends AnyWordSpecLike with Matchers with Inspectors with EitherValuable {
+class BaseUriSpec extends BaseSpec {
 
   "A BaseUri config reader" should {
     "correctly slice the last path segment" in {

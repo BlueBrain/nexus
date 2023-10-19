@@ -11,8 +11,8 @@ import cats.effect.concurrent.Ref
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.testkit._
-import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsSpec
-import ch.epfl.bluebrain.nexus.tests.BaseSpec._
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
+import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec._
 import ch.epfl.bluebrain.nexus.tests.HttpClient._
 import ch.epfl.bluebrain.nexus.tests.Identity._
 import ch.epfl.bluebrain.nexus.tests.admin.AdminDsl
@@ -30,8 +30,8 @@ import org.scalatest.{Assertion, BeforeAndAfterAll, OptionValues}
 
 import scala.concurrent.duration._
 
-trait BaseSpec
-    extends CatsSpec
+trait BaseIntegrationSpec
+    extends CatsEffectSpec
     with CirceUnmarshalling
     with CirceLiteral
     with CirceEq
@@ -229,7 +229,7 @@ trait BaseSpec
   private[tests] def tag(name: String, rev: Int) = json"""{"tag": "$name", "rev": $rev}"""
 }
 
-object BaseSpec {
+object BaseIntegrationSpec {
 
   val setupCompleted: Ref[IO, Boolean] = Ref.unsafe(false)
 

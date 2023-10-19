@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.testkit.CirceEq
 import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValuable
-import ch.epfl.bluebrain.nexus.tests.{BaseSpec, SchemaPayload}
+import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, SchemaPayload}
 import ch.epfl.bluebrain.nexus.tests.Identity.listings.{Alice, Bob}
 import ch.epfl.bluebrain.nexus.tests.Identity.{Anonymous, Delta}
 import ch.epfl.bluebrain.nexus.tests.Optics._
@@ -16,7 +16,7 @@ import org.scalatest.Inspectors
 import java.net.URLEncoder
 import java.util.UUID
 
-final class ListingsSpec extends BaseSpec with Inspectors with EitherValuable with CirceEq {
+final class ListingsSpec extends BaseIntegrationSpec with Inspectors with EitherValuable with CirceEq {
 
   private val org1   = genId()
   private val proj11 = genId()

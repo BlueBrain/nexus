@@ -1,5 +1,5 @@
 package ch.epfl.bluebrain.nexus.testkit.scalatest.bio
 
-import ch.epfl.bluebrain.nexus.testkit.scalatest.DeltaSpec
+import ch.epfl.bluebrain.nexus.testkit.scalatest.BaseSpec
 
-trait BioSpec extends DeltaSpec with IOValues
+trait BioSpec extends BaseSpec with IOValues

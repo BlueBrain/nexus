@@ -7,9 +7,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress.{Organization, Pr
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddressFilter.{AnyOrganization, AnyOrganizationAnyProject, AnyProject}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.AclGen
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.testkit.scalatest.DeltaSpec
+import ch.epfl.bluebrain.nexus.testkit.scalatest.BaseSpec
 
-class AclCollectionSpec extends DeltaSpec with AclFixtures {
+class AclCollectionSpec extends BaseSpec with AclFixtures {
 
   "A Collection of ACL" should {
 

@@ -4,14 +4,14 @@ import akka.http.scaladsl.model.StatusCodes
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.testkit.CirceEq
 import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValuable
-import ch.epfl.bluebrain.nexus.tests.BaseSpec
+import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.tests.Identity.views.ScoobyDoo
 import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Organizations, Views}
 import io.circe.Json
 
-class SparqlViewsSpec extends BaseSpec with EitherValuable with CirceEq {
+class SparqlViewsSpec extends BaseIntegrationSpec with EitherValuable with CirceEq {
 
   private val orgId  = genId()
   private val projId = genId()

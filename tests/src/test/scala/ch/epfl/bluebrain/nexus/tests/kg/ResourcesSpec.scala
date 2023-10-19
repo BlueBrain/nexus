@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.tests.Optics.listing._total
 import ch.epfl.bluebrain.nexus.tests.Optics.{filterKey, filterMetadataKeys}
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Resources
 import ch.epfl.bluebrain.nexus.tests.resources.SimpleResource
-import ch.epfl.bluebrain.nexus.tests.{BaseSpec, Optics, SchemaPayload}
+import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, Optics, SchemaPayload}
 import io.circe.Json
 import io.circe.optics.JsonPath.root
 import monocle.Optional
@@ -25,7 +25,7 @@ import org.scalatest.matchers.{HavePropertyMatchResult, HavePropertyMatcher}
 
 import java.net.URLEncoder
 
-class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
+class ResourcesSpec extends BaseIntegrationSpec with EitherValuable with CirceEq {
 
   private val orgId   = genId()
   private val projId1 = genId()

@@ -4,9 +4,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddressFilter.{AnyOrganization, AnyOrganizationAnyProject, AnyProject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.testkit.scalatest.DeltaSpec
+import ch.epfl.bluebrain.nexus.testkit.scalatest.BaseSpec
 
-class AclAddressFilterSpec extends DeltaSpec with AclFixtures {
+class AclAddressFilterSpec extends BaseSpec with AclFixtures {
 
   "An ACL address filter" should {
     val org2          = Label.unsafe("org2")

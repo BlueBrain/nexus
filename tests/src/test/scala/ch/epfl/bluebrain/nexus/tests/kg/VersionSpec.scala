@@ -4,11 +4,11 @@ import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValuable
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission
 import ch.epfl.bluebrain.nexus.tests.kg.VersionSpec.VersionBundle
-import ch.epfl.bluebrain.nexus.tests.{BaseSpec, Identity}
+import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, Identity}
 import io.circe.generic.semiauto.deriveDecoder
 import io.circe.{Decoder, Json}
 
-class VersionSpec extends BaseSpec with EitherValuable {
+class VersionSpec extends BaseIntegrationSpec with EitherValuable {
 
   "The /version endpoint" should {
     s"be protected by ${Permission.Version.Read.value}" in {

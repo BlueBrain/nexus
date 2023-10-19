@@ -5,9 +5,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.testkit.scalatest.DeltaSpec
+import ch.epfl.bluebrain.nexus.testkit.scalatest.BaseSpec
 
-class CompactedJsonLdSpec extends DeltaSpec with Fixtures {
+class CompactedJsonLdSpec extends BaseSpec with Fixtures {
 
   "A compacted Json-LD" should {
     val expanded              = jsonContentOf("expanded.json")

@@ -1,11 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client
 
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlResults._
-import ch.epfl.bluebrain.nexus.testkit.scalatest.DeltaSpec
+import ch.epfl.bluebrain.nexus.testkit.scalatest.BaseSpec
 import ch.epfl.bluebrain.nexus.testkit.{CirceEq, TestHelpers}
 import io.circe.syntax._
 
-class SparqlResultsSpec extends DeltaSpec with TestHelpers with CirceEq {
+class SparqlResultsSpec extends BaseSpec with TestHelpers with CirceEq {
 
   "A Sparql Json result" should {
     val json     = jsonContentOf("sparql/results/query-result.json")

@@ -2,10 +2,10 @@ package ch.epfl.bluebrain.nexus.tests.iam
 
 import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.tests.Optics._
-import ch.epfl.bluebrain.nexus.tests.{BaseSpec, Identity, Realm}
+import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, Identity, Realm}
 import io.circe.Json
 
-class RealmsSpec extends BaseSpec {
+class RealmsSpec extends BaseIntegrationSpec {
 
   private val testRealm    = Realm("realm" + genString())
   private val testRealmUri = config.realmSuffix(testRealm)
