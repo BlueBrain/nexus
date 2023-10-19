@@ -17,7 +17,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues}
+import ch.epfl.bluebrain.nexus.testkit.bio.IOFixedClock
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.IOValues
 import io.circe.Json
 import monix.bio.IO
 import org.scalatest.matchers.should.Matchers

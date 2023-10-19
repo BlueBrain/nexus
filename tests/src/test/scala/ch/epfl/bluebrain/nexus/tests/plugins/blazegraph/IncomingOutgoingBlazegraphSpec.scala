@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.tests.plugins.blazegraph
 
 import akka.http.scaladsl.model.StatusCodes
-import ch.epfl.bluebrain.nexus.testkit.EitherValuable
+import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValuable
 import ch.epfl.bluebrain.nexus.tests.BaseSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.mash.Radar
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Organizations

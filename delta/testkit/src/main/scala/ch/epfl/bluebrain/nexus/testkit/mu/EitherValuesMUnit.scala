@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.testkit
+package ch.epfl.bluebrain.nexus.testkit.mu
 
 import munit.Assertions.fail
 import munit.Suite

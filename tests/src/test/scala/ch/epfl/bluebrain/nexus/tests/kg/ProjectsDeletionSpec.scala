@@ -1,7 +1,8 @@
 package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
-import ch.epfl.bluebrain.nexus.testkit.{CirceEq, EitherValuable}
+import ch.epfl.bluebrain.nexus.testkit.CirceEq
+import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValuable
 import ch.epfl.bluebrain.nexus.tests.Identity.projects.{Bojack, PrincessCarolyn}
 import ch.epfl.bluebrain.nexus.tests.Identity.{Anonymous, ServiceAccount}
 import ch.epfl.bluebrain.nexus.tests.Optics.{admin, listing, supervision}

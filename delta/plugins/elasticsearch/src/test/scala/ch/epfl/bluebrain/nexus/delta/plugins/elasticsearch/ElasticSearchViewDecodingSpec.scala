@@ -15,7 +15,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.{PipeStep, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes._
-import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.TestHelpers
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.IOValues
 import io.circe.literal._
 import monix.execution.Scheduler.Implicits.global
 import org.scalatest.matchers.should.Matchers

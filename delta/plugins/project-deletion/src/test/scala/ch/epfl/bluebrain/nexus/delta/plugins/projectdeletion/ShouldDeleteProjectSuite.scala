@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.Project
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers.genString
-import ch.epfl.bluebrain.nexus.testkit.ce.{CatsEffectMUnitAssertions, CatsEffectSuite}
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.{CatsEffectMUnitAssertions, CatsEffectSuite}
 import munit.{Assertions, Location}
 
 import java.time.{Duration, Instant}

@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverValue.InProject
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{Priority, ResolverValue}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.testkit.ce.CatsEffectSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 
 class ResolverScopeInitializationSuite extends CatsEffectSuite {
 

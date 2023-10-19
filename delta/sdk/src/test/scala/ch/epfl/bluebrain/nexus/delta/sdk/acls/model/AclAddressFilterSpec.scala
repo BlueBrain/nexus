@@ -4,7 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddressFilter.{AnyOrganization, AnyOrganizationAnyProject, AnyProject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.testkit.DeltaSpec
+import ch.epfl.bluebrain.nexus.testkit.scalatest.DeltaSpec
 
 class AclAddressFilterSpec extends DeltaSpec with AclFixtures {
 

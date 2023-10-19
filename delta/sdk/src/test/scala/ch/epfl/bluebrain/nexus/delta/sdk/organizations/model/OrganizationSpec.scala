@@ -4,7 +4,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary._
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.OrganizationGen
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.Fixtures
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.IOValues
+import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
 import org.scalatest.OptionValues
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike

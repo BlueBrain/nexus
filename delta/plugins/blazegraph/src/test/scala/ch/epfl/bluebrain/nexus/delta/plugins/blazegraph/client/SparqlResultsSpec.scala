@@ -1,7 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client
 
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlResults._
-import ch.epfl.bluebrain.nexus.testkit.{CirceEq, DeltaSpec, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.DeltaSpec
+import ch.epfl.bluebrain.nexus.testkit.{CirceEq, TestHelpers}
 import io.circe.syntax._
 
 class SparqlResultsSpec extends DeltaSpec with TestHelpers with CirceEq {

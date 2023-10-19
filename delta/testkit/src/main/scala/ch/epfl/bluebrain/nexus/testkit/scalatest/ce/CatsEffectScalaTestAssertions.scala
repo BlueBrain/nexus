@@ -1,10 +1,9 @@
-package ch.epfl.bluebrain.nexus.testkit.ce
+package ch.epfl.bluebrain.nexus.testkit.scalatest.ce
 
 import cats.effect.IO
 import org.scalactic.source
-import org.scalatest.Assertion
-import org.scalatest.Suite
 import org.scalatest.Assertions._
+import org.scalatest.{Assertion, Suite}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.ClassTag

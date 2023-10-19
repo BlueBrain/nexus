@@ -3,8 +3,9 @@ package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.AnalyticsGraph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.testkit.bio.BioSpec
-import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
+import ch.epfl.bluebrain.nexus.testkit.TestHelpers
+import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValuable
 import org.scalatest.matchers.should.Matchers
 
 class AnalyticsGraphSpec extends BioSpec with Matchers with TestHelpers with EitherValuable with ContextFixtures {

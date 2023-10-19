@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.testkit.DeltaSpec
+import ch.epfl.bluebrain.nexus.testkit.scalatest.DeltaSpec
 
 class CompactedJsonLdSpec extends DeltaSpec with Fixtures {
 

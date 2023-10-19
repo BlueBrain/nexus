@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model
 
 import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatErrors.ResolverPriorityIntervalError
-import ch.epfl.bluebrain.nexus.testkit.EitherValuable
+import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValuable
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike

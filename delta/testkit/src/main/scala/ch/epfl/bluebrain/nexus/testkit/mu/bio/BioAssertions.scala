@@ -1,11 +1,11 @@
-package ch.epfl.bluebrain.nexus.testkit.bio
+package ch.epfl.bluebrain.nexus.testkit.mu.bio
 
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig.MaximumCumulativeDelayConfig
+import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
 import monix.bio.Cause.{Error, Termination}
 import monix.bio.{IO, UIO}
 import munit.{Assertions, Location}
-import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
 
 import java.io.{ByteArrayOutputStream, PrintStream}
 import scala.concurrent.duration.FiniteDuration

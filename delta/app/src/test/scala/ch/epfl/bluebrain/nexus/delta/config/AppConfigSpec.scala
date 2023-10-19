@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.config
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
-import ch.epfl.bluebrain.nexus.testkit.IOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.IOValues
 import com.typesafe.config.impl.ConfigImpl
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers

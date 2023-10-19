@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.projects.model
 
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary._
 import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatErrors.{IllegalIRIFormatError, IllegalPrefixIRIFormatError}
-import ch.epfl.bluebrain.nexus.testkit.EitherValuable
+import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValuable
 import io.circe.Json
 import io.circe.parser._
 import io.circe.syntax._

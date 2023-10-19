@@ -22,8 +22,10 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
-import ch.epfl.bluebrain.nexus.testkit.ce.{CatsEffectScalaTestAssertions, CatsIOValues, CatsRunContext, IOFixedClock}
-import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.ce.{CatsRunContext, IOFixedClock}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.{CatsEffectScalaTestAssertions, CatsIOValues}
+import ch.epfl.bluebrain.nexus.testkit.TestHelpers
+import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValuable
 import io.circe.literal._
 import org.scalatest.matchers.should.Matchers
 

@@ -5,11 +5,11 @@ import cats.effect.{ContextShift, IO, Timer}
 import ch.epfl.bluebrain.nexus.delta.plugin.PluginsLoader.PluginLoaderConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.PriorityRoute
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.testkit.IOValues
 import com.typesafe.config.impl.ConfigImpl
 import izumi.distage.model.definition.ModuleDef
 import monix.bio.Task
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.IOValues
 import monix.execution.Scheduler
 import monix.execution.Scheduler.Implicits.global
 import org.scalatest.matchers.should.Matchers

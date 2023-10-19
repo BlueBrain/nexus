@@ -11,7 +11,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.SimpleResource
 import ch.epfl.bluebrain.nexus.delta.sdk.SimpleResource.{context, contextIri}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestMatchers}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.TestMatchers
+import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.IOValues
 import org.scalatest.matchers.should.Matchers
 
 import java.time.Instant

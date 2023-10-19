@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.StatusCodes
-import ch.epfl.bluebrain.nexus.testkit.EitherValuable
+import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValuable
 import ch.epfl.bluebrain.nexus.tests.{BaseSpec, Identity}
 import io.circe.Json
 

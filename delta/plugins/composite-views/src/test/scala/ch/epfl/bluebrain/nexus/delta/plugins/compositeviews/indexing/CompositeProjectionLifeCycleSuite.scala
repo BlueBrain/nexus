@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, IndexingViewRef, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
-import ch.epfl.bluebrain.nexus.testkit.bio.{BioSuite, PatienceConfig}
+import ch.epfl.bluebrain.nexus.testkit.mu.bio.{BioSuite, PatienceConfig}
 import monix.bio.{Task, UIO}
 import munit.Location
 

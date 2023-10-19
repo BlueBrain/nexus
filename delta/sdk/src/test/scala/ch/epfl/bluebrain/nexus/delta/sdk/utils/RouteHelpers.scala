@@ -8,7 +8,7 @@ import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import akka.testkit.TestDuration
 import akka.util.ByteString
-import ch.epfl.bluebrain.nexus.testkit.EitherValuable
+import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValuable
 import io.circe.parser.parse
 import io.circe.{Decoder, Json, JsonObject, Printer}
 import org.scalatest.concurrent.ScalaFutures

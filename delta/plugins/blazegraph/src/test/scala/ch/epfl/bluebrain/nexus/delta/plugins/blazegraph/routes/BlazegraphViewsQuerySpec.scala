@@ -40,6 +40,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ResourceRe
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit._
 import ch.epfl.bluebrain.nexus.testkit.blazegraph.BlazegraphDocker
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.IOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.{EitherValuable, TestMatchers}
 import monix.bio.IO
 import monix.execution.Scheduler
 import org.scalatest.concurrent.Eventually

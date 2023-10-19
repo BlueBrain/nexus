@@ -1,6 +1,7 @@
-package ch.epfl.bluebrain.nexus.testkit.bio
+package ch.epfl.bluebrain.nexus.testkit.mu.bio
 
-import ch.epfl.bluebrain.nexus.testkit.{EitherValuesMUnit, IOFixedClock, IOValuesMUnit, NexusSuite}
+import ch.epfl.bluebrain.nexus.testkit.bio.IOFixedClock
+import ch.epfl.bluebrain.nexus.testkit.mu.{CollectionAssertions, EitherAssertions, EitherValuesMUnit, NexusSuite}
 import monix.bio.IO
 import monix.execution.Scheduler
 

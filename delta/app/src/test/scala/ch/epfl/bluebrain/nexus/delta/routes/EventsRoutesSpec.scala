@@ -21,7 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset.{At, Start}
 import ch.epfl.bluebrain.nexus.testkit.bio.IOFromMap
-import ch.epfl.bluebrain.nexus.testkit.ce.CatsEffectScalaTestAssertions
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectScalaTestAssertions
 import fs2.Stream
 
 import java.util.UUID

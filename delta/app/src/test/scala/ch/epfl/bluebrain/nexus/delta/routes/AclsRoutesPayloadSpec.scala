@@ -4,7 +4,8 @@ import ch.epfl.bluebrain.nexus.delta.routes.AclsRoutes.PatchAcl.{Append, Subtrac
 import ch.epfl.bluebrain.nexus.delta.routes.AclsRoutes.{AclValues, PatchAcl, ReplaceAcl}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable}
+import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
+import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValuable
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 

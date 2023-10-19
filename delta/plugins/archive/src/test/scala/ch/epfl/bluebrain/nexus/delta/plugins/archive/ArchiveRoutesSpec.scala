@@ -47,7 +47,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.testkit.archive.ArchiveHelpers
-import ch.epfl.bluebrain.nexus.testkit.ce.{CatsEffectScalaTestAssertions, IOFixedClock}
+import ch.epfl.bluebrain.nexus.testkit.ce.IOFixedClock
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectScalaTestAssertions
 import io.circe.Json
 import io.circe.syntax.EncoderOps
 import org.scalatest.TryValues

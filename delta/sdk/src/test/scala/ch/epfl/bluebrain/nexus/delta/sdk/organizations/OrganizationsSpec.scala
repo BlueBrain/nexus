@@ -8,8 +8,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationState
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
-import ch.epfl.bluebrain.nexus.testkit.ce.{CatsEffectScalaTestAssertions, CatsIOValues, IOFixedClock}
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable}
+import ch.epfl.bluebrain.nexus.testkit.ce.IOFixedClock
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.{CatsEffectScalaTestAssertions, CatsIOValues}
+import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
+import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValuable
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{Inspectors, OptionValues}

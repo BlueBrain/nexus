@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.rdf
 
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
-import ch.epfl.bluebrain.nexus.testkit.EitherValuable
+import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValuable
 import io.circe.Json
 import io.circe.syntax._
 import org.scalatest.{Inspectors, OptionValues}

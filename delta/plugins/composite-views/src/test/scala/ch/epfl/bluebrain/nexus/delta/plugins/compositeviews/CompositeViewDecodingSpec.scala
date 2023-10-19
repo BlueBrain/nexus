@@ -19,7 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectCon
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.testkit.bio.BioSpec
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
 
 import java.util.UUID

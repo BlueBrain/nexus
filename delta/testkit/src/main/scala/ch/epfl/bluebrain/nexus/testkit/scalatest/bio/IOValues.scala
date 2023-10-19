@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.testkit
+package ch.epfl.bluebrain.nexus.testkit.scalatest.bio
 
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler

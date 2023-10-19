@@ -22,8 +22,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescr
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.blazegraph.BlazegraphDocker
-import ch.epfl.bluebrain.nexus.testkit.ce.CatsIOValues
-import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOValues, TestHelpers, TestMatchers}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.{EitherValuable, TestMatchers}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
+import ch.epfl.bluebrain.nexus.testkit.TestHelpers
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.IOValues
 import io.circe.Json
 import monix.execution.Scheduler
 import org.scalatest.concurrent.Eventually

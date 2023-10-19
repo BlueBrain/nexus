@@ -14,7 +14,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.{HttpClientStatusE
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientSpec.{Count, Value}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientWorthRetry.onServerError
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, IOValues, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValuable
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.IOValues
+import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
 import io.circe.generic.semiauto._
 import io.circe.parser.parse
 import io.circe.syntax._

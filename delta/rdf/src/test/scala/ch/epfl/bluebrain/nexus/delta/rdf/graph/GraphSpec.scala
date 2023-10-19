@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.{ContextEmp
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
-import ch.epfl.bluebrain.nexus.testkit.bio.BioSpec
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
 
 class GraphSpec extends BioSpec with Fixtures {
 

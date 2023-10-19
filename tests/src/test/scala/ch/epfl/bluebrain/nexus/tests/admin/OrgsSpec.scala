@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.tests.admin
 
 import akka.http.scaladsl.model.StatusCodes
-import ch.epfl.bluebrain.nexus.testkit.EitherValuable
+import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValuable
 import ch.epfl.bluebrain.nexus.tests.Identity.orgs.{Fry, Leela}
 import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.{BaseSpec, ExpectedResponse}

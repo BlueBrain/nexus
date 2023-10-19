@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.SupervisorSetup
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.SupervisorSetup.unapply
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
-import ch.epfl.bluebrain.nexus.testkit.bio.{BioSuite, PatienceConfig}
+import ch.epfl.bluebrain.nexus.testkit.mu.bio.{BioSuite, PatienceConfig}
 import monix.bio.IO
 import munit.AnyFixture
 

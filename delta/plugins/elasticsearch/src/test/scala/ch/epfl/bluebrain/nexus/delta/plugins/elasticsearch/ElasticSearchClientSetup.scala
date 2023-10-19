@@ -6,9 +6,9 @@ import cats.effect.Resource
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientSetup
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
-import ch.epfl.bluebrain.nexus.testkit.bio.ResourceFixture.TaskFixture
-import ch.epfl.bluebrain.nexus.testkit.bio.{BioSuite, ResourceFixture}
+import ch.epfl.bluebrain.nexus.testkit.mu.bio.ResourceFixture.TaskFixture
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchContainer
+import ch.epfl.bluebrain.nexus.testkit.mu.bio.{BioSuite, ResourceFixture}
 import monix.bio.Task
 import monix.execution.Scheduler
 

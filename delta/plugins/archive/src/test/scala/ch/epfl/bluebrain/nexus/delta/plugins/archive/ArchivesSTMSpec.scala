@@ -8,8 +8,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRepresentation.SourceJson
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
-import ch.epfl.bluebrain.nexus.testkit.ce.{CatsIOValues, IOFixedClock}
-import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.ce.IOFixedClock
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
+import ch.epfl.bluebrain.nexus.testkit.TestHelpers
+import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValuable
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 

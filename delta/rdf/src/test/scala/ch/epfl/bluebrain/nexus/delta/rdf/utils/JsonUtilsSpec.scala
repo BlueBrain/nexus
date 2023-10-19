@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.rdf.utils
 
 import ch.epfl.bluebrain.nexus.delta.rdf.Fixtures
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
-import ch.epfl.bluebrain.nexus.testkit.DeltaSpec
+import ch.epfl.bluebrain.nexus.testkit.scalatest.DeltaSpec
 import io.circe.Json
 import io.circe.syntax._
 

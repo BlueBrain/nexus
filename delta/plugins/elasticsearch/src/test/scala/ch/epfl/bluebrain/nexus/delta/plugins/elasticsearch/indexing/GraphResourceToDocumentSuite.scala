@@ -9,7 +9,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef, Res
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
-import ch.epfl.bluebrain.nexus.testkit.bio.{BioSuite, JsonAssertions}
+import ch.epfl.bluebrain.nexus.testkit.mu.JsonAssertions
+import ch.epfl.bluebrain.nexus.testkit.mu.bio.BioSuite
 import io.circe.Json
 
 import java.time.Instant

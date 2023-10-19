@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.testkit.ce
+package ch.epfl.bluebrain.nexus.testkit.scalatest.ce
 
 import cats.effect.IO
 

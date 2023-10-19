@@ -2,7 +2,8 @@ package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.StatusCodes
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.testkit.{CirceEq, EitherValuable}
+import ch.epfl.bluebrain.nexus.testkit.CirceEq
+import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValuable
 import ch.epfl.bluebrain.nexus.tests.{BaseSpec, SchemaPayload}
 import ch.epfl.bluebrain.nexus.tests.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.tests.Identity.aggregations.{Charlie, Rose}

@@ -51,8 +51,9 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{DiscardMetadata, FilterByType, FilterDeprecated}
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
-import ch.epfl.bluebrain.nexus.testkit.bio.ResourceFixture.TaskFixture
-import ch.epfl.bluebrain.nexus.testkit.bio._
+import ch.epfl.bluebrain.nexus.testkit.mu.bio.ResourceFixture.TaskFixture
+import ch.epfl.bluebrain.nexus.testkit.mu.bio.{BioSuite, PatienceConfig, ResourceFixture}
+import ch.epfl.bluebrain.nexus.testkit.mu.{JsonAssertions, TextAssertions}
 import fs2.Stream
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder

@@ -17,7 +17,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.provisioning.ProjectProvisioning.Invali
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
-import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues}
+import ch.epfl.bluebrain.nexus.testkit.bio.IOFixedClock
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.IOValues
 import monix.bio.{IO, UIO}
 import org.scalatest.OptionValues
 import org.scalatest.matchers.should.Matchers

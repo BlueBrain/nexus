@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.testkit.ce
+package ch.epfl.bluebrain.nexus.testkit.mu.ce
 
 import cats.effect.{IO, Sync}
 import cats.syntax.eq._

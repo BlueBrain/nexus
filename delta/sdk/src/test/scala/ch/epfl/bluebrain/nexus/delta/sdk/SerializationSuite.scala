@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.testkit.bio.{EitherAssertions, JsonAssertions}
+import ch.epfl.bluebrain.nexus.testkit.mu.{EitherAssertions, JsonAssertions}
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
 import io.circe.parser._
 import io.circe.{Json, JsonObject}

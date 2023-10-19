@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.quotas.model.QuotaRejection.QuotaReache
 import ch.epfl.bluebrain.nexus.delta.sdk.quotas.model.QuotaRejection.QuotasDisabled
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.testkit.IOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.IOValues
 import monix.bio.UIO
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike

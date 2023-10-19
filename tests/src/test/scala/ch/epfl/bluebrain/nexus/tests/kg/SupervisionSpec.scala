@@ -1,7 +1,8 @@
 package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.StatusCodes
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable}
+import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
+import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValuable
 import ch.epfl.bluebrain.nexus.tests.BaseSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.supervision.Mickey
 import ch.epfl.bluebrain.nexus.tests.Optics.{filterKeys, projections}

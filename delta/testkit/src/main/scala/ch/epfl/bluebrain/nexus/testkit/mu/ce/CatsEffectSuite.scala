@@ -1,8 +1,9 @@
-package ch.epfl.bluebrain.nexus.testkit.ce
+package ch.epfl.bluebrain.nexus.testkit.mu.ce
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.testkit.{EitherValuesMUnit, NexusSuite}
-import ch.epfl.bluebrain.nexus.testkit.bio.{CollectionAssertions, EitherAssertions}
+import ch.epfl.bluebrain.nexus.testkit.ce.{CatsRunContext, IOFixedClock}
+import ch.epfl.bluebrain.nexus.testkit.mu.{CollectionAssertions, EitherAssertions, EitherValuesMUnit, NexusSuite}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
 import monix.bio.{IO => BIO}
 import monix.execution.Scheduler
 

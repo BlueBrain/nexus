@@ -11,7 +11,7 @@ import cats.effect.concurrent.Ref
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.testkit._
-import ch.epfl.bluebrain.nexus.testkit.ce.CatsSpec
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsSpec
 import ch.epfl.bluebrain.nexus.tests.BaseSpec._
 import ch.epfl.bluebrain.nexus.tests.HttpClient._
 import ch.epfl.bluebrain.nexus.tests.Identity._

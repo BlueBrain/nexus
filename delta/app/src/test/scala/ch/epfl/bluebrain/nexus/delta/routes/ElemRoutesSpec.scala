@@ -21,7 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.RemainingElems
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import ch.epfl.bluebrain.nexus.testkit.bio.IOFromMap
-import ch.epfl.bluebrain.nexus.testkit.ce.CatsEffectScalaTestAssertions
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectScalaTestAssertions
 import fs2.Stream
 
 import java.time.Instant

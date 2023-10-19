@@ -29,7 +29,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.bio.IOFromMap
 import io.circe.Json
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.testkit.ce.{CatsEffectScalaTestAssertions, IOFixedClock}
+import ch.epfl.bluebrain.nexus.testkit.ce.IOFixedClock
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectScalaTestAssertions
 
 import java.util.UUID
 

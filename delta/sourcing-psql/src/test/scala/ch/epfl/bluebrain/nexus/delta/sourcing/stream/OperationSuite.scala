@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Pipe
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.OperationSuite.{double, half, until}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionErr.{LeapingNotAllowedErr, OperationInOutMatchErr}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.GenericPipe
-import ch.epfl.bluebrain.nexus.testkit.bio.{BioSuite, StreamAssertions}
+import ch.epfl.bluebrain.nexus.testkit.mu.bio.{BioSuite, StreamAssertions}
 import fs2.Stream
 import monix.bio.Task
 import shapeless.Typeable

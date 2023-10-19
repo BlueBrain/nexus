@@ -4,7 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress.{Organization, Ro
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.Acl
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.testkit.EitherValuable
+import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValuable
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 

@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.SupervisorSetup.unapply
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{CacheSink, Elem, ExecutionStatus, ProjectionProgress, SupervisorSetup}
-import ch.epfl.bluebrain.nexus.testkit.bio.{BioSuite, PatienceConfig}
+import ch.epfl.bluebrain.nexus.testkit.mu.bio.{BioSuite, PatienceConfig}
 import munit.AnyFixture
 import fs2.Stream
 import fs2.concurrent.SignallingRef
