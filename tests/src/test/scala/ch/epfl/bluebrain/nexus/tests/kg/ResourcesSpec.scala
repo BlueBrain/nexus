@@ -89,7 +89,7 @@ class ResourcesSpec extends BaseIntegrationSpec with CirceEq {
       val schemaPayload = jsonContentOf("/kg/schemas/simple-schema-prop-shape.json")
 
       deltaClient.post[Json](s"/schemas/$id1", schemaPayload, Rick) { (_, response) =>
-        response.status shouldEqual StatusCodes.NotFound
+        response.status shouldEqual StatusCodes.Created
       }
     }
 
