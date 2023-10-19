@@ -348,12 +348,13 @@ class ResourcesImplSpec
           mkResource(expectedData).copy(rev = 3)
       }
 
-      "succeed with a schema update" in {
-        val updated      = source.removeKeys(keywords.id) deepMerge json"""{"number": 70}"""
-        val expectedData = ResourceGen.resource(myId2, projectRef, updated, Revision(schema3.id, 1))
-        resources
-          .update(myId2, projectRef, Some(schema3.id), 3, updated)
-          .accepted shouldEqual mkResource(expectedData).copy(rev = 4)
+      "succeed when changing the schema" in {
+        val updatedSource   = source.removeKeys(keywords.id) deepMerge json"""{"number": 70}"""
+        val newSchema       = Revision(schema3.id, 1)
+        val updatedResource = resources.update(myId2, projectRef, Some(newSchema.iri), 3, updatedSource).accepted
+
+        updatedResource.rev shouldEqual 4
+        updatedResource.schema shouldEqual newSchema
       }
 
       "reject if it doesn't exists" in {
