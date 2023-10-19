@@ -27,6 +27,8 @@ final class ListingsSpec extends BaseSpec with Inspectors with EitherValuable wi
   private val proj21 = genId()
   private val ref21  = s"$org2/$proj21"
 
+  private val ref11Tag = "v1.0.0"
+
   private val resourceType = s"https://bluebrain.github.io/nexus/vocabulary/Type-${UUID.randomUUID()}"
 
   "Setting up" should {
@@ -59,7 +61,7 @@ final class ListingsSpec extends BaseSpec with Inspectors with EitherValuable wi
         _ <- deltaClient.put[Json](s"/resources/$ref21/_/resource21", resourcePayload, Bob)(expectCreated)
         // Tag
         _ <-
-          deltaClient.post[Json](s"/resources/$ref11/_/resource11/tags?rev=1", tag("v1.0.0", 1), Bob)(expectCreated)
+          deltaClient.post[Json](s"/resources/$ref11/_/resource11/tags?rev=1", tag(ref11Tag, 1), Bob)(expectCreated)
         _ <-
           deltaClient.post[Json](s"/resources/$ref21/_/resource21/tags?rev=1", tag("v1.0.1", 1), Bob)(expectCreated)
         // Deprecate
@@ -179,6 +181,25 @@ final class ListingsSpec extends BaseSpec with Inspectors with EitherValuable wi
       deltaClient.get[Json](s"/resources?locate=$encodedSelf", Bob) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
         filterSearchMetadata(json) should equalIgnoreArrayOrder(resource11WithSchemaResult)
+      }
+    }
+
+    "get the latest revision of a previously tagged resource when queried by tag" in {
+      val resource11Self = resourceSelf(ref11, resource11Id)
+      val expected       = jsonContentOf(
+        "/kg/listings/project/resource11-tagged-unconstrained.json",
+        replacements(
+          Bob,
+          "org"          -> org1,
+          "proj"         -> proj11,
+          "resourceType" -> resourceType,
+          "id"           -> resource11Id,
+          "self"         -> resource11Self
+        ): _*
+      )
+      deltaClient.get[Json](s"/resources?tag=$ref11Tag", Bob) { (json, response) =>
+        response.status shouldEqual StatusCodes.OK
+        filterSearchMetadata(json) should equalIgnoreArrayOrder(expected)
       }
     }
 

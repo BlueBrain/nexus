@@ -1,0 +1,25 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/metadata.json",
+    "https://bluebrain.github.io/nexus/contexts/search.json",
+    "https://bluebrain.github.io/nexus/contexts/search-metadata.json"
+  ],
+  "_total": 1,
+  "_results": [
+    {
+      "@id": "{{id}}",
+      "@type": "{{resourceType}}",
+      "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/unconstrained.json",
+      "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
+      "_deprecated": false,
+      "_incoming": "{{self}}/incoming",
+      "_outgoing": "{{self}}/outgoing",
+      "_project": "{{deltaUri}}/projects/{{org}}/{{proj}}",
+      "_rev": 2,
+      "_schemaProject": "{{deltaUri}}/projects/{{org}}/{{proj}}",
+      "_self": "{{self}}",
+      "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
+      "_tags": ["v1.0.0"]
+    }
+  ]
+}
