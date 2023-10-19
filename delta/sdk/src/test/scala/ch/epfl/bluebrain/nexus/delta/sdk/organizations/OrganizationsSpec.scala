@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.testkit.ce.IOFixedClock
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.{CatsEffectScalaTestAssertions, CatsIOValues}
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
-import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValuable
+import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{Inspectors, OptionValues}
@@ -21,7 +21,7 @@ import java.time.Instant
 class OrganizationsSpec
     extends AnyWordSpecLike
     with Matchers
-    with EitherValuable
+    with EitherValues
     with OptionValues
     with Inspectors
     with CatsIOValues

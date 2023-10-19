@@ -12,8 +12,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderSpec.{Absol
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.configuration.semiauto._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.semiauto._
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
-import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValuable
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.IOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
@@ -30,8 +30,8 @@ class JsonLdDecoderSpec
     with Matchers
     with Inspectors
     with CirceLiteral
-    with EitherValuable
-    with IOValues
+    with EitherValues
+    with BIOValues
     with Fixtures
     with TestHelpers {
 

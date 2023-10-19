@@ -2,12 +2,12 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client
 
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel.{IllegalIndexLabel, IndexGroup}
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
-import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValuable
+import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
-class IndexLabelSpec extends AnyWordSpecLike with Matchers with Inspectors with TestHelpers with EitherValuable {
+class IndexLabelSpec extends AnyWordSpecLike with Matchers with Inspectors with TestHelpers with EitherValues {
   "An IndexLabel" should {
     "fail" in {
       val list = List(".", ".s", "+s", "s*e", "s?e", "s/e", "s|e", "s\\e", "s,e", genString(length = 210))

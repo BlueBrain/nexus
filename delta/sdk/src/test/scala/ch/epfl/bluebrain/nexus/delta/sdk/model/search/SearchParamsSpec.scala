@@ -6,13 +6,13 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.{OrganizationSearchParams, ProjectSearchParams, RealmSearchParams}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.IOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
 import monix.bio.UIO
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
-class SearchParamsSpec extends AnyWordSpecLike with IOValues with Matchers with Inspectors {
+class SearchParamsSpec extends AnyWordSpecLike with BIOValues with Matchers with Inspectors {
 
   private val subject = User("myuser", Label.unsafe("myrealm"))
 

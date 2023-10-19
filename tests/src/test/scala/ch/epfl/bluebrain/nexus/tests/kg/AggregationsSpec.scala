@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.tests.kg
 import akka.http.scaladsl.model.StatusCodes
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.testkit.CirceEq
-import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValuable
+import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
 import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, SchemaPayload}
 import ch.epfl.bluebrain.nexus.tests.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.tests.Identity.aggregations.{Charlie, Rose}
@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.tests.resources.SimpleResource
 import io.circe.Json
 import org.scalatest.Inspectors
 
-final class AggregationsSpec extends BaseIntegrationSpec with Inspectors with EitherValuable with CirceEq {
+final class AggregationsSpec extends BaseIntegrationSpec with Inspectors with EitherValues with CirceEq {
 
   private val org1   = genId()
   private val proj11 = genId()

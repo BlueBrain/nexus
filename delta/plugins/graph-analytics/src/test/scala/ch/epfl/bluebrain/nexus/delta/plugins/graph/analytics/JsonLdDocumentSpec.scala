@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.IOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
 import ch.epfl.bluebrain.nexus.testkit.{CirceEq, TestHelpers}
 import io.circe.syntax.EncoderOps
@@ -19,7 +19,7 @@ class JsonLdDocumentSpec
     extends AnyWordSpecLike
     with Matchers
     with TestHelpers
-    with IOValues
+    with BIOValues
     with CatsIOValues
     with OptionValues
     with ContextFixtures

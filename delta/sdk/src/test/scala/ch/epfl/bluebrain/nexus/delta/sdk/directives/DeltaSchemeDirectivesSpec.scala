@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectCon
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.scalatest.TestMatchers
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.IOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
 import monix.bio.UIO
 import monix.execution.Scheduler
@@ -27,7 +27,7 @@ class DeltaSchemeDirectivesSpec
     with OptionValues
     with CirceLiteral
     with UriDirectives
-    with IOValues
+    with BIOValues
     with TestMatchers
     with TestHelpers
     with Inspectors {

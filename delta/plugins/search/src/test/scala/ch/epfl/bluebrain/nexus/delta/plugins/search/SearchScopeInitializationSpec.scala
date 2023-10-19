@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.IOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
 import io.circe.JsonObject
 import org.scalatest.matchers.should.Matchers
@@ -27,7 +27,7 @@ class SearchScopeInitializationSpec
     with CompositeViewsFixture
     with Matchers
     with CatsIOValues
-    with IOValues
+    with BIOValues
     with Fixtures {
 
   implicit val baseUri: BaseUri = BaseUri.withoutPrefix("http://localhost")

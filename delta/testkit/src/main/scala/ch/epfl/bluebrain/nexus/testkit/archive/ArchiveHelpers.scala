@@ -5,7 +5,7 @@ import akka.stream.alpakka.file.scaladsl.Archive
 import akka.stream.scaladsl.{FileIO, Source}
 import akka.util.ByteString
 import ch.epfl.bluebrain.nexus.testkit.archive.ArchiveHelpers.ArchiveContent
-import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValuable
+import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
 import io.circe.Json
 import io.circe.parser.parse
 import org.scalatest.{OptionValues, Suite}
@@ -19,7 +19,7 @@ import org.scalatest.concurrent.PatienceConfiguration
 import org.scalatest.time.Span
 import org.scalatest.time.Seconds
 
-trait ArchiveHelpers extends ScalaFutures with EitherValuable with OptionValues {
+trait ArchiveHelpers extends ScalaFutures with EitherValues with OptionValues {
 
   self: Suite =>
 

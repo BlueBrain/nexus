@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.IOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
 import io.circe.literal._
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
@@ -27,7 +27,7 @@ class BlazegraphViewDecodingSpec
     extends AnyWordSpecLike
     with Matchers
     with Inspectors
-    with IOValues
+    with BIOValues
     with TestHelpers
     with Fixtures {
 

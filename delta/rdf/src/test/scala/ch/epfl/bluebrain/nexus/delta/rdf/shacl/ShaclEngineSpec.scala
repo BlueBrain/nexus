@@ -7,10 +7,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
-import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValuable
+import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.IOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -19,9 +19,9 @@ class ShaclEngineSpec
     extends AnyWordSpecLike
     with Matchers
     with TestHelpers
-    with IOValues
+    with BIOValues
     with CatsIOValues
-    with EitherValuable
+    with EitherValues
     with Inspectors {
 
   implicit val api: JsonLdApi = JsonLdJavaApi.lenient

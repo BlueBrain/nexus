@@ -9,7 +9,7 @@ import com.typesafe.config.impl.ConfigImpl
 import izumi.distage.model.definition.ModuleDef
 import monix.bio.Task
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.IOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
 import monix.execution.Scheduler
 import monix.execution.Scheduler.Implicits.global
 import org.scalatest.matchers.should.Matchers
@@ -17,7 +17,7 @@ import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.concurrent.ExecutionContext
 
-class PluginLoaderSpec extends AnyWordSpecLike with ScalatestRouteTest with Matchers with IOValues {
+class PluginLoaderSpec extends AnyWordSpecLike with ScalatestRouteTest with Matchers with BIOValues {
 
   private val baseUri       = BaseUri.withoutPrefix("http://localhost")
   private val serviceModule = new ModuleDef {

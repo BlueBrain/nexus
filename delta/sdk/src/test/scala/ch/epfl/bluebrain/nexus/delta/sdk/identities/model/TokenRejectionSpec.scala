@@ -9,7 +9,7 @@ import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import ch.epfl.bluebrain.nexus.delta.sdk.error.IdentityError._
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.IOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
 
 class TokenRejectionSpec
     extends AnyWordSpecLike
@@ -17,7 +17,7 @@ class TokenRejectionSpec
     with Inspectors
     with CirceLiteral
     with TestHelpers
-    with IOValues
+    with BIOValues
     with Fixtures {
 
   "A TokenRejection" should {

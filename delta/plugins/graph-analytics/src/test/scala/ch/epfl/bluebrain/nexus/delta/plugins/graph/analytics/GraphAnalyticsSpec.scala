@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchContainer._
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchDocker
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.IOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
 import ch.epfl.bluebrain.nexus.testkit.bio.IOFixedClock
 import monix.execution.Scheduler
@@ -36,7 +36,7 @@ class GraphAnalyticsSpec(docker: ElasticSearchDocker)
     with AnyWordSpecLike
     with Matchers
     with TestHelpers
-    with IOValues
+    with BIOValues
     with IOFixedClock
     with ConfigFixtures
     with Eventually {

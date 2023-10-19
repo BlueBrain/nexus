@@ -33,8 +33,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit._
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchDocker
-import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValuable
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.IOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.{CatsEffectScalaTestAssertions, CatsIOValues}
 import io.circe.{Json, JsonObject}
 import org.scalatest.concurrent.Eventually
@@ -50,7 +50,7 @@ class SearchSpec
     extends TestKit(ActorSystem("SearchSpec"))
     with AnyWordSpecLike
     with Matchers
-    with EitherValuable
+    with EitherValues
     with OptionValues
     with CirceLiteral
     with TestHelpers
@@ -60,7 +60,7 @@ class SearchSpec
     with ConfigFixtures
     with CatsIOValues
     with CatsEffectScalaTestAssertions
-    with IOValues
+    with BIOValues
     with Eventually
     with Fixtures
     with ElasticSearchDocker {

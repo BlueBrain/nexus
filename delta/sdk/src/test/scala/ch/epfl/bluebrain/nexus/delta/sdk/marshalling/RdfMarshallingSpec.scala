@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.testkit.scalatest.TestMatchers
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.IOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
 import org.scalatest.matchers.should.Matchers
 
 import java.time.Instant
@@ -23,7 +23,7 @@ class RdfMarshallingSpec
     with Matchers
     with CirceLiteral
     with RdfMarshalling
-    with IOValues
+    with BIOValues
     with TestMatchers {
 
   implicit private val api: JsonLdApi               = JsonLdJavaApi.strict

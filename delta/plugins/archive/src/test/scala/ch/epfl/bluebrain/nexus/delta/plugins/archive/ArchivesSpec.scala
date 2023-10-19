@@ -25,7 +25,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit.ce.{CatsRunContext, IOFixedClock}
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.{CatsEffectScalaTestAssertions, CatsIOValues}
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
-import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValuable
+import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
 import io.circe.literal._
 import org.scalatest.matchers.should.Matchers
 
@@ -42,7 +42,7 @@ class ArchivesSpec
     with CatsRunContext
     with CatsEffectScalaTestAssertions
     with CatsIOValues
-    with EitherValuable
+    with EitherValues
     with TestHelpers
     with RemoteContextResolutionFixture {
 

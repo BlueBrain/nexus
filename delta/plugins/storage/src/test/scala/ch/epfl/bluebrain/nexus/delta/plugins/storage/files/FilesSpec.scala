@@ -37,7 +37,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit.remotestorage.RemoteStorageDocker
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.IOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import ch.epfl.bluebrain.nexus.testkit.bio.IOFixedClock
 import monix.bio.IO
@@ -52,7 +52,7 @@ class FilesSpec(docker: RemoteStorageDocker)
     with DoobieScalaTestFixture
     with OptionValues
     with Matchers
-    with IOValues
+    with BIOValues
     with IOFixedClock
     with Inspectors
     with CirceLiteral

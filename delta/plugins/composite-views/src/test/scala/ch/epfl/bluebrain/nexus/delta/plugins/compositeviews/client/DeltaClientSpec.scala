@@ -29,7 +29,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, RemainingElems}
 import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectScalaTestAssertions
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.IOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
 import io.circe.syntax.EncoderOps
 import monix.execution.Scheduler
 import org.scalatest.concurrent.ScalaFutures
@@ -47,7 +47,7 @@ class DeltaClientSpec
     with Matchers
     with ScalaFutures
     with OptionValues
-    with IOValues
+    with BIOValues
     with CatsRunContext
     with CatsEffectScalaTestAssertions
     with ConfigFixtures

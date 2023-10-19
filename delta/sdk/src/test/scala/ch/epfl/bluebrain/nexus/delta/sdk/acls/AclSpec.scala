@@ -4,11 +4,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress.{Organization, Ro
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.Acl
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValuable
+import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
-class AclSpec extends AnyWordSpecLike with Matchers with EitherValuable with AclFixtures {
+class AclSpec extends AnyWordSpecLike with Matchers with EitherValues with AclFixtures {
 
   "An Access Control List" should {
 

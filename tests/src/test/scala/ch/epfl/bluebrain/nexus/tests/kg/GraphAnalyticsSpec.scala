@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.tests.kg
 import akka.http.scaladsl.model.StatusCodes
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.testkit.CirceEq
-import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValuable
+import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
 import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.tests.Identity.projects.Bojack
@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Events, Organizations, Projects, Resources}
 import io.circe.Json
 
-final class GraphAnalyticsSpec extends BaseIntegrationSpec with CirceEq with EitherValuable {
+final class GraphAnalyticsSpec extends BaseIntegrationSpec with CirceEq with EitherValues {
   private val org          = genId()
   private val proj         = genId()
   private val ref          = s"$org/$proj"

@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
 import ch.epfl.bluebrain.nexus.testkit.CirceEq
-import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValuable
+import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
 import ch.epfl.bluebrain.nexus.tests.Identity.projects.{Bojack, PrincessCarolyn}
 import ch.epfl.bluebrain.nexus.tests.Identity.{Anonymous, ServiceAccount}
 import ch.epfl.bluebrain.nexus.tests.Optics.{admin, listing, supervision}
@@ -16,7 +16,7 @@ import org.scalatest.AppendedClues
 import java.io.File
 import scala.reflect.io.Directory
 
-final class ProjectsDeletionSpec extends BaseIntegrationSpec with CirceEq with EitherValuable with AppendedClues {
+final class ProjectsDeletionSpec extends BaseIntegrationSpec with CirceEq with EitherValues with AppendedClues {
 
   private val org   = genId()
   private val proj1 = genId()

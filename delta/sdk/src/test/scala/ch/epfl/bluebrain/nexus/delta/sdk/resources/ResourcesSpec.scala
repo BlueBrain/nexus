@@ -21,7 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.testkit.ce.IOFixedClock
-import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValuable
+import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.{CatsEffectScalaTestAssertions, CatsIOValues}
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
 import io.circe.Json
@@ -35,7 +35,7 @@ import java.time.Instant
 class ResourcesSpec
     extends AnyWordSpecLike
     with Matchers
-    with EitherValuable
+    with EitherValues
     with Inspectors
     with IOFixedClock
     with CatsIOValues

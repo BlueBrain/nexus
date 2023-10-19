@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, Resource
 import ch.epfl.bluebrain.nexus.testkit.ce.IOFixedClock
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
-import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValuable
+import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -23,7 +23,7 @@ class ArchivesSTMSpec
     with Matchers
     with CatsIOValues
     with IOFixedClock
-    with EitherValuable
+    with EitherValues
     with TestHelpers {
 
   "An Archive STM" when {

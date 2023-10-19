@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions.{read,
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.minio.MinioDocker
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.IOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -23,7 +23,7 @@ class S3StorageAccessSpec(docker: MinioDocker)
     extends TestKit(ActorSystem("S3StorageAccessSpec"))
     with AnyWordSpecLike
     with Matchers
-    with IOValues
+    with BIOValues
     with Eventually
     with TestHelpers
     with StorageFixtures

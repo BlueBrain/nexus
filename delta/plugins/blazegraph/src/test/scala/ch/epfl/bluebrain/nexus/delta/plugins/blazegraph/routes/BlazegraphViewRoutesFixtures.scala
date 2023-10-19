@@ -27,8 +27,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit.bio.IOFixedClock
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.IOValues
-import ch.epfl.bluebrain.nexus.testkit.scalatest.{EitherValuable, TestMatchers}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.{EitherValues, TestMatchers}
 import ch.epfl.bluebrain.nexus.testkit.{CirceEq, CirceLiteral, TestHelpers}
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
@@ -44,7 +44,7 @@ trait BlazegraphViewRoutesFixtures
     with CirceLiteral
     with CirceEq
     with IOFixedClock
-    with IOValues
+    with BIOValues
     with OptionValues
     with TestMatchers
     with Inspectors
@@ -53,7 +53,7 @@ trait BlazegraphViewRoutesFixtures
     with BeforeAndAfterAll
     with TestHelpers
     with Fixtures
-    with EitherValuable {
+    with EitherValues {
 
   import akka.actor.typed.scaladsl.adapter._
 

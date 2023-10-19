@@ -24,7 +24,7 @@ import ch.epfl.bluebrain.nexus.testkit._
 import ch.epfl.bluebrain.nexus.testkit.bio.IOFixedClock
 import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
 import ch.epfl.bluebrain.nexus.testkit.scalatest.TestMatchers
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.IOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectScalaTestAssertions
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
@@ -39,7 +39,7 @@ class ElasticSearchViewsRoutesFixtures
     with CirceLiteral
     with CirceEq
     with IOFixedClock
-    with IOValues
+    with BIOValues
     with CatsRunContext
     with CatsEffectScalaTestAssertions
     with OptionValues

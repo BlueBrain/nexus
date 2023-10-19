@@ -5,11 +5,11 @@ import ch.epfl.bluebrain.nexus.delta.routes.AclsRoutes.{AclValues, PatchAcl, Rep
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
-import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValuable
+import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
-class AclsRoutesPayloadSpec extends AnyWordSpecLike with Matchers with CirceLiteral with EitherValuable {
+class AclsRoutesPayloadSpec extends AnyWordSpecLike with Matchers with CirceLiteral with EitherValues {
 
   private val json = json"""{"acl": [{"permissions": ["resources/read"], "identity": {"@type": "Anonymous"} } ] }"""
 

@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Authenticated, Gro
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
-import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValuable
+import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -19,7 +19,7 @@ import org.scalatest.wordspec.AnyWordSpecLike
 class ResolverValueSpec
     extends AnyWordSpecLike
     with Matchers
-    with EitherValuable
+    with EitherValues
     with CatsIOValues
     with Inspectors
     with TestHelpers

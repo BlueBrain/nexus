@@ -40,8 +40,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ResourceRe
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit._
 import ch.epfl.bluebrain.nexus.testkit.blazegraph.BlazegraphDocker
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.IOValues
-import ch.epfl.bluebrain.nexus.testkit.scalatest.{EitherValuable, TestMatchers}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.{EitherValues, TestMatchers}
 import monix.bio.IO
 import monix.execution.Scheduler
 import org.scalatest.concurrent.Eventually
@@ -56,7 +56,7 @@ class BlazegraphViewsQuerySpec(docker: BlazegraphDocker)
     extends TestKit(ActorSystem("BlazegraphViewsQuerySpec"))
     with DoobieScalaTestFixture
     with Matchers
-    with EitherValuable
+    with EitherValues
     with OptionValues
     with CirceLiteral
     with TestHelpers
@@ -64,7 +64,7 @@ class BlazegraphViewsQuerySpec(docker: BlazegraphDocker)
     with CancelAfterFailure
     with Inspectors
     with ConfigFixtures
-    with IOValues
+    with BIOValues
     with Fixtures
     with Eventually {
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(6.seconds, 100.millis)

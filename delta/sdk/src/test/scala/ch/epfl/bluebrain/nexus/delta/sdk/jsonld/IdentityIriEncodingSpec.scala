@@ -6,12 +6,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label}
-import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValuable
+import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
-class IdentityIriEncodingSpec extends AnyWordSpecLike with Matchers with Inspectors with EitherValuable {
+class IdentityIriEncodingSpec extends AnyWordSpecLike with Matchers with Inspectors with EitherValues {
 
   implicit private val base: BaseUri                = BaseUri("http://localhost:8080", Label.unsafe("v1"))
   private val realm                                 = Label.unsafe("myrealm")

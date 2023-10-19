@@ -32,7 +32,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.testkit.scalatest.TestMatchers
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.IOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
@@ -49,7 +49,7 @@ class DeltaDirectivesSpec
     with OptionValues
     with CirceMarshalling
     with CirceLiteral
-    with IOValues
+    with BIOValues
     with TestMatchers
     with TestHelpers
     with Inspectors {

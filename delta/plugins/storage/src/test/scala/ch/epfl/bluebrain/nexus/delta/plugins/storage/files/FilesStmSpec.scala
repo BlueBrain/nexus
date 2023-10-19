@@ -17,8 +17,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.testkit.bio.IOFixedClock
-import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValuable
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.IOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
 import org.scalatest.{Inspectors, OptionValues}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -30,9 +30,9 @@ class FilesStmSpec
     with Matchers
     with IOFixedClock
     with OptionValues
-    with EitherValuable
+    with EitherValues
     with Inspectors
-    with IOValues
+    with BIOValues
     with FileFixtures
     with StorageFixtures {
 

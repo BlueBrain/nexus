@@ -23,7 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit._
 import ch.epfl.bluebrain.nexus.testkit.bio.IOFixedClock
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.IOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
 import io.circe.Json
 import io.circe.syntax._
 import monix.bio.UIO
@@ -38,7 +38,7 @@ class BlazegraphViewsSpec
     with Matchers
     with Inspectors
     with IOFixedClock
-    with IOValues
+    with BIOValues
     with TestHelpers
     with ConfigFixtures
     with Fixtures {

@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.IOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
 import ch.epfl.bluebrain.nexus.testkit.bio.IOFixedClock
 import io.circe.Json
@@ -28,7 +28,7 @@ class CompositeViewsStmSpec
     with Inspectors
     with IOFixedClock
     with OptionValues
-    with IOValues
+    with BIOValues
     with TestHelpers
     with CompositeViewsFixture {
   "A CompositeViews STM" when {

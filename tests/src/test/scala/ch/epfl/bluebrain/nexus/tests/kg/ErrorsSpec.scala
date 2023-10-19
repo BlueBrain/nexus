@@ -1,11 +1,11 @@
 package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.StatusCodes
-import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValuable
+import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
 import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, Identity}
 import io.circe.Json
 
-class ErrorsSpec extends BaseIntegrationSpec with EitherValuable {
+class ErrorsSpec extends BaseIntegrationSpec with EitherValues {
 
   "The /errors/invalid endpoint" should {
     s"return the proper error code" in {

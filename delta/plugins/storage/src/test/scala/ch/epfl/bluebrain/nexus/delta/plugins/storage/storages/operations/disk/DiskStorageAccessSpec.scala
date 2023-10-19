@@ -5,15 +5,15 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePath, DigestAlgorithm}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValuable
+import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.IOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
 import java.nio.file.{Files, Path}
 
-class DiskStorageAccessSpec extends AnyWordSpecLike with Matchers with IOValues with EitherValuable with TestHelpers {
+class DiskStorageAccessSpec extends AnyWordSpecLike with Matchers with BIOValues with EitherValues with TestHelpers {
 
   "A DiskStorage access operations" should {
     val iri = iri"http://localhost/disk"

@@ -23,8 +23,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.remotestorage.RemoteStorageDocker
-import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValuable
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.IOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
 import io.circe.Json
 import monix.execution.Scheduler
 import org.scalatest.concurrent.Eventually
@@ -41,9 +41,9 @@ class RemoteStorageSaveAndFetchFileSpec(docker: RemoteStorageDocker)
     with AnyWordSpecLike
     with AkkaSourceHelpers
     with OptionValues
-    with EitherValuable
+    with EitherValues
     with Matchers
-    with IOValues
+    with BIOValues
     with Eventually
     with BeforeAndAfterAll
     with StorageFixtures

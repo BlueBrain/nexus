@@ -10,7 +10,7 @@ import scala.concurrent.duration.Duration
 import scala.reflect.ClassTag
 import scala.util.control.NonFatal
 
-trait IOValuesMUnit {
+trait BIOValues {
   self: Suite =>
 
   implicit class UIOValuesOps[A](private val uio: UIO[A]) {

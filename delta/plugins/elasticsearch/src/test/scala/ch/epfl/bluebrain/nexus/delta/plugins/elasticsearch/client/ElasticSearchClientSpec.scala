@@ -18,8 +18,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{AggregationResult, Search
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchDocker
-import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValuable
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.IOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
 import io.circe.{Json, JsonObject}
 import org.scalatest.{DoNotDiscover, OptionValues}
@@ -35,11 +35,11 @@ class ElasticSearchClientSpec(override val docker: ElasticSearchDocker)
     with AnyWordSpecLike
     with Matchers
     with ScalaTestElasticSearchClientSetup
-    with EitherValuable
+    with EitherValues
     with OptionValues
     with CirceLiteral
     with TestHelpers
-    with IOValues
+    with BIOValues
     with Eventually {
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(6.seconds, 100.millis)

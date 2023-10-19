@@ -12,7 +12,7 @@ import scala.concurrent.duration.Duration
 import scala.reflect.ClassTag
 import scala.util.control.NonFatal
 
-trait IOValues extends IOValuesLowPrio {
+trait BIOValues extends BIOValuesLowPrio {
   self: Suite =>
 
   implicit def taskToFutureAssertion(
@@ -30,7 +30,7 @@ trait IOValues extends IOValuesLowPrio {
   implicit final def ioValuesSyntax[E: ClassTag, A](io: IO[E, A]): IOValuesOps[E, A] = new IOValuesOps(io)
 }
 
-trait IOValuesLowPrio extends Assertions {
+trait BIOValuesLowPrio extends Assertions {
   implicit def taskListToFutureAssertion(
       task: Task[List[Assertion]]
   )(implicit s: Scheduler = Scheduler.global): Future[Assertion] =

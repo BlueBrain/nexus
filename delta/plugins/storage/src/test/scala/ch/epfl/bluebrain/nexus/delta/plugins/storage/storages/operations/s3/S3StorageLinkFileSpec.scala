@@ -21,7 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.testkit.minio.MinioDocker
 import ch.epfl.bluebrain.nexus.testkit.minio.MinioDocker._
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.IOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
 import io.circe.Json
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
@@ -37,7 +37,7 @@ class S3StorageLinkFileSpec(docker: MinioDocker)
     with AnyWordSpecLike
     with AkkaSourceHelpers
     with Matchers
-    with IOValues
+    with BIOValues
     with StorageFixtures
     with BeforeAndAfterAll {
 

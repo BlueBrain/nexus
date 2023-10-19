@@ -18,7 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.bio.IOFixedClock
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.IOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
 import io.circe.Json
 import monix.bio.IO
 import org.scalatest.matchers.should.Matchers
@@ -34,7 +34,7 @@ class BlazegraphViewsStmSpec
     with Inspectors
     with OptionValues
     with IOFixedClock
-    with IOValues
+    with BIOValues
     with Fixtures {
 
   "A Blazegraph STM" when {

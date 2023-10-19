@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.storage.Storages.DiskStorage
 import ch.epfl.bluebrain.nexus.storage.Storages.PathExistence.{PathDoesNotExist, PathExists}
 import ch.epfl.bluebrain.nexus.storage.attributes.{AttributesCache, ContentTypeDetector}
 import ch.epfl.bluebrain.nexus.storage.config.AppConfig.{DigestConfig, StorageConfig}
-import ch.epfl.bluebrain.nexus.storage.utils.{EitherValues, IOEitherValues, Randomness}
+import ch.epfl.bluebrain.nexus.storage.utils.{IOEitherValues, Randomness}
 import org.mockito.IdiomaticMockito
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -38,7 +38,6 @@ class DiskStorageSpec
     with Randomness
     with IOEitherValues
     with BeforeAndAfterAll
-    with EitherValues
     with OptionValues
     with Inspectors
     with IdiomaticMockito {

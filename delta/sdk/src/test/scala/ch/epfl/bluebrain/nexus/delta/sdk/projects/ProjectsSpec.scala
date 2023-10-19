@@ -14,8 +14,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit._
 import ch.epfl.bluebrain.nexus.testkit.bio.IOFixedClock
-import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValuable
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.IOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
 import monix.bio.IO
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
@@ -27,10 +27,10 @@ import java.time.Instant
 class ProjectsSpec
     extends AnyWordSpecLike
     with Matchers
-    with EitherValuable
+    with EitherValues
     with Inspectors
     with IOFixedClock
-    with IOValues
+    with BIOValues
     with TestHelpers
     with CirceLiteral
     with OptionValues {

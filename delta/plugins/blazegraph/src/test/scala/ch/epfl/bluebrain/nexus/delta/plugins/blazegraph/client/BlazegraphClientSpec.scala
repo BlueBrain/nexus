@@ -22,10 +22,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescr
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.blazegraph.BlazegraphDocker
-import ch.epfl.bluebrain.nexus.testkit.scalatest.{EitherValuable, TestMatchers}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.{EitherValues, TestMatchers}
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.IOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
 import io.circe.Json
 import monix.execution.Scheduler
 import org.scalatest.concurrent.Eventually
@@ -43,13 +43,13 @@ class BlazegraphClientSpec(docker: BlazegraphDocker)
     with AnyWordSpecLike
     with Matchers
     with ConfigFixtures
-    with EitherValuable
+    with EitherValues
     with CancelAfterFailure
     with TestHelpers
     with Eventually
     with Inspectors
     with TestMatchers
-    with IOValues
+    with BIOValues
     with CatsIOValues {
 
   implicit private val sc: Scheduler                = Scheduler.global
