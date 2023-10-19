@@ -21,7 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit._
-import ch.epfl.bluebrain.nexus.testkit.ce.CatsIOValues
+import ch.epfl.bluebrain.nexus.testkit.ce.{CatsIOValues, CatsRunContext}
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
@@ -36,6 +36,7 @@ class ElasticSearchViewsRoutesFixtures
     with CirceEq
     with IOFixedClock
     with IOValues
+    with CatsRunContext
     with CatsIOValues
     with OptionValues
     with TestMatchers

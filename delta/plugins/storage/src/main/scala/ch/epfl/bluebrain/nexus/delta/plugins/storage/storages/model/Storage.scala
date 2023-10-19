@@ -14,6 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.{OrderingFields, ResourceShift}
@@ -173,7 +174,7 @@ object Storage {
   def shift(storages: Storages)(implicit baseUri: BaseUri): Shift =
     ResourceShift.withMetadata[StorageState, Storage, Metadata](
       Storages.entityType,
-      (ref, project) => storages.fetch(IdSegmentRef(ref), project),
+      (ref, project) => storages.fetch(IdSegmentRef(ref), project).toCatsIO,
       state => state.toResource,
       value => JsonLdContent(value, value.value.source, Some(value.value.metadata))
     )

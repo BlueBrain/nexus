@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.testkit.ce.CatsIOValues
 import ch.epfl.bluebrain.nexus.testkit.{CirceEq, IOValues, TestHelpers}
 import io.circe.syntax.EncoderOps
 import monix.bio.UIO
@@ -18,6 +19,7 @@ class JsonLdDocumentSpec
     with Matchers
     with TestHelpers
     with IOValues
+    with CatsIOValues
     with OptionValues
     with ContextFixtures
     with CirceEq {

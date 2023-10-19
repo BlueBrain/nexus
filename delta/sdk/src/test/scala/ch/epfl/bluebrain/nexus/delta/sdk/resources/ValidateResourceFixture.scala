@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resources
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ValidationReport
@@ -11,7 +12,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import io.circe.Json
 import io.circe.syntax.KeyOps
-import monix.bio.IO
 
 trait ValidateResourceFixture {
 
@@ -25,7 +25,7 @@ trait ValidateResourceFixture {
         schemaRef: ResourceRef,
         projectRef: ProjectRef,
         caller: Caller
-    ): IO[ResourceRejection, ValidationResult] =
+    ): IO[ValidationResult] =
       IO.pure(
         Validated(
           projectRef,
@@ -38,7 +38,7 @@ trait ValidateResourceFixture {
         resourceId: Iri,
         expanded: ExpandedJsonLd,
         schema: ResourceF[Schema]
-    ): IO[ResourceRejection, ValidationResult] =
+    ): IO[ValidationResult] =
       IO.pure(
         Validated(
           schema.value.project,
@@ -55,13 +55,13 @@ trait ValidateResourceFixture {
         schemaRef: ResourceRef,
         projectRef: ProjectRef,
         caller: Caller
-    ): IO[ResourceRejection, ValidationResult] = IO.raiseError(expected)
+    ): IO[ValidationResult] = IO.raiseError(expected)
 
     override def apply(
         resourceId: Iri,
         expanded: ExpandedJsonLd,
         schema: ResourceF[Schema]
-    ): IO[ResourceRejection, ValidationResult] = IO.raiseError(expected)
+    ): IO[ValidationResult] = IO.raiseError(expected)
   }
 
 }

@@ -103,11 +103,12 @@ final class ProjectsImpl private (
     ).span("listProjects")
 
   override def currentRefs: Stream[Task, ProjectRef] =
-    log.currentStates(Scope.root).map(_.value.project)
+    log.currentStates(Scope.root).translate(ioToTaskK).map(_.value.project)
 
-  override def states(offset: Offset): ElemStream[ProjectState] = log.states(Scope.root, offset).map {
-    _.toElem { p => Some(p.project) }
-  }
+  override def states(offset: Offset): ElemStream[ProjectState] =
+    log.states(Scope.root, offset).translate(ioToTaskK).map {
+      _.toElem { p => Some(p.project) }
+    }
 
   private def eval(cmd: ProjectCommand): IO[ProjectRejection, ProjectResource] =
     log.evaluate(cmd.ref, cmd.ref, cmd).map(_._2.toResource(defaultApiMappings))

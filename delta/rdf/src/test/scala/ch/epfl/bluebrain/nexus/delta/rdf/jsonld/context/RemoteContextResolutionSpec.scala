@@ -4,10 +4,11 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Fixtures
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContext.StaticContext
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolutionError.RemoteContextNotFound
+import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
-class RemoteContextResolutionSpec extends AnyWordSpecLike with Matchers with Fixtures {
+class RemoteContextResolutionSpec extends AnyWordSpecLike with Matchers with Fixtures with CatsRunContext {
 
   "A remote context resolution" should {
 

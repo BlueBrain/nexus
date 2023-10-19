@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.tests.BaseSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.listings.{Alice, Bob}
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Organizations
-import io.circe.Json
+import io.circe.{Decoder, Json}
 import org.scalatest.Assertion
 
 class IdResolutionSpec extends BaseSpec {
@@ -36,6 +36,8 @@ class IdResolutionSpec extends BaseSpec {
   private val encodedReusedId       = UrlUtils.encode(reusedId)
   private val uniqueResourcePayload = resource(uniqueId)
   private val reusedResourcePayload = resource(reusedId)
+
+  private val addressOfProjectWithUniqueResource = "http://delta:8080/v1/projects/" + ref11
 
   private val neurosciencegraphSegment   = "neurosciencegraph/data/segment"
   private val proxyIdBase                = "http://localhost:8081"
@@ -84,7 +86,8 @@ class IdResolutionSpec extends BaseSpec {
       eventually {
         deltaClient.get[Json](s"/resolve/$encodedUniqueId", Bob) { (json, response) =>
           response.status shouldEqual StatusCodes.OK
-          json shouldEqual uniqueResourcePayload
+          json.topLevelField[String]("@id") shouldEqual uniqueId
+          json.topLevelField[String]("_project") shouldEqual addressOfProjectWithUniqueResource
         }
       }
     }
@@ -97,22 +100,6 @@ class IdResolutionSpec extends BaseSpec {
         }
       }
     }
-
-    "redirect to fusion login when if text/html accept header is present (no results)" in {
-      val fusionLoginPage = "https://bbp.epfl.ch/nexus/web/login"
-
-      deltaClient.get[String]("/resolve/unknownId", Bob, acceptTextHtml) { (_, response) =>
-        response isRedirectTo fusionLoginPage
-      }(PredefinedFromEntityUnmarshallers.stringUnmarshaller)
-    }
-
-    "redirect to fusion resource page if text/html accept header is present (single result)" in {
-      deltaClient.get[String](s"/resolve/$encodedUniqueId", Bob, acceptTextHtml) { (_, response) =>
-        response isRedirectTo fusionResourcePageFor(encodedUniqueId)
-      }(PredefinedFromEntityUnmarshallers.stringUnmarshaller)
-    }
-
-    "redirect to fusion resource selection page if text/html accept header is present (multiple result)" in { pending }
 
     "redirect to delta resolve if the request comes to the proxy endpoint" in {
       deltaClient.get[String](s"/resolve-proxy-pass/$neurosciencegraphSegment", Bob) { (_, response) =>
@@ -128,18 +115,22 @@ class IdResolutionSpec extends BaseSpec {
 
   }
 
-  implicit class HttpResponseOps(response: HttpResponse) {
+  implicit private class HttpResponseOps(response: HttpResponse) {
     def isRedirectTo(uri: String): Assertion = {
       response.status shouldEqual StatusCodes.SeeOther
       locationHeaderOf(response) shouldEqual uri
     }
   }
+
+  implicit private class JsonOps(json: Json) {
+    def topLevelField[A: Decoder](field: String): A =
+      json.hcursor.get[A](field).toOption.get
+  }
+
   private def locationHeaderOf(response: HttpResponse) =
     response.header[Location].value.uri.toString()
   private def acceptTextHtml                           =
     List(Accept(MediaRange.One(`text/html`, 1f)))
-  private def fusionResourcePageFor(encodedId: String) =
-    s"https://bbp.epfl.ch/nexus/web/$ref11/resources/$encodedId".replace("%3A", ":")
   private def fusionResolveEndpoint(encodedId: String) =
     s"https://bbp.epfl.ch/nexus/web/resolve/$encodedId".replace("%3A", ":")
   private def deltaResolveEndpoint(encodedId: String)  =

@@ -20,8 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
-import ch.epfl.bluebrain.nexus.testkit.ce.IOFixedClock
-import ch.epfl.bluebrain.nexus.testkit.ce.CatsIOValues
+import ch.epfl.bluebrain.nexus.testkit.ce.{CatsIOValues, CatsRunContext, IOFixedClock}
 import monix.bio.UIO
 import monix.execution.Scheduler
 import org.scalatest.CancelAfterFailure
@@ -34,6 +33,7 @@ import java.util.UUID
 class OrganizationsImplSpec
     extends DoobieScalaTestFixture
     with Matchers
+    with CatsRunContext
     with CatsIOValues
     with IOFixedClock
     with CancelAfterFailure

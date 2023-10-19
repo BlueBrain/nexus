@@ -74,4 +74,12 @@ object UUIDF {
                 override def apply(): UIO[UUID]           = uuidRef.get.hideErrors
               }
     } yield uuidF).hideErrors
+
+  /**
+    * Creates a [[UUIDF]] sourcing [[UUID]] values from a mutable reference.
+    *
+    * @param ref
+    *   the pre-initialised mutable reference used to store the [[UUID]]
+    */
+  final def fromRef(ref: Ref[Task, UUID]): UUIDF = () => ref.get.hideErrors
 }

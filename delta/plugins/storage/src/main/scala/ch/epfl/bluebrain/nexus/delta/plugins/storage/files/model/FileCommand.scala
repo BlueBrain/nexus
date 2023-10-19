@@ -62,7 +62,8 @@ object FileCommand {
       storage: ResourceRef.Revision,
       storageType: StorageType,
       attributes: FileAttributes,
-      subject: Subject
+      subject: Subject,
+      tag: Option[UserTag]
   ) extends FileCommand {
     override def rev: Int = 0
   }

@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.state
 
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.taskToIoK
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.IriInstances
@@ -291,7 +292,7 @@ object ScopedStateStore {
         _.offset,
         config.copy(refreshStrategy = strategy),
         xas
-      )
+      ).translate(taskToIoK)
 
     override def currentStates(scope: Scope, tag: Tag, offset: Offset): EnvelopeStream[S] =
       states(scope, tag, offset, RefreshStrategy.Stop)

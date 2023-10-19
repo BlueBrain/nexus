@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resolvers
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
@@ -67,7 +66,7 @@ object ResourceResolution {
     apply(
       aclCheck,
       resolvers,
-      (ref: ResourceRef, project: ProjectRef) => toCatsIO(resources.fetch(ref, project).redeem(_ => None, Some(_))),
+      (ref: ResourceRef, project: ProjectRef) => resources.fetch(ref, project).redeem(_ => None, Some(_)),
       Permissions.resources.read
     )
 
