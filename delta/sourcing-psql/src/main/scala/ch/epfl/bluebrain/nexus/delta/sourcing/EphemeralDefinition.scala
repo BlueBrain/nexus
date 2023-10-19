@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
 import cats.effect.IO
+import cats.implicits.catsSyntaxMonadErrorRethrow
 import ch.epfl.bluebrain.nexus.delta.sourcing.EvaluationError.EvaluationTimeout
 import ch.epfl.bluebrain.nexus.delta.sourcing.execution.EvaluationExecution
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
@@ -25,6 +26,5 @@ final case class EphemeralDefinition[Id, S <: EphemeralState, Command, +R <: Rej
         execution.timer,
         execution.contextShift
       )
-      .flatMap(IO.fromEither)
-
+      .rethrow
 }

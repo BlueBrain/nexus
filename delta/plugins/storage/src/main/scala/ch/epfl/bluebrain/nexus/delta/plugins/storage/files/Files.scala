@@ -8,6 +8,7 @@ import cats.effect.Clock
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.KeyValueStore
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.ioToTaskK
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files._
@@ -85,19 +86,22 @@ final class Files(
     *   the project where the file will belong
     * @param entity
     *   the http FormData entity
+    * @param tag
+    *   the optional tag this file is being created with, attached to the current revision
     */
   def create(
       storageId: Option[IdSegment],
       projectRef: ProjectRef,
-      entity: HttpEntity
+      entity: HttpEntity,
+      tag: Option[UserTag]
   )(implicit caller: Caller): IO[FileRejection, FileResource] = {
     for {
       pc                    <- fetchContext.onCreate(projectRef)
       iri                   <- generateId(pc)
-      _                     <- test(CreateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, caller.subject))
+      _                     <- test(CreateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, caller.subject, tag))
       (storageRef, storage) <- fetchActiveStorage(storageId, projectRef, pc)
       attributes            <- extractFileAttributes(iri, entity, storage)
-      res                   <- eval(CreateFile(iri, projectRef, storageRef, storage.tpe, attributes, caller.subject))
+      res                   <- eval(CreateFile(iri, projectRef, storageRef, storage.tpe, attributes, caller.subject, tag))
     } yield res
   }.span("createFile")
 
@@ -112,20 +116,23 @@ final class Files(
     *   the project where the file will belong
     * @param entity
     *   the http FormData entity
+    * @param tag
+    *   the optional tag this file is being created with, attached to the current revision
     */
   def create(
       id: IdSegment,
       storageId: Option[IdSegment],
       projectRef: ProjectRef,
-      entity: HttpEntity
+      entity: HttpEntity,
+      tag: Option[UserTag]
   )(implicit caller: Caller): IO[FileRejection, FileResource] = {
     for {
       pc                    <- fetchContext.onCreate(projectRef)
       iri                   <- expandIri(id, pc)
-      _                     <- test(CreateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, caller.subject))
+      _                     <- test(CreateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, caller.subject, tag))
       (storageRef, storage) <- fetchActiveStorage(storageId, projectRef, pc)
       attributes            <- extractFileAttributes(iri, entity, storage)
-      res                   <- eval(CreateFile(iri, projectRef, storageRef, storage.tpe, attributes, caller.subject))
+      res                   <- eval(CreateFile(iri, projectRef, storageRef, storage.tpe, attributes, caller.subject, tag))
     } yield res
   }.span("createFile")
 
@@ -142,18 +149,21 @@ final class Files(
     *   the optional media type to use
     * @param path
     *   the path where the file is located inside the storage
+    * @param tag
+    *   the optional tag this file link is being created with, attached to the current revision
     */
   def createLink(
       storageId: Option[IdSegment],
       projectRef: ProjectRef,
       filename: Option[String],
       mediaType: Option[ContentType],
-      path: Uri.Path
+      path: Uri.Path,
+      tag: Option[UserTag]
   )(implicit caller: Caller): IO[FileRejection, FileResource] = {
     for {
       pc  <- fetchContext.onCreate(projectRef)
       iri <- generateId(pc)
-      res <- createLink(iri, projectRef, pc, storageId, filename, mediaType, path)
+      res <- createLink(iri, projectRef, pc, storageId, filename, mediaType, path, tag)
     } yield res
   }.span("createLink")
 
@@ -172,6 +182,8 @@ final class Files(
     *   the optional media type to use
     * @param path
     *   the path where the file is located inside the storage
+    * @param tag
+    *   the optional tag this file link is being created with, attached to the current revision
     */
   def createLink(
       id: IdSegment,
@@ -179,12 +191,13 @@ final class Files(
       projectRef: ProjectRef,
       filename: Option[String],
       mediaType: Option[ContentType],
-      path: Uri.Path
+      path: Uri.Path,
+      tag: Option[UserTag]
   )(implicit caller: Caller): IO[FileRejection, FileResource] = {
     for {
       pc  <- fetchContext.onCreate(projectRef)
       iri <- expandIri(id, pc)
-      res <- createLink(iri, projectRef, pc, storageId, filename, mediaType, path)
+      res <- createLink(iri, projectRef, pc, storageId, filename, mediaType, path, tag)
     } yield res
   }.span("createLink")
 
@@ -388,17 +401,18 @@ final class Files(
       storageId: Option[IdSegment],
       filename: Option[String],
       mediaType: Option[ContentType],
-      path: Uri.Path
+      path: Uri.Path,
+      tag: Option[UserTag]
   )(implicit caller: Caller): IO[FileRejection, FileResource] =
     for {
-      _                     <- test(CreateFile(iri, ref, testStorageRef, testStorageType, testAttributes, caller.subject))
+      _                     <- test(CreateFile(iri, ref, testStorageRef, testStorageType, testAttributes, caller.subject, tag))
       (storageRef, storage) <- fetchActiveStorage(storageId, ref, pc)
       resolvedFilename      <- IO.fromOption(filename.orElse(path.lastSegment), InvalidFileLink(iri))
       description           <- FileDescription(resolvedFilename, mediaType)
       attributes            <- LinkFile(storage, remoteDiskStorageClient, config)
                                  .apply(path, description)
                                  .mapError(LinkRejection(iri, storage.id, _))
-      res                   <- eval(CreateFile(iri, ref, storageRef, storage.tpe, attributes, caller.subject))
+      res                   <- eval(CreateFile(iri, ref, storageRef, storage.tpe, attributes, caller.subject, tag))
     } yield res
 
   private def eval(cmd: FileCommand): IO[FileRejection, FileResource] =
@@ -479,6 +493,7 @@ final class Files(
                          )
       stream        <- log
                          .states(Scope.root, offset)
+                         .translate(ioToTaskK)
                          .map { envelope =>
                            envelope.value match {
                              case f
@@ -567,7 +582,7 @@ object Files {
   ): Option[FileState] = {
     // format: off
     def created(e: FileCreated): Option[FileState] = Option.when(state.isEmpty) {
-      FileState(e.id, e.project, e.storage, e.storageType, e.attributes, Tags.empty, e.rev, deprecated = false,  e.instant, e.subject, e.instant, e.subject)
+      FileState(e.id, e.project, e.storage, e.storageType, e.attributes, Tags(e.tag, e.rev), e.rev, deprecated = false,  e.instant, e.subject, e.instant, e.subject)
     }
 
     def updated(e: FileUpdated): Option[FileState] = state.map { s =>
@@ -607,7 +622,9 @@ object Files {
 
     def create(c: CreateFile) = state match {
       case None    =>
-        IOUtils.instant.map(FileCreated(c.id, c.project, c.storage, c.storageType, c.attributes, 1, _, c.subject))
+        IOUtils.instant.map(
+          FileCreated(c.id, c.project, c.storage, c.storageType, c.attributes, 1, _, c.subject, c.tag)
+        )
       case Some(_) =>
         IO.raiseError(ResourceAlreadyExists(c.id, c.project))
     }
@@ -684,6 +701,7 @@ object Files {
       FileState.serializer,
       Tagger[FileEvent](
         {
+          case f: FileCreated  => f.tag.flatMap(t => Some(t -> f.rev))
           case f: FileTagAdded => Some(f.tag -> f.targetRev)
           case _               => None
         },

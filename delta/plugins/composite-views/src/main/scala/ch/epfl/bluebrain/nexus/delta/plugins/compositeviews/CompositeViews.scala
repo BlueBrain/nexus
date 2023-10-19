@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
 import cats.effect.Clock
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.ioToTaskK
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax.kamonSyntax
@@ -330,19 +331,19 @@ final class CompositeViews private (
     * Return all existing views for the given project in a finite stream
     */
   def currentViews(project: ProjectRef): ElemStream[CompositeViewDef] =
-    log.currentStates(Scope.Project(project)).map(toCompositeViewDef)
+    log.currentStates(Scope.Project(project)).translate(ioToTaskK).map(toCompositeViewDef)
 
   /**
     * Return all existing indexing views in a finite stream
     */
   def currentViews: ElemStream[CompositeViewDef] =
-    log.currentStates(Scope.Root).map(toCompositeViewDef)
+    log.currentStates(Scope.Root).translate(ioToTaskK).map(toCompositeViewDef)
 
   /**
     * Return the indexing views in a non-ending stream
     */
   def views(start: Offset): ElemStream[CompositeViewDef] =
-    log.states(Scope.Root, start).map(toCompositeViewDef)
+    log.states(Scope.Root, start).translate(ioToTaskK).map(toCompositeViewDef)
 
   private def toCompositeViewDef(envelope: Envelope[CompositeViewState]) =
     envelope.toElem { v => Some(v.project) }.map { v =>

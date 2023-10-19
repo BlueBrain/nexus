@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.event
 
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.taskToIoK
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.ScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
@@ -132,7 +133,7 @@ object ScopedEventStore {
           scope: Scope,
           offset: Offset,
           strategy: RefreshStrategy
-      ): Stream[Task, Envelope[E]] =
+      ): EnvelopeStream[E] =
         StreamingQuery[Envelope[E]](
           offset,
           offset => sql"""SELECT type, id, value, rev, instant, ordering FROM public.scoped_events
@@ -142,12 +143,12 @@ object ScopedEventStore {
           _.offset,
           config.copy(refreshStrategy = strategy),
           xas
-        )
+        ).translate(taskToIoK)
 
-      override def currentEvents(scope: Scope, offset: Offset): Stream[Task, Envelope[E]] =
+      override def currentEvents(scope: Scope, offset: Offset): EnvelopeStream[E] =
         events(scope, offset, RefreshStrategy.Stop)
 
-      override def events(scope: Scope, offset: Offset): Stream[Task, Envelope[E]] =
+      override def events(scope: Scope, offset: Offset): EnvelopeStream[E] =
         events(scope, offset, config.refreshStrategy)
 
     }

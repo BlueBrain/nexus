@@ -270,7 +270,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
   }
 
   make[IdResolution].from { (defaultViewsQuery: DefaultViewsQuery.Elasticsearch, shifts: ResourceShifts) =>
-    new IdResolution(defaultViewsQuery, (resourceRef, projectRef) => shifts.fetch(resourceRef, projectRef))
+    new IdResolution(defaultViewsQuery, (resourceRef, projectRef) => shifts.fetch(resourceRef, projectRef).toUIO)
   }
 
   make[IdResolutionRoutes].from {
@@ -284,7 +284,8 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         fusionConfig: FusionConfig,
         baseUri: BaseUri
     ) =>
-      new IdResolutionRoutes(identities, aclCheck, idResolution, baseUri)(
+      new IdResolutionRoutes(identities, aclCheck, idResolution)(
+        baseUri,
         s,
         ordering,
         rcr,

@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
+import ch.epfl.bluebrain.nexus.testkit.ce.CatsIOValues
 import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOValues, TestHelpers}
 import io.circe.Json
 import io.circe.syntax._
@@ -21,6 +22,7 @@ class ValidationReportSpec
     with TestHelpers
     with EitherValuable
     with OptionValues
+    with CatsIOValues
     with IOValues {
 
   implicit val api: JsonLdApi = JsonLdJavaApi.strict

@@ -27,6 +27,7 @@ import java.time.Instant
 import java.util.UUID
 import scala.annotation.nowarn
 import scala.concurrent.duration.FiniteDuration
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 
 /**
   * Representation of a composite view.
@@ -170,7 +171,7 @@ object CompositeView {
   def shift(views: CompositeViews)(implicit baseUri: BaseUri): Shift =
     ResourceShift.withMetadata[CompositeViewState, CompositeView, Metadata](
       CompositeViews.entityType,
-      (ref, project) => views.fetch(IdSegmentRef(ref), project),
+      (ref, project) => views.fetch(IdSegmentRef(ref), project).toCatsIO,
       state => state.toResource,
       value => JsonLdContent(value, value.value.source, Some(value.value.metadata))
     )

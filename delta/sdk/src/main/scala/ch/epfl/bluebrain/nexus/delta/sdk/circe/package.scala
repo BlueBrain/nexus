@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 import cats.Order
 import cats.data.NonEmptyMap
 import io.circe.syntax.EncoderOps
-import io.circe.{Decoder, Encoder}
+import io.circe.{Decoder, Encoder, JsonObject}
 
 package object circe {
 
@@ -21,4 +21,10 @@ package object circe {
       }
 
   }
+
+  implicit class JsonObjOps(j: JsonObject) {
+    def dropNulls: JsonObject = dropNullValues(j)
+  }
+
+  def dropNullValues(j: JsonObject): JsonObject = j.filter { case (_, v) => !v.isNull }
 }

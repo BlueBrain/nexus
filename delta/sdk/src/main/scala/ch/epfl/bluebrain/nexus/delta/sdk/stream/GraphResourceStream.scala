@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.{RefreshStrategy, SelectFilter, StreamingQuery}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.RemainingElems
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import fs2.Stream
 import monix.bio.{Task, UIO}
 
@@ -77,7 +78,7 @@ object GraphResourceStream {
   ): GraphResourceStream = new GraphResourceStream {
 
     override def continuous(project: ProjectRef, selectFilter: SelectFilter, start: Offset): ElemStream[GraphResource] =
-      StreamingQuery.elems(project, start, selectFilter, qc, xas, shifts.decodeGraphResource)
+      StreamingQuery.elems(project, start, selectFilter, qc, xas, shifts.decodeGraphResource(_, _).toTask)
 
     override def currents(project: ProjectRef, selectFilter: SelectFilter, start: Offset): ElemStream[GraphResource] =
       StreamingQuery.elems(
@@ -86,7 +87,7 @@ object GraphResourceStream {
         selectFilter,
         qc.copy(refreshStrategy = RefreshStrategy.Stop),
         xas,
-        shifts.decodeGraphResource
+        shifts.decodeGraphResource(_, _).toTask
       )
 
     override def remaining(

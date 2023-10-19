@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
+import ch.epfl.bluebrain.nexus.testkit.ce.CatsIOValues
 import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOValues, TestHelpers}
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
@@ -17,6 +18,7 @@ class ShaclEngineSpec
     with Matchers
     with TestHelpers
     with IOValues
+    with CatsIOValues
     with EitherValuable
     with Inspectors {
 

@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.generators
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
@@ -15,12 +16,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
-import ch.epfl.bluebrain.nexus.testkit.IOValues
+import ch.epfl.bluebrain.nexus.testkit.ce.CatsIOValues
 import io.circe.Json
 
 import java.time.Instant
 
-object ResourceGen extends IOValues {
+object ResourceGen extends CatsIOValues {
 
   // We put a lenient api for schemas otherwise the api checks data types before the actual schema validation process
   implicit val api: JsonLdApi = JsonLdJavaApi.strict
@@ -65,6 +66,21 @@ object ResourceGen extends IOValues {
     val expanded  = ExpandedJsonLd(source).accepted.replaceId(id)
     val compacted = expanded.toCompacted(source.topContextValueOrEmpty).accepted
     Resource(id, project, tags, schema, source, compacted, expanded)
+  }
+
+  def resourceAsync(
+      id: Iri,
+      project: ProjectRef,
+      source: Json,
+      schema: ResourceRef = Latest(schemas.resources),
+      tags: Tags = Tags.empty
+  )(implicit resolution: RemoteContextResolution): IO[Resource] = {
+    for {
+      expanded  <- ExpandedJsonLd(source).map(_.replaceId(id))
+      compacted <- expanded.toCompacted(source.topContextValueOrEmpty)
+    } yield {
+      Resource(id, project, tags, schema, source, compacted, expanded)
+    }
   }
 
   def sourceToResourceF(

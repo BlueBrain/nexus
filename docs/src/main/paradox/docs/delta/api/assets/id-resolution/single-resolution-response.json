@@ -1,9 +1,24 @@
 {
-  "@context": {
-    "@vocab": "https://schema.org/"
-  },
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/metadata.json",
+    {
+      "@vocab": "https://schema.org/"
+    }
+  ],
   "@id": "https://example.com/Alice",
   "@type": "Person",
   "name": "Alice",
-  "age": 42
+  "age": 42,
+  "_constrainedBy" : "https://bluebrain.github.io/nexus/schemas/unconstrained.json",
+  "_createdAt" : "1970-01-01T00:00:00Z",
+  "_createdBy" : "http://localhost/v1/anonymous",
+  "_deprecated" : false,
+  "_incoming" : "http://localhost/v1/resources/myorg/myproject/_/https%3A%2F%2Fexample.com%2FAlice/incoming",
+  "_outgoing" : "http://localhost/v1/resources/myorg/myproject/_/https%3A%2F%2Fexample.com%2FAlice/outgoing",
+  "_project" : "http://localhost/v1/projects/myorg/myproject",
+  "_rev" : 1,
+  "_schemaProject" : "http://localhost/v1/projects/myorg/myproject",
+  "_self" : "http://localhost/v1/resources/myorg/myproject/_/https%3A%2F%2Fexample.com%2FAlice",
+  "_updatedAt" : "1970-01-01T00:00:00Z",
+  "_updatedBy" : "http://localhost/v1/anonymous"
 }

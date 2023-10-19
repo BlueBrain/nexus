@@ -37,11 +37,6 @@ Response (single resource)
 Response (multiple choices)
 :   @@snip [response.json](assets/id-resolution/multiple-resolution-response.json)
 
-### Fusion Redirection
-
-When querying the resolve endpoint, it is possible to add the `Accept: text/html` header in order for Nexus Delta to
-redirect to the appropriate Nexus Fusion page.
-
 ## Resolve (Proxy Pass)
 
 @@@ note { .warning }

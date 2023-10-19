@@ -70,7 +70,7 @@ final class RealmsImpl private (log: RealmsLog) extends Realms {
       ordering: Ordering[RealmResource]
   ): IO[SearchResults.UnscoredSearchResults[RealmResource]] =
     SearchResults(
-      log.currentStates(_.toResource).evalFilter(params.matches),
+      log.currentStates(_.toResource).translate(ioToTaskK).evalFilter(params.matches),
       pagination,
       ordering
     ).span("listRealms")

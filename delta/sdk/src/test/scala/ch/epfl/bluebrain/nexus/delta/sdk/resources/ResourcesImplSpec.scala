@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk.resources
 
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -27,7 +26,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revisio
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues}
+import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
+import ch.epfl.bluebrain.nexus.testkit.ce.{CatsIOValues, IOFixedClock}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
 
@@ -36,7 +36,7 @@ import java.util.UUID
 class ResourcesImplSpec
     extends DoobieScalaTestFixture
     with Matchers
-    with IOValues
+    with CatsIOValues
     with IOFixedClock
     with CancelAfterFailure
     with CirceLiteral
@@ -70,10 +70,12 @@ class ResourcesImplSpec
   private val schemaSource = jsonContentOf("resources/schema.json").addContext(contexts.shacl, contexts.schemasMetadata)
   private val schema1      = SchemaGen.schema(nxv + "myschema", project.ref, schemaSource.removeKeys(keywords.id))
   private val schema2      = SchemaGen.schema(schema.Person, project.ref, schemaSource.removeKeys(keywords.id))
+  private val schema3      = SchemaGen.schema(nxv + "myschema3", project.ref, schemaSource.removeKeys(keywords.id))
 
   private val fetchSchema: (ResourceRef, ProjectRef) => FetchResource[Schema] = {
     case (ref, _) if ref.iri == schema2.id => IO.pure(Some(SchemaGen.resourceFor(schema2, deprecated = true)))
     case (ref, _) if ref.iri == schema1.id => IO.pure(Some(SchemaGen.resourceFor(schema1)))
+    case (ref, _) if ref.iri == schema3.id => IO.pure(Some(SchemaGen.resourceFor(schema3)))
     case _                                 => IO.none
   }
   private val resourceResolution: ResourceResolution[Schema]                  =
@@ -91,7 +93,7 @@ class ResourcesImplSpec
 
   private val resolverContextResolution: ResolverContextResolution = new ResolverContextResolution(
     res,
-    (r, p, _) => resources.fetch(r, p).bimap(_ => ResourceResolutionReport(), identity).attempt
+    (r, p, _) => resources.fetch(r, p).attempt.map(_.left.map(_ => ResourceResolutionReport()))
   )
 
   private lazy val resources: Resources = ResourcesImpl(
@@ -346,6 +348,15 @@ class ResourcesImplSpec
           mkResource(expectedData).copy(rev = 3)
       }
 
+      "succeed when changing the schema" in {
+        val updatedSource   = source.removeKeys(keywords.id) deepMerge json"""{"number": 70}"""
+        val newSchema       = Revision(schema3.id, 1)
+        val updatedResource = resources.update(myId2, projectRef, Some(newSchema.iri), 3, updatedSource).accepted
+
+        updatedResource.rev shouldEqual 4
+        updatedResource.schema shouldEqual newSchema
+      }
+
       "reject if it doesn't exists" in {
         resources
           .update(nxv + "other", projectRef, None, 1, json"""{"a": "b"}""")
@@ -367,15 +378,9 @@ class ResourcesImplSpec
           .rejectedWith[ResourceIsDeprecated]
       }
 
-      "reject if schemas do not match" in {
-        resources
-          .update(myId2, projectRef, Some(schemas.resources), 3, json"""{"a": "b"}""")
-          .rejectedWith[UnexpectedResourceSchema]
-      }
-
       "reject if it does not validate against its schema" in {
         val wrongSource = source.removeKeys(keywords.id) deepMerge json"""{"number": "wrong"}"""
-        resources.update(myId2, projectRef, Some(schema1.id), 3, wrongSource).rejectedWith[InvalidResource]
+        resources.update(myId2, projectRef, Some(schema1.id), 4, wrongSource).rejectedWith[InvalidResource]
       }
 
       "reject if project does not exist" in {
@@ -482,7 +487,7 @@ class ResourcesImplSpec
 
       "reject if schemas do not match" in {
         resources
-          .tag(myId2, projectRef, Some(schemas.resources), tag, 2, 3)
+          .tag(myId2, projectRef, Some(schemas.resources), tag, 2, 4)
           .rejectedWith[UnexpectedResourceSchema]
       }
 
@@ -528,7 +533,7 @@ class ResourcesImplSpec
       }
 
       "reject if schemas do not match" in {
-        resources.deprecate(myId2, projectRef, Some(schemas.resources), 3).rejectedWith[UnexpectedResourceSchema]
+        resources.deprecate(myId2, projectRef, Some(schemas.resources), 4).rejectedWith[UnexpectedResourceSchema]
       }
 
       "reject if project does not exist" in {
@@ -627,7 +632,7 @@ class ResourcesImplSpec
 
       "reject if schemas do not match" in {
         resources
-          .deleteTag(myId2, projectRef, Some(schemas.resources), tag, 3)
+          .deleteTag(myId2, projectRef, Some(schemas.resources), tag, 4)
           .rejectedWith[UnexpectedResourceSchema]
       }
 
