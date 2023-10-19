@@ -20,7 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.testkit.ce.{CatsIOValues, IOFixedClock}
+import ch.epfl.bluebrain.nexus.testkit.ce.{CatsEffectScalaTestAssertions, CatsIOValues, IOFixedClock}
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, TestHelpers}
 import io.circe.Json
 import io.circe.syntax.{EncoderOps, KeyOps}
@@ -37,6 +37,7 @@ class ResourcesSpec
     with Inspectors
     with IOFixedClock
     with CatsIOValues
+    with CatsEffectScalaTestAssertions
     with TestHelpers
     with CirceLiteral
     with OptionValues

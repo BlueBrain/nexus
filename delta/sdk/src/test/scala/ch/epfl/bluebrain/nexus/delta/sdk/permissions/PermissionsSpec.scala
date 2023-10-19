@@ -6,13 +6,18 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.PermissionsEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.PermissionsRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label}
-import ch.epfl.bluebrain.nexus.testkit.ce.{CatsIOValues, IOFixedClock}
+import ch.epfl.bluebrain.nexus.testkit.ce.{CatsEffectScalaTestAssertions, CatsIOValues, IOFixedClock}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
 import java.time.Instant
 
-class PermissionsSpec extends AnyWordSpecLike with Matchers with CatsIOValues with IOFixedClock {
+class PermissionsSpec
+    extends AnyWordSpecLike
+    with Matchers
+    with CatsIOValues
+    with CatsEffectScalaTestAssertions
+    with IOFixedClock {
 
   "The Permissions next function" should {
     val minimum     = Set(permissions.write, permissions.read)

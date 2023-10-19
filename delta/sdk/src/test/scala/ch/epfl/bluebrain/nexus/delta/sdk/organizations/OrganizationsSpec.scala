@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationState
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
-import ch.epfl.bluebrain.nexus.testkit.ce.{CatsIOValues, IOFixedClock}
+import ch.epfl.bluebrain.nexus.testkit.ce.{CatsEffectScalaTestAssertions, CatsIOValues, IOFixedClock}
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -23,6 +23,7 @@ class OrganizationsSpec
     with OptionValues
     with Inspectors
     with CatsIOValues
+    with CatsEffectScalaTestAssertions
     with IOFixedClock
     with CirceLiteral {
 

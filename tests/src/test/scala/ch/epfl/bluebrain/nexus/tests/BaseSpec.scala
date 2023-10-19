@@ -11,10 +11,10 @@ import cats.effect.concurrent.Ref
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.testkit._
-import ch.epfl.bluebrain.nexus.testkit.ce.{CatsIOValues, CatsRunContext}
+import ch.epfl.bluebrain.nexus.testkit.ce.{CatsEffectScalaTestAssertions, CatsIOValues, CatsRunContext}
 import ch.epfl.bluebrain.nexus.tests.BaseSpec._
 import ch.epfl.bluebrain.nexus.tests.HttpClient._
-import ch.epfl.bluebrain.nexus.tests.Identity.{allUsers, testClient, testRealm, _}
+import ch.epfl.bluebrain.nexus.tests.Identity._
 import ch.epfl.bluebrain.nexus.tests.admin.AdminDsl
 import ch.epfl.bluebrain.nexus.tests.config.ConfigLoader._
 import ch.epfl.bluebrain.nexus.tests.config.TestsConfig
@@ -45,6 +45,7 @@ trait BaseSpec
     with Eventually
     with CatsRunContext
     with CatsIOValues
+    with CatsEffectScalaTestAssertions
     with OptionValues
     with ScalaFutures
     with Matchers {

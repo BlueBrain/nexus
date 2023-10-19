@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
-import ch.epfl.bluebrain.nexus.testkit.ce.{CatsIOValues, IOFixedClock}
+import ch.epfl.bluebrain.nexus.testkit.ce.{CatsEffectScalaTestAssertions, CatsIOValues, IOFixedClock}
 import org.scalatest.CancelAfterFailure
 import org.scalatest.matchers.should.Matchers
 
@@ -19,6 +19,7 @@ import scala.concurrent.duration._
 class PermissionsImplSpec
     extends DoobieScalaTestFixture
     with CatsIOValues
+    with CatsEffectScalaTestAssertions
     with Matchers
     with CancelAfterFailure
     with IOFixedClock {

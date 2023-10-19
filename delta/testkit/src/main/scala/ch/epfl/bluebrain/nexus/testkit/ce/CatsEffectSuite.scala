@@ -15,11 +15,12 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration}
 abstract class CatsEffectSuite
     extends NexusSuite
     with CatsRunContext
-    with CatsEffectAssertions
-    with CatsStreamAssertions
     with CatsIOValues
+    with CatsEffectMUnitAssertions
+    with CatsStreamMUnitAssertions
     with CollectionAssertions
-    with EitherAssertions {
+    with EitherAssertions
+    with IOFixedClock {
   protected val ioTimeout: FiniteDuration = 45.seconds
 
   override def munitValueTransforms: List[ValueTransform] =

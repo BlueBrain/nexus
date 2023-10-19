@@ -6,7 +6,7 @@ import munit.{Assertions, Location}
 
 import scala.concurrent.duration.DurationInt
 
-trait CatsStreamAssertions { self: CatsRunContext with Assertions =>
+trait CatsStreamMUnitAssertions { self: CatsRunContext with Assertions =>
 
   implicit class CEStreamAssertionsOps[A](stream: Stream[IO, A])(implicit
       loc: Location

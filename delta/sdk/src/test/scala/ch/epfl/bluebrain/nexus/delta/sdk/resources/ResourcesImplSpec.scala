@@ -27,7 +27,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
-import ch.epfl.bluebrain.nexus.testkit.ce.{CatsIOValues, IOFixedClock}
+import ch.epfl.bluebrain.nexus.testkit.ce.{CatsEffectScalaTestAssertions, CatsIOValues, IOFixedClock}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
 
@@ -37,6 +37,7 @@ class ResourcesImplSpec
     extends DoobieScalaTestFixture
     with Matchers
     with CatsIOValues
+    with CatsEffectScalaTestAssertions
     with IOFixedClock
     with CancelAfterFailure
     with CirceLiteral

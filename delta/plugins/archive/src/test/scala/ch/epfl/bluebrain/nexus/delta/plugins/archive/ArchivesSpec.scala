@@ -19,11 +19,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EphemeralLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.execution.EvaluationExecution
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
+import ch.epfl.bluebrain.nexus.testkit.ce.{CatsEffectScalaTestAssertions, CatsIOValues, CatsRunContext, IOFixedClock}
 import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, TestHelpers}
-import ch.epfl.bluebrain.nexus.testkit.ce.{CatsIOValues, CatsRunContext, IOFixedClock}
 import io.circe.literal._
 import org.scalatest.matchers.should.Matchers
 
@@ -38,6 +38,7 @@ class ArchivesSpec
     with Matchers
     with IOFixedClock
     with CatsRunContext
+    with CatsEffectScalaTestAssertions
     with CatsIOValues
     with EitherValuable
     with TestHelpers

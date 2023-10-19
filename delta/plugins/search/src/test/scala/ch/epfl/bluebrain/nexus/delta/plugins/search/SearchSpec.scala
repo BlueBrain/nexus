@@ -32,7 +32,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.IndexingRev
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit._
-import ch.epfl.bluebrain.nexus.testkit.ce.CatsIOValues
+import ch.epfl.bluebrain.nexus.testkit.ce.{CatsEffectScalaTestAssertions, CatsIOValues}
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchDocker
 import io.circe.{Json, JsonObject}
 import org.scalatest.concurrent.Eventually
@@ -57,6 +57,7 @@ class SearchSpec
     with ScalaTestElasticSearchClientSetup
     with ConfigFixtures
     with CatsIOValues
+    with CatsEffectScalaTestAssertions
     with IOValues
     with Eventually
     with Fixtures

@@ -5,6 +5,7 @@ import akka.http.scaladsl.model.headers.{BasicHttpCredentials, OAuth2BearerToken
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{ExceptionHandler, Route}
 import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.jwt.AuthToken
 import ch.epfl.bluebrain.nexus.delta.kernel.jwt.TokenRejection.InvalidAccessToken
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
@@ -14,7 +15,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfExceptionHandler

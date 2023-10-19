@@ -23,7 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.FailedElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionProgress
 import ch.epfl.bluebrain.nexus.testkit.bio.IOFromMap
-import ch.epfl.bluebrain.nexus.testkit.ce.{CatsIOValues, CatsRunContext}
+import ch.epfl.bluebrain.nexus.testkit.ce.{CatsEffectScalaTestAssertions, CatsRunContext}
 import monix.bio.IO
 
 import java.time.Instant
@@ -33,7 +33,7 @@ class BlazegraphViewsIndexingRoutesSpec
     extends BlazegraphViewRoutesFixtures
     with IOFromMap
     with CatsRunContext
-    with CatsIOValues {
+    with CatsEffectScalaTestAssertions {
 
   private lazy val projections      = Projections(xas, queryConfig, 1.hour)
   private lazy val projectionErrors = ProjectionErrors(xas, queryConfig)

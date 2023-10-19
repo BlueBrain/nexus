@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.testkit._
-import ch.epfl.bluebrain.nexus.testkit.ce.CatsIOValues
+import ch.epfl.bluebrain.nexus.testkit.ce.{CatsEffectScalaTestAssertions, CatsIOValues}
 import monix.execution.schedulers.CanBlock
 import org.scalatest.OptionValues
 
@@ -17,6 +17,7 @@ trait Fixtures
     with OptionValues
     with IOValues
     with CatsIOValues
+    with CatsEffectScalaTestAssertions
     with EitherValuable
     with TestMatchers {
 

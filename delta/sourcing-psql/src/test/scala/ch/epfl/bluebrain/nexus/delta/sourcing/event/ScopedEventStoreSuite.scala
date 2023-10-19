@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.{PullRequest, Scope}
 import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
-import ch.epfl.bluebrain.nexus.testkit.ce.{CatsRunContext, CatsStreamAssertions}
+import ch.epfl.bluebrain.nexus.testkit.ce.{CatsRunContext, CatsStreamMUnitAssertions}
 import doobie.implicits._
 import munit.AnyFixture
 
@@ -23,7 +23,7 @@ import scala.concurrent.duration._
 class ScopedEventStoreSuite
     extends BioSuite
     with CatsRunContext
-    with CatsStreamAssertions
+    with CatsStreamMUnitAssertions
     with Doobie.Fixture
     with Doobie.Assertions {
 

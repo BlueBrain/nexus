@@ -39,7 +39,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.testkit.archive.ArchiveHelpers
-import ch.epfl.bluebrain.nexus.testkit.ce.{CatsIOValues, CatsRunContext}
+import ch.epfl.bluebrain.nexus.testkit.ce.{CatsEffectScalaTestAssertions, CatsIOValues, CatsRunContext}
 import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, TestHelpers}
 import io.circe.syntax.EncoderOps
 import org.scalatest.matchers.should.Matchers
@@ -57,6 +57,7 @@ class ArchiveDownloadSpec
     with EitherValuable
     with CatsRunContext
     with CatsIOValues
+    with CatsEffectScalaTestAssertions
     with OptionValues
     with TestHelpers
     with StorageFixtures

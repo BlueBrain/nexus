@@ -10,14 +10,14 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Envelope, Proje
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.testkit.IOFixedClock
 import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
-import ch.epfl.bluebrain.nexus.testkit.ce.CatsEffectAssertions
+import ch.epfl.bluebrain.nexus.testkit.ce.CatsEffectMUnitAssertions
 import io.circe.JsonObject
 import io.circe.syntax.EncoderOps
 
 import java.time.Instant
 import java.util.UUID
 
-class SseEventLogSuite extends BioSuite with ConfigFixtures with IOFixedClock with CatsEffectAssertions {
+class SseEventLogSuite extends BioSuite with ConfigFixtures with IOFixedClock with CatsEffectMUnitAssertions {
 
   implicit private val jo: JsonKeyOrdering = JsonKeyOrdering.alphabetical
 
