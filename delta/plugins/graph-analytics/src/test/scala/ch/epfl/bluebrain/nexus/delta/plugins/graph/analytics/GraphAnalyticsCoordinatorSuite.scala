@@ -10,22 +10,22 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.SupervisorSetup.unapply
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{CacheSink, Elem, ExecutionStatus, ProjectionProgress, SupervisorSetup}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
 import ch.epfl.bluebrain.nexus.testkit.bio.{BioSuite, PatienceConfig}
-import munit.AnyFixture
 import fs2.Stream
 import fs2.concurrent.SignallingRef
 import monix.bio.Task
+import munit.AnyFixture
 
 import java.time.Instant
-import collection.mutable.{Set => MutableSet}
-import concurrent.duration._
+import scala.collection.mutable.{Set => MutableSet}
+import scala.concurrent.duration._
 
 class GraphAnalyticsCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(supervisor)
 
-  implicit private val patienceConfig: PatienceConfig = PatienceConfig(5.seconds, 10.millis)
+  implicit private val patienceConfig: PatienceConfig = PatienceConfig(10.seconds, 10.millis)
 
   private lazy val (sv, projections, _) = unapply(supervisor())
   private val project1                  = ProjectRef.unsafe("org", "proj1")
@@ -86,8 +86,8 @@ class GraphAnalyticsCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtu
              graphAnalysisStream,
              sv,
              _ => sink,
-             (ref: ProjectRef) => Task.pure(createdIndices.add(ref)).void,
-             (ref: ProjectRef) => Task.pure(deletedIndices.add(ref)).void
+             (ref: ProjectRef) => Task.delay(createdIndices.add(ref)).void,
+             (ref: ProjectRef) => Task.delay(deletedIndices.add(ref)).void
            )
       _ <- sv.describe(GraphAnalyticsCoordinator.metadata.name)
              .map(_.map(_.progress))

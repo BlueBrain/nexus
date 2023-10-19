@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.toMonixBIOOps
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchBulk, ElasticSearchClient}
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.config.GraphAnalyticsConfig.TermAggregationsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.AnalyticsGraph.{Edge, EdgePath, Node}
@@ -78,7 +79,7 @@ class GraphAnalyticsSpec(docker: ElasticSearchDocker)
     }
 
     "fetch relationships" in eventually {
-      graphAnalytics.relationships(project.ref).accepted shouldEqual
+      graphAnalytics.relationships(project.ref).toBIO.accepted shouldEqual
         AnalyticsGraph(
           List(Node(schema.Person, "Person", 3)),
           List(Edge(schema.Person, schema.Person, 3, Vector(EdgePath(schema + "brother", "brother"))))
@@ -86,7 +87,7 @@ class GraphAnalyticsSpec(docker: ElasticSearchDocker)
     }
 
     "fetch properties" in {
-      graphAnalytics.properties(project.ref, schema.Person).accepted shouldEqual
+      graphAnalytics.properties(project.ref, schema.Person).toBIO.accepted shouldEqual
         PropertiesStatistics(
           Metadata(schema.Person, "Person", 3),
           List(
