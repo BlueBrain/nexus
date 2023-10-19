@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.testkit.{CirceEq, EitherValuable}
 import ch.epfl.bluebrain.nexus.tests.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.tests.Identity.resources.{Morty, Rick}
+import ch.epfl.bluebrain.nexus.tests.Optics.admin.{_constrainedBy, _rev}
 import ch.epfl.bluebrain.nexus.tests.Optics.listing._total
 import ch.epfl.bluebrain.nexus.tests.Optics.{filterKey, filterMetadataKeys}
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Resources
@@ -379,6 +380,27 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
           response.status shouldEqual StatusCodes.OK
           filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
       }
+    }
+
+    "allow to change the schema" in {
+      val resourceId       = "schemaChange"
+      val payload          = SimpleResource.sourcePayload(resourceId, 4)
+      val newSchemaPayload = SchemaPayload.loadSimpleNoId()
+
+      val postResourceAndNewSchema =
+        deltaClient.put[Json](s"/schemas/$id1/new-schema", newSchemaPayload, Rick) { expectCreated } >>
+          deltaClient.put[Json](s"/resources/$id1/test-schema/$resourceId", payload, Rick) { expectCreated } >>
+          deltaClient.get[Json](s"/resources/$id1/test-schema/$resourceId", Rick) { expectOk }
+
+      val updateResourceAndSchema =
+        deltaClient.put[Json](s"/resources/$id1/new-schema/$resourceId?rev=1", payload, Rick)(_)
+
+      postResourceAndNewSchema >>
+        updateResourceAndSchema { (json, response) =>
+          response.status shouldEqual StatusCodes.OK
+          _rev.getOption(json) should contain(2)
+          _constrainedBy.getOption(json) should contain("http://delta:8080/v1/resources/" + id1 + "/_/new-schema")
+        }
     }
   }
 

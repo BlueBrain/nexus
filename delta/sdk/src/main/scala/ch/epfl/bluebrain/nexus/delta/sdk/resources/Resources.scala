@@ -365,7 +365,6 @@ object Resources {
       }
     }
 
-    /** Raise an error when there is a mismatch between the schema in the command and the one in the state */
     def raiseWhenDifferentSchema(c: ModifyCommand, s: ResourceState) =
       IO.raiseWhen(c.schemaOpt.exists(cur => cur.iri != s.schema.iri))(
         UnexpectedResourceSchema(s.id, c.schemaOpt.get, s.schema)
