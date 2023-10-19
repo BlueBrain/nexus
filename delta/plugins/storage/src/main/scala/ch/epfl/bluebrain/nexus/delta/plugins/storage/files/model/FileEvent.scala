@@ -12,6 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.instances._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.circe.JsonObjOps
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.IriEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
@@ -23,7 +24,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef, ResourceRef}
 import io.circe.generic.extras.Configuration
-import io.circe.generic.extras.semiauto.{deriveConfiguredCodec, deriveConfiguredEncoder}
+import io.circe.generic.extras.semiauto.{deriveConfiguredCodec, deriveConfiguredDecoder, deriveConfiguredEncoder}
 import io.circe.generic.semiauto.deriveEncoder
 import io.circe.syntax._
 import io.circe.{Codec, Decoder, Encoder, Json}
@@ -81,6 +82,8 @@ object FileEvent {
     *   the instant this event was created
     * @param subject
     *   the subject which created this event
+    * @param tag
+    *   an optional tag attached at creation
     */
   final case class FileCreated(
       id: Iri,
@@ -90,7 +93,8 @@ object FileEvent {
       attributes: FileAttributes,
       rev: Int,
       instant: Instant,
-      subject: Subject
+      subject: Subject,
+      tag: Option[UserTag]
   ) extends FileEvent
 
   /**
@@ -263,7 +267,8 @@ object FileEvent {
       deriveConfiguredCodec[Digest]
     implicit val fileAttributesCodec: Codec.AsObject[FileAttributes] =
       deriveConfiguredCodec[FileAttributes]
-    implicit val coder: Codec.AsObject[FileEvent]                    = deriveConfiguredCodec[FileEvent]
+    implicit val enc: Encoder.AsObject[FileEvent]                    = deriveConfiguredEncoder[FileEvent].mapJsonObject(_.dropNulls)
+    implicit val codec: Codec.AsObject[FileEvent]                    = Codec.AsObject.from(deriveConfiguredDecoder, enc)
     Serializer()
   }
 
@@ -332,6 +337,7 @@ object FileEvent {
           }
           deriveConfiguredEncoder[FileEvent]
             .encodeObject(event)
+            .dropNulls
             .remove("storage")
             .remove("storageType")
             .addIfExists("_storage", storageJsonOpt)

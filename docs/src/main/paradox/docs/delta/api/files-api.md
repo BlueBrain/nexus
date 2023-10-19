@@ -43,11 +43,13 @@ synchronously or in the background. This behaviour is controlled using `indexing
 ## Create using POST
 
 ```
-POST /v1/files/{org_label}/{project_label}?storage={storageId}
+POST /v1/files/{org_label}/{project_label}?storage={storageId}&tag={tagName}
 ```
 
-... where `{storageId}` selects a specific storage backend where the file will be uploaded. This field is optional.
+... where 
+- `{storageId}` selects a specific storage backend where the file will be uploaded. This field is optional.
 When not specified, the default storage of the project is used.
+- `{tagName}` an optional label given to the file on its first revision.
 
 The json payload:
 
@@ -69,11 +71,13 @@ This alternative endpoint to create a resource is useful in case the json payloa
 to specify one. The @id will be specified in the last segment of the endpoint URI.
 
 ```
-PUT /v1/files/{org_label}/{project_label}/{file_id}?storage={storageId}
+PUT /v1/files/{org_label}/{project_label}/{file_id}?storage={storageId}&tag={tagName}
 ```
 
-... where `{storageId}` selects a specific storage backend where the file will be uploaded. This field is optional. 
+... where 
+- `{storageId}` selects a specific storage backend where the file will be uploaded. This field is optional. 
 When not specified, the default storage of the project is used.
+- `{tagName}` an optional label given to the file on its first revision.
 
 Note that if the payload contains an @id different from the `{file_id}`, the request will fail.
 
@@ -90,7 +94,7 @@ Response
 Brings a file existing in a storage to Nexus Delta as a file resource. This operation is supported for files using `S3Storage` and `RemoteDiskStorage`.
 
 ```
-POST /v1/files/{org_label}/{project_label}?storage={storageId}
+POST /v1/files/{org_label}/{project_label}?storage={storageId}&tag={tagName}
   {
     "path": "{path}",
     "filename": "{filename}",
@@ -103,6 +107,7 @@ POST /v1/files/{org_label}/{project_label}?storage={storageId}
 - `{path}`: String - the relative location (from the point of view of storage folder) on the remote storage where the file exists.
 - `{filenane}`: String - the name that will be given to the file during linking. This field is optional. When not specified, the original filename is retained.
 - `{mediaType}`: String - the MediaType fo the file. This field is optional. When not specified, Nexus Delta will attempt to detectput
+- `{tagName}` an optional label given to the linked file resource on its first revision.
 
 **Example**
 
@@ -122,7 +127,7 @@ Brings a file existing in a storage to Nexus Delta as a file resource. This oper
 This alternative endpoint allows to specify the resource `@id`.
 
 ```
-PUT /v1/files/{org_label}/{project_label}/{file_id}?storage={storageId}
+PUT /v1/files/{org_label}/{project_label}/{file_id}?storage={storageId}&tag={tagName}
   {
     "path": "{path}",
     "filename": "{filename}",
@@ -137,6 +142,7 @@ When not specified, the default storage of the project is used.
 - `{path}`: String - the relative location (from the point of view of the storage folder) on the remote storage where the file exists.
 - `{filenane}`: String - the name that will be given to the file during linking. This field is optional. When not specified, the original filename is retained.
 - `{mediaType}`: String - the MediaType fo the file. This field is optional. When not specified, Nexus Delta will attempt to detect it.
+- `{tagName}` an optional label given to the linked file resource on its first revision.
 
 **Example**
 

@@ -23,6 +23,8 @@ object Tags {
 
   def apply(first: (UserTag, Int), values: (UserTag, Int)*): Tags = Tags(Map(first) ++ values)
 
+  def apply(maybeTag: Option[UserTag], rev: Int): Tags = maybeTag.fold(empty)(t => apply(t -> rev))
+
   implicit val tagsDecoder: Decoder[Tags]          =
     Decoder.decodeMap[UserTag, Int].map(Tags(_))
   implicit val tagsEncoder: Encoder.AsObject[Tags] =
