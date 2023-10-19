@@ -61,10 +61,10 @@ class FilesStmSpec
     "evaluating an incoming command" should {
 
       "create a new event from a CreateFile command" in {
-        val createCmd = CreateFile(id, projectRef, storageRef, DiskStorageType, attributes, bob)
+        val createCmd = CreateFile(id, projectRef, storageRef, DiskStorageType, attributes, bob, Some(myTag))
 
         evaluate(None, createCmd).accepted shouldEqual
-          FileCreated(id, projectRef, storageRef, DiskStorageType, attributes, 1, epoch, bob)
+          FileCreated(id, projectRef, storageRef, DiskStorageType, attributes, 1, epoch, bob, Some(myTag))
       }
 
       "create a new event from a UpdateFile command" in {
@@ -126,7 +126,7 @@ class FilesStmSpec
 
       "reject with ResourceAlreadyExists when file already exists" in {
         val current = FileGen.state(id, projectRef, storageRef, attributes)
-        evaluate(Some(current), CreateFile(id, projectRef, storageRef, DiskStorageType, attributes, bob))
+        evaluate(Some(current), CreateFile(id, projectRef, storageRef, DiskStorageType, attributes, bob, None))
           .rejectedWith[ResourceAlreadyExists]
       }
 
@@ -179,7 +179,7 @@ class FilesStmSpec
     "producing next state" should {
 
       "from a new FileCreated event" in {
-        val event     = FileCreated(id, projectRef, storageRef, DiskStorageType, attributes, 1, epoch, bob)
+        val event     = FileCreated(id, projectRef, storageRef, DiskStorageType, attributes, 1, epoch, bob, None)
         val nextState = FileGen.state(id, projectRef, storageRef, attributes, createdBy = bob, updatedBy = bob)
 
         next(None, event).value shouldEqual nextState

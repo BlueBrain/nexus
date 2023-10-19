@@ -265,11 +265,8 @@ object Resources {
 
   private[delta] def next(state: Option[ResourceState], event: ResourceEvent): Option[ResourceState] = {
     // format: off
-    def created(e: ResourceCreated): Option[ResourceState] = {
-      val tags = e.tag.fold(Tags.empty)(t => Tags(t -> e.rev))
-      Option.when(state.isEmpty){
-        ResourceState(e.id, e.project, e.schemaProject, e.source, e.compacted, e.expanded, e.remoteContexts, e.rev, deprecated = false, e.schema, e.types, tags, e.instant, e.subject, e.instant, e.subject)
-      }
+    def created(e: ResourceCreated): Option[ResourceState] = Option.when(state.isEmpty){
+      ResourceState(e.id, e.project, e.schemaProject, e.source, e.compacted, e.expanded, e.remoteContexts, e.rev, deprecated = false, e.schema, e.types, Tags(e.tag, e.rev), e.instant, e.subject, e.instant, e.subject)
     }
 
     def updated(e: ResourceUpdated): Option[ResourceState] = state.map {

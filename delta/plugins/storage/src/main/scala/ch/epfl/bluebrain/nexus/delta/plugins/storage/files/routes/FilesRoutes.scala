@@ -27,6 +27,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, IdSegmentRef, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.Decoder
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
@@ -80,19 +81,19 @@ final class FilesRoutes(
             concat(
               (post & pathEndOrSingleSlash & noParameter("rev") & parameter(
                 "storage".as[IdSegment].?
-              ) & indexingMode) { (storage, mode) =>
+              ) & indexingMode & tagParam) { (storage, mode, tag) =>
                 operationName(s"$prefixSegment/files/{org}/{project}") {
                   concat(
                     // Link a file without id segment
                     entity(as[LinkFile]) { case LinkFile(filename, mediaType, path) =>
                       emit(
                         Created,
-                        files.createLink(storage, ref, filename, mediaType, path).tapEval(indexUIO(ref, _, mode))
+                        files.createLink(storage, ref, filename, mediaType, path, tag).tapEval(indexUIO(ref, _, mode))
                       )
                     },
                     // Create a file without id segment
                     extractRequestEntity { entity =>
-                      emit(Created, files.create(storage, ref, entity).tapEval(indexUIO(ref, _, mode)))
+                      emit(Created, files.create(storage, ref, entity, tag).tapEval(indexUIO(ref, _, mode)))
                     }
                   )
                 }
@@ -103,24 +104,27 @@ final class FilesRoutes(
                     operationName(s"$prefixSegment/files/{org}/{project}/{id}") {
                       concat(
                         (put & pathEndOrSingleSlash) {
-                          parameters("rev".as[Int].?, "storage".as[IdSegment].?) {
-                            case (None, storage)      =>
+                          parameters("rev".as[Int].?, "storage".as[IdSegment].?, "tag".as[UserTag].?) {
+                            case (None, storage, tag)    =>
                               concat(
                                 // Link a file with id segment
                                 entity(as[LinkFile]) { case LinkFile(filename, mediaType, path) =>
                                   emit(
                                     Created,
                                     files
-                                      .createLink(id, storage, ref, filename, mediaType, path)
+                                      .createLink(id, storage, ref, filename, mediaType, path, tag)
                                       .tapEval(indexUIO(ref, _, mode))
                                   )
                                 },
                                 // Create a file with id segment
                                 extractRequestEntity { entity =>
-                                  emit(Created, files.create(id, storage, ref, entity).tapEval(indexUIO(ref, _, mode)))
+                                  emit(
+                                    Created,
+                                    files.create(id, storage, ref, entity, tag).tapEval(indexUIO(ref, _, mode))
+                                  )
                                 }
                               )
-                            case (Some(rev), storage) =>
+                            case (Some(rev), storage, _) =>
                               concat(
                                 // Update a Link
                                 entity(as[LinkFile]) { case LinkFile(filename, mediaType, path) =>
