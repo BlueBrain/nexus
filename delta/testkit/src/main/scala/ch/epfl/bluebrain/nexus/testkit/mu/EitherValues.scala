@@ -13,8 +13,8 @@ trait EitherValues {
     }
 
     def leftValue(implicit loc: munit.Location): L = either match {
-      case Left(value) => value
-      case Right(_)    => fail("Expected Left but got Right($value)")
+      case Left(value)  => value
+      case Right(value) => fail(s"Expected Left but got Right($value)")
     }
   }
 }
