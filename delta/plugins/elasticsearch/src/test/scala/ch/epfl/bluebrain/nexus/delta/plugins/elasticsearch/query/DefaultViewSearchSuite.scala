@@ -17,8 +17,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.DataResource
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ResourceGen
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search._
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.Resource
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
@@ -277,8 +278,7 @@ object DefaultViewSearchSuite {
     def id: Iri = nxv + suffix
 
     def asResourceF(implicit rcr: RemoteContextResolution): DataResource = {
-      val tags     = tag.map(t => Tags(t -> rev)).getOrElse(Tags.empty)
-      val resource = ResourceGen.resource(id, project, Json.obj(), tags = tags)
+      val resource = ResourceGen.resource(id, project, Json.obj())
       ResourceGen
         .resourceFor(resource, types = types, rev = rev, deprecated = deprecated)
         .copy(
@@ -290,8 +290,10 @@ object DefaultViewSearchSuite {
         )
     }
 
-    def asDocument(implicit baseUri: BaseUri, rcr: RemoteContextResolution, jsonldApi: JsonLdApi): UIO[Json] =
-      asResourceF.toCompactedJsonLd.map(_.json).hideErrors
+    def asDocument(implicit baseUri: BaseUri, rcr: RemoteContextResolution, jsonldApi: JsonLdApi): UIO[Json] = {
+      val metadata = Resource.fileMetadataEncoder(Resource.Metadata(tag.toList))
+      asResourceF.toCompactedJsonLd.map(_.json.deepMerge(metadata)).hideErrors
+    }
 
   }
 

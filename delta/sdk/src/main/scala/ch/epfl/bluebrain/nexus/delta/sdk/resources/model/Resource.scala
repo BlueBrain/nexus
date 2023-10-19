@@ -70,7 +70,7 @@ object Resource {
         value.source.topContextValueOrEmpty
     }
 
-  implicit private val fileMetadataEncoder: Encoder[Metadata] = { m =>
+  implicit val fileMetadataEncoder: Encoder[Metadata] = { m =>
     Json.obj("_tags" -> m.tags.asJson)
   }
 
