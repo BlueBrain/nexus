@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resources
 
 import cats.effect.{Clock, IO}
-import cats.implicits.catsSyntaxMonadError
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant
@@ -270,7 +270,7 @@ object Resources {
     }
 
     def updated(e: ResourceUpdated): Option[ResourceState] = state.map {
-      _.copy(rev = e.rev, types = e.types, source = e.source, compacted = e.compacted, expanded = e.expanded, remoteContexts = e.remoteContexts, updatedAt = e.instant, updatedBy = e.subject)
+      _.copy(rev = e.rev, types = e.types, schema = e.schema, schemaProject = e.schemaProject, source = e.source, compacted = e.compacted, expanded = e.expanded, remoteContexts = e.remoteContexts, updatedAt = e.instant, updatedBy = e.subject)
     }
 
     def refreshed(e: ResourceRefreshed): Option[ResourceState] = state.map {
@@ -336,13 +336,11 @@ object Resources {
 
     def stateWhereResourceExists(c: ModifyCommand) = {
       state match {
-        case None                                                          =>
+        case None                      =>
           IO.raiseError(ResourceNotFound(c.id, c.project))
-        case Some(s) if s.rev != c.rev                                     =>
+        case Some(s) if s.rev != c.rev =>
           IO.raiseError(IncorrectRev(c.rev, s.rev))
-        case Some(s) if c.schemaOpt.exists(cur => cur.iri != s.schema.iri) =>
-          IO.raiseError(UnexpectedResourceSchema(s.id, c.schemaOpt.get, s.schema))
-        case Some(s)                                                       =>
+        case Some(s)                   =>
           IO.pure(s)
       }
     }
@@ -355,22 +353,29 @@ object Resources {
 
     def stateWhereTagExistsOnResource(c: ModifyCommand, tag: UserTag) = {
       stateWhereResourceExists(c).flatMap { s =>
-        IO.raiseWhen(!s.tags.contains(tag))(TagNotFound(tag)).as(s)
+        raiseWhenDifferentSchema(c, s) >>
+          IO.raiseWhen(!s.tags.contains(tag))(TagNotFound(tag)).as(s)
       }
     }
 
     def stateWhereRevisionExists(c: ModifyCommand, targetRev: Int) = {
       stateWhereResourceExists(c).flatMap { s =>
-        IO.raiseWhen(targetRev <= 0 || targetRev > s.rev)(RevisionNotFound(targetRev, s.rev)).as(s)
+        raiseWhenDifferentSchema(c, s) >>
+          IO.raiseWhen(targetRev <= 0 || targetRev > s.rev)(RevisionNotFound(targetRev, s.rev)).as(s)
       }
     }
+
+    def raiseWhenDifferentSchema(c: ModifyCommand, s: ResourceState) =
+      IO.raiseWhen(c.schemaOpt.exists(cur => cur.iri != s.schema.iri))(
+        UnexpectedResourceSchema(s.id, c.schemaOpt.get, s.schema)
+      )
 
     def update(u: UpdateResource) = {
       import u.jsonld._
       // format: off
       for {
         s                          <- stateWhereResourceIsEditable(u)
-        schemaRef = u.schemaOpt.getOrElse(ResourceRef.Latest(s.schema.iri))
+        schemaRef                   = u.schemaOpt.getOrElse(ResourceRef.Latest(s.schema.iri))
         (schemaRev, schemaProject) <- validate(u.id, expanded, schemaRef, s.project, u.caller)
         time                       <- IOInstant.now
       } yield ResourceUpdated(u.id, u.project, schemaRev, schemaProject, types, u.source, compacted, expanded, remoteContextRefs, s.rev + 1, time, u.subject)
@@ -382,6 +387,7 @@ object Resources {
       // format: off
       for {
         s                          <- stateWhereResourceIsEditable(c)
+        _                          <- raiseWhenDifferentSchema(c, s)
         (schemaRev, schemaProject) <- validate(c.id, expanded, c.schemaOpt.getOrElse(s.schema), s.project, c.caller)
         time                       <- IOInstant.now
       } yield ResourceRefreshed(c.id, c.project, schemaRev, schemaProject, types, compacted, expanded, remoteContextRefs, s.rev + 1, time, c.subject)
@@ -407,6 +413,7 @@ object Resources {
     def deprecate(c: DeprecateResource) = {
       for {
         s    <- stateWhereResourceIsEditable(c)
+        _    <- raiseWhenDifferentSchema(c, s)
         time <- IOInstant.now
       } yield ResourceDeprecated(c.id, c.project, s.types, s.rev + 1, time, c.subject)
     }
