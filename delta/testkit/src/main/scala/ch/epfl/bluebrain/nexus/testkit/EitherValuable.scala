@@ -1,10 +1,12 @@
 package ch.epfl.bluebrain.nexus.testkit
 
 import org.scalactic.source
+import org.scalatest
 import org.scalatest.exceptions.{StackDepthException, TestFailedException}
 
 trait EitherValuable {
 
+  self: scalatest.Suite =>
   class EitherValuable[L, R](either: Either[L, R], pos: source.Position) {
     def rightValue: R =
       either match {

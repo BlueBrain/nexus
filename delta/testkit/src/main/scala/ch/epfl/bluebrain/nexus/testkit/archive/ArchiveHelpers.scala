@@ -8,19 +8,20 @@ import ch.epfl.bluebrain.nexus.testkit.EitherValuable
 import ch.epfl.bluebrain.nexus.testkit.archive.ArchiveHelpers.ArchiveContent
 import io.circe.Json
 import io.circe.parser.parse
-import org.scalatest.OptionValues
+import org.scalatest.{OptionValues, Suite}
 import org.scalatest.concurrent.ScalaFutures
 
 import java.nio.file.{Files => JFiles}
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
-
 import java.security.MessageDigest
 import org.scalatest.concurrent.PatienceConfiguration
 import org.scalatest.time.Span
 import org.scalatest.time.Seconds
 
 trait ArchiveHelpers extends ScalaFutures with EitherValuable with OptionValues {
+
+  self: Suite =>
 
   implicit class ByteStringMapOps(value: ArchiveContent) {
     def entryAsJson(path: String): Json = parse(entryAsString(path)).rightValue

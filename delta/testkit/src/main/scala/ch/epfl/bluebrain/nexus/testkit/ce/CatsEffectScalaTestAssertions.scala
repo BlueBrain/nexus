@@ -3,13 +3,15 @@ package ch.epfl.bluebrain.nexus.testkit.ce
 import cats.effect.IO
 import org.scalactic.source
 import org.scalatest.Assertion
+import org.scalatest.Suite
 import org.scalatest.Assertions._
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.ClassTag
 
-trait CatsEffectScalaTestAssertions extends CatsEffectScalaTestAssertionsLowPrio {
+trait CatsEffectScalaTestAssertions extends CatsIOValues with CatsEffectScalaTestAssertionsLowPrio {
 
+  this: Suite =>
   implicit def ioToFutureAssertion(io: IO[Assertion]): Future[Assertion] = io.unsafeToFuture()
 
   implicit def futureListToFutureAssertion(future: Future[List[Assertion]])(implicit
@@ -24,7 +26,7 @@ trait CatsEffectScalaTestAssertions extends CatsEffectScalaTestAssertionsLowPrio
       assertResult(expected)(rejectedWith[E])
 
     def rejectedWith[E](implicit pos: source.Position, EE: ClassTag[E]): E = {
-      io.attempt.unsafeRunSync() match {
+      io.attempt.accepted match {
         case Left(EE(value)) => value
         case Left(value)     =>
           fail(

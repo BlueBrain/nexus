@@ -42,7 +42,7 @@ class MainSuite extends CatsEffectSuite with MainSuite.Fixture {
       make[ContextShift[IO]].fromValue(contextShift)
       make[Timer[IO]].fromValue(timer)
     }
-    val (cfg, config, cl, pDefs) = Main.loadPluginsAndConfig(pluginLoaderConfig).unsafeRunSync()
+    val (cfg, config, cl, pDefs) = Main.loadPluginsAndConfig(pluginLoaderConfig).accepted
     val pluginsInfoModule        = new ModuleDef { make[List[PluginDef]].from(pDefs) }
     val modules: Module          =
       (catsEffectModule :: DeltaModule(cfg, config, cl) :: pluginsInfoModule :: pDefs.map(_.module)).merge

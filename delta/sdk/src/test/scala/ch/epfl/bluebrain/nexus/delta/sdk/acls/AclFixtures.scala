@@ -6,12 +6,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{acls, resolver
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.testkit.EitherValuable
-import org.scalatest.Inspectors
+import org.scalatest.Suite
 
 import java.time.Instant
 
-trait AclFixtures extends EitherValuable with Inspectors {
+trait AclFixtures {
+
+  self: Suite =>
+
   implicit val base: BaseUri                  = BaseUri("http://localhost", Label.unsafe("v1"))
   val realm: Label                            = Label.unsafe("myrealm")
   val realm2: Label                           = Label.unsafe("myrealm2")
@@ -34,5 +36,3 @@ trait AclFixtures extends EitherValuable with Inspectors {
   def groupX(address: AclAddress): Acl        = Acl(address, group -> Set(x))
   def anonR(address: AclAddress): Acl         = Acl(address, anon -> Set(r))
 }
-
-object AclFixtures extends AclFixtures

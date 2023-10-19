@@ -32,13 +32,6 @@ trait EitherAssertions { self: Assertions =>
         case Left(l)  => fail(s"Left caught: $l, expected as right: $expected")
         case Right(r) => assertEquals(r, expected)
       }
-
-    def rightValue: A =
-      either match {
-        case Right(r) => r
-        case Left(l)  => fail(s"Left caught: $l, expected a right value.")
-      }
-
   }
 
 }

@@ -1,19 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client
 
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlResults._
-import ch.epfl.bluebrain.nexus.testkit.{CirceEq, EitherValuable, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.{CirceEq, DeltaSpec, TestHelpers}
 import io.circe.syntax._
-import org.scalatest.OptionValues
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
 
-class SparqlResultsSpec
-    extends AnyWordSpecLike
-    with Matchers
-    with TestHelpers
-    with EitherValuable
-    with CirceEq
-    with OptionValues {
+class SparqlResultsSpec extends DeltaSpec with TestHelpers with CirceEq {
 
   "A Sparql Json result" should {
     val json     = jsonContentOf("sparql/results/query-result.json")

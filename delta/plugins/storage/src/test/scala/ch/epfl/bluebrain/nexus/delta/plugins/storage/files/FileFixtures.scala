@@ -16,11 +16,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOValues}
 import monix.bio.Task
+import org.scalatest.Suite
 
 import java.nio.file.{Files => JavaFiles}
 import java.util.UUID
 
 trait FileFixtures extends EitherValuable with IOValues {
+
+  self: Suite =>
 
   val uuid                     = UUID.fromString("8249ba90-7cc6-4de5-93a1-802c04200dcc")
   val uuid2                    = UUID.fromString("12345678-7cc6-4de5-93a1-802c04200dcc")

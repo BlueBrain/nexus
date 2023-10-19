@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.testkit.ce
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.testkit.NexusSuite
+import ch.epfl.bluebrain.nexus.testkit.{EitherValuesMUnit, NexusSuite}
 import ch.epfl.bluebrain.nexus.testkit.bio.{CollectionAssertions, EitherAssertions}
 import monix.bio.{IO => BIO}
 import monix.execution.Scheduler
@@ -20,6 +20,7 @@ abstract class CatsEffectSuite
     with CatsStreamMUnitAssertions
     with CollectionAssertions
     with EitherAssertions
+    with EitherValuesMUnit
     with IOFixedClock {
   protected val ioTimeout: FiniteDuration = 45.seconds
 

@@ -12,10 +12,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.{ContextEmp
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
+import ch.epfl.bluebrain.nexus.testkit.bio.BioSpec
 
-class GraphSpec extends AnyWordSpecLike with Matchers with Fixtures {
+class GraphSpec extends BioSpec with Fixtures {
 
   "A Graph" should {
     val expandedJson     = jsonContentOf("expanded.json")

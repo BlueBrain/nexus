@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageStatE
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.SupervisorSetup
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.SupervisorSetup.unapply
-import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.TestHelpers
 import ch.epfl.bluebrain.nexus.testkit.bio.{BioSuite, PatienceConfig}
 import monix.bio.IO
 import munit.AnyFixture
@@ -22,8 +22,7 @@ class StoragesStatisticsSuite
     extends BioSuite
     with ElasticSearchClientSetup.Fixture
     with SupervisorSetup.Fixture
-    with TestHelpers
-    with IOValues {
+    with TestHelpers {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(esClient, supervisor)
 

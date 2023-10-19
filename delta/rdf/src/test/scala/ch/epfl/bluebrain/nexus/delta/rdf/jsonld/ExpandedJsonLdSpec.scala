@@ -8,10 +8,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdOptions
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
+import ch.epfl.bluebrain.nexus.testkit.ce.CatsSpec
 
-class ExpandedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures {
+class ExpandedJsonLdSpec extends CatsSpec with Fixtures {
 
   implicit val opts: JsonLdOptions = JsonLdOptions(base = Some(iri"http://default.com/"))
 

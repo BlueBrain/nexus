@@ -4,7 +4,7 @@ import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
 import org.scalactic.source
 import org.scalatest.matchers.should.Matchers.fail
-import org.scalatest.{Assertion, Assertions}
+import org.scalatest.{Assertion, Assertions, Suite}
 
 import java.io.{ByteArrayOutputStream, PrintStream}
 import scala.concurrent.Future
@@ -13,6 +13,8 @@ import scala.reflect.ClassTag
 import scala.util.control.NonFatal
 
 trait IOValues extends IOValuesLowPrio {
+  self: Suite =>
+
   implicit def taskToFutureAssertion(
       task: Task[Assertion]
   )(implicit s: Scheduler = Scheduler.global): Future[Assertion] =

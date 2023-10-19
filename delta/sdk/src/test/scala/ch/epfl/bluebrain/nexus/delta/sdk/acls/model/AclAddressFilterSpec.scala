@@ -3,12 +3,10 @@ package ch.epfl.bluebrain.nexus.delta.sdk.acls.model
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddressFilter.{AnyOrganization, AnyOrganizationAnyProject, AnyProject}
-import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
+import ch.epfl.bluebrain.nexus.testkit.DeltaSpec
 
-class AclAddressFilterSpec extends AnyWordSpecLike with Matchers with AclFixtures {
+class AclAddressFilterSpec extends DeltaSpec with AclFixtures {
 
   "An ACL address filter" should {
     val org2          = Label.unsafe("org2")

@@ -11,7 +11,7 @@ import cats.effect.concurrent.Ref
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.testkit._
-import ch.epfl.bluebrain.nexus.testkit.ce.{CatsEffectScalaTestAssertions, CatsIOValues, CatsRunContext}
+import ch.epfl.bluebrain.nexus.testkit.ce.CatsSpec
 import ch.epfl.bluebrain.nexus.tests.BaseSpec._
 import ch.epfl.bluebrain.nexus.tests.HttpClient._
 import ch.epfl.bluebrain.nexus.tests.Identity._
@@ -26,14 +26,12 @@ import com.typesafe.config.ConfigFactory
 import io.circe.Json
 import org.scalactic.source.Position
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AsyncWordSpecLike
 import org.scalatest.{Assertion, BeforeAndAfterAll, OptionValues}
 
 import scala.concurrent.duration._
 
 trait BaseSpec
-    extends AsyncWordSpecLike
+    extends CatsSpec
     with CirceUnmarshalling
     with CirceLiteral
     with CirceEq
@@ -43,12 +41,8 @@ trait BaseSpec
     with TestHelpers
     with ScalatestRouteTest
     with Eventually
-    with CatsRunContext
-    with CatsIOValues
-    with CatsEffectScalaTestAssertions
     with OptionValues
-    with ScalaFutures
-    with Matchers {
+    with ScalaFutures {
 
   private val logger = Logger.cats[this.type]
 
