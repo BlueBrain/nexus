@@ -1,13 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld
 
-import ch.epfl.bluebrain.nexus.delta.rdf.Fixtures
+import ch.epfl.bluebrain.nexus.delta.rdf.{Fixtures, GraphHelpers}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.testkit.scalatest.BaseSpec
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 
-class CompactedJsonLdSpec extends BaseSpec with Fixtures {
+class CompactedJsonLdSpec extends CatsEffectSpec with Fixtures with GraphHelpers {
 
   "A compacted Json-LD" should {
     val expanded              = jsonContentOf("expanded.json")

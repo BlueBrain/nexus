@@ -11,11 +11,12 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.testkit.mu.JsonAssertions
 import ch.epfl.bluebrain.nexus.testkit.mu.bio.BioSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsIOValues
 import io.circe.Json
 
 import java.time.Instant
 
-class GraphResourceToDocumentSuite extends BioSuite with Fixtures with JsonAssertions {
+class GraphResourceToDocumentSuite extends BioSuite with Fixtures with JsonAssertions with CatsIOValues {
 
   private val entityType = EntityType("entityType")
   private val project    = ProjectRef.unsafe("org", "project")

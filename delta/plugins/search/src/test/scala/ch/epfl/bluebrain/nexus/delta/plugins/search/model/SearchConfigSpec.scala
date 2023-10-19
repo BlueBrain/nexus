@@ -4,20 +4,12 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchConfigError.{InvalidJsonError, InvalidSparqlConstructQuery, LoadingFileError}
 import ch.epfl.bluebrain.nexus.delta.sdk.Defaults
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.{CatsEffectScalaTestAssertions, CatsIOValues}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import com.typesafe.config.ConfigFactory
-import org.scalatest.Inspectors
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.concurrent.duration.DurationInt
 
-class SearchConfigSpec
-    extends AnyWordSpecLike
-    with Matchers
-    with Inspectors
-    with CatsIOValues
-    with CatsEffectScalaTestAssertions {
+class SearchConfigSpec extends CatsEffectSpec {
 
   private def getAbsolutePath(path: String) = getClass.getResource(path).getPath
 

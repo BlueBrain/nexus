@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld
 
-import ch.epfl.bluebrain.nexus.delta.rdf.Fixtures
+import ch.epfl.bluebrain.nexus.delta.rdf.{Fixtures, GraphHelpers}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.RemoteContextCircularDependency
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schema
@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 
-class ExpandedJsonLdSpec extends CatsEffectSpec with Fixtures {
+class ExpandedJsonLdSpec extends CatsEffectSpec with Fixtures with GraphHelpers {
 
   implicit val opts: JsonLdOptions = JsonLdOptions(base = Some(iri"http://default.com/"))
 

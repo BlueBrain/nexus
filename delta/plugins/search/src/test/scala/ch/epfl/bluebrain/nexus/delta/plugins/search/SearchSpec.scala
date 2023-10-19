@@ -35,7 +35,7 @@ import ch.epfl.bluebrain.nexus.testkit._
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchDocker
 import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
 import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
-import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.{CatsEffectScalaTestAssertions, CatsIOValues}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
 import io.circe.{Json, JsonObject}
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
@@ -59,7 +59,6 @@ class SearchSpec
     with ScalaTestElasticSearchClientSetup
     with ConfigFixtures
     with CatsIOValues
-    with CatsEffectScalaTestAssertions
     with BIOValues
     with Eventually
     with Fixtures

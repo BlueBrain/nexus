@@ -22,7 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revisio
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.testkit.ce.IOFixedClock
 import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
-import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.{CatsEffectScalaTestAssertions, CatsIOValues}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
 import io.circe.Json
 import io.circe.syntax.{EncoderOps, KeyOps}
@@ -39,7 +39,6 @@ class ResourcesSpec
     with Inspectors
     with IOFixedClock
     with CatsIOValues
-    with CatsEffectScalaTestAssertions
     with TestHelpers
     with CirceLiteral
     with OptionValues

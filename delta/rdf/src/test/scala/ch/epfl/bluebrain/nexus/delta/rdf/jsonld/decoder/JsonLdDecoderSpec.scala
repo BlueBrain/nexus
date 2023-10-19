@@ -12,12 +12,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderSpec.{Absol
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.configuration.semiauto._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.semiauto._
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
-import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
+import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
-import org.scalatest.Inspectors
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 
 import java.time.Instant
 import java.util.UUID
@@ -25,15 +22,7 @@ import scala.annotation.nowarn
 import scala.concurrent.duration._
 
 @nowarn("cat=unused")
-class JsonLdDecoderSpec
-    extends AnyWordSpecLike
-    with Matchers
-    with Inspectors
-    with CirceLiteral
-    with EitherValues
-    with BIOValues
-    with Fixtures
-    with TestHelpers {
+class JsonLdDecoderSpec extends CatsEffectSpec with CirceLiteral with BIOValues with Fixtures {
 
   implicit private val rcr: RemoteContextResolution = RemoteContextResolution.fixed()
 

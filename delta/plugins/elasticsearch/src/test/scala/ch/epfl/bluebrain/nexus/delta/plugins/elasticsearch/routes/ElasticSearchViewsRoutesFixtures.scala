@@ -25,7 +25,6 @@ import ch.epfl.bluebrain.nexus.testkit.bio.IOFixedClock
 import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
 import ch.epfl.bluebrain.nexus.testkit.scalatest.TestMatchers
 import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
-import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectScalaTestAssertions
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
@@ -41,7 +40,6 @@ class ElasticSearchViewsRoutesFixtures
     with IOFixedClock
     with BIOValues
     with CatsRunContext
-    with CatsEffectScalaTestAssertions
     with OptionValues
     with TestMatchers
     with Inspectors

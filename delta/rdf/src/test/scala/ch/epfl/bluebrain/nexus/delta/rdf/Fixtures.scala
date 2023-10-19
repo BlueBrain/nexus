@@ -7,12 +7,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.testkit._
-import ch.epfl.bluebrain.nexus.testkit.scalatest.TestMatchers
-import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
 import monix.execution.schedulers.CanBlock
-import org.scalatest.OptionValues
+import org.scalatest.{OptionValues, TestSuite}
 
-trait Fixtures extends TestHelpers with CirceLiteral with OptionValues with CatsIOValues with TestMatchers {
+trait Fixtures extends CirceLiteral {
 
   implicit val api: JsonLdApi = JsonLdJavaApi.strict
 
@@ -42,13 +40,18 @@ trait Fixtures extends TestHelpers with CirceLiteral with OptionValues with Cats
     val value                  = iri"http://nexus.example.com/"
     def +(string: String): Iri = iri"$value$string"
   }
+}
+
+object Fixtures extends Fixtures
+
+trait GraphHelpers extends OptionValues {
+  self: TestSuite =>
 
   def bNode(graph: Graph): BNode =
     BNode.unsafe(
       graph
-        .find { case (s, p, _) => s == subject(graph.rootNode) && p == predicate(vocab + "address") }
+        .find { case (s, p, _) => s == subject(graph.rootNode) && p == predicate(Fixtures.vocab + "address") }
         .map(_._3.getBlankNodeLabel)
         .value
     )
-
 }

@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.routes
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.server.Route
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
@@ -13,32 +14,20 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.OrganizationGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.OrganizationsConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.OrganizationDeleter
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.OrganizationsImpl
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.{OrganizationDeleter, OrganizationsConfig, OrganizationsImpl}
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.OrganizationNonEmpty
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{orgs => orgsPermissions}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{events, orgs => orgsPermissions}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.OwnerPermissionsScopeInitialization
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Authenticated
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Group
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.bio.IOFromMap
-import io.circe.Json
-import cats.effect.IO
 import ch.epfl.bluebrain.nexus.testkit.ce.IOFixedClock
-import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectScalaTestAssertions
+import io.circe.Json
 
 import java.util.UUID
 
-class OrganizationsRoutesSpec
-    extends BaseRouteSpec
-    with IOFromMap
-    with IOFixedClock
-    with CatsEffectScalaTestAssertions {
+class OrganizationsRoutesSpec extends BaseRouteSpec with IOFromMap with IOFixedClock {
 
   private val fixedUuid             = UUID.randomUUID()
   implicit private val uuidF: UUIDF = UUIDF.fixed(fixedUuid)

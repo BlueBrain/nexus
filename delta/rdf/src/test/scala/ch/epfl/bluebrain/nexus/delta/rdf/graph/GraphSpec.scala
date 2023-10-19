@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.graph
 
-import ch.epfl.bluebrain.nexus.delta.rdf.Fixtures
+import ch.epfl.bluebrain.nexus.delta.rdf.Fixtures._
+import ch.epfl.bluebrain.nexus.delta.rdf.GraphHelpers
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.{ConversionError, UnexpectedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple._
@@ -13,8 +14,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
 
-class GraphSpec extends BioSpec with Fixtures {
+class GraphSpec extends BioSpec with GraphHelpers with CatsIOValues {
 
   "A Graph" should {
     val expandedJson     = jsonContentOf("expanded.json")

@@ -1,8 +1,11 @@
 package ch.epfl.bluebrain.nexus.testkit.scalatest
 
+import org.scalatest.Suite
 import org.scalatest.matchers.{MatchResult, Matcher}
 
 trait TestMatchers {
+
+  self: Suite =>
 
   def equalLinesUnordered(right: String): Matcher[String] = new EqualLinesUnordered(right)
 

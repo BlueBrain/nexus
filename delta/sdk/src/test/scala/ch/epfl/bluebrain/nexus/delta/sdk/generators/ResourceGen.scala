@@ -16,12 +16,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
-import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
 import io.circe.Json
 
 import java.time.Instant
+import scala.concurrent.duration.DurationInt
 
-object ResourceGen extends CatsIOValues {
+object ResourceGen {
 
   // We put a lenient api for schemas otherwise the api checks data types before the actual schema validation process
   implicit val api: JsonLdApi = JsonLdJavaApi.strict
@@ -147,6 +147,11 @@ object ResourceGen extends CatsIOValues {
   def jsonLdContent(id: Iri, project: ProjectRef, source: Json)(implicit resolution: RemoteContextResolution) = {
     val resourceF = sourceToResourceF(id, project, source)
     JsonLdContent(resourceF, resourceF.value.source, None)
+  }
+
+  implicit final private class CatsIOValuesOps[A](private val io: IO[A]) {
+    def accepted: A =
+      io.unsafeRunTimed(45.seconds).getOrElse(throw new RuntimeException("IO timed out during .accepted call"))
   }
 
 }
