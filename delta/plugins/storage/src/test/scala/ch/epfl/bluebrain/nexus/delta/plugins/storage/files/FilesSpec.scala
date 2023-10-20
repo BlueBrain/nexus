@@ -36,24 +36,22 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
-import ch.epfl.bluebrain.nexus.testkit.remotestorage.RemoteStorageDocker
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
-import ch.epfl.bluebrain.nexus.testkit.bio.IOFixedClock
+import ch.epfl.bluebrain.nexus.testkit.remotestorage.RemoteStorageDocker
 import monix.bio.IO
 import monix.execution.Scheduler
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{DoNotDiscover, Inspectors, OptionValues}
 
 @DoNotDiscover
 class FilesSpec(docker: RemoteStorageDocker)
     extends TestKit(ActorSystem("FilesSpec"))
+    with AnyWordSpecLike
     with DoobieScalaTestFixture
     with OptionValues
     with Matchers
-    with BIOValues
-    with IOFixedClock
     with Inspectors
     with CirceLiteral
     with ConfigFixtures

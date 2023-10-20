@@ -10,27 +10,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
-import ch.epfl.bluebrain.nexus.testkit.TestHelpers
-import ch.epfl.bluebrain.nexus.testkit.bio.IOFixedClock
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
 import io.circe.Json
 import monix.bio.IO
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
-import org.scalatest.{Inspectors, OptionValues}
 
 import java.time.Instant
 import java.util.UUID
 
-class CompositeViewsStmSpec
-    extends AnyWordSpecLike
-    with Matchers
-    with Inspectors
-    with IOFixedClock
-    with OptionValues
-    with BIOValues
-    with TestHelpers
-    with CompositeViewsFixture {
+class CompositeViewsStmSpec extends BioSpec with CompositeViewsFixture {
   "A CompositeViews STM" when {
 
     val validView: ValidateCompositeView   = (_, _) => IO.unit

@@ -14,22 +14,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectCon
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.testkit.TestHelpers
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
 import io.circe.literal._
-import org.scalatest.Inspectors
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
 
 import java.util.UUID
 
-class BlazegraphViewDecodingSpec
-    extends AnyWordSpecLike
-    with Matchers
-    with Inspectors
-    with BIOValues
-    with TestHelpers
-    with Fixtures {
+class BlazegraphViewDecodingSpec extends BioSpec with Fixtures {
 
   private val context = ProjectContext.unsafe(
     ApiMappings.empty,

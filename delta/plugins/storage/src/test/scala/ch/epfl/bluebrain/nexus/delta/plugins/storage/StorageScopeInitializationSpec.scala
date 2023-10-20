@@ -15,23 +15,17 @@ import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, Defaults}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
-import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
-import ch.epfl.bluebrain.nexus.testkit.TestHelpers
-import ch.epfl.bluebrain.nexus.testkit.bio.IOFixedClock
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import monix.bio.IO
 import monix.execution.Scheduler
-import org.scalatest.matchers.should.Matchers
 
 import java.util.UUID
 
 class StorageScopeInitializationSpec
-    extends DoobieScalaTestFixture
-    with Matchers
-    with CatsIOValues
-    with IOFixedClock
+    extends CatsEffectSpec
+    with DoobieScalaTestFixture
     with RemoteContextResolutionFixture
-    with ConfigFixtures
-    with TestHelpers {
+    with ConfigFixtures {
 
   private val serviceAccount: ServiceAccount = ServiceAccount(User("nexus-sa", Label.unsafe("sa")))
 

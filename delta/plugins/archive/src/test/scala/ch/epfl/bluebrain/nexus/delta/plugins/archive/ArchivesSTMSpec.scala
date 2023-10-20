@@ -8,23 +8,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRepresentation.SourceJson
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
-import ch.epfl.bluebrain.nexus.testkit.ce.IOFixedClock
-import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
-import ch.epfl.bluebrain.nexus.testkit.TestHelpers
-import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 
 import java.nio.file.Paths
 import java.time.Instant
 
-class ArchivesSTMSpec
-    extends AnyWordSpecLike
-    with Matchers
-    with CatsIOValues
-    with IOFixedClock
-    with EitherValues
-    with TestHelpers {
+class ArchivesSTMSpec extends CatsEffectSpec {
 
   "An Archive STM" when {
     val id      = iri"http://localhost${genString()}"

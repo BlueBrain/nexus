@@ -1,13 +1,12 @@
 package ch.epfl.bluebrain.nexus.tests.admin
 
 import akka.http.scaladsl.model.StatusCodes
-import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
 import ch.epfl.bluebrain.nexus.tests.Identity.orgs.{Fry, Leela}
 import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, ExpectedResponse}
 import io.circe.Json
 
-class OrgsSpec extends BaseIntegrationSpec with EitherValues {
+class OrgsSpec extends BaseIntegrationSpec {
 
   import ch.epfl.bluebrain.nexus.tests.iam.types.Permission._
 

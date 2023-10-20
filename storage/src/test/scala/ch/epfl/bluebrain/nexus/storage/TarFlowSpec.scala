@@ -47,11 +47,11 @@ class TarFlowSpec
 
     "generate the byteString for a tar file correctly" in {
       val file1        = dir1.resolve("file1.txt")
-      val file1Content = genString()
+      val file1Content = randomString()
       val file2        = dir1.resolve("file3.txt")
-      val file2Content = genString()
+      val file2Content = randomString()
       val file3        = dir2.resolve("file3.txt")
-      val file3Content = genString()
+      val file3Content = randomString()
       val files        = List(file1 -> file1Content, file2 -> file2Content, file3 -> file3Content)
       forAll(files) { case (file, content) =>
         Source.single(ByteString(content)).runWith(FileIO.toPath(file)).futureValue

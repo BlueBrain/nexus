@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk.organizations
 
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, ScopeInitializationLog}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.OrganizationGen.{organization, resourceFor}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
@@ -10,27 +9,22 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.OrganizationS
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.{IncorrectRev, OrganizationAlreadyExists, OrganizationIsDeprecated, OrganizationNotFound, RevisionNotFound}
+import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, ScopeInitializationLog}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
-import ch.epfl.bluebrain.nexus.testkit.ce.{CatsRunContext, IOFixedClock}
-import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import monix.bio.UIO
 import monix.execution.Scheduler
-import org.scalatest.{CancelAfterFailure, OptionValues}
-import org.scalatest.matchers.should.Matchers
+import org.scalatest.CancelAfterFailure
 
 import java.time.Instant
 import java.util.UUID
 
 class OrganizationsImplSpec
-    extends DoobieScalaTestFixture
-    with Matchers
-    with CatsRunContext
-    with CatsIOValues
-    with IOFixedClock
+    extends CatsEffectSpec
+    with DoobieScalaTestFixture
     with CancelAfterFailure
-    with OptionValues
     with ConfigFixtures {
 
   private lazy val config = OrganizationsConfig(eventLogConfig, pagination, cacheConfig)

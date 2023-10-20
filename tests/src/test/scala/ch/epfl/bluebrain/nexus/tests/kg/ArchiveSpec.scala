@@ -5,7 +5,6 @@ import akka.http.scaladsl.model.{MediaRanges, MediaTypes, StatusCodes, Uri}
 import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers
 import akka.util.ByteString
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
-import ch.epfl.bluebrain.nexus.testkit.CirceEq
 import ch.epfl.bluebrain.nexus.testkit.archive.ArchiveHelpers
 import ch.epfl.bluebrain.nexus.tests.HttpClient._
 import ch.epfl.bluebrain.nexus.tests.Identity.archives.Tweety
@@ -17,7 +16,7 @@ import io.circe.Json
 
 import java.nio.file.Paths
 
-class ArchiveSpec extends BaseIntegrationSpec with ArchiveHelpers with CirceEq {
+class ArchiveSpec extends BaseIntegrationSpec with ArchiveHelpers {
 
   private val orgId   = genId()
   private val projId  = genId()
