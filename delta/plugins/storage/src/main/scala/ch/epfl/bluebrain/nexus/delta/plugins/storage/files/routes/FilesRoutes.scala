@@ -65,7 +65,7 @@ final class FilesRoutes(
     ordering: JsonKeyOrdering,
     fusionConfig: FusionConfig
 ) extends AuthDirectives(identities, aclCheck)
-    with CirceUnmarshalling {
+    with CirceUnmarshalling { self =>
 
   import baseUri.prefixSegment
   import schemeDirectives._
@@ -75,6 +75,11 @@ final class FilesRoutes(
       pathPrefix("files") {
         extractCaller { implicit caller =>
           resolveProjectRef.apply { ref =>
+            implicit class IndexOps[A](io: IO[A]) {
+              def index(m: IndexingMode)(implicit ev: A =:= FileResource): IO[A] = io.flatTap(self.index(ref, _, m))
+              def attemptN: IO[Either[FileRejection, A]]                         = io.attemptNarrow[FileRejection]
+            }
+
             concat(
               (post & pathEndOrSingleSlash & noParameter("rev") & parameter(
                 "storage".as[IdSegment].?
@@ -85,20 +90,14 @@ final class FilesRoutes(
                     entity(as[LinkFile]) { case LinkFile(filename, mediaType, path) =>
                       emit(
                         Created,
-                        files
-                          .createLink(storage, ref, filename, mediaType, path, tag)
-                          .flatTap(index(ref, _, mode))
-                          .attemptNarrow[FileRejection]
+                        files.createLink(storage, ref, filename, mediaType, path, tag).index(mode).attemptN
                       )
                     },
                     // Create a file without id segment
                     extractRequestEntity { entity =>
                       emit(
                         Created,
-                        files
-                          .create(storage, ref, entity, tag)
-                          .flatTap(index(ref, _, mode))
-                          .attemptNarrow[FileRejection]
+                        files.create(storage, ref, entity, tag).index(mode).attemptN
                       )
                     }
                   )
@@ -119,18 +118,15 @@ final class FilesRoutes(
                                     Created,
                                     files
                                       .createLink(id, storage, ref, filename, mediaType, path, tag)
-                                      .flatTap(index(ref, _, mode))
-                                      .attemptNarrow[FileRejection]
+                                      .index(mode)
+                                      .attemptN
                                   )
                                 },
                                 // Create a file with id segment
                                 extractRequestEntity { entity =>
                                   emit(
                                     Created,
-                                    files
-                                      .create(id, storage, ref, entity, tag)
-                                      .flatTap(index(ref, _, mode))
-                                      .attemptNarrow[FileRejection]
+                                    files.create(id, storage, ref, entity, tag).index(mode).attemptN
                                   )
                                 }
                               )
@@ -141,17 +137,14 @@ final class FilesRoutes(
                                   emit(
                                     files
                                       .updateLink(id, storage, ref, filename, mediaType, path, rev)
-                                      .flatTap(index(ref, _, mode))
-                                      .attemptNarrow[FileRejection]
+                                      .index(mode)
+                                      .attemptN
                                   )
                                 },
                                 // Update a file
                                 extractRequestEntity { entity =>
                                   emit(
-                                    files
-                                      .update(id, storage, ref, rev, entity)
-                                      .flatTap(index(ref, _, mode))
-                                      .attemptNarrow[FileRejection]
+                                    files.update(id, storage, ref, rev, entity).index(mode).attemptN
                                   )
                                 }
                               )
@@ -161,10 +154,7 @@ final class FilesRoutes(
                         (delete & parameter("rev".as[Int])) { rev =>
                           authorizeFor(ref, Write).apply {
                             emit(
-                              files
-                                .deprecate(id, ref, rev)
-                                .flatTap(index(ref, _, mode))
-                                .attemptNarrow[FileRejection]
+                              files.deprecate(id, ref, rev).index(mode).attemptN
                             )
                           }
                         },
@@ -185,7 +175,7 @@ final class FilesRoutes(
                         // Fetch a file tags
                         (get & idSegmentRef(id) & pathEndOrSingleSlash & authorizeFor(ref, Read)) { id =>
                           emit(
-                            fetchMetadata(id, ref).map(_.value.tags).attemptNarrow[FileRejection]
+                            fetchMetadata(id, ref).map(_.value.tags).attemptN
                           )
                         },
                         // Tag a file
@@ -194,10 +184,7 @@ final class FilesRoutes(
                             entity(as[Tag]) { case Tag(tagRev, tag) =>
                               emit(
                                 Created,
-                                files
-                                  .tag(id, ref, tag, tagRev, rev)
-                                  .flatTap(index(ref, _, mode))
-                                  .attemptNarrow[FileRejection]
+                                files.tag(id, ref, tag, tagRev, rev).index(mode).attemptN
                               )
                             }
                           }
@@ -208,10 +195,7 @@ final class FilesRoutes(
                           Write
                         )) { (tag, rev) =>
                           emit(
-                            files
-                              .deleteTag(id, ref, tag, rev)
-                              .flatTap(index(ref, _, mode))
-                              .attemptNarrow[FileRejection]
+                            files.deleteTag(id, ref, tag, rev).index(mode).attemptN
                           )
                         }
                       )

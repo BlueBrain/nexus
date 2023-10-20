@@ -19,10 +19,10 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.testkit.bio.IOFixedClock
 import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
 import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
 import org.scalatest.{Inspectors, OptionValues}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
-import org.scalatest.{Inspectors, OptionValues}
 
 import java.time.Instant
 
