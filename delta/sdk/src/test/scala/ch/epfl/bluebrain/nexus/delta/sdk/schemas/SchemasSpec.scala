@@ -14,11 +14,10 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
 
 import java.time.Instant
 
-class SchemasSpec extends CatsEffectSpec with TestHelpers with CirceLiteral with Fixtures {
+class SchemasSpec extends CatsEffectSpec with Fixtures {
 
   implicit override val api: JsonLdApi = JsonLdJavaApi.lenient
 

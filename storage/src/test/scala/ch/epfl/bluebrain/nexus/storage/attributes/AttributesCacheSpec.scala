@@ -46,8 +46,8 @@ class AttributesCacheSpec
   }
 
   trait Ctx {
-    val path: Path                      = Paths.get(genString())
-    val digest                          = Digest(config.algorithm, genString())
+    val path: Path                      = Paths.get(randomString())
+    val digest                          = Digest(config.algorithm, randomString())
     val attributes                      = FileAttributes(s"file://$path", genInt().toLong, digest, `image/jpeg`)
     def attributesEmpty(p: Path = path) = FileAttributes(p.toAkkaUri, 0L, Digest.empty, `application/octet-stream`)
     val counter                         = new AtomicInteger(0)

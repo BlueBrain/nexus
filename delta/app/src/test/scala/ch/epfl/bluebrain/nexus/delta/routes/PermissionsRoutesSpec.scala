@@ -15,11 +15,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.{Permissions, PermissionsCo
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
-import ch.epfl.bluebrain.nexus.testkit.ce.IOFixedClock
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
 import io.circe.Json
 
-class PermissionsRoutesSpec extends BaseRouteSpec with IOFixedClock with CatsIOValues {
+class PermissionsRoutesSpec extends BaseRouteSpec with CatsIOValues {
 
   implicit private val caller: Subject = Identity.Anonymous
 

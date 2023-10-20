@@ -4,11 +4,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schema, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.{IriSegment, StringSegment}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectBase}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
-import org.scalatest.{Inspectors, OptionValues}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.BaseSpec
 
-class IdSegmentSpec extends AnyWordSpecLike with Matchers with Inspectors with OptionValues {
+class IdSegmentSpec extends BaseSpec {
 
   private val am   = ApiMappings(
     "nxv"      -> nxv.base,

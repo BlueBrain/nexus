@@ -4,11 +4,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.AnalyticsGrap
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
-import ch.epfl.bluebrain.nexus.testkit.TestHelpers
-import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
-import org.scalatest.matchers.should.Matchers
 
-class AnalyticsGraphSpec extends BioSpec with Matchers with TestHelpers with EitherValues with ContextFixtures {
+class AnalyticsGraphSpec extends BioSpec with ContextFixtures {
 
   "A AnalyticsGraph" should {
 

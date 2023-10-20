@@ -3,17 +3,14 @@ package ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion.model
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.testkit.TestHelpers
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
 import com.typesafe.config.ConfigFactory
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
 import pureconfig.ConfigSource
 import pureconfig.error.ConfigReaderException
 
 import scala.concurrent.duration.DurationInt
 
-class ProjectDeletionConfigSpec extends AnyWordSpecLike with Matchers with BIOValues with TestHelpers {
+class ProjectDeletionConfigSpec extends BioSpec {
 
   implicit private val cl: ClassLoader = getClass.getClassLoader
   implicit private val api: JsonLdApi  = JsonLdJavaApi.strict

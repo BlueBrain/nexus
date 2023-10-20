@@ -5,20 +5,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejecti
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.Fixtures
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
-import org.scalatest.Inspectors
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
 
-class OrganizationRejectionsSpec
-    extends AnyWordSpecLike
-    with Matchers
-    with Inspectors
-    with CirceLiteral
-    with TestHelpers
-    with BIOValues
-    with Fixtures {
+class OrganizationRejectionsSpec extends BioSpec with Fixtures {
 
   "An OrganizationRejection" should {
 

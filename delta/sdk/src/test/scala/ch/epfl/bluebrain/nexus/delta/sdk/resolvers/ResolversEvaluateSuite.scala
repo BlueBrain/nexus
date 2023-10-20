@@ -13,11 +13,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverType.{CrossProj
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverValue.{CrossProjectValue, InProjectValue}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.testkit.ce.IOFixedClock
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import io.circe.Json
 
-class ResolversEvaluateSuite extends CatsEffectSuite with IOFixedClock with ResolverStateMachineFixture {
+class ResolversEvaluateSuite extends CatsEffectSuite with ResolverStateMachineFixture {
 
   private val validatePriority: ValidatePriority = (_, _, _) => IO.unit
 

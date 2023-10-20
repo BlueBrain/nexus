@@ -17,24 +17,17 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Authenticated, Gro
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
-import ch.epfl.bluebrain.nexus.testkit.bio.IOFixedClock
-import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
 import io.circe.Json
 import io.circe.syntax._
 import monix.bio.IO
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.{CancelAfterFailure, Inspectors}
+import org.scalatest.CancelAfterFailure
 
 import java.util.UUID
 
-class StoragesSpec
-    extends DoobieScalaTestFixture
-    with EitherValues
-    with Matchers
-    with BIOValues
-    with IOFixedClock
-    with Inspectors
+private class StoragesSpec
+    extends BioSpec
+    with DoobieScalaTestFixture
     with CancelAfterFailure
     with ConfigFixtures
     with StorageFixtures

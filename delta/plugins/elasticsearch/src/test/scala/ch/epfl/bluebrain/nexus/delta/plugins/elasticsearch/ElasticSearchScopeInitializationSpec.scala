@@ -17,24 +17,13 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{DefaultLabelPredicates, SourceAsText}
-import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
-import ch.epfl.bluebrain.nexus.testkit.TestHelpers
-import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
-import org.scalatest.{Inspectors, OptionValues}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 
 import java.util.UUID
 
 class ElasticSearchScopeInitializationSpec
-    extends DoobieScalaTestFixture
-    with AnyWordSpecLike
-    with Matchers
-    with Inspectors
-    with CatsIOValues
-    with OptionValues
-    with EitherValues
-    with TestHelpers
+    extends CatsEffectSpec
+    with DoobieScalaTestFixture
     with ConfigFixtures
     with Fixtures {
 

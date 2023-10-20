@@ -2,20 +2,19 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.metrics
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric.ProjectScopedMetric
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetricSpec.SimpleEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.ScopedEvent
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
+import ch.epfl.bluebrain.nexus.testkit.scalatest.BaseSpec
 import io.circe.JsonObject
 import io.circe.syntax.EncoderOps
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
 
 import java.time.Instant
 
-class EventMetricSpec extends AnyWordSpecLike with Matchers with CirceLiteral {
+class EventMetricSpec extends BaseSpec with CirceLiteral {
 
   "A metric" should {
     "be correctly created from the event" in {
