@@ -16,7 +16,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.NTriples
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
-import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
@@ -27,34 +26,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.testkit._
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
-import ch.epfl.bluebrain.nexus.testkit.scalatest.{EitherValues, TestMatchers}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
 import io.circe.JsonObject
 import monix.execution.Scheduler
-import org.scalatest.concurrent.Eventually
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
-import org.scalatest.{CancelAfterFailure, Inspectors}
+import org.scalatest.CancelAfterFailure
 
 import java.util.UUID
-import scala.concurrent.duration._
 
-class BlazegraphQuerySpec
-    extends AnyWordSpecLike
-    with Matchers
-    with EitherValues
-    with CirceLiteral
-    with TestHelpers
-    with TestMatchers
-    with CirceEq
-    with CancelAfterFailure
-    with Inspectors
-    with ConfigFixtures
-    with Fixtures
-    with BIOValues
-    with Eventually {
-  implicit override def patienceConfig: PatienceConfig = PatienceConfig(6.seconds, 100.millis)
+class BlazegraphQuerySpec extends BioSpec with CancelAfterFailure {
 
   implicit private val sc: Scheduler = Scheduler.global
   implicit val baseUri: BaseUri      = BaseUri("http://localhost", Label.unsafe("v1"))

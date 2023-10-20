@@ -1,12 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.utils
 
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
+import ch.epfl.bluebrain.nexus.testkit.scalatest.BaseSpec
 
 import java.nio.file.Paths
 
-class PathUtilsSpec extends AnyWordSpecLike with Matchers {
+class PathUtilsSpec extends BaseSpec {
   "A Path" should {
     val `/tmp/a`     = Paths.get("/tmp/a")
     val `/tmp/a/b/c` = Paths.get("/tmp/a/b/c")

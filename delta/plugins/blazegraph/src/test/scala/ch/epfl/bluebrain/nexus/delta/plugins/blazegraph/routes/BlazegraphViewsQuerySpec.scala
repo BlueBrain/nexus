@@ -46,6 +46,7 @@ import monix.bio.IO
 import monix.execution.Scheduler
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{CancelAfterFailure, DoNotDiscover, Inspectors, OptionValues}
 
 import java.time.Instant
@@ -54,6 +55,7 @@ import scala.concurrent.duration._
 @DoNotDiscover
 class BlazegraphViewsQuerySpec(docker: BlazegraphDocker)
     extends TestKit(ActorSystem("BlazegraphViewsQuerySpec"))
+    with AnyWordSpecLike
     with DoobieScalaTestFixture
     with Matchers
     with EitherValues

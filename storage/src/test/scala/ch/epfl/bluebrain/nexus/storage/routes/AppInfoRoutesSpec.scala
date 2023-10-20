@@ -9,19 +9,13 @@ import ch.epfl.bluebrain.nexus.storage.config.{AppConfig, Settings}
 import ch.epfl.bluebrain.nexus.storage.routes.instances._
 import ch.epfl.bluebrain.nexus.storage.utils.Resources
 import ch.epfl.bluebrain.nexus.storage.{AkkaSource, Storages}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.BaseSpec
 import io.circe.Json
 import org.mockito.IdiomaticMockito
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
 
 import java.util.regex.Pattern.quote
 
-class AppInfoRoutesSpec
-    extends AnyWordSpecLike
-    with Matchers
-    with ScalatestRouteTest
-    with IdiomaticMockito
-    with Resources {
+class AppInfoRoutesSpec extends BaseSpec with ScalatestRouteTest with IdiomaticMockito with Resources {
 
   "the app info routes" should {
 

@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.quotas
 
-import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ServiceAccountConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.ProjectsStatistics
@@ -11,14 +10,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.quotas.model.QuotaRejection.QuotaReache
 import ch.epfl.bluebrain.nexus.delta.sdk.quotas.model.QuotaRejection.QuotasDisabled
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
 import monix.bio.UIO
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
 
 import java.time.Instant
 
-class QuotasImplSpec extends AnyWordSpecLike with Matchers with BIOValues with ConfigFixtures {
+class QuotasImplSpec extends BioSpec {
 
   private val project  = ProjectRef.unsafe("myorg", "myproject")
   private val project2 = ProjectRef.unsafe("myorg", "myproject2")

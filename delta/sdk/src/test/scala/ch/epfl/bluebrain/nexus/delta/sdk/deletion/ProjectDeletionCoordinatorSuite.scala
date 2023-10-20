@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.deletion
 
-import cats.syntax.all._
 import cats.effect.concurrent.Ref
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.ProjectDeletionCoordinator.{Active, Noop}
@@ -16,13 +16,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.{Projec
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, PrefixIri, ProjectFields}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{ProjectsConfig, ProjectsFixture}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.EntityDependencyStore
+import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityDependency.DependsOn
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.testkit.bio.IOFixedClock
 import ch.epfl.bluebrain.nexus.testkit.mu.bio.BioSuite
 import doobie.implicits._
 import monix.bio.{IO, Task, UIO}
@@ -31,7 +30,7 @@ import munit.AnyFixture
 import java.time.Instant
 import java.util.UUID
 
-class ProjectDeletionCoordinatorSuite extends BioSuite with IOFixedClock with ConfigFixtures {
+class ProjectDeletionCoordinatorSuite extends BioSuite with ConfigFixtures {
 
   implicit private val subject: Subject = Identity.User("Bob", Label.unsafe("realm"))
 

@@ -12,28 +12,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, PrefixIri}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.testkit._
-import ch.epfl.bluebrain.nexus.testkit.bio.IOFixedClock
-import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
 import monix.bio.IO
 import monix.execution.Scheduler
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
-import org.scalatest.{Inspectors, OptionValues}
 
 import java.time.Instant
 
-class ProjectsSpec
-    extends AnyWordSpecLike
-    with Matchers
-    with EitherValues
-    with Inspectors
-    with IOFixedClock
-    with BIOValues
-    with TestHelpers
-    with CirceLiteral
-    with OptionValues {
+class ProjectsSpec extends BioSpec {
 
   "The Projects state machine" when {
     implicit val sc: Scheduler  = Scheduler.global

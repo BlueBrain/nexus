@@ -7,7 +7,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
-import ch.epfl.bluebrain.nexus.testkit.bio.IOFixedClock
 import ch.epfl.bluebrain.nexus.testkit.mu.bio.BioSuite
 import munit.AnyFixture
 
@@ -17,7 +16,6 @@ import scala.concurrent.duration.DurationInt
 
 class BlazegraphSlowQueryStoreSuite
     extends BioSuite
-    with IOFixedClock
     with Doobie.Fixture
     with Doobie.Assertions
     with BlazegraphSlowQueryStoreFixture {

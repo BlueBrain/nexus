@@ -15,7 +15,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.test.{expandOnlyIris
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
-import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
@@ -29,36 +28,17 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit._
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
-import ch.epfl.bluebrain.nexus.testkit.scalatest.{EitherValues, TestMatchers}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
 import monix.bio.IO
 import monix.execution.Scheduler
-import org.scalatest.concurrent.Eventually
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
-import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
+import org.scalatest.CancelAfterFailure
 
 import java.util.UUID
 import scala.annotation.nowarn
-import scala.concurrent.duration._
 
-class ElasticSearchQuerySpec
-    extends AnyWordSpecLike
-    with Matchers
-    with EitherValues
-    with CirceLiteral
-    with TestHelpers
-    with CancelAfterFailure
-    with Inspectors
-    with OptionValues
-    with ConfigFixtures
-    with Fixtures
-    with BIOValues
-    with Eventually
-    with TestMatchers {
-  implicit override def patienceConfig: PatienceConfig = PatienceConfig(6.seconds, 100.millis)
+class ElasticSearchQuerySpec extends BioSpec with CirceLiteral with CancelAfterFailure {
 
   implicit private val sc: Scheduler = Scheduler.global
   implicit val baseUri: BaseUri      = BaseUri("http://localhost", Label.unsafe("v1"))
