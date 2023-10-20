@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.{Fil
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileId, FileRejection}
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
@@ -27,7 +27,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.AnnotatedSource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRepresentation._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef, ResourceRepresentation}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceRepresentation}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.StreamConverter
 import ch.epfl.bluebrain.nexus.delta.sdk.{AkkaSource, JsonLdValue, ResourceShifts}
@@ -282,7 +282,7 @@ object ArchiveDownload {
     ArchiveDownload(
       aclCheck,
       shifts.fetch,
-      (id: ResourceRef, project: ProjectRef, caller: Caller) => files.fetchContent(IdSegmentRef(id), project)(caller),
+      (id: ResourceRef, project: ProjectRef, caller: Caller) => files.fetchContent(FileId(id, project))(caller),
       fileSelf
     )
 

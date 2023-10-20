@@ -6,9 +6,11 @@ import akka.http.scaladsl.model.headers.Accept
 import akka.http.scaladsl.model.{ContentType, MediaRange}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
+import cats.effect.IO
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{File, FileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{File, FileId, FileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.permissions.{read => Read, write => Write}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutes._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{schemas, FileResource, Files}
@@ -17,23 +19,21 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.ce.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.{baseUriPrefix, idSegment, indexingMode, noParameter, tagParam}
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, IdSegmentRef, ResourceF}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.Decoder
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
-import monix.bio.IO
-import monix.execution.Scheduler
 
 import scala.annotation.nowarn
 
@@ -60,24 +60,24 @@ final class FilesRoutes(
 )(implicit
     baseUri: BaseUri,
     storageConfig: StorageTypeConfig,
-    s: Scheduler,
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering,
     fusionConfig: FusionConfig
 ) extends AuthDirectives(identities, aclCheck)
-    with CirceUnmarshalling {
+    with CirceUnmarshalling { self =>
 
   import baseUri.prefixSegment
   import schemeDirectives._
-
-  private def indexUIO(project: ProjectRef, resource: ResourceF[File], mode: IndexingMode) =
-    index(project, resource, mode).toUIO
 
   def routes: Route =
     (baseUriPrefix(baseUri.prefix) & replaceUri("files", schemas.files)) {
       pathPrefix("files") {
         extractCaller { implicit caller =>
           resolveProjectRef.apply { ref =>
+            implicit class IndexOps(io: IO[FileResource]) {
+              def index(m: IndexingMode): IO[FileResource] = io.flatTap(self.index(ref, _, m))
+            }
+
             concat(
               (post & pathEndOrSingleSlash & noParameter("rev") & parameter(
                 "storage".as[IdSegment].?
@@ -88,17 +88,24 @@ final class FilesRoutes(
                     entity(as[LinkFile]) { case LinkFile(filename, mediaType, path) =>
                       emit(
                         Created,
-                        files.createLink(storage, ref, filename, mediaType, path, tag).tapEval(indexUIO(ref, _, mode))
+                        files
+                          .createLink(storage, ref, filename, mediaType, path, tag)
+                          .index(mode)
+                          .attemptNarrow[FileRejection]
                       )
                     },
                     // Create a file without id segment
                     extractRequestEntity { entity =>
-                      emit(Created, files.create(storage, ref, entity, tag).tapEval(indexUIO(ref, _, mode)))
+                      emit(
+                        Created,
+                        files.create(storage, ref, entity, tag).index(mode).attemptNarrow[FileRejection]
+                      )
                     }
                   )
                 }
               },
               (idSegment & indexingMode) { (id, mode) =>
+                val fileId = FileId(id, ref)
                 concat(
                   pathEndOrSingleSlash {
                     operationName(s"$prefixSegment/files/{org}/{project}/{id}") {
@@ -112,15 +119,16 @@ final class FilesRoutes(
                                   emit(
                                     Created,
                                     files
-                                      .createLink(id, storage, ref, filename, mediaType, path, tag)
-                                      .tapEval(indexUIO(ref, _, mode))
+                                      .createLink(fileId, storage, filename, mediaType, path, tag)
+                                      .index(mode)
+                                      .attemptNarrow[FileRejection]
                                   )
                                 },
                                 // Create a file with id segment
                                 extractRequestEntity { entity =>
                                   emit(
                                     Created,
-                                    files.create(id, storage, ref, entity, tag).tapEval(indexUIO(ref, _, mode))
+                                    files.create(fileId, storage, entity, tag).index(mode).attemptNarrow[FileRejection]
                                   )
                                 }
                               )
@@ -130,13 +138,16 @@ final class FilesRoutes(
                                 entity(as[LinkFile]) { case LinkFile(filename, mediaType, path) =>
                                   emit(
                                     files
-                                      .updateLink(id, storage, ref, filename, mediaType, path, rev)
-                                      .tapEval(indexUIO(ref, _, mode))
+                                      .updateLink(fileId, storage, filename, mediaType, path, rev)
+                                      .index(mode)
+                                      .attemptNarrow[FileRejection]
                                   )
                                 },
                                 // Update a file
                                 extractRequestEntity { entity =>
-                                  emit(files.update(id, storage, ref, rev, entity).tapEval(indexUIO(ref, _, mode)))
+                                  emit(
+                                    files.update(fileId, storage, rev, entity).index(mode).attemptNarrow[FileRejection]
+                                  )
                                 }
                               )
                           }
@@ -144,16 +155,18 @@ final class FilesRoutes(
                         // Deprecate a file
                         (delete & parameter("rev".as[Int])) { rev =>
                           authorizeFor(ref, Write).apply {
-                            emit(files.deprecate(id, ref, rev).tapEval(indexUIO(ref, _, mode)).rejectOn[FileNotFound])
+                            emit(
+                              files
+                                .deprecate(fileId, rev)
+                                .index(mode)
+                                .attemptNarrow[FileRejection]
+                                .rejectOn[FileNotFound]
+                            )
                           }
                         },
                         // Fetch a file
                         (get & idSegmentRef(id)) { id =>
-                          emitOrFusionRedirect(
-                            ref,
-                            id,
-                            fetch(id, ref)
-                          )
+                          emitOrFusionRedirect(ref, id, fetch(FileId(id, ref)))
                         }
                       )
                     }
@@ -163,13 +176,21 @@ final class FilesRoutes(
                       concat(
                         // Fetch a file tags
                         (get & idSegmentRef(id) & pathEndOrSingleSlash & authorizeFor(ref, Read)) { id =>
-                          emit(fetchMetadata(id, ref).map(_.value.tags).rejectOn[FileNotFound])
+                          emit(
+                            fetchMetadata(FileId(id, ref))
+                              .map(_.value.tags)
+                              .attemptNarrow[FileRejection]
+                              .rejectOn[FileNotFound]
+                          )
                         },
                         // Tag a file
                         (post & parameter("rev".as[Int]) & pathEndOrSingleSlash) { rev =>
                           authorizeFor(ref, Write).apply {
                             entity(as[Tag]) { case Tag(tagRev, tag) =>
-                              emit(Created, files.tag(id, ref, tag, tagRev, rev).tapEval(indexUIO(ref, _, mode)))
+                              emit(
+                                Created,
+                                files.tag(fileId, tag, tagRev, rev).index(mode).attemptNarrow[FileRejection]
+                              )
                             }
                           }
                         },
@@ -179,7 +200,11 @@ final class FilesRoutes(
                           Write
                         )) { (tag, rev) =>
                           emit(
-                            files.deleteTag(id, ref, tag, rev).tapEval(indexUIO(ref, _, mode)).rejectOn[FileNotFound]
+                            files
+                              .deleteTag(fileId, tag, rev)
+                              .index(mode)
+                              .attemptNarrow[FileRejection]
+                              .rejectOn[FileNotFound]
                           )
                         }
                       )
@@ -193,16 +218,16 @@ final class FilesRoutes(
       }
     }
 
-  def fetch(id: IdSegmentRef, ref: ProjectRef)(implicit caller: Caller): Route =
+  def fetch(id: FileId)(implicit caller: Caller): Route =
     (headerValueByType(Accept) & varyAcceptHeaders) {
       case accept if accept.mediaRanges.exists(metadataMediaRanges.contains) =>
-        emit(fetchMetadata(id, ref).rejectOn[FileNotFound])
+        emit(fetchMetadata(id).attemptNarrow[FileRejection].rejectOn[FileNotFound])
       case _                                                                 =>
-        emit(files.fetchContent(id, ref).rejectOn[FileNotFound])
+        emit(files.fetchContent(id).attemptNarrow[FileRejection].rejectOn[FileNotFound])
     }
 
-  def fetchMetadata(id: IdSegmentRef, ref: ProjectRef)(implicit caller: Caller): IO[FileRejection, FileResource] =
-    aclCheck.authorizeForOr(ref, Read)(AuthorizationFailed(ref, Read)) >> files.fetch(id, ref)
+  def fetchMetadata(id: FileId)(implicit caller: Caller): IO[FileResource] =
+    aclCheck.authorizeForOr(id.project, Read)(AuthorizationFailed(id.project, Read)).toCatsIO >> files.fetch(id)
 }
 
 object FilesRoutes {
@@ -224,7 +249,6 @@ object FilesRoutes {
       index: IndexingAction.Execute[File]
   )(implicit
       baseUri: BaseUri,
-      s: Scheduler,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering,
       fusionConfig: FusionConfig

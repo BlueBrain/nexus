@@ -9,7 +9,7 @@ import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileId, FileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutesSpec.fileMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts => fileContexts, permissions, FileFixtures, Files, FilesConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{StorageRejection, StorageStatEntry, StorageType}
@@ -29,7 +29,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{Caller, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef, ResourceUris}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
@@ -40,6 +40,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.testkit._
 import ch.epfl.bluebrain.nexus.testkit.bio.IOFromMap
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
 import io.circe.Json
 import monix.bio.IO
 import org.scalatest._
@@ -49,7 +50,8 @@ class FilesRoutesSpec
     with CancelAfterFailure
     with StorageFixtures
     with FileFixtures
-    with IOFromMap {
+    with IOFromMap
+    with CatsIOValues {
 
   import akka.actor.typed.scaladsl.adapter._
   implicit val typedSystem: typed.ActorSystem[Nothing] = system.toTyped
@@ -109,16 +111,17 @@ class FilesRoutesSpec
     StoragesConfig(eventLogConfig, pagination, stCfg),
     ServiceAccount(User("nexus-sa", Label.unsafe("sa")))
   ).accepted
-  lazy val files: Files       = Files(
-    fetchContext.mapRejection(FileRejection.ProjectContextRejection),
-    aclCheck,
-    storages,
-    storagesStatistics,
-    xas,
-    config,
-    FilesConfig(eventLogConfig, MediaTypeDetectorConfig.Empty),
-    remoteDiskStorageClient
-  )
+  lazy val files: Files       =
+    Files(
+      fetchContext.mapRejection(FileRejection.ProjectContextRejection),
+      aclCheck,
+      storages,
+      storagesStatistics,
+      xas,
+      config,
+      FilesConfig(eventLogConfig, MediaTypeDetectorConfig.Empty),
+      remoteDiskStorageClient
+    )(ceClock, uuidF, contextShift, typedSystem)
   private val groupDirectives =
     DeltaSchemeDirectives(fetchContext, ioFromMap(uuid -> projectRef.organization), ioFromMap(uuid -> projectRef))
 
@@ -171,7 +174,7 @@ class FilesRoutesSpec
           status shouldEqual StatusCodes.Created
           val attr      = attributes(id = uuid2)
           val expected  = fileMetadata(projectRef, generatedId2, attr, diskIdRev)
-          val fileByTag = files.fetch(IdSegmentRef(generatedId2, tag), projectRef).accepted
+          val fileByTag = files.fetch(FileId(generatedId2, tag, projectRef)).accepted
           response.asJson shouldEqual expected
           fileByTag.value.tags.tags should contain(tag)
         }
@@ -213,7 +216,7 @@ class FilesRoutesSpec
           status shouldEqual StatusCodes.Created
           val attr      = attributes("fileTagged.txt", id = uuid2)
           val expected  = fileMetadata(projectRef, fileTagged, attr, s3IdRev, createdBy = alice, updatedBy = alice)
-          val fileByTag = files.fetch(IdSegmentRef(generatedId2, tag), projectRef).accepted
+          val fileByTag = files.fetch(FileId(generatedId2, tag, projectRef)).accepted
           response.asJson shouldEqual expected
           fileByTag.value.tags.tags should contain(tag)
         }
@@ -323,7 +326,7 @@ class FilesRoutesSpec
       }
     }
 
-    "reject the deprecation of a already deprecated file" in {
+    "reject the deprecation of an already deprecated file" in {
       Delete(s"/v1/files/org/proj/$uuid?rev=2") ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual jsonContentOf("/files/errors/file-deprecated.json", "id" -> generatedId)

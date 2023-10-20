@@ -1,11 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations
 
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
+import ch.epfl.bluebrain.nexus.delta.sourcing.rejection.Rejection
 
 /**
   * Enumeration of Storage rejections related to file operations.
   */
-sealed abstract class StorageFileRejection(val loggedDetails: String) extends Product with Serializable
+sealed abstract class StorageFileRejection(val loggedDetails: String) extends Rejection {
+  override def reason: String = loggedDetails
+}
 
 object StorageFileRejection {
 

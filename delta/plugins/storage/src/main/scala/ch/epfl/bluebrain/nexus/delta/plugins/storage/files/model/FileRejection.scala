@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model
 
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.server.Rejection
+import akka.http.scaladsl.server.{Rejection => AkkaRejection}
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection
@@ -22,6 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax.httpResponseFieldsSyntax
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.rejection.Rejection
 import com.typesafe.scalalogging.Logger
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
@@ -32,9 +33,7 @@ import io.circe.{Encoder, JsonObject}
   * @param reason
   *   a descriptive message as to why the rejection occurred
   */
-sealed abstract class FileRejection(val reason: String, val loggedDetails: Option[String] = None) extends Exception {
-  override def getMessage: String = reason
-}
+sealed abstract class FileRejection(val reason: String, val loggedDetails: Option[String] = None) extends Rejection
 
 object FileRejection {
 
@@ -178,7 +177,7 @@ object FileRejection {
   /**
     * Rejection returned when attempting to create/update a file and the unmarshaller fails
     */
-  final case class WrappedAkkaRejection(rejection: Rejection) extends FileRejection(rejection.toString)
+  final case class WrappedAkkaRejection(rejection: AkkaRejection) extends FileRejection(rejection.toString)
 
   /**
     * Rejection returned when interacting with the storage operations bundle to fetch a storage
