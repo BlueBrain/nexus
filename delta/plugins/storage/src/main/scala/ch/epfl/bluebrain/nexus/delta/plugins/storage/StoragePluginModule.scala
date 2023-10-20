@@ -59,6 +59,8 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
 
   implicit private val classLoader: ClassLoader = getClass.getClassLoader
 
+  make[ExecutionContext].from { ExecutionContext.Implicits.global }
+
   make[StoragePluginConfig].fromEffect { cfg: Config => StoragePluginConfig.load(cfg) }
 
   make[StorageTypeConfig].from { cfg: StoragePluginConfig => cfg.storages.storageTypeConfig }
