@@ -62,7 +62,7 @@ object KamonMonitoringCats {
       component: String,
       tags: Map[String, Any] = Map.empty,
       takeSamplingDecision: Boolean = true
-  )(io: IO[A]): IO[A] =
+  )(io: IO[A]): IO[A] = {
     if (enabled)
       buildSpan(name, component, tags).bracketCase(_ => io) {
         case (span, ExitCase.Completed)    => finishSpan(span, takeSamplingDecision)
@@ -70,6 +70,7 @@ object KamonMonitoringCats {
         case (span, ExitCase.Canceled)     => finishSpan(span.tag("cancel", value = true), takeSamplingDecision)
       }
     else io
+  }.onError { e => logger.info(e)(e.getMessage) }
 
   private def buildSpan(name: String, component: String, tags: Map[String, Any]): IO[Span] =
     IO {
