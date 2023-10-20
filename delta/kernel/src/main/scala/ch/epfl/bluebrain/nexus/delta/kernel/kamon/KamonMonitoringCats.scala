@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.kernel.kamon
 import cats.effect.{ContextShift, ExitCase, IO, Timer}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
+import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import com.typesafe.config.Config
 import kamon.tag.TagSet
 import kamon.trace.Span
