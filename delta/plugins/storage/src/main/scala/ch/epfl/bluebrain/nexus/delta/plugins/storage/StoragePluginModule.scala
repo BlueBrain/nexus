@@ -168,7 +168,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           supervisor: Supervisor,
           storagesStatistics: StoragesStatistics,
           xas: Transactors,
-          clock: Clock[UIO],
+          clock: Clock[IO],
           uuidF: UUIDF,
           as: ActorSystem[Nothing],
           remoteDiskStorageClient: RemoteDiskStorageClient,

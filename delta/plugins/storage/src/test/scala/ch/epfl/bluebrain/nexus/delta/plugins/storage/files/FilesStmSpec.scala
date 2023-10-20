@@ -37,7 +37,6 @@ class FilesStmSpec
     with BIOValues
     with FileFixtures
     with StorageFixtures {
-class FilesStmSpec extends BioSpec with FileFixtures with StorageFixtures {
 
   private val epoch = Instant.EPOCH
   private val time2 = Instant.ofEpochMilli(10L)

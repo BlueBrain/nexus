@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.{ioToTaskK, toCatsIOOps, toMonixBIOOps}
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOInstant, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.{ComputedDigest, NotComputedDigest}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
@@ -48,7 +48,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, SuccessE
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{CompiledProjection, ExecutionStrategy, ProjectionMetadata, Supervisor}
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
-import monix.bio.{IO => BIO, Task, UIO}
+import monix.bio.{IO => BIO, Task}
 
 import java.util.UUID
 import scala.concurrent.ExecutionContext
@@ -609,12 +609,12 @@ object Files {
   }
 
   private[files] def evaluate(state: Option[FileState], cmd: FileCommand)(implicit
-      clock: Clock[UIO]
+      clock: Clock[IO]
   ): IO[FileEvent] = {
 
     def create(c: CreateFile) = state match {
       case None    =>
-        IOUtils.instant.toCatsIO.map(
+        IOInstant.now.map(
           FileCreated(c.id, c.project, c.storage, c.storageType, c.attributes, 1, _, c.subject, c.tag)
         )
       case Some(_) =>
@@ -627,7 +627,7 @@ object Files {
       case Some(s) if s.deprecated                             => IO.raiseError(FileIsDeprecated(c.id))
       case Some(s) if s.attributes.digest == NotComputedDigest => IO.raiseError(DigestNotComputed(c.id))
       case Some(s)                                             =>
-        IOUtils.instant.toCatsIO
+        IOInstant.now
           .map(FileUpdated(c.id, c.project, c.storage, c.storageType, c.attributes, s.rev + 1, _, c.subject))
     }
 
@@ -638,7 +638,7 @@ object Files {
       case Some(s) if s.attributes.digest.computed => IO.raiseError(DigestAlreadyComputed(s.id))
       case Some(s)                                 =>
         // format: off
-        IOUtils.instant.toCatsIO
+        IOInstant.now
           .map(FileAttributesUpdated(c.id, c.project, s.storage, s.storageType, c.mediaType, c.bytes, c.digest, s.rev + 1, _, c.subject))
       // format: on
     }
@@ -648,7 +648,7 @@ object Files {
       case Some(s) if s.rev != c.rev                           => IO.raiseError(IncorrectRev(c.rev, s.rev))
       case Some(s) if c.targetRev <= 0L || c.targetRev > s.rev => IO.raiseError(RevisionNotFound(c.targetRev, s.rev))
       case Some(s)                                             =>
-        IOUtils.instant.toCatsIO.map(
+        IOInstant.now.map(
           FileTagAdded(c.id, c.project, s.storage, s.storageType, c.targetRev, c.tag, s.rev + 1, _, c.subject)
         )
     }
@@ -659,7 +659,7 @@ object Files {
         case Some(s) if s.rev != c.rev          => IO.raiseError(IncorrectRev(c.rev, s.rev))
         case Some(s) if !s.tags.contains(c.tag) => IO.raiseError(TagNotFound(c.tag))
         case Some(s)                            =>
-          IOUtils.instant.toCatsIO.map(
+          IOInstant.now.map(
             FileTagDeleted(c.id, c.project, s.storage, s.storageType, c.tag, s.rev + 1, _, c.subject)
           )
       }
@@ -669,7 +669,7 @@ object Files {
       case Some(s) if s.rev != c.rev => IO.raiseError(IncorrectRev(c.rev, s.rev))
       case Some(s) if s.deprecated   => IO.raiseError(FileIsDeprecated(c.id))
       case Some(s)                   =>
-        IOUtils.instant.toCatsIO.map(FileDeprecated(c.id, c.project, s.storage, s.storageType, s.rev + 1, _, c.subject))
+        IOInstant.now.map(FileDeprecated(c.id, c.project, s.storage, s.storageType, s.rev + 1, _, c.subject))
     }
 
     cmd match {
@@ -686,7 +686,7 @@ object Files {
     * Entity definition for [[Files]]
     */
   def definition(implicit
-      clock: Clock[UIO]
+      clock: Clock[IO]
   ): ScopedEntityDefinition[Iri, FileState, FileCommand, FileEvent, FileRejection] =
     ScopedEntityDefinition(
       entityType,
@@ -725,7 +725,7 @@ object Files {
       config: FilesConfig,
       remoteDiskStorageClient: RemoteDiskStorageClient
   )(implicit
-      clock: Clock[UIO],
+      clock: Clock[IO],
       uuidF: UUIDF,
       cs: ContextShift[IO],
       ec: ExecutionContext,
