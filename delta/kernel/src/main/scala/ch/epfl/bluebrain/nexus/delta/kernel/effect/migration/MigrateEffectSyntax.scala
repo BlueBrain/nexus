@@ -2,11 +2,12 @@ package ch.epfl.bluebrain.nexus.delta.kernel.effect.migration
 
 import cats.effect.IO
 import cats.~>
-import monix.bio.{IO => BIO, Task, UIO}
+import monix.bio.{Task, UIO, IO => BIO}
 import monix.execution.Scheduler.Implicits.global
 import shapeless.=:!=
 
 import scala.annotation.nowarn
+
 import scala.reflect.ClassTag
 
 trait MigrateEffectSyntax {
@@ -41,6 +42,7 @@ final class CatsIOToBioOps[A](private val io: IO[A]) extends AnyVal {
     * Safe conversion between CE and Monix, forcing the user to specify a strict subtype of [[Throwable]]. If omitted,
     * the compiler may infer [[Throwable]] and bypass any custom error handling.
     */
+  @SuppressWarnings(Array("UnusedMethodParameter"))
   @nowarn
   def toBIO[E <: Throwable](implicit E: ClassTag[E], ev: E =:!= Throwable): BIO[E, A] =
     toBIOUnsafe[E]
