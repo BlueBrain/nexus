@@ -13,7 +13,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
 import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
-import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -30,9 +29,8 @@ class FormDataExtractorSpec
 
   "A Form Data HttpEntity" should {
 
-    val uuid                   = UUID.randomUUID()
-    implicit val sc: Scheduler = Scheduler.global
-    implicit val uuidF: UUIDF  = UUIDF.fixed(uuid)
+    val uuid                  = UUID.randomUUID()
+    implicit val uuidF: UUIDF = UUIDF.fixed(uuid)
 
     val content = "file content"
     val iri     = iri"http://localhost/file"

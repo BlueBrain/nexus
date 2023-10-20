@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.kernel.effect.migration
 
 import cats.effect.IO
 import cats.~>
-import monix.bio.{Task, UIO, IO => BIO}
+import monix.bio.{IO => BIO, Task, UIO}
 import monix.execution.Scheduler.Implicits.global
 import shapeless.=:!=
 

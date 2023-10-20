@@ -64,8 +64,10 @@ object FormDataExtractor {
 
   def apply(
       mediaTypeDetector: MediaTypeDetectorConfig
-  )(implicit uuidF: UUIDF, as: ActorSystem, cs: ContextShift[IO], ec: ExecutionContext): FormDataExtractor =
+  )(implicit uuidF: UUIDF, as: ActorSystem, cs: ContextShift[IO]): FormDataExtractor =
     new FormDataExtractor {
+      implicit val ec: ExecutionContext = as.getDispatcher
+
       override def apply(
           id: Iri,
           entity: HttpEntity,
@@ -80,10 +82,10 @@ object FormDataExtractor {
         } yield file
       }
 
-      private def unmarshall(entity: HttpEntity, sizeLimit: Long) =
+      private def unmarshall(entity: HttpEntity, sizeLimit: Long): IO[FormData] =
         IO.fromFuture(IO.delay(um(entity.withSizeLimit(sizeLimit)))).adaptError(onUnmarshallingError(_))
 
-      private def onUnmarshallingError(th: Throwable) = th match {
+      private def onUnmarshallingError(th: Throwable): WrappedAkkaRejection = th match {
         case RejectionError(r)                  =>
           WrappedAkkaRejection(r)
         case Unmarshaller.NoContentException    =>

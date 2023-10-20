@@ -50,16 +50,12 @@ import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
 import monix.execution.Scheduler
 
-import scala.concurrent.ExecutionContext
-
 /**
   * Storages and Files wiring
   */
 class StoragePluginModule(priority: Int) extends ModuleDef {
 
   implicit private val classLoader: ClassLoader = getClass.getClassLoader
-
-  make[ExecutionContext].from { ExecutionContext.Implicits.global }
 
   make[StoragePluginConfig].fromEffect { cfg: Config => StoragePluginConfig.load(cfg) }
 
@@ -174,8 +170,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           uuidF: UUIDF,
           as: ActorSystem[Nothing],
           remoteDiskStorageClient: RemoteDiskStorageClient,
-          cs: ContextShift[IO],
-          ec: ExecutionContext
+          cs: ContextShift[IO]
       ) =>
         IO
           .delay(
@@ -192,7 +187,6 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
               clock,
               uuidF,
               cs,
-              ec,
               as
             )
           )

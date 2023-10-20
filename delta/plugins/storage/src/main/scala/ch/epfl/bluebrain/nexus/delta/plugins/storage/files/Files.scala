@@ -51,7 +51,6 @@ import fs2.Stream
 import monix.bio.{IO => BIO, Task}
 
 import java.util.UUID
-import scala.concurrent.ExecutionContext
 
 /**
   * Operations for handling files
@@ -728,7 +727,6 @@ object Files {
       clock: Clock[IO],
       uuidF: UUIDF,
       cs: ContextShift[IO],
-      ec: ExecutionContext,
       as: ActorSystem[Nothing]
   ): Files = {
     implicit val classicAs: ClassicActorSystem = as.classicSystem
