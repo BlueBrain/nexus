@@ -6,20 +6,11 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
-import org.scalatest.Inspectors
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
 
-class StorageSpec
-    extends AnyWordSpecLike
-    with Matchers
-    with Inspectors
-    with RemoteContextResolutionFixture
-    with BIOValues
-    with StorageFixtures {
+class StorageSpec extends BioSpec with RemoteContextResolutionFixture with StorageFixtures {
 
   "A Storage" should {
     val project       = ProjectRef(Label.unsafe("org"), Label.unsafe("project"))

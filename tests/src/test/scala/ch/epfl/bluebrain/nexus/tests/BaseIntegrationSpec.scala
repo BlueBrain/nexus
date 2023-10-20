@@ -30,7 +30,7 @@ import org.scalactic.source.Position
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpecLike
-import org.scalatest.{Assertion, BeforeAndAfterAll, Inspectors, OptionValues}
+import org.scalatest._
 
 import scala.concurrent.duration._
 
@@ -53,6 +53,7 @@ trait BaseIntegrationSpec
     with TestHelpers
     with ScalatestRouteTest
     with Eventually
+    with AppendedClues
     with ScalaFutures {
 
   private val logger = Logger.cats[this.type]

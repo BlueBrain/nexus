@@ -15,24 +15,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.{PipeStep, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes._
-import ch.epfl.bluebrain.nexus.testkit.TestHelpers
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
 import io.circe.literal._
 import monix.execution.Scheduler.Implicits.global
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
-import org.scalatest.{Inspectors, OptionValues}
 
 import java.util.UUID
 
-class ElasticSearchViewDecodingSpec
-    extends AnyWordSpecLike
-    with Matchers
-    with Inspectors
-    with BIOValues
-    with TestHelpers
-    with OptionValues
-    with Fixtures {
+class ElasticSearchViewDecodingSpec extends BioSpec with Fixtures {
 
   private val ref     = ProjectRef.unsafe("org", "proj")
   private val context = ProjectContext.unsafe(

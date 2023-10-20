@@ -1,14 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.acls
 
-import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress.{Organization, Root}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.Acl
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress.{Organization, Root}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
+import ch.epfl.bluebrain.nexus.testkit.scalatest.BaseSpec
 
-class AclSpec extends AnyWordSpecLike with Matchers with EitherValues with AclFixtures {
+class AclSpec extends BaseSpec with AclFixtures {
 
   "An Access Control List" should {
 

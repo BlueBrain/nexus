@@ -5,15 +5,11 @@ import ch.epfl.bluebrain.nexus.testkit.TestHelpers
 import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
 import monix.bio.Task
 import monix.execution.Scheduler
-import org.scalatest.BeforeAndAfterAll
-import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.{BeforeAndAfterAll, Suite}
 
-trait DoobieScalaTestFixture
-    extends AnyWordSpecLike
-    with BeforeAndAfterAll
-    with PostgresDocker
-    with TestHelpers
-    with BIOValues {
+trait DoobieScalaTestFixture extends BeforeAndAfterAll with PostgresDocker with TestHelpers with BIOValues {
+
+  self: Suite =>
 
   implicit val classLoader: ClassLoader = getClass.getClassLoader
 

@@ -2,12 +2,11 @@ package ch.epfl.bluebrain.nexus.delta.sdk.permissions.model
 
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.PermissionsGen
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
+import ch.epfl.bluebrain.nexus.testkit.scalatest.BaseSpec
 
 import java.time.Instant
 
-class PermissionsStateSpec extends AnyWordSpecLike with Matchers {
+class PermissionsStateSpec extends BaseSpec {
 
   "A PermissionsState" when {
 

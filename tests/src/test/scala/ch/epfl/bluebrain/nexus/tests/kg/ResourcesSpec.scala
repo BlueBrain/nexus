@@ -7,7 +7,6 @@ import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers
 import cats.effect.IO
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
-import ch.epfl.bluebrain.nexus.testkit.CirceEq
 import ch.epfl.bluebrain.nexus.tests.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.tests.Identity.resources.{Morty, Rick}
 import ch.epfl.bluebrain.nexus.tests.Optics.admin._constrainedBy
@@ -24,7 +23,7 @@ import org.scalatest.matchers.{HavePropertyMatchResult, HavePropertyMatcher}
 
 import java.net.URLEncoder
 
-class ResourcesSpec extends BaseIntegrationSpec with CirceEq {
+class ResourcesSpec extends BaseIntegrationSpec {
 
   private val orgId   = genId()
   private val projId1 = genId()

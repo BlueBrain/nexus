@@ -2,17 +2,13 @@ package ch.epfl.bluebrain.nexus.delta.sdk.permissions.model
 
 import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatErrors.IllegalPermissionFormatError
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.acls
-import ch.epfl.bluebrain.nexus.testkit.TestHelpers
-import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.BaseSpec
 import io.circe.Json
 import io.circe.syntax._
-import org.scalatest.Inspectors
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.util.Random
 
-class PermissionSpec extends AnyWordSpecLike with Matchers with Inspectors with TestHelpers with EitherValues {
+class PermissionSpec extends BaseSpec {
 
   "A Permission" should {
     "be constructed correctly for valid strings" in {

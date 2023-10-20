@@ -44,11 +44,13 @@ import monix.bio.IO
 import monix.execution.Scheduler
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{DoNotDiscover, Inspectors, OptionValues}
 
 @DoNotDiscover
 class FilesSpec(docker: RemoteStorageDocker)
     extends TestKit(ActorSystem("FilesSpec"))
+    with AnyWordSpecLike
     with DoobieScalaTestFixture
     with OptionValues
     with Matchers

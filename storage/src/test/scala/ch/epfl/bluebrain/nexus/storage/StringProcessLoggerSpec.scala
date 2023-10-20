@@ -1,11 +1,10 @@
 package ch.epfl.bluebrain.nexus.storage
 
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
+import ch.epfl.bluebrain.nexus.testkit.scalatest.BaseSpec
 
 import scala.sys.process._
 
-class StringProcessLoggerSpec extends AnyWordSpecLike with Matchers {
+class StringProcessLoggerSpec extends BaseSpec {
   "A StringProcessLogger" should {
     "log stdout" in {
       val cmd      = List("echo", "-n", "Hello", "world!")
