@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.storage.auth
 
-import ch.epfl.bluebrain.nexus.storage.utils.Randomness.genString
+import ch.epfl.bluebrain.nexus.storage.utils.Randomness.randomString
 import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.storage.auth.AuthorizationMethod._
 import com.nimbusds.jose.jwk.gen.RSAKeyGenerator
@@ -12,7 +12,7 @@ import scala.jdk.CollectionConverters._
 
 class AuthorizationMethodSuite extends FunSuite {
 
-  private def generateKey: RSAKey = new RSAKeyGenerator(2048).keyID(genString()).generate()
+  private def generateKey: RSAKey = new RSAKeyGenerator(2048).keyID(randomString()).generate()
 
   private def parseConfig(value: String) =
     ConfigSource.string(value).at("authorization").load[AuthorizationMethod]

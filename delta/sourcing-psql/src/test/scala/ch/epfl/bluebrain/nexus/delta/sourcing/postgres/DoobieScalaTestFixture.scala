@@ -2,18 +2,20 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.postgres
 
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
+import ch.epfl.bluebrain.nexus.testkit.bio.IOFixedClock
 import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
 import monix.bio.Task
 import monix.execution.Scheduler
-import org.scalatest.BeforeAndAfterAll
-import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.{BeforeAndAfterAll, Suite}
 
 trait DoobieScalaTestFixture
-    extends AnyWordSpecLike
-    with BeforeAndAfterAll
+    extends BeforeAndAfterAll
     with PostgresDocker
     with TestHelpers
-    with BIOValues {
+    with BIOValues
+    with IOFixedClock {
+
+  self: Suite =>
 
   implicit val classLoader: ClassLoader = getClass.getClassLoader
 

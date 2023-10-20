@@ -19,8 +19,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.BlankResourceId
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.sdk.{AkkaSource, SimpleRejection, SimpleResource}
-import ch.epfl.bluebrain.nexus.testkit.scalatest.ShouldMatchers.convertToAnyShouldWrapper
-import ch.epfl.bluebrain.nexus.testkit.TestHelpers.jsonContentOf
 import monix.bio.IO
 import monix.execution.Scheduler
 

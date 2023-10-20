@@ -9,19 +9,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
-import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
-import ch.epfl.bluebrain.nexus.testkit.TestHelpers
-import ch.epfl.bluebrain.nexus.testkit.bio.IOFixedClock
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import monix.bio.UIO
-import org.scalatest.matchers.should.Matchers
 
-class OwnerPermissionsScopeInitializationSpec
-    extends DoobieScalaTestFixture
-    with Matchers
-    with CatsIOValues
-    with IOFixedClock
-    with TestHelpers
-    with ConfigFixtures {
+class OwnerPermissionsScopeInitializationSpec extends CatsEffectSpec with DoobieScalaTestFixture with ConfigFixtures {
 
   private val saRealm: Label    = Label.unsafe("service-accounts")
   private val usersRealm: Label = Label.unsafe("users")

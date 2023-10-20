@@ -2,12 +2,12 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.state
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.sourcing.{DeleteExpired, Message}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Message.MessageState
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
-import ch.epfl.bluebrain.nexus.testkit.ce.IOFixedClock
+import ch.epfl.bluebrain.nexus.delta.sourcing.{DeleteExpired, Message}
+import ch.epfl.bluebrain.nexus.testkit.bio.IOFixedClock
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import doobie.implicits._
 import munit.AnyFixture
