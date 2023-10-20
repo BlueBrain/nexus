@@ -5,11 +5,11 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils.encode
 import ch.epfl.bluebrain.nexus.tests.Identity.userPermissions.{UserWithNoPermissions, UserWithPermissions}
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Resources
-import ch.epfl.bluebrain.nexus.tests.{BaseSpec, Identity}
+import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, Identity}
 import io.circe.Json
 import org.scalactic.source.Position
 
-class UserPermissionsSpec extends BaseSpec {
+class UserPermissionsSpec extends BaseIntegrationSpec {
 
   val org, project           = genId()
   val StorageId              = "https://bluebrain.github.io/nexus/vocabulary/storage1"

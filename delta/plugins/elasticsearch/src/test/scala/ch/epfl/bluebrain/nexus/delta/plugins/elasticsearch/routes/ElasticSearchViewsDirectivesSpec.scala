@@ -20,7 +20,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ResourceRef}
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestHelpers, TestMatchers}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.TestMatchers
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
+import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
 import io.circe.generic.extras.Configuration
 import io.circe.Codec
 import io.circe.syntax.EncoderOps
@@ -37,7 +39,7 @@ class ElasticSearchViewsDirectivesSpec
     with OptionValues
     with CirceLiteral
     with ElasticSearchViewsDirectives
-    with IOValues
+    with BIOValues
     with TestMatchers
     with TestHelpers
     with Inspectors {

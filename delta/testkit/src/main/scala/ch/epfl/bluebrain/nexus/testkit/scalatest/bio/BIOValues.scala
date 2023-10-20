@@ -1,10 +1,10 @@
-package ch.epfl.bluebrain.nexus.testkit
+package ch.epfl.bluebrain.nexus.testkit.scalatest.bio
 
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
 import org.scalactic.source
 import org.scalatest.matchers.should.Matchers.fail
-import org.scalatest.{Assertion, Assertions}
+import org.scalatest.{Assertion, Assertions, Suite}
 
 import java.io.{ByteArrayOutputStream, PrintStream}
 import scala.concurrent.Future
@@ -12,7 +12,9 @@ import scala.concurrent.duration.Duration
 import scala.reflect.ClassTag
 import scala.util.control.NonFatal
 
-trait IOValues extends IOValuesLowPrio {
+trait BIOValues extends BIOValuesLowPrio {
+  self: Suite =>
+
   implicit def taskToFutureAssertion(
       task: Task[Assertion]
   )(implicit s: Scheduler = Scheduler.global): Future[Assertion] =
@@ -28,7 +30,7 @@ trait IOValues extends IOValuesLowPrio {
   implicit final def ioValuesSyntax[E: ClassTag, A](io: IO[E, A]): IOValuesOps[E, A] = new IOValuesOps(io)
 }
 
-trait IOValuesLowPrio extends Assertions {
+trait BIOValuesLowPrio extends Assertions {
   implicit def taskListToFutureAssertion(
       task: Task[List[Assertion]]
   )(implicit s: Scheduler = Scheduler.global): Future[Assertion] =

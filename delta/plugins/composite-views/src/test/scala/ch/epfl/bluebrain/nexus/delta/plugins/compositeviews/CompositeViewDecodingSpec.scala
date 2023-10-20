@@ -19,23 +19,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectCon
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, TestHelpers}
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
-import org.scalatest.{Inspectors, OptionValues}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
+import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
 
 import java.util.UUID
 import scala.concurrent.duration.DurationInt
 
-class CompositeViewDecodingSpec
-    extends AnyWordSpecLike
-    with Matchers
-    with Inspectors
-    with TestHelpers
-    with CirceLiteral
-    with Fixtures
-    with EitherValuable
-    with OptionValues {
+class CompositeViewDecodingSpec extends BioSpec with TestHelpers with CirceLiteral with Fixtures {
 
   private val realm                  = Label.unsafe("myrealm")
   implicit private val alice: Caller = Caller(User("Alice", realm), Set(User("Alice", realm), Group("users", realm)))

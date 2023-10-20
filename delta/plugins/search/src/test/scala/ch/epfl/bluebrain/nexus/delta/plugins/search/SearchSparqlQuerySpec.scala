@@ -17,8 +17,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.blazegraph.BlazegraphDocker
-import ch.epfl.bluebrain.nexus.testkit.ce.CatsIOValues
-import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOValues, TestHelpers, TestMatchers}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.{EitherValues, TestMatchers}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
+import ch.epfl.bluebrain.nexus.testkit.TestHelpers
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
 import io.circe.Json
 import monix.execution.Scheduler
 import org.scalatest.concurrent.Eventually
@@ -34,13 +36,13 @@ class SearchSparqlQuerySpec
     with AnyWordSpecLike
     with Matchers
     with ConfigFixtures
-    with EitherValuable
+    with EitherValues
     with CancelAfterFailure
     with TestHelpers
     with Eventually
     with Inspectors
     with TestMatchers
-    with IOValues
+    with BIOValues
     with CatsIOValues
     with BlazegraphDocker {
 

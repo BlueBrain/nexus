@@ -17,7 +17,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOFixedClock, IOValues}
+import ch.epfl.bluebrain.nexus.testkit.bio.IOFixedClock
+import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
 import io.circe.Json
 import monix.bio.IO
 import monix.execution.Scheduler
@@ -32,10 +34,10 @@ class ElasticSearchViewSTMSpec
     extends AnyWordSpecLike
     with Matchers
     with OptionValues
-    with EitherValuable
+    with EitherValues
     with Inspectors
     with IOFixedClock
-    with IOValues
+    with BIOValues
     with Fixtures {
 
   "An ElasticSearch STM" when {

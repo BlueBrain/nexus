@@ -1,18 +1,18 @@
 package ch.epfl.bluebrain.nexus.storage
 
-import java.io.ByteArrayInputStream
-import java.nio.file.{Files, Path, Paths}
 import akka.actor.ActorSystem
 import akka.stream.alpakka.file.scaladsl.Directory
 import akka.stream.scaladsl.{FileIO, Source}
 import akka.testkit.TestKit
 import akka.util.ByteString
-import ch.epfl.bluebrain.nexus.storage.utils.{EitherValues, IOEitherValues, Randomness}
+import ch.epfl.bluebrain.nexus.storage.utils.{IOEitherValues, Randomness}
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{BeforeAndAfterAll, Inspectors, OptionValues}
 
+import java.io.ByteArrayInputStream
+import java.nio.file.{Files, Path, Paths}
 import scala.annotation.tailrec
 import scala.reflect.io.{Directory => ScalaDirectory}
 
@@ -22,7 +22,6 @@ class TarFlowSpec
     with Matchers
     with IOEitherValues
     with Randomness
-    with EitherValues
     with OptionValues
     with Inspectors
     with BeforeAndAfterAll {

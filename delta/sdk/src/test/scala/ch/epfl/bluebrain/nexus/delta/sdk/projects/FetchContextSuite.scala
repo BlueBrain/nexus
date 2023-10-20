@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.quotas.model.QuotaRejection.QuotaReache
 import ch.epfl.bluebrain.nexus.delta.sdk.quotas.model.{Quota, QuotaRejection}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.bio.BioSuite
 import monix.bio.IO
 
 class FetchContextSuite extends BioSuite {

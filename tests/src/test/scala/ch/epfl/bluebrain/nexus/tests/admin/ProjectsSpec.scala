@@ -9,10 +9,10 @@ import ch.epfl.bluebrain.nexus.tests.Identity.Authenticated
 import ch.epfl.bluebrain.nexus.tests.Identity.projects.{Bojack, PrincessCarolyn}
 import ch.epfl.bluebrain.nexus.tests.Identity.resources.Rick
 import ch.epfl.bluebrain.nexus.tests.Optics._
-import ch.epfl.bluebrain.nexus.tests.{BaseSpec, ExpectedResponse, Identity}
+import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, ExpectedResponse, Identity}
 import io.circe.Json
 
-class ProjectsSpec extends BaseSpec {
+class ProjectsSpec extends BaseIntegrationSpec {
 
   import ch.epfl.bluebrain.nexus.tests.iam.types.Permission._
 

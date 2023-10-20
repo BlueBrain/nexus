@@ -29,6 +29,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit._
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.{EitherValues, TestMatchers}
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
 import monix.bio.IO
@@ -45,7 +47,7 @@ import scala.concurrent.duration._
 class ElasticSearchQuerySpec
     extends AnyWordSpecLike
     with Matchers
-    with EitherValuable
+    with EitherValues
     with CirceLiteral
     with TestHelpers
     with CancelAfterFailure
@@ -53,7 +55,7 @@ class ElasticSearchQuerySpec
     with OptionValues
     with ConfigFixtures
     with Fixtures
-    with IOValues
+    with BIOValues
     with Eventually
     with TestMatchers {
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(6.seconds, 100.millis)

@@ -6,7 +6,8 @@ import akka.http.scaladsl.model.{HttpEntity, HttpRequest}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.testkit.TestKit
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestMatchers}
+import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
+import ch.epfl.bluebrain.nexus.testkit.scalatest.TestMatchers
 import io.circe.DecodingFailure
 import io.circe.syntax._
 import org.scalatest.concurrent.ScalaFutures

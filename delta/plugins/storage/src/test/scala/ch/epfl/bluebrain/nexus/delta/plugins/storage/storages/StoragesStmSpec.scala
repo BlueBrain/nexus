@@ -14,7 +14,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOFixedClock, IOValues}
+import ch.epfl.bluebrain.nexus.testkit.bio.IOFixedClock
+import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
 import io.circe.Json
 import monix.bio.IO
 import org.scalatest.{Inspectors, OptionValues}
@@ -29,9 +31,9 @@ class StoragesStmSpec
     with Matchers
     with IOFixedClock
     with OptionValues
-    with EitherValuable
+    with EitherValues
     with Inspectors
-    with IOValues
+    with BIOValues
     with StorageFixtures {
 
   private val epoch = Instant.EPOCH

@@ -11,10 +11,12 @@ import cats.effect.concurrent.Ref
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.testkit._
-import ch.epfl.bluebrain.nexus.testkit.ce.{CatsIOValues, CatsRunContext}
-import ch.epfl.bluebrain.nexus.tests.BaseSpec._
+import ch.epfl.bluebrain.nexus.testkit.ce.{CatsRunContext, IOFixedClock}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.{CatsEffectAsyncScalaTestAdapter, CatsIOValues}
+import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec._
 import ch.epfl.bluebrain.nexus.tests.HttpClient._
-import ch.epfl.bluebrain.nexus.tests.Identity.{allUsers, testClient, testRealm, _}
+import ch.epfl.bluebrain.nexus.tests.Identity._
 import ch.epfl.bluebrain.nexus.tests.admin.AdminDsl
 import ch.epfl.bluebrain.nexus.tests.config.ConfigLoader._
 import ch.epfl.bluebrain.nexus.tests.config.TestsConfig
@@ -28,12 +30,20 @@ import org.scalactic.source.Position
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpecLike
-import org.scalatest.{Assertion, BeforeAndAfterAll, OptionValues}
+import org.scalatest.{Assertion, BeforeAndAfterAll, Inspectors, OptionValues}
 
 import scala.concurrent.duration._
 
-trait BaseSpec
+trait BaseIntegrationSpec
     extends AsyncWordSpecLike
+    with CatsEffectAsyncScalaTestAdapter
+    with Matchers
+    with EitherValues
+    with OptionValues
+    with Inspectors
+    with CatsRunContext
+    with CatsIOValues
+    with IOFixedClock
     with CirceUnmarshalling
     with CirceLiteral
     with CirceEq
@@ -43,11 +53,7 @@ trait BaseSpec
     with TestHelpers
     with ScalatestRouteTest
     with Eventually
-    with CatsRunContext
-    with CatsIOValues
-    with OptionValues
-    with ScalaFutures
-    with Matchers {
+    with ScalaFutures {
 
   private val logger = Logger.cats[this.type]
 
@@ -234,7 +240,7 @@ trait BaseSpec
   private[tests] def tag(name: String, rev: Int) = json"""{"tag": "$name", "rev": $rev}"""
 }
 
-object BaseSpec {
+object BaseIntegrationSpec {
 
   val setupCompleted: Ref[IO, Boolean] = Ref.unsafe(false)
 

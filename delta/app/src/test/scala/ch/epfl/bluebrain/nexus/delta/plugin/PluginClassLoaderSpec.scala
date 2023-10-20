@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugin
 
 import ch.epfl.bluebrain.nexus.delta.testplugin.ClassLoaderTestClassImpl
-import ch.epfl.bluebrain.nexus.testkit.ShouldMatchers.convertToAnyShouldWrapper
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ShouldMatchers.convertToAnyShouldWrapper
 import ch.epfl.bluebrain.nexus.testkit.plugin.ClassLoaderTestClass
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.must.Matchers

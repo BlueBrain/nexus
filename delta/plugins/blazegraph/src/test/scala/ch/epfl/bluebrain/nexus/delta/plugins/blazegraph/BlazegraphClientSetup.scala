@@ -4,9 +4,9 @@ import akka.actor.ActorSystem
 import cats.effect.Resource
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientSetup
-import ch.epfl.bluebrain.nexus.testkit.bio.ResourceFixture.TaskFixture
-import ch.epfl.bluebrain.nexus.testkit.bio.{BioSuite, ResourceFixture}
+import ch.epfl.bluebrain.nexus.testkit.mu.bio.ResourceFixture.TaskFixture
 import ch.epfl.bluebrain.nexus.testkit.blazegraph.BlazegraphContainer
+import ch.epfl.bluebrain.nexus.testkit.mu.bio.{BioSuite, ResourceFixture}
 import monix.bio.Task
 import monix.execution.Scheduler
 

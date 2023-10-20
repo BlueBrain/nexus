@@ -2,13 +2,13 @@ package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.StatusCodes
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.tests.BaseSpec
+import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.resources.Rick
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Organizations, Resources, Views}
 import io.circe.Json
 import io.circe.optics.JsonPath._
 
-class SearchAccessSpec extends BaseSpec {
+class SearchAccessSpec extends BaseIntegrationSpec {
 
   private val orgId   = genId()
   private val projId1 = genId()

@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.tests.plugins.blazegraph
 
 import akka.http.scaladsl.model.StatusCodes
-import ch.epfl.bluebrain.nexus.testkit.EitherValuable
-import ch.epfl.bluebrain.nexus.tests.BaseSpec
+import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
+import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.mash.Radar
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Organizations
 import ch.epfl.bluebrain.nexus.tests.plugins.blazegraph.IncomingOutgoingBlazegraphSpec.Reference
@@ -21,7 +21,7 @@ import java.time.Instant
  * 4. test the incoming references
  * 5. test the outgoing references
  */
-class IncomingOutgoingBlazegraphSpec extends BaseSpec with EitherValuable {
+class IncomingOutgoingBlazegraphSpec extends BaseIntegrationSpec with EitherValues {
 
   private val orgLabel  = genId()
   private val projLabel = genId()

@@ -8,7 +8,7 @@ import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import akka.testkit.TestDuration
 import akka.util.ByteString
-import ch.epfl.bluebrain.nexus.testkit.EitherValuable
+import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
 import io.circe.parser.parse
 import io.circe.{Decoder, Json, JsonObject, Printer}
 import org.scalatest.concurrent.ScalaFutures
@@ -19,7 +19,7 @@ import java.nio.charset.StandardCharsets
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
 
-trait RouteHelpers extends AnyWordSpecLike with ScalatestRouteTest with ScalaFutures with EitherValuable {
+trait RouteHelpers extends AnyWordSpecLike with ScalatestRouteTest with ScalaFutures with EitherValues {
 
   implicit val routeTimeout: RouteTestTimeout = RouteTestTimeout(6.seconds.dilated)
 

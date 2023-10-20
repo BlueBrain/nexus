@@ -3,11 +3,11 @@ package ch.epfl.bluebrain.nexus.tests.resources
 import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.testkit.CirceEq
 import ch.epfl.bluebrain.nexus.tests.Identity.listings.{Alice, Bob}
-import ch.epfl.bluebrain.nexus.tests.{BaseSpec, SchemaPayload}
+import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, SchemaPayload}
 import io.circe.Json
 import io.circe.optics.JsonPath.root
 
-class ResourcesTrialSpec extends BaseSpec with CirceEq {
+class ResourcesTrialSpec extends BaseIntegrationSpec with CirceEq {
 
   private val org  = genId()
   private val proj = genId()

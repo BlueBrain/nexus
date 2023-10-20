@@ -21,12 +21,11 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset.{At, Start}
 import ch.epfl.bluebrain.nexus.testkit.bio.IOFromMap
-import ch.epfl.bluebrain.nexus.testkit.ce.CatsIOValues
 import fs2.Stream
 
 import java.util.UUID
 
-class EventsRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues {
+class EventsRoutesSpec extends BaseRouteSpec with IOFromMap {
 
   private val uuid = UUID.randomUUID()
 
