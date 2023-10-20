@@ -45,12 +45,12 @@ final class CatsIOToBioOps[A](private val io: IO[A]) extends AnyVal {
   @SuppressWarnings(Array("UnusedMethodParameter"))
   @nowarn
   def toBIO[E <: Throwable](implicit E: ClassTag[E], ev: E =:!= Throwable): BIO[E, A] =
-    toBIOUnsafe[E]
+    toBIOThrowable[E]
 
   /**
     * Prefer [[toBIO]]. Only use this when we are sure there's no custom error handling logic.
     */
-  def toBIOUnsafe[E <: Throwable](implicit E: ClassTag[E]): BIO[E, A] =
+  def toBIOThrowable[E <: Throwable](implicit E: ClassTag[E]): BIO[E, A] =
     BIO.from(io).mapErrorPartialWith {
       case E(e)  => monix.bio.IO.raiseError(e)
       case other => BIO.terminate(other)

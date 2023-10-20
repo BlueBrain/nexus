@@ -147,7 +147,7 @@ object RetryStrategy {
     RetryStrategy(
       config,
       (t: Throwable) => NonFatal(t),
-      (t: Throwable, d: RetryDetails) => logError[Throwable](logger, action)(t, d).toBIOUnsafe
+      (t: Throwable, d: RetryDetails) => logError[Throwable](logger, action)(t, d).toBIOThrowable
     )
 
 }

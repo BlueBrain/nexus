@@ -10,21 +10,13 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileDescription
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.{FileTooLarge, InvalidMultipartFieldName}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
-import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
-import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 
 import java.util.UUID
 
 class FormDataExtractorSpec
     extends TestKit(ActorSystem("FormDataExtractorSpec"))
-    with AnyWordSpecLike
-    with Matchers
-    with CatsIOValues
-    with CatsRunContext
-    with EitherValues
+    with CatsEffectSpec
     with AkkaSourceHelpers {
 
   "A Form Data HttpEntity" should {

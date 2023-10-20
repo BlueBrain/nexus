@@ -69,10 +69,6 @@ final class FilesRoutes(
   import baseUri.prefixSegment
   import schemeDirectives._
 
-  implicit class ErrorOps[A](io: IO[A]) {
-    def attemptN: IO[Either[FileRejection, A]] = io.attemptNarrow[FileRejection]
-  }
-
   def routes: Route =
     (baseUriPrefix(baseUri.prefix) & replaceUri("files", schemas.files)) {
       pathPrefix("files") {
@@ -92,14 +88,17 @@ final class FilesRoutes(
                     entity(as[LinkFile]) { case LinkFile(filename, mediaType, path) =>
                       emit(
                         Created,
-                        files.createLink(storage, ref, filename, mediaType, path, tag).index(mode).attemptN
+                        files
+                          .createLink(storage, ref, filename, mediaType, path, tag)
+                          .index(mode)
+                          .attemptNarrow[FileRejection]
                       )
                     },
                     // Create a file without id segment
                     extractRequestEntity { entity =>
                       emit(
                         Created,
-                        files.create(storage, ref, entity, tag).index(mode).attemptN
+                        files.create(storage, ref, entity, tag).index(mode).attemptNarrow[FileRejection]
                       )
                     }
                   )
@@ -122,14 +121,14 @@ final class FilesRoutes(
                                     files
                                       .createLink(fileId, storage, filename, mediaType, path, tag)
                                       .index(mode)
-                                      .attemptN
+                                      .attemptNarrow[FileRejection]
                                   )
                                 },
                                 // Create a file with id segment
                                 extractRequestEntity { entity =>
                                   emit(
                                     Created,
-                                    files.create(fileId, storage, entity, tag).index(mode).attemptN
+                                    files.create(fileId, storage, entity, tag).index(mode).attemptNarrow[FileRejection]
                                   )
                                 }
                               )
@@ -141,13 +140,13 @@ final class FilesRoutes(
                                     files
                                       .updateLink(fileId, storage, filename, mediaType, path, rev)
                                       .index(mode)
-                                      .attemptN
+                                      .attemptNarrow[FileRejection]
                                   )
                                 },
                                 // Update a file
                                 extractRequestEntity { entity =>
                                   emit(
-                                    files.update(fileId, storage, rev, entity).index(mode).attemptN
+                                    files.update(fileId, storage, rev, entity).index(mode).attemptNarrow[FileRejection]
                                   )
                                 }
                               )
@@ -157,7 +156,11 @@ final class FilesRoutes(
                         (delete & parameter("rev".as[Int])) { rev =>
                           authorizeFor(ref, Write).apply {
                             emit(
-                              files.deprecate(fileId, rev).index(mode).attemptN
+                              files
+                                .deprecate(fileId, rev)
+                                .index(mode)
+                                .attemptNarrow[FileRejection]
+                                .rejectOn[FileNotFound]
                             )
                           }
                         },
@@ -174,7 +177,10 @@ final class FilesRoutes(
                         // Fetch a file tags
                         (get & idSegmentRef(id) & pathEndOrSingleSlash & authorizeFor(ref, Read)) { id =>
                           emit(
-                            fetchMetadata(FileId(id, ref)).map(_.value.tags).attemptN
+                            fetchMetadata(FileId(id, ref))
+                              .map(_.value.tags)
+                              .attemptNarrow[FileRejection]
+                              .rejectOn[FileNotFound]
                           )
                         },
                         // Tag a file
@@ -183,7 +189,7 @@ final class FilesRoutes(
                             entity(as[Tag]) { case Tag(tagRev, tag) =>
                               emit(
                                 Created,
-                                files.tag(fileId, tag, tagRev, rev).index(mode).attemptN
+                                files.tag(fileId, tag, tagRev, rev).index(mode).attemptNarrow[FileRejection]
                               )
                             }
                           }
@@ -194,7 +200,11 @@ final class FilesRoutes(
                           Write
                         )) { (tag, rev) =>
                           emit(
-                            files.deleteTag(fileId, tag, rev).index(mode).attemptN
+                            files
+                              .deleteTag(fileId, tag, rev)
+                              .index(mode)
+                              .attemptNarrow[FileRejection]
+                              .rejectOn[FileNotFound]
                           )
                         }
                       )
@@ -210,8 +220,10 @@ final class FilesRoutes(
 
   def fetch(id: FileId)(implicit caller: Caller): Route =
     (headerValueByType(Accept) & varyAcceptHeaders) {
-      case accept if accept.mediaRanges.exists(metadataMediaRanges.contains) => emit(fetchMetadata(id).attemptN)
-      case _                                                                 => emit(files.fetchContent(id).attemptN)
+      case accept if accept.mediaRanges.exists(metadataMediaRanges.contains) =>
+        emit(fetchMetadata(id).attemptNarrow[FileRejection].rejectOn[FileNotFound])
+      case _                                                                 =>
+        emit(files.fetchContent(id).attemptNarrow[FileRejection].rejectOn[FileNotFound])
     }
 
   def fetchMetadata(id: FileId)(implicit caller: Caller): IO[FileResource] =

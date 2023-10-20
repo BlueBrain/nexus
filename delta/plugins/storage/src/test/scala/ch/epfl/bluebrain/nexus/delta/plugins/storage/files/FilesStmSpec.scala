@@ -14,29 +14,13 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.testkit.bio.IOFixedClock
-import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
-import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
-import org.scalatest.{Inspectors, OptionValues}
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ResourceRef}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 
 import java.time.Instant
 
-class FilesStmSpec
-    extends AnyWordSpecLike
-    with Matchers
-    with IOFixedClock
-    with OptionValues
-    with EitherValues
-    with Inspectors
-    with CatsIOValues
-    with BIOValues
-    with FileFixtures
-    with StorageFixtures {
+class FilesStmSpec extends CatsEffectSpec with FileFixtures with StorageFixtures {
 
   private val epoch = Instant.EPOCH
   private val time2 = Instant.ofEpochMilli(10L)
