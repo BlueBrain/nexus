@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.testkit.bio
+package ch.epfl.bluebrain.nexus.testkit.mu.bio
 
 import cats.effect.Resource
 import monix.bio.Task

@@ -16,7 +16,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Group, Subject, Us
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
-import ch.epfl.bluebrain.nexus.testkit.{CirceEq, IOFixedClock}
+import ch.epfl.bluebrain.nexus.testkit.CirceEq
+import ch.epfl.bluebrain.nexus.testkit.bio.IOFixedClock
 import io.circe.Json
 import io.circe.syntax._
 import monix.execution.Scheduler

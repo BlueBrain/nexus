@@ -28,6 +28,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit._
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.{EitherValues, TestMatchers}
 import io.circe.JsonObject
 import monix.execution.Scheduler
 import org.scalatest.concurrent.Eventually
@@ -41,7 +43,7 @@ import scala.concurrent.duration._
 class BlazegraphQuerySpec
     extends AnyWordSpecLike
     with Matchers
-    with EitherValuable
+    with EitherValues
     with CirceLiteral
     with TestHelpers
     with TestMatchers
@@ -50,7 +52,7 @@ class BlazegraphQuerySpec
     with Inspectors
     with ConfigFixtures
     with Fixtures
-    with IOValues
+    with BIOValues
     with Eventually {
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(6.seconds, 100.millis)
 

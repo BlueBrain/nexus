@@ -2,12 +2,10 @@ package ch.epfl.bluebrain.nexus.delta.sdk.acls.model
 
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress._
-import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
+import ch.epfl.bluebrain.nexus.testkit.scalatest.BaseSpec
 
-class AclAddressSpec extends AnyWordSpecLike with Matchers with AclFixtures with TestHelpers {
+class AclAddressSpec extends BaseSpec with AclFixtures with TestHelpers {
 
   "An ACL address" should {
     val orgAddress  = Organization(org)

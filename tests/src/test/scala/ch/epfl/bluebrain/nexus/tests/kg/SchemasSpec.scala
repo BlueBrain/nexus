@@ -2,8 +2,9 @@ package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
-import ch.epfl.bluebrain.nexus.testkit.{CirceEq, EitherValuable}
-import ch.epfl.bluebrain.nexus.tests.BaseSpec
+import ch.epfl.bluebrain.nexus.testkit.CirceEq
+import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
+import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.resources.Rick
 import ch.epfl.bluebrain.nexus.tests.builders.SchemaPayloads._
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Organizations
@@ -11,7 +12,7 @@ import io.circe.Json
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.LoneElement._
 
-class SchemasSpec extends BaseSpec with EitherValuable with CirceEq with BeforeAndAfterAll {
+class SchemasSpec extends BaseIntegrationSpec with EitherValues with CirceEq with BeforeAndAfterAll {
 
   private val orgId  = genId()
   private val projId = genId()

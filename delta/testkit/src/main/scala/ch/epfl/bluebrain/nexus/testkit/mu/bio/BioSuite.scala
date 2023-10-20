@@ -1,6 +1,7 @@
-package ch.epfl.bluebrain.nexus.testkit.bio
+package ch.epfl.bluebrain.nexus.testkit.mu.bio
 
-import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, NexusSuite}
+import ch.epfl.bluebrain.nexus.testkit.bio.IOFixedClock
+import ch.epfl.bluebrain.nexus.testkit.mu.{CollectionAssertions, EitherAssertions, EitherValues, NexusSuite}
 import monix.bio.IO
 import monix.execution.Scheduler
 
@@ -11,9 +12,11 @@ abstract class BioSuite
     with BioFixtures
     with BioFunFixtures
     with BioAssertions
-    with StreamAssertions
+    with BIOValues
+    with BIOStreamAssertions
     with CollectionAssertions
     with EitherAssertions
+    with EitherValues
     with IOFixedClock {
 
   implicit protected val scheduler: Scheduler = Scheduler.global

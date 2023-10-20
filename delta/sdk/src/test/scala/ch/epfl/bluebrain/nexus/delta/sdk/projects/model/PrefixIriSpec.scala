@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.projects.model
 
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary._
 import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatErrors.{IllegalIRIFormatError, IllegalPrefixIRIFormatError}
-import ch.epfl.bluebrain.nexus.testkit.EitherValuable
+import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
 import io.circe.Json
 import io.circe.parser._
 import io.circe.syntax._
@@ -10,7 +10,7 @@ import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
-class PrefixIriSpec extends AnyWordSpecLike with Matchers with Inspectors with EitherValuable {
+class PrefixIriSpec extends AnyWordSpecLike with Matchers with Inspectors with EitherValues {
   "A PrefixIri" should {
 
     "be an iri ending with / or #" in {

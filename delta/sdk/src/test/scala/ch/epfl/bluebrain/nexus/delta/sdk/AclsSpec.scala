@@ -10,7 +10,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOFixedClock, IOValues}
+import ch.epfl.bluebrain.nexus.testkit.bio.IOFixedClock
+import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
 import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
 import org.scalatest.{Inspectors, OptionValues}
@@ -22,12 +24,12 @@ import java.time.Instant
 class AclsSpec
     extends AnyWordSpecLike
     with Matchers
-    with EitherValuable
+    with EitherValues
     with OptionValues
     with AclFixtures
     with Inspectors
     with IOFixedClock
-    with IOValues {
+    with BIOValues {
 
   "The ACL state machine" when {
     implicit val sc: Scheduler                                             = Scheduler.global

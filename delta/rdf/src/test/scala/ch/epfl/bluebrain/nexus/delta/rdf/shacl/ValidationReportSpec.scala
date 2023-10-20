@@ -6,8 +6,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
-import ch.epfl.bluebrain.nexus.testkit.ce.CatsIOValues
-import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOValues, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
+import ch.epfl.bluebrain.nexus.testkit.TestHelpers
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
 import io.circe.Json
 import io.circe.syntax._
 import org.apache.jena.query.DatasetFactory
@@ -20,10 +22,10 @@ class ValidationReportSpec
     extends AnyWordSpecLike
     with Matchers
     with TestHelpers
-    with EitherValuable
+    with EitherValues
     with OptionValues
     with CatsIOValues
-    with IOValues {
+    with BIOValues {
 
   implicit val api: JsonLdApi = JsonLdJavaApi.strict
 

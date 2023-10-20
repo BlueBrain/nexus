@@ -14,7 +14,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.{HttpClientStatusE
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientSpec.{Count, Value}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientWorthRetry.onServerError
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, IOValues, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
+import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
 import io.circe.generic.semiauto._
 import io.circe.parser.parse
 import io.circe.syntax._
@@ -33,12 +35,12 @@ class HttpClientSpec
     extends TestKit(ActorSystem("HttpClientSpec"))
     with AnyWordSpecLike
     with Matchers
-    with IOValues
+    with BIOValues
     with CirceLiteral
     with TestHelpers
     with ScalaFutures
     with BeforeAndAfterEach
-    with EitherValuable {
+    with EitherValues {
 
   implicit private val config: HttpClientConfig = HttpClientConfig(OnceStrategyConfig(200.millis), onServerError, false)
   implicit private val sc: Scheduler            = Scheduler.global

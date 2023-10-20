@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.Scope
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, Tag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStoreFixture
-import ch.epfl.bluebrain.nexus.testkit.bio.{BioSuite, ResourceFixture}
+import ch.epfl.bluebrain.nexus.testkit.mu.bio.{BioSuite, ResourceFixture}
 import munit.AnyFixture
 
 import java.util.UUID

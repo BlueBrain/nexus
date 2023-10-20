@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.testkit.bio
+package ch.epfl.bluebrain.nexus.testkit.mu.bio
 
 import fs2.Stream
 import monix.bio.Task
@@ -6,7 +6,7 @@ import munit.{Assertions, Location}
 
 import scala.concurrent.duration.DurationInt
 
-trait StreamAssertions { self: Assertions =>
+trait BIOStreamAssertions { self: Assertions =>
 
   implicit class StreamAssertionsOps[A](stream: Stream[Task, A])(implicit loc: Location) {
     def assert(expected: List[A]): Task[Unit] =

@@ -13,7 +13,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectCon
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOValues, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
+import ch.epfl.bluebrain.nexus.testkit.TestHelpers
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
 import io.circe.literal._
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
@@ -25,8 +27,8 @@ class ArchivesDecodingSpec
     extends AnyWordSpecLike
     with Matchers
     with Inspectors
-    with IOValues
-    with EitherValuable
+    with BIOValues
+    with EitherValues
     with TestHelpers
     with RemoteContextResolutionFixture {
 

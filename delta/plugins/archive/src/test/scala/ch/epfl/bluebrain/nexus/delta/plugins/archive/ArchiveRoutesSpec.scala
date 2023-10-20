@@ -47,7 +47,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.testkit.archive.ArchiveHelpers
-import ch.epfl.bluebrain.nexus.testkit.ce.{CatsIOValues, IOFixedClock}
+import ch.epfl.bluebrain.nexus.testkit.ce.IOFixedClock
 import io.circe.Json
 import io.circe.syntax.EncoderOps
 import org.scalatest.TryValues
@@ -60,8 +60,7 @@ class ArchiveRoutesSpec
     with StorageFixtures
     with IOFixedClock
     with TryValues
-    with ArchiveHelpers
-    with CatsIOValues {
+    with ArchiveHelpers {
 
   private val uuid                          = UUID.fromString("8249ba90-7cc6-4de5-93a1-802c04200dcc")
   implicit private val uuidF: StatefulUUIDF = UUIDF.stateful(uuid).accepted

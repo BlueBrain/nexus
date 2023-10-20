@@ -4,7 +4,9 @@ import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.PropertiesSta
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.PropertiesStatistics.propertiesDecoderFromEsAggregations
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOValues, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
+import ch.epfl.bluebrain.nexus.testkit.TestHelpers
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -12,8 +14,8 @@ class PropertiesStatisticsSpec
     extends AnyWordSpecLike
     with Matchers
     with TestHelpers
-    with EitherValuable
-    with IOValues
+    with EitherValues
+    with BIOValues
     with ContextFixtures {
 
   "PropertiesStatistics" should {

@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.tests.kg
 import akka.http.scaladsl.model.StatusCodes
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
-import ch.epfl.bluebrain.nexus.tests.BaseSpec
+import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
 import ch.epfl.bluebrain.nexus.tests.HttpClient._
 import ch.epfl.bluebrain.nexus.tests.Identity.compositeviews.Jerry
 import ch.epfl.bluebrain.nexus.tests.Optics._
@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.tests.kg.CompositeViewsSpec.{albumQuery, bandQuer
 import io.circe.Json
 import io.circe.optics.JsonPath._
 
-class CompositeViewsSpec extends BaseSpec {
+class CompositeViewsSpec extends BaseIntegrationSpec {
 
   private val logger = Logger.cats[this.type]
 

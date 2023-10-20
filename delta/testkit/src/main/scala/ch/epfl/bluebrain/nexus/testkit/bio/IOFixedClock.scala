@@ -1,10 +1,9 @@
-package ch.epfl.bluebrain.nexus.testkit
-
-import java.time.Instant
+package ch.epfl.bluebrain.nexus.testkit.bio
 
 import cats.effect.Clock
 import monix.bio.{IO, UIO}
 
+import java.time.Instant
 import scala.concurrent.duration.TimeUnit
 
 trait IOFixedClock {
