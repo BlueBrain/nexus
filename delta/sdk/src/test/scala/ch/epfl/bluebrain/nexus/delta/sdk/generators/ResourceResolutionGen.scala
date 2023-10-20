@@ -37,10 +37,3 @@ object ResourceResolutionGen {
     )
   }
 }
-
-//(checkAcls: (ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef, Set[ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity]) => cats.effect.IO[Boolean],
-//  listResolvers: ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef => cats.effect.IO[List[ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.Resolver]],
-//  fetchResolver: (ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri, ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef) => cats.effect.IO[ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.Resolver],
-//  fetch: (ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef, ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef) => ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.Fetch[R],
-//  extractTypes: R => Set[ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri],
-//  deprecationCheck: ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.DeprecationCheck[R]): ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution[R]
