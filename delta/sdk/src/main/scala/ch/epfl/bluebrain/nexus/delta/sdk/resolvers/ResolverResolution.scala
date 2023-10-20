@@ -146,12 +146,15 @@ final class ResolverResolution[R](
   ): IO[ResolverResolutionResult[R]] =
     for {
       resourceOpt <- fetch(ref, projectRef)
-      result      <- resourceOpt.traverse(checkLatestDeprecated(ref, projectRef, _))
+      result      <- resourceOpt.traverse(runDeprecationCheck(ref, projectRef, _))
     } yield {
       result match {
+        // The resource has not been found in the project
         case None        => ResolverReport.failed(resolver.id, projectRef -> ResolutionFetchRejection(ref, projectRef)) -> None
+        // The resource exists but the deprecation check is positive so we reject it
         case Some(true)  =>
           ResolverReport.failed(resolver.id, projectRef -> ResourceIsDeprecated(ref.original, projectRef)) -> None
+        // The resource has been successfully resolved
         case Some(false) => ResolverReport.success(resolver.id, projectRef)                                             -> resourceOpt
       }
     }
@@ -189,7 +192,7 @@ final class ResolverResolution[R](
             resourceOpt  <- fetch(ref, projectRef)
             resource     <- IO.fromOption(resourceOpt)(ResolutionFetchRejection(ref, projectRef))
             _            <- validateResourceTypes(extractTypes(resource), projectRef)
-            isDeprecated <- checkLatestDeprecated(ref, projectRef, resource)
+            isDeprecated <- runDeprecationCheck(ref, projectRef, resource)
             _            <- IO.raiseWhen(isDeprecated)(ResourceIsDeprecated(ref.original, projectRef))
           } yield ResolverSuccessReport(resolver.id, projectRef, f.rejections) -> Option(resource)
           resolve.attemptNarrow[ResolverResolutionRejection].map {
@@ -200,11 +203,15 @@ final class ResolverResolution[R](
     }
   }
 
-  private def checkLatestDeprecated(resourceRef: ResourceRef, project: ProjectRef, resource: R) =
-    resourceRef match {
-      case _: ResourceRef.Latest => IO.pure(deprecationCheck(resource))
-      case _                     => fetch(ResourceRef.Latest(resourceRef.original), project).map(_.exists(deprecationCheck(_)))
-    }
+  private def runDeprecationCheck(resourceRef: ResourceRef, project: ProjectRef, resource: R): IO[Boolean] = {
+    if (deprecationCheck.enabled) {
+      resourceRef match {
+        case _: ResourceRef.Latest => IO.pure(deprecationCheck(resource))
+        // Fetch the latest version to get its deprecation status
+        case _                     => fetch(ResourceRef.Latest(resourceRef.original), project).map(_.exists(deprecationCheck(_)))
+      }
+    } else IO.pure(false)
+  }
 }
 
 object ResolverResolution {
@@ -232,7 +239,7 @@ object ResolverResolution {
     *   extract the deprecation status from the resource
     */
   final case class DeprecationCheck[R](enabled: Boolean, isDeprecated: R => Boolean) {
-    def apply(r: R): Boolean = enabled && isDeprecated(r)
+    def apply(r: R): Boolean = isDeprecated(r)
   }
 
   /**
