@@ -104,12 +104,12 @@ object SchemaImports {
   )(implicit contextShift: ContextShift[IO]): SchemaImports = {
     def resolveSchema(ref: ResourceRef, projectRef: ProjectRef, caller: Caller)   =
       ResourceResolution
-        .schemaResource(aclCheck, resolvers, schemas)
+        .schemaResource(aclCheck, resolvers, schemas, excludeDeprecated = true)
         .resolve(ref, projectRef)(caller)
         .map(_.map(_.value))
     def resolveResource(ref: ResourceRef, projectRef: ProjectRef, caller: Caller) =
       ResourceResolution
-        .dataResource(aclCheck, resolvers, resources)
+        .dataResource(aclCheck, resolvers, resources, excludeDeprecated = true)
         .resolve(ref, projectRef)(caller)
         .map(_.map(_.value))
     new SchemaImports(resolveSchema, resolveResource)

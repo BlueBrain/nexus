@@ -3,7 +3,7 @@
     "this": "https://dev.nexus.test.com/schema-with-power-level/shapes/",
     "other": "https://some.other.prefix.com/"
   },
-  "@id": "https://dev.nexus.test.com/schema-with-power-level",
+  "@id": "{{id}}",
   "shapes": [
     {
       "@id": "this:powerlevel",

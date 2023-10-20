@@ -93,13 +93,11 @@ object ResolverResolutionRejection {
       extends ResolutionFetchRejection(s"The resource was not found in project '$projectRef'.")
 
   /**
-    * Rejection returned when attempting to interact with a resource providing an id that cannot be resolved to an Iri.
-    *
-    * @param id
-    *   the resource identifier
+    * Rejection returned when attempting to fetch a deprecation resource using a resolver when the deprecation check is
+    * enforced
     */
-  final case class InvalidId(id: String)
-      extends ResolutionFetchRejection(s"The identifier '$id' cannot be expanded to an Iri.")
+  final case class ResourceIsDeprecated(id: Iri, projectRef: ProjectRef)
+      extends ResolutionFetchRejection(s"The resource is deprecated in project '$projectRef'.")
 
   /**
     * Rejection the rejection when attempting to resolve with an invalid resolver (i.e deprecated, not found, invalid

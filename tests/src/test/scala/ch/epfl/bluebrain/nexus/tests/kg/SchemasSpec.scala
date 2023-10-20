@@ -6,59 +6,59 @@ import ch.epfl.bluebrain.nexus.testkit.{CirceEq, EitherValuable}
 import ch.epfl.bluebrain.nexus.tests.BaseSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.resources.Rick
 import ch.epfl.bluebrain.nexus.tests.builders.SchemaPayloads._
-import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Organizations
 import io.circe.Json
+import io.circe.optics.JsonPath.root
 import org.scalatest.BeforeAndAfterAll
-import org.scalatest.LoneElement._
+import ch.epfl.bluebrain.nexus.tests.Optics._
 
 class SchemasSpec extends BaseSpec with EitherValuable with CirceEq with BeforeAndAfterAll {
 
-  private val orgId  = genId()
-  private val projId = genId()
-  private val id     = s"$orgId/$projId"
+  private val orgId   = genId()
+  private val projId  = genId()
+  private val project = s"$orgId/$projId"
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-
-    (for {
-      _ <- aclDsl.addPermission(
-             "/",
-             Rick,
-             Organizations.Create
-           )
-      _ <- adminDsl.createOrganization(orgId, orgId, Rick)
-      _ <- adminDsl.createProject(orgId, projId, kgDsl.projectJson(name = id), Rick)
-    } yield succeed).accepted
-    ()
+    createProjects(Rick, orgId, projId).accepted
   }
 
   "Schemas" should {
     "update a schema" in {
       val schemaId = "updatable-schema"
-      for {
-        _ <- deltaClient
-               .post[Json](s"/schemas/$id", withMinCount(schemaId, minCount = 1), Rick) { (_, response) =>
-                 response.status shouldEqual StatusCodes.Created
-               }
 
+      def expectMinCount(json: Json, value: Int) =
+        root.shapes.index(0).minCount.int.getOption(json) shouldEqual Some(value)
+
+      for {
+        _ <- deltaClient.post[Json](s"/schemas/$project", withMinCount(schemaId, minCount = 1), Rick) { expectCreated }
         _ <-
           deltaClient
-            .put[Json](s"/schemas/$id/${UrlUtils.encode(schemaId)}?rev=1", withMinCount(schemaId, minCount = 2), Rick) {
-              (_, response) =>
-                response.status shouldEqual StatusCodes.OK
+            .put[Json](
+              s"/schemas/$project/${UrlUtils.encode(schemaId)}?rev=1",
+              withMinCount(schemaId, minCount = 2),
+              Rick
+            ) {
+              expectOk
             }
-
-        _ <- deltaClient.get[Json](s"/schemas/$id/${UrlUtils.encode(schemaId)}", Rick) { (json, response) =>
+        _ <- deltaClient.get[Json](s"/schemas/$project/${UrlUtils.encode(schemaId)}", Rick) { (json, response) =>
                response.status shouldEqual StatusCodes.OK
-               json.hcursor
-                 .downField("shapes")
-                 .as[List[Json]]
-                 .getOrElse(Nil)
-                 .loneElement
-                 .hcursor
-                 .downField("minCount")
-                 .as[Int]
-                 .toOption shouldEqual Some(2)
+               expectMinCount(json, 2)
+             }
+      } yield succeed
+    }
+
+    "fail creating a schema a deprecated import" in {
+      val baseSchemaId           = "https://localhost/base-schema"
+      val baseSchemaPayload      = withPowerLevelShape(id = baseSchemaId, maxPowerLevel = 10000)
+      val importingSchemaId      = "https://localhost/importing-schema"
+      val importingSchemaPayload = withImportOfPowerLevelShape(id = importingSchemaId, importedSchemaId = baseSchemaId)
+
+      for {
+        _ <- deltaClient.post[Json](s"/schemas/$project", baseSchemaPayload, Rick) { expectCreated }
+        _ <- deltaClient.delete[Json](s"/schemas/$project/${UrlUtils.encode(baseSchemaId)}?rev=1", Rick) { expectOk }
+        _ <- deltaClient.post[Json](s"/schemas/$project", importingSchemaPayload, Rick) { (json, response) =>
+               response.status shouldEqual StatusCodes.BadRequest
+               `@type`.getOption(json) shouldEqual Some("InvalidSchemaResolution")
              }
       } yield succeed
     }
@@ -67,56 +67,45 @@ class SchemasSpec extends BaseSpec with EitherValuable with CirceEq with BeforeA
       val powerLevelSchemaId = "https://dev.nexus.test.com/schema-with-power-level"
       val schemaId           = "https://dev.nexus.test.com/refreshable-schema"
 
+      def resourceWithPowerLevel(id: String, powerLevel: Int) =
+        jsonContentOf(
+          "/kg/resources/resource-with-power-level.json",
+          "id"         -> id,
+          "powerLevel" -> powerLevel
+        )
+
       for {
-        _ <- deltaClient
-               .post[Json](s"/schemas/$id", withPowerLevelShape(id = powerLevelSchemaId, maxPowerLevel = 10000), Rick) {
-                 (_, response) =>
-                   response.status shouldEqual StatusCodes.Created
-               }
+        _ <- deltaClient.post[Json](
+               s"/schemas/$project",
+               withPowerLevelShape(id = powerLevelSchemaId, maxPowerLevel = 10000),
+               Rick
+             ) { expectCreated }
         _ <- deltaClient
                .post[Json](
-                 s"/schemas/$id",
+                 s"/schemas/$project",
                  withImportOfPowerLevelShape(id = schemaId, importedSchemaId = powerLevelSchemaId),
                  Rick
-               ) { (_, response) =>
-                 response.status shouldEqual StatusCodes.Created
-               }
+               ) { expectCreated }
         _ <- deltaClient
                .post[Json](
-                 s"/resources/$id/${UrlUtils.encode(schemaId)}",
-                 jsonContentOf(
-                   "/kg/resources/resource-with-power-level.json",
-                   "id"         -> genId(),
-                   "powerLevel" -> 9001
-                 ),
+                 s"/resources/$project/${UrlUtils.encode(schemaId)}",
+                 resourceWithPowerLevel(genId(), 9001),
                  Rick
-               ) { (_, response) =>
-                 response.status shouldEqual StatusCodes.Created
-               }
+               ) { expectCreated }
         _ <- deltaClient
                .put[Json](
-                 s"/schemas/$id/${UrlUtils.encode(powerLevelSchemaId)}?rev=1",
+                 s"/schemas/$project/${UrlUtils.encode(powerLevelSchemaId)}?rev=1",
                  withPowerLevelShape(id = powerLevelSchemaId, maxPowerLevel = 9000),
                  Rick
-               ) { (_, response) =>
-                 response.status shouldEqual StatusCodes.OK
-               }
+               ) { expectOk }
         _ <- deltaClient
-               .put[Json](s"/schemas/$id/${UrlUtils.encode(schemaId)}/refresh", Json.Null, Rick) { (_, response) =>
-                 response.status shouldEqual StatusCodes.OK
-               }
+               .put[Json](s"/schemas/$project/${UrlUtils.encode(schemaId)}/refresh", Json.Null, Rick) { expectOk }
         _ <- deltaClient
                .post[Json](
-                 s"/resources/$id/${UrlUtils.encode(schemaId)}",
-                 jsonContentOf(
-                   "/kg/resources/resource-with-power-level.json",
-                   "id"         -> genId(),
-                   "powerLevel" -> 9001
-                 ),
+                 s"/resources/$project/${UrlUtils.encode(schemaId)}",
+                 resourceWithPowerLevel(genId(), 9001),
                  Rick
-               ) { (_, response) =>
-                 response.status shouldEqual StatusCodes.BadRequest
-               }
+               ) { expectBadRequest }
       } yield succeed
     }
 
@@ -126,28 +115,22 @@ class SchemasSpec extends BaseSpec with EitherValuable with CirceEq with BeforeA
       for {
         _ <- deltaClient
                .post[Json](
-                 s"/schemas/$id",
+                 s"/schemas/$project",
                  jsonContentOf("/kg/schemas/bicycle-schema.json", "id" -> schemaId, "maxNumberOfGears" -> 13),
                  Rick
-               ) { (_, response) =>
-                 response.status shouldEqual StatusCodes.Created
-               }
+               ) { expectCreated }
         _ <- deltaClient
                .post[Json](
-                 s"/resources/$id/${UrlUtils.encode(schemaId)}",
+                 s"/resources/$project/${UrlUtils.encode(schemaId)}",
                  jsonContentOf("/kg/resources/bicycle.json", "id" -> genId(), "gears" -> 13),
                  Rick
-               ) { (_, response) =>
-                 response.status shouldEqual StatusCodes.Created
-               }
+               ) { expectCreated }
         _ <- deltaClient
                .post[Json](
-                 s"/resources/$id/${UrlUtils.encode(schemaId)}",
+                 s"/resources/$project/${UrlUtils.encode(schemaId)}",
                  jsonContentOf("/kg/resources/bicycle.json", "id" -> genId(), "gears" -> 14),
                  Rick
-               ) { (_, response) =>
-                 response.status shouldEqual StatusCodes.BadRequest
-               }
+               ) { expectBadRequest }
       } yield succeed
     }
 
@@ -159,38 +142,34 @@ class SchemasSpec extends BaseSpec with EitherValuable with CirceEq with BeforeA
       for {
         _ <- deltaClient
                .post[Json](
-                 s"/schemas/$id",
+                 s"/schemas/$project",
                  jsonContentOf("/kg/schemas/bicycle-schema.json", "id" -> schemaId13Gears, "maxNumberOfGears" -> 13),
                  Rick
-               ) { (_, response) =>
-                 response.status shouldEqual StatusCodes.Created
-               }
+               ) { expectCreated }
         _ <- deltaClient
                .post[Json](
-                 s"/schemas/$id",
+                 s"/schemas/$project",
                  jsonContentOf("/kg/schemas/bicycle-schema.json", "id" -> schemaId12Gears, "maxNumberOfGears" -> 12),
                  Rick
-               ) { (_, response) =>
-                 response.status shouldEqual StatusCodes.Created
-               }
+               ) { expectCreated }
         _ <- deltaClient
                .post[Json](
-                 s"/resources/$id/$schemaId13Gears",
+                 s"/resources/$project/$schemaId13Gears",
                  jsonContentOf("/kg/resources/bicycle.json", "id" -> resourceId, "gears" -> 13),
                  Rick
-               ) { (_, response) =>
-                 response.status shouldEqual StatusCodes.Created
-               }
-        _ <- deltaClient.get[Json](s"/resources/$id/$schemaId13Gears/$resourceId/validate", Rick) { (json, response) =>
-               response.status shouldEqual StatusCodes.OK
-               json.hcursor.downField("@type").as[String].toOption shouldEqual Some("Validated")
+               ) { expectCreated }
+        _ <- deltaClient.get[Json](s"/resources/$project/$schemaId13Gears/$resourceId/validate", Rick) {
+               (json, response) =>
+                 response.status shouldEqual StatusCodes.OK
+                 json.hcursor.downField("@type").as[String].toOption shouldEqual Some("Validated")
              }
-        _ <- deltaClient.get[Json](s"/resources/$id/$schemaId12Gears/$resourceId/validate", Rick) { (json, response) =>
-               response.status shouldEqual StatusCodes.BadRequest
-               json.hcursor.downField("@type").as[String].toOption shouldEqual Some("InvalidResource")
-               json.hcursor.downField("details").downField("@type").as[String].toOption shouldEqual Some(
-                 "sh:ValidationReport"
-               )
+        _ <- deltaClient.get[Json](s"/resources/$project/$schemaId12Gears/$resourceId/validate", Rick) {
+               (json, response) =>
+                 response.status shouldEqual StatusCodes.BadRequest
+                 `@type`.getOption(json) shouldEqual Some("InvalidResource")
+                 json.hcursor.downField("details").downField("@type").as[String].toOption shouldEqual Some(
+                   "sh:ValidationReport"
+                 )
              }
       } yield succeed
     }

@@ -56,8 +56,9 @@ object Optics extends Optics {
   val filterResultMetadataAndLinks: Json => Json = filterResults(metadataKeys ++ linkKeys)
   val filterSearchMetadataAndLinks: Json => Json = filterKey("_next") andThen filterResultMetadataAndLinks
 
-  val `@id` = root.`@id`.string
-  val _uuid = root._uuid.string
+  val `@id`   = root.`@id`.string
+  val `@type` = root.`@type`.string
+  val _uuid   = root._uuid.string
 
   val _total = root._total.long
 
