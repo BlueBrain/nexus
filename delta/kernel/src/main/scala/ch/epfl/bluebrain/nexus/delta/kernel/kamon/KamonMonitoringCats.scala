@@ -63,7 +63,7 @@ object KamonMonitoringCats {
       component: String,
       tags: Map[String, Any] = Map.empty,
       takeSamplingDecision: Boolean = true
-  )(io: IO[A]): IO[A] = {
+  )(io: IO[A]): IO[A]                                                                      = {
     if (enabled)
       buildSpan(name, component, tags).bracketCase(_ => io) {
         case (span, ExitCase.Completed)    => finishSpan(span, takeSamplingDecision)
