@@ -10,12 +10,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.RealmEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.RealmRejection._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.testkit.ce.{IOFixedClock, IOFromMap}
+import ch.epfl.bluebrain.nexus.testkit.ce.IOFromMap
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 
 import java.time.Instant
 
-class RealmsEvaluateSuite extends CatsEffectSuite with IOFromMap with IOFixedClock {
+class RealmsEvaluateSuite extends CatsEffectSuite with IOFromMap {
 
   private val epoch: Instant       = Instant.EPOCH
   private val issuer: String       = "myrealm"

@@ -27,7 +27,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Authenticated, Gro
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
-import ch.epfl.bluebrain.nexus.testkit.ce.IOFixedClock
 import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
 import monix.bio.UIO
@@ -39,7 +38,6 @@ class ResolversImplSpec
     extends BioSpec
     with DoobieScalaTestFixture
     with CatsIOValues
-    with IOFixedClock
     with CancelAfterFailure
     with ConfigFixtures {
 

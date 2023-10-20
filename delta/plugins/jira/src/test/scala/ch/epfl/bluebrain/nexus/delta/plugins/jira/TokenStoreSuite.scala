@@ -4,11 +4,10 @@ import ch.epfl.bluebrain.nexus.delta.plugins.jira.OAuthToken.{AccessToken, Reque
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
-import ch.epfl.bluebrain.nexus.testkit.ce.IOFixedClock
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import munit.AnyFixture
 
-class TokenStoreSuite extends CatsEffectSuite with Doobie.Fixture with IOFixedClock {
+class TokenStoreSuite extends CatsEffectSuite with Doobie.Fixture {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 

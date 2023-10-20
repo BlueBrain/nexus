@@ -2,12 +2,18 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.postgres
 
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
+import ch.epfl.bluebrain.nexus.testkit.bio.IOFixedClock
 import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
 import monix.bio.Task
 import monix.execution.Scheduler
 import org.scalatest.{BeforeAndAfterAll, Suite}
 
-trait DoobieScalaTestFixture extends BeforeAndAfterAll with PostgresDocker with TestHelpers with BIOValues {
+trait DoobieScalaTestFixture
+    extends BeforeAndAfterAll
+    with PostgresDocker
+    with TestHelpers
+    with BIOValues
+    with IOFixedClock {
 
   self: Suite =>
 
