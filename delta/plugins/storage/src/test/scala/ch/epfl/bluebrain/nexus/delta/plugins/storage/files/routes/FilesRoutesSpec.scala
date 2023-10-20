@@ -9,7 +9,7 @@ import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileId, FileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutesSpec.fileMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts => fileContexts, permissions, FileFixtures, Files, FilesConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{StorageRejection, StorageStatEntry, StorageType}
@@ -29,7 +29,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{Caller, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef, ResourceUris}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
@@ -174,7 +174,7 @@ class FilesRoutesSpec
           status shouldEqual StatusCodes.Created
           val attr      = attributes(id = uuid2)
           val expected  = fileMetadata(projectRef, generatedId2, attr, diskIdRev)
-          val fileByTag = files.fetch(IdSegmentRef(generatedId2, tag), projectRef).accepted
+          val fileByTag = files.fetch(FileId(generatedId2, tag, projectRef)).accepted
           response.asJson shouldEqual expected
           fileByTag.value.tags.tags should contain(tag)
         }
@@ -216,7 +216,7 @@ class FilesRoutesSpec
           status shouldEqual StatusCodes.Created
           val attr      = attributes("fileTagged.txt", id = uuid2)
           val expected  = fileMetadata(projectRef, fileTagged, attr, s3IdRev, createdBy = alice, updatedBy = alice)
-          val fileByTag = files.fetch(IdSegmentRef(generatedId2, tag), projectRef).accepted
+          val fileByTag = files.fetch(FileId(generatedId2, tag, projectRef)).accepted
           response.asJson shouldEqual expected
           fileByTag.value.tags.tags should contain(tag)
         }

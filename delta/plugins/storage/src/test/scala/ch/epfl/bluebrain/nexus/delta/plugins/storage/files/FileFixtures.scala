@@ -12,8 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePat
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
 import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
 import monix.bio.Task
@@ -36,8 +35,6 @@ trait FileFixtures extends EitherValues with BIOValues {
   val deprecatedProject        = ProjectGen.project("org", "proj-deprecated")
   val projectWithDeprecatedOrg = ProjectGen.project("org-deprecated", "other-proj")
   val projectRef               = project.ref
-  val diskId                   = nxv + "disk"
-  val diskRev                  = ResourceRef.Revision(iri"$diskId?rev=1", diskId, 1)
   val diskId2                  = nxv + "disk2"
   val file1                    = nxv + "file1"
   val file2                    = nxv + "file2"
