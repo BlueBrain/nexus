@@ -2,10 +2,10 @@ package ch.epfl.bluebrain.nexus.tests.iam
 
 import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.tests.HttpClient.tokensMap
-import ch.epfl.bluebrain.nexus.tests.{BaseSpec, Identity}
+import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, Identity}
 import io.circe.Json
 
-class IdentitiesSpec extends BaseSpec {
+class IdentitiesSpec extends BaseIntegrationSpec {
 
   "The /identities endpoint" should {
     s"return identities of the user" in {

@@ -7,18 +7,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.Fixtures
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestHelpers, TestMatchers}
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
 
-class ResourceFSpec
-    extends AnyWordSpecLike
-    with Matchers
-    with CirceLiteral
-    with TestHelpers
-    with IOValues
-    with TestMatchers
-    with Fixtures {
+class ResourceFSpec extends BioSpec with Fixtures {
 
   implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
 

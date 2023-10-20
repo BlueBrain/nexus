@@ -2,15 +2,14 @@ package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.tests.BaseSpec
+import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.events.BugsBunny
 import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Events, Organizations, Resources}
 import ch.epfl.bluebrain.nexus.tests.resources.SimpleResource
 import io.circe.Json
-import org.scalatest.Inspectors
 
-class EventsSpec extends BaseSpec with Inspectors {
+class EventsSpec extends BaseIntegrationSpec {
 
   private val orgId                          = genId()
   private val orgId2                         = genId()

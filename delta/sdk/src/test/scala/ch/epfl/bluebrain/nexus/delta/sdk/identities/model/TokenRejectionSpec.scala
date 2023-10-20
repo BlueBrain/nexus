@@ -1,23 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.identities.model
 
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.kernel.jwt.TokenRejection._
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
+import ch.epfl.bluebrain.nexus.delta.sdk.error.IdentityError._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.Fixtures
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestHelpers}
-import org.scalatest.Inspectors
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
-import ch.epfl.bluebrain.nexus.delta.sdk.error.IdentityError._
+import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
 
-class TokenRejectionSpec
-    extends AnyWordSpecLike
-    with Matchers
-    with Inspectors
-    with CirceLiteral
-    with TestHelpers
-    with IOValues
-    with Fixtures {
+class TokenRejectionSpec extends BioSpec with CirceLiteral with Fixtures {
 
   "A TokenRejection" should {
 

@@ -3,18 +3,17 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.projections
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.model.ProjectionRestart
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.model.ProjectionRestart.{entityType, restartId}
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
-import ch.epfl.bluebrain.nexus.testkit.IOFixedClock
-import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
-import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
+import ch.epfl.bluebrain.nexus.testkit.mu.bio.BioSuite
 import munit.AnyFixture
 
 import java.time.Instant
 
-class ProjectionRestartStoreSuite extends BioSuite with IOFixedClock with Doobie.Fixture with Doobie.Assertions {
+class ProjectionRestartStoreSuite extends BioSuite with Doobie.Fixture with Doobie.Assertions {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 

@@ -24,26 +24,22 @@ import ch.epfl.bluebrain.nexus.storage.jsonld.JsonLdContext.addContext
 import ch.epfl.bluebrain.nexus.storage.routes.instances._
 import ch.epfl.bluebrain.nexus.storage.utils.{Randomness, Resources}
 import ch.epfl.bluebrain.nexus.storage.{AkkaSource, Storages}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.BaseSpec
 import io.circe.Json
 import org.mockito.{ArgumentMatchersSugar, IdiomaticMockito}
-import org.scalatest.OptionValues
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
 
 import java.nio.file.Paths
 import java.util.regex.Pattern.quote
 import scala.concurrent.duration._
 
 class StorageRoutesSpec
-    extends AnyWordSpecLike
-    with Matchers
+    extends BaseSpec
     with ScalatestRouteTest
     with IdiomaticMockito
     with Randomness
     with Resources
     with ArgumentMatchersSugar
-    with OptionValues
     with ScalaFutures {
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(3.second, 15.milliseconds)
@@ -54,13 +50,13 @@ class StorageRoutesSpec
   val route: Route                                      = Routes(storages)
 
   trait Ctx {
-    val name        = genString()
+    val name        = randomString()
     val resourceCtx = "https://bluebrain.github.io/nexus/contexts/resource.json"
   }
 
   trait RandomFile extends Ctx {
-    val filename                            = s"${genString()}.json"
-    val content                             = Json.obj("key" -> Json.fromString(genString())).noSpaces
+    val filename                            = s"${randomString()}.json"
+    val content                             = Json.obj("key" -> Json.fromString(randomString())).noSpaces
     val source: AkkaSource                  = Source.single(ByteString(content))
     implicit val bucketExists: BucketExists = BucketExists
     implicit val pathExists: PathExists     = PathExists
@@ -169,7 +165,7 @@ class StorageRoutesSpec
 
       "pass" in new RandomFileCreate {
         val absoluteFilePath = appConfig.storage.rootVolume.resolve(filePath)
-        val digest           = Digest("SHA-256", genString())
+        val digest           = Digest("SHA-256", randomString())
         val attributes       = FileAttributes(s"file://$absoluteFilePath", 12L, digest, `application/octet-stream`)
         storages.exists(name) shouldReturn BucketExists
         storages.pathExists(name, filePathUri) shouldReturn PathDoesNotExist
@@ -389,7 +385,7 @@ class StorageRoutesSpec
         val filePathUri = Uri.Path(s"$filename")
         storages.exists(name) shouldReturn BucketExists
         val attributes  =
-          FileAttributes(s"file://$filePathUri", genInt().toLong, Digest("SHA-256", genString()), `image/jpeg`)
+          FileAttributes(s"file://$filePathUri", genInt().toLong, Digest("SHA-256", randomString()), `image/jpeg`)
         storages.getAttributes(name, filePathUri) shouldReturn IO(attributes)
         storages.pathExists(name, filePathUri) shouldReturn PathExists
 

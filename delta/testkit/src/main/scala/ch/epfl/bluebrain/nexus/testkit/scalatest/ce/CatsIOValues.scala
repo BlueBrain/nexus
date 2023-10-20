@@ -1,24 +1,19 @@
-package ch.epfl.bluebrain.nexus.testkit.ce
+package ch.epfl.bluebrain.nexus.testkit.scalatest.ce
 
 import cats.effect.IO
 import org.scalactic.source
-import org.scalatest.Assertion
-import org.scalatest.Assertions._
+import org.scalatest.{Assertion, Suite}
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.duration.DurationInt
 import scala.reflect.ClassTag
 
-trait CatsIOValues extends CatsIOValuesLowPrio {
+trait CatsIOValues {
 
-  implicit def ioToFutureAssertion(io: IO[Assertion]): Future[Assertion] = io.unsafeToFuture()
-
-  implicit def futureListToFutureAssertion(future: Future[List[Assertion]])(implicit
-      ec: ExecutionContext
-  ): Future[Assertion] =
-    future.map(_ => succeed)
+  self: Suite =>
 
   implicit final class CatsIOValuesOps[A](private val io: IO[A]) {
-    def accepted: A = io.unsafeRunSync()
+    def accepted: A =
+      io.unsafeRunTimed(45.seconds).getOrElse(fail("IO timed out during .accepted call"))
 
     def rejected(implicit pos: source.Position): Throwable = rejectedWith[Throwable]
 
@@ -26,7 +21,7 @@ trait CatsIOValues extends CatsIOValuesLowPrio {
       assertResult(expected)(rejectedWith[E])
 
     def rejectedWith[E](implicit pos: source.Position, EE: ClassTag[E]): E = {
-      io.attempt.unsafeRunSync() match {
+      io.attempt.accepted match {
         case Left(EE(value)) => value
         case Left(value)     =>
           fail(
@@ -39,10 +34,4 @@ trait CatsIOValues extends CatsIOValuesLowPrio {
       }
     }
   }
-
-}
-
-trait CatsIOValuesLowPrio {
-  implicit def ioListToFutureAssertion(io: IO[List[Assertion]])(implicit ec: ExecutionContext): Future[Assertion] =
-    io.unsafeToFuture().map(_ => succeed)
 }

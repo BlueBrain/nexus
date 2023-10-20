@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem._
-import ch.epfl.bluebrain.nexus.testkit.bio.{BioSuite, PatienceConfig}
+import ch.epfl.bluebrain.nexus.testkit.mu.bio.{BioSuite, PatienceConfig}
 import fs2.Stream
 import monix.bio.UIO
 

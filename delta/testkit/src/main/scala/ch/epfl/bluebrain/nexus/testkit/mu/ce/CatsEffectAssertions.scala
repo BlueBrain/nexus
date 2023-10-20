@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.testkit.ce
+package ch.epfl.bluebrain.nexus.testkit.mu.ce
 
 import cats.effect.{IO, Sync}
 import cats.syntax.eq._
@@ -11,7 +11,7 @@ import scala.util.control.NonFatal
   * Adapted from: from
   * https://github.com/typelevel/munit-cats-effect/blob/main/core/src/main/scala/munit/CatsEffectAssertions.scala
   */
-trait CatsEffectAssertions { self: Assertions =>
+trait CatsEffectMUnitAssertions { self: Assertions =>
 
   def assertIO[A, B](
       obtained: IO[A],
@@ -225,4 +225,4 @@ trait CatsEffectAssertions { self: Assertions =>
   }
 }
 
-object CatsEffectAssertions extends Assertions with CatsEffectAssertions
+object CatsEffectMUnitAssertions extends Assertions with CatsEffectMUnitAssertions

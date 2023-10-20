@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.Scope
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.bio.BioSuite
 import monix.bio.UIO
 
 class DefaultViewsQuerySuite extends BioSuite {

@@ -8,8 +8,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects.FetchOrganization
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.testkit.bio.ResourceFixture
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
+import ch.epfl.bluebrain.nexus.testkit.mu.bio.ResourceFixture
 import monix.bio.UIO
 
 import java.util.UUID

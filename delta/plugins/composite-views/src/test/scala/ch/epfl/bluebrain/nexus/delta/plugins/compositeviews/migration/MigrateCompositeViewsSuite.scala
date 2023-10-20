@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import doobie.postgres.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
-import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.bio.BioSuite
 import doobie.Get
 import munit.{AnyFixture, Location}
 import doobie.implicits._

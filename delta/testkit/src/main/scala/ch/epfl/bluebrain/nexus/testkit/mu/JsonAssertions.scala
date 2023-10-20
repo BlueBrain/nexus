@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.testkit.bio
+package ch.epfl.bluebrain.nexus.testkit.mu
 
 import io.circe.syntax.EncoderOps
 import io.circe.{Json, JsonObject, Printer}

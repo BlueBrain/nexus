@@ -10,16 +10,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSour
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.testkit.IOValues
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
 
-class StorageFieldsSpec
-    extends AnyWordSpec
-    with Matchers
-    with RemoteContextResolutionFixture
-    with IOValues
-    with StorageFixtures {
+class StorageFieldsSpec extends BioSpec with RemoteContextResolutionFixture with StorageFixtures {
 
   implicit private val cfg: Configuration = StorageDecoderConfiguration.apply.accepted
   val sourceDecoder                       = new JsonLdSourceDecoder[StorageRejection, StorageFields](contexts.storages, UUIDF.random)

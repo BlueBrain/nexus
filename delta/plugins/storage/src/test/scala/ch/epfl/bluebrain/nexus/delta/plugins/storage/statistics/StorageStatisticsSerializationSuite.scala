@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.statistics
 
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageStatEntry
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers.jsonContentOf
-import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.bio.BioSuite
 
 class StorageStatisticsSerializationSuite extends BioSuite {
 

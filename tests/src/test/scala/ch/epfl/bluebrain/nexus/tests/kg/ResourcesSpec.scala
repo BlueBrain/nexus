@@ -2,26 +2,28 @@ package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.MediaTypes.`text/html`
 import akka.http.scaladsl.model.headers.{Accept, Location, RawHeader}
-import akka.http.scaladsl.model.{MediaRange, StatusCodes}
+import akka.http.scaladsl.model.{HttpResponse, MediaRange, StatusCodes}
 import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers
+import cats.effect.IO
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
-import ch.epfl.bluebrain.nexus.testkit.{CirceEq, EitherValuable}
 import ch.epfl.bluebrain.nexus.tests.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.tests.Identity.resources.{Morty, Rick}
+import ch.epfl.bluebrain.nexus.tests.Optics.admin._constrainedBy
 import ch.epfl.bluebrain.nexus.tests.Optics.listing._total
 import ch.epfl.bluebrain.nexus.tests.Optics.{filterKey, filterMetadataKeys}
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Resources
 import ch.epfl.bluebrain.nexus.tests.resources.SimpleResource
-import ch.epfl.bluebrain.nexus.tests.{BaseSpec, Optics, SchemaPayload}
+import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, Optics, SchemaPayload}
 import io.circe.Json
 import io.circe.optics.JsonPath.root
 import monocle.Optional
+import org.scalatest.Assertion
 import org.scalatest.matchers.{HavePropertyMatchResult, HavePropertyMatcher}
 
 import java.net.URLEncoder
 
-class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
+class ResourcesSpec extends BaseIntegrationSpec {
 
   private val orgId   = genId()
   private val projId1 = genId()
@@ -379,6 +381,29 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
           response.status shouldEqual StatusCodes.OK
           filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
       }
+    }
+
+    "allow to change the schema" in {
+      val resourceId       = "schemaChange"
+      val payload          = SimpleResource.sourcePayload(resourceId, 4)
+      val newSchemaPayload = SchemaPayload.loadSimpleNoId()
+      val newSchemaName    = "new-schema"
+      val newSchemaId      = "http://delta:8080/v1/resources/" + id1 + s"/_/$newSchemaName"
+
+      val thereIsANewSchema                                                             =
+        deltaClient.put[Json](s"/schemas/$id1/$newSchemaName", newSchemaPayload, Rick) { expectCreated }
+      val thereIsARessourceWithOldSchema                                                =
+        deltaClient.put[Json](s"/resources/$id1/test-schema/$resourceId", payload, Rick) { expectCreated }
+      def updateResourceAndSchema: ((Json, HttpResponse) => Assertion) => IO[Assertion] =
+        deltaClient.put[Json](s"/resources/$id1/$newSchemaName/$resourceId?rev=1", payload, Rick) { expectOk } >>
+          deltaClient.get[Json](s"/resources/$id1/$newSchemaName/$resourceId?rev=2", Rick)(_)
+
+      thereIsANewSchema >>
+        thereIsARessourceWithOldSchema >>
+        updateResourceAndSchema { (json, response) =>
+          response.status shouldEqual StatusCodes.OK
+          _constrainedBy.getOption(json) shouldEqual newSchemaId.some
+        }
     }
   }
 

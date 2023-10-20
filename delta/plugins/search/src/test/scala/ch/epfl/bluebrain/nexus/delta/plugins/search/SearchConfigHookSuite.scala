@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.Defaults
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectBase
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import ch.epfl.bluebrain.nexus.testkit.ce.CatsEffectSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import io.circe.{Json, JsonObject}
 
 import java.util.UUID

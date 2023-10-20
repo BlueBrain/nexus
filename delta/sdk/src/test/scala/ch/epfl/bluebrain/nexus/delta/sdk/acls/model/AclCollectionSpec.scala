@@ -5,13 +5,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.AclResource
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress.{Organization, Project, Root}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddressFilter.{AnyOrganization, AnyOrganizationAnyProject, AnyProject}
-import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.{Acl, AclAddress, AclCollection}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.AclGen
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
+import ch.epfl.bluebrain.nexus.testkit.scalatest.BaseSpec
 
-class AclCollectionSpec extends AnyWordSpecLike with Matchers with AclFixtures {
+class AclCollectionSpec extends BaseSpec with AclFixtures {
 
   "A Collection of ACL" should {
 

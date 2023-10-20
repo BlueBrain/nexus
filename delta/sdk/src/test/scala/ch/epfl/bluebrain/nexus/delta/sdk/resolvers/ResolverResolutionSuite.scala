@@ -20,7 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{IdentityResolution, Pr
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef, ResourceRef}
-import ch.epfl.bluebrain.nexus.testkit.ce.CatsEffectSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import io.circe.Json
 
 import java.time.Instant

@@ -1,11 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.query
 
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
-import ch.epfl.bluebrain.nexus.testkit.EitherValuable
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
+import ch.epfl.bluebrain.nexus.testkit.scalatest.BaseSpec
 
-class SparqlQuerySpec extends AnyWordSpec with Matchers with EitherValuable {
+class SparqlQuerySpec extends BaseSpec {
 
   val validSparql = """SELECT ?s ?p ?o WHERE { ?s ?p ?o }"""
 

@@ -2,16 +2,14 @@ package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
-import ch.epfl.bluebrain.nexus.testkit.{CirceEq, EitherValuable}
-import ch.epfl.bluebrain.nexus.tests.BaseSpec
+import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.resources.Rick
+import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.builders.SchemaPayloads._
 import io.circe.Json
 import io.circe.optics.JsonPath.root
-import org.scalatest.BeforeAndAfterAll
-import ch.epfl.bluebrain.nexus.tests.Optics._
 
-class SchemasSpec extends BaseSpec with EitherValuable with CirceEq with BeforeAndAfterAll {
+class SchemasSpec extends BaseIntegrationSpec {
 
   private val orgId   = genId()
   private val projId  = genId()

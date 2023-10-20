@@ -1,6 +1,7 @@
-package ch.epfl.bluebrain.nexus.testkit.ce
+package ch.epfl.bluebrain.nexus.testkit.mu.ce
 
 import cats.effect.IO
+import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
 import fs2.Stream
 import munit.{Assertions, Location}
 

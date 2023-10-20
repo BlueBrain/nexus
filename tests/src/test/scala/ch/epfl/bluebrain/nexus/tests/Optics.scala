@@ -75,6 +75,7 @@ object Optics extends Optics {
 
     val _label             = root._label.string
     val description        = root.description.string
+    val _constrainedBy     = root._constrainedBy.string
     val _rev               = root._rev.int
     val _deprecated        = root._deprecated.boolean
     val _markedForDeletion = root._markedForDeletion.boolean

@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.testkit
+package ch.epfl.bluebrain.nexus.testkit.scalatest
 
 import org.scalactic.{source, Prettifier}
 import org.scalatest.matchers.should.Matchers

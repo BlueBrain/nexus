@@ -1,8 +1,9 @@
-package ch.epfl.bluebrain.nexus.testkit.ce
+package ch.epfl.bluebrain.nexus.testkit.mu.ce
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.testkit.NexusSuite
-import ch.epfl.bluebrain.nexus.testkit.bio.{CollectionAssertions, EitherAssertions}
+import ch.epfl.bluebrain.nexus.testkit.bio.IOFixedClock
+import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
+import ch.epfl.bluebrain.nexus.testkit.mu.{CollectionAssertions, EitherAssertions, EitherValues, NexusSuite}
 import monix.bio.{IO => BIO}
 import monix.execution.Scheduler
 
@@ -15,11 +16,13 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration}
 abstract class CatsEffectSuite
     extends NexusSuite
     with CatsRunContext
-    with CatsEffectAssertions
-    with CatsStreamAssertions
     with CatsIOValues
+    with CatsEffectMUnitAssertions
+    with CatsStreamAssertions
     with CollectionAssertions
-    with EitherAssertions {
+    with EitherAssertions
+    with EitherValues
+    with IOFixedClock {
   protected val ioTimeout: FiniteDuration = 45.seconds
 
   override def munitValueTransforms: List[ValueTransform] =

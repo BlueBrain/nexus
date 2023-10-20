@@ -6,23 +6,14 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.testkit.ce.CatsIOValues
-import ch.epfl.bluebrain.nexus.testkit.{CirceEq, IOValues, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.CirceEq
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
 import io.circe.syntax.EncoderOps
 import monix.bio.UIO
-import org.scalatest.OptionValues
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
 
-class JsonLdDocumentSpec
-    extends AnyWordSpecLike
-    with Matchers
-    with TestHelpers
-    with IOValues
-    with CatsIOValues
-    with OptionValues
-    with ContextFixtures
-    with CirceEq {
+class JsonLdDocumentSpec extends BioSpec with CatsIOValues with ContextFixtures with CirceEq {
+
   "A JsonLdDocument" should {
     implicit val jsonLdApi: JsonLdApi = JsonLdJavaApi.lenient
     val input                         = jsonContentOf("reconstructed-cell.json")

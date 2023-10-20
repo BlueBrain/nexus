@@ -9,24 +9,16 @@ import ch.epfl.bluebrain.nexus.storage.auth.AuthorizationMethod.VerifyToken
 import ch.epfl.bluebrain.nexus.storage.config.AppConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.storage.config.Settings
 import ch.epfl.bluebrain.nexus.storage.routes.AuthDirectives._
-import ch.epfl.bluebrain.nexus.storage.utils.EitherValues
-import ch.epfl.bluebrain.nexus.storage.utils.Randomness.genString
 import ch.epfl.bluebrain.nexus.testkit.jwt.TokenGenerator
+import ch.epfl.bluebrain.nexus.testkit.scalatest.BaseSpec
 import com.nimbusds.jose.jwk.gen.RSAKeyGenerator
 import com.nimbusds.jose.jwk.{JWKSet, RSAKey}
 import org.scalatest.BeforeAndAfter
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
 
 import java.time.Instant
 
 //noinspection NameBooleanParameters
-class AuthDirectivesSpec
-    extends AnyWordSpecLike
-    with Matchers
-    with EitherValues
-    with BeforeAndAfter
-    with ScalatestRouteTest {
+class AuthDirectivesSpec extends BaseSpec with BeforeAndAfter with ScalatestRouteTest {
 
   implicit private val hc: HttpConfig = Settings(system).appConfig.http
 

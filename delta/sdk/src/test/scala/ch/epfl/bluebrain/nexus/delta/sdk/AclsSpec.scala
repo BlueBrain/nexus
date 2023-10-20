@@ -1,33 +1,22 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.Acls.{evaluate, next}
-import ch.epfl.bluebrain.nexus.delta.sdk.acls.{AclFixtures, Acls}
-import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.{Acl, AclCommand, AclEvent, AclRejection, AclState}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress.Root
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclCommand.{AppendAcl, DeleteAcl, ReplaceAcl, SubtractAcl}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclEvent.{AclAppended, AclDeleted, AclReplaced, AclSubtracted}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclRejection._
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.{AclFixtures, Acls}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOFixedClock, IOValues}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
 import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
-import org.scalatest.{Inspectors, OptionValues}
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
 
 import java.time.Instant
 
-class AclsSpec
-    extends AnyWordSpecLike
-    with Matchers
-    with EitherValuable
-    with OptionValues
-    with AclFixtures
-    with Inspectors
-    with IOFixedClock
-    with IOValues {
+class AclsSpec extends BioSpec with AclFixtures {
 
   "The ACL state machine" when {
     implicit val sc: Scheduler                                             = Scheduler.global

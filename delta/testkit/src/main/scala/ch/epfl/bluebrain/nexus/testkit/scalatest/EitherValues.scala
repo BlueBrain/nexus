@@ -1,11 +1,13 @@
-package ch.epfl.bluebrain.nexus.testkit
+package ch.epfl.bluebrain.nexus.testkit.scalatest
 
 import org.scalactic.source
+import org.scalatest.Suite
 import org.scalatest.exceptions.{StackDepthException, TestFailedException}
 
-trait EitherValuable {
+trait EitherValues {
 
-  class EitherValuable[L, R](either: Either[L, R], pos: source.Position) {
+  self: Suite =>
+  class EitherValuesOps[L, R](either: Either[L, R], pos: source.Position) {
     def rightValue: R =
       either match {
         case Right(value) => value
@@ -29,7 +31,7 @@ trait EitherValuable {
       }
   }
 
-  implicit def convertEitherToValuable[L, R](either: Either[L, R])(implicit p: source.Position): EitherValuable[L, R] =
-    new EitherValuable(either, p)
+  implicit def convertEitherToValuable[L, R](either: Either[L, R])(implicit p: source.Position): EitherValuesOps[L, R] =
+    new EitherValuesOps(either, p)
 
 }

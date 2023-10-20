@@ -19,13 +19,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EphemeralLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.execution.EvaluationExecution
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
-import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, TestHelpers}
-import ch.epfl.bluebrain.nexus.testkit.ce.{CatsIOValues, CatsRunContext, IOFixedClock}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.literal._
-import org.scalatest.matchers.should.Matchers
 
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
@@ -33,15 +31,7 @@ import java.time.Instant
 import java.util.UUID
 import scala.concurrent.duration._
 
-class ArchivesSpec
-    extends DoobieScalaTestFixture
-    with Matchers
-    with IOFixedClock
-    with CatsRunContext
-    with CatsIOValues
-    with EitherValuable
-    with TestHelpers
-    with RemoteContextResolutionFixture {
+class ArchivesSpec extends CatsEffectSpec with DoobieScalaTestFixture with RemoteContextResolutionFixture {
 
   private val uuid                  = UUID.randomUUID()
   implicit private val uuidF: UUIDF = UUIDF.random

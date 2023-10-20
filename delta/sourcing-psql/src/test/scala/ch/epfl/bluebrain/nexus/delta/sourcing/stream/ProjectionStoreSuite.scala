@@ -6,13 +6,12 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
-import ch.epfl.bluebrain.nexus.testkit.IOFixedClock
-import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.bio.BioSuite
 import munit.AnyFixture
 
 import java.time.Instant
 
-class ProjectionStoreSuite extends BioSuite with IOFixedClock with Doobie.Fixture with Doobie.Assertions {
+class ProjectionStoreSuite extends BioSuite with Doobie.Fixture with Doobie.Assertions {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 
@@ -75,7 +74,7 @@ class ProjectionStoreSuite extends BioSuite with IOFixedClock with Doobie.Fixtur
 
   test("Reset an offset") {
     val later      = Instant.EPOCH.plusSeconds(1000)
-    val storeLater = ProjectionStore(xas, QueryConfig(10, RefreshStrategy.Stop))(ioClock(later))
+    val storeLater = ProjectionStore(xas, QueryConfig(10, RefreshStrategy.Stop))(bioClock(later))
 
     for {
       _ <- store.save(metadata, progress)

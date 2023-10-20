@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.tests.kg
 import akka.http.scaladsl.model.StatusCodes
 import cats.effect.IO
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.tests.BaseSpec
+import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.resources.Rick
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Organizations, Resources}
 import io.circe.Json
@@ -12,7 +12,7 @@ import org.scalatest.Assertion
 import java.time.Instant
 import concurrent.duration._
 
-class SearchConfigSpec extends BaseSpec {
+class SearchConfigSpec extends BaseIntegrationSpec {
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(config.patience * 2, 300.millis)
 

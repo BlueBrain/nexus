@@ -5,9 +5,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts => fileCont
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{contexts => storageContexts}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
-import ch.epfl.bluebrain.nexus.testkit.IOValues
 
-trait RemoteContextResolutionFixture extends IOValues {
+trait RemoteContextResolutionFixture {
   implicit private val cl: ClassLoader = getClass.getClassLoader
 
   implicit val rcr: RemoteContextResolution = RemoteContextResolution.fixedIO(

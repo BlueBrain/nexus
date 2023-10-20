@@ -17,7 +17,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.testkit.remotestorage.RemoteStorageDocker
-import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOValues}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
 import io.circe.Json
 import monix.execution.Scheduler
 import org.scalatest.BeforeAndAfterAll
@@ -33,8 +34,8 @@ class DiskStorageSaveFileSpec
     with AkkaSourceHelpers
     with AnyWordSpecLike
     with Matchers
-    with IOValues
-    with EitherValuable
+    with BIOValues
+    with EitherValues
     with BeforeAndAfterAll {
 
   private val volume = AbsolutePath(Files.createTempDirectory("disk-access")).rightValue

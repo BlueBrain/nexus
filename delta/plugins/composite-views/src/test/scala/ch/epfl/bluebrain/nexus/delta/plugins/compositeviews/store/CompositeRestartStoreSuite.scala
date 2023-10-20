@@ -7,15 +7,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
-import ch.epfl.bluebrain.nexus.testkit.IOFixedClock
-import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
+import ch.epfl.bluebrain.nexus.testkit.mu.bio.BioSuite
 import munit.AnyFixture
 
 import java.time.Instant
 
-class CompositeRestartStoreSuite extends BioSuite with IOFixedClock with Doobie.Fixture with Doobie.Assertions {
+class CompositeRestartStoreSuite extends BioSuite with Doobie.Fixture with Doobie.Assertions {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 

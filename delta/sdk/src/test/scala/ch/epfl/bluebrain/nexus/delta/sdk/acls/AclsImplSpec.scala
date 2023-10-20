@@ -15,24 +15,19 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Group, 
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
-import ch.epfl.bluebrain.nexus.testkit.ce.CatsIOValues
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
 import monix.bio.UIO
 import monix.execution.Scheduler
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.{CancelAfterFailure, Inspectors}
+import org.scalatest.CancelAfterFailure
 
 import java.time.Instant
 
 class AclsImplSpec
-    extends DoobieScalaTestFixture
-    with IOValues
-    with IOFixedClock
+    extends BioSpec
+    with DoobieScalaTestFixture
     with CatsIOValues
-    with Inspectors
-    with Matchers
     with CancelAfterFailure
-    with CirceLiteral
     with ConfigFixtures {
 
   val epoch: Instant                = Instant.EPOCH

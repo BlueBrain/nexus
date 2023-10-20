@@ -10,8 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverValue.{CrossPro
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{Priority, ResolverState, ResolverType}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.testkit.NexusSuite
-import ch.epfl.bluebrain.nexus.testkit.bio.OptionAssertions
+import ch.epfl.bluebrain.nexus.testkit.mu.{NexusSuite, OptionAssertions}
 import io.circe.Json
 
 class ResolversNextSuite extends NexusSuite with ResolverStateMachineFixture with OptionAssertions {

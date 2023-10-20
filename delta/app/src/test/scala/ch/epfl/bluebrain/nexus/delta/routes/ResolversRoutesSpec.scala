@@ -31,14 +31,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.{Defaults, IndexingAction}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
-import ch.epfl.bluebrain.nexus.testkit.ce.IOFixedClock
 import io.circe.Json
 import io.circe.syntax._
 
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 
-class ResolversRoutesSpec extends BaseRouteSpec with IOFixedClock {
+class ResolversRoutesSpec extends BaseRouteSpec {
 
   private val uuid                  = UUID.randomUUID()
   implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)

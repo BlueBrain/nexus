@@ -17,20 +17,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.provisioning.ProjectProvisioning.Invali
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
-import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
 import monix.bio.{IO, UIO}
-import org.scalatest.OptionValues
-import org.scalatest.matchers.should.Matchers
 
 import java.util.UUID
 
-class ProjectProvisioningSpec
-    extends DoobieScalaTestFixture
-    with Matchers
-    with IOValues
-    with IOFixedClock
-    with OptionValues
-    with ConfigFixtures {
+class ProjectProvisioningSpec extends BioSpec with DoobieScalaTestFixture with ConfigFixtures {
 
   implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
 
