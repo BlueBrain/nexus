@@ -93,11 +93,13 @@ class AclsRoutes(identities: Identities, acls: Acls, aclCheck: AclCheck)(implici
 
   private def emitMetadata(io: IO[AclResource]): Route = emitMetadata(StatusCodes.OK, io)
 
-  private def emitWithoutAncestors(io: IO[AclResource]): Route = {
-    io.map(Option(_)).recover {
-      case AclNotFound(_) => None
-    }.map(searchResults(_))
-    emit(io.attemptNarrow[AclRejection])
+  private def emitWithoutAncestors(io: IO[AclResource]): Route = emit {
+    io.map(Option(_))
+      .recover { case AclNotFound(_) =>
+        None
+      }
+      .map(searchResults(_))
+      .attemptNarrow[AclRejection]
   }
 
   private def emitWithAncestors(io: IO[AclCollection]) =
@@ -179,13 +181,13 @@ class AclsRoutes(identities: Identities, acls: Acls, aclCheck: AclCheck)(implici
                 case false =>
                   // Filter all ACLs with or without ancestors
                   emitWithAncestors(
-                      acls
-                        .list(addressFilter)
-                        .map { aclCol =>
-                          val accessibleAcls = aclCol.filterByPermission(caller.identities, aclsPermissions.read)
-                          val callerAcls = aclCol.filter(caller.identities)
-                          accessibleAcls ++ callerAcls
-                        }
+                    acls
+                      .list(addressFilter)
+                      .map { aclCol =>
+                        val accessibleAcls = aclCol.filterByPermission(caller.identities, aclsPermissions.read)
+                        val callerAcls     = aclCol.filter(caller.identities)
+                        accessibleAcls ++ callerAcls
+                      }
                   )
               }
             }

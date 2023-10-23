@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.{OrganizationIsDeprecated, OrganizationNotFound}
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{events, resources, projects => projectsPermissions}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{events, projects => projectsPermissions, resources}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects.FetchOrganization
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.WrappedOrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model._
@@ -97,7 +97,8 @@ class ProjectsRoutesSpec extends BaseRouteSpec with IOFromMap {
   }
 
   private lazy val projects     = ProjectsImpl(fetchOrg, _ => UIO.unit, Set.empty, defaultApiMappings, projectsConfig, xas)
-  private lazy val provisioning = ProjectProvisioning(aclCheck.append(_).toBIO[AclRejection], projects, provisioningConfig)
+  private lazy val provisioning =
+    ProjectProvisioning(aclCheck.append(_).toBIO[AclRejection], projects, provisioningConfig)
   private lazy val routes       = Route.seal(
     ProjectsRoutes(
       identities,

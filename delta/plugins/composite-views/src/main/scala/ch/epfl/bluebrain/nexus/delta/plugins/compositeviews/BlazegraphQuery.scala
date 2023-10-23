@@ -161,7 +161,8 @@ object BlazegraphQuery {
             project,
             p => p.permission,
             p => projectionNamespace(p, view.uuid, prefix)
-          ).toUIO
+          )
+          .toUIO
           .tapEval { namespaces => IO.raiseWhen(namespaces.isEmpty)(AuthorizationFailed) }
     }
 }

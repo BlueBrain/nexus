@@ -176,13 +176,16 @@ object BlazegraphViewsQuery {
                        case i: IndexingView  =>
                          aclCheck
                            .authorizeForOr(i.ref.project, i.permission)(AuthorizationFailed)
-                           .as(Set(i.index)).toBIO[AuthorizationFailed]
+                           .as(Set(i.index))
+                           .toBIO[AuthorizationFailed]
                        case a: AggregateView =>
-                         aclCheck.mapFilter[IndexingView, String](
-                           a.views,
-                           v => ProjectAcl(v.ref.project) -> v.permission,
-                           _.index
-                         ).toUIO
+                         aclCheck
+                           .mapFilter[IndexingView, String](
+                             a.views,
+                             v => ProjectAcl(v.ref.project) -> v.permission,
+                             _.index
+                           )
+                           .toUIO
                      }
           qr      <- logSlowQueries(
                        BlazegraphQueryContext(ViewRef.apply(project, iri), query, caller.subject),

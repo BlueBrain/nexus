@@ -42,7 +42,8 @@ object ValidateCompositeView {
       maxProjections: Int
   )(implicit baseUri: BaseUri): ValidateCompositeView = (uuid: UUID, value: CompositeViewValue) => {
     def validateAcls(cpSource: CrossProjectSource): IO[CrossProjectSourceForbidden, Unit] =
-      aclCheck.authorizeForOr(cpSource.project, events.read, cpSource.identities)(CrossProjectSourceForbidden(cpSource))
+      aclCheck
+        .authorizeForOr(cpSource.project, events.read, cpSource.identities)(CrossProjectSourceForbidden(cpSource))
         .toBIO[CrossProjectSourceForbidden]
 
     def validateProject(cpSource: CrossProjectSource) = {

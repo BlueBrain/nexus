@@ -166,7 +166,8 @@ object ArchiveDownload {
             (a: FullArchiveReference) => AclAddress.Project(a.project.getOrElse(project)) -> resources.read,
             identity[ArchiveReference],
             address => IO.raiseError(AuthorizationFailed(address, resources.read))
-          ).void
+          )
+          .void
 
       private def fileEntry(
           ref: FileReference,
@@ -190,7 +191,9 @@ object ArchiveDownload {
             val archiveMetadata             = Zip.metadata(path)
             val contentTask: IO[AkkaSource] = content
               .tapError(response =>
-                logger.error(s"Error streaming file '${fileMetadata.filename}' for archive: ${response.value.value}").toUIO
+                logger
+                  .error(s"Error streaming file '${fileMetadata.filename}' for archive: ${response.value.value}")
+                  .toUIO
               )
               .mapError(response => ArchiveDownloadError(fileMetadata.filename, response))
             Option((archiveMetadata, contentTask))

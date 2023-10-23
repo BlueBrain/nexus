@@ -68,11 +68,13 @@ object DefaultViewsQuery {
     private def filterViews(scope: Scope)(implicit caller: Caller) =
       fetchViews(scope)
         .flatMap { allViews =>
-          aclCheck.mapFilter[IndexingView, IndexingView](
-            allViews,
-            v => ProjectAcl(v.ref.project) -> permissions.read,
-            identity
-          )(caller).toUIO
+          aclCheck
+            .mapFilter[IndexingView, IndexingView](
+              allViews,
+              v => ProjectAcl(v.ref.project) -> permissions.read,
+              identity
+            )(caller)
+            .toUIO
         }
         .flatMap { views =>
           IO.raiseWhen(views.isEmpty)(AuthorizationFailed).as(views)

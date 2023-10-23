@@ -12,8 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfExceptionHandler
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group}
 
-class IdentitiesRoutesSpec
-    extends BaseRouteSpec {
+class IdentitiesRoutesSpec extends BaseRouteSpec {
 
   private val caller = Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
 

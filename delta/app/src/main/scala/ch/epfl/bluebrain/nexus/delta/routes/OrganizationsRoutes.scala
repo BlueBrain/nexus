@@ -63,18 +63,18 @@ final class OrganizationsRoutes(
   import schemeDirectives._
 
   private def orgsSearchParams(implicit caller: Caller): Directive1[OrganizationSearchParams] =
-   onSuccess(aclCheck.fetchAll.unsafeToFuture()).flatMap { allAcls =>
-    (searchParams & parameter("label".?)).tmap { case (deprecated, rev, createdBy, updatedBy, label) =>
-      OrganizationSearchParams(
-        deprecated,
-        rev,
-        createdBy,
-        updatedBy,
-        label,
-        org => aclCheck.authorizeFor(org.label, orgs.read, allAcls).toUIO
-      )
+    onSuccess(aclCheck.fetchAll.unsafeToFuture()).flatMap { allAcls =>
+      (searchParams & parameter("label".?)).tmap { case (deprecated, rev, createdBy, updatedBy, label) =>
+        OrganizationSearchParams(
+          deprecated,
+          rev,
+          createdBy,
+          updatedBy,
+          label,
+          org => aclCheck.authorizeFor(org.label, orgs.read, allAcls).toUIO
+        )
+      }
     }
-  }
 
   private def emitMetadata(value: IO[OrganizationResource]) = {
     emit(

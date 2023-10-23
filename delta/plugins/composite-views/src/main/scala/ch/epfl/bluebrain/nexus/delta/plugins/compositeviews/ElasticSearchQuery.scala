@@ -129,7 +129,8 @@ object ElasticSearchQuery {
             project,
             p => p.permission,
             p => projectionIndex(p, view.uuid, prefix).value
-          ).toUIO
+          )
+          .toUIO
           .tapEval { indices => IO.raiseWhen(indices.isEmpty)(AuthorizationFailed) }
     }
 }
