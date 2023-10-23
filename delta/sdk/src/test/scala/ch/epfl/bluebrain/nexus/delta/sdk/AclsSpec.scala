@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.Acls.{evaluate, next}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress.Root
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclCommand.{AppendAcl, DeleteAcl, ReplaceAcl, SubtractAcl}
@@ -10,22 +11,19 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.{AclFixtures, Acls}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
-import monix.bio.{IO, UIO}
-import monix.execution.Scheduler
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 
 import java.time.Instant
 
-class AclsSpec extends BioSpec with AclFixtures {
+class AclsSpec extends CatsEffectSpec with AclFixtures {
 
   "The ACL state machine" when {
-    implicit val sc: Scheduler                                             = Scheduler.global
-    val currentRealms                                                      = Set(realm, realm2)
-    val fetchPermissionsSet                                                = UIO.pure(rwx)
-    val findUnknownRealms                                                  = Acls.findUnknownRealms(_, currentRealms)
-    val current                                                            = AclState(userR_groupX(Root), 1, epoch, Anonymous, epoch, Anonymous)
-    val time2                                                              = Instant.ofEpochMilli(10L)
-    val eval: (Option[AclState], AclCommand) => IO[AclRejection, AclEvent] =
+    val currentRealms                                        = Set(realm, realm2)
+    val fetchPermissionsSet                                  = IO.pure(rwx)
+    val findUnknownRealms                                    = Acls.findUnknownRealms(_, currentRealms)
+    val current                                              = AclState(userR_groupX(Root), 1, epoch, Anonymous, epoch, Anonymous)
+    val time2                                                = Instant.ofEpochMilli(10L)
+    val eval: (Option[AclState], AclCommand) => IO[AclEvent] =
       evaluate(fetchPermissionsSet, findUnknownRealms)(_, _)
 
     "evaluating an incoming command" should {

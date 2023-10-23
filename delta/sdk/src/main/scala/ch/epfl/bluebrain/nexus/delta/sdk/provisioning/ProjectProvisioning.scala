@@ -4,6 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.error.FormatError
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.Acls
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.{Acl, AclAddress, AclRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.SDKError
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection
@@ -119,6 +120,6 @@ object ProjectProvisioning {
       serviceAccount: ServiceAccount
   ): ProjectProvisioning = {
     implicit val serviceAccountSubject: Subject = serviceAccount.subject
-    apply(acls.append(_, 0).void, projects, provisioningConfig)
+    apply(acls.append(_, 0).void.toBIO[AclRejection], projects, provisioningConfig)
   }
 }

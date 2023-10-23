@@ -6,7 +6,7 @@ import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
-import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.{AclAddress, AclRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen.defaultApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
@@ -26,6 +26,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.bio.IOFromMap
 import io.circe.Json
 import monix.bio.{IO, UIO}
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 
 import java.time.Instant
 import java.util.UUID
@@ -96,7 +97,8 @@ class ProjectsRoutesSpec extends BaseRouteSpec with IOFromMap {
   }
 
   private lazy val projects     = ProjectsImpl(fetchOrg, _ => UIO.unit, Set.empty, defaultApiMappings, projectsConfig, xas)
-  private lazy val provisioning = ProjectProvisioning(aclCheck.append, projects, provisioningConfig)
+  private lazy val provisioning =
+    ProjectProvisioning(aclCheck.append(_).toBIO[AclRejection], projects, provisioningConfig)
   private lazy val routes       = Route.seal(
     ProjectsRoutes(
       identities,

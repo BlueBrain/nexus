@@ -3,8 +3,9 @@ package ch.epfl.bluebrain.nexus.delta.sdk.provisioning
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
-import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.{Acl, AclAddress}
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.{Acl, AclAddress, AclRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.OrganizationNotFound
@@ -18,11 +19,12 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
 import monix.bio.{IO, UIO}
 
 import java.util.UUID
 
-class ProjectProvisioningSpec extends BioSpec with DoobieScalaTestFixture with ConfigFixtures {
+class ProjectProvisioningSpec extends BioSpec with DoobieScalaTestFixture with ConfigFixtures with CatsIOValues {
 
   implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
 
@@ -63,7 +65,8 @@ class ProjectProvisioningSpec extends BioSpec with DoobieScalaTestFixture with C
     xas
   )
 
-  private lazy val provisioning = ProjectProvisioning(aclCheck.append, projects, provisioningConfig)
+  private lazy val provisioning =
+    ProjectProvisioning(aclCheck.append(_).toBIO[AclRejection], projects, provisioningConfig)
 
   "Provisioning projects" should {
 

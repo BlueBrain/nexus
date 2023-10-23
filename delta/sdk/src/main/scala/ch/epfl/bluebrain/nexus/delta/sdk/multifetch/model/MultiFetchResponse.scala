@@ -1,7 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.multifetch.model
 
 import cats.data.NonEmptyList
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
+import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
@@ -16,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.multifetch.model.MultiFetchResponse.Res
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import io.circe.syntax.EncoderOps
 import io.circe.{Encoder, Json, JsonObject}
-import monix.bio.{IO, UIO}
+import monix.bio.UIO
 
 /**
   * A response for a multi-fetch operation
@@ -30,7 +31,7 @@ final case class MultiFetchResponse(format: ResourceRepresentation, resources: N
   /**
     * Encode the response as a Json payload
     */
-  def asJson(implicit base: BaseUri, rcr: RemoteContextResolution): UIO[Json] = {
+  def asJson(implicit base: BaseUri, rcr: RemoteContextResolution): IO[Json] = {
     val encodeItem = itemEncoder(format)
     resources.traverse(encodeItem).map { r =>
       Json.obj(
@@ -38,7 +39,7 @@ final case class MultiFetchResponse(format: ResourceRepresentation, resources: N
         "resources" -> r.asJson
       )
     }
-  }.hideErrors
+  }
 }
 
 object MultiFetchResponse {
@@ -88,7 +89,7 @@ object MultiFetchResponse {
           "project" -> item.project.asJson
         )
 
-        def valueToJson[A](content: JsonLdContent[A, _]): IO[RdfError, Json] = {
+        def valueToJson[A](content: JsonLdContent[A, _]): IO[Json] = {
           implicit val encoder: JsonLdEncoder[A] = content.encoder
           val value                              = content.resource
           val source                             = content.source
@@ -103,7 +104,7 @@ object MultiFetchResponse {
           }
         }
 
-        def onError(error: Error): IO[RdfError, Json] =
+        def onError(error: Error): IO[Json] =
           repr match {
             case SourceJson | AnnotatedSourceJson => UIO.pure(error.asJson)
             case CompactedJsonLd                  => error.toCompactedJsonLd.map { v => v.json }

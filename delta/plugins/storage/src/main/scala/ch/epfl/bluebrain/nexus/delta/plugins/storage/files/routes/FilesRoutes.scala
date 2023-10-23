@@ -8,7 +8,6 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import cats.effect.IO
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{File, FileId, FileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.permissions.{read => Read, write => Write}
@@ -227,7 +226,7 @@ final class FilesRoutes(
     }
 
   def fetchMetadata(id: FileId)(implicit caller: Caller): IO[FileResource] =
-    aclCheck.authorizeForOr(id.project, Read)(AuthorizationFailed(id.project, Read)).toCatsIO >> files.fetch(id)
+    aclCheck.authorizeForOr(id.project, Read)(AuthorizationFailed(id.project, Read)) >> files.fetch(id)
 }
 
 object FilesRoutes {
