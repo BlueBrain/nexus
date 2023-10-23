@@ -214,7 +214,7 @@ object SchemaRejection {
         case InvalidSchema(_, report)                                                         => obj.addContext(contexts.shacl).add("details", report.json)
         case InvalidSchemaResolution(_, schemaImports, resourceImports, nonOntologyResources) =>
           obj
-            .addContext(contexts.schemasError)
+            .addContext(contexts.resolvers)
             .add("schemaImports", importsAsJson(schemaImports))
             .add("resourceImports", importsAsJson(resourceImports))
             .add("nonOntologyResources", nonOntologyResources.asJson)

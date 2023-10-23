@@ -99,13 +99,11 @@ object SchemasModule extends ModuleDef {
 
   many[RemoteContextResolution].addEffect(
     for {
-      shaclCtx        <- ContextValue.fromFile("contexts/shacl.json")
-      schemasMetaCtx  <- ContextValue.fromFile("contexts/schemas-metadata.json")
-      schemasErrorCtx <- ContextValue.fromFile("contexts/schemas-error.json")
+      shaclCtx       <- ContextValue.fromFile("contexts/shacl.json")
+      schemasMetaCtx <- ContextValue.fromFile("contexts/schemas-metadata.json")
     } yield RemoteContextResolution.fixed(
       contexts.shacl           -> shaclCtx,
-      contexts.schemasMetadata -> schemasMetaCtx,
-      contexts.schemasError    -> schemasErrorCtx
+      contexts.schemasMetadata -> schemasMetaCtx
     )
   )
 

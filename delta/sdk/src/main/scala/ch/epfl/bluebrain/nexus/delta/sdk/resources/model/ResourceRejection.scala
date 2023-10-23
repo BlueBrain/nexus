@@ -226,7 +226,8 @@ object ResourceRejection {
         case InvalidJsonLdFormat(_, rdf)                 => obj.add("rdf", rdf.asJson)
         case InvalidResource(_, _, report, expanded)     =>
           obj.addContext(contexts.shacl).add("details", report.json).add("expanded", expanded.json)
-        case InvalidSchemaRejection(_, _, report)        => obj.add("report", report.asJson)
+        case InvalidSchemaRejection(_, _, report)        =>
+          obj.addContext(contexts.resolvers).add("report", report.asJson)
         case IncorrectRev(provided, expected)            => obj.add("provided", provided.asJson).add("expected", expected.asJson)
         case _                                           => obj
       }

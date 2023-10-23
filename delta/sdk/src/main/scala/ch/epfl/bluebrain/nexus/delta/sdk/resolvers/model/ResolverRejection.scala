@@ -11,6 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.{BlankId, UnexpectedId}
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
@@ -239,8 +240,9 @@ object ResolverRejection {
         case ProjectContextRejection(rejection)         => rejection.asJsonObject
         case InvalidJsonLdFormat(_, rdf)                => obj.add("details", rdf.asJson)
         case IncorrectRev(provided, expected)           => obj.add("provided", provided.asJson).add("expected", expected.asJson)
-        case InvalidResolution(_, _, report)            => obj.add("report", report.asJson)
-        case InvalidResolverResolution(_, _, _, report) => obj.add("report", report.asJson)
+        case InvalidResolution(_, _, report)            => obj.addContext(contexts.resolvers).add("report", report.asJson)
+        case InvalidResolverResolution(_, _, _, report) =>
+          obj.addContext(contexts.resolvers).add("report", report.asJson)
         case _: ResolverNotFound                        => obj.add(keywords.tpe, "ResourceNotFound".asJson)
         case _                                          => obj
       }

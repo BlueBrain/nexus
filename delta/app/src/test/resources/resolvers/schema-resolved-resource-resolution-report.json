@@ -1,10 +1,12 @@
 {
   "@context": "https://bluebrain.github.io/nexus/contexts/resolvers.json",
-  "history": {
-    "rejections": [
-    ],
-    "resolverId": "https://bluebrain.github.io/nexus/vocabulary/in-project-post",
-    "resourceProject" : "org/project",
-    "success": true
-  }
+  "history": [
+    {
+      "rejections": [
+      ],
+      "resolverId": "https://bluebrain.github.io/nexus/vocabulary/in-project-post",
+      "resourceProject": "org/project",
+      "success": true
+    }
+  ]
 }
