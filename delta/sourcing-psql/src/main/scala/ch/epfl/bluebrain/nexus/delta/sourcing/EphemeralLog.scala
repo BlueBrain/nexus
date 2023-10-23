@@ -1,10 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
 import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EphemeralLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.execution.EvaluationExecution
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.rejection.Rejection
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.EphemeralStateStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.EphemeralState
 import doobie.implicits._

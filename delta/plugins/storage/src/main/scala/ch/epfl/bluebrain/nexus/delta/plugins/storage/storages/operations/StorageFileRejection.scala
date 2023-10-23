@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations
 
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
-import ch.epfl.bluebrain.nexus.delta.sourcing.rejection.Rejection
+import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 
 /**
   * Enumeration of Storage rejections related to file operations.
