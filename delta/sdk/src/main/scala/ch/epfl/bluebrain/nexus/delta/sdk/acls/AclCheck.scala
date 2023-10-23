@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.acls
 
+import cats.effect.IO
 import cats.effect.concurrent.Ref
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddressFilter.AnyOrganizationAnyProject
@@ -8,7 +9,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
-import monix.bio.{IO, Task, UIO}
 
 import scala.collection.immutable.Iterable
 
@@ -17,39 +17,37 @@ import scala.collection.immutable.Iterable
   */
 trait AclCheck {
 
-  def fetchOne: AclAddress => IO[AclNotFound, Acl]
+  def fetchOne: AclAddress => IO[Acl]
 
-  def fetchAll: UIO[Map[AclAddress, Acl]]
+  def fetchAll: IO[Map[AclAddress, Acl]]
 
-  private def authorizeForOr[E](
+  private def authorizeForOrFail[E <: Throwable](
       path: AclAddress,
       permission: Permission,
       identities: Set[Identity],
-      f: AclAddress => IO[AclNotFound, Acl]
+      f: AclAddress => IO[Acl]
   )(
       onError: => E
-  ): IO[E, Unit] =
-    path.ancestors
-      .foldM(false) {
-        case (false, address) => f(address).redeem(_ => false, _.hasPermission(identities, permission))
-        case (true, _)        => UIO.pure(true)
-      }
+  ): IO[Unit] =
+    authorizeFor(path, permission, identities, f)
       .flatMap { result => IO.raiseWhen(!result)(onError) }
 
   /**
     * Checks whether the provided entities has the passed ''permission'' on the passed ''path'', raising the error
     * ''onError'' when it doesn't
     */
-  def authorizeForOr[E](path: AclAddress, permission: Permission, identities: Set[Identity])(
+  def authorizeForOr[E <: Throwable](path: AclAddress, permission: Permission, identities: Set[Identity])(
       onError: => E
-  ): IO[E, Unit] =
-    authorizeForOr(path, permission, identities, fetchOne)(onError)
+  ): IO[Unit] =
+    authorizeForOrFail(path, permission, identities, fetchOne)(onError)
 
   /**
     * Checks whether a given [[Caller]] has the passed ''permission'' on the passed ''path'', raising the error
     * ''onError'' when it doesn't
     */
-  def authorizeForOr[E](path: AclAddress, permission: Permission)(onError: => E)(implicit caller: Caller): IO[E, Unit] =
+  def authorizeForOr[E <: Throwable](path: AclAddress, permission: Permission)(onError: => E)(implicit
+      caller: Caller
+  ): IO[Unit] =
     authorizeForOr(path, permission, caller.identities)(onError)
 
   /**
@@ -59,9 +57,13 @@ trait AclCheck {
       path: AclAddress,
       permission: Permission,
       identities: Set[Identity],
-      f: AclAddress => IO[AclNotFound, Acl]
-  ): UIO[Boolean] =
-    authorizeForOr(path, permission, identities, f)(false).redeem(identity, _ => true)
+      f: AclAddress => IO[Acl]
+  ): IO[Boolean] =
+    path.ancestors
+      .foldM(false) {
+        case (false, address) => f(address).redeem(_ => false, _.hasPermission(identities, permission))
+        case (true, _)        => IO.pure(true)
+      }
 
   /**
     * Checkswhether a given [[Caller]] has the passed ''permission'' on the passed ''path''.
@@ -69,37 +71,34 @@ trait AclCheck {
   def authorizeFor(
       path: AclAddress,
       permission: Permission,
-      fAll: UIO[Map[AclAddress, Acl]]
-  )(implicit caller: Caller): UIO[Boolean] = {
-    def fetch = (address: AclAddress) =>
-      fAll.flatMap { m =>
-        IO.fromOption(m.get(address), AclNotFound(address))
-      }
+      acls: Map[AclAddress, Acl]
+  )(implicit caller: Caller): IO[Boolean] = {
+    def fetch = (address: AclAddress) => IO.fromOption(acls.get(address))(AclNotFound(address))
     authorizeFor(path, permission, caller.identities, fetch)
   }
 
   /**
     * Checks whether the provided entities have the passed ''permission'' on the passed ''path''.
     */
-  def authorizeFor(path: AclAddress, permission: Permission, identities: Set[Identity]): UIO[Boolean] =
-    authorizeForOr(path, permission, identities)(false).redeem(identity, _ => true)
+  def authorizeFor(path: AclAddress, permission: Permission, identities: Set[Identity]): IO[Boolean] =
+    authorizeFor(path, permission, identities, fetchOne)
 
   /**
     * Checks whether a given [[Caller]] has the passed ''permission'' on the passed ''path''.
     */
-  def authorizeFor(path: AclAddress, permission: Permission)(implicit caller: Caller): UIO[Boolean] =
+  def authorizeFor(path: AclAddress, permission: Permission)(implicit caller: Caller): IO[Boolean] =
     authorizeFor(path, permission, caller.identities)
 
   /**
     * Checks whether a given [[Caller]] has all the passed ''permissions'' on the passed ''path'', raising the error
     * ''onError'' when it doesn't
     */
-  def authorizeForEveryOr[E](path: AclAddress, permissions: Set[Permission])(
+  def authorizeForEveryOr[E <: Throwable](path: AclAddress, permissions: Set[Permission])(
       onError: => E
-  )(implicit caller: Caller): IO[E, Unit] =
+  )(implicit caller: Caller): IO[Unit]   =
     path.ancestors
       .foldM((false, Set.empty[Permission])) {
-        case ((true, set), _)        => UIO.pure((true, set))
+        case ((true, set), _)        => IO.pure((true, set))
         case ((false, set), address) =>
           fetchOne(address)
             .redeem(
@@ -135,12 +134,11 @@ trait AclCheck {
       values: Iterable[A],
       extractAddressPermission: A => (AclAddress, Permission),
       onAuthorized: A => B,
-      onFailure: AclAddress => IO[E, Unit]
-  )(implicit caller: Caller): IO[E, Set[B]] = {
-    val fetchAllCached = fetchAll.memoizeOnSuccess
+      onFailure: AclAddress => IO[Unit]
+  )(implicit caller: Caller): IO[Set[B]] = fetchAll.flatMap { allAcls =>
     values.toList.foldLeftM(Set.empty[B]) { case (acc, value) =>
       val (address, permission) = extractAddressPermission(value)
-      authorizeFor(address, permission, fetchAllCached).flatMap { success =>
+      authorizeFor(address, permission, allAcls).flatMap { success =>
         if (success)
           IO.pure(acc + onAuthorized(value))
         else
@@ -163,7 +161,7 @@ trait AclCheck {
       values: Iterable[A],
       extractAddressPermission: A => (AclAddress, Permission),
       onAuthorized: A => B
-  )(implicit caller: Caller): UIO[Set[B]] =
+  )(implicit caller: Caller): IO[Set[B]] =
     mapFilterOrRaise(values, extractAddressPermission, onAuthorized, _ => IO.unit)
 
   /**
@@ -187,13 +185,13 @@ trait AclCheck {
       address: AclAddress,
       extractPermission: A => Permission,
       onAuthorized: A => B,
-      onFailure: AclAddress => IO[E, Unit]
-  )(implicit caller: Caller): IO[E, Set[B]] =
-    Ref.of[Task, Map[AclAddress, Acl]](Map.empty).hideErrors.flatMap { cache =>
-      def fetch: AclAddress => IO[AclNotFound, Acl] = (address: AclAddress) =>
-        cache.get.hideErrors.map(_.get(address)).flatMap {
+      onFailure: AclAddress => IO[Unit]
+  )(implicit caller: Caller): IO[Set[B]] =
+    Ref.of[IO, Map[AclAddress, Acl]](Map.empty).flatMap { cache =>
+      def fetch: AclAddress => IO[Acl] = (address: AclAddress) =>
+        cache.get.map(_.get(address)).flatMap {
           case Some(acl) => IO.pure(acl)
-          case None      => fetchOne(address).tapEval { acl => cache.update { _.updated(address, acl) }.hideErrors }
+          case None      => fetchOne(address).flatTap { acl => cache.update { _.updated(address, acl) } }
         }
 
       values.toList.foldLeftM(Set.empty[B]) { case (acc, value) =>
@@ -224,16 +222,16 @@ trait AclCheck {
       address: AclAddress,
       extractPermission: A => Permission,
       onAuthorized: A => B
-  )(implicit caller: Caller): UIO[Set[B]] =
+  )(implicit caller: Caller): IO[Set[B]] =
     mapFilterAtAddressOrRaise(values, address, extractPermission, onAuthorized, _ => IO.unit)
 }
 
 object AclCheck {
 
   def apply(acls: Acls): AclCheck = new AclCheck {
-    override def fetchOne: AclAddress => IO[AclNotFound, Acl] = acls.fetch(_).map(_.value)
+    override def fetchOne: AclAddress => IO[Acl] = acls.fetch(_).map(_.value)
 
-    override def fetchAll: UIO[Map[AclAddress, Acl]] =
+    override def fetchAll: IO[Map[AclAddress, Acl]] =
       acls
         .list(AnyOrganizationAnyProject(true))
         .map(_.value.map { case (address, resource) => address -> resource.value })

@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewR
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{AuthorizationFailed, WrappedElasticSearchClientError}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.HttpResult
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
@@ -96,7 +97,7 @@ object ElasticSearchQuery {
         for {
           view       <- fetchView(id, project)
           projection <- fetchProjection(view, projectionId)
-          _          <- aclCheck.authorizeForOr(project, projection.permission)(AuthorizationFailed)
+          _          <- aclCheck.authorizeForOr(project, projection.permission)(AuthorizationFailed).toBIO[AuthorizationFailed]
           index       = projectionIndex(projection, view.uuid, prefix).value
           search     <- elasticSearchQuery(query, Set(index), qp).mapError(WrappedElasticSearchClientError)
         } yield search
@@ -128,7 +129,7 @@ object ElasticSearchQuery {
             project,
             p => p.permission,
             p => projectionIndex(p, view.uuid, prefix).value
-          )
+          ).toUIO
           .tapEval { indices => IO.raiseWhen(indices.isEmpty)(AuthorizationFailed) }
     }
 }

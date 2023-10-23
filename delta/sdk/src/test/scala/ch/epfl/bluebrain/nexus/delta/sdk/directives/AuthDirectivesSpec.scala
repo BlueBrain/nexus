@@ -5,7 +5,6 @@ import akka.http.scaladsl.model.headers.{BasicHttpCredentials, OAuth2BearerToken
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{ExceptionHandler, Route}
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.jwt.AuthToken
 import ch.epfl.bluebrain.nexus.delta.kernel.jwt.TokenRejection.InvalidAccessToken
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
@@ -59,7 +58,7 @@ class AuthDirectivesSpec extends RouteHelpers with TestHelpers with Matchers wit
     }
   }
 
-  val aclCheck = toCatsIO(AclSimpleCheck((user, AclAddress.Root, Set(permission)))).accepted
+  val aclCheck = AclSimpleCheck((user, AclAddress.Root, Set(permission))).accepted
 
   val directives = new AuthDirectives(identities, aclCheck) {}
 

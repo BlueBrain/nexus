@@ -429,7 +429,7 @@ final class Files(
     }
 
   private def validateAuth(project: ProjectRef, permission: Permission)(implicit c: Caller): IO[Unit] =
-    aclCheck.authorizeForOr(project, permission)(AuthorizationFailed(project, permission)).toCatsIO
+    aclCheck.authorizeForOr(project, permission)(AuthorizationFailed(project, permission))
 
   private def extractFileAttributes(iri: Iri, entity: HttpEntity, storage: Storage): IO[FileAttributes] =
     for {

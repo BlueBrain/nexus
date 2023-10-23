@@ -12,6 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{AggregationResult, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.View.IndexingView
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Scope, Transactors}
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import io.circe.JsonObject
 import monix.bio.{IO, UIO}
 
@@ -71,7 +72,7 @@ object DefaultViewsQuery {
             allViews,
             v => ProjectAcl(v.ref.project) -> permissions.read,
             identity
-          )(caller)
+          )(caller).toUIO
         }
         .flatMap { views =>
           IO.raiseWhen(views.isEmpty)(AuthorizationFailed).as(views)

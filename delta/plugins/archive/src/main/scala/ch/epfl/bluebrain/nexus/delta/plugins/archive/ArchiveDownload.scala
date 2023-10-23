@@ -34,7 +34,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.{AkkaSource, JsonLdValue, ResourceShift
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import fs2.Stream
 import io.circe.{Json, Printer}
-import monix.bio.{Task, UIO}
+import monix.bio.UIO
 
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
@@ -159,16 +159,14 @@ object ArchiveDownload {
       private def checkResourcePermissions(
           refs: List[FullArchiveReference],
           project: ProjectRef
-      )(implicit caller: Caller): IO[Unit] = toCatsIO {
+      )(implicit caller: Caller): IO[Unit] =
         aclCheck
           .mapFilterOrRaise(
             refs,
             (a: FullArchiveReference) => AclAddress.Project(a.project.getOrElse(project)) -> resources.read,
             identity[ArchiveReference],
-            address => Task.raiseError(AuthorizationFailed(address, resources.read))
-          )
-          .void
-      }
+            address => IO.raiseError(AuthorizationFailed(address, resources.read))
+          ).void
 
       private def fileEntry(
           ref: FileReference,
@@ -192,9 +190,7 @@ object ArchiveDownload {
             val archiveMetadata             = Zip.metadata(path)
             val contentTask: IO[AkkaSource] = content
               .tapError(response =>
-                logger
-                  .error(s"Error streaming file '${fileMetadata.filename}' for archive: ${response.value.value}")
-                  .toUIO
+                logger.error(s"Error streaming file '${fileMetadata.filename}' for archive: ${response.value.value}").toUIO
               )
               .mapError(response => ArchiveDownloadError(fileMetadata.filename, response))
             Option((archiveMetadata, contentTask))

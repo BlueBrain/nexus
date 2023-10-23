@@ -5,6 +5,7 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive1, Route}
 import cats.effect.IO
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -17,10 +18,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaScheme
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.OrganizationSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.{Organization, OrganizationRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.{OrganizationDeleter, Organizations}
@@ -62,17 +63,18 @@ final class OrganizationsRoutes(
   import schemeDirectives._
 
   private def orgsSearchParams(implicit caller: Caller): Directive1[OrganizationSearchParams] =
+   onSuccess(aclCheck.fetchAll.unsafeToFuture()).flatMap { allAcls =>
     (searchParams & parameter("label".?)).tmap { case (deprecated, rev, createdBy, updatedBy, label) =>
-      val fetchAllCached = aclCheck.fetchAll.memoizeOnSuccess
       OrganizationSearchParams(
         deprecated,
         rev,
         createdBy,
         updatedBy,
         label,
-        org => aclCheck.authorizeFor(org.label, orgs.read, fetchAllCached)
+        org => aclCheck.authorizeFor(org.label, orgs.read, allAcls).toUIO
       )
     }
+  }
 
   private def emitMetadata(value: IO[OrganizationResource]) = {
     emit(

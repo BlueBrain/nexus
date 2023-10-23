@@ -17,6 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit.bio.IOFixedClock
 import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
 import ch.epfl.bluebrain.nexus.testkit.scalatest.TestMatchers
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
 import ch.epfl.bluebrain.nexus.testkit.{CirceEq, CirceLiteral}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
@@ -25,6 +26,7 @@ trait CompositeViewsRoutesFixtures
     extends RouteHelpers
     with DoobieScalaTestFixture
     with Matchers
+    with CatsIOValues
     with CirceLiteral
     with CirceEq
     with IOFixedClock

@@ -5,7 +5,7 @@ import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.Fixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.SparqlLink.{SparqlExternalLink, SparqlResourceLink}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{schema, SparqlLink}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{SparqlLink, schema}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
@@ -28,6 +28,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Authenticated, Gro
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit.bio.IOFixedClock
 import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
 import ch.epfl.bluebrain.nexus.testkit.scalatest.{EitherValues, TestMatchers}
 import ch.epfl.bluebrain.nexus.testkit.{CirceEq, CirceLiteral, TestHelpers}
 import monix.execution.Scheduler
@@ -41,6 +42,7 @@ trait BlazegraphViewRoutesFixtures
     extends RouteHelpers
     with DoobieScalaTestFixture
     with Matchers
+    with CatsIOValues
     with CirceLiteral
     with CirceEq
     with IOFixedClock
