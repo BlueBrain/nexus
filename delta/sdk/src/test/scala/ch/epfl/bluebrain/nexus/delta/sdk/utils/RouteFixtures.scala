@@ -41,6 +41,7 @@ trait RouteFixtures {
       contexts.search                -> ContextValue.fromFile("contexts/search.json"),
       contexts.shacl                 -> ContextValue.fromFile("contexts/shacl.json"),
       contexts.schemasMetadata       -> ContextValue.fromFile("contexts/schemas-metadata.json"),
+      contexts.schemasError          -> ContextValue.fromFile("contexts/schemas-error.json"),
       contexts.offset                -> ContextValue.fromFile("contexts/offset.json"),
       contexts.statistics            -> ContextValue.fromFile("contexts/statistics.json"),
       contexts.supervision           -> ContextValue.fromFile("contexts/supervision.json"),

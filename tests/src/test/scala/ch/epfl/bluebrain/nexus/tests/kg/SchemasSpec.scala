@@ -45,11 +45,17 @@ class SchemasSpec extends BaseIntegrationSpec {
       } yield succeed
     }
 
-    "fail creating a schema a deprecated import" in {
+    "fail creating a schema with a deprecated import" in {
       val baseSchemaId           = "https://localhost/base-schema"
       val baseSchemaPayload      = withPowerLevelShape(id = baseSchemaId, maxPowerLevel = 10000)
       val importingSchemaId      = "https://localhost/importing-schema"
       val importingSchemaPayload = withImportOfPowerLevelShape(id = importingSchemaId, importedSchemaId = baseSchemaId)
+
+      def checkDeprecationError(json: Json) = {
+        val rejectionsRoot = root.schemaImports.report.history.index(0).rejections
+        rejectionsRoot.arr.getOption(json).map(_.length) shouldEqual Some(1)
+        rejectionsRoot.index(0).cause.`@type`.string.getOption(json) shouldEqual Some("ResourceIsDeprecated")
+      }
 
       for {
         _ <- deltaClient.post[Json](s"/schemas/$project", baseSchemaPayload, Rick) { expectCreated }
@@ -57,6 +63,7 @@ class SchemasSpec extends BaseIntegrationSpec {
         _ <- deltaClient.post[Json](s"/schemas/$project", importingSchemaPayload, Rick) { (json, response) =>
                response.status shouldEqual StatusCodes.BadRequest
                `@type`.getOption(json) shouldEqual Some("InvalidSchemaResolution")
+               checkDeprecationError(json)
              }
       } yield succeed
     }
