@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
+import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
@@ -10,7 +11,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.GlobalEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ResourceRef}
-import ch.epfl.bluebrain.nexus.delta.sourcing.rejection.Rejection
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.GlobalState
 import io.circe.Codec
 import io.circe.generic.extras.Configuration
