@@ -14,7 +14,7 @@ object Optics extends Optics {
   def filterKey(key: String): Json => Json = filterKeys(Set(key))
 
   def filterKeys(keys: Set[String]): Json => Json =
-    keys.map { root.at(_).set(None) }.reduce(_ andThen _)
+    keys.map { root.at(_).replace(None) }.reduce(_ andThen _)
 
   def filterNestedKeys(keys: String*): Json => Json = {
     def inner(jsonObject: JsonObject): JsonObject = {
@@ -156,7 +156,7 @@ object Optics extends Optics {
     val filterFields = filterKeys(Set("_instant", "_updatedAt"))
       .andThen(
         List("_location", "_uuid", "_path")
-          .map { root._attributes.at(_).set(None) }
+          .map { root._attributes.at(_).replace(None) }
           .reduce(_ andThen _)
       )
   }
