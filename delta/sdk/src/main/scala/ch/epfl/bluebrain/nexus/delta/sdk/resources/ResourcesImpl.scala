@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resources
 
 import cats.effect.{Clock, IO}
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
@@ -17,7 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources.{entityType, expandIri, expandResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.ResourcesImpl.ResourcesLog
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceCommand._
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{ProjectContextRejection, ResourceNotFound, RevisionNotFound, TagNotFound}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{IdenticalSchema, ProjectContextRejection, ResourceNotFound, RevisionNotFound, TagNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{ResourceCommand, ResourceEvent, ResourceRejection, ResourceState}
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
@@ -78,6 +79,22 @@ final class ResourcesImpl private (
       res            <- eval(UpdateResource(iri, projectRef, schemeRefOpt, source, jsonld, rev, caller))
     } yield res
   }.span("updateResource")
+
+  override def updateResourceSchema(
+      id: IdSegment,
+      projectRef: ProjectRef,
+      schema: IdSegment
+  )(implicit caller: Caller): IO[DataResource] = {
+    for {
+      projectContext <- fetchContext.onModify(projectRef).toCatsIO
+      iri            <- expandIri(id, projectContext).toCatsIO
+      schemaRef      <- expandResourceRef(schema, projectContext)
+      resource       <- log.stateOr(projectRef, iri, ResourceNotFound(iri, projectRef)).toCatsIO
+      _              <- IO.raiseWhen(schemaRef.iri == resource.schema.iri)(IdenticalSchema())
+      jsonld         <- sourceParser(projectRef, projectContext, iri, resource.source).toCatsIO
+      res            <- eval(UpdateResource(iri, projectRef, schemaRef.some, resource.source, jsonld, resource.rev, caller))
+    } yield res
+  }.span("updateResourceSchema")
 
   override def refresh(
       id: IdSegment,

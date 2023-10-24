@@ -91,6 +91,22 @@ trait Resources {
   )(implicit caller: Caller): IO[DataResource]
 
   /**
+    * Update the schema of an existing resource
+    *
+    * @param id
+    *   identifier that will be expanded to the iri of the resource
+    * @param projectRef
+    *   project reference where the resource belongs
+    * @param schema
+    *   identifier of the new schema that will be used to validate the resource. This identifier will be expanded
+    */
+  def updateResourceSchema(
+      id: IdSegment,
+      projectRef: ProjectRef,
+      schema: IdSegment
+  )(implicit caller: Caller): IO[DataResource]
+
+  /**
     * Refreshes an existing resource. This is equivalent to posting an update with the latest source. Used for when the
     * project or schema contexts have changes
     *
