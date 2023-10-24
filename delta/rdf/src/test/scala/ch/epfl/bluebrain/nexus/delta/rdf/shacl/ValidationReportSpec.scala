@@ -6,14 +6,13 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
-import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.Json
 import io.circe.syntax._
 import org.apache.jena.query.DatasetFactory
 import org.apache.jena.rdf.model.Resource
 
-class ValidationReportSpec extends BioSpec with CatsIOValues {
+class ValidationReportSpec extends CatsEffectSpec {
 
   implicit val api: JsonLdApi = JsonLdJavaApi.strict
 
