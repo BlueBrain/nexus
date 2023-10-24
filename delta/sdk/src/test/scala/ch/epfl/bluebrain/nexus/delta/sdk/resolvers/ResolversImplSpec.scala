@@ -27,19 +27,13 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Authenticated, Gro
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
-import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import monix.bio.UIO
 import org.scalatest.CancelAfterFailure
 
 import java.util.UUID
 
-class ResolversImplSpec
-    extends BioSpec
-    with DoobieScalaTestFixture
-    with CatsIOValues
-    with CancelAfterFailure
-    with ConfigFixtures {
+class ResolversImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with CancelAfterFailure with ConfigFixtures {
 
   private val realm                = Label.unsafe("myrealm")
   implicit private val bob: Caller =
