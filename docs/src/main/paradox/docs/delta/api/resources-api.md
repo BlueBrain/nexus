@@ -234,6 +234,22 @@ Request
 Response
 :   @@snip [deprecated.json](assets/resources/deprecated.json)
 
+## Change schema
+
+This operation allows to only change the schema of a resource without providing any payload.
+
+```
+PUT /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}/updateSchema
+```
+
+**Example**
+
+Request
+:   @@snip [schema-change.sh](assets/resources/schema-change.sh)
+
+Response
+:   @@snip [schema-changed.json](assets/resources/schema-changed.json)
+
 ## Fetch
 
 ```
