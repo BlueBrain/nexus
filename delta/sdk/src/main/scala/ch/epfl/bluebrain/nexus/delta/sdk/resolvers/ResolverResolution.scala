@@ -165,6 +165,10 @@ final class ResolverResolution[R](
   )(implicit caller: Caller): IO[ResolverResolutionResult[R]] = {
     import resolver.value._
 
+    def fetchInProject(p: ProjectRef) = fetch(ref, p).flatMap(
+      IO.fromOption(_)(ResolutionFetchRejection(ref, p))
+    )
+
     def validateIdentities(p: ProjectRef): IO[Unit] = {
       val identities = identityResolution match {
         case UseCurrentCaller               => caller.identities
@@ -180,6 +184,11 @@ final class ResolverResolution[R](
     def validateResourceTypes(types: Set[Iri], p: ProjectRef): IO[Unit] =
       IO.raiseUnless(resourceTypes.isEmpty || resourceTypes.exists(types.contains))(ResourceTypesDenied(p, types))
 
+    def validateDeprecationCheck(p: ProjectRef, resource: R) =
+      runDeprecationCheck(ref, p, resource).flatMap { isDeprecated =>
+        IO.raiseWhen(isDeprecated)(ResourceIsDeprecated(ref.original, p))
+      }
+
     val initial: ResolverResolutionResult[R] = ResolverFailedReport(resolver.id, VectorMap.empty) -> None
     projects.foldLeftM(initial) { (previous, projectRef) =>
       previous match {
@@ -188,12 +197,10 @@ final class ResolverResolution[R](
         // No resolution was successful yet, we carry on
         case (f: ResolverFailedReport, _)  =>
           val resolve = for {
-            _            <- validateIdentities(projectRef)
-            resourceOpt  <- fetch(ref, projectRef)
-            resource     <- IO.fromOption(resourceOpt)(ResolutionFetchRejection(ref, projectRef))
-            _            <- validateResourceTypes(extractTypes(resource), projectRef)
-            isDeprecated <- runDeprecationCheck(ref, projectRef, resource)
-            _            <- IO.raiseWhen(isDeprecated)(ResourceIsDeprecated(ref.original, projectRef))
+            _        <- validateIdentities(projectRef)
+            resource <- fetchInProject(projectRef)
+            _        <- validateResourceTypes(extractTypes(resource), projectRef)
+            _        <- validateDeprecationCheck(projectRef, resource)
           } yield ResolverSuccessReport(resolver.id, projectRef, f.rejections) -> Option(resource)
           resolve.attemptNarrow[ResolverResolutionRejection].map {
             case Left(r)  => f.copy(rejections = f.rejections + (projectRef -> r)) -> None
