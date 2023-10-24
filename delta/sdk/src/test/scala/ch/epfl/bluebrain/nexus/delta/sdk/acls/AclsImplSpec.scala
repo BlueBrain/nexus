@@ -16,18 +16,12 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Group, 
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
-import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import org.scalatest.CancelAfterFailure
 
 import java.time.Instant
 
-class AclsImplSpec
-    extends BioSpec
-    with DoobieScalaTestFixture
-    with CatsIOValues
-    with CancelAfterFailure
-    with ConfigFixtures {
+class AclsImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with CancelAfterFailure with ConfigFixtures {
 
   val epoch: Instant            = Instant.EPOCH
   val realm: Label              = Label.unsafe("realm")
