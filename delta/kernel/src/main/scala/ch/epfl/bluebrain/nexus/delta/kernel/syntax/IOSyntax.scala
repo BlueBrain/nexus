@@ -3,8 +3,11 @@ import cats.Functor
 import cats.effect.IO
 import cats.syntax.functor._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import com.typesafe.scalalogging.Logger
 import monix.bio.{IO => BIO, Task, UIO}
+
+import scala.reflect.ClassTag
 
 trait IOSyntax {
 
@@ -17,6 +20,9 @@ trait IOSyntax {
 
   implicit final def taskSyntaxLogErrors[A](task: Task[A]): TaskOps[A] = new TaskOps(task)
 
+  implicit final def ioRetryStrategyOps[A](io: IO[A]): IORetryStrategyOps[A] =
+    new IORetryStrategyOps[A](io)
+
   implicit final def ioFunctorOps[A, F[_]: Functor](io: IO[F[A]]): IOFunctorOps[A, F] = new IOFunctorOps(io)
 }
 
@@ -26,6 +32,16 @@ final class BIORetryStrategyOps[E, A](private val io: BIO[E, A]) extends AnyVal 
     * Apply the retry strategy on the provided IO
     */
   def retry(retryStrategy: RetryStrategy[E]): BIO[E, A] = RetryStrategy.use(io, retryStrategy)
+
+}
+
+final class IORetryStrategyOps[A](private val io: IO[A]) extends AnyVal {
+
+  /**
+    * Apply the retry strategy on the provided IO
+    */
+  def retry[E <: Throwable](retryStrategy: RetryStrategy[E])(implicit E: ClassTag[E]): IO[A] =
+    RetryStrategy.use(io.toBIO[E], retryStrategy)
 
 }
 

@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.projections
 
+import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef.ActiveViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.{commonNamespace, projectionIndex, projectionNamespace}
@@ -9,13 +10,13 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeInde
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.CompositeBranch.Run
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.{CompositeBranch, CompositeGraphStream, CompositeProgress}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.views.IndexingViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.ProgressStatistics
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.RemainingElems
-import monix.bio.UIO
 
 /**
   * Allow to list offsets and compute statistics for composite views
@@ -25,15 +26,15 @@ import monix.bio.UIO
   *   to get the remaining information to build statistics
   */
 final class CompositeIndexingDetails(
-    fetchProgress: IndexingViewRef => UIO[CompositeProgress],
-    fetchRemaining: (CompositeViewSource, ProjectRef, Offset) => UIO[Option[RemainingElems]],
+    fetchProgress: IndexingViewRef => IO[CompositeProgress],
+    fetchRemaining: (CompositeViewSource, ProjectRef, Offset) => IO[Option[RemainingElems]],
     prefix: String
 ) {
 
   /**
     * List the offsets for the given composite view
     */
-  def offsets(view: IndexingViewRef): UIO[SearchResults[ProjectionOffset]] =
+  def offsets(view: IndexingViewRef): IO[SearchResults[ProjectionOffset]] =
     resultOffsets(view, _ => true)
 
   /**
@@ -44,7 +45,7 @@ final class CompositeIndexingDetails(
     * @param target
     *   the target projection
     */
-  def projectionOffsets(view: IndexingViewRef, target: Iri): UIO[SearchResults[ProjectionOffset]] =
+  def projectionOffsets(view: IndexingViewRef, target: Iri): IO[SearchResults[ProjectionOffset]] =
     resultOffsets(view, _.target == target)
 
   private def resultOffsets(view: IndexingViewRef, c: CompositeBranch => Boolean) =
@@ -66,7 +67,7 @@ final class CompositeIndexingDetails(
     * @param view
     *   the view
     */
-  def statistics(view: ActiveViewDef): UIO[SearchResults[ProjectionStatistics]] =
+  def statistics(view: ActiveViewDef): IO[SearchResults[ProjectionStatistics]] =
     resultStatistics(view, _ => true)
 
   /**
@@ -76,7 +77,7 @@ final class CompositeIndexingDetails(
     * @param source
     *   the source identifier
     */
-  def sourceStatistics(view: ActiveViewDef, source: Iri): UIO[SearchResults[ProjectionStatistics]] =
+  def sourceStatistics(view: ActiveViewDef, source: Iri): IO[SearchResults[ProjectionStatistics]] =
     resultStatistics(view, _.source == source)
 
   /**
@@ -86,7 +87,7 @@ final class CompositeIndexingDetails(
     * @param projection
     *   the source identifier
     */
-  def projectionStatistics(view: ActiveViewDef, projection: Iri): UIO[SearchResults[ProjectionStatistics]] =
+  def projectionStatistics(view: ActiveViewDef, projection: Iri): IO[SearchResults[ProjectionStatistics]] =
     resultStatistics(view, _.target == projection)
 
   private def resultStatistics(view: ActiveViewDef, c: CompositeBranch => Boolean) =
@@ -112,12 +113,12 @@ final class CompositeIndexingDetails(
                               )
                             }
                         }
-                      case _                                                         => UIO.none
+                      case _                                                         => IO.none
                     }
     } yield statistics
   }
 
-  def description(view: ActiveViewDef): UIO[CompositeIndexingDescription] =
+  def description(view: ActiveViewDef): IO[CompositeIndexingDescription] =
     for {
       offset          <- listOffsets(view.indexingRef, _ => true)
       stats           <- statistics(view, _ => true)

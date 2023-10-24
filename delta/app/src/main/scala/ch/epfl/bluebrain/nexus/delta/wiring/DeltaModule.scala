@@ -135,13 +135,12 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
 
   make[Materializer].from((as: ActorSystem[Nothing]) => SystemMaterializer(as).materializer)
   make[Logger].from { LoggerFactory.getLogger("delta") }
-  make[RejectionHandler].from {
-    (s: Scheduler, cr: RemoteContextResolution @Id("aggregate"), ordering: JsonKeyOrdering) =>
-      RdfRejectionHandler(s, cr, ordering)
+  make[RejectionHandler].from { (cr: RemoteContextResolution @Id("aggregate"), ordering: JsonKeyOrdering) =>
+    RdfRejectionHandler(cr, ordering)
   }
   make[ExceptionHandler].from {
-    (s: Scheduler, cr: RemoteContextResolution @Id("aggregate"), ordering: JsonKeyOrdering, base: BaseUri) =>
-      RdfExceptionHandler(s, cr, ordering, base)
+    (cr: RemoteContextResolution @Id("aggregate"), ordering: JsonKeyOrdering, base: BaseUri) =>
+      RdfExceptionHandler(cr, ordering, base)
   }
   make[CorsSettings].from(
     CorsSettings.defaultSettings

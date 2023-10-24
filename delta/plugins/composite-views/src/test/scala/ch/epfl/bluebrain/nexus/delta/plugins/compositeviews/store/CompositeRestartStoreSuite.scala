@@ -9,12 +9,12 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.BioSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import munit.AnyFixture
 
 import java.time.Instant
 
-class CompositeRestartStoreSuite extends BioSuite with Doobie.Fixture with Doobie.Assertions {
+class CompositeRestartStoreSuite extends CatsEffectSuite with Doobie.Fixture with Doobie.Assertions {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 
@@ -41,9 +41,9 @@ class CompositeRestartStoreSuite extends BioSuite with Doobie.Fixture with Doobi
 
   test("Save composite restarts") {
     for {
-      _ <- store.save(cr1).assert(())
-      _ <- store.save(cr2).assert(())
-      _ <- store.save(cr3).assert(())
+      _ <- store.save(cr1).assert
+      _ <- store.save(cr2).assert
+      _ <- store.save(cr3).assert
     } yield ()
   }
 

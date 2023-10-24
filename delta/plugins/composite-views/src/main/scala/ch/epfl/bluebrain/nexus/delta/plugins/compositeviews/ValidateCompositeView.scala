@@ -1,13 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
+import cats.effect.IO
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.DeltaClient
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.DeltaClient
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.projectionIndex
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{CrossProjectSourceForbidden, CrossProjectSourceProjectNotFound, DuplicateIds, InvalidElasticSearchProjectionPayload, InvalidRemoteProjectSource, PermissionIsNotDefined, TooManyProjections, TooManySources, WrappedElasticSearchClientError}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.{CrossProjectSource, ProjectSource, RemoteProjectSource}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeViewProjection, CompositeViewRejection, CompositeViewSource, CompositeViewValue}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeViewProjection, CompositeViewSource, CompositeViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
@@ -16,7 +17,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
-import monix.bio.{IO, UIO}
 
 import java.util.UUID
 
@@ -25,7 +25,7 @@ import java.util.UUID
   */
 trait ValidateCompositeView {
 
-  def apply(uuid: UUID, value: CompositeViewValue): IO[CompositeViewRejection, Unit]
+  def apply(uuid: UUID, value: CompositeViewValue): IO[Unit]
 
 }
 
@@ -34,28 +34,25 @@ object ValidateCompositeView {
   def apply(
       aclCheck: AclCheck,
       projects: Projects,
-      fetchPermissions: UIO[Set[Permission]],
+      fetchPermissions: IO[Set[Permission]],
       client: ElasticSearchClient,
       deltaClient: DeltaClient,
       prefix: String,
       maxSources: Int,
       maxProjections: Int
   )(implicit baseUri: BaseUri): ValidateCompositeView = (uuid: UUID, value: CompositeViewValue) => {
-    def validateAcls(cpSource: CrossProjectSource): IO[CrossProjectSourceForbidden, Unit] =
-      aclCheck
-        .authorizeForOr(cpSource.project, events.read, cpSource.identities)(CrossProjectSourceForbidden(cpSource))
-        .toBIO[CrossProjectSourceForbidden]
+    def validateAcls(cpSource: CrossProjectSource): IO[Unit] =
+      aclCheck.authorizeForOr(cpSource.project, events.read, cpSource.identities)(CrossProjectSourceForbidden(cpSource))
 
-    def validateProject(cpSource: CrossProjectSource) = {
+    def validateProject(cpSource: CrossProjectSource) =
       projects.fetch(cpSource.project).mapError(_ => CrossProjectSourceProjectNotFound(cpSource)).void
-    }
 
     def validatePermission(permission: Permission) =
       fetchPermissions.flatMap { perms =>
-        IO.when(!perms.contains(permission))(IO.raiseError(PermissionIsNotDefined(permission)))
+        IO.raiseWhen(!perms.contains(permission))(PermissionIsNotDefined(permission))
       }
 
-    def validateIndex(es: ElasticSearchProjection, index: IndexLabel) =
+    def validateIndex(es: ElasticSearchProjection, index: IndexLabel) = toCatsIO {
       client
         .createIndex(index, Some(es.mapping), es.settings)
         .mapError {
@@ -63,17 +60,20 @@ object ValidateCompositeView {
           case err                        => WrappedElasticSearchClientError(err)
         }
         .void
+    }
 
-    val checkRemoteEvent: RemoteProjectSource => IO[HttpClientError, Unit] = deltaClient.checkElems
+    val checkRemoteEvent: RemoteProjectSource => IO[Unit] = deltaClient.checkElems
 
-    val validateSource: CompositeViewSource => IO[CompositeViewRejection, Unit] = {
+    val validateSource: CompositeViewSource => IO[Unit] = {
       case _: ProjectSource             => IO.unit
       case cpSource: CrossProjectSource => validateAcls(cpSource) >> validateProject(cpSource)
       case rs: RemoteProjectSource      =>
-        checkRemoteEvent(rs).mapError(InvalidRemoteProjectSource(rs, _))
+        checkRemoteEvent(rs).adaptError { case http: HttpClientError =>
+          InvalidRemoteProjectSource(rs, http)
+        }
     }
 
-    val validateProjection: CompositeViewProjection => IO[CompositeViewRejection, Unit] = {
+    val validateProjection: CompositeViewProjection => IO[Unit] = {
       case sparql: SparqlProjection    => validatePermission(sparql.permission)
       case es: ElasticSearchProjection =>
         validatePermission(es.permission) >>
