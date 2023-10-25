@@ -311,7 +311,6 @@ object ResourceEvent {
             case _: ResourceTagAdded      => Tagged
             case _: ResourceTagDeleted    => TagDeleted
             case _: ResourceDeprecated    => Deprecated
-            // TODO: Check if we want new one?
             case _: ResourceSchemaUpdated => Updated
           },
           event.id,
