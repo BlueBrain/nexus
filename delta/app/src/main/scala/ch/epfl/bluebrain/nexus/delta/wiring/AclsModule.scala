@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
 import akka.http.scaladsl.server.RouteConcatenation
-import cats.effect.Clock
+import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
@@ -18,9 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.{Permissions, StoragePermis
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import izumi.distage.model.definition.{Id, ModuleDef}
-import monix.bio.UIO
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
-import monix.execution.Scheduler
 
 /**
   * Acls module wiring config.
@@ -34,7 +32,7 @@ object AclsModule extends ModuleDef {
         permissions: Permissions,
         config: AppConfig,
         xas: Transactors,
-        clock: Clock[UIO]
+        clock: Clock[IO]
     ) =>
       acls.AclsImpl(
         permissions.fetchPermissionSet.toUIO,
@@ -53,11 +51,10 @@ object AclsModule extends ModuleDef {
         acls: Acls,
         aclCheck: AclCheck,
         baseUri: BaseUri,
-        s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
     ) =>
-      new AclsRoutes(identities, acls, aclCheck)(baseUri, s, cr, ordering)
+      new AclsRoutes(identities, acls, aclCheck)(baseUri, cr, ordering)
   }
 
   many[ProjectDeletionTask].add { (acls: Acls) => Acls.projectDeletionTask(acls) }

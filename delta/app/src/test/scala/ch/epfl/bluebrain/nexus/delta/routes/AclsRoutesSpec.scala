@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.routes
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.server.Route
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress.{Organization, Project, Root}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.{Acl, AclAddress}
@@ -19,7 +20,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import io.circe.Json
 import io.circe.syntax.EncoderOps
-import monix.bio.UIO
 
 import scala.concurrent.duration._
 
@@ -87,7 +87,7 @@ class AclsRoutesSpec extends BaseRouteSpec {
 
   private lazy val acls =
     AclsImpl(
-      UIO.pure(Set(aclsPermissions.read, aclsPermissions.write, managePermission, events.read)),
+      IO.pure(Set(aclsPermissions.read, aclsPermissions.write, managePermission, events.read)),
       Acls.findUnknownRealms(_, Set(realm1, realm2)),
       Set(aclsPermissions.read, aclsPermissions.write, managePermission, events.read),
       AclsConfig(EventLogConfig(QueryConfig(5, RefreshStrategy.Stop), 100.millis)),

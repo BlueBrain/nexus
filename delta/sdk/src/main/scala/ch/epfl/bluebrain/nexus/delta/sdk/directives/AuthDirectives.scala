@@ -7,6 +7,7 @@ import akka.http.scaladsl.server.directives.Credentials
 import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
+import ch.epfl.bluebrain.nexus.delta.kernel.jwt.{AuthToken, TokenRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.error.IdentityError.{AuthenticationFailed, InvalidToken}
@@ -15,8 +16,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{Caller, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
-import ch.epfl.bluebrain.nexus.delta.kernel.jwt.{AuthToken, TokenRejection}
 
 import scala.concurrent.Future
 
@@ -67,10 +66,10 @@ abstract class AuthDirectives(identities: Identities, aclCheck: AclCheck) {
     * Checks whether given [[Caller]] has the [[Permission]] on the [[AclAddress]].
     */
   def authorizeFor(path: AclAddress, permission: Permission)(implicit caller: Caller): Directive0 =
-    authorizeAsync(toCatsIO(aclCheck.authorizeFor(path, permission)).unsafeToFuture()) or failWith(AuthorizationFailed)
+    authorizeAsync(aclCheck.authorizeFor(path, permission).unsafeToFuture()) or failWith(AuthorizationFailed)
 
   def authorizeForIO(path: AclAddress, fetchPermission: IO[Permission])(implicit caller: Caller): Directive0 = {
-    val check = fetchPermission.flatMap(permission => toCatsIO(aclCheck.authorizeFor(path, permission)))
+    val check = fetchPermission.flatMap(permission => aclCheck.authorizeFor(path, permission))
     authorizeAsync(check.unsafeToFuture()) or failWith(AuthorizationFailed)
   }
 

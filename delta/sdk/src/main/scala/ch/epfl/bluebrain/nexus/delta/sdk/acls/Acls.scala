@@ -1,13 +1,15 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.acls
 
-import cats.effect.Clock
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils.instant
+import cats.effect.{Clock, IO}
+import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.AclResource
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclCommand.{AppendAcl, DeleteAcl, ReplaceAcl, SubtractAcl}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclEvent.{AclAppended, AclDeleted, AclReplaced, AclSubtracted}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.ProjectDeletionTask
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.model.ProjectDeletionReport
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
@@ -18,7 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{IdentityRealm, Sub
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, EnvelopeStream, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.{GlobalEntityDefinition, StateMachine}
-import monix.bio.{IO, Task, UIO}
+import monix.bio.Task
 
 import java.time.Instant
 
@@ -33,7 +35,7 @@ trait Acls {
     * @param address
     *   the ACL address
     */
-  def fetch(address: AclAddress): IO[AclNotFound, AclResource]
+  def fetch(address: AclAddress): IO[AclResource]
 
   /**
     * Fetches the ACL resource for an ''address'' and its ancestors on the current revision.
@@ -41,12 +43,12 @@ trait Acls {
     * @param address
     *   the ACL address
     */
-  def fetchWithAncestors(address: AclAddress): UIO[AclCollection] = {
+  def fetchWithAncestors(address: AclAddress): IO[AclCollection] = {
 
     def recurseOnParentAddress(current: AclCollection) =
       address.parent match {
         case Some(parent) => fetchWithAncestors(parent).map(_ ++ current)
-        case None         => UIO.pure(current)
+        case None         => IO.pure(current)
       }
 
     fetch(address).attempt.flatMap {
@@ -63,7 +65,7 @@ trait Acls {
     * @param rev
     *   the revision to fetch
     */
-  def fetchAt(address: AclAddress, rev: Int): IO[AclRejection.NotFound, AclResource]
+  def fetchAt(address: AclAddress, rev: Int): IO[AclResource]
 
   /**
     * Fetches the ACL resource with the passed ''address'' on the current revision. The response only contains ACL with
@@ -72,7 +74,7 @@ trait Acls {
     * @param address
     *   the ACL address
     */
-  final def fetchSelf(address: AclAddress)(implicit caller: Caller): IO[AclNotFound, AclResource] =
+  final def fetchSelf(address: AclAddress)(implicit caller: Caller): IO[AclResource] =
     fetch(address).map(filterSelf)
 
   /**
@@ -82,7 +84,7 @@ trait Acls {
     * @param address
     *   the ACL address
     */
-  def fetchSelfWithAncestors(address: AclAddress)(implicit caller: Caller): UIO[AclCollection] =
+  def fetchSelfWithAncestors(address: AclAddress)(implicit caller: Caller): IO[AclCollection] =
     fetchWithAncestors(address).map(_.filter(caller.identities))
 
   /**
@@ -96,7 +98,7 @@ trait Acls {
     */
   final def fetchSelfAt(address: AclAddress, rev: Int)(implicit
       caller: Caller
-  ): IO[AclRejection.NotFound, AclResource] =
+  ): IO[AclResource] =
     fetchAt(address, rev).map(filterSelf)
 
   /**
@@ -106,8 +108,8 @@ trait Acls {
     * @param address
     *   the ACL address
     */
-  final def fetchAcl(address: AclAddress): UIO[Acl] =
-    fetch(address).attempt.map {
+  final def fetchAcl(address: AclAddress): IO[Acl] =
+    fetch(address).attemptNarrow[AclNotFound].map {
       case Left(AclNotFound(_)) => Acl(address)
       case Right(resource)      => resource.value
     }
@@ -119,8 +121,8 @@ trait Acls {
     * @param address
     *   the ACL address
     */
-  final def fetchSelfAcl(address: AclAddress)(implicit caller: Caller): UIO[Acl] =
-    fetchSelf(address).attempt.map {
+  final def fetchSelfAcl(address: AclAddress)(implicit caller: Caller): IO[Acl] =
+    fetchSelf(address).attemptNarrow[AclNotFound].map {
       case Left(AclNotFound(_)) => Acl(address)
       case Right(resource)      => resource.value
     }
@@ -131,7 +133,7 @@ trait Acls {
     * @param filter
     *   the ACL filter address. All [[AclAddress]] matching the provided filter will be returned
     */
-  def list(filter: AclAddressFilter): UIO[AclCollection]
+  def list(filter: AclAddressFilter): IO[AclCollection]
 
   /**
     * Fetches the [[AclCollection]] of the provided ''filter'' address with identities present in the ''caller''.
@@ -141,7 +143,7 @@ trait Acls {
     * @param caller
     *   the caller that contains the provided identities
     */
-  def listSelf(filter: AclAddressFilter)(implicit caller: Caller): UIO[AclCollection]
+  def listSelf(filter: AclAddressFilter)(implicit caller: Caller): IO[AclCollection]
 
   /**
     * A non terminating stream of events for ACLs. After emitting all known events it sleeps until new events are
@@ -168,7 +170,7 @@ trait Acls {
     * @param rev
     *   the last known revision of the resource
     */
-  def replace(acl: Acl, rev: Int)(implicit caller: Subject): IO[AclRejection, AclResource]
+  def replace(acl: Acl, rev: Int)(implicit caller: Subject): IO[AclResource]
 
   /**
     * Appends ''acl''.
@@ -178,7 +180,7 @@ trait Acls {
     * @param rev
     *   the last known revision of the resource
     */
-  def append(acl: Acl, rev: Int)(implicit caller: Subject): IO[AclRejection, AclResource]
+  def append(acl: Acl, rev: Int)(implicit caller: Subject): IO[AclResource]
 
   /**
     * Subtracts ''acl''.
@@ -188,7 +190,7 @@ trait Acls {
     * @param rev
     *   the last known revision of the resource
     */
-  def subtract(acl: Acl, rev: Int)(implicit caller: Subject): IO[AclRejection, AclResource]
+  def subtract(acl: Acl, rev: Int)(implicit caller: Subject): IO[AclResource]
 
   /**
     * Delete all ''acl'' on the passed ''address''.
@@ -198,13 +200,13 @@ trait Acls {
     * @param rev
     *   the last known revision of the resource
     */
-  def delete(address: AclAddress, rev: Int)(implicit caller: Subject): IO[AclRejection, AclResource]
+  def delete(address: AclAddress, rev: Int)(implicit caller: Subject): IO[AclResource]
 
   /**
     * Hard deletes events and states for the given acl address. This is meant to be used internally for project and
     * organization deletion.
     */
-  def purge(project: AclAddress): UIO[Unit]
+  def purge(project: AclAddress): IO[Unit]
 
   private def filterSelf(resource: AclResource)(implicit caller: Caller): AclResource =
     resource.map(_.filter(caller.identities))
@@ -223,7 +225,7 @@ object Acls {
     */
   def encodeId(address: AclAddress): Iri = ResourceUris.acl(address).relativeAccessUri.toIri
 
-  def findUnknownRealms(labels: Set[Label], existing: Set[Label]): IO[UnknownRealms, Unit] = {
+  def findUnknownRealms(labels: Set[Label], existing: Set[Label]): IO[Unit] = {
     val unknown = labels.diff(existing)
     IO.raiseWhen(unknown.nonEmpty)(UnknownRealms(unknown))
   }
@@ -258,18 +260,16 @@ object Acls {
   }
 
   private[delta] def evaluate(
-      fetchPermissionSet: UIO[Set[Permission]],
-      findUnknownRealms: Set[Label] => IO[UnknownRealms, Unit]
-  )(state: Option[AclState], cmd: AclCommand)(implicit clock: Clock[UIO] = IO.clock): IO[AclRejection, AclEvent] = {
+      fetchPermissionSet: IO[Set[Permission]],
+      findUnknownRealms: Set[Label] => IO[Unit]
+  )(state: Option[AclState], cmd: AclCommand)(implicit clock: Clock[IO]): IO[AclEvent] = {
 
     def acceptChecking(acl: Acl)(f: Instant => AclEvent) =
       fetchPermissionSet.flatMap { permissions =>
-        IO.when(!acl.permissions.subsetOf(permissions))(
-          IO.raiseError(UnknownPermissions(acl.permissions -- permissions))
-        )
+        IO.raiseWhen(!acl.permissions.subsetOf(permissions))(UnknownPermissions(acl.permissions -- permissions))
       } >>
         findUnknownRealms(acl.value.keySet.collect { case id: IdentityRealm => id.realm }) >>
-        instant.map(f)
+        IOInstant.now.map(f)
 
     def replace(c: ReplaceAcl)   =
       state match {
@@ -325,7 +325,7 @@ object Acls {
         case None                      => IO.raiseError(AclNotFound(c.address))
         case Some(s) if c.rev != s.rev => IO.raiseError(IncorrectRev(c.address, c.rev, s.rev))
         case Some(s) if s.acl.isEmpty  => IO.raiseError(AclIsEmpty(c.address))
-        case Some(_)                   => instant.map(AclDeleted(c.address, c.rev + 1, _, c.subject))
+        case Some(_)                   => IOInstant.now.map(AclDeleted(c.address, c.rev + 1, _, c.subject))
       }
 
     cmd match {
@@ -340,14 +340,12 @@ object Acls {
     * Entity definition for [[Acls]]
     */
   def definition(
-      fetchPermissionSet: UIO[Set[Permission]],
-      findUnknownRealms: Set[Label] => IO[UnknownRealms, Unit]
-  )(implicit
-      clock: Clock[UIO] = IO.clock
-  ): GlobalEntityDefinition[AclAddress, AclState, AclCommand, AclEvent, AclRejection] =
+      fetchPermissionSet: IO[Set[Permission]],
+      findUnknownRealms: Set[Label] => IO[Unit]
+  )(implicit clock: Clock[IO]): GlobalEntityDefinition[AclAddress, AclState, AclCommand, AclEvent, AclRejection] =
     GlobalEntityDefinition(
       entityType,
-      StateMachine(None, evaluate(fetchPermissionSet, findUnknownRealms), next),
+      StateMachine(None, evaluate(fetchPermissionSet, findUnknownRealms)(_, _).toBIO[AclRejection], next),
       AclEvent.serializer,
       AclState.serializer,
       onUniqueViolation = (address: AclAddress, c: AclCommand) =>
@@ -361,11 +359,9 @@ object Acls {
     * acls
     */
   def projectDeletionTask(acls: Acls): ProjectDeletionTask = new ProjectDeletionTask {
-    override def apply(project: ProjectRef)(implicit subject: Subject): Task[ProjectDeletionReport.Stage] =
-      acls
-        .purge(project)
-        .as(
-          ProjectDeletionReport.Stage("acls", "The acl has been deleted.")
-        )
+    override def apply(project: ProjectRef)(implicit subject: Subject): Task[ProjectDeletionReport.Stage] = {
+      val report = ProjectDeletionReport.Stage("acls", "The acl has been deleted.")
+      acls.purge(project).as(report).toTask
+    }
   }
 }

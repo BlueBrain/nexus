@@ -28,6 +28,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Authenticated, Gro
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit.bio.IOFixedClock
 import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
 import ch.epfl.bluebrain.nexus.testkit.scalatest.{EitherValues, TestMatchers}
 import ch.epfl.bluebrain.nexus.testkit.{CirceEq, CirceLiteral, TestHelpers}
 import monix.execution.Scheduler
@@ -41,6 +42,7 @@ trait BlazegraphViewRoutesFixtures
     extends RouteHelpers
     with DoobieScalaTestFixture
     with Matchers
+    with CatsIOValues
     with CirceLiteral
     with CirceEq
     with IOFixedClock

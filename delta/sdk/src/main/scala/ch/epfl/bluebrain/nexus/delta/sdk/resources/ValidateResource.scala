@@ -2,12 +2,12 @@ package ch.epfl.bluebrain.nexus.delta.sdk.resources
 
 import cats.effect.IO
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.{ShaclEngine, ValidationReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
@@ -64,7 +64,9 @@ trait ValidateResource {
 
 object ValidateResource {
 
-  def apply(resourceResolution: ResourceResolution[Schema])(implicit jsonLdApi: JsonLdApi): ValidateResource =
+  def apply(
+      resourceResolution: ResourceResolution[Schema]
+  )(implicit jsonLdApi: JsonLdApi, rcr: RemoteContextResolution): ValidateResource =
     new ValidateResource {
       override def apply(
           resourceId: Iri,
@@ -98,8 +100,7 @@ object ValidateResource {
 
       private def toGraph(id: Iri, expanded: ExpandedJsonLd): IO[Graph] = {
         IO.fromEither(
-          expanded.toGraph
-            .leftMap[InvalidJsonLdFormat](err => InvalidJsonLdFormat(Some(id), err))
+          expanded.toGraph.leftMap(err => InvalidJsonLdFormat(Some(id), err))
         )
       }
 
@@ -108,16 +109,15 @@ object ValidateResource {
           graph: Graph,
           schemaRef: ResourceRef,
           schema: ResourceF[Schema]
-      ): IO[ValidationReport] = {
+      ): IO[ValidationReport] =
         ShaclEngine(
           graph ++ schema.value.ontologies,
           schema.value.shapes,
           reportDetails = true,
           validateShapes = false
-        ).toCatsIOEither
-          .map(_.leftMap(ResourceShaclEngineRejection(resourceId, schemaRef, _)))
-          .rethrow
-      }
+        ).adaptError { e =>
+          ResourceShaclEngineRejection(resourceId, schemaRef, e.getMessage)
+        }
 
       private def assertNotDeprecated(schema: ResourceF[Schema]) = {
         IO.raiseWhen(schema.deprecated)(SchemaIsDeprecated(schema.value.id))

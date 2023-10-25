@@ -5,7 +5,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{Inspectors, OptionValues}
 
-abstract class BaseSpec
+trait BaseSpec
     extends AnyWordSpecLike
     with Matchers
     with EitherValues

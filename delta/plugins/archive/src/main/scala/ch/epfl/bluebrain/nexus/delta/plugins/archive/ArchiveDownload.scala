@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.{Fil
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileId, FileRejection}
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
@@ -27,14 +27,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.AnnotatedSource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRepresentation._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef, ResourceRepresentation}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceRepresentation}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.StreamConverter
 import ch.epfl.bluebrain.nexus.delta.sdk.{AkkaSource, JsonLdValue, ResourceShifts}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import fs2.Stream
 import io.circe.{Json, Printer}
-import monix.bio.{Task, UIO}
+import monix.bio.UIO
 
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
@@ -159,16 +159,15 @@ object ArchiveDownload {
       private def checkResourcePermissions(
           refs: List[FullArchiveReference],
           project: ProjectRef
-      )(implicit caller: Caller): IO[Unit] = toCatsIO {
+      )(implicit caller: Caller): IO[Unit] =
         aclCheck
           .mapFilterOrRaise(
             refs,
             (a: FullArchiveReference) => AclAddress.Project(a.project.getOrElse(project)) -> resources.read,
             identity[ArchiveReference],
-            address => Task.raiseError(AuthorizationFailed(address, resources.read))
+            address => IO.raiseError(AuthorizationFailed(address, resources.read))
           )
           .void
-      }
 
       private def fileEntry(
           ref: FileReference,
@@ -282,7 +281,7 @@ object ArchiveDownload {
     ArchiveDownload(
       aclCheck,
       shifts.fetch,
-      (id: ResourceRef, project: ProjectRef, caller: Caller) => files.fetchContent(IdSegmentRef(id), project)(caller),
+      (id: ResourceRef, project: ProjectRef, caller: Caller) => files.fetchContent(FileId(id, project))(caller),
       fileSelf
     )
 

@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics
 
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.toCatsIOOps
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.config.GraphAnalyticsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.GraphAnalyticsStream
@@ -7,7 +8,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.GraphAnalytic
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.routes.GraphAnalyticsRoutes
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
@@ -21,7 +21,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projections
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Supervisor
 import izumi.distage.model.definition.{Id, ModuleDef}
-import monix.execution.Scheduler
 
 /**
   * Graph analytics plugin wiring.
@@ -49,9 +48,7 @@ class GraphAnalyticsPluginModule(priority: Int) extends ModuleDef {
         client: ElasticSearchClient,
         config: GraphAnalyticsConfig
     ) =>
-      toCatsIO(
-        GraphAnalyticsCoordinator(projects, analyticsStream, supervisor, client, config)
-      )
+      GraphAnalyticsCoordinator(projects, analyticsStream, supervisor, client, config).toCatsIO
   }
 
   make[GraphAnalyticsViewsQuery].from { (client: ElasticSearchClient, config: GraphAnalyticsConfig) =>
@@ -66,7 +63,6 @@ class GraphAnalyticsPluginModule(priority: Int) extends ModuleDef {
         projections: Projections,
         schemeDirectives: DeltaSchemeDirectives,
         baseUri: BaseUri,
-        s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering,
         viewsQuery: GraphAnalyticsViewsQuery
@@ -75,12 +71,12 @@ class GraphAnalyticsPluginModule(priority: Int) extends ModuleDef {
         identities,
         aclCheck,
         graphAnalytics,
-        project => projections.statistics(project, SelectFilter.latest, GraphAnalytics.projectionName(project)),
+        project =>
+          projections.statistics(project, SelectFilter.latest, GraphAnalytics.projectionName(project)).toCatsIO,
         schemeDirectives,
         viewsQuery
       )(
         baseUri,
-        s,
         cr,
         ordering
       )

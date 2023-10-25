@@ -19,7 +19,7 @@ import io.circe.{Encoder, JsonObject}
   * @param reason
   *   a descriptive message as to why the rejection occurred
   */
-sealed abstract class GraphAnalyticsRejection(val reason: String) extends Product with Serializable
+sealed abstract class GraphAnalyticsRejection(val reason: String) extends Exception(reason)
 
 object GraphAnalyticsRejection {
 

@@ -16,6 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.{Json, JsonObject}
 import monix.bio.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 
 /**
   * Allows operations on Elasticsearch views
@@ -90,13 +91,18 @@ final class ElasticSearchViewsQueryImpl private[elasticsearch] (
       view    <- viewStore.fetch(id, project)
       indices <- view match {
                    case v: IndexingView  =>
-                     aclCheck.authorizeForOr(v.ref.project, v.permission)(AuthorizationFailed).as(Set(v.index))
+                     aclCheck
+                       .authorizeForOr(v.ref.project, v.permission)(AuthorizationFailed)
+                       .as(Set(v.index))
+                       .toBIO[AuthorizationFailed]
                    case v: AggregateView =>
-                     aclCheck.mapFilter[IndexingView, String](
-                       v.views,
-                       v => ProjectAcl(v.ref.project) -> v.permission,
-                       _.index
-                     )
+                     aclCheck
+                       .mapFilter[IndexingView, String](
+                         v.views,
+                         v => ProjectAcl(v.ref.project) -> v.permission,
+                         _.index
+                       )
+                       .toUIO
                  }
       search  <- client.search(query, indices, qp)(SortList.empty).mapError(WrappedElasticSearchClientError)
     } yield search
@@ -107,7 +113,10 @@ final class ElasticSearchViewsQueryImpl private[elasticsearch] (
       project: ProjectRef
   )(implicit caller: Caller): IO[ElasticSearchViewRejection, Json] =
     for {
-      view   <- aclCheck.authorizeForOr(project, permissions.write)(AuthorizationFailed).as(viewStore.fetch(id, project))
+      view   <- aclCheck
+                  .authorizeForOr(project, permissions.write)(AuthorizationFailed)
+                  .as(viewStore.fetch(id, project))
+                  .toBIO[AuthorizationFailed]
       index  <- view.map {
                   case v: IndexingView  =>
                     IO.pure(v.index)

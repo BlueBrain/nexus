@@ -28,15 +28,13 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Group, 
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
 import io.circe.JsonObject
-import monix.execution.Scheduler
 import org.scalatest.CancelAfterFailure
 
 import java.util.UUID
 
 class BlazegraphQuerySpec extends BioSpec with CancelAfterFailure {
 
-  implicit private val sc: Scheduler = Scheduler.global
-  implicit val baseUri: BaseUri      = BaseUri("http://localhost", Label.unsafe("v1"))
+  implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
 
   private val realm                = Label.unsafe("myrealm")
   private val alice: Caller        = Caller(User("Alice", realm), Set(User("Alice", realm), Group("users", realm)))

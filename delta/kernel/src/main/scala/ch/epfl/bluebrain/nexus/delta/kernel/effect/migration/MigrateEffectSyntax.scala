@@ -4,6 +4,9 @@ import cats.effect.IO
 import cats.~>
 import monix.bio.{IO => BIO, Task, UIO}
 import monix.execution.Scheduler.Implicits.global
+import shapeless.=:!=
+
+import scala.annotation.nowarn
 
 import scala.reflect.ClassTag
 
@@ -34,7 +37,20 @@ final class MonixBioToCatsIOEitherOps[E, A](private val io: BIO[E, A]) extends A
 }
 
 final class CatsIOToBioOps[A](private val io: IO[A]) extends AnyVal {
-  def toBIO[E <: Throwable](implicit E: ClassTag[E]): BIO[E, A] =
+
+  /**
+    * Safe conversion between CE and Monix, forcing the user to specify a strict subtype of [[Throwable]]. If omitted,
+    * the compiler may infer [[Throwable]] and bypass any custom error handling.
+    */
+  @SuppressWarnings(Array("UnusedMethodParameter"))
+  @nowarn
+  def toBIO[E <: Throwable](implicit E: ClassTag[E], ev: E =:!= Throwable): BIO[E, A] =
+    toBIOThrowable[E]
+
+  /**
+    * Prefer [[toBIO]]. Only use this when we are sure there's no custom error handling logic.
+    */
+  def toBIOThrowable[E <: Throwable](implicit E: ClassTag[E]): BIO[E, A] =
     BIO.from(io).mapErrorPartialWith {
       case E(e)  => monix.bio.IO.raiseError(e)
       case other => BIO.terminate(other)
