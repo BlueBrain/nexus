@@ -3,9 +3,9 @@ package ch.epfl.bluebrain.nexus.delta.dependency
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.{DoobieScalaTestFixture, PostgresDocker}
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 
-class PostgresServiceDependencySpec extends BioSpec with DoobieScalaTestFixture with PostgresDocker {
+class PostgresServiceDependencySpec extends CatsEffectSpec with DoobieScalaTestFixture with PostgresDocker {
 
   "PostgresServiceDependency" should {
 
