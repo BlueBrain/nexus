@@ -126,7 +126,6 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         indexingAction: AggregateIndexingAction,
         shift: Storage.Shift,
         baseUri: BaseUri,
-        s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering,
         fusionConfig: FusionConfig
@@ -141,7 +140,6 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           indexingAction(_, _, _)(shift)
         )(
           baseUri,
-          s,
           cr,
           ordering,
           fusionConfig
