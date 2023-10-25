@@ -193,7 +193,7 @@ final class StoragesRoutes(
                   },
                   (pathPrefix("statistics") & get & pathEndOrSingleSlash) {
                     authorizeFor(ref, Read).apply {
-                      emit(storagesStatistics.get(id, ref).toCatsIO.attemptNarrow[StorageRejection])
+                      emit(storagesStatistics.get(id, ref).attemptNarrow[StorageRejection])
                     }
                   }
                 )

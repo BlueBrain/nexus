@@ -4,10 +4,12 @@ import cats.effect.{Clock, Resource}
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ProjectionConfig.ClusterConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{BatchConfig, ProjectionConfig, QueryConfig}
+import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionErrors, Projections}
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
-import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.{BioSuite, ResourceFixture}
+import ch.epfl.bluebrain.nexus.testkit.bio.BioRunContext
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.bio.ResourceFixture
 import monix.bio.{Task, UIO}
 
 import scala.concurrent.duration._
@@ -52,7 +54,7 @@ object SupervisorSetup {
   ): ResourceFixture.TaskFixture[SupervisorSetup] =
     ResourceFixture.suiteLocal(name, resource(cluster))
 
-  trait Fixture { self: BioSuite =>
+  trait Fixture { self: NexusSuite with BioRunContext =>
     val supervisor: ResourceFixture.TaskFixture[SupervisorSetup]    =
       SupervisorSetup.suiteLocalFixture("supervisor", ClusterConfig(1, 0))
     val supervisor3_1: ResourceFixture.TaskFixture[SupervisorSetup] =

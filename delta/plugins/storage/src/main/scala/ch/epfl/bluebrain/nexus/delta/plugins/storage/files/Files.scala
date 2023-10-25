@@ -441,7 +441,6 @@ final class Files(
                                      _ => Some(capacity),
                                      stat => Some(capacity - stat.spaceUsed)
                                    )
-                                   .toCatsIO
                                }
       (description, source) <- formDataExtractor(iri, entity, storage.storageValue.maxFileSize, storageAvailableSpace)
       attributes            <- SaveFile(storage, remoteDiskStorageClient, config)

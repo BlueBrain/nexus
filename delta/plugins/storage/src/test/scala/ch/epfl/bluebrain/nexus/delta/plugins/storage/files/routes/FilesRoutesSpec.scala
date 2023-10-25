@@ -7,6 +7,7 @@ import akka.http.scaladsl.model.MediaTypes.`text/html`
 import akka.http.scaladsl.model.headers.{Accept, Location, OAuth2BearerToken, RawHeader}
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.http.MediaTypeDetectorConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileId, FileRejection}
@@ -42,7 +43,7 @@ import ch.epfl.bluebrain.nexus.testkit._
 import ch.epfl.bluebrain.nexus.testkit.bio.IOFromMap
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
 import io.circe.Json
-import monix.bio.IO
+import monix.bio.{IO => BIO}
 import org.scalatest._
 
 class FilesRoutesSpec
@@ -105,8 +106,8 @@ class FilesRoutesSpec
   lazy val storages: Storages = Storages(
     fetchContext.mapRejection(StorageRejection.ProjectContextRejection),
     ResolverContextResolution(rcr),
-    IO.pure(allowedPerms.toSet),
-    (_, _) => IO.unit,
+    BIO.pure(allowedPerms.toSet),
+    (_, _) => BIO.unit,
     xas,
     StoragesConfig(eventLogConfig, pagination, stCfg),
     ServiceAccount(User("nexus-sa", Label.unsafe("sa")))

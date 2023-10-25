@@ -6,11 +6,13 @@ import cats.effect.Resource
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientSetup
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.ResourceFixture.TaskFixture
+import ch.epfl.bluebrain.nexus.testkit.bio.BioRunContext
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchContainer
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.{BioSuite, ResourceFixture}
+import ch.epfl.bluebrain.nexus.testkit.mu.bio.ResourceFixture.TaskFixture
+import ch.epfl.bluebrain.nexus.testkit.mu.bio.ResourceFixture
 import monix.bio.Task
 import monix.execution.Scheduler
+import munit.Suite
 
 object ElasticSearchClientSetup extends CirceLiteral {
 
@@ -42,7 +44,7 @@ object ElasticSearchClientSetup extends CirceLiteral {
   def suiteLocalFixture(name: String)(implicit s: Scheduler): TaskFixture[ElasticSearchClient] =
     ResourceFixture.suiteLocal(name, resource())
 
-  trait Fixture { self: BioSuite =>
+  trait Fixture { self: Suite with BioRunContext =>
     val esClient: ResourceFixture.TaskFixture[ElasticSearchClient] =
       ElasticSearchClientSetup.suiteLocalFixture("esclient")
   }
