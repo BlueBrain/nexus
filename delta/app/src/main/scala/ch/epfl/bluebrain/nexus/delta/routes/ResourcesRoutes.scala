@@ -175,7 +175,7 @@ final class ResourcesRoutes(
                         authorizeFor(ref, Write).apply {
 
                           emit(
-                            IO.fromOption(schemaOpt)(NoSchemaProvided())
+                            IO.fromOption(schemaOpt)(NoSchemaProvided)
                               .flatMap { schema =>
                                 resources
                                   .updateResourceSchema(id, ref, schema)
