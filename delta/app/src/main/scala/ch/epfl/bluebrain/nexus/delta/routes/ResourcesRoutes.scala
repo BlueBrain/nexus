@@ -171,7 +171,7 @@ final class ResourcesRoutes(
                           }
                         )
                       },
-                      (pathPrefix("updateSchema") & put & pathEndOrSingleSlash) {
+                      (pathPrefix("update-schema") & put & pathEndOrSingleSlash) {
                         authorizeFor(ref, Write).apply {
 
                           emit(

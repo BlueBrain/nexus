@@ -351,7 +351,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues
 
     "fail to update a schema without resources/write permission" in {
       aclCheck.subtract(AclAddress.Root, Anonymous -> Set(resources.write)).accepted
-      Put(s"/v1/resources/$projectRef/_/someId/updateSchema") ~> routes ~> check {
+      Put(s"/v1/resources/$projectRef/_/someId/update-schema") ~> routes ~> check {
         response.status shouldEqual StatusCodes.Forbidden
         response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
       }
@@ -360,7 +360,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues
     "fail to update a schema when providing a non-existing schema" in {
       aclCheck.append(AclAddress.Root, Anonymous -> Set(resources.write)).accepted
       thereIsAResourceWithSchema { id =>
-        Put(s"/v1/resources/$projectRef/wrongSchema/$id/updateSchema") ~> routes ~> check {
+        Put(s"/v1/resources/$projectRef/wrongSchema/$id/update-schema") ~> routes ~> check {
           response.status shouldEqual StatusCodes.NotFound
           response.asJson.hcursor.get[String]("@type").toOption should contain("InvalidSchemaRejection")
         }
@@ -369,7 +369,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues
 
     "fail to update schema when providing _ as schema" in {
       thereIsAResourceWithSchema { id =>
-        Put(s"/v1/resources/$projectRef/_/$id/updateSchema") ~> routes ~> check {
+        Put(s"/v1/resources/$projectRef/_/$id/update-schema") ~> routes ~> check {
           response.status shouldEqual StatusCodes.BadRequest
           response.asJson.hcursor.get[String]("@type").toOption should contain("NoSchemaProvided")
         }
@@ -378,7 +378,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues
 
     "succeed to update the schema" in {
       thereIsAResourceWithSchema { id =>
-        Put(s"/v1/resources/$projectRef/otherSchema/$id/updateSchema") ~> routes ~> check {
+        Put(s"/v1/resources/$projectRef/otherSchema/$id/update-schema") ~> routes ~> check {
           response.status shouldEqual StatusCodes.OK
           response.asJson.hcursor.get[String]("_constrainedBy").toOption should contain(schema3.id.toString)
         }

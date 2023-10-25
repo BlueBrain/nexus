@@ -625,7 +625,7 @@ class ResourcesSpec extends BaseIntegrationSpec {
         thereIsASchemaIn(project1) { newSchema =>
           thereIsAResourceWithSchema(project1, firstSchema) { id =>
             deltaClient
-              .put[Json](s"/resources/$project1/$newSchema/$id/updateSchema", Json.Null, Rick) { (_, response) =>
+              .put[Json](s"/resources/$project1/$newSchema/$id/update-schema", Json.Null, Rick) { (_, response) =>
                 response.status shouldEqual StatusCodes.OK
               }
               .accepted

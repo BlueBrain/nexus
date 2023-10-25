@@ -239,7 +239,7 @@ Response
 This operation allows to only change the schema of a resource without providing any payload.
 
 ```
-PUT /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}/updateSchema
+PUT /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}/update-schema
 ```
 
 **Example**
