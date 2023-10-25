@@ -91,7 +91,7 @@ trait Resources {
   )(implicit caller: Caller): IO[DataResource]
 
   /**
-    * Update the schema of an existing resource
+    * Update the schema that is attached to the resource
     *
     * @param id
     *   identifier that will be expanded to the iri of the resource
@@ -100,7 +100,7 @@ trait Resources {
     * @param schema
     *   identifier of the new schema that will be used to validate the resource. This identifier will be expanded
     */
-  def updateResourceSchema(
+  def updateAttachedSchema(
       id: IdSegment,
       projectRef: ProjectRef,
       schema: IdSegment

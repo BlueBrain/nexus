@@ -80,7 +80,7 @@ final class ResourcesImpl private (
     } yield res
   }.span("updateResource")
 
-  override def updateResourceSchema(
+  override def updateAttachedSchema(
       id: IdSegment,
       projectRef: ProjectRef,
       schema: IdSegment

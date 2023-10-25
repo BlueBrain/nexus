@@ -454,31 +454,31 @@ class ResourcesImplSpec
 
       "reject if the resource doesn't exist" in {
         resources
-          .updateResourceSchema(nonExistentResourceId, projectRef, schema3.id)
+          .updateAttachedSchema(nonExistentResourceId, projectRef, schema3.id)
           .rejectedWith[ResourceNotFound]
       }
 
       "reject if the schema doesn't exist" in {
         resources.create(id, projectRef, schema1.id, sourceWithId, None).accepted
         resources
-          .updateResourceSchema(id, projectRef, nonExistentSchemaId)
+          .updateAttachedSchema(id, projectRef, nonExistentSchemaId)
           .rejectedWith[InvalidSchemaRejection]
       }
 
       "fetch if the provided schema is the existing resource schema" in {
-        val fetched = resources.updateResourceSchema(id, projectRef, schema1.id).accepted
+        val fetched = resources.updateAttachedSchema(id, projectRef, schema1.id).accepted
         fetched.rev shouldEqual 1
         fetched.schema.iri shouldEqual schema1.id
       }
 
       "reject if the project doesn't exist" in {
         resources
-          .updateResourceSchema(id, nonExistentProject, schema3.id)
+          .updateAttachedSchema(id, nonExistentProject, schema3.id)
           .rejectedWith[ProjectContextRejection]
       }
 
       "succeed" in {
-        val updated = resources.updateResourceSchema(id, projectRef, schema3.id).accepted
+        val updated = resources.updateAttachedSchema(id, projectRef, schema3.id).accepted
         updated.schema.iri shouldEqual schema3.id
 
         val fetched = resources.fetch(id, projectRef, None).accepted

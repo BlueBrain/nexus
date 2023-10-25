@@ -178,7 +178,7 @@ final class ResourcesRoutes(
                             IO.fromOption(schemaOpt)(NoSchemaProvided)
                               .flatMap { schema =>
                                 resources
-                                  .updateResourceSchema(id, ref, schema)
+                                  .updateAttachedSchema(id, ref, schema)
                                   .flatTap(indexUIO(ref, _, mode))
                               }
                               .attemptNarrow[ResourceRejection]
