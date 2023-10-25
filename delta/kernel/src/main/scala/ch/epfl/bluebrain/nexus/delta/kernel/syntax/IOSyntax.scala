@@ -26,7 +26,6 @@ trait IOSyntax {
   implicit final def ioRetryStrategyOps[A](io: IO[A]): IORetryStrategyOps[A] =
     new IORetryStrategyOps[A](io)
 
-
   implicit final def ioFunctorOps[A, F[_]: Functor](io: IO[F[A]]): IOFunctorOps[A, F] = new IOFunctorOps(io)
 }
 
