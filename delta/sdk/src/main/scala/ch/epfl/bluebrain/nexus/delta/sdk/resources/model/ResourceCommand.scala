@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resources.model
 
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
@@ -47,6 +48,12 @@ object ResourceCommand {
     def project: ProjectRef
     def schemaOpt: Option[ResourceRef]
     def rev: Int
+  }
+
+  /** A [[ModifyCommand]] to use when the schema is not optional */
+  trait ModifyCommandWithSchema extends ModifyCommand {
+    def schemaRef: ResourceRef
+    def schemaOpt: Option[ResourceRef] = schemaRef.some
   }
 
   /**
@@ -142,12 +149,12 @@ object ResourceCommand {
   final case class UpdateResourceSchema(
       id: Iri,
       project: ProjectRef,
-      schemaOpt: Option[ResourceRef],
+      schemaRef: ResourceRef,
       expanded: ExpandedJsonLd,
       rev: Int,
       caller: Caller
   ) extends ResourceCommand
-      with ModifyCommand {
+      with ModifyCommandWithSchema {
     def subject: Subject = caller.subject
   }
 

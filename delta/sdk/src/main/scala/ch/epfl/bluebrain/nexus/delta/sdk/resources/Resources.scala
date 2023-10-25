@@ -406,8 +406,7 @@ object Resources {
     def updateResourceSchema(u: UpdateResourceSchema) = {
       for {
         s                          <- stateWhereResourceIsEditable(u)
-        schemaRef                  <- IO.fromOption(u.schemaOpt)(???)
-        (schemaRev, schemaProject) <- validate(u.id, u.expanded, schemaRef, s.project, u.caller)
+        (schemaRev, schemaProject) <- validate(u.id, u.expanded, u.schemaRef, s.project, u.caller)
         types                       = u.expanded.getTypes.getOrElse(Set.empty)
         time                       <- IOInstant.now
       } yield ResourceSchemaUpdated(u.id, u.project, schemaRev, schemaProject, types, s.rev + 1, time, u.subject)

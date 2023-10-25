@@ -91,7 +91,7 @@ final class ResourcesImpl private (
       schemaRef      <- expandResourceRef(schema, projectContext)
       resource       <- log.stateOr(projectRef, iri, ResourceNotFound(iri, projectRef)).toCatsIO
       res            <- if (schemaRef.iri == resource.schema.iri) fetch(id, projectRef, schema.some)
-                        else eval(UpdateResourceSchema(iri, projectRef, schemaRef.some, resource.expanded, resource.rev, caller))
+                        else eval(UpdateResourceSchema(iri, projectRef, schemaRef, resource.expanded, resource.rev, caller))
     } yield res
   }.span("updateResourceSchema")
 
