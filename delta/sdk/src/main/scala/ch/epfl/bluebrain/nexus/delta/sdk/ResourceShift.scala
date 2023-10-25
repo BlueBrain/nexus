@@ -2,15 +2,15 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 
 import cats.effect.IO
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
@@ -89,9 +89,10 @@ abstract class ResourceShift[State <: ScopedState, A, M](
   private def toGraphResource(project: ProjectRef, resource: ResourceF[A])(implicit
       cr: RemoteContextResolution
   ): IO[GraphResource] = {
-    val content  = resourceToContent(resource)
-    val metadata = content.metadata
-    val id       = resource.resolvedId
+    implicit val jsonLdOptions = JsonLdOptions.AlwaysEmbed
+    val content                = resourceToContent(resource)
+    val metadata               = content.metadata
+    val id                     = resource.resolvedId
     for {
       graph             <- valueJsonLdEncoder.graph(resource.value).toCatsIO
       rootGraph          = graph.replaceRootNode(id)
@@ -114,7 +115,7 @@ abstract class ResourceShift[State <: ScopedState, A, M](
     )
   }
 
-  private def encodeMetadata(id: Iri, metadata: Option[M])(implicit cr: RemoteContextResolution) =
+  private def encodeMetadata(id: Iri, metadata: Option[M])(implicit cr: RemoteContextResolution, opts: JsonLdOptions) =
     (metadata, metadataEncoder) match {
       case (Some(m), Some(e)) => e.graph(m).toCatsIO.map { g => Some(g.replaceRootNode(id)) }
       case (_, _)             => IO.none

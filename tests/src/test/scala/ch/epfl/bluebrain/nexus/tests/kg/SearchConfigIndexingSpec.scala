@@ -7,12 +7,13 @@ import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.resources.Rick
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Organizations, Resources}
 import io.circe.Json
+import org.scalactic.source.Position
 import org.scalatest.Assertion
 
 import java.time.Instant
 import concurrent.duration._
 
-class SearchConfigSpec extends BaseIntegrationSpec {
+class SearchConfigIndexingSpec extends BaseIntegrationSpec {
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(config.patience * 2, 300.millis)
 
@@ -30,6 +31,7 @@ class SearchConfigSpec extends BaseIntegrationSpec {
   private val boutonDensityId      = "https://bbp.epfl.ch/data/bouton-density"
   private val simulationCampaignId = "https://bbp.epfl.ch/data/simulation-campaign"
   private val simulationId         = "https://bbp.epfl.ch/data/simulation"
+  private val synapseId            = "https://bbp.epfl.ch/data/synapse"
   private val detailedCircuitId    = "https://bbp.epfl.ch/data/detailed-circuit"
 
   // the resources that should appear in the search index
@@ -40,6 +42,7 @@ class SearchConfigSpec extends BaseIntegrationSpec {
     "/kg/search/unassessed-trace.json",
     "/kg/search/neuron-morphology.json",
     "/kg/search/neuron-density.json",
+    "/kg/search/synapse.json",
     "/kg/search/layer-thickness.json",
     "/kg/search/bouton-density.json",
     "/kg/search/detailed-circuit.json",
@@ -784,6 +787,45 @@ class SearchConfigSpec extends BaseIntegrationSpec {
       }
     }
 
+    "have the correct pre synaptic pathway" in {
+      val query    = queryField(synapseId, "preSynapticPathway")
+      val expected =
+        json"""{
+          "preSynapticPathway": [
+            {
+              "@id": "http://api.brain-map.org/api/v2/data/Structure/453",
+              "about": "https://bbp.epfl.ch/neurosciencegraph/data/BrainRegion",
+              "label": "Somatosensory areas",
+              "notation": "SS"
+            }
+          ]
+        }
+      """
+
+      assertOneSource(query) { json =>
+        json should equalIgnoreArrayOrder(expected)
+      }
+    }
+
+    "have the correct post synaptic pathway" in {
+      val query    = queryField(synapseId, "postSynapticPathway")
+      val expected =
+        json"""{
+          "postSynapticPathway": [
+              {
+                "@id": "http://api.brain-map.org/api/v2/data/Structure/454",
+                "about": "https://bbp.epfl.ch/neurosciencegraph/data/OtherBrainRegion",
+                "label": "Other somatosensory areas",
+                "notation": "OSS"
+              }
+            ]
+        }
+      """
+
+      assertOneSource(query) { json =>
+        json should equalIgnoreArrayOrder(expected)
+      }
+    }
   }
 
   /**
@@ -809,20 +851,35 @@ class SearchConfigSpec extends BaseIntegrationSpec {
     * Queries ES using the provided query. Asserts that there is only on result in _source. Runs the provided assertion
     * on the _source.
     */
-  private def assertOneSource(query: Json)(assertion: Json => Assertion): IO[Assertion] =
+  private def assertOneSource(query: Json)(assertion: Json => Assertion)(implicit pos: Position): IO[Assertion] =
     eventually {
       deltaClient.post[Json]("/search/query", query, Rick) { (body, response) =>
         response.status shouldEqual StatusCodes.OK
-        val sources = Json.fromValues(body.findAllByKey("_source"))
-        val source  = sources.hcursor.downArray.as[Json]
-        val actual  = source.getOrElse(Json.Null)
 
-        sources.asArray.value.size shouldBe 1
-        assertion(actual)
+        val results = Json
+          .fromValues(body.findAllByKey("_source"))
+          .hcursor
+          .as[List[Json]]
+          .getOrElse(Nil)
+
+        results match {
+          case single :: Nil => assertion(single)
+          case Nil           =>
+            fail(
+              s"Expected exactly 1 source to match query, got 0.\n " +
+                s"Query was ${query.spaces2}"
+            )
+          case many          =>
+            fail(
+              s"Expected exactly 1 source to match query, got ${many.size}.\n" +
+                s"Query was: ${query.spaces2}\n" +
+                s"Results were: $results"
+            )
+        }
       }
     }
 
-  private def assertEmpty(query: Json): IO[Assertion] =
+  private def assertEmpty(query: Json)(implicit pos: Position): IO[Assertion] =
     assertOneSource(query)(j => assert(j == json"""{ }"""))
 
   /** Check that a given field in the json can be parsed as [[Instant]] */

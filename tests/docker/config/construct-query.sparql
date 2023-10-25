@@ -183,6 +183,18 @@ CONSTRUCT {
   ?alias  :campaign            ?campaignId              .
                                ?campaignId              :identifier      ?campaignId   ;
                                                         :name           ?campaignName .
+
+  ## Synapses
+  ?alias  :postSynapticPathway  ?postSynaptic   .
+                            ?postSynaptic   :about      ?postSynapticAbout      ;
+                                              :label      ?postSynapticLabel      ;
+                                              :notation   ?postSynapticNotation   .
+
+  ?alias  :preSynapticPathway  ?preSynaptic .
+                            ?preSynaptic       :about      ?preSynapticAbout       ;
+                                              :label      ?preSynapticLabel       ;
+                                              :notation   ?preSynapticNotation    .
+
 } WHERE {
   VALUES ?id { {resource_id} } .
   BIND( IRI(concat(str(?id), '/', 'alias')) AS ?alias ) .
@@ -633,4 +645,16 @@ CONSTRUCT {
     } .
   } .
 
+  # Synapses
+  OPTIONAL {
+    ?id bmo:synapticPathway / nsg:postSynaptic  ?postSynaptic   .
+                                                ?postSynaptic   schema:about    ?postSynapticAbout      ;
+                                                                rdfs:label      ?postSynapticLabel      .
+                                                OPTIONAL {      ?postSynaptic   skos:notation           ?postSynapticNotation   . } .
+    ?id bmo:synapticPathway / nsg:preSynaptic     ?preSynaptic .
+                                                  ?preSynaptic    schema:about     ?preSynapticAbout       ;
+                                                                  rdfs:label       ?preSynapticLabel       .
+                                                  OPTIONAL { ?preSynaptic     skos:notation   ?preSynapticNotation    . } .
+
+    } .
 }

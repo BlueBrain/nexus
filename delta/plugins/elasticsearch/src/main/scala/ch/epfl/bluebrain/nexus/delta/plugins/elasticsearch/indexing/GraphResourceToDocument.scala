@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing
 
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
@@ -33,8 +33,9 @@ final class GraphResourceToDocument(context: ContextValue, includeContext: Boole
 
   /** Given a [[GraphResource]] returns a JSON-LD created from the merged graph and metadata graph */
   def graphToDocument(element: GraphResource): Task[Option[Json]] = {
-    val graph = element.graph ++ element.metadataGraph
-    val json  =
+    implicit val jsonLdOptions = JsonLdOptions.AlwaysEmbed
+    val graph                  = element.graph ++ element.metadataGraph
+    val json                   =
       if (element.source.isEmpty())
         graph
           .toCompactedJsonLd(context)

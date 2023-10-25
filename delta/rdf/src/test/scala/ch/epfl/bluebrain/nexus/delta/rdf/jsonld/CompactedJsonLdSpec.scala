@@ -1,10 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld
 
-import ch.epfl.bluebrain.nexus.delta.rdf.{Fixtures, GraphHelpers}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import ch.epfl.bluebrain.nexus.delta.rdf.{Fixtures, GraphHelpers}
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 
 class CompactedJsonLdSpec extends CatsEffectSpec with Fixtures with GraphHelpers {

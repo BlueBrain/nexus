@@ -1,0 +1,93 @@
+{
+  "@context": "https://bbp.neuroshapes.org",
+  "@id": "https://bbp.epfl.ch/data/synapse",
+  "@type": [
+    "Entity",
+    "Parameter",
+    "SchafferCollateralAnatomyParameter",
+    "SynapsesPerConnection",
+    "ExperimentalSynapsesPerConnection"
+  ],
+  "brainLocation": {
+    "brainRegion": {
+      "@id": "http://purl.obolibrary.org/obo/UBERON_0003883",
+      "label": "CA3"
+    }
+  },
+  "comment": "inferred from Sik et al (1993) but unclear exactly how ",
+  "contribution": {
+    "@type": "Contribution",
+    "agent": {
+      "@id": "https://bbp.epfl.ch/nexus/v1/realms/bbp/users/aantonie",
+      "@type": "Agent"
+    }
+  },
+  "description": "SynapseDensity parameter from Schaffer axon collateral (pre-synaptic) to PV+ (post-synaptic) neurons. These data are part of the Schaffer collateral anatomy data.",
+  "name": "SynapseDensity parameter from Schaffer axon collateral (pre-synaptic) to PV+ (post-synaptic) neurons",
+  "series": [
+    {
+      "statistic": "mean",
+      "unitCode": "synapses/connection",
+      "value": 1.19
+    },
+    {
+      "statistic": "N synapses",
+      "unitCode": "dimensionless",
+      "value": 274
+    },
+    {
+      "statistic": "standard deviation",
+      "unitCode": "synapses/connection",
+      "value": 0.48
+    },
+    {
+      "statistic": "standard error of the mean",
+      "unitCode": "synapses/connection",
+      "value": 0.028997860479848495
+    },
+    {
+      "statistic": "minimum",
+      "unitCode": "synapses/connection",
+      "value": 1
+    },
+    {
+      "statistic": "maximum",
+      "unitCode": "synapses/connection",
+      "value": 3
+    }
+  ],
+  "subject": {
+    "@type": "Subject",
+    "species": {
+      "@id": "http://purl.obolibrary.org/obo/NCBITaxon_10116",
+      "label": "Rattus norvegicus"
+    },
+    "strain": {
+      "@id": "http://www.ebi.ac.uk/efo/EFO_0001352",
+      "label": "Sprague Dawley"
+    },
+    "weight": {
+      "maxValue": 300,
+      "minValue": 200,
+      "unitCode": "grams"
+    }
+  },
+  "synapticPathway": {
+    "postSynaptic": [
+      {
+        "@id": "http://api.brain-map.org/api/v2/data/Structure/454",
+        "about": "OtherBrainRegion",
+        "label": "Other somatosensory areas",
+        "notation": "OSS"
+      }
+    ],
+    "preSynaptic": [
+      {
+        "@id": "http://api.brain-map.org/api/v2/data/Structure/453",
+        "about": "BrainRegion",
+        "label": "Somatosensory areas",
+        "notation": "SS"
+      }
+    ]
+  }
+}
