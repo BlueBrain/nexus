@@ -72,7 +72,7 @@ object ResourcesModule extends ModuleDef {
   }
 
   make[ResourceResolution[Schema]].from { (aclCheck: AclCheck, resolvers: Resolvers, schemas: Schemas) =>
-    ResourceResolution.schemaResource(aclCheck, resolvers, schemas)
+    ResourceResolution.schemaResource(aclCheck, resolvers, schemas, excludeDeprecated = false)
   }
 
   make[ResourcesRoutes].from {

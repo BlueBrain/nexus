@@ -61,7 +61,7 @@ object ResolversModule extends ModuleDef {
     ) =>
       MultiResolution(
         fetchContext.mapRejection(ProjectContextRejection),
-        ResolverResolution(aclCheck, resolvers, shifts)
+        ResolverResolution(aclCheck, resolvers, shifts, excludeDeprecated = false)
       )
   }
 

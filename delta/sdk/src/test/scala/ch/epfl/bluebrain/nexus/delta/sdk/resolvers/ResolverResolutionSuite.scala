@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolutionSuite.Resou
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.IdentityResolution.{ProvidedIdentities, UseCurrentCaller}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.Resolver.CrossProjectResolver
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.ResolverNotFound
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverResolutionRejection.{ProjectAccessDenied, ResourceNotFound, ResourceTypesDenied, WrappedResolverRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverResolutionRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverValue.CrossProjectValue
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport.ResolverReport
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{IdentityResolution, Priority, Resolver, ResourceResolutionReport}
@@ -51,7 +51,7 @@ class ResolverResolutionSuite extends CatsEffectSuite {
     uris = ResourceUris(Uri("/example1")),
     rev = 5,
     types = Set(nxv + "ResourceExample", nxv + "ResourceExample2"),
-    deprecated = false,
+    deprecated = true,
     createdAt = Instant.now(),
     createdBy = alice,
     updatedAt = Instant.now(),
@@ -103,23 +103,29 @@ class ResolverResolutionSuite extends CatsEffectSuite {
         case _            => IO.none
       }
 
-  private def singleResolverResolution(resourceProject: ProjectRef, resolver: Resolver) =
+  private def singleResolverResolution(resourceProject: ProjectRef, resolver: Resolver, excludeDeprecated: Boolean) =
     ResourceResolution(
       checkAcls,
       emptyResolverListQuery,
       fetchResolver(resolver),
-      fetchResource(resourceProject)
+      fetchResource(resourceProject),
+      excludeDeprecated
     )
 
-  private def multipleResolverResolution(resourceProject: ProjectRef, resolvers: Resolver*) =
+  private def multipleResolverResolution(
+      resourceProject: ProjectRef,
+      excludeDeprecated: Boolean,
+      resolvers: Resolver*
+  ) =
     ResourceResolution(
       checkAcls,
       listResolvers(resolvers.toList),
       noResolverFetch,
-      fetchResource(resourceProject)
+      fetchResource(resourceProject),
+      excludeDeprecated
     )
 
-  private val inProjectResolution = singleResolverResolution(project1, inProjectResolver)
+  private val inProjectResolution = singleResolverResolution(project1, inProjectResolver, excludeDeprecated = false)
 
   private val resource1NotFound = None
   private val resource1Found    = Some(resource)
@@ -158,9 +164,22 @@ class ResolverResolutionSuite extends CatsEffectSuite {
       .assertEquals((expectedReport, expectedResult))
   }
 
+  test("Using an in-project resolver excluding deprecated resources fails with a deprecated resource") {
+    val noDeprecated = singleResolverResolution(project1, inProjectResolver, excludeDeprecated = true)
+
+    val expectedReport = ResolverReport.failed(
+      inProjectResolver.id,
+      project1 -> ResourceIsDeprecated(resource.id, project1)
+    )
+
+    noDeprecated
+      .resolveReport(Latest(resource.id), project1, inProjectResolver.id)
+      .assertEquals((expectedReport, resource1NotFound))
+  }
+
   test("Using a cross-project resolver with current caller succeeds") {
     val resolver           = crossProjectResolver("use-current", 40, identityResolution = UseCurrentCaller)
-    val resolverResolution = singleResolverResolution(project3, resolver)
+    val resolverResolution = singleResolverResolution(project3, resolver, excludeDeprecated = false)
 
     val successAtProject3 = ResolverReport.success(
       resolver.id,
@@ -178,7 +197,7 @@ class ResolverResolutionSuite extends CatsEffectSuite {
     val acceptedTypes      = resource.types + nxv.Schema
     val resolver           =
       crossProjectResolver("use-current", 40, resourceTypes = acceptedTypes, identityResolution = UseCurrentCaller)
-    val resolverResolution = singleResolverResolution(project3, resolver)
+    val resolverResolution = singleResolverResolution(project3, resolver, excludeDeprecated = false)
 
     val successAtProject3 = ResolverReport.success(
       resolver.id,
@@ -194,7 +213,7 @@ class ResolverResolutionSuite extends CatsEffectSuite {
 
   test("Using a cross-project resolver with current caller fails if the caller has no access to the project") {
     val resolver           = crossProjectResolver("use-current", 40, identityResolution = UseCurrentCaller)
-    val resolverResolution = singleResolverResolution(project2, resolver)
+    val resolverResolution = singleResolverResolution(project2, resolver, excludeDeprecated = false)
 
     val failedReport = ResolverReport.failed(
       resolver.id,
@@ -212,7 +231,7 @@ class ResolverResolutionSuite extends CatsEffectSuite {
     val acceptedTypes      = Set(nxv.Schema)
     val resolver           =
       crossProjectResolver("use-current", 40, resourceTypes = acceptedTypes, identityResolution = UseCurrentCaller)
-    val resolverResolution = singleResolverResolution(project3, resolver)
+    val resolverResolution = singleResolverResolution(project3, resolver, excludeDeprecated = false)
 
     val failedReport = ResolverReport.failed(
       resolver.id,
@@ -228,7 +247,7 @@ class ResolverResolutionSuite extends CatsEffectSuite {
 
   test("Using a cross-project resolver with provided identities succeeds") {
     val resolver           = crossProjectResolver("provided-identities", 40, identityResolution = ProvidedIdentities(Set(bob)))
-    val resolverResolution = singleResolverResolution(project2, resolver)
+    val resolverResolution = singleResolverResolution(project2, resolver, excludeDeprecated = false)
 
     val successAtProject2 = ResolverReport.success(
       resolver.id,
@@ -249,7 +268,7 @@ class ResolverResolutionSuite extends CatsEffectSuite {
       resourceTypes = acceptedTypes,
       identityResolution = ProvidedIdentities(Set(bob))
     )
-    val resolverResolution = singleResolverResolution(project2, resolver)
+    val resolverResolution = singleResolverResolution(project2, resolver, excludeDeprecated = false)
 
     val successAtProject2 = ResolverReport.success(
       resolver.id,
@@ -264,7 +283,7 @@ class ResolverResolutionSuite extends CatsEffectSuite {
 
   test("Using a cross-project resolver with provided identities fail if the identity has no access") {
     val resolver           = crossProjectResolver("provided-identities", 40, identityResolution = ProvidedIdentities(Set(bob)))
-    val resolverResolution = singleResolverResolution(project3, resolver)
+    val resolverResolution = singleResolverResolution(project3, resolver, excludeDeprecated = false)
 
     val failedReport = ResolverReport.failed(
       resolver.id,
@@ -278,9 +297,26 @@ class ResolverResolutionSuite extends CatsEffectSuite {
       .assertEquals((failedReport, resource1NotFound))
   }
 
+  test("Using an cross-project resolver excluding deprecated resources fails with a deprecated resource") {
+    val resolver     = crossProjectResolver("use-current", 40, identityResolution = UseCurrentCaller)
+    val noDeprecated = singleResolverResolution(project3, resolver, excludeDeprecated = true)
+
+    val expectedReport = ResolverReport.failed(
+      resolver.id,
+      project1 -> ResourceNotFound(resource.id, project1),
+      project2 -> ProjectAccessDenied(project2, UseCurrentCaller),
+      project3 -> ResourceIsDeprecated(resource.id, project3)
+    )
+
+    noDeprecated
+      .resolveReport(Latest(resource.id), project1, resolver.id)
+      .assertEquals((expectedReport, resource1NotFound))
+  }
+
   test("Using multiple resolvers succeeds after a first failure") {
     val resolution = multipleResolverResolution(
       project1,
+      false,
       crossProjectResolver("cross-project-1", priority = 10, resourceTypes = Set(nxv.Schema)),
       crossProjectResolver("cross-project-2", priority = 40),
       inProjectResolver
@@ -302,6 +338,7 @@ class ResolverResolutionSuite extends CatsEffectSuite {
   test("Using multiple resolvers succeeds with the last resolver") {
     val resolution = multipleResolverResolution(
       project3,
+      false,
       crossProjectResolver("cross-project-1", priority = 10, resourceTypes = Set(nxv.Schema)),
       crossProjectResolver("cross-project-2", priority = 40, projects = NonEmptyList.of(project3)),
       inProjectResolver
@@ -327,6 +364,7 @@ class ResolverResolutionSuite extends CatsEffectSuite {
   test("Using multiple resolvers fails if no resolver matches") {
     val resolution = multipleResolverResolution(
       project2,
+      false,
       crossProjectResolver("cross-project-1", priority = 10, resourceTypes = Set(nxv.Schema)),
       crossProjectResolver("cross-project-2", priority = 40, projects = NonEmptyList.of(project3)),
       inProjectResolver

@@ -8,14 +8,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.{Fetch, ResolverResolutionResult}
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.{DeprecationCheck, Fetch, ResolverResolutionResult}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.IdentityResolution.{ProvidedIdentities, UseCurrentCaller}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.Resolver.{CrossProjectResolver, InProjectResolver}
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverResolutionRejection.{ProjectAccessDenied, ResolutionFetchRejection, ResourceTypesDenied, WrappedResolverRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverResolutionRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport.{ResolverFailedReport, ResolverReport, ResolverSuccessReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{Resolver, ResolverRejection, ResolverResolutionRejection, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.{ResolverResource, ResourceShifts}
@@ -41,7 +41,8 @@ final class ResolverResolution[R](
     listResolvers: ProjectRef => IO[List[Resolver]],
     fetchResolver: (Iri, ProjectRef) => IO[Resolver],
     fetch: (ResourceRef, ProjectRef) => Fetch[R],
-    extractTypes: R => Set[Iri]
+    extractTypes: R => Set[Iri],
+    deprecationCheck: DeprecationCheck[R]
 ) {
 
   /**
@@ -142,9 +143,19 @@ final class ResolverResolution[R](
       projectRef: ProjectRef,
       resolver: InProjectResolver
   ): IO[ResolverResolutionResult[R]] =
-    fetch(ref, projectRef).map {
-      case None => ResolverReport.failed(resolver.id, projectRef -> ResolutionFetchRejection(ref, projectRef)) -> None
-      case s    => ResolverReport.success(resolver.id, projectRef)                                             -> s
+    for {
+      resourceOpt <- fetch(ref, projectRef)
+      result      <- resourceOpt.traverse(runDeprecationCheck(ref, projectRef, _))
+    } yield {
+      result match {
+        // The resource has not been found in the project
+        case None        => ResolverReport.failed(resolver.id, projectRef -> ResolutionFetchRejection(ref, projectRef)) -> None
+        // The resource exists but the deprecation check is positive so we reject it
+        case Some(true)  =>
+          ResolverReport.failed(resolver.id, projectRef -> ResourceIsDeprecated(ref.original, projectRef)) -> None
+        // The resource has been successfully resolved
+        case Some(false) => ResolverReport.success(resolver.id, projectRef)                                             -> resourceOpt
+      }
     }
 
   private def crossProjectResolve(
@@ -152,6 +163,10 @@ final class ResolverResolution[R](
       resolver: CrossProjectResolver
   )(implicit caller: Caller): IO[ResolverResolutionResult[R]] = {
     import resolver.value._
+
+    def fetchInProject(p: ProjectRef) = fetch(ref, p).flatMap(
+      IO.fromOption(_)(ResolutionFetchRejection(ref, p))
+    )
 
     def validateIdentities(p: ProjectRef): IO[Unit] = {
       val identities = identityResolution match {
@@ -168,6 +183,11 @@ final class ResolverResolution[R](
     def validateResourceTypes(types: Set[Iri], p: ProjectRef): IO[Unit] =
       IO.raiseUnless(resourceTypes.isEmpty || resourceTypes.exists(types.contains))(ResourceTypesDenied(p, types))
 
+    def validateDeprecationCheck(p: ProjectRef, resource: R) =
+      runDeprecationCheck(ref, p, resource).flatMap { isDeprecated =>
+        IO.raiseWhen(isDeprecated)(ResourceIsDeprecated(ref.original, p))
+      }
+
     val initial: ResolverResolutionResult[R] = ResolverFailedReport(resolver.id, VectorMap.empty) -> None
     projects.foldLeftM(initial) { (previous, projectRef) =>
       previous match {
@@ -177,10 +197,9 @@ final class ResolverResolution[R](
         case (f: ResolverFailedReport, _)  =>
           val resolve = for {
             _        <- validateIdentities(projectRef)
-            resource <- fetch(ref, projectRef).flatMap { res =>
-                          IO.fromOption(res)(ResolutionFetchRejection(ref, projectRef))
-                        }
+            resource <- fetchInProject(projectRef)
             _        <- validateResourceTypes(extractTypes(resource), projectRef)
+            _        <- validateDeprecationCheck(projectRef, resource)
           } yield ResolverSuccessReport(resolver.id, projectRef, f.rejections) -> Option(resource)
           resolve.attemptNarrow[ResolverResolutionRejection].map {
             case Left(r)  => f.copy(rejections = f.rejections + (projectRef -> r)) -> None
@@ -188,6 +207,16 @@ final class ResolverResolution[R](
           }
       }
     }
+  }
+
+  private def runDeprecationCheck(resourceRef: ResourceRef, project: ProjectRef, resource: R): IO[Boolean] = {
+    if (deprecationCheck.enabled) {
+      resourceRef match {
+        case _: ResourceRef.Latest => IO.pure(deprecationCheck(resource))
+        // Fetch the latest version to get its deprecation status
+        case _                     => fetch(ResourceRef.Latest(resourceRef.original), project).map(_.exists(deprecationCheck(_)))
+      }
+    } else IO.pure(false)
   }
 }
 
@@ -209,6 +238,17 @@ object ResolverResolution {
   private val resolverOrdering: Ordering[ResolverResource] = Ordering[Instant] on (r => r.createdAt)
 
   /**
+    * Allows to check and exclude deprecated resources from the resolution
+    * @param enabled
+    *   if the check is enabled
+    * @param isDeprecated
+    *   extract the deprecation status from the resource
+    */
+  final case class DeprecationCheck[R](enabled: Boolean, isDeprecated: R => Boolean) {
+    def apply(r: R): Boolean = isDeprecated(r)
+  }
+
+  /**
     * Resolution for a given type based on resolvers
     * @param aclCheck
     *   how to check acls
@@ -226,7 +266,8 @@ object ResolverResolution {
       resolvers: Resolvers,
       fetch: (ResourceRef, ProjectRef) => Fetch[R],
       extractTypes: R => Set[Iri],
-      readPermission: Permission
+      readPermission: Permission,
+      deprecationCheck: DeprecationCheck[R]
   ) = new ResolverResolution(
     checkAcls = (p: ProjectRef, identities: Set[Identity]) => aclCheck.authorizeFor(p, readPermission, identities),
     listResolvers = (projectRef: ProjectRef) =>
@@ -235,30 +276,39 @@ object ResolverResolution {
         .map { r => r.results.map { r: ResultEntry[ResolverResource] => r.source.value }.toList },
     fetchResolver = (id: Iri, projectRef: ProjectRef) => resolvers.fetchActiveResolver(id, projectRef),
     fetch = fetch,
-    extractTypes
+    extractTypes,
+    deprecationCheck
   )
 
   /**
     * Resolution based on resolvers and reference exchanges
+    *
     * @param aclCheck
     *   how to check acls
     * @param resolvers
     *   a resolvers instance
     * @param shifts
     *   how to fetch the resource
+    * @param excludeDeprecated
+    *   to exclude deprecated resources from the resolution
     */
   def apply(
       aclCheck: AclCheck,
       resolvers: Resolvers,
-      shifts: ResourceShifts
-  ): ResolverResolution[JsonLdContent[_, _]] =
-    apply(aclCheck, resolvers, shifts.fetch, _.resource.types, Permissions.resources.read)
+      shifts: ResourceShifts,
+      excludeDeprecated: Boolean
+  ): ResolverResolution[JsonLdContent[_, _]] = {
+    apply(aclCheck, resolvers, shifts.fetch(_, _), excludeDeprecated)
+  }
 
   def apply(
       aclCheck: AclCheck,
       resolvers: Resolvers,
-      fetch: (ResourceRef, ProjectRef) => IO[Option[JsonLdContent[_, _]]]
-  ): ResolverResolution[JsonLdContent[_, _]] =
-    apply(aclCheck, resolvers, fetch, _.resource.types, Permissions.resources.read)
+      fetch: (ResourceRef, ProjectRef) => IO[Option[JsonLdContent[_, _]]],
+      excludeDeprecated: Boolean
+  ): ResolverResolution[JsonLdContent[_, _]] = {
+    val deprecationCheck = DeprecationCheck[JsonLdContent[_, _]](excludeDeprecated, _.resource.deprecated)
+    apply(aclCheck, resolvers, fetch, _.resource.types, Permissions.resources.read, deprecationCheck)
+  }
 
 }
