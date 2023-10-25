@@ -81,7 +81,7 @@ class GraphAnalyticsSpec(docker: ElasticSearchDocker)
     }
 
     "fetch relationships" in eventually {
-      graphAnalytics.relationships(project.ref).toBIO.accepted shouldEqual
+      graphAnalytics.relationships(project.ref).toBIO[GraphAnalyticsRejection].accepted shouldEqual
         AnalyticsGraph(
           List(Node(schema.Person, "Person", 3)),
           List(Edge(schema.Person, schema.Person, 3, Vector(EdgePath(schema + "brother", "brother"))))
@@ -89,7 +89,7 @@ class GraphAnalyticsSpec(docker: ElasticSearchDocker)
     }
 
     "fetch properties" in {
-      graphAnalytics.properties(project.ref, schema.Person).toBIO.accepted shouldEqual
+      graphAnalytics.properties(project.ref, schema.Person).toBIO[GraphAnalyticsRejection].accepted shouldEqual
         PropertiesStatistics(
           Metadata(schema.Person, "Person", 3),
           List(
