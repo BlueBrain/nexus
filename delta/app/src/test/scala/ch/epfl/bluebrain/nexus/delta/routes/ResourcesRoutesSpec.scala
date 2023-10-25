@@ -359,7 +359,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues
 
     "fail to update a schema when providing a non-existing schema" in {
       aclCheck.append(AclAddress.Root, Anonymous -> Set(resources.write)).accepted
-      thereIsAResourceWithSchema { id =>
+      thereIsAResourceWithSchema("myschema") { id =>
         Put(s"/v1/resources/$projectRef/wrongSchema/$id/update-schema") ~> routes ~> check {
           response.status shouldEqual StatusCodes.NotFound
           response.asJson.hcursor.get[String]("@type").toOption should contain("InvalidSchemaRejection")
@@ -368,7 +368,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues
     }
 
     "fail to update schema when providing _ as schema" in {
-      thereIsAResourceWithSchema { id =>
+      thereIsAResourceWithSchema("myschema") { id =>
         Put(s"/v1/resources/$projectRef/_/$id/update-schema") ~> routes ~> check {
           response.status shouldEqual StatusCodes.BadRequest
           response.asJson.hcursor.get[String]("@type").toOption should contain("NoSchemaProvided")
@@ -377,7 +377,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues
     }
 
     "succeed to update the schema" in {
-      thereIsAResourceWithSchema { id =>
+      thereIsAResourceWithSchema("myschema") { id =>
         Put(s"/v1/resources/$projectRef/otherSchema/$id/update-schema") ~> routes ~> check {
           response.status shouldEqual StatusCodes.OK
           response.asJson.hcursor.get[String]("_constrainedBy").toOption should contain(schema3.id.toString)
@@ -687,12 +687,12 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues
     * @param assertion
     *   An assertion that can use the id of the newly created one resource
     */
-  private def thereIsAResourceWithSchema(assertion: String => Assertion): Assertion = {
+  private def thereIsAResourceWithSchema(schemaName: String)(assertion: String => Assertion): Assertion = {
     val resourceName = genString()
     val id           = nxv + resourceName
     val payload      = jsonContentOf("resources/resource.json", "id" -> id)
 
-    Post(s"/v1/resources/$projectRef/myschema", payload.toEntity) ~> routes ~> check {
+    Post(s"/v1/resources/$projectRef/$schemaName", payload.toEntity) ~> routes ~> check {
       status shouldEqual StatusCodes.Created
     }
 
