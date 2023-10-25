@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resources.model
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdResult
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
@@ -131,6 +132,18 @@ object ResourceCommand {
       project: ProjectRef,
       schemaOpt: Option[ResourceRef],
       jsonld: JsonLdResult,
+      rev: Int,
+      caller: Caller
+  ) extends ResourceCommand
+      with ModifyCommand {
+    def subject: Subject = caller.subject
+  }
+
+  final case class UpdateResourceSchema(
+      id: Iri,
+      project: ProjectRef,
+      schemaOpt: Option[ResourceRef],
+      expanded: ExpandedJsonLd,
       rev: Int,
       caller: Caller
   ) extends ResourceCommand

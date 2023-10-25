@@ -201,8 +201,7 @@ object ResourceRejection {
   /**
     * Rejection returned when attempting to update the resource with the schema it is already constrained with.
     */
-  final case class IdenticalSchema()
-      extends ResourceRejection(s"The provided schema is already constraining the resource.")
+  final case class NoSchemaProvided() extends ResourceRejection(s"No schema provided.")
 
   /**
     * Signals a rejection caused when interacting with other APIs when fetching a resource

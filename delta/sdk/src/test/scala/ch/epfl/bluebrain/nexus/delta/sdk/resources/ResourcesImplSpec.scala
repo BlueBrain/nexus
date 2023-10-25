@@ -458,17 +458,16 @@ class ResourcesImplSpec
           .rejectedWith[ResourceNotFound]
       }
 
-      "reject if the provided schema is the existing resource schema" in {
-        resources.create(id, projectRef, schema1.id, sourceWithId, None).accepted
-        resources
-          .updateResourceSchema(id, projectRef, schema1.id)
-          .rejectedWith[IdenticalSchema]
-      }
-
       "reject if the schema doesn't exist" in {
+        resources.create(id, projectRef, schema1.id, sourceWithId, None).accepted
         resources
           .updateResourceSchema(id, projectRef, nonExistentSchemaId)
           .rejectedWith[InvalidSchemaRejection]
+      }
+
+      "refresh if the provided schema is the existing resource schema" in {
+        val refreshed = resources.updateResourceSchema(id, projectRef, schema1.id).accepted
+        refreshed.schema.iri shouldEqual schema1.id
       }
 
       "reject if the project doesn't exist" in {

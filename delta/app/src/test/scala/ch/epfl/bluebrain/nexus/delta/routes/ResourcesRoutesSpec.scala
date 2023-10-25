@@ -371,16 +371,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues
       thereIsAResourceWithSchema { id =>
         Put(s"/v1/resources/$projectRef/_/$id/updateSchema") ~> routes ~> check {
           response.status shouldEqual StatusCodes.BadRequest
-          response.asJson.hcursor.get[String]("@type").toOption should contain("IdenticalSchema")
-        }
-      }
-    }
-
-    "fail to update schema when providing current schema" in {
-      thereIsAResourceWithSchema { id =>
-        Put(s"/v1/resources/$projectRef/myschema/$id/updateSchema") ~> routes ~> check {
-          response.status shouldEqual StatusCodes.BadRequest
-          response.asJson.hcursor.get[String]("@type").toOption should contain("IdenticalSchema")
+          response.asJson.hcursor.get[String]("@type").toOption should contain("NoSchemaProvided")
         }
       }
     }

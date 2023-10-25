@@ -143,6 +143,17 @@ object ResourceEvent {
       subject: Subject
   ) extends ResourceEvent
 
+  final case class ResourceSchemaUpdated(
+      id: Iri,
+      project: ProjectRef,
+      schema: ResourceRef.Revision,
+      schemaProject: ProjectRef,
+      types: Set[Iri],
+      rev: Int,
+      instant: Instant,
+      subject: Subject
+  ) extends ResourceEvent
+
   /**
     * Event representing a resource refresh.
     *
@@ -294,12 +305,14 @@ object ResourceEvent {
         ProjectScopedMetric.from(
           event,
           event match {
-            case _: ResourceCreated    => Created
-            case _: ResourceUpdated    => Updated
-            case _: ResourceRefreshed  => Refreshed
-            case _: ResourceTagAdded   => Tagged
-            case _: ResourceTagDeleted => TagDeleted
-            case _: ResourceDeprecated => Deprecated
+            case _: ResourceCreated       => Created
+            case _: ResourceUpdated       => Updated
+            case _: ResourceRefreshed     => Refreshed
+            case _: ResourceTagAdded      => Tagged
+            case _: ResourceTagDeleted    => TagDeleted
+            case _: ResourceDeprecated    => Deprecated
+            // TODO: Check if we want new one?
+            case _: ResourceSchemaUpdated => Updated
           },
           event.id,
           event.types,

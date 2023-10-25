@@ -24,7 +24,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources.{read => Read, write => Write}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.NexusSource.DecodingOption
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{IdenticalSchema, InvalidJsonLdFormat, InvalidSchemaRejection, ResourceNotFound}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{InvalidJsonLdFormat, InvalidSchemaRejection, NoSchemaProvided, ResourceNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{Resource, ResourceRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.{NexusSource, Resources}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
@@ -175,7 +175,7 @@ final class ResourcesRoutes(
                         authorizeFor(ref, Write).apply {
 
                           emit(
-                            IO.fromOption(schemaOpt)(IdenticalSchema())
+                            IO.fromOption(schemaOpt)(NoSchemaProvided())
                               .flatMap { schema =>
                                 resources
                                   .updateResourceSchema(id, ref, schema)

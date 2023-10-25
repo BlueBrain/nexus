@@ -18,7 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources.{entityType, expandIri, expandResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.ResourcesImpl.ResourcesLog
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceCommand._
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{IdenticalSchema, ProjectContextRejection, ResourceNotFound, RevisionNotFound, TagNotFound}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{ProjectContextRejection, ResourceNotFound, RevisionNotFound, TagNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{ResourceCommand, ResourceEvent, ResourceRejection, ResourceState}
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
@@ -90,9 +90,8 @@ final class ResourcesImpl private (
       iri            <- expandIri(id, projectContext).toCatsIO
       schemaRef      <- expandResourceRef(schema, projectContext)
       resource       <- log.stateOr(projectRef, iri, ResourceNotFound(iri, projectRef)).toCatsIO
-      _              <- IO.raiseWhen(schemaRef.iri == resource.schema.iri)(IdenticalSchema())
-      jsonld         <- sourceParser(projectRef, projectContext, iri, resource.source).toCatsIO
-      res            <- eval(UpdateResource(iri, projectRef, schemaRef.some, resource.source, jsonld, resource.rev, caller))
+      res            <- if (schemaRef.iri == resource.schema.iri) refresh(id, projectRef, schema.some)
+                        else eval(UpdateResourceSchema(iri, projectRef, schemaRef.some, resource.expanded, resource.rev, caller))
     } yield res
   }.span("updateResourceSchema")
 
