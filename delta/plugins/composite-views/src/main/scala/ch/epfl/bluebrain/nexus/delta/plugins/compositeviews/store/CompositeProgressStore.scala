@@ -1,8 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.store
 
-import cats.effect.Clock
+import cats.effect.{Clock, IO}
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeRestart
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeRestart.{FullRebuild, FullRestart, PartialRebuild}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.store.CompositeProgressStore.{logger, CompositeProgressRow}
@@ -18,18 +19,17 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionProgress
 import doobie._
 import doobie.implicits._
 import doobie.postgres.implicits._
-import monix.bio.UIO
 
 import java.time.Instant
 
-final class CompositeProgressStore(xas: Transactors)(implicit clock: Clock[UIO]) {
+final class CompositeProgressStore(xas: Transactors)(implicit clock: Clock[IO]) {
 
   /**
     * Saves a projection offset.
     */
-  def save(view: IndexingViewRef, branch: CompositeBranch, progress: ProjectionProgress): UIO[Unit] = {
+  def save(view: IndexingViewRef, branch: CompositeBranch, progress: ProjectionProgress): IO[Unit] = {
     logger.debug(s"Saving progress $progress for branch $branch of view $view") >>
-      IOUtils.instant.flatMap { instant =>
+      IOInstant.now.flatMap { instant =>
         sql"""INSERT INTO public.composite_offsets (project, view_id, rev, source_id, target_id, run, ordering,
            |processed, discarded, failed, created_at, updated_at)
            |VALUES (
@@ -44,31 +44,29 @@ final class CompositeProgressStore(xas: Transactors)(implicit clock: Clock[UIO])
            |  failed = EXCLUDED.failed,
            |  updated_at = EXCLUDED.updated_at;
            |""".stripMargin.update.run
-          .transact(xas.write)
+          .transact(xas.writeCE)
           .void
-          .hideErrors
       }
   }
 
   /**
     * Retrieves a projection offset if found.
     */
-  def progress(view: IndexingViewRef): UIO[Map[CompositeBranch, ProjectionProgress]] =
+  def progress(view: IndexingViewRef): IO[Map[CompositeBranch, ProjectionProgress]] =
     sql"""SELECT * FROM public.composite_offsets
          |WHERE project = ${view.project} and view_id = ${view.id} and rev = ${view.indexingRev};
          |""".stripMargin
       .query[CompositeProgressRow]
       .map { row => row.branch -> row.progress }
       .toMap
-      .transact(xas.read)
-      .hideErrors
+      .transact(xas.readCE)
 
   /**
     * Reset the offset according to the provided restart
     * @param restart
     *   the restart to apply
     */
-  def restart(restart: CompositeRestart): UIO[Unit] = IOUtils.instant.flatMap { instant =>
+  def restart(restart: CompositeRestart): IO[Unit] = IOInstant.now.flatMap { instant =>
     val project = restart.view.project
     val id      = restart.view.viewId
     val reset   = ProjectionProgress.NoProgress
@@ -94,26 +92,24 @@ final class CompositeProgressStore(xas: Transactors)(implicit clock: Clock[UIO])
          |  updated_at = $instant
          |$where
          |""".stripMargin.update.run
-      .transact(xas.write)
+      .transact(xas.writeCE)
       .void
-      .hideErrors
   }
 
   /**
     * Delete all entries for the given view
     */
-  def deleteAll(view: IndexingViewRef): UIO[Unit] =
+  def deleteAll(view: IndexingViewRef): IO[Unit] =
     sql"""DELETE FROM public.composite_offsets
          |WHERE project = ${view.project} and view_id = ${view.id} and rev = ${view.indexingRev};
          |""".stripMargin.update.run
-      .transact(xas.write)
+      .transact(xas.writeCE)
       .void
-      .hideErrors
 }
 
 object CompositeProgressStore {
 
-  private val logger: Logger = Logger[CompositeProgressStore]
+  private val logger = Logger.cats[CompositeProgressStore]
 
   final private[store] case class CompositeProgressRow(
       view: IndexingViewRef,

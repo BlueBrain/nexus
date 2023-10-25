@@ -1,19 +1,19 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
+import cats.effect.IO
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.Aux
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client._
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef.ActiveViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.{commonNamespace, projectionNamespace}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.SparqlProjection
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{AuthorizationFailed, WrappedBlazegraphClientError}
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import monix.bio.IO
 
 trait BlazegraphQuery {
 
@@ -35,7 +35,7 @@ trait BlazegraphQuery {
       project: ProjectRef,
       query: SparqlQuery,
       responseType: SparqlQueryResponseType.Aux[R]
-  )(implicit caller: Caller): IO[CompositeViewRejection, R]
+  )(implicit caller: Caller): IO[R]
 
   /**
     * Queries the blazegraph namespace of the passed composite views' projection. We check for the caller to have the
@@ -58,7 +58,7 @@ trait BlazegraphQuery {
       project: ProjectRef,
       query: SparqlQuery,
       responseType: SparqlQueryResponseType.Aux[R]
-  )(implicit caller: Caller): IO[CompositeViewRejection, R]
+  )(implicit caller: Caller): IO[R]
 
   /**
     * Queries all the blazegraph namespaces of the passed composite views' projection We check for the caller to have
@@ -78,7 +78,7 @@ trait BlazegraphQuery {
       project: ProjectRef,
       query: SparqlQuery,
       responseType: SparqlQueryResponseType.Aux[R]
-  )(implicit caller: Caller): IO[CompositeViewRejection, R]
+  )(implicit caller: Caller): IO[R]
 
 }
 
@@ -111,7 +111,7 @@ object BlazegraphQuery {
           project: ProjectRef,
           query: SparqlQuery,
           responseType: Aux[R]
-      )(implicit caller: Caller): IO[CompositeViewRejection, R] =
+      )(implicit caller: Caller): IO[R] =
         for {
           view       <- fetchView(id, project)
           permissions = view.sparqlProjections.map(_.permission)
@@ -126,7 +126,7 @@ object BlazegraphQuery {
           project: ProjectRef,
           query: SparqlQuery,
           responseType: Aux[R]
-      )(implicit caller: Caller): IO[CompositeViewRejection, R] =
+      )(implicit caller: Caller): IO[R] =
         for {
           view       <- fetchView(id, project)
           projection <- fetchProjection(view, projectionId)
@@ -140,7 +140,7 @@ object BlazegraphQuery {
           project: ProjectRef,
           query: SparqlQuery,
           responseType: Aux[R]
-      )(implicit caller: Caller): IO[CompositeViewRejection, R] =
+      )(implicit caller: Caller): IO[R] =
         for {
           view       <- fetchView(id, project)
           namespaces <- allowedProjections(view, project)
@@ -154,7 +154,7 @@ object BlazegraphQuery {
 
       private def allowedProjections(view: ActiveViewDef, project: ProjectRef)(implicit
           caller: Caller
-      ): IO[AuthorizationFailed, Set[String]] =
+      ): IO[Set[String]] =
         aclCheck
           .mapFilterAtAddress[SparqlProjection, String](
             view.sparqlProjections,
@@ -162,7 +162,6 @@ object BlazegraphQuery {
             p => p.permission,
             p => projectionNamespace(p, view.uuid, prefix)
           )
-          .toUIO
-          .tapEval { namespaces => IO.raiseWhen(namespaces.isEmpty)(AuthorizationFailed) }
+          .flatTap { namespaces => IO.raiseWhen(namespaces.isEmpty)(AuthorizationFailed) }
     }
 }

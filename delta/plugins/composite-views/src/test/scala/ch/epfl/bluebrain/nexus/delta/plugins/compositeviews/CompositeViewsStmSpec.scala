@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews.{evaluate, next}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewCommand._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewEvent._
@@ -10,14 +11,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.Json
-import monix.bio.IO
 
 import java.time.Instant
 import java.util.UUID
 
-class CompositeViewsStmSpec extends BioSpec with CompositeViewsFixture {
+class CompositeViewsStmSpec extends CatsEffectSpec with CompositeViewsFixture {
   "A CompositeViews STM" when {
 
     val validView: ValidateCompositeView   = (_, _) => IO.unit

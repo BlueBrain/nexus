@@ -7,6 +7,7 @@ import cats.data.NonEmptyList
 import cats.effect.Resource
 import cats.effect.concurrent.Ref
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphClientSetup
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
@@ -421,7 +422,7 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
       _        <- mainCompleted.get.map(_.get(project2)).eventuallySome(1)
       _        <- mainCompleted.get.map(_.get(project3)).eventuallySome(1)
       _        <- rebuildCompleted.get.assert(Map.empty)
-      _        <- projections.progress(view.indexingRef).eventually(expectedProgress)
+      _        <- projections.progress(view.indexingRef).toUIO.eventually(expectedProgress)
       _        <- checkElasticSearchDocuments(
                     elasticIndex,
                     jsonContentOf("indexing/result_muse.json"),
@@ -506,7 +507,7 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
 
     def checkIndexingState =
       for {
-        _ <- projections.progress(view.indexingRef).eventually(expectedProgress)
+        _ <- projections.progress(view.indexingRef).toUIO.eventually(expectedProgress)
         _ <- checkElasticSearchDocuments(
                elasticIndex,
                jsonContentOf("indexing/result_muse.json"),
@@ -525,7 +526,7 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
       _ <- rebuildCompleted.get.map(_.get(project2)).eventuallySome(1)
       _ <- rebuildCompleted.get.map(_.get(project3)).eventuallySome(1)
       _ <- checkIndexingState
-      _ <- projections.scheduleFullRestart(viewRef)(Anonymous)
+      _ <- projections.scheduleFullRestart(viewRef)(Anonymous).toUIO
       _ <- mainCompleted.get.map(_.get(project1)).eventuallySome(2)
       _ <- mainCompleted.get.map(_.get(project2)).eventuallySome(2)
       _ <- mainCompleted.get.map(_.get(project3)).eventuallySome(2)

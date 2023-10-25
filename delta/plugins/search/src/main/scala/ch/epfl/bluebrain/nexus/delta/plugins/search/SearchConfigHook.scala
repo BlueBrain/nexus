@@ -12,8 +12,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.Defaults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
-
 final class SearchConfigHook(
     defaults: Defaults,
     config: IndexingConfig,
