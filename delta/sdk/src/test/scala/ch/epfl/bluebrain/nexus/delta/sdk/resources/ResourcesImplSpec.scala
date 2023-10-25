@@ -479,6 +479,9 @@ class ResourcesImplSpec
       "succeed" in {
         val updated = resources.updateResourceSchema(id, projectRef, schema3.id).accepted
         updated.schema.iri shouldEqual schema3.id
+
+        val fetched = resources.fetch(id, projectRef, None).accepted
+        fetched.schema.iri shouldEqual schema3.id
       }
 
     }
