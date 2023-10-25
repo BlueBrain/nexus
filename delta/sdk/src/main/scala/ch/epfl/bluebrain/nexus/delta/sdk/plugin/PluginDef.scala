@@ -1,11 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.plugin
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.PluginDescription
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
 import com.typesafe.config.{Config, ConfigFactory, ConfigParseOptions, ConfigResolveOptions}
 import izumi.distage.model.Locator
 import izumi.distage.model.definition.ModuleDef
-import monix.bio.Task
 
 import java.io.File
 
@@ -50,7 +50,7 @@ trait PluginDef {
     * @return
     *   [[Plugin]] instance.
     */
-  def initialize(locator: Locator): Task[Plugin]
+  def initialize(locator: Locator): IO[Plugin]
 
   protected lazy val pluginConfigObject: Config = PluginDef.load(getClass.getClassLoader, info.name, configFileName)
 
