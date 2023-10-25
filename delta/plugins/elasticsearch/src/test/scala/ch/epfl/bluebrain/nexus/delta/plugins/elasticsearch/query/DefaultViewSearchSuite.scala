@@ -21,7 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
-import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.bio.BioSuite
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
 import io.circe.syntax.EncoderOps
 import io.circe.{Decoder, Json, JsonObject}

@@ -22,7 +22,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.remotestorage.RemoteStorageDocker
-import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOValues}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
 import io.circe.Json
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
@@ -37,9 +38,9 @@ class RemoteStorageLinkFileSpec(docker: RemoteStorageDocker)
     extends TestKit(ActorSystem("RemoteStorageMoveFileSpec"))
     with AnyWordSpecLike
     with AkkaSourceHelpers
-    with EitherValuable
+    with EitherValues
     with Matchers
-    with IOValues
+    with BIOValues
     with StorageFixtures
     with BeforeAndAfterAll
     with ConfigFixtures {

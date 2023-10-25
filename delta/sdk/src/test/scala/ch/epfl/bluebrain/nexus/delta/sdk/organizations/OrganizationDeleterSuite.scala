@@ -18,14 +18,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.{ProjectsConfig, ProjectsFixtu
 import ch.epfl.bluebrain.nexus.delta.sourcing.PartitionInit
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.testkit.ce.{CatsEffectSuite, IOFixedClock}
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import doobie.implicits._
 import monix.bio.{IO => BIO}
 import munit.AnyFixture
 
 import java.util.UUID
 
-class OrganizationDeleterSuite extends CatsEffectSuite with IOFixedClock with ConfigFixtures {
+class OrganizationDeleterSuite extends CatsEffectSuite with ConfigFixtures {
 
   private val org1 = Label.unsafe("org1")
   private val org2 = Label.unsafe("org2")
@@ -71,7 +71,7 @@ class OrganizationDeleterSuite extends CatsEffectSuite with IOFixedClock with Co
   }
 
   def createOrgAndAcl(org: Label): IO[Unit] = for {
-    _ <- acls.replace(Acl(AclAddress.fromOrg(org), subject -> Set(permission)), 0).toCatsIO
+    _ <- acls.replace(Acl(AclAddress.fromOrg(org), subject -> Set(permission)), 0)
     _ <- orgs.create(org, None)
   } yield ()
 

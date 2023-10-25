@@ -10,18 +10,12 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
-import ch.epfl.bluebrain.nexus.testkit.ce.{CatsIOValues, IOFixedClock}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import org.scalatest.CancelAfterFailure
-import org.scalatest.matchers.should.Matchers
 
 import scala.concurrent.duration._
 
-class PermissionsImplSpec
-    extends DoobieScalaTestFixture
-    with CatsIOValues
-    with Matchers
-    with CancelAfterFailure
-    with IOFixedClock {
+class PermissionsImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with CancelAfterFailure {
 
   implicit def subject: Subject = Identity.User("user", Label.unsafe("realm"))
 

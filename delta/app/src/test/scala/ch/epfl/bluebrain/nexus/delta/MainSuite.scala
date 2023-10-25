@@ -6,9 +6,9 @@ import ch.epfl.bluebrain.nexus.delta.plugin.PluginsLoader.PluginLoaderConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.PluginDef
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie._
 import ch.epfl.bluebrain.nexus.delta.wiring.DeltaModule
-import ch.epfl.bluebrain.nexus.testkit.bio.ResourceFixture
-import ch.epfl.bluebrain.nexus.testkit.ce.CatsEffectSuite
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchContainer
+import ch.epfl.bluebrain.nexus.testkit.mu.bio.ResourceFixture
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresContainer
 import com.typesafe.config.impl.ConfigImpl
 import izumi.distage.model.definition.{Module, ModuleDef}
@@ -42,7 +42,7 @@ class MainSuite extends CatsEffectSuite with MainSuite.Fixture {
       make[ContextShift[IO]].fromValue(contextShift)
       make[Timer[IO]].fromValue(timer)
     }
-    val (cfg, config, cl, pDefs) = Main.loadPluginsAndConfig(pluginLoaderConfig).unsafeRunSync()
+    val (cfg, config, cl, pDefs) = Main.loadPluginsAndConfig(pluginLoaderConfig).accepted
     val pluginsInfoModule        = new ModuleDef { make[List[PluginDef]].from(pDefs) }
     val modules: Module          =
       (catsEffectModule :: DeltaModule(cfg, config, cl) :: pluginsInfoModule :: pDefs.map(_.module)).merge

@@ -7,8 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.RealmEvent.{RealmCreated, 
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.RealmState
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.testkit.NexusSuite
-import ch.epfl.bluebrain.nexus.testkit.bio.OptionAssertions
+import ch.epfl.bluebrain.nexus.testkit.mu.{NexusSuite, OptionAssertions}
 
 import java.time.Instant
 

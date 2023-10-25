@@ -1,32 +1,25 @@
 package ch.epfl.bluebrain.nexus.delta.plugin
 
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import cats.effect.{ContextShift, IO, Timer}
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugin.PluginsLoader.PluginLoaderConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.PriorityRoute
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.testkit.IOValues
+import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
 import com.typesafe.config.impl.ConfigImpl
 import izumi.distage.model.definition.ModuleDef
 import monix.bio.Task
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import monix.execution.Scheduler
 import monix.execution.Scheduler.Implicits.global
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
 
-import scala.concurrent.ExecutionContext
-
-class PluginLoaderSpec extends AnyWordSpecLike with ScalatestRouteTest with Matchers with IOValues {
+class PluginLoaderSpec extends BioSpec with ScalatestRouteTest with CatsRunContext {
 
   private val baseUri       = BaseUri.withoutPrefix("http://localhost")
   private val serviceModule = new ModuleDef {
     make[BaseUri].fromValue(baseUri)
     make[Scheduler].from(Scheduler.global)
   }
-
-  implicit val contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
-  implicit val timer: Timer[IO]               = IO.timer(ExecutionContext.global)
 
   "A PluginLoader" should {
     val config = PluginLoaderConfig("../plugins/test-plugin/target")

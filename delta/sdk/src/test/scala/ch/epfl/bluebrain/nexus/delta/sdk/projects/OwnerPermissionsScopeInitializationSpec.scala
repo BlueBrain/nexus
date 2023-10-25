@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.projects
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.{Acls, AclsConfig, AclsImpl}
@@ -9,25 +10,16 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
-import ch.epfl.bluebrain.nexus.testkit.ce.CatsIOValues
-import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, TestHelpers}
-import monix.bio.UIO
-import org.scalatest.matchers.should.Matchers
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 
-class OwnerPermissionsScopeInitializationSpec
-    extends DoobieScalaTestFixture
-    with Matchers
-    with CatsIOValues
-    with IOFixedClock
-    with TestHelpers
-    with ConfigFixtures {
+class OwnerPermissionsScopeInitializationSpec extends CatsEffectSpec with DoobieScalaTestFixture with ConfigFixtures {
 
   private val saRealm: Label    = Label.unsafe("service-accounts")
   private val usersRealm: Label = Label.unsafe("users")
 
   private lazy val acls: Acls =
     AclsImpl(
-      UIO.pure(PermissionsGen.minimum),
+      IO.pure(PermissionsGen.minimum),
       Acls.findUnknownRealms(_, Set(saRealm, usersRealm)),
       PermissionsGen.minimum,
       AclsConfig(eventLogConfig),

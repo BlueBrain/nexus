@@ -17,26 +17,15 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOFixedClock, IOValues}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
 import io.circe.Json
 import monix.bio.IO
 import monix.execution.Scheduler
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
-import org.scalatest.{Inspectors, OptionValues}
 
 import java.time.Instant
 import java.util.UUID
 
-class ElasticSearchViewSTMSpec
-    extends AnyWordSpecLike
-    with Matchers
-    with OptionValues
-    with EitherValuable
-    with Inspectors
-    with IOFixedClock
-    with IOValues
-    with Fixtures {
+class ElasticSearchViewSTMSpec extends BioSpec {
 
   "An ElasticSearch STM" when {
 

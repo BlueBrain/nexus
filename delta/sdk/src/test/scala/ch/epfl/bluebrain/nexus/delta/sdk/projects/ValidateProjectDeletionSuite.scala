@@ -4,7 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.{ProjectDeletionIsDisabled, ProjectIsReferenced}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityDependency.ReferencedBy
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.bio.BioSuite
 import monix.bio.{IO, UIO}
 
 class ValidateProjectDeletionSuite extends BioSuite {

@@ -7,7 +7,6 @@ import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers
 import cats.effect.IO
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
-import ch.epfl.bluebrain.nexus.testkit.{CirceEq, EitherValuable}
 import ch.epfl.bluebrain.nexus.tests.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.tests.Identity.resources.{Morty, Rick}
 import ch.epfl.bluebrain.nexus.tests.Optics.admin._constrainedBy
@@ -15,7 +14,7 @@ import ch.epfl.bluebrain.nexus.tests.Optics.listing._total
 import ch.epfl.bluebrain.nexus.tests.Optics.{filterKey, filterMetadataKeys}
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Resources
 import ch.epfl.bluebrain.nexus.tests.resources.SimpleResource
-import ch.epfl.bluebrain.nexus.tests.{BaseSpec, Optics, SchemaPayload}
+import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, Optics, SchemaPayload}
 import io.circe.Json
 import io.circe.optics.JsonPath.root
 import monocle.Optional
@@ -24,7 +23,7 @@ import org.scalatest.matchers.{HavePropertyMatchResult, HavePropertyMatcher}
 
 import java.net.URLEncoder
 
-class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
+class ResourcesSpec extends BaseIntegrationSpec {
 
   private val orgId   = genId()
   private val projId1 = genId()

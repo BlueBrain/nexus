@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
+import ch.epfl.bluebrain.nexus.delta.sdk.ce.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.UriDirectives.baseUriPrefix
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
@@ -15,7 +15,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceRepresentation}
 import ch.epfl.bluebrain.nexus.delta.sdk.multifetch.MultiFetch
 import ch.epfl.bluebrain.nexus.delta.sdk.multifetch.model.MultiFetchRequest
 import io.circe.Printer
-import monix.execution.Scheduler
 
 /**
   * Route allowing to fetch multiple resources in a single request
@@ -27,8 +26,7 @@ class MultiFetchRoutes(
 )(implicit
     baseUri: BaseUri,
     cr: RemoteContextResolution,
-    ordering: JsonKeyOrdering,
-    s: Scheduler
+    ordering: JsonKeyOrdering
 ) extends AuthDirectives(identities, aclCheck)
     with CirceUnmarshalling
     with RdfMarshalling {

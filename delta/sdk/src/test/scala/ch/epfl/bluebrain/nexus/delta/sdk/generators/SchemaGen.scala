@@ -12,13 +12,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.{Schema, SchemaState}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import ch.epfl.bluebrain.nexus.testkit.EitherValuable
-import ch.epfl.bluebrain.nexus.testkit.ce.CatsIOValues
 import io.circe.Json
 
 import java.time.Instant
+import scala.concurrent.duration.DurationInt
 
-object SchemaGen extends CatsIOValues with EitherValuable {
+object SchemaGen {
   // We put a lenient api for schemas otherwise the api checks data types before the actual schema validation process
   implicit val api: JsonLdApi = JsonLdJavaApi.lenient
 
@@ -88,4 +87,8 @@ object SchemaGen extends CatsIOValues with EitherValuable {
       subject
     ).toResource
 
+  implicit final private class CatsIOValuesOps[A](private val io: IO[A]) {
+    def accepted: A =
+      io.unsafeRunTimed(45.seconds).getOrElse(throw new RuntimeException("IO timed out during .accepted call"))
+  }
 }

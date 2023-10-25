@@ -1,42 +1,29 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.Acls.{evaluate, next}
-import ch.epfl.bluebrain.nexus.delta.sdk.acls.{AclFixtures, Acls}
-import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.{Acl, AclCommand, AclEvent, AclRejection, AclState}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress.Root
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclCommand.{AppendAcl, DeleteAcl, ReplaceAcl, SubtractAcl}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclEvent.{AclAppended, AclDeleted, AclReplaced, AclSubtracted}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclRejection._
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.{AclFixtures, Acls}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOFixedClock, IOValues}
-import monix.bio.{IO, UIO}
-import monix.execution.Scheduler
-import org.scalatest.{Inspectors, OptionValues}
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 
 import java.time.Instant
 
-class AclsSpec
-    extends AnyWordSpecLike
-    with Matchers
-    with EitherValuable
-    with OptionValues
-    with AclFixtures
-    with Inspectors
-    with IOFixedClock
-    with IOValues {
+class AclsSpec extends CatsEffectSpec with AclFixtures {
 
   "The ACL state machine" when {
-    implicit val sc: Scheduler                                             = Scheduler.global
-    val currentRealms                                                      = Set(realm, realm2)
-    val fetchPermissionsSet                                                = UIO.pure(rwx)
-    val findUnknownRealms                                                  = Acls.findUnknownRealms(_, currentRealms)
-    val current                                                            = AclState(userR_groupX(Root), 1, epoch, Anonymous, epoch, Anonymous)
-    val time2                                                              = Instant.ofEpochMilli(10L)
-    val eval: (Option[AclState], AclCommand) => IO[AclRejection, AclEvent] =
+    val currentRealms                                        = Set(realm, realm2)
+    val fetchPermissionsSet                                  = IO.pure(rwx)
+    val findUnknownRealms                                    = Acls.findUnknownRealms(_, currentRealms)
+    val current                                              = AclState(userR_groupX(Root), 1, epoch, Anonymous, epoch, Anonymous)
+    val time2                                                = Instant.ofEpochMilli(10L)
+    val eval: (Option[AclState], AclCommand) => IO[AclEvent] =
       evaluate(fetchPermissionsSet, findUnknownRealms)(_, _)
 
     "evaluating an incoming command" should {

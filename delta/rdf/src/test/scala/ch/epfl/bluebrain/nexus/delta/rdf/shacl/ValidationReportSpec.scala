@@ -6,24 +6,13 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
-import ch.epfl.bluebrain.nexus.testkit.ce.CatsIOValues
-import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOValues, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.Json
 import io.circe.syntax._
 import org.apache.jena.query.DatasetFactory
 import org.apache.jena.rdf.model.Resource
-import org.scalatest.OptionValues
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
 
-class ValidationReportSpec
-    extends AnyWordSpecLike
-    with Matchers
-    with TestHelpers
-    with EitherValuable
-    with OptionValues
-    with CatsIOValues
-    with IOValues {
+class ValidationReportSpec extends CatsEffectSpec {
 
   implicit val api: JsonLdApi = JsonLdJavaApi.strict
 

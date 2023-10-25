@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.model
 
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
-import ch.epfl.bluebrain.nexus.testkit.bio.EitherAssertions
+import ch.epfl.bluebrain.nexus.testkit.mu.EitherAssertions
 import munit.FunSuite
 
 class LabelSuite extends FunSuite with EitherAssertions with TestHelpers {

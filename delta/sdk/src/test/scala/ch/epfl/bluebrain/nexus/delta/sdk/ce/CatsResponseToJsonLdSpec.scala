@@ -7,6 +7,7 @@ import akka.http.scaladsl.model.{ContentType, StatusCodes}
 import akka.http.scaladsl.server.RouteConcatenation
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
+import cats.effect.{IO => CatsIO}
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes.`application/ld+json`
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
@@ -20,10 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.BlankResourceId
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.sdk.{AkkaSource, SimpleRejection, SimpleResource}
-import ch.epfl.bluebrain.nexus.testkit.ShouldMatchers.convertToAnyShouldWrapper
-import ch.epfl.bluebrain.nexus.testkit.TestHelpers.jsonContentOf
 import monix.bio.IO
-import cats.effect.{IO => CatsIO}
 import monix.execution.Scheduler
 
 class CatsResponseToJsonLdSpec extends RouteHelpers with JsonSyntax with RouteConcatenation {

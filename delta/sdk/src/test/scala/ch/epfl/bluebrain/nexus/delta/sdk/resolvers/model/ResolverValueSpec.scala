@@ -9,20 +9,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverValue.{CrossPro
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.Fixtures
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.testkit.ce.CatsIOValues
-import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, TestHelpers}
-import org.scalatest.Inspectors
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 
-class ResolverValueSpec
-    extends AnyWordSpecLike
-    with Matchers
-    with EitherValuable
-    with CatsIOValues
-    with Inspectors
-    with TestHelpers
-    with Fixtures {
+class ResolverValueSpec extends CatsEffectSpec with Fixtures {
 
   private val realm       = Label.unsafe("myrealm")
   private val name        = Some("resolverName")

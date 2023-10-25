@@ -6,12 +6,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceUris.{EphemeralResourceInProjectUris, ResourceInProjectAndSchemaUris, ResourceInProjectUris}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.testkit.TestHelpers.genString
-import org.scalatest.Inspectors
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
+import ch.epfl.bluebrain.nexus.testkit.scalatest.BaseSpec
 
-class ResourceUrisSpec extends AnyWordSpecLike with Matchers with Inspectors {
+class ResourceUrisSpec extends BaseSpec {
 
   implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
 

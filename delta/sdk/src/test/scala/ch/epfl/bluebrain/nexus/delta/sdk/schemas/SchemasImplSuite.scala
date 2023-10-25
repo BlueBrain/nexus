@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
+import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclShapesGraph
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
@@ -19,7 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
-import ch.epfl.bluebrain.nexus.testkit.ce.{CatsEffectSuite, IOFixedClock}
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
 import munit.AnyFixture
 
@@ -28,7 +29,6 @@ import java.util.UUID
 class SchemasImplSuite
     extends CatsEffectSuite
     with Doobie.Fixture
-    with IOFixedClock
     with CirceLiteral
     with ConfigFixtures
     with TestHelpers {
@@ -36,6 +36,8 @@ class SchemasImplSuite
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 
   private lazy val xas = doobie()
+
+  implicit private lazy val shaclShaclShapes: ShaclShapesGraph = ShaclShapesGraph.shaclShaclShapes.accepted
 
   implicit private val subject: Subject = Identity.User("user", Label.unsafe("realm"))
   implicit private val caller: Caller   = Caller(subject, Set(subject))
@@ -77,7 +79,7 @@ class SchemasImplSuite
   private val config       = SchemasConfig(eventLogConfig)
 
   private lazy val schemas: Schemas =
-    SchemasImpl(fetchContext, schemaImports, resolverContextResolution, config, xas)
+    SchemasImpl(fetchContext, schemaImports, resolverContextResolution, ValidateSchema.apply, config, xas)
 
   private def schemaSourceWithId(id: Iri) = {
     source deepMerge json"""{"@id": "$id"}"""

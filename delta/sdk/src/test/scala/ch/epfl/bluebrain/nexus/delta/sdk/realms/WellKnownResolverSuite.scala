@@ -6,11 +6,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpUnexpectedErro
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.GrantType
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.GrantType._
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.RealmRejection.{IllegalEndpointFormat, IllegalIssuerFormat, IllegalJwkFormat, IllegalJwksUriFormat, NoValidKeysFound, UnsuccessfulJwksResponse, UnsuccessfulOpenIdConfigResponse}
-import ch.epfl.bluebrain.nexus.testkit.ce.{CatsEffectSuite, IOFromMap}
+import ch.epfl.bluebrain.nexus.testkit.ce.IOFromMap
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import com.nimbusds.jose.jwk.gen.RSAKeyGenerator
 import io.circe.Json
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import io.circe.syntax.KeyOps
 
 class WellKnownResolverSuite extends CatsEffectSuite with IOFromMap with CirceLiteral {

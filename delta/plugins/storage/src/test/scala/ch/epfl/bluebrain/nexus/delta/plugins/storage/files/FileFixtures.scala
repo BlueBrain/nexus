@@ -12,15 +12,18 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePat
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ResourceRef}
-import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOValues}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
 import monix.bio.Task
+import org.scalatest.Suite
 
 import java.nio.file.{Files => JavaFiles}
 import java.util.UUID
 
-trait FileFixtures extends EitherValuable with IOValues {
+trait FileFixtures extends EitherValues with BIOValues {
+
+  self: Suite =>
 
   val uuid                     = UUID.fromString("8249ba90-7cc6-4de5-93a1-802c04200dcc")
   val uuid2                    = UUID.fromString("12345678-7cc6-4de5-93a1-802c04200dcc")
@@ -32,8 +35,6 @@ trait FileFixtures extends EitherValuable with IOValues {
   val deprecatedProject        = ProjectGen.project("org", "proj-deprecated")
   val projectWithDeprecatedOrg = ProjectGen.project("org-deprecated", "other-proj")
   val projectRef               = project.ref
-  val diskId                   = nxv + "disk"
-  val diskRev                  = ResourceRef.Revision(iri"$diskId?rev=1", diskId, 1)
   val diskId2                  = nxv + "disk2"
   val file1                    = nxv + "file1"
   val file2                    = nxv + "file2"

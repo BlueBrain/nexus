@@ -14,9 +14,10 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore.StateNotFound.{TagNotFound, UnknownState}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{EntityCheck, PullRequest, Scope}
-import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
-import ch.epfl.bluebrain.nexus.testkit.ce.{CatsRunContext, CatsStreamAssertions}
+import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
+import ch.epfl.bluebrain.nexus.testkit.mu.bio.BioSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsStreamAssertions
 import doobie.implicits._
 import munit.AnyFixture
 

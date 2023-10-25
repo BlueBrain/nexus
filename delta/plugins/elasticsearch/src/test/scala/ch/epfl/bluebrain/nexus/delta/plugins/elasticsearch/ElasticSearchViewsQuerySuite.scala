@@ -29,7 +29,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Group, 
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{DiscardMetadata, FilterDeprecated}
-import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.bio.BioSuite
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
 import io.circe.syntax.EncoderOps
 import io.circe.{Decoder, Json, JsonObject}
@@ -75,7 +75,7 @@ class ElasticSearchViewsQuerySuite
     (alice.subject, AclAddress.Project(project1.ref), Set(queryPermission, permissions.read, permissions.write)),
     // Charlie has access to views in project 2
     (charlie.subject, AclAddress.Project(project2.ref), Set(queryPermission, permissions.read))
-  ).runSyncUnsafe()
+  ).accepted
 
   private val mappings = jsonObjectContentOf("defaults/default-mapping.json")
 

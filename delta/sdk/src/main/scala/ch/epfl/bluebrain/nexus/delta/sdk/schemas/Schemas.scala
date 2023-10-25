@@ -7,10 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
-import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
-import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclEngine
 import ch.epfl.bluebrain.nexus.delta.sdk.SchemaResource
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
@@ -246,36 +243,25 @@ object Schemas {
     }
   }
 
-  private[delta] def evaluate(
+  private[delta] def evaluate(shaclValidation: ValidateSchema)(
       state: Option[SchemaState],
       cmd: SchemaCommand
-  )(implicit api: JsonLdApi, clock: Clock[IO]): IO[SchemaEvent] = {
-
-    def toGraph(id: Iri, expanded: NonEmptyList[ExpandedJsonLd]) = {
-      val eitherGraph =
-        toFoldableOps(expanded)
-          .foldM(Graph.empty)((acc, expandedEntry) => expandedEntry.toGraph.map(acc ++ (_: Graph)))
-          .leftMap { err => InvalidJsonLdFormat(Some(id), err) }
-      IO.fromEither(eitherGraph)
-    }
-
-    def validate(id: Iri, graph: Graph): IO[Unit] =
+  )(implicit clock: Clock[IO]): IO[SchemaEvent] = {
+    def validate(id: Iri, expanded: NonEmptyList[ExpandedJsonLd]): IO[Unit] =
       for {
         _      <- IO.raiseWhen(id.startsWith(schemas.base))(ReservedSchemaId(id))
-        report <- toCatsIO(ShaclEngine(graph, reportDetails = true).mapError(SchemaShaclEngineRejection(id, _: String)))
+        report <- shaclValidation(id, expanded)
         result <- IO.raiseWhen(!report.isValid())(InvalidSchema(id, report))
       } yield result
 
     def create(c: CreateSchema) =
       state match {
         case None =>
-          for {
-            graph <- toGraph(c.id, c.expanded)
-            _     <- validate(c.id, graph)
-            t     <- IOInstant.now
-          } yield SchemaCreated(c.id, c.project, c.source, c.compacted, c.expanded, 1, t, c.subject)
-
-        case _ => IO.raiseError(ResourceAlreadyExists(c.id, c.project))
+          validate(c.id, c.expanded) >>
+            IOInstant.now.map { now =>
+              SchemaCreated(c.id, c.project, c.source, c.compacted, c.expanded, 1, now, c.subject)
+            }
+        case _    => IO.raiseError(ResourceAlreadyExists(c.id, c.project))
       }
 
     def update(c: UpdateSchema) =
@@ -287,12 +273,10 @@ object Schemas {
         case Some(s) if s.deprecated   =>
           IO.raiseError(SchemaIsDeprecated(c.id))
         case Some(s)                   =>
-          for {
-            graph <- toGraph(c.id, c.expanded)
-            _     <- validate(c.id, graph)
-            time  <- IOInstant.now
-          } yield SchemaUpdated(c.id, c.project, c.source, c.compacted, c.expanded, s.rev + 1, time, c.subject)
-
+          validate(c.id, c.expanded) >>
+            IOInstant.now.map { now =>
+              SchemaUpdated(c.id, c.project, c.source, c.compacted, c.expanded, s.rev + 1, now, c.subject)
+            }
       }
 
     def refresh(c: RefreshSchema) =
@@ -304,12 +288,10 @@ object Schemas {
         case Some(s) if s.deprecated   =>
           IO.raiseError(SchemaIsDeprecated(c.id))
         case Some(s)                   =>
-          for {
-            graph <- toGraph(c.id, c.expanded)
-            _     <- validate(c.id, graph)
-            time  <- IOInstant.now
-          } yield SchemaRefreshed(c.id, c.project, c.compacted, c.expanded, s.rev + 1, time, c.subject)
-
+          validate(c.id, c.expanded) >>
+            IOInstant.now.map { now =>
+              SchemaRefreshed(c.id, c.project, c.compacted, c.expanded, s.rev + 1, now, c.subject)
+            }
       }
 
     def tag(c: TagSchema) =
@@ -363,13 +345,12 @@ object Schemas {
   /**
     * Entity definition for [[Schemas]]
     */
-  def definition(implicit
-      api: JsonLdApi,
+  def definition(validate: ValidateSchema)(implicit
       clock: Clock[IO]
   ): ScopedEntityDefinition[Iri, SchemaState, SchemaCommand, SchemaEvent, SchemaRejection] =
     ScopedEntityDefinition(
       entityType,
-      StateMachine(None, evaluate(_, _).toBIO[SchemaRejection], next),
+      StateMachine(None, evaluate(validate)(_, _).toBIO[SchemaRejection], next),
       SchemaEvent.serializer,
       SchemaState.serializer,
       Tagger[SchemaEvent](

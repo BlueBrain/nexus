@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.DataConstructQuery.DataConstructQueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{pipes, ReferenceRegistry}
-import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.bio.BioSuite
 
 import java.time.Instant
 

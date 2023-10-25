@@ -1,12 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model
 
 import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatErrors.ResolverPriorityIntervalError
-import ch.epfl.bluebrain.nexus.testkit.EitherValuable
-import org.scalatest.Inspectors
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
+import ch.epfl.bluebrain.nexus.testkit.scalatest.BaseSpec
 
-class PrioritySpec extends AnyWordSpecLike with Matchers with Inspectors with EitherValuable {
+class PrioritySpec extends BaseSpec {
 
   "A priority" should {
 

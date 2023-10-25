@@ -8,15 +8,15 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.IdentityResolution.{Pro
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.Priority
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverCommand.{CreateResolver, DeprecateResolver, TagResolver, UpdateResolver}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverEvent.{ResolverCreated, ResolverDeprecated, ResolverTagAdded, ResolverUpdated}
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.{IncorrectRev, _}
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverType.{CrossProject, InProject}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverValue.{CrossProjectValue, InProjectValue}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.testkit.ce.{CatsEffectSuite, IOFixedClock}
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import io.circe.Json
 
-class ResolversEvaluateSuite extends CatsEffectSuite with IOFixedClock with ResolverStateMachineFixture {
+class ResolversEvaluateSuite extends CatsEffectSuite with ResolverStateMachineFixture {
 
   private val validatePriority: ValidatePriority = (_, _, _) => IO.unit
 

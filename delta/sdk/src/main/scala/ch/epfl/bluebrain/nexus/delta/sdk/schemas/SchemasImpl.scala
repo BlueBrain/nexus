@@ -167,6 +167,7 @@ object SchemasImpl {
       fetchContext: FetchContext[ProjectContextRejection],
       schemaImports: SchemaImports,
       contextResolution: ResolverContextResolution,
+      validate: ValidateSchema,
       config: SchemasConfig,
       xas: Transactors
   )(implicit api: JsonLdApi, clock: Clock[IO], uuidF: UUIDF): Schemas = {
@@ -177,7 +178,7 @@ object SchemasImpl {
         uuidF
       )
     new SchemasImpl(
-      ScopedEventLog(Schemas.definition, config.eventLog, xas),
+      ScopedEventLog(Schemas.definition(validate), config.eventLog, xas),
       fetchContext,
       schemaImports,
       parser

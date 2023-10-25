@@ -6,7 +6,8 @@ import akka.http.scaladsl.model.MediaTypes.`application/json`
 import akka.http.scaladsl.model.{HttpEntity, MessageEntity}
 import akka.testkit.TestKit
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestMatchers}
+import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
+import ch.epfl.bluebrain.nexus.testkit.scalatest.TestMatchers
 import io.circe.syntax._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers

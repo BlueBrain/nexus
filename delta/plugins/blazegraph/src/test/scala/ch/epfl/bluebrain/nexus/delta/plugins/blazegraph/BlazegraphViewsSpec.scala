@@ -21,25 +21,15 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Authenticated, Gro
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
-import ch.epfl.bluebrain.nexus.testkit._
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
 import io.circe.Json
 import io.circe.syntax._
 import monix.bio.UIO
 import monix.execution.Scheduler
-import org.scalatest.Inspectors
-import org.scalatest.matchers.should.Matchers
 
 import java.util.UUID
 
-class BlazegraphViewsSpec
-    extends DoobieScalaTestFixture
-    with Matchers
-    with Inspectors
-    with IOFixedClock
-    with IOValues
-    with TestHelpers
-    with ConfigFixtures
-    with Fixtures {
+class BlazegraphViewsSpec extends BioSpec with DoobieScalaTestFixture with ConfigFixtures with Fixtures {
 
   "BlazegraphViews" when {
     val uuid                  = UUID.randomUUID()

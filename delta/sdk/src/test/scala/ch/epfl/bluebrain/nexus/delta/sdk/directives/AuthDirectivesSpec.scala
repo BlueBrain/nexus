@@ -14,7 +14,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfExceptionHandler
@@ -24,7 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
-import ch.epfl.bluebrain.nexus.testkit.ce.CatsIOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
 import monix.execution.Scheduler.Implicits.global
 import org.scalatest.matchers.should.Matchers
 
@@ -59,7 +58,7 @@ class AuthDirectivesSpec extends RouteHelpers with TestHelpers with Matchers wit
     }
   }
 
-  val aclCheck = toCatsIO(AclSimpleCheck((user, AclAddress.Root, Set(permission)))).accepted
+  val aclCheck = AclSimpleCheck((user, AclAddress.Root, Set(permission))).accepted
 
   val directives = new AuthDirectives(identities, aclCheck) {}
 

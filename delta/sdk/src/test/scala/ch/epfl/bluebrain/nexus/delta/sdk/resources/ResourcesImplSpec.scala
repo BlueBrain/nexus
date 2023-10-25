@@ -27,21 +27,16 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
-import ch.epfl.bluebrain.nexus.testkit.ce.{CatsIOValues, IOFixedClock}
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
+import org.scalatest.CancelAfterFailure
 
 import java.util.UUID
 
 class ResourcesImplSpec
-    extends DoobieScalaTestFixture
-    with Matchers
-    with CatsIOValues
-    with IOFixedClock
+    extends CatsEffectSpec
+    with DoobieScalaTestFixture
     with CancelAfterFailure
     with CirceLiteral
-    with Inspectors
-    with OptionValues
     with ConfigFixtures {
 
   implicit private val subject: Subject = Identity.User("user", Label.unsafe("realm"))

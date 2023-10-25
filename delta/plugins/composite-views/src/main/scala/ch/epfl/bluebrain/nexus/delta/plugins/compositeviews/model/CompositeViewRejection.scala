@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 
 import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
+import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClientError
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource._
@@ -24,7 +25,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.rejection.Rejection
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
 

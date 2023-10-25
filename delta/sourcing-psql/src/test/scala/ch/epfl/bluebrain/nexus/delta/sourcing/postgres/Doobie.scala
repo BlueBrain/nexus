@@ -4,9 +4,9 @@ import cats.effect.{IO, Resource}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Execute, Transactors}
-import ch.epfl.bluebrain.nexus.testkit.NexusSuite
-import ch.epfl.bluebrain.nexus.testkit.bio.ResourceFixture
-import ch.epfl.bluebrain.nexus.testkit.bio.ResourceFixture.TaskFixture
+import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.bio.ResourceFixture.TaskFixture
+import ch.epfl.bluebrain.nexus.testkit.mu.bio.ResourceFixture
 import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresContainer
 import doobie.implicits._
 import doobie.postgres.sqlstate

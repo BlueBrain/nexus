@@ -16,21 +16,17 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Group, Subject, Us
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
-import ch.epfl.bluebrain.nexus.testkit.{CirceEq, IOFixedClock}
+import ch.epfl.bluebrain.nexus.testkit.CirceEq
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
 import io.circe.Json
 import io.circe.syntax._
 import monix.execution.Scheduler
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.{Inspectors, OptionValues}
 
 import java.time.Instant
 
 class CompositeViewsSpec
-    extends DoobieScalaTestFixture
-    with Matchers
-    with Inspectors
-    with IOFixedClock
-    with OptionValues
+    extends BioSpec
+    with DoobieScalaTestFixture
     with CompositeViewsFixture
     with CirceEq
     with Fixtures {

@@ -95,7 +95,7 @@ object DeltaClient {
 
     override def projectStatistics(source: RemoteProjectSource): HttpResult[ProjectStatistics] = {
       for {
-        authToken <- authTokenProvider(credentials).toBIO
+        authToken <- authTokenProvider(credentials).toBIOThrowable
         request    =
           Get(
             source.endpoint / "projects" / source.project.organization.value / source.project.project.value / "statistics"
@@ -108,7 +108,7 @@ object DeltaClient {
 
     override def remaining(source: RemoteProjectSource, offset: Offset): HttpResult[RemainingElems] = {
       for {
-        authToken <- authTokenProvider(credentials).toBIO
+        authToken <- authTokenProvider(credentials).toBIOThrowable
         request    = Get(elemAddress(source) / "remaining")
                        .addHeader(accept)
                        .addHeader(`Last-Event-ID`(offset.value.toString))
@@ -119,7 +119,7 @@ object DeltaClient {
 
     override def checkElems(source: RemoteProjectSource): HttpResult[Unit] = {
       for {
-        authToken <- authTokenProvider(credentials).toBIO
+        authToken <- authTokenProvider(credentials).toBIOThrowable
         result    <- client(Head(elemAddress(source)).withCredentials(authToken)) {
                        case resp if resp.status.isSuccess() => UIO.delay(resp.discardEntityBytes()) >> BIO.unit
                      }
@@ -134,7 +134,7 @@ object DeltaClient {
 
       def send(request: HttpRequest): Future[HttpResponse] = {
         (for {
-          authToken <- authTokenProvider(credentials).toBIO
+          authToken <- authTokenProvider(credentials).toBIOThrowable
           result    <- client[HttpResponse](request.withCredentials(authToken))(BIO.pure(_))
         } yield result).runToFuture
       }
@@ -169,7 +169,7 @@ object DeltaClient {
       val resourceUrl =
         source.endpoint / "resources" / source.project.organization.value / source.project.project.value / "_" / id.toString
       for {
-        authToken <- authTokenProvider(credentials).toBIO
+        authToken <- authTokenProvider(credentials).toBIOThrowable
         req        = Get(
                        source.resourceTag.fold(resourceUrl)(t => resourceUrl.withQuery(Query("tag" -> t.value)))
                      ).addHeader(Accept(RdfMediaTypes.`application/n-quads`)).withCredentials(authToken)

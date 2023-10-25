@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries
 
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
-import ch.epfl.bluebrain.nexus.testkit.bio.ResourceFixture.TaskFixture
+import ch.epfl.bluebrain.nexus.testkit.mu.bio.ResourceFixture.TaskFixture
 import doobie.implicits._
 import monix.bio.Task
 import munit.AfterEach

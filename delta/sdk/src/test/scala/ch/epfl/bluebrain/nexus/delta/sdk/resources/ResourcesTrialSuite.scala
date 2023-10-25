@@ -18,9 +18,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{Resource, ResourceGene
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Revision
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
-import ch.epfl.bluebrain.nexus.testkit.ce.CatsEffectSuite
 import munit.Location
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 
 import java.util.UUID
 

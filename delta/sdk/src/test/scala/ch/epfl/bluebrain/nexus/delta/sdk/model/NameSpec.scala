@@ -1,12 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model
 
 import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatErrors.IllegalNameFormatError
-import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, TestHelpers}
-import org.scalatest.Inspectors
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
+import ch.epfl.bluebrain.nexus.testkit.scalatest.BaseSpec
 
-class NameSpec extends AnyWordSpecLike with Matchers with Inspectors with TestHelpers with EitherValuable {
+class NameSpec extends BaseSpec {
 
   "A Name" should {
     "be constructed correctly from alphanumeric chars, - and _" in {

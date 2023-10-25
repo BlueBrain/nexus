@@ -20,7 +20,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.IndexingRev
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.testkit.EitherValuable
 import io.circe.{Json, JsonObject}
 import monix.bio.IO
 import monix.execution.Scheduler
@@ -29,14 +28,14 @@ import java.time.Instant
 import java.util.UUID
 import scala.concurrent.duration._
 
-trait CompositeViewsFixture extends ConfigFixtures with EitherValuable {
+trait CompositeViewsFixture extends ConfigFixtures {
 
   val alwaysValidate: ValidateCompositeView = (_, _) => IO.unit
 
   val query =
     TemplateSparqlConstructQuery(
       "prefix p: <http://localhost/>\nCONSTRUCT{ {resource_id} p:transformed ?v } WHERE { {resource_id} p:predicate ?v}"
-    ).rightValue
+    ).getOrElse(throw new RuntimeException("Should never happen"))
 
   val uuid                   = UUID.fromString("f8468909-a797-4b10-8b5f-000cba337bfa")
   implicit val uuidF: UUIDF  = UUIDF.fixed(uuid)

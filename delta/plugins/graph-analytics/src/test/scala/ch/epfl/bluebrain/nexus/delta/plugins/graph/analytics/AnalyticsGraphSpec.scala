@@ -3,17 +3,9 @@ package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.AnalyticsGraph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOValues, TestHelpers}
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
 
-class AnalyticsGraphSpec
-    extends AnyWordSpecLike
-    with Matchers
-    with TestHelpers
-    with EitherValuable
-    with IOValues
-    with ContextFixtures {
+class AnalyticsGraphSpec extends BioSpec with ContextFixtures {
 
   "A AnalyticsGraph" should {
 

@@ -25,25 +25,15 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.PipeChain
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{FilterBySchema, FilterByType, FilterDeprecated}
-import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOFixedClock}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
 import io.circe.Json
 import io.circe.literal._
 import monix.bio.{IO, UIO}
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.{Inspectors, OptionValues}
 
 import java.time.Instant
 import java.util.UUID
 
-class ElasticSearchViewsSpec
-    extends DoobieScalaTestFixture
-    with Matchers
-    with Inspectors
-    with OptionValues
-    with EitherValuable
-    with IOFixedClock
-    with ConfigFixtures
-    with Fixtures {
+class ElasticSearchViewsSpec extends BioSpec with DoobieScalaTestFixture with ConfigFixtures with Fixtures {
 
   private val realm                  = Label.unsafe("myrealm")
   implicit private val alice: Caller = Caller(User("Alice", realm), Set(User("Alice", realm), Group("users", realm)))

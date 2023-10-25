@@ -1,11 +1,10 @@
 package ch.epfl.bluebrain.nexus.tests.kg
 
-import akka.http.scaladsl.model.headers.{ContentDispositionTypes, HttpEncodings}
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers.{ContentDispositionTypes, HttpEncodings}
 import akka.util.ByteString
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.testkit.CirceEq
-import ch.epfl.bluebrain.nexus.tests.BaseSpec
+import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
 import ch.epfl.bluebrain.nexus.tests.HttpClient._
 import ch.epfl.bluebrain.nexus.tests.Identity.storages.Coyote
 import ch.epfl.bluebrain.nexus.tests.Optics._
@@ -20,7 +19,7 @@ import org.scalatest.Assertion
 
 import java.util.Base64
 
-abstract class StorageSpec extends BaseSpec with CirceEq {
+abstract class StorageSpec extends BaseIntegrationSpec {
 
   val storageConfig: StorageConfig = load[StorageConfig](ConfigFactory.load(), "storage")
 

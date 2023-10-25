@@ -2,10 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.search
 
 import cats.syntax.functor._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.{ScoredResultEntry, UnscoredResultEntry}
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
+import ch.epfl.bluebrain.nexus.testkit.scalatest.BaseSpec
 
-class ResultEntrySpec extends AnyWordSpecLike with Matchers {
+class ResultEntrySpec extends BaseSpec {
 
   "A ScoredResultEntry entry" should {
 

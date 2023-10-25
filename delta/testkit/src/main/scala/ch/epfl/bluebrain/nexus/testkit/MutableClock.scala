@@ -2,8 +2,8 @@ package ch.epfl.bluebrain.nexus.testkit
 
 import cats.effect.concurrent.Ref
 import cats.effect.{Clock, Resource}
-import ch.epfl.bluebrain.nexus.testkit.bio.ResourceFixture.TaskFixture
-import ch.epfl.bluebrain.nexus.testkit.bio.{BioSuite, ResourceFixture}
+import ch.epfl.bluebrain.nexus.testkit.mu.bio.ResourceFixture.TaskFixture
+import ch.epfl.bluebrain.nexus.testkit.mu.bio.{BioSuite, ResourceFixture}
 import monix.bio.{Task, UIO}
 
 import java.time.Instant

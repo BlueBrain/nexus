@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.storage.Storages.DiskStorage
 import ch.epfl.bluebrain.nexus.storage.Storages.PathExistence.{PathDoesNotExist, PathExists}
 import ch.epfl.bluebrain.nexus.storage.attributes.{AttributesCache, ContentTypeDetector}
 import ch.epfl.bluebrain.nexus.storage.config.AppConfig.{DigestConfig, StorageConfig}
-import ch.epfl.bluebrain.nexus.storage.utils.{EitherValues, IOEitherValues, Randomness}
+import ch.epfl.bluebrain.nexus.storage.utils.{IOEitherValues, Randomness}
 import org.mockito.IdiomaticMockito
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -38,7 +38,6 @@ class DiskStorageSpec
     with Randomness
     with IOEitherValues
     with BeforeAndAfterAll
-    with EitherValues
     with OptionValues
     with Inspectors
     with IdiomaticMockito {
@@ -61,7 +60,7 @@ class DiskStorageSpec
   }
 
   trait AbsoluteDirectoryCreated {
-    val name         = genString()
+    val name         = randomString()
     val baseRootPath = rootPath.resolve(name)
     val basePath     = baseRootPath.resolve(sConfig.protectedDirectory)
     Files.createDirectories(rootPath.resolve(name).resolve(sConfig.protectedDirectory))
@@ -69,7 +68,7 @@ class DiskStorageSpec
   }
 
   trait RelativeDirectoryCreated extends AbsoluteDirectoryCreated {
-    val relativeDir                                 = s"some/${genString()}"
+    val relativeDir                                 = s"some/${randomString()}"
     val absoluteDir                                 = basePath.resolve(relativeDir)
     val relativeFileString                          = s"$relativeDir/file.txt"
     val relativeFilePath                            = Uri.Path(relativeFileString)
@@ -84,12 +83,12 @@ class DiskStorageSpec
     "checking storage" should {
 
       "fail when bucket directory does not exists" in {
-        val name = genString()
+        val name = randomString()
         storage.exists(name) shouldBe a[BucketDoesNotExist]
       }
 
       "fail when bucket is not a directory" in {
-        val name      = genString()
+        val name      = randomString()
         val directory = Files.createDirectories(rootPath.resolve(name))
         Files.createFile(directory.resolve(sConfig.protectedDirectory))
         storage.exists(name) shouldBe a[BucketDoesNotExist]
@@ -175,13 +174,13 @@ class DiskStorageSpec
         Files.write(absoluteFile, "something".getBytes(StandardCharsets.UTF_8))
 
         badStorage
-          .moveFile(name, Uri.Path(file), Uri.Path(genString()))
+          .moveFile(name, Uri.Path(file), Uri.Path(randomString()))
           .failed[StorageError] shouldEqual PermissionsFixingFailed(absoluteFile.toString, "")
       }
 
       "fail when source does not exists" in new AbsoluteDirectoryCreated {
-        val source = genString()
-        storage.moveFile(name, Uri.Path(source), Uri.Path(genString())).rejected[PathNotFound] shouldEqual
+        val source = randomString()
+        storage.moveFile(name, Uri.Path(source), Uri.Path(randomString())).rejected[PathNotFound] shouldEqual
           PathNotFound(name, Uri.Path(source))
       }
 
@@ -191,7 +190,7 @@ class DiskStorageSpec
         Files.createDirectories(absoluteFile.getParent)
         Files.write(absoluteFile, "something".getBytes(StandardCharsets.UTF_8))
 
-        storage.moveFile(name, Uri.Path(file), Uri.Path(genString())).rejected[PathNotFound] shouldEqual
+        storage.moveFile(name, Uri.Path(file), Uri.Path(randomString())).rejected[PathNotFound] shouldEqual
           PathNotFound(name, Uri.Path(file))
       }
 
@@ -380,7 +379,7 @@ class DiskStorageSpec
         val expectedAttributes = FileAttributes(
           s"file://$absoluteFilePath",
           content.size.toLong,
-          Digest(alg, genString()),
+          Digest(alg, randomString()),
           `text/plain(UTF-8)`
         )
         cache.get(absoluteFilePath) shouldReturn IO(expectedAttributes)

@@ -6,13 +6,13 @@ import akka.http.scaladsl.model.{HttpResponse, MediaRange, StatusCodes}
 import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
-import ch.epfl.bluebrain.nexus.tests.BaseSpec
+import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.listings.{Alice, Bob}
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Organizations
 import io.circe.{Decoder, Json}
 import org.scalatest.Assertion
 
-class IdResolutionSpec extends BaseSpec {
+class IdResolutionSpec extends BaseIntegrationSpec {
 
   private val org1   = genId()
   private val proj11 = genId()

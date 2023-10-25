@@ -1,38 +1,27 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.{DiskStorage => DiskStorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageGen.storageState
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages.{evaluate, next}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.{DiskStorageConfig, StorageTypeConfig}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePath, DigestAlgorithm}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageCommand.{CreateStorage, DeprecateStorage, TagStorage, UpdateStorage}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageEvent.{StorageCreated, StorageDeprecated, StorageTagAdded, StorageUpdated}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.{DifferentStorageType, IncorrectRev, InvalidMaxFileSize, InvalidStorageType, PermissionsAreNotDefined, ResourceAlreadyExists, RevisionNotFound, StorageIsDeprecated, StorageNotAccessible, StorageNotFound}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.{DiskStorage => DiskStorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePath, DigestAlgorithm}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOFixedClock, IOValues}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
 import io.circe.Json
 import monix.bio.IO
-import org.scalatest.{Inspectors, OptionValues}
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
 
 import java.nio.file.Files
 import java.time.Instant
 
-class StoragesStmSpec
-    extends AnyWordSpecLike
-    with Matchers
-    with IOFixedClock
-    with OptionValues
-    with EitherValuable
-    with Inspectors
-    with IOValues
-    with StorageFixtures {
+class StoragesStmSpec extends BioSpec with StorageFixtures {
 
   private val epoch = Instant.EPOCH
   private val time2 = Instant.ofEpochMilli(10L)

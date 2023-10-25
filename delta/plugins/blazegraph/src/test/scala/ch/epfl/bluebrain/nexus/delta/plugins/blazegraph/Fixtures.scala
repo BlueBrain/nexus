@@ -5,10 +5,9 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.contexts.{blazegra
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
-import ch.epfl.bluebrain.nexus.testkit.IOValues
 import monix.bio.IO
 
-trait Fixtures extends IOValues {
+trait Fixtures {
   implicit private val cl: ClassLoader = getClass.getClassLoader
 
   implicit val api: JsonLdApi = JsonLdJavaApi.strict

@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.StatusCodes
-import ch.epfl.bluebrain.nexus.tests.BaseSpec
+import ch.epfl.bluebrain.nexus.tests.BaseIntegrationSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.projects.Bojack
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Events, Organizations, Projects, Resources}
 import io.circe.Json
@@ -20,7 +20,7 @@ import scala.concurrent.duration._
   * @see
   *   ProjectsDeletionSpec
   */
-class AutoProjectDeletionSpec extends BaseSpec {
+class AutoProjectDeletionSpec extends BaseIntegrationSpec {
 
   // We double the default patience in order to make sure that the automatic deletion has time to process the project
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(config.patience * 2, 300.millis)
