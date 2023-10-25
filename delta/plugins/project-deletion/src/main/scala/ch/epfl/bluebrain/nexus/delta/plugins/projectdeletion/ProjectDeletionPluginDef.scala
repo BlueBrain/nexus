@@ -7,7 +7,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.{Plugin, PluginDef}
 import izumi.distage.model.Locator
 import izumi.distage.model.definition.ModuleDef
-import monix.bio.Task
 import pureconfig.ConfigSource
 
 class ProjectDeletionPluginDef extends PluginDef {
@@ -40,6 +39,6 @@ class ProjectDeletionPluginDef extends PluginDef {
     * @return
     *   [[Plugin]] instance.
     */
-  override def initialize(locator: Locator): Task[Plugin] =
-    Task.pure(ProjectDeletionPlugin)
+  override def initialize(locator: Locator): IO[Plugin] =
+    IO.pure(ProjectDeletionPlugin)
 }
