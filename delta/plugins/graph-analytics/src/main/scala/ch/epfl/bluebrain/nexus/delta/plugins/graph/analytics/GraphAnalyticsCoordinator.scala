@@ -5,14 +5,13 @@ import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.GraphAnalytics.{index, projectionName}
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.config.GraphAnalyticsConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.{graphAnalyticsMappings, scriptContent, updateRelationshipsScriptId, GraphAnalyticsSink, GraphAnalyticsStream}
+import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
-import fs2.Stream
 import monix.bio.Task
 
 sealed trait GraphAnalyticsCoordinator
@@ -49,7 +48,7 @@ object GraphAnalyticsCoordinator {
       deleteIndex: ProjectRef => Task[Unit]
   ) extends GraphAnalyticsCoordinator {
 
-    def run(offset: Offset): Stream[Task, Elem[Unit]] =
+    def run(offset: Offset): ElemStream[Unit] =
       fetchProjects(offset).evalMap {
         _.traverse {
           case p if p.markedForDeletion => destroy(p.ref)
