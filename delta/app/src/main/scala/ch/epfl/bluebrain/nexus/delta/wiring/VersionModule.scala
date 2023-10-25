@@ -27,11 +27,11 @@ object VersionModule extends ModuleDef {
         identities: Identities,
         aclCheck: AclCheck,
         plugins: List[PluginDescription],
-        dependencies: List[ServiceDependency],
+        dependencies: Set[ServiceDependency],
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
     ) =>
-      VersionRoutes(identities, aclCheck, plugins, dependencies, cfg.description)(cfg.http.baseUri, cr, ordering)
+      VersionRoutes(identities, aclCheck, plugins, dependencies.toList, cfg.description)(cfg.http.baseUri, cr, ordering)
   }
 
   many[PriorityRoute].add { (route: VersionRoutes) =>
