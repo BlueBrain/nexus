@@ -1,7 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.marshalling
 
-import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.{EntityStreamSizeException, StatusCodes}
 import akka.http.scaladsl.server.ExceptionHandler
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
+import akka.http.scaladsl.server.Directives._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
@@ -14,12 +16,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.error.{AuthTokenError, IdentityError, ServiceError}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.PermissionsRejection
-import com.typesafe.scalalogging.Logger
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
 
 object RdfExceptionHandler {
-  private val logger: Logger = Logger[RdfExceptionHandler.type]
+  private val logger = Logger.cats[RdfExceptionHandler.type]
 
   /**
     * An [[ExceptionHandler]] that returns RDF output (Json-LD compacted, Json-LD expanded, Dot or NTriples) depending
@@ -31,14 +32,16 @@ object RdfExceptionHandler {
       base: BaseUri
   ): ExceptionHandler =
     ExceptionHandler {
-      case err: IdentityError        => discardEntityAndForceEmit(err)
-      case err: PermissionsRejection => discardEntityAndForceEmit(err)
-      case err: AuthTokenError       => discardEntityAndForceEmit(err)
-      case AuthorizationFailed       => discardEntityAndForceEmit(AuthorizationFailed: ServiceError)
-      case err: RdfError             => discardEntityAndForceEmit(err)
-      case err: Throwable            =>
-        logger.error(s"An exception was thrown while evaluating a Route'", err)
-        discardEntityAndForceEmit(UnexpectedError)
+      case err: IdentityError             => discardEntityAndForceEmit(err)
+      case err: PermissionsRejection      => discardEntityAndForceEmit(err)
+      case err: AuthTokenError            => discardEntityAndForceEmit(err)
+      case AuthorizationFailed            => discardEntityAndForceEmit(AuthorizationFailed: ServiceError)
+      case err: RdfError                  => discardEntityAndForceEmit(err)
+      case err: EntityStreamSizeException => discardEntityAndForceEmit(err)
+      case err: Throwable                 =>
+        onComplete(logger.error(err)(s"An exception was thrown while evaluating a Route'").unsafeToFuture()) { _ =>
+          discardEntityAndForceEmit(UnexpectedError)
+        }
     }
 
   implicit private val rdfErrorEncoder: Encoder[RdfError] =
@@ -52,6 +55,21 @@ object RdfExceptionHandler {
 
   implicit private val rdfErrorHttpFields: HttpResponseFields[RdfError] =
     HttpResponseFields(_ => StatusCodes.InternalServerError)
+
+  implicit private val entityStreamSizeExceptionEncoder: Encoder[EntityStreamSizeException] =
+    Encoder.AsObject.instance { r =>
+      val tpe    = "PayloadTooLarge"
+      val reason = s"""Incoming payload size (${r.actualSize.getOrElse(
+        "while streaming"
+      )}) exceeded size limit (${r.limit} bytes)"""
+      JsonObject(keywords.tpe -> tpe.asJson, "reason" -> reason.asJson)
+    }
+
+  implicit private val entityStreamSizeExceptionJsonLdEncoder: JsonLdEncoder[EntityStreamSizeException] =
+    JsonLdEncoder.computeFromCirce(ContextValue(contexts.error))
+
+  implicit private val entityStreamSizeExceptionHttpFields: HttpResponseFields[EntityStreamSizeException] =
+    HttpResponseFields(_ => StatusCodes.PayloadTooLarge)
 
   final private case object UnexpectedError
   private type UnexpectedError = UnexpectedError.type
