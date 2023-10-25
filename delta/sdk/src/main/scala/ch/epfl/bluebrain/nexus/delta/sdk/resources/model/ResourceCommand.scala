@@ -146,6 +146,22 @@ object ResourceCommand {
     def subject: Subject = caller.subject
   }
 
+  /**
+    * Command that signals the intent to update the schema attached to a resource
+    *
+    * @param id
+    *   resource identifier
+    * @param project
+    *   project where the resource belongs
+    * @param schemaRef
+    *   schema of the resource
+    * @param expanded
+    *   expanded representation of the resource
+    * @param rev
+    *   last known revision of the resource
+    * @param caller
+    *   subject which created this event
+    */
   final case class UpdateResourceSchema(
       id: Iri,
       project: ProjectRef,
