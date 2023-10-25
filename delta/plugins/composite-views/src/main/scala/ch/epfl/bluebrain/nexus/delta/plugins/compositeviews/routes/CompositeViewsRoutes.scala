@@ -1,10 +1,15 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.routes
 
-import akka.http.scaladsl.model.StatusCodes.Created
+import akka.http.scaladsl.model.StatusCode
+import akka.http.scaladsl.model.StatusCodes.{Created, OK}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
+import cats.effect.IO
+import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponse
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.BlazegraphViewsDirectives
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection._
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeViewRejection, ViewResource}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.permissions.{read => Read, write => Write}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.{BlazegraphQuery, CompositeViews, ElasticSearchQuery}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.ElasticSearchViewsDirectives
@@ -13,7 +18,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaDirectives, DeltaSchemeDirectives}
+import ch.epfl.bluebrain.nexus.delta.sdk.ce.DeltaDirectives
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
@@ -21,7 +27,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
 import io.circe.{Json, JsonObject}
-import monix.execution.Scheduler
 
 /**
   * Composite views routes.
@@ -35,7 +40,6 @@ class CompositeViewsRoutes(
     schemeDirectives: DeltaSchemeDirectives
 )(implicit
     baseUri: BaseUri,
-    s: Scheduler,
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering,
     fusionConfig: FusionConfig
@@ -48,6 +52,29 @@ class CompositeViewsRoutes(
 
   import schemeDirectives._
 
+  private def emitMetadata(statusCode: StatusCode, io: IO[ViewResource]): Route =
+    emit(
+      statusCode,
+      io.mapValue(_.metadata).attemptNarrow[CompositeViewRejection].rejectWhen(decodingFailedOrViewNotFound)
+    )
+
+  private def emitMetadata(io: IO[ViewResource]): Route = emitMetadata(OK, io)
+
+  private def emitFetch(io: IO[ViewResource]) =
+    emit(io.attemptNarrow[CompositeViewRejection].rejectOn[ViewNotFound])
+
+  private def emitTags(io: IO[ViewResource]) =
+    emit(io.map(_.value.tags).attemptNarrow[CompositeViewRejection].rejectOn[ViewNotFound])
+
+  private def emitSource(io: IO[ViewResource]) =
+    emit(io.map(_.value.source).attemptNarrow[CompositeViewRejection].rejectOn[ViewNotFound])
+
+  private def emitSparqlResponse[R <: SparqlQueryResponse](io: IO[R]) =
+    emit(io.attemptNarrow[CompositeViewRejection].rejectOn[ViewNotFound])
+
+  private def emitElasticsearchResponse(io: IO[Json]) =
+    emit(io.attemptNarrow[CompositeViewRejection].rejectOn[ViewNotFound])
+
   def routes: Route =
     pathPrefix("views") {
       extractCaller { implicit caller =>
@@ -56,10 +83,7 @@ class CompositeViewsRoutes(
             //Create a view without id segment
             (post & entity(as[Json]) & noParameter("rev") & pathEndOrSingleSlash) { source =>
               authorizeFor(ref, Write).apply {
-                emit(
-                  Created,
-                  views.create(ref, source).mapValue(_.metadata).rejectWhen(decodingFailedOrViewNotFound)
-                )
+                emitMetadata(Created, views.create(ref, source))
               }
             },
             idSegment { id =>
@@ -71,28 +95,17 @@ class CompositeViewsRoutes(
                         (parameter("rev".as[Int].?) & pathEndOrSingleSlash & entity(as[Json])) {
                           case (None, source)      =>
                             // Create a view with id segment
-                            emit(
-                              Created,
-                              views
-                                .create(id, ref, source)
-                                .mapValue(_.metadata)
-                                .rejectWhen(decodingFailedOrViewNotFound)
-                            )
+                            emitMetadata(Created, views.create(id, ref, source))
                           case (Some(rev), source) =>
                             // Update a view
-                            emit(
-                              views
-                                .update(id, ref, rev, source)
-                                .mapValue(_.metadata)
-                                .rejectWhen(decodingFailedOrViewNotFound)
-                            )
+                            emitMetadata(views.update(id, ref, rev, source))
                         }
                       }
                     },
                     //Deprecate a view
                     (delete & parameter("rev".as[Int])) { rev =>
                       authorizeFor(ref, Write).apply {
-                        emit(views.deprecate(id, ref, rev).mapValue(_.metadata).rejectOn[ViewNotFound])
+                        emitMetadata(views.deprecate(id, ref, rev))
                       }
                     },
                     // Fetch a view
@@ -101,7 +114,7 @@ class CompositeViewsRoutes(
                         ref,
                         id,
                         authorizeFor(ref, Read).apply {
-                          emit(views.fetch(id, ref).rejectOn[ViewNotFound])
+                          emitFetch(views.fetch(id, ref))
                         }
                       )
                     }
@@ -111,16 +124,13 @@ class CompositeViewsRoutes(
                   concat(
                     // Fetch tags for a view
                     (get & idSegmentRef(id) & authorizeFor(ref, Read)) { id =>
-                      emit(views.fetch(id, ref).map(_.value.tags).rejectOn[ViewNotFound])
+                      emitTags(views.fetch(id, ref))
                     },
                     // Tag a view
                     (post & parameter("rev".as[Int])) { rev =>
                       authorizeFor(ref, Write).apply {
                         entity(as[Tag]) { case Tag(tagRev, tag) =>
-                          emit(
-                            Created,
-                            views.tag(id, ref, tag, tagRev, rev).mapValue(_.metadata).rejectOn[ViewNotFound]
-                          )
+                          emitMetadata(Created, views.tag(id, ref, tag, tagRev, rev))
                         }
                       }
                     }
@@ -129,7 +139,7 @@ class CompositeViewsRoutes(
                 // Fetch a view original source
                 (pathPrefix("source") & get & pathEndOrSingleSlash & idSegmentRef(id)) { id =>
                   authorizeFor(ref, Read).apply {
-                    emit(views.fetch(id, ref).map(_.value.source).rejectOn[ViewNotFound])
+                    emitSource(views.fetch(id, ref))
                   }
                 },
                 pathPrefix("projections") {
@@ -138,7 +148,7 @@ class CompositeViewsRoutes(
                     (pathPrefix("_") & pathPrefix("sparql") & pathEndOrSingleSlash) {
                       ((get & parameter("query".as[SparqlQuery])) | (post & entity(as[SparqlQuery]))) { query =>
                         queryResponseType.apply { responseType =>
-                          emit(blazegraphQuery.queryProjections(id, ref, query, responseType))
+                          emitSparqlResponse(blazegraphQuery.queryProjections(id, ref, query, responseType))
                         }
                       }
                     },
@@ -146,20 +156,20 @@ class CompositeViewsRoutes(
                     (idSegment & pathPrefix("sparql") & pathEndOrSingleSlash) { projectionId =>
                       ((get & parameter("query".as[SparqlQuery])) | (post & entity(as[SparqlQuery]))) { query =>
                         queryResponseType.apply { responseType =>
-                          emit(blazegraphQuery.query(id, projectionId, ref, query, responseType))
+                          emitSparqlResponse(blazegraphQuery.query(id, projectionId, ref, query, responseType))
                         }
                       }
                     },
                     // Query all composite views' elasticsearch projections indices
                     (pathPrefix("_") & pathPrefix("_search") & pathEndOrSingleSlash & post) {
                       (extractQueryParams & entity(as[JsonObject])) { (qp, query) =>
-                        emit(elasticSearchQuery.queryProjections(id, ref, query, qp))
+                        emitElasticsearchResponse(elasticSearchQuery.queryProjections(id, ref, query, qp))
                       }
                     },
                     // Query a composite views' elasticsearch projection index
                     (idSegment & pathPrefix("_search") & pathEndOrSingleSlash & post) { projectionId =>
                       (extractQueryParams & entity(as[JsonObject])) { (qp, query) =>
-                        emit(elasticSearchQuery.query(id, projectionId, ref, query, qp))
+                        emitElasticsearchResponse(elasticSearchQuery.query(id, projectionId, ref, query, qp))
                       }
                     }
                   )
@@ -169,7 +179,7 @@ class CompositeViewsRoutes(
                   concat(
                     ((get & parameter("query".as[SparqlQuery])) | (post & entity(as[SparqlQuery]))) { query =>
                       queryResponseType.apply { responseType =>
-                        emit(blazegraphQuery.query(id, ref, query, responseType).rejectOn[ViewNotFound])
+                        emitSparqlResponse(blazegraphQuery.query(id, ref, query, responseType))
                       }
                     }
                   )
@@ -197,7 +207,6 @@ object CompositeViewsRoutes {
       schemeDirectives: DeltaSchemeDirectives
   )(implicit
       baseUri: BaseUri,
-      s: Scheduler,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering,
       fusionConfig: FusionConfig

@@ -16,7 +16,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.Response.Reject
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.syntax._
 import io.circe.{DecodingFailure, Encoder, JsonObject}
-import monix.execution.Scheduler
 
 // $COVERAGE-OFF$
 @SuppressWarnings(Array("UnsafeTraversableMethods"))
@@ -28,7 +27,6 @@ object RdfRejectionHandler {
     * ''format'' query parameter
     */
   def apply(implicit
-      s: Scheduler,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering
   ): RejectionHandler =

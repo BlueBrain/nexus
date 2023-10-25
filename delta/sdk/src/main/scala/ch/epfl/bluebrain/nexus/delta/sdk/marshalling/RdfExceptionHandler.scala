@@ -17,7 +17,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.PermissionsRejection
 import com.typesafe.scalalogging.Logger
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
-import monix.execution.Scheduler
 
 object RdfExceptionHandler {
   private val logger: Logger = Logger[RdfExceptionHandler.type]
@@ -27,7 +26,6 @@ object RdfExceptionHandler {
     * on content negotiation (Accept Header) and ''format'' query parameter
     */
   def apply(implicit
-      s: Scheduler,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering,
       base: BaseUri

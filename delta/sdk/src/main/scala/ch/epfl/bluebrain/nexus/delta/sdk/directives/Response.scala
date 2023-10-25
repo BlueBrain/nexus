@@ -11,7 +11,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
-import monix.execution.Scheduler
 
 /**
   * An enumeration of possible Route responses
@@ -43,7 +42,7 @@ object Response {
     /**
       * Generates a route that completes from the current rejection
       */
-    def forceComplete(implicit s: Scheduler, cr: RemoteContextResolution, ordering: JsonKeyOrdering): Route =
+    def forceComplete(implicit cr: RemoteContextResolution, ordering: JsonKeyOrdering): Route =
       DeltaDirectives.discardEntityAndForceEmit(value)
 
     /**

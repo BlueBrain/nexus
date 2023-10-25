@@ -1,13 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
 import cats.data.NonEmptyList
+import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.RebuildStrategy
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeViewFields, CompositeViewProjection, CompositeViewProjectionFields, CompositeViewSource, CompositeViewSourceFields, CompositeViewValue}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectBase
 import ch.epfl.bluebrain.nexus.delta.sdk.views.IndexingRev
-import monix.bio.UIO
 
 object CompositeViewFactory {
 
@@ -16,7 +17,7 @@ object CompositeViewFactory {
     *
     *   - The indexing revision for the common spaces and the projections defaults to 1.
     */
-  def create(fields: CompositeViewFields)(implicit projectBase: ProjectBase, uuidF: UUIDF): UIO[CompositeViewValue] =
+  def create(fields: CompositeViewFields)(implicit projectBase: ProjectBase, uuidF: UUIDF): IO[CompositeViewValue] =
     for {
       sources     <- fields.sources.traverse { create }
       projections <- fields.projections.traverse { create(_, IndexingRev.init) }
@@ -40,7 +41,7 @@ object CompositeViewFactory {
   def update(fields: CompositeViewFields, current: CompositeViewValue, nextRev: IndexingRev)(implicit
       projectBase: ProjectBase,
       uuidF: UUIDF
-  ): UIO[CompositeViewValue] = {
+  ): IO[CompositeViewValue] = {
     for {
       sources             <- fields.sources.traverse { upsert(_, current.sources.lookup) }.map(_.toNem)
       // If any source has changed, we update the indexing rev for sources
@@ -62,8 +63,10 @@ object CompositeViewFactory {
   }
 
   // Generate an id and a uuid for a source or a projection
-  private def generate(implicit projectBase: ProjectBase, uuidF: UUIDF) = uuidF().map { uuid =>
-    uuid -> projectBase.iri / uuid.toString
+  private def generate(implicit projectBase: ProjectBase, uuidF: UUIDF) = toCatsIO {
+    uuidF().map { uuid =>
+      uuid -> projectBase.iri / uuid.toString
+    }
   }
 
   private[compositeviews] def create(
@@ -82,7 +85,7 @@ object CompositeViewFactory {
     val currentSourceOpt = input.id.flatMap(find)
     currentSourceOpt
       .map { currentSource =>
-        UIO.pure {
+        IO.pure {
           currentSource.id -> input.toSource(currentSource.uuid, currentSource.id)
         }
       }
@@ -110,7 +113,7 @@ object CompositeViewFactory {
     val currentProjectionOpt = input.id.flatMap(find)
     currentProjectionOpt
       .map { currentProjection =>
-        UIO.pure {
+        IO.pure {
           val newProjection  =
             input.toProjection(currentProjection.uuid, currentProjection.id, currentProjection.indexingRev)
           val newIndexingRev =
