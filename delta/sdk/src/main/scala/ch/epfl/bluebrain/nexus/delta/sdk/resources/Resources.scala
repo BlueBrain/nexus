@@ -91,6 +91,22 @@ trait Resources {
   )(implicit caller: Caller): IO[DataResource]
 
   /**
+    * Update the schema that is attached to the resource
+    *
+    * @param id
+    *   identifier that will be expanded to the iri of the resource
+    * @param projectRef
+    *   project reference where the resource belongs
+    * @param schema
+    *   identifier of the new schema that will be used to validate the resource. This identifier will be expanded
+    */
+  def updateAttachedSchema(
+      id: IdSegment,
+      projectRef: ProjectRef,
+      schema: IdSegment
+  )(implicit caller: Caller): IO[DataResource]
+
+  /**
     * Refreshes an existing resource. This is equivalent to posting an update with the latest source. Used for when the
     * project or schema contexts have changes
     *
@@ -284,6 +300,10 @@ object Resources {
     def tagDeleted(e: ResourceTagDeleted): Option[ResourceState] = state.map { s =>
       s.copy(rev = e.rev, tags = s.tags - e.tag, updatedAt = e.instant, updatedBy = e.subject)
     }
+
+    def resourceSchemaUpdated(e: ResourceSchemaUpdated): Option[ResourceState] = state.map {
+      _.copy(rev = e.rev, schema = e.schema, schemaProject = e.schemaProject, updatedAt = e.instant, updatedBy = e.subject)
+    }
     // format: on
 
     def deprecated(e: ResourceDeprecated): Option[ResourceState] = state.map {
@@ -291,12 +311,13 @@ object Resources {
     }
 
     event match {
-      case e: ResourceCreated    => created(e)
-      case e: ResourceUpdated    => updated(e)
-      case e: ResourceRefreshed  => refreshed(e)
-      case e: ResourceTagAdded   => tagAdded(e)
-      case e: ResourceTagDeleted => tagDeleted(e)
-      case e: ResourceDeprecated => deprecated(e)
+      case e: ResourceCreated       => created(e)
+      case e: ResourceUpdated       => updated(e)
+      case e: ResourceRefreshed     => refreshed(e)
+      case e: ResourceTagAdded      => tagAdded(e)
+      case e: ResourceTagDeleted    => tagDeleted(e)
+      case e: ResourceDeprecated    => deprecated(e)
+      case e: ResourceSchemaUpdated => resourceSchemaUpdated(e)
     }
   }
 
@@ -382,6 +403,15 @@ object Resources {
       // format: on
     }
 
+    def updateResourceSchema(u: UpdateResourceSchema) = {
+      for {
+        s                          <- stateWhereResourceIsEditable(u)
+        (schemaRev, schemaProject) <- validate(u.id, u.expanded, u.schemaRef, s.project, u.caller)
+        types                       = u.expanded.getTypes.getOrElse(Set.empty)
+        time                       <- IOInstant.now
+      } yield ResourceSchemaUpdated(u.id, u.project, schemaRev, schemaProject, types, s.rev + 1, time, u.subject)
+    }
+
     def refresh(c: RefreshResource) = {
       import c.jsonld._
       // format: off
@@ -419,12 +449,13 @@ object Resources {
     }
 
     cmd match {
-      case c: CreateResource    => create(c)
-      case c: UpdateResource    => update(c)
-      case c: RefreshResource   => refresh(c)
-      case c: TagResource       => tag(c)
-      case c: DeleteResourceTag => deleteTag(c)
-      case c: DeprecateResource => deprecate(c)
+      case c: CreateResource       => create(c)
+      case c: UpdateResource       => update(c)
+      case c: RefreshResource      => refresh(c)
+      case c: TagResource          => tag(c)
+      case c: DeleteResourceTag    => deleteTag(c)
+      case c: DeprecateResource    => deprecate(c)
+      case c: UpdateResourceSchema => updateResourceSchema(c)
     }
   }
 
