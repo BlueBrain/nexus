@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.routes
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.server.Route
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.config.DescriptionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.ServiceDependency
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
@@ -14,7 +15,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{events, version}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group}
-import monix.bio.UIO
 
 class VersionRoutesSpec extends BaseRouteSpec {
 
@@ -28,13 +28,13 @@ class VersionRoutesSpec extends BaseRouteSpec {
     List(PluginDescription(Name.unsafe("pluginA"), "1.0"), PluginDescription(Name.unsafe("pluginB"), "2.0"))
 
   private val dependency1 = new ServiceDependency {
-    override def serviceDescription: UIO[ServiceDescription] =
-      UIO.pure(ServiceDescription.unresolved(Name.unsafe("elasticsearch")))
+    override def serviceDescription: IO[ServiceDescription] =
+      IO.pure(ServiceDescription.unresolved(Name.unsafe("elasticsearch")))
   }
 
   private val dependency2 = new ServiceDependency {
-    override def serviceDescription: UIO[ServiceDescription] =
-      UIO.pure(ServiceDescription(Name.unsafe("remoteStorage"), "1.0.0"))
+    override def serviceDescription: IO[ServiceDescription] =
+      IO.pure(ServiceDescription(Name.unsafe("remoteStorage"), "1.0.0"))
   }
 
   private val descriptionConfig = DescriptionConfig(Name.unsafe("delta"), Name.unsafe("dev"))
@@ -45,7 +45,7 @@ class VersionRoutesSpec extends BaseRouteSpec {
       identities,
       aclCheck,
       pluginsInfo,
-      Set(dependency1, dependency2),
+      List(dependency1, dependency2),
       descriptionConfig
     ).routes
   )
