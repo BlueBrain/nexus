@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resources
 
 import cats.effect.{Clock, IO}
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
@@ -78,6 +79,21 @@ final class ResourcesImpl private (
       res            <- eval(UpdateResource(iri, projectRef, schemeRefOpt, source, jsonld, rev, caller))
     } yield res
   }.span("updateResource")
+
+  override def updateAttachedSchema(
+      id: IdSegment,
+      projectRef: ProjectRef,
+      schema: IdSegment
+  )(implicit caller: Caller): IO[DataResource] = {
+    for {
+      projectContext <- fetchContext.onModify(projectRef).toCatsIO
+      iri            <- expandIri(id, projectContext).toCatsIO
+      schemaRef      <- expandResourceRef(schema, projectContext)
+      resource       <- log.stateOr(projectRef, iri, ResourceNotFound(iri, projectRef)).toCatsIO
+      res            <- if (schemaRef.iri == resource.schema.iri) fetch(id, projectRef, schema.some)
+                        else eval(UpdateResourceSchema(iri, projectRef, schemaRef, resource.expanded, resource.rev, caller))
+    } yield res
+  }.span("updateResourceSchema")
 
   override def refresh(
       id: IdSegment,

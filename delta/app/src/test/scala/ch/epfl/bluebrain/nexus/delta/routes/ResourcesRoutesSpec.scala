@@ -34,6 +34,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.testkit.bio.IOFromMap
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
 import io.circe.{Json, Printer}
+import org.scalatest.Assertion
 
 import java.util.UUID
 
@@ -63,6 +64,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues
   private val schemaSource = jsonContentOf("resources/schema.json").addContext(contexts.shacl, contexts.schemasMetadata)
   private val schema1      = SchemaGen.schema(nxv + "myschema", project.value.ref, schemaSource.removeKeys(keywords.id))
   private val schema2      = SchemaGen.schema(schema.Person, project.value.ref, schemaSource.removeKeys(keywords.id))
+  private val schema3      = SchemaGen.schema(nxv + "otherSchema", project.value.ref, schemaSource.removeKeys(keywords.id))
   private val tag          = UserTag.unsafe("mytag")
 
   private val myId  = nxv + "myid"  // Resource created against no schema with id present on the payload
@@ -94,6 +96,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues
   private val fetchSchema: (ResourceRef, ProjectRef) => FetchResource[Schema] = {
     case (ref, _) if ref.iri == schema2.id => IO.pure(Some(SchemaGen.resourceFor(schema2, deprecated = true)))
     case (ref, _) if ref.iri == schema1.id => IO.pure(Some(SchemaGen.resourceFor(schema1)))
+    case (ref, _) if ref.iri == schema3.id => IO.pure(Some(SchemaGen.resourceFor(schema3)))
     case _                                 => IO.none
   }
 
@@ -343,6 +346,42 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues
         status shouldEqual StatusCodes.NotFound
         response.asJson shouldEqual
           jsonContentOf("/resources/errors/not-found.json", "id" -> (nxv + "myid10"), "proj" -> "myorg/myproject")
+      }
+    }
+
+    "fail to update a schema without resources/write permission" in {
+      aclCheck.subtract(AclAddress.Root, Anonymous -> Set(resources.write)).accepted
+      Put(s"/v1/resources/$projectRef/_/someId/update-schema") ~> routes ~> check {
+        response.status shouldEqual StatusCodes.Forbidden
+        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+      }
+    }
+
+    "fail to update a schema when providing a non-existing schema" in {
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(resources.write)).accepted
+      thereIsAResourceWithSchema("myschema") { id =>
+        Put(s"/v1/resources/$projectRef/wrongSchema/$id/update-schema") ~> routes ~> check {
+          response.status shouldEqual StatusCodes.NotFound
+          response.asJson.hcursor.get[String]("@type").toOption should contain("InvalidSchemaRejection")
+        }
+      }
+    }
+
+    "fail to update schema when providing _ as schema" in {
+      thereIsAResourceWithSchema("myschema") { id =>
+        Put(s"/v1/resources/$projectRef/_/$id/update-schema") ~> routes ~> check {
+          response.status shouldEqual StatusCodes.BadRequest
+          response.asJson.hcursor.get[String]("@type").toOption should contain("NoSchemaProvided")
+        }
+      }
+    }
+
+    "succeed to update the schema" in {
+      thereIsAResourceWithSchema("myschema") { id =>
+        Put(s"/v1/resources/$projectRef/otherSchema/$id/update-schema") ~> routes ~> check {
+          response.status shouldEqual StatusCodes.OK
+          response.asJson.hcursor.get[String]("_constrainedBy").toOption should contain(schema3.id.toString)
+        }
       }
     }
 
@@ -642,5 +681,22 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues
       "schema"     -> schema,
       "self"       -> ResourceUris.resource(project, project, id).accessUri
     )
+
+  /**
+    * Ensure there is a new simple resource that can be used in a further assertion
+    * @param assertion
+    *   An assertion that can use the id of the newly created one resource
+    */
+  private def thereIsAResourceWithSchema(schemaName: String)(assertion: String => Assertion): Assertion = {
+    val resourceName = genString()
+    val id           = nxv + resourceName
+    val payload      = jsonContentOf("resources/resource.json", "id" -> id)
+
+    Post(s"/v1/resources/$projectRef/$schemaName", payload.toEntity) ~> routes ~> check {
+      status shouldEqual StatusCodes.Created
+    }
+
+    assertion(resourceName)
+  }
 
 }
