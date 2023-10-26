@@ -4,7 +4,6 @@ import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageRejection}
@@ -72,7 +71,6 @@ final class StoragesRoutes(
                       Created,
                       storages
                         .create(ref, source)
-                        .toCatsIO
                         .flatTap(index(ref, _, mode))
                         .mapValue(_.metadata)
                         .attemptNarrow[StorageRejection]
@@ -95,7 +93,6 @@ final class StoragesRoutes(
                                   Created,
                                   storages
                                     .create(id, ref, source)
-                                    .toCatsIO
                                     .flatTap(index(ref, _, mode))
                                     .mapValue(_.metadata)
                                     .attemptNarrow[StorageRejection]
@@ -105,7 +102,6 @@ final class StoragesRoutes(
                                 emit(
                                   storages
                                     .update(id, ref, rev, source)
-                                    .toCatsIO
                                     .flatTap(index(ref, _, mode))
                                     .mapValue(_.metadata)
                                     .attemptNarrow[StorageRejection]
@@ -119,7 +115,6 @@ final class StoragesRoutes(
                             emit(
                               storages
                                 .deprecate(id, ref, rev)
-                                .toCatsIO
                                 .flatTap(index(ref, _, mode))
                                 .mapValue(_.metadata)
                                 .attemptNarrow[StorageRejection]
@@ -136,7 +131,6 @@ final class StoragesRoutes(
                               emit(
                                 storages
                                   .fetch(id, ref)
-                                  .toCatsIO
                                   .attemptNarrow[StorageRejection]
                                   .rejectOn[StorageNotFound]
                               )
@@ -152,7 +146,6 @@ final class StoragesRoutes(
                       authorizeFor(ref, Read).apply {
                         val sourceIO = storages
                           .fetch(id, ref)
-                          .toCatsIO
                           .map(res => res.value.source)
                         emit(sourceIO.attemptNarrow[StorageRejection].rejectOn[StorageNotFound])
                       }
@@ -166,7 +159,6 @@ final class StoragesRoutes(
                           emit(
                             storages
                               .fetch(id, ref)
-                              .toCatsIO
                               .map(_.value.tags)
                               .attemptNarrow[StorageRejection]
                               .rejectOn[StorageNotFound]
@@ -180,7 +172,6 @@ final class StoragesRoutes(
                                 Created,
                                 storages
                                   .tag(id, ref, tag, tagRev, rev)
-                                  .toCatsIO
                                   .flatTap(index(ref, _, mode))
                                   .mapValue(_.metadata)
                                   .attemptNarrow[StorageRejection]

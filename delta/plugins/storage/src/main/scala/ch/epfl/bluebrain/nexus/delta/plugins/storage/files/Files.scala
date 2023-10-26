@@ -20,8 +20,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.schemas.{files => fileSchema}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageIsDeprecated
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, Storage, StorageType}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.{StorageFetchRejection, StorageIsDeprecated}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, Storage, StorageRejection, StorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.{FetchAttributeRejection, FetchFileRejection, SaveFileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
@@ -345,7 +345,7 @@ final class Files(
     for {
       file      <- fetch(id)
       attributes = file.value.attributes
-      storage   <- storages.fetch(file.value.storage, id.project).toCatsIO
+      storage   <- storages.fetch(file.value.storage, id.project)
       _         <- validateAuth(id.project, storage.value.storageValue.readPermission)
       s          = fetchFile(storage.value, attributes, file.id)
       mediaType  = attributes.mediaType.getOrElse(`application/octet-stream`)
@@ -418,13 +418,15 @@ final class Files(
       case Some(storageId) =>
         for {
           iri     <- expandStorageIri(storageId, pc)
-          storage <- storages.fetch(ResourceRef(iri), ref).toCatsIO
+          storage <- storages.fetch(ResourceRef(iri), ref)
           _       <- IO.whenA(storage.deprecated)(IO.raiseError(WrappedStorageRejection(StorageIsDeprecated(iri))))
           _       <- validateAuth(ref, storage.value.storageValue.writePermission)
         } yield ResourceRef.Revision(storage.id, storage.rev) -> storage.value
       case None            =>
         for {
-          storage <- storages.fetchDefault(ref).mapError(WrappedStorageRejection).toCatsIO
+          storage <- storages.fetchDefault(ref).adaptError { case e: StorageRejection =>
+                       WrappedStorageRejection(e)
+                     }
           _       <- validateAuth(ref, storage.value.storageValue.writePermission)
         } yield ResourceRef.Revision(storage.id, storage.rev) -> storage.value
     }
@@ -482,7 +484,11 @@ final class Files(
                            f.storage,
                            storages
                              .fetch(IdSegmentRef(f.storage), f.project)
-                             .bimap(WrappedStorageRejection, _.value)
+                             .map(_.value)
+                             .adaptError { case e: StorageRejection =>
+                               WrappedStorageRejection(e)
+                             }
+                             .toBIO[StorageRejection]
                          )
       stream        <- log
                          .states(Scope.root, offset)
@@ -526,7 +532,9 @@ final class Files(
   private[files] def updateAttributes(iri: Iri, project: ProjectRef): IO[Unit] =
     for {
       f       <- log.stateOr(project, iri, FileNotFound(iri, project)).toCatsIO
-      storage <- storages.fetch(IdSegmentRef(f.storage), f.project).bimap(WrappedStorageRejection, _.value).toCatsIO
+      storage <- storages.fetch(IdSegmentRef(f.storage), f.project).map(_.value).adaptError {
+                   case e: StorageFetchRejection => WrappedStorageRejection(e)
+                 }
       _       <- updateAttributes(f: FileState, storage: Storage)
     } yield ()
 

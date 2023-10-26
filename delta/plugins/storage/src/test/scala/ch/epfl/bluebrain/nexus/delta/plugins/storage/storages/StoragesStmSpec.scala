@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageGen.storageState
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages.{evaluate, next}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.{DiskStorageConfig, StorageTypeConfig}
@@ -14,14 +15,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.Json
-import monix.bio.IO
 
 import java.nio.file.Files
 import java.time.Instant
 
-class StoragesStmSpec extends BioSpec with StorageFixtures {
+class StoragesStmSpec extends CatsEffectSpec with StorageFixtures {
 
   private val epoch = Instant.EPOCH
   private val time2 = Instant.ofEpochMilli(10L)
@@ -35,11 +35,13 @@ class StoragesStmSpec extends BioSpec with StorageFixtures {
 
   private val access: Storages.StorageAccess = {
     case (id, disk: DiskStorageValue)         =>
-      IO.when(!accessibleDisk.contains(disk.volume))(IO.raiseError(StorageNotAccessible(id, "wrong volume")))
+      IO.whenA(!accessibleDisk.contains(disk.volume))(IO.raiseError(StorageNotAccessible(id, "wrong volume")))
     case (id, s3: S3StorageValue)             =>
-      IO.when(s3.bucket != s3Fields.bucket)(IO.raiseError(StorageNotAccessible(id, "wrong bucket")))
+      IO.whenA(s3.bucket != s3Fields.bucket)(IO.raiseError(StorageNotAccessible(id, "wrong bucket")))
     case (id, remote: RemoteDiskStorageValue) =>
-      IO.when(remote.endpoint != remoteFields.endpoint.value)(IO.raiseError(StorageNotAccessible(id, "wrong endpoint")))
+      IO.whenA(remote.endpoint != remoteFields.endpoint.value)(
+        IO.raiseError(StorageNotAccessible(id, "wrong endpoint"))
+      )
   }
 
   private val perms = IO.pure(allowedPerms.toSet)

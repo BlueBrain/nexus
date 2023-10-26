@@ -34,7 +34,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.bio.IOFromMap
 import io.circe.Json
-import monix.bio.{IO => BIO}
 import org.scalatest._
 
 import java.util.UUID
@@ -103,8 +102,8 @@ class StoragesRoutesSpec extends BaseRouteSpec with TryValues with StorageFixtur
   private lazy val storages    = Storages(
     fetchContext,
     ResolverContextResolution(rcr),
-    BIO.pure(perms),
-    (_, _) => BIO.unit,
+    IO.pure(perms),
+    (_, _) => IO.unit,
     xas,
     cfg,
     serviceAccount

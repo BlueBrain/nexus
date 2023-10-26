@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.{BatchConfig, ProjectionCon
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionErrors, Projections}
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
-import ch.epfl.bluebrain.nexus.testkit.bio.BioRunContext
+import ch.epfl.bluebrain.nexus.testkit.bio.{BioRunContext, IOFixedClock}
 import ch.epfl.bluebrain.nexus.testkit.mu.NexusSuite
 import ch.epfl.bluebrain.nexus.testkit.mu.bio.ResourceFixture
 import monix.bio.{Task, UIO}
@@ -54,7 +54,7 @@ object SupervisorSetup {
   ): ResourceFixture.TaskFixture[SupervisorSetup] =
     ResourceFixture.suiteLocal(name, resource(cluster))
 
-  trait Fixture { self: NexusSuite with BioRunContext =>
+  trait Fixture { self: NexusSuite with BioRunContext with IOFixedClock =>
     val supervisor: ResourceFixture.TaskFixture[SupervisorSetup]    =
       SupervisorSetup.suiteLocalFixture("supervisor", ClusterConfig(1, 0))
     val supervisor3_1: ResourceFixture.TaskFixture[SupervisorSetup] =

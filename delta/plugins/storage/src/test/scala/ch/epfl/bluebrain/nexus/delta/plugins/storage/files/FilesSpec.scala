@@ -40,7 +40,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, Resource
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit.remotestorage.RemoteStorageDocker
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
-import monix.bio.{IO => BIO}
 import monix.execution.Scheduler
 import org.scalatest.DoNotDiscover
 import org.scalatest.concurrent.Eventually
@@ -115,8 +114,8 @@ class FilesSpec(docker: RemoteStorageDocker)
     lazy val storages: Storages = Storages(
       fetchContext.mapRejection(StorageRejection.ProjectContextRejection),
       ResolverContextResolution(rcr),
-      BIO.pure(allowedPerms),
-      (_, _) => BIO.unit,
+      IO.pure(allowedPerms),
+      (_, _) => IO.unit,
       xas,
       StoragesConfig(eventLogConfig, pagination, cfg),
       ServiceAccount(User("nexus-sa", Label.unsafe("sa")))
