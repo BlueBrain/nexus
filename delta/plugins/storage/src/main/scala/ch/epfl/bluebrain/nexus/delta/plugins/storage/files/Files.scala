@@ -552,7 +552,6 @@ final class Files(
   private def fetchAttributes(storage: Storage, attr: FileAttributes, fileId: Iri): IO[ComputedFileAttributes] =
     FetchAttributes(storage, remoteDiskStorageClient)
       .apply(attr)
-      .toCatsIO
       .adaptError { case e: FetchAttributeRejection => FetchAttributesRejection(fileId, storage.id, e) }
 
 }

@@ -4,7 +4,7 @@ import cats.effect.{Clock, IO}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOInstant, IOUtils, UUIDF}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOInstant, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.kernel.{Logger, Mapper}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
@@ -34,7 +34,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, EntityType, ProjectRef, ResourceRef}
 import fs2.Stream
 import io.circe.Json
-import monix.bio.UIO
 import org.typelevel.log4cats
 
 import java.time.Instant
@@ -316,13 +315,15 @@ final class Storages private (
           logFailureAndContinue(io)
         }
         .compile
-        .drain >> UIO.unit
+        .drain
+        .void
     }
 
   private def logFailureAndContinue[A](io: IO[A]): IO[Unit] = {
     io.onError { case err: StorageRejection =>
       logger.warn(err.reason)
-    }.attemptNarrow[StorageRejection] >> IO.unit
+    }.attemptNarrow[StorageRejection]
+      .void
   }
 
   private def eval(cmd: StorageCommand): IO[StorageResource] =
@@ -444,7 +445,7 @@ object Storages {
       case None    =>
         for {
           value   <- validateAndReturnValue(c.id, c.fields)
-          instant <- IOUtils.instant
+          instant <- IOInstant.now
         } yield StorageCreated(c.id, c.project, value, c.source, 1, instant, c.subject)
       case Some(_) =>
         IO.raiseError(ResourceAlreadyExists(c.id, c.project))
@@ -459,7 +460,7 @@ object Storages {
       case Some(s)                                =>
         for {
           value   <- validateAndReturnValue(c.id, c.fields)
-          instant <- IOUtils.instant
+          instant <- IOInstant.now
         } yield StorageUpdated(c.id, c.project, value, c.source, s.rev + 1, instant, c.subject)
     }
 

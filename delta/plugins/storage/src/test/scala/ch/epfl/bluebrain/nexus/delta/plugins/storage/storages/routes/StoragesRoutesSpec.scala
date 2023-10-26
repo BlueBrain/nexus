@@ -34,11 +34,10 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.bio.IOFromMap
 import io.circe.Json
-import org.scalatest._
 
 import java.util.UUID
 
-class StoragesRoutesSpec extends BaseRouteSpec with TryValues with StorageFixtures with IOFromMap {
+class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures with IOFromMap {
 
   import akka.actor.typed.scaladsl.adapter._
   implicit private val typedSystem: ActorSystem[Nothing] = system.toTyped
