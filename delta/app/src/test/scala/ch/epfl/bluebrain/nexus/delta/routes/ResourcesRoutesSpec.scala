@@ -349,8 +349,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues
     "fail to update a schema without resources/write permission" in {
       aclCheck.subtract(AclAddress.Root, Anonymous -> Set(resources.write)).accepted
       Put(s"/v1/resources/$projectRef/_/someId/update-schema") ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
 
