@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit.CirceEq
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.Json
 import io.circe.syntax._
 import monix.execution.Scheduler
@@ -25,7 +25,7 @@ import monix.execution.Scheduler
 import java.time.Instant
 
 class CompositeViewsSpec
-    extends BioSpec
+    extends CatsEffectSpec
     with DoobieScalaTestFixture
     with CompositeViewsFixture
     with CirceEq

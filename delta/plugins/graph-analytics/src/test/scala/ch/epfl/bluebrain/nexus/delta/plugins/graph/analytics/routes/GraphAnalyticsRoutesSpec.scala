@@ -3,10 +3,11 @@ package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.routes
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.server.Route
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.AnalyticsGraph.{Edge, EdgePath, Node}
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.GraphAnalyticsRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.PropertiesStatistics.Metadata
-import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.{AnalyticsGraph, GraphAnalyticsRejection, PropertiesStatistics}
+import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.{AnalyticsGraph, PropertiesStatistics}
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.{contexts, permissions, GraphAnalytics}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schema
@@ -27,7 +28,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.ProgressStatistics
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import monix.bio.{IO, UIO}
 import org.scalatest.CancelAfterFailure
 
 import java.time.Instant
@@ -59,7 +59,7 @@ class GraphAnalyticsRoutesSpec extends BaseRouteSpec with CancelAfterFailure {
 
   private val graphAnalytics = new GraphAnalytics {
 
-    override def relationships(projectRef: ProjectRef): IO[GraphAnalyticsRejection, AnalyticsGraph] =
+    override def relationships(projectRef: ProjectRef): IO[AnalyticsGraph] =
       IO.raiseWhen(projectRef != project.ref)(projectNotFound(projectRef))
         .as(
           AnalyticsGraph(
@@ -68,7 +68,7 @@ class GraphAnalyticsRoutesSpec extends BaseRouteSpec with CancelAfterFailure {
           )
         )
 
-    override def properties(projectRef: ProjectRef, tpe: IdSegment): IO[GraphAnalyticsRejection, PropertiesStatistics] =
+    override def properties(projectRef: ProjectRef, tpe: IdSegment): IO[PropertiesStatistics] =
       IO.raiseWhen(projectRef != project.ref)(projectNotFound(projectRef))
         .as(
           PropertiesStatistics(
@@ -86,7 +86,7 @@ class GraphAnalyticsRoutesSpec extends BaseRouteSpec with CancelAfterFailure {
         identities,
         aclCheck,
         graphAnalytics,
-        _ => UIO.pure(ProgressStatistics(0L, 0L, 0L, 10L, Some(Instant.EPOCH), None)),
+        _ => IO.pure(ProgressStatistics(0L, 0L, 0L, 10L, Some(Instant.EPOCH), None)),
         DeltaSchemeDirectives.empty,
         (_, _, _) => IO.pure(viewQueryResponse)
       ).routes

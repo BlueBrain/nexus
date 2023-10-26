@@ -1,5 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.deletion
 
+import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.deletion.CompositeViewsDeletionTask.{init, logger}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef
@@ -8,7 +11,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.deletion.ProjectDeletionTask
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.model.ProjectDeletionReport
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import monix.bio.{Task, UIO}
 
@@ -37,7 +39,7 @@ final class CompositeViewsDeletionTask(
 
 object CompositeViewsDeletionTask {
 
-  private val logger: Logger = Logger[CompositeViewsDeletionTask]
+  private val logger = Logger.cats[CompositeViewsDeletionTask]
 
   private val init = ProjectDeletionReport.Stage.empty("compositeviews")
 
@@ -45,9 +47,12 @@ object CompositeViewsDeletionTask {
     new CompositeViewsDeletionTask(
       project => views.currentViews(project).evalMapFilter(_.toTask),
       (v: ActiveViewDef, subject: Subject) =>
-        views.internalDeprecate(v.ref.viewId, v.ref.project, v.rev)(subject).onErrorHandleWith { r =>
-          UIO.delay(logger.error(s"Deprecating '$v' resulted in error: '$r'."))
-        }
+        views
+          .internalDeprecate(v.ref.viewId, v.ref.project, v.rev)(subject)
+          .onError { r =>
+            logger.error(s"Deprecating '$v' resulted in error: '$r'.")
+          }
+          .toUIO
     )
 
 }

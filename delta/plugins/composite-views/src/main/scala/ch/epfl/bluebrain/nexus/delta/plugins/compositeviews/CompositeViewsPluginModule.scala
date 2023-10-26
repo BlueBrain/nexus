@@ -43,7 +43,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionErrors
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeChain, ReferenceRegistry, Supervisor}
 import distage.ModuleDef
 import izumi.distage.model.definition.Id
-import monix.bio.{Task, UIO}
+import monix.bio.Task
 import monix.execution.Scheduler
 
 class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
@@ -127,20 +127,18 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         xas: Transactors,
         api: JsonLdApi,
         uuidF: UUIDF,
-        clock: Clock[UIO]
+        clock: Clock[IO]
     ) =>
-      toCatsIO(
-        CompositeViews(
-          fetchContext.mapRejection(ProjectContextRejection),
-          contextResolution,
-          validate,
-          config,
-          xas
-        )(
-          api,
-          clock,
-          uuidF
-        )
+      CompositeViews(
+        fetchContext.mapRejection(ProjectContextRejection),
+        contextResolution,
+        validate,
+        config,
+        xas
+      )(
+        api,
+        clock,
+        uuidF
       )
   }
 
@@ -150,7 +148,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         xas: Transactors,
         config: CompositeViewsConfig,
         projectionConfig: ProjectionConfig,
-        clock: Clock[UIO]
+        clock: Clock[IO]
     ) =>
       val compositeRestartStore = new CompositeRestartStore(xas)
       val compositeProjections  =
@@ -162,11 +160,9 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
           config.restartCheckInterval
         )(clock)
 
-      toCatsIO(
-        CompositeRestartStore
-          .deleteExpired(compositeRestartStore, supervisor, projectionConfig)(clock)
-          .as(compositeProjections)
-      )
+      CompositeRestartStore
+        .deleteExpired(compositeRestartStore, supervisor, projectionConfig)(clock)
+        .as(compositeProjections)
   }
 
   make[CompositeSpaces].from {
@@ -293,7 +289,6 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         elasticSearchQuery: ElasticSearchQuery,
         schemeDirectives: DeltaSchemeDirectives,
         baseUri: BaseUri,
-        s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering,
         fusionConfig: FusionConfig
@@ -305,7 +300,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         blazegraphQuery,
         elasticSearchQuery,
         schemeDirectives
-      )(baseUri, s, cr, ordering, fusionConfig)
+      )(baseUri, cr, ordering, fusionConfig)
   }
 
   make[CompositeViewsIndexingRoutes].from {
@@ -319,7 +314,6 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         schemeDirectives: DeltaSchemeDirectives,
         baseUri: BaseUri,
         config: CompositeViewsConfig,
-        s: Scheduler,
         c: ContextShift[IO],
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
@@ -333,7 +327,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         projections,
         projectionErrors,
         schemeDirectives
-      )(baseUri, config.pagination, s, c, cr, ordering)
+      )(baseUri, config.pagination, c, cr, ordering)
   }
 
   make[CompositeView.Shift].from { (views: CompositeViews, base: BaseUri) =>

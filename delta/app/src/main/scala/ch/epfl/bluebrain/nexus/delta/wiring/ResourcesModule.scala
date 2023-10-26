@@ -35,8 +35,9 @@ import izumi.distage.model.definition.{Id, ModuleDef}
   */
 object ResourcesModule extends ModuleDef {
 
-  make[ValidateResource].from { (resourceResolution: ResourceResolution[Schema], api: JsonLdApi) =>
-    ValidateResource(resourceResolution)(api)
+  make[ValidateResource].from {
+    (resourceResolution: ResourceResolution[Schema], api: JsonLdApi, rcr: RemoteContextResolution @Id("aggregate")) =>
+      ValidateResource(resourceResolution)(api, rcr)
   }
 
   make[ResourcesConfig].from { (config: AppConfig) => config.resources }
@@ -71,7 +72,7 @@ object ResourcesModule extends ModuleDef {
   }
 
   make[ResourceResolution[Schema]].from { (aclCheck: AclCheck, resolvers: Resolvers, schemas: Schemas) =>
-    ResourceResolution.schemaResource(aclCheck, resolvers, schemas)
+    ResourceResolution.schemaResource(aclCheck, resolvers, schemas, excludeDeprecated = false)
   }
 
   make[ResourcesRoutes].from {

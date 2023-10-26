@@ -28,20 +28,18 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit._
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
 import monix.bio.IO
-import monix.execution.Scheduler
 import org.scalatest.CancelAfterFailure
 
 import java.util.UUID
 import scala.annotation.nowarn
 
-class ElasticSearchQuerySpec extends BioSpec with CirceLiteral with CancelAfterFailure {
+class ElasticSearchQuerySpec extends CatsEffectSpec with CirceLiteral with CancelAfterFailure {
 
-  implicit private val sc: Scheduler = Scheduler.global
-  implicit val baseUri: BaseUri      = BaseUri("http://localhost", Label.unsafe("v1"))
+  implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
 
   private val realm                = Label.unsafe("myrealm")
   private val alice: Caller        = Caller(User("Alice", realm), Set(User("Alice", realm), Group("users", realm)))

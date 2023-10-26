@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
 import akka.http.scaladsl.model.Uri
 import cats.data.NonEmptyList
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig.{BlazegraphAccess, RemoteSourceClientConfig, SinkConfig, SourcesConfig}
@@ -21,7 +22,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
 import io.circe.{Json, JsonObject}
-import monix.bio.IO
 import monix.execution.Scheduler
 
 import java.time.Instant

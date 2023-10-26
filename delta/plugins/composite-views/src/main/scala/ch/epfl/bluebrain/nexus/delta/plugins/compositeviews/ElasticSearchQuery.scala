@@ -2,21 +2,21 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
 import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.Uri.Query
+import cats.effect.IO
+import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef.ActiveViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.projectionIndex
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.ElasticSearchProjection
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{AuthorizationFailed, WrappedElasticSearchClientError}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.HttpResult
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SortList
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.{Json, JsonObject}
-import monix.bio.IO
 
 trait ElasticSearchQuery {
 
@@ -41,7 +41,7 @@ trait ElasticSearchQuery {
       project: ProjectRef,
       query: JsonObject,
       qp: Uri.Query
-  )(implicit caller: Caller): IO[CompositeViewRejection, Json]
+  )(implicit caller: Caller): IO[Json]
 
   /**
     * Queries all the Elasticsearch indices of the passed composite views' projection. We check for the caller to have
@@ -61,7 +61,7 @@ trait ElasticSearchQuery {
       project: ProjectRef,
       query: JsonObject,
       qp: Uri.Query
-  )(implicit caller: Caller): IO[CompositeViewRejection, Json]
+  )(implicit caller: Caller): IO[Json]
 
 }
 
@@ -93,7 +93,7 @@ object ElasticSearchQuery {
           project: ProjectRef,
           query: JsonObject,
           qp: Uri.Query
-      )(implicit caller: Caller): IO[CompositeViewRejection, Json] =
+      )(implicit caller: Caller): IO[Json] =
         for {
           view       <- fetchView(id, project)
           projection <- fetchProjection(view, projectionId)
@@ -107,7 +107,7 @@ object ElasticSearchQuery {
           project: ProjectRef,
           query: JsonObject,
           qp: Uri.Query
-      )(implicit caller: Caller): IO[CompositeViewRejection, Json] =
+      )(implicit caller: Caller): IO[Json] =
         for {
           view    <- fetchView(id, project)
           indices <- allowedProjections(view, project)
@@ -122,7 +122,7 @@ object ElasticSearchQuery {
       private def allowedProjections(
           view: ActiveViewDef,
           project: ProjectRef
-      )(implicit caller: Caller): IO[AuthorizationFailed, Set[String]] =
+      )(implicit caller: Caller): IO[Set[String]] =
         aclCheck
           .mapFilterAtAddress[ElasticSearchProjection, String](
             view.elasticSearchProjections,
@@ -130,7 +130,6 @@ object ElasticSearchQuery {
             p => p.permission,
             p => projectionIndex(p, view.uuid, prefix).value
           )
-          .toUIO
-          .tapEval { indices => IO.raiseWhen(indices.isEmpty)(AuthorizationFailed) }
+          .flatTap { indices => IO.raiseWhen(indices.isEmpty)(AuthorizationFailed) }
     }
 }

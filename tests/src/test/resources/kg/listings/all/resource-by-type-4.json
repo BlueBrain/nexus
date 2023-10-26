@@ -4,7 +4,7 @@
     "https://bluebrain.github.io/nexus/contexts/search.json",
     "https://bluebrain.github.io/nexus/contexts/search-metadata.json"
   ],
-  "_total": 4,
+  "_total": 5,
   "_results": [
     {
       "@id": "{{deltaUri}}/resources/{{proj1}}/_/resource11_with_schema",
@@ -18,15 +18,15 @@
       "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
     },
     {
-      "@id": "{{deltaUri}}/resources/{{proj3}}/_/resource21",
+      "@id": "{{deltaUri}}/resources/{{proj4}}/_/resource21",
       "@type": "{{resourceType}}",
       "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/unconstrained.json",
       "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
       "_deprecated": false,
-      "_project": "{{deltaUri}}/projects/{{org2}}/{{proj3}}",
+      "_project": "{{deltaUri}}/projects/{{org2}}/{{proj4}}",
       "_rev": 2,
-      "_tags": ["v1.0.1"],
-      "_schemaProject": "{{deltaUri}}/projects/{{org2}}/{{proj3}}",
+      "_tags": ["v1.0.2"],
+      "_schemaProject": "{{deltaUri}}/projects/{{org2}}/{{proj4}}",
       "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
     },
     {
@@ -50,6 +50,18 @@
       "_rev": 2,
       "_tags": ["v1.0.0"],
       "_schemaProject": "{{deltaUri}}/projects/{{org1}}/{{proj1}}",
+      "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
+    },
+    {
+      "@id": "{{deltaUri}}/resources/{{proj3}}/_/resource13",
+      "@type": "{{resourceType}}",
+      "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/unconstrained.json",
+      "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
+      "_deprecated": false,
+      "_project": "{{deltaUri}}/projects/{{org1}}/{{proj3}}",
+      "_rev": 3,
+      "_tags": ["v1.0.0", "v1.0.1"],
+      "_schemaProject": "{{deltaUri}}/projects/{{org1}}/{{proj3}}",
       "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
     }
   ]

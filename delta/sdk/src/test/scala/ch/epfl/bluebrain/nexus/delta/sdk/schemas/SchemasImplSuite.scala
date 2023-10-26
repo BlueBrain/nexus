@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
+import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclShapesGraph
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
@@ -35,6 +36,8 @@ class SchemasImplSuite
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 
   private lazy val xas = doobie()
+
+  implicit private lazy val shaclShaclShapes: ShaclShapesGraph = ShaclShapesGraph.shaclShaclShapes.accepted
 
   implicit private val subject: Subject = Identity.User("user", Label.unsafe("realm"))
   implicit private val caller: Caller   = Caller(subject, Set(subject))
@@ -76,7 +79,7 @@ class SchemasImplSuite
   private val config       = SchemasConfig(eventLogConfig)
 
   private lazy val schemas: Schemas =
-    SchemasImpl(fetchContext, schemaImports, resolverContextResolution, config, xas)
+    SchemasImpl(fetchContext, schemaImports, resolverContextResolution, ValidateSchema.apply, config, xas)
 
   private def schemaSourceWithId(id: Iri) = {
     source deepMerge json"""{"@id": "$id"}"""

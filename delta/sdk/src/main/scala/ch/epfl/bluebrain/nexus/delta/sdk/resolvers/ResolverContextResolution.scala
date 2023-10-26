@@ -123,5 +123,5 @@ object ResolverContextResolution {
       resources: Resources,
       rcr: RemoteContextResolution
   ): ResolverContextResolution =
-    apply(rcr, ResourceResolution.dataResource(aclCheck, resolvers, resources))
+    apply(rcr, ResourceResolution.dataResource(aclCheck, resolvers, resources, excludeDeprecated = false))
 }

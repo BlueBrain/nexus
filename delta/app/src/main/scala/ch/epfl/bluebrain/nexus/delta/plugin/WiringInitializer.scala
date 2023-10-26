@@ -1,10 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugin
 
 import cats.effect.{ContextShift, IO, Resource, Timer}
-import cats.syntax.traverse._
 import cats.syntax.flatMap._
 import cats.syntax.monadError._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
+import cats.syntax.traverse._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.sdk.error.PluginError.PluginInitializationError
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.{Plugin, PluginDef}
@@ -41,7 +40,7 @@ object WiringInitializer {
         pluginsDef
           .traverse { plugin =>
             logger.info(s"Initializing plugin ${plugin.info.name}...") >>
-              toCatsIO(plugin.initialize(locator)).flatTap { _ =>
+              plugin.initialize(locator).flatTap { _ =>
                 logger.info(s"Plugin ${plugin.info.name} initialized.")
               }
           }

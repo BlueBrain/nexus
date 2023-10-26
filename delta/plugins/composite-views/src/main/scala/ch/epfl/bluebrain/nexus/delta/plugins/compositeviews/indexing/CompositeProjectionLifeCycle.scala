@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing
 import cats.effect.IO
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.toMonixBIOOps
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef.{ActiveViewDef, DeprecatedViewDef}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.projections.CompositeProjections
@@ -69,13 +69,13 @@ object CompositeProjectionLifeCycle {
     def destroyAll(view: ActiveViewDef): Task[Unit] =
       for {
         _ <- spaces.destroyAll(view)
-        _ <- compositeProjections.deleteAll(view.indexingRef)
+        _ <- compositeProjections.deleteAll(view.indexingRef).toUIO
       } yield ()
 
     def destroyProjection(view: ActiveViewDef, projection: CompositeViewProjection): Task[Unit] =
       for {
         _ <- spaces.destroyProjection(view, projection)
-        _ <- compositeProjections.partialRebuild(view.ref, projection.id)
+        _ <- compositeProjections.partialRebuild(view.ref, projection.id).toUIO
       } yield ()
 
     apply(hooks, init, index, destroyAll, destroyProjection)

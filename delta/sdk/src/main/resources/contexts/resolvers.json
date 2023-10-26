@@ -13,6 +13,12 @@
     "identities": {
       "@container": "@set"
     },
+    "history": {
+      "@container": "@list"
+    },
+    "rejections": {
+      "@container": "@list"
+    },
     "subject": "https://bluebrain.github.io/nexus/vocabulary/subject",
     "_resolverId": {
       "@id": "https://bluebrain.github.io/nexus/vocabulary/resolverId",

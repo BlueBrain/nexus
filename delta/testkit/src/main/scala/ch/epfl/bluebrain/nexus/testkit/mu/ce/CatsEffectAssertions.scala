@@ -1,7 +1,12 @@
 package ch.epfl.bluebrain.nexus.testkit.mu.ce
 
 import cats.effect.{IO, Sync}
+import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
 import cats.syntax.eq._
+import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
+import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig.MaximumCumulativeDelayConfig
+import ch.epfl.bluebrain.nexus.testkit.mu.bio.PatienceConfig
+import monix.bio.UIO
 import munit.{Assertions, FailException, Location}
 
 import scala.reflect.ClassTag
@@ -189,6 +194,24 @@ trait CatsEffectMUnitAssertions { self: Assertions =>
     def intercept[T <: Throwable](expectedError: T)(implicit T: ClassTag[T], loc: Location): IO[T] =
       interceptErrorIO[T](expectedError)(io)
 
+    def eventually(expected: A, retryWhen: Throwable => Boolean)(implicit patience: PatienceConfig): IO[Unit] = {
+      val strategy = RetryStrategy[Throwable](
+        MaximumCumulativeDelayConfig(patience.timeout, patience.interval),
+        retryWhen,
+        onError = (_, _) => UIO.unit
+      )
+      assertEquals(expected, patience.timeout)
+        .retry(strategy)
+    }
+
+    def eventually(expected: A)(implicit patience: PatienceConfig): IO[Unit] =
+      eventually(
+        expected,
+        {
+          case _: AssertionError => true
+          case _                 => false
+        }
+      )
   }
 
   implicit class MUnitCatsAssertionsForIOUnitOps(io: IO[Unit]) {

@@ -19,7 +19,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaDirectives, DeltaSchemeDirectives}
+import ch.epfl.bluebrain.nexus.delta.sdk.ce.DeltaDirectives
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
@@ -31,8 +32,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{FailedElemLogRow, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionErrors
-import monix.bio.{IO => BIO}
-import monix.execution.Scheduler
 class CompositeViewsIndexingRoutes(
     identities: Identities,
     aclCheck: AclCheck,
@@ -45,7 +44,6 @@ class CompositeViewsIndexingRoutes(
 )(implicit
     baseUri: BaseUri,
     paginationConfig: PaginationConfig,
-    s: Scheduler,
     c: ContextShift[IO],
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering
@@ -75,24 +73,34 @@ class CompositeViewsIndexingRoutes(
                 concat(
                   // Fetch all composite view offsets
                   (get & authorizeFor(ref, Read)) {
-                    emit(fetchOffsets(ref, id).rejectOn[ViewNotFound])
+                    emit(fetchOffsets(ref, id).attemptNarrow[CompositeViewRejection].rejectOn[ViewNotFound])
                   },
                   // Remove all composite view offsets (restart the view)
                   (delete & authorizeFor(ref, Write)) {
-                    emit(fullRestart(ref, id).rejectOn[ViewNotFound])
+                    emit(fullRestart(ref, id).attemptNarrow[CompositeViewRejection].rejectOn[ViewNotFound])
                   }
                 )
               },
               // Fetch composite indexing description
               (get & pathPrefix("description") & pathEndOrSingleSlash) {
                 authorizeFor(ref, Read).apply {
-                  emit(fetchView(id, ref).flatMap(details.description).rejectOn[ViewNotFound])
+                  emit(
+                    fetchView(id, ref)
+                      .flatMap(details.description)
+                      .attemptNarrow[CompositeViewRejection]
+                      .rejectOn[ViewNotFound]
+                  )
                 }
               },
               // Fetch composite view statistics
               (get & pathPrefix("statistics") & pathEndOrSingleSlash) {
                 authorizeFor(ref, Read).apply {
-                  emit(fetchView(id, ref).flatMap(details.statistics).rejectOn[ViewNotFound])
+                  emit(
+                    fetchView(id, ref)
+                      .flatMap(details.statistics)
+                      .attemptNarrow[CompositeViewRejection]
+                      .rejectOn[ViewNotFound]
+                  )
                 }
               },
               // Fetch elastic search view indexing failures
@@ -101,7 +109,7 @@ class CompositeViewsIndexingRoutes(
                   concat(
                     (pathPrefix("sse") & lastEventId) { offset =>
                       emit(
-                        fetchView(id, ref).toCatsIO
+                        fetchView(id, ref)
                           .map { view =>
                             projectionErrors.sses(view.project, view.id, offset)
                           }
@@ -115,8 +123,9 @@ class CompositeViewsIndexingRoutes(
                         emit(
                           fetchView(id, ref)
                             .flatMap { view =>
-                              projectionErrors.search(view.ref, pagination, timeRange)
+                              toCatsIO(projectionErrors.search(view.ref, pagination, timeRange))
                             }
+                            .attemptNarrow[CompositeViewRejection]
                             .rejectOn[ViewNotFound]
                         )
                     }
@@ -149,7 +158,11 @@ class CompositeViewsIndexingRoutes(
                     concat(
                       // Fetch a composite view projection offset
                       (get & authorizeFor(ref, Read)) {
-                        emit(projectionOffsets(ref, id, projectionId).rejectOn[ViewNotFound])
+                        emit(
+                          projectionOffsets(ref, id, projectionId)
+                            .attemptNarrow[CompositeViewRejection]
+                            .rejectOn[ViewNotFound]
+                        )
                       },
                       // Remove a composite view projection offset
                       (delete & authorizeFor(ref, Write)) {
@@ -160,7 +173,11 @@ class CompositeViewsIndexingRoutes(
                   // Fetch a views' projection statistics
                   (get & idSegment & pathPrefix("statistics") & pathEndOrSingleSlash) { projectionId =>
                     authorizeFor(ref, Read).apply {
-                      emit(projectionStatistics(ref, id, projectionId).rejectOn[ViewNotFound])
+                      emit(
+                        projectionStatistics(ref, id, projectionId)
+                          .attemptNarrow[CompositeViewRejection]
+                          .rejectOn[ViewNotFound]
+                      )
                     }
                   }
                 )
@@ -237,12 +254,12 @@ class CompositeViewsIndexingRoutes(
 
   private def fetchProjection(view: ActiveViewDef, projectionId: IdSegment) =
     expandId(projectionId, view.project).flatMap { id =>
-      BIO.fromEither(view.projection(id))
+      IO.fromEither(view.projection(id))
     }
 
   private def fetchSource(view: ActiveViewDef, sourceId: IdSegment) =
     expandId(sourceId, view.project).flatMap { id =>
-      BIO.fromEither(view.source(id))
+      IO.fromEither(view.source(id))
     }
 
 }
@@ -265,7 +282,6 @@ object CompositeViewsIndexingRoutes {
   )(implicit
       baseUri: BaseUri,
       paginationConfig: PaginationConfig,
-      s: Scheduler,
       c: ContextShift[IO],
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering

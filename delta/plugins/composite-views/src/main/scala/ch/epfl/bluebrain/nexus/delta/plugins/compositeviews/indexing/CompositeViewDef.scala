@@ -5,6 +5,7 @@ import cats.effect.ExitCase
 import cats.effect.ExitCase.{Canceled, Completed, Error}
 import cats.effect.concurrent.Ref
 import cats.kernel.Semigroup
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.GraphResourceToNTriples
@@ -186,7 +187,7 @@ object CompositeViewDef {
       compositeProjections: CompositeProjections
   ): Task[CompiledProjection] = {
     val metadata                              = view.metadata
-    val fetchProgress: UIO[CompositeProgress] = compositeProjections.progress(view.indexingRef)
+    val fetchProgress: UIO[CompositeProgress] = compositeProjections.progress(view.indexingRef).toUIO
 
     def compileSource =
       CompositeViewDef.compileSource(
@@ -204,7 +205,7 @@ object CompositeViewDef {
         view.ref,
         view.value.rebuildStrategy,
         CompositeViewDef.rebuildWhen(view, progressRef, fetchProgress, graphStream),
-        compositeProjections.resetRebuild(view.ref)
+        compositeProjections.resetRebuild(view.ref).toUIO
       )
 
       compile(
