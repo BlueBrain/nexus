@@ -1,10 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.quotas
 
-import ch.epfl.bluebrain.nexus.delta.sdk.quotas.model.QuotaRejection.QuotaReached
-import ch.epfl.bluebrain.nexus.delta.sdk.quotas.model.{Quota, QuotaRejection}
+import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.sdk.quotas.model.Quota
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import monix.bio.IO
 
 trait Quotas {
 
@@ -14,7 +13,7 @@ trait Quotas {
     * @param ref
     *   the project reference
     */
-  def fetch(ref: ProjectRef): IO[QuotaRejection, Quota]
+  def fetch(ref: ProjectRef): IO[Quota]
 
   /**
     * Verify that the quotas for resources on the current project haven't been reached.
@@ -24,7 +23,7 @@ trait Quotas {
     * @return
     *   Returns in the regular channel if no quotas have been reached or in the error channel otherwise
     */
-  def reachedForResources(ref: ProjectRef, subject: Subject): IO[QuotaReached, Unit]
+  def reachedForResources(ref: ProjectRef, subject: Subject): IO[Unit]
 
   /**
     * Verify that the quotas for events on the current project haven't been reached.
@@ -34,6 +33,6 @@ trait Quotas {
     * @return
     *   Returns in the regular channel if no quotas have been reached or in the error channel otherwise
     */
-  def reachedForEvents(ref: ProjectRef, subject: Subject): IO[QuotaReached, Unit]
+  def reachedForEvents(ref: ProjectRef, subject: Subject): IO[Unit]
 
 }
