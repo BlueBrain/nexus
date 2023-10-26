@@ -29,7 +29,7 @@ final class S3StorageSaveFile(storage: S3Storage, config: StorageTypeConfig)(imp
       entity: BodyPartEntity
   ): IO[SaveFileRejection, FileAttributes] = {
     val attributes = S3Attributes.settings(storage.value.alpakkaSettings(config))
-    val path       = intermediateFolders(storage.project, description.uuid, description.filename)
+    val path       = Uri.Path(intermediateFolders(storage.project, description.uuid, description.filename))
     val key        = path.toString
     def s3Sink     = S3.multipartUpload(storage.value.bucket, key).withAttributes(attributes)
     IO.deferFuture(

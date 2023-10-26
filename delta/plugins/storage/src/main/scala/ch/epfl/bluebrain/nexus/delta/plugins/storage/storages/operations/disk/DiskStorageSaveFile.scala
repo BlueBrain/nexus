@@ -41,7 +41,7 @@ final class DiskStorageSaveFile(storage: DiskStorage)(implicit as: ActorSystem) 
                   FileAttributes(
                     uuid = description.uuid,
                     location = Uri(fullPath.toUri.toString),
-                    path = relativePath,
+                    path = Uri.Path(relativePath.toString),
                     filename = description.filename,
                     mediaType = description.mediaType,
                     bytes = ioResult.count,
@@ -69,21 +69,21 @@ object DiskStorageSaveFile {
       disk: DiskStorageValue,
       uuid: UUID,
       filename: String
-  ): IO[SaveFileRejection, (Path, Uri.Path)] = {
-    val relativeUriPath = intermediateFolders(project, uuid, filename)
+  ): IO[SaveFileRejection, (Path, Path)] = {
+    val relativePath = intermediateFolders(project, uuid, filename)
     for {
-      relative <- ioDelayTry(Paths.get(relativeUriPath.toString), wrongPath(relativeUriPath, _))
-      resolved <- ioDelayTry(disk.volume.value.resolve(relative), wrongPath(relativeUriPath, _))
+      relative <- ioDelayTry(Paths.get(relativePath), wrongPath(relativePath, _))
+      resolved <- ioDelayTry(disk.volume.value.resolve(relative), wrongPath(relativePath, _))
       dir       = resolved.getParent
       _        <- ioDelayTry(Files.createDirectories(dir), couldNotCreateDirectory(dir, _))
-    } yield resolved -> relativeUriPath
+    } yield resolved -> relative
   }
 
   private def ioDelayTry[A, E <: SaveFileRejection](a: => A, ef: Throwable => E): IO[E, A] =
     IO.deferTotal(IO.fromEither(Try(a).toEither)).mapError(ef)
 
-  private def wrongPath(relativeUriPath: Uri.Path, err: Throwable) =
-    UnexpectedLocationFormat(relativeUriPath.toString, err.getMessage)
+  private def wrongPath(path: String, err: Throwable) =
+    UnexpectedLocationFormat(path, err.getMessage)
 
   private def couldNotCreateDirectory(directory: Path, err: Throwable) =
     CouldNotCreateIntermediateDirectory(directory.toString, err.getMessage)
