@@ -22,10 +22,9 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.testkit.minio.MinioDocker
 import ch.epfl.bluebrain.nexus.testkit.minio.MinioDocker._
 import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.Json
 import monix.execution.Scheduler
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{BeforeAndAfterAll, DoNotDiscover}
 import software.amazon.awssdk.regions.Region
 
@@ -34,9 +33,8 @@ import java.util.UUID
 @DoNotDiscover
 class S3StorageLinkFileSpec(docker: MinioDocker)
     extends TestKit(ActorSystem("S3StorageSaveAndFetchFileSpec"))
-    with AnyWordSpecLike
+    with CatsEffectSpec
     with AkkaSourceHelpers
-    with Matchers
     with BIOValues
     with StorageFixtures
     with BeforeAndAfterAll {

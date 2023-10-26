@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{S3StorageFetchFile, S3StorageLinkFile, S3StorageSaveFile}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.{FetchAttributes, FetchFile, LinkFile, SaveFile}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{Storages, contexts}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{contexts, Storages}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -87,7 +87,7 @@ object Storage {
     def fetchFile: FetchFile =
       DiskStorageFetchFile
 
-    def saveFile(implicit as: ActorSystem): SaveFile =
+    def saveFile(implicit as: ActorSystem, cs: ContextShift[IO]): SaveFile =
       new DiskStorageSaveFile(this)
 
   }
@@ -109,10 +109,10 @@ object Storage {
     def fetchFile(config: StorageTypeConfig)(implicit as: ActorSystem, contextShift: ContextShift[IO]): FetchFile =
       new S3StorageFetchFile(value, config)
 
-    def saveFile(config: StorageTypeConfig)(implicit as: ActorSystem): SaveFile =
+    def saveFile(config: StorageTypeConfig)(implicit as: ActorSystem, cs: ContextShift[IO]): SaveFile =
       new S3StorageSaveFile(this, config)
 
-    def linkFile(config: StorageTypeConfig)(implicit as: ActorSystem): LinkFile =
+    def linkFile(config: StorageTypeConfig)(implicit as: ActorSystem, cs: ContextShift[IO]): LinkFile =
       new S3StorageLinkFile(this, config)
 
   }

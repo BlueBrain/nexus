@@ -356,8 +356,8 @@ final class Files(
   private def fetchFile(storage: Storage, attr: FileAttributes, fileId: Iri): IO[AkkaSource] =
     FetchFile(storage, remoteDiskStorageClient, config)
       .apply(attr)
-      .adaptError {
-        case e: FetchFileRejection => FetchRejection(fileId, storage.id, e)
+      .adaptError { case e: FetchFileRejection =>
+        FetchRejection(fileId, storage.id, e)
       }
 
   /**
@@ -406,7 +406,6 @@ final class Files(
   private def linkFile(storage: Storage, path: Uri.Path, desc: FileDescription, fileId: Iri): IO[FileAttributes] =
     LinkFile(storage, remoteDiskStorageClient, config)
       .apply(path, desc)
-      .toCatsIO
       .adaptError { case e: StorageFileRejection => LinkRejection(fileId, storage.id, e) }
 
   private def eval(cmd: FileCommand): IO[FileResource]                                                           =
@@ -450,7 +449,6 @@ final class Files(
       (description, source) <- formDataExtractor(iri, entity, storage.storageValue.maxFileSize, storageAvailableSpace)
       attributes            <- SaveFile(storage, remoteDiskStorageClient, config)
                                  .apply(description, source)
-                                 .toCatsIO
                                  .adaptError { case e: SaveFileRejection => SaveRejection(iri, storage.id, e) }
     } yield attributes
 

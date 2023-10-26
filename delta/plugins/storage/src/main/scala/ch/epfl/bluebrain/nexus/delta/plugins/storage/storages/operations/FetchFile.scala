@@ -34,7 +34,8 @@ object FetchFile {
     * Construct a [[FetchFile]] from the given ''storage''.
     */
   def apply(storage: Storage, client: RemoteDiskStorageClient, config: StorageTypeConfig)(implicit
-      as: ActorSystem, contextShift: ContextShift[IO]
+      as: ActorSystem,
+      contextShift: ContextShift[IO]
   ): FetchFile =
     storage match {
       case storage: Storage.DiskStorage       => storage.fetchFile
