@@ -6,7 +6,7 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViewsQuerySuite.Sample
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchBulk
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{AuthorizationFailed, DifferentElasticSearchViewType, ProjectContextRejection, ViewIsDeprecated, ViewNotFound}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{DifferentElasticSearchViewType, ProjectContextRejection, ViewIsDeprecated, ViewNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultViewId, permissions, ElasticSearchViewRejection, ElasticSearchViewType}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -15,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
+import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
@@ -305,7 +306,7 @@ class ElasticSearchViewsQuerySuite
 
   test("Query a view without permissions") {
     implicit val caller: Caller = anon
-    viewsQuery.query(view1Proj1, JsonObject.empty, Query.Empty).error(AuthorizationFailed)
+    viewsQuery.query(view1Proj1, JsonObject.empty, Query.Empty).terminated[AuthorizationFailed]
   }
 
   test("Query the deprecated view should raise an deprecation error") {
@@ -353,7 +354,7 @@ class ElasticSearchViewsQuerySuite
     implicit val caller: Caller = anon
     viewsQuery
       .mapping(view1Proj1.viewId, project1.ref)
-      .assertError(_ == AuthorizationFailed)
+      .terminated[AuthorizationFailed]
   }
 
   test("Obtaining the mapping for a view that doesn't exist in the project should fail") {

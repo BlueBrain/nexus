@@ -124,10 +124,8 @@ class ResolversRoutesSpec extends BaseRouteSpec {
       ResolversRoutes(identities, aclCheck, resolvers, multiResolution, groupDirectives, IndexingAction.noop)
     )
 
-  private def withId(id: String, payload: Json) =
+  private def withId(id: String, payload: Json)   =
     payload.deepMerge(Json.obj("@id" -> id.asJson))
-
-  private val authorizationFailedResponse       = jsonContentOf("errors/authorization-failed.json")
 
   private val inProjectPayload                    = jsonContentOf("resolvers/in-project-success.json")
   private val crossProjectUseCurrentPayload       = jsonContentOf("resolvers/cross-project-use-current-caller-success.json")
@@ -226,13 +224,11 @@ class ResolversRoutesSpec extends BaseRouteSpec {
           create(genString(), project2.ref, inProjectPayload) ++ create(genString(), project2.ref, inProjectPayload)
         ) { case (_, request) =>
           request ~> asBob ~> routes ~> check {
-            status shouldEqual StatusCodes.Forbidden
-            response.asJson shouldEqual authorizationFailedResponse
+            response.shouldBeForbidden
           }
 
           request ~> routes ~> check {
-            status shouldEqual StatusCodes.Forbidden
-            response.asJson shouldEqual authorizationFailedResponse
+            response.shouldBeForbidden
           }
         }
       }
@@ -323,8 +319,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
           )
         ) { request =>
           request ~> check {
-            status shouldEqual StatusCodes.Forbidden
-            response.asJson shouldEqual authorizationFailedResponse
+            response.shouldBeForbidden
           }
         }
       }
@@ -354,8 +349,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
           s"/v1/resolvers/${project2.ref}/in-project-put/tags?rev=2",
           tagPayload.toEntity
         ) ~> asBob ~> routes ~> check {
-          status shouldEqual StatusCodes.Forbidden
-          response.asJson shouldEqual authorizationFailedResponse
+          response.shouldBeForbidden
         }
       }
     }
@@ -435,8 +429,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
           )
         ) { request =>
           request ~> check {
-            status shouldEqual StatusCodes.Forbidden
-            response.asJson shouldEqual authorizationFailedResponse
+            response.shouldBeForbidden
           }
         }
       }
@@ -650,8 +643,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
           )
         ) { request =>
           request ~> check {
-            status shouldEqual StatusCodes.Forbidden
-            response.asJson shouldEqual authorizationFailedResponse
+            response.shouldBeForbidden
           }
         }
       }
@@ -760,8 +752,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
 
       "fail if the user does not have the right permission" in {
         Get(s"/v1/resolvers/${project.ref}/in-project-post/$idSchemaEncoded") ~> routes ~> check {
-          response.status shouldEqual StatusCodes.Forbidden
-          response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+          response.shouldBeForbidden
         }
       }
     }

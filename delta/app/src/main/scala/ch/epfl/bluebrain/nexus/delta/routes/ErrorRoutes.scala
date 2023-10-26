@@ -24,8 +24,8 @@ final class ErrorRoutes()(implicit
     baseUriPrefix(baseUri.prefix) {
       pathPrefix("errors") {
         pathPrefix("invalid") {
-          (get & pathEndOrSingleSlash) {
-            emit(IO.pure(AuthorizationFailed))
+          (get & extractRequest & pathEndOrSingleSlash) { request =>
+            emit(IO.pure(AuthorizationFailed(request)))
           }
         }
       }

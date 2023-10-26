@@ -232,10 +232,7 @@ class ArchiveSpec extends BaseIntegrationSpec with ArchiveHelpers {
       )
 
     "fail when a resource in the archive cannot be fetched due to missing permissions" in {
-      deltaClient.get[Json](s"/archives/$fullId/test-resource:archive", Tweety, acceptAll) { (json, response) =>
-        json shouldEqual jsonContentOf("/kg/archives/authorization-failed.json", "project" -> fullId2)
-        response.status shouldEqual StatusCodes.Forbidden
-      }
+      deltaClient.get[Json](s"/archives/$fullId/test-resource:archive", Tweety, acceptAll) { expectForbidden }
     }
 
     "succeed getting archive using query param ignoreNotFound" in {

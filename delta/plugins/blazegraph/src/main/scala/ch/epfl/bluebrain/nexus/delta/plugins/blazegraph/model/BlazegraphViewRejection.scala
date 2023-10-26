@@ -12,7 +12,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.{RdfError, Vocabulary}
-import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.{BlankId, UnexpectedId}
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
@@ -195,13 +194,6 @@ object BlazegraphViewRejection {
       extends BlazegraphViewRejection(s"Resource identifier '$id' cannot be expanded to an Iri.")
 
   /**
-    * Rejection returned when attempting to query a BlazegraphView and the caller does not have the right permissions
-    * defined in the view.
-    */
-  final case object AuthorizationFailed extends BlazegraphViewRejection(ServiceError.AuthorizationFailed.reason)
-  type AuthorizationFailed = AuthorizationFailed.type
-
-  /**
     * Signals a rejection caused when interacting with the blazegraph client
     */
   final case class WrappedBlazegraphClientError(error: SparqlClientError) extends BlazegraphViewRejection(error.reason)
@@ -252,7 +244,6 @@ object BlazegraphViewRejection {
       case ResourceAlreadyExists(_, _)  => StatusCodes.Conflict
       case IncorrectRev(_, _)           => StatusCodes.Conflict
       case ProjectContextRejection(rej) => rej.status
-      case AuthorizationFailed          => StatusCodes.Forbidden
       case _                            => StatusCodes.BadRequest
     }
 }

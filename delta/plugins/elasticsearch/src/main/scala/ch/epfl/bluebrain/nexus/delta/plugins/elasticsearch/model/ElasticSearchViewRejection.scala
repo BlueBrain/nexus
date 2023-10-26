@@ -11,7 +11,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.{RdfError, Vocabulary}
-import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
@@ -202,14 +201,6 @@ object ElasticSearchViewRejection {
       )
 
   /**
-    * Rejection returned when attempting to query an elasticsearchview and the caller does not have the right
-    * permissions defined in the view.
-    */
-  final case object AuthorizationFailed extends ElasticSearchViewRejection(ServiceError.AuthorizationFailed.reason)
-
-  type AuthorizationFailed = AuthorizationFailed.type
-
-  /**
     * Signals a rejection caused when interacting with the elasticserch client
     */
   final case class WrappedElasticSearchClientError(error: HttpClientError)
@@ -272,7 +263,6 @@ object ElasticSearchViewRejection {
       case ResourceAlreadyExists(_, _)            => StatusCodes.Conflict
       case IncorrectRev(_, _)                     => StatusCodes.Conflict
       case ProjectContextRejection(rej)           => rej.status
-      case AuthorizationFailed                    => StatusCodes.Forbidden
       case WrappedElasticSearchClientError(error) => error.errorCode.getOrElse(StatusCodes.InternalServerError)
       case _                                      => StatusCodes.BadRequest
     }

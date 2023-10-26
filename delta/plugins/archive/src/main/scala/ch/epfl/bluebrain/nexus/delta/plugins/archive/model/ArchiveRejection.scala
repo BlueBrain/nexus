@@ -13,10 +13,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.{RdfError, Vocabulary}
-import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
@@ -149,19 +147,6 @@ object ArchiveRejection {
       extends ArchiveRejection(s"The resource '${ref.toString}' was not found in project '$project'.")
 
   /**
-    * Rejection returned when the caller does not have permission to access a referenced resource.
-    *
-    * @param address
-    *   the address on which the permission was checked
-    * @param permission
-    *   the permission that was required
-    */
-  final case class AuthorizationFailed(address: AclAddress, permission: Permission)
-      extends ArchiveRejection(
-        s"The permission '$permission' required for accessing a resource at '$address' is missing."
-      )
-
-  /**
     * Wrapper for file rejections.
     *
     * @param rejection
@@ -204,7 +189,6 @@ object ArchiveRejection {
       case DecodingFailed(_)                  => StatusCodes.BadRequest
       case InvalidJsonLdFormat(_, _)          => StatusCodes.BadRequest
       case ResourceNotFound(_, _)             => StatusCodes.NotFound
-      case AuthorizationFailed(_, _)          => StatusCodes.Forbidden
       case BlankArchiveId                     => StatusCodes.BadRequest
       case InvalidFileSelf(_)                 => StatusCodes.BadRequest
       case WrappedFileRejection(rejection)    => rejection.status

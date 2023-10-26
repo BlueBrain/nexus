@@ -4,6 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.{DefaultSearchR
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.DummyDefaultViewsQuery._
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
+import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{AggregationResult, SearchResults}
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral.circeLiteralSyntax
 import io.circe.JsonObject
@@ -17,7 +18,7 @@ class DummyDefaultViewsQuery extends DefaultViewsQuery[Result, Aggregation] {
     if (searchRequest.pagination == allowedPage)
       IO.pure(SearchResults(1, List(listResponse)))
     else
-      IO.raiseError(ElasticSearchQueryError.AuthorizationFailed)
+      IO.terminate(AuthorizationFailed("Fail !!!!"))
 
   override def aggregate(searchRequest: DefaultSearchRequest)(implicit
       caller: Caller

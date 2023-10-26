@@ -122,8 +122,7 @@ class EventsRoutesSpec extends BaseRouteSpec with IOFromMap {
 
       forAll(endpoints) { endpoint =>
         Get(endpoint) ~> `Last-Event-ID`("2") ~> routes ~> check {
-          response.status shouldEqual StatusCodes.Forbidden
-          response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+          response.shouldBeForbidden
         }
       }
     }

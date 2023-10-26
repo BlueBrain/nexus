@@ -122,8 +122,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with TryValues with StorageFixtur
       aclCheck.append(AclAddress.Root, Anonymous -> Set(events.read)).accepted
       val payload = s3FieldsJson deepMerge json"""{"@id": "$s3Id"}"""
       Post("/v1/storages/myorg/myproject", payload.toEntity) ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
 
@@ -159,8 +158,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with TryValues with StorageFixtur
     "fail to update a storage without storages/write permission" in {
       aclCheck.subtract(AclAddress.Root, Anonymous -> Set(permissions.write)).accepted
       Put(s"/v1/storages/myorg/myproject/s3-storage?rev=1", s3FieldsJson.toEntity) ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
 
@@ -198,8 +196,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with TryValues with StorageFixtur
     "fail to deprecate a storage without storages/write permission" in {
       aclCheck.subtract(AclAddress.Root, Anonymous -> Set(permissions.write)).accepted
       Delete("/v1/storages/myorg/myproject/s3-storage?rev=3") ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
 
@@ -245,8 +242,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with TryValues with StorageFixtur
       forAll(endpoints) { endpoint =>
         forAll(List("", "?rev=1", "?tags=mytag")) { suffix =>
           Get(s"$endpoint$suffix") ~> routes ~> check {
-            response.status shouldEqual StatusCodes.Forbidden
-            response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+            response.shouldBeForbidden
           }
         }
       }
@@ -369,8 +365,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with TryValues with StorageFixtur
     "fail to get storage statistics for an existing entry without resources/read permission" in {
       aclCheck.subtract(AclAddress.Root, Anonymous -> Set(permissions.read)).accepted
       Get("/v1/storages/myorg/myproject/remote-disk-storage/statistics") ~> routes ~> check {
-        status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
 

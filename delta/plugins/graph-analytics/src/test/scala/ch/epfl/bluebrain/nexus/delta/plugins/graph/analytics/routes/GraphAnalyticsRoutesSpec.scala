@@ -98,8 +98,7 @@ class GraphAnalyticsRoutesSpec extends BaseRouteSpec with CancelAfterFailure {
       "fail to fetch without resources/read permission" in {
         aclCheck.append(AclAddress.Root, alice -> Set(resources.read)).accepted
         Get("/v1/graph-analytics/org/project/relationships") ~> routes ~> check {
-          response.status shouldEqual StatusCodes.Forbidden
-          response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+          response.shouldBeForbidden
         }
       }
 
@@ -115,8 +114,7 @@ class GraphAnalyticsRoutesSpec extends BaseRouteSpec with CancelAfterFailure {
 
       "fail to fetch without resources/read permission" in {
         Get("/v1/graph-analytics/org/project/properties/Person") ~> routes ~> check {
-          response.status shouldEqual StatusCodes.Forbidden
-          response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+          response.shouldBeForbidden
         }
       }
 
@@ -132,8 +130,7 @@ class GraphAnalyticsRoutesSpec extends BaseRouteSpec with CancelAfterFailure {
 
       "fail to fetch without resources/read permission" in {
         Get("/v1/graph-analytics/org/project/statistics") ~> routes ~> check {
-          response.status shouldEqual StatusCodes.Forbidden
-          response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+          response.shouldBeForbidden
         }
       }
 
@@ -151,8 +148,7 @@ class GraphAnalyticsRoutesSpec extends BaseRouteSpec with CancelAfterFailure {
 
       "fail without authorization" in {
         Post("/v1/graph-analytics/org/project/_search", query.toEntity) ~> asAlice ~> routes ~> check {
-          response.status shouldEqual StatusCodes.Forbidden
-          response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+          response.shouldBeForbidden
         }
       }
 
