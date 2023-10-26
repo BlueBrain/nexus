@@ -44,6 +44,8 @@ import monix.execution.Scheduler
 import org.scalatest.DoNotDiscover
 import org.scalatest.concurrent.Eventually
 
+import java.net.URLDecoder
+
 @DoNotDiscover
 class FilesSpec(docker: RemoteStorageDocker)
     extends TestKit(ActorSystem("FilesSpec"))
@@ -162,6 +164,18 @@ class FilesSpec(docker: RemoteStorageDocker)
         actual shouldEqual expected
       }
 
+      "succeed when the file has special characters" in {
+        val specialFileName = "-._~:?#[ ]@!$&'()*,;="
+
+        files.create(fileId("specialFile"), Some(diskId), randomEntity(specialFileName, 1), None).accepted
+        val fetched = files.fetch(fileId("specialFile")).accepted
+
+        val decodedFilenameFromLocation =
+          URLDecoder.decode(fetched.value.attributes.location.path.lastSegment.get, "UTF-8")
+
+        decodedFilenameFromLocation shouldEqual specialFileName
+      }
+
       "succeed and tag with the id passed" in {
         withUUIDF(uuid2) {
           val file         = files
@@ -252,7 +266,11 @@ class FilesSpec(docker: RemoteStorageDocker)
         val path     = Uri.Path("my/file-3.txt")
         val tempAttr = attributes("myfile.txt").copy(digest = NotComputedDigest)
         val attr     =
-          tempAttr.copy(location = s"file:///app/nexustest/nexus/${tempAttr.path}", origin = Storage, mediaType = None)
+          tempAttr.copy(
+            location = Uri(s"file:///app/nexustest/nexus/${tempAttr.path}"),
+            origin = Storage,
+            mediaType = None
+          )
         val expected = mkResource(file2, projectRef, remoteRev, attr, RemoteStorageType, tags = Tags(tag -> 1))
 
         val result    = files
@@ -331,7 +349,7 @@ class FilesSpec(docker: RemoteStorageDocker)
 
       "succeed" in {
         val tempAttr  = attributes("myfile.txt")
-        val attr      = tempAttr.copy(location = s"file:///app/nexustest/nexus/${tempAttr.path}", origin = Storage)
+        val attr      = tempAttr.copy(location = Uri(s"file:///app/nexustest/nexus/${tempAttr.path}"), origin = Storage)
         val expected  = mkResource(file2, projectRef, remoteRev, attr, RemoteStorageType, rev = 2, tags = Tags(tag -> 1))
         val updatedF2 = for {
           _ <- files.updateAttributes(file2, projectRef)
@@ -346,7 +364,7 @@ class FilesSpec(docker: RemoteStorageDocker)
       "succeed" in {
         val path     = Uri.Path("my/file-4.txt")
         val tempAttr = attributes("file-4.txt").copy(digest = NotComputedDigest)
-        val attr     = tempAttr.copy(location = s"file:///app/nexustest/nexus/${tempAttr.path}", origin = Storage)
+        val attr     = tempAttr.copy(location = Uri(s"file:///app/nexustest/nexus/${tempAttr.path}"), origin = Storage)
         val expected = mkResource(file2, projectRef, remoteRev, attr, RemoteStorageType, rev = 3, tags = Tags(tag -> 1))
         files
           .updateLink(fileId("file2"), Some(remoteId), None, Some(`text/plain(UTF-8)`), path, 2)
