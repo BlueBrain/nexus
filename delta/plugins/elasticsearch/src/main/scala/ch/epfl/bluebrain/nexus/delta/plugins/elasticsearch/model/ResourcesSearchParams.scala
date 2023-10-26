@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.QueryParamsUnmarshalling.{i
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 
 /**
   * Search parameters for any generic resource type.
@@ -34,6 +35,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
   *   schema to consider, where empty implies any schema
   * @param q
   *   a full text search query parameter
+  * @param tag
+  *   an optional tag to filter resources on, returning the latest revision of matching resources.
   */
 final case class ResourcesSearchParams(
     locate: Option[Iri] = None,
@@ -47,7 +50,8 @@ final case class ResourcesSearchParams(
     types: List[Type] = List.empty,
     typeOperator: TypeOperator = TypeOperator.Or,
     schema: Option[ResourceRef] = None,
-    q: Option[String] = None
+    q: Option[String] = None,
+    tag: Option[UserTag] = None
 ) {
 
   /**

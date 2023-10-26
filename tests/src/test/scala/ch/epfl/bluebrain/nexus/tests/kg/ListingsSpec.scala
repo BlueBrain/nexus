@@ -18,12 +18,20 @@ final class ListingsSpec extends BaseIntegrationSpec {
   private val org1   = genId()
   private val proj11 = genId()
   private val proj12 = genId()
+  private val proj13 = genId()
   private val ref11  = s"$org1/$proj11"
   private val ref12  = s"$org1/$proj12"
+  private val ref13  = s"$org1/$proj13"
 
   private val org2   = genId()
   private val proj21 = genId()
   private val ref21  = s"$org2/$proj21"
+
+  private val tag1 = "v1.0.0"
+  private val tag2 = "v1.0.1"
+  private val tag3 = "v1.0.2"
+
+  private val resource11Id = s"${config.deltaUri}/resources/$proj11/_/resource11"
 
   private val resourceType = s"https://bluebrain.github.io/nexus/vocabulary/Type-${UUID.randomUUID()}"
 
@@ -35,6 +43,7 @@ final class ListingsSpec extends BaseIntegrationSpec {
         _ <- adminDsl.createOrganization(org1, org1, Bob)
         _ <- adminDsl.createProject(org1, proj11, kgDsl.projectJson(name = proj11), Bob)
         _ <- adminDsl.createProject(org1, proj12, kgDsl.projectJson(name = proj12), Bob)
+        _ <- adminDsl.createProject(org1, proj13, kgDsl.projectJson(name = proj13), Bob)
         // Second org and projects
         _ <- adminDsl.createOrganization(org2, org2, Bob)
         _ <- adminDsl.createProject(org2, proj21, kgDsl.projectJson(name = proj21), Bob)
@@ -54,12 +63,17 @@ final class ListingsSpec extends BaseIntegrationSpec {
                expectCreated
              )
         _ <- deltaClient.put[Json](s"/resources/$ref12/_/resource12", resourcePayload, Bob)(expectCreated)
+        _ <- deltaClient.put[Json](s"/resources/$ref13/_/resource13", resourcePayload, Bob)(expectCreated)
         _ <- deltaClient.put[Json](s"/resources/$ref21/_/resource21", resourcePayload, Bob)(expectCreated)
         // Tag
         _ <-
-          deltaClient.post[Json](s"/resources/$ref11/_/resource11/tags?rev=1", tag("v1.0.0", 1), Bob)(expectCreated)
+          deltaClient.post[Json](s"/resources/$ref11/_/resource11/tags?rev=1", tag(tag1, 1), Bob)(expectCreated)
         _ <-
-          deltaClient.post[Json](s"/resources/$ref21/_/resource21/tags?rev=1", tag("v1.0.1", 1), Bob)(expectCreated)
+          deltaClient.post[Json](s"/resources/$ref13/_/resource13/tags?rev=1", tag(tag1, 1), Bob)(expectCreated)
+        _ <-
+          deltaClient.post[Json](s"/resources/$ref13/_/resource13/tags?rev=2", tag(tag2, 2), Bob)(expectCreated)
+        _ <-
+          deltaClient.post[Json](s"/resources/$ref21/_/resource21/tags?rev=1", tag(tag3, 1), Bob)(expectCreated)
         // Deprecate
         _ <- deltaClient.delete[Json](s"/resources/$ref12/_/resource12?rev=1", Bob)(expectOk)
       } yield succeed
@@ -136,7 +150,6 @@ final class ListingsSpec extends BaseIntegrationSpec {
       }
     }
 
-    val resource11Id               = s"${config.deltaUri}/resources/$proj11/_/resource11"
     val resource11WithSchemaId     = s"${config.deltaUri}/resources/$proj11/_/resource11_with_schema"
     val resource11WithSchemaSelf   = resourceSelf(ref11, resource11WithSchemaId)
     val resource11WithSchemaResult = jsonContentOf(
@@ -226,7 +239,8 @@ final class ListingsSpec extends BaseIntegrationSpec {
           Bob,
           "org"   -> org1,
           "proj1" -> proj11,
-          "proj2" -> proj12
+          "proj2" -> proj12,
+          "proj3" -> proj13
         ): _*
       )
 
@@ -256,6 +270,33 @@ final class ListingsSpec extends BaseIntegrationSpec {
       }
     }
 
+    "get the latest revision of previously tagged resources when queried by tag" in {
+      val resource11Self = resourceSelf(ref11, resource11Id)
+      val resource13Id   = s"${config.deltaUri}/resources/$proj13/_/resource13"
+      val resource13Self = resourceSelf(ref13, resource13Id)
+      val expected       = jsonContentOf(
+        "/kg/listings/project/resources-tagged.json",
+        replacements(
+          Bob,
+          "org"          -> org1,
+          "proj1"        -> proj11,
+          "resourceType" -> resourceType,
+          "id1"          -> resource11Id,
+          "self1"        -> resource11Self,
+          "proj2"        -> proj13,
+          "id2"          -> resource13Id,
+          "self2"        -> resource13Self
+        ): _*
+      )
+
+      eventually {
+        deltaClient.get[Json](s"/resources/$org1?tag=$tag1", Bob) { (json, response) =>
+          response.status shouldEqual StatusCodes.OK
+          filterSearchMetadata(json) should equalIgnoreArrayOrder(expected)
+        }
+      }
+    }
+
     "get an error for anonymous" in {
       deltaClient.get[Json](s"/resources/$org1?type=$projectType", Anonymous) { (_, response) =>
         response.status shouldEqual StatusCodes.Forbidden
@@ -275,7 +316,8 @@ final class ListingsSpec extends BaseIntegrationSpec {
           "org2"         -> org2,
           "proj1"        -> proj11,
           "proj2"        -> proj12,
-          "proj3"        -> proj21,
+          "proj3"        -> proj13,
+          "proj4"        -> proj21,
           "resourceType" -> resourceType
         ): _*
       )
