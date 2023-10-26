@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.routes
 
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.config.DescriptionConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
@@ -11,17 +12,14 @@ import ch.epfl.bluebrain.nexus.delta.routes.VersionRoutes.VersionBundle
 import ch.epfl.bluebrain.nexus.delta.sdk.ServiceDependency
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
+import ch.epfl.bluebrain.nexus.delta.sdk.ce.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.{PluginDescription, ServiceDescription}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ComponentDescription, Name}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.version
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
-import kamon.instrumentation.akka.http.TracingDirectives.operationName
-import monix.bio.UIO
-import monix.execution.Scheduler
 
 import scala.collection.immutable.Iterable
 
@@ -29,27 +27,22 @@ class VersionRoutes(
     identities: Identities,
     aclCheck: AclCheck,
     main: ServiceDescription,
-    plugins: Iterable[PluginDescription],
-    dependencies: Iterable[ServiceDependency],
+    plugins: List[PluginDescription],
+    dependencies: List[ServiceDependency],
     env: Name
 )(implicit
     baseUri: BaseUri,
-    s: Scheduler,
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering
 ) extends AuthDirectives(identities, aclCheck) {
-
-  import baseUri.prefixSegment
 
   def routes: Route =
     baseUriPrefix(baseUri.prefix) {
       pathPrefix("version") {
         extractCaller { implicit caller =>
           (get & pathEndOrSingleSlash) {
-            operationName(s"$prefixSegment/version") {
-              authorizeFor(AclAddress.Root, version.read).apply {
-                emit(UIO.traverse(dependencies)(_.serviceDescription).map(VersionBundle(main, _, plugins, env)))
-              }
+            authorizeFor(AclAddress.Root, version.read).apply {
+              emit(dependencies.traverse(_.serviceDescription).map(VersionBundle(main, _, plugins, env)))
             }
           }
         }
@@ -91,14 +84,14 @@ object VersionRoutes {
   final def apply(
       identities: Identities,
       aclCheck: AclCheck,
-      plugins: Iterable[PluginDescription],
-      depdendencies: Iterable[ServiceDependency],
+      plugins: List[PluginDescription],
+      dependencies: List[ServiceDependency],
       cfg: DescriptionConfig
   )(implicit
       baseUri: BaseUri,
-      s: Scheduler,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering
-  ): VersionRoutes =
-    new VersionRoutes(identities, aclCheck, ServiceDescription(cfg.name, cfg.version), plugins, depdendencies, cfg.env)
+  ): VersionRoutes = {
+    new VersionRoutes(identities, aclCheck, ServiceDescription(cfg.name, cfg.version), plugins, dependencies, cfg.env)
+  }
 }
