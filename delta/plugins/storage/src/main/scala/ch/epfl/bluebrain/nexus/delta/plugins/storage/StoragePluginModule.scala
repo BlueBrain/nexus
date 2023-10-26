@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage
 
 import akka.actor
 import akka.actor.typed.ActorSystem
-import cats.effect.{Clock, ContextShift, IO}
+import cats.effect.{Clock, ContextShift, IO, Timer}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
@@ -227,13 +227,15 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         client: HttpClient @Id("storage"),
         as: ActorSystem[Nothing],
         authTokenProvider: AuthTokenProvider,
-        cfg: StorageTypeConfig
+        cfg: StorageTypeConfig,
+        cs: ContextShift[IO],
+        timer: Timer[IO]
     ) =>
       new RemoteDiskStorageClient(
         client,
         authTokenProvider,
         cfg.remoteDisk.map(_.credentials).getOrElse(Credentials.Anonymous)
-      )(as.classicSystem)
+      )(as.classicSystem, cs, timer)
   }
 
   many[ServiceDependency].addSet {

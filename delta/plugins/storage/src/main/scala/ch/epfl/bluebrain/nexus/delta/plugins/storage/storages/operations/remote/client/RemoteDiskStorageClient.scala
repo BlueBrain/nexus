@@ -7,6 +7,8 @@ import akka.http.scaladsl.model.Multipart.FormData
 import akka.http.scaladsl.model.Multipart.FormData.BodyPart
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.Uri.Path
+import cats.effect.{ContextShift, IO, Timer}
+import cats.implicits.{catsSyntaxApplicativeError, catsSyntaxMonadError, toFunctorOps}
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.MigrateEffectSyntax
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection.UnexpectedFetchError
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.MoveFileRejection.UnexpectedMoveError
@@ -26,7 +28,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import io.circe.generic.semiauto.deriveDecoder
 import io.circe.syntax._
 import io.circe.{Decoder, Json}
-import monix.bio.{IO, UIO}
 
 import scala.concurrent.duration._
 
@@ -34,7 +35,10 @@ import scala.concurrent.duration._
   * The client to communicate with the remote storage service
   */
 final class RemoteDiskStorageClient(client: HttpClient, getAuthToken: AuthTokenProvider, credentials: Credentials)(
-    implicit as: ActorSystem
+    implicit
+    as: ActorSystem,
+    cs: ContextShift[IO],
+    timer: Timer[IO]
 ) extends MigrateEffectSyntax {
   import as.dispatcher
 
@@ -43,14 +47,13 @@ final class RemoteDiskStorageClient(client: HttpClient, getAuthToken: AuthTokenP
   /**
     * Fetches the service description information (name and version)
     */
-  def serviceDescription(implicit baseUri: BaseUri): UIO[ServiceDescription] =
+  def serviceDescription(implicit baseUri: BaseUri): IO[ServiceDescription] =
     client
       .fromJsonTo[ResolvedServiceDescription](Get(baseUri.base))
+      .toCatsIO
+      .widen[ServiceDescription]
       .timeout(3.seconds)
-      .redeem(
-        _ => ServiceDescription.unresolved(serviceName),
-        _.map(_.copy(name = serviceName)).getOrElse(ServiceDescription.unresolved(serviceName))
-      )
+      .recover(_ => ServiceDescription.unresolved(serviceName))
 
   /**
     * Checks that the provided storage bucket exists and it is readable/writable.
@@ -58,13 +61,13 @@ final class RemoteDiskStorageClient(client: HttpClient, getAuthToken: AuthTokenP
     * @param bucket
     *   the storage bucket name
     */
-  def exists(bucket: Label)(implicit baseUri: BaseUri): IO[HttpClientError, Unit] = {
-    getAuthToken(credentials).toBIOThrowable.flatMap { authToken =>
+  def exists(bucket: Label)(implicit baseUri: BaseUri): IO[Unit] = {
+    getAuthToken(credentials).flatMap { authToken =>
       val endpoint = baseUri.endpoint / "buckets" / bucket.value
       val req      = Head(endpoint).withCredentials(authToken)
       client(req) {
-        case resp if resp.status.isSuccess() => UIO.delay(resp.discardEntityBytes()) >> IO.unit
-      }
+        case resp if resp.status.isSuccess() => IO.delay(resp.discardEntityBytes()).void.toUIO
+      }.toCatsIO
     }
   }
 
@@ -82,17 +85,18 @@ final class RemoteDiskStorageClient(client: HttpClient, getAuthToken: AuthTokenP
       bucket: Label,
       relativePath: Path,
       entity: BodyPartEntity
-  )(implicit baseUri: BaseUri): IO[SaveFileRejection, RemoteDiskStorageFileAttributes] = {
-    getAuthToken(credentials).toBIOThrowable.flatMap { authToken =>
+  )(implicit baseUri: BaseUri): IO[RemoteDiskStorageFileAttributes] = {
+    getAuthToken(credentials).flatMap { authToken =>
       val endpoint      = baseUri.endpoint / "buckets" / bucket.value / "files" / relativePath
       val filename      = relativePath.lastSegment.getOrElse("filename")
       val multipartForm = FormData(BodyPart("file", entity, Map("filename" -> filename))).toEntity()
       client
         .fromJsonTo[RemoteDiskStorageFileAttributes](Put(endpoint, multipartForm).withCredentials(authToken))
-        .mapError {
+        .toCatsIO
+        .adaptError {
           case HttpClientStatusError(_, `Conflict`, _) =>
             SaveFileRejection.ResourceAlreadyExists(relativePath.toString)
-          case error                                   =>
+          case error: HttpClientError                  =>
             SaveFileRejection.UnexpectedSaveError(relativePath.toString, error.asString)
         }
     }
@@ -106,15 +110,18 @@ final class RemoteDiskStorageClient(client: HttpClient, getAuthToken: AuthTokenP
     * @param relativePath
     *   the relative path to the file location
     */
-  def getFile(bucket: Label, relativePath: Path)(implicit baseUri: BaseUri): IO[FetchFileRejection, AkkaSource] = {
-    getAuthToken(credentials).toBIOThrowable.flatMap { authToken =>
+  def getFile(bucket: Label, relativePath: Path)(implicit baseUri: BaseUri): IO[AkkaSource] = {
+    getAuthToken(credentials).flatMap { authToken =>
       val endpoint = baseUri.endpoint / "buckets" / bucket.value / "files" / relativePath
-      client.toDataBytes(Get(endpoint).withCredentials(authToken)).mapError {
-        case error @ HttpClientStatusError(_, `NotFound`, _) if !bucketNotFoundType(error) =>
-          FetchFileRejection.FileNotFound(relativePath.toString)
-        case error                                                                         =>
-          UnexpectedFetchError(relativePath.toString, error.asString)
-      }
+      client
+        .toDataBytes(Get(endpoint).withCredentials(authToken))
+        .toCatsIO
+        .adaptError {
+          case error @ HttpClientStatusError(_, `NotFound`, _) if !bucketNotFoundType(error) =>
+            FetchFileRejection.FileNotFound(relativePath.toString)
+          case error: HttpClientError                                                        =>
+            UnexpectedFetchError(relativePath.toString, error.asString)
+        }
     }
   }
 
@@ -129,17 +136,16 @@ final class RemoteDiskStorageClient(client: HttpClient, getAuthToken: AuthTokenP
   def getAttributes(
       bucket: Label,
       relativePath: Path
-  )(implicit baseUri: BaseUri): IO[FetchFileRejection, RemoteDiskStorageFileAttributes] = {
-    getAuthToken(credentials).toBIOThrowable.flatMap { authToken =>
+  )(implicit baseUri: BaseUri): IO[RemoteDiskStorageFileAttributes] = {
+    getAuthToken(credentials).flatMap { authToken =>
       val endpoint = baseUri.endpoint / "buckets" / bucket.value / "attributes" / relativePath
-      client.fromJsonTo[RemoteDiskStorageFileAttributes](Get(endpoint).withCredentials(authToken)).mapError {
+      client.fromJsonTo[RemoteDiskStorageFileAttributes](Get(endpoint).withCredentials(authToken)).toCatsIO.adaptError {
         case error @ HttpClientStatusError(_, `NotFound`, _) if !bucketNotFoundType(error) =>
           FetchFileRejection.FileNotFound(relativePath.toString)
-        case error                                                                         =>
+        case error: HttpClientError                                                        =>
           UnexpectedFetchError(relativePath.toString, error.asString)
       }
     }
-
   }
 
   /**
@@ -156,20 +162,23 @@ final class RemoteDiskStorageClient(client: HttpClient, getAuthToken: AuthTokenP
       bucket: Label,
       sourceRelativePath: Path,
       destRelativePath: Path
-  )(implicit baseUri: BaseUri): IO[MoveFileRejection, RemoteDiskStorageFileAttributes] = {
-    getAuthToken(credentials).toBIOThrowable.flatMap { authToken =>
+  )(implicit baseUri: BaseUri): IO[RemoteDiskStorageFileAttributes] = {
+    getAuthToken(credentials).flatMap { authToken =>
       val endpoint = baseUri.endpoint / "buckets" / bucket.value / "files" / destRelativePath
       val payload  = Json.obj("source" -> sourceRelativePath.toString.asJson)
-      client.fromJsonTo[RemoteDiskStorageFileAttributes](Put(endpoint, payload).withCredentials(authToken)).mapError {
-        case error @ HttpClientStatusError(_, `NotFound`, _) if !bucketNotFoundType(error)     =>
-          MoveFileRejection.FileNotFound(sourceRelativePath.toString)
-        case error @ HttpClientStatusError(_, `BadRequest`, _) if pathContainsLinksType(error) =>
-          MoveFileRejection.PathContainsLinks(destRelativePath.toString)
-        case HttpClientStatusError(_, `Conflict`, _)                                           =>
-          MoveFileRejection.ResourceAlreadyExists(destRelativePath.toString)
-        case error                                                                             =>
-          UnexpectedMoveError(sourceRelativePath.toString, destRelativePath.toString, error.asString)
-      }
+      client
+        .fromJsonTo[RemoteDiskStorageFileAttributes](Put(endpoint, payload).withCredentials(authToken))
+        .toCatsIO
+        .adaptError {
+          case error @ HttpClientStatusError(_, `NotFound`, _) if !bucketNotFoundType(error)     =>
+            MoveFileRejection.FileNotFound(sourceRelativePath.toString)
+          case error @ HttpClientStatusError(_, `BadRequest`, _) if pathContainsLinksType(error) =>
+            MoveFileRejection.PathContainsLinks(destRelativePath.toString)
+          case HttpClientStatusError(_, `Conflict`, _)                                           =>
+            MoveFileRejection.ResourceAlreadyExists(destRelativePath.toString)
+          case error: HttpClientError                                                            =>
+            UnexpectedMoveError(sourceRelativePath.toString, destRelativePath.toString, error.asString)
+        }
     }
   }
 

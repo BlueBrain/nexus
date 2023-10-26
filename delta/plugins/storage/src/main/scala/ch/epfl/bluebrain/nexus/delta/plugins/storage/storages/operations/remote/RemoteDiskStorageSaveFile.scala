@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote
 
 import akka.http.scaladsl.model.{BodyPartEntity, Uri}
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.RemoteDiskStorage
@@ -18,7 +17,7 @@ class RemoteDiskStorageSaveFile(storage: RemoteDiskStorage, client: RemoteDiskSt
       entity: BodyPartEntity
   ): IO[FileAttributes] = {
     val path = Uri.Path(intermediateFolders(storage.project, description.uuid, description.filename))
-    client.createFile(storage.value.folder, path, entity)(storage.value.endpoint).toCatsIO.map {
+    client.createFile(storage.value.folder, path, entity)(storage.value.endpoint).map {
       case RemoteDiskStorageFileAttributes(location, bytes, digest, mediaType) =>
         FileAttributes(
           uuid = description.uuid,

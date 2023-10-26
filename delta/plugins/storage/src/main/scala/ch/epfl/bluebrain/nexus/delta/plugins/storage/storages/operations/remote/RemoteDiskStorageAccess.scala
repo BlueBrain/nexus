@@ -7,7 +7,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageAccess
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
 
 class RemoteDiskStorageAccess(client: RemoteDiskStorageClient) extends StorageAccess {
@@ -16,7 +15,6 @@ class RemoteDiskStorageAccess(client: RemoteDiskStorageClient) extends StorageAc
   override def apply(id: Iri, storage: RemoteDiskStorageValue): IO[Unit] = {
     client
       .exists(storage.folder)(storage.endpoint)
-      .toCatsIO
       .adaptError { case err: HttpClientError =>
         StorageNotAccessible(
           id,
