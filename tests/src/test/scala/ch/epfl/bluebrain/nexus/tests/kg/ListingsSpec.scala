@@ -289,9 +289,11 @@ final class ListingsSpec extends BaseIntegrationSpec {
         ): _*
       )
 
-      deltaClient.get[Json](s"/resources?tag=$tag1", Bob) { (json, response) =>
-        response.status shouldEqual StatusCodes.OK
-        filterSearchMetadata(json) should equalIgnoreArrayOrder(expected)
+      eventually {
+        deltaClient.get[Json](s"/resources/$org1?tag=$tag1", Bob) { (json, response) =>
+          response.status shouldEqual StatusCodes.OK
+          filterSearchMetadata(json) should equalIgnoreArrayOrder(expected)
+        }
       }
     }
 
