@@ -20,6 +20,7 @@ import io.circe.optics.JsonPath.root
 import monocle.Optional
 import org.scalatest.Assertion
 import org.scalatest.matchers.{HavePropertyMatchResult, HavePropertyMatcher}
+import org.testcontainers.utility.Base58.randomString
 
 import java.net.URLEncoder
 
@@ -600,5 +601,18 @@ class ResourcesSpec extends BaseIntegrationSpec {
         json should have(`@type`(NewFullResourceType))
       }
     }
+  }
+
+  "uploading a payload too large" should {
+
+    "fail with the appropriate message" in {
+      val value   = randomString(270000)
+      val payload = json"""{ "value": "$value" }"""
+      deltaClient.post[Json](s"/resources/$id1/", payload, Rick) { (json, response) =>
+        response.status shouldEqual StatusCodes.PayloadTooLarge
+        Optics.`@type`.getOption(json) shouldEqual Some("PayloadTooLarge")
+      }
+    }
+
   }
 }
