@@ -100,6 +100,17 @@ class ResourceSerializationSuite extends SerializationSuite with ResourceInstanc
       instant,
       subject
     )
+  private val schemaUpdated  =
+    ResourceSchemaUpdated(
+      myId,
+      projectRef,
+      Revision(schemas.resources, 1),
+      projectRef,
+      types,
+      6,
+      instant,
+      subject
+    )
 
   private val resourcesMapping = List(
     (created, loadEvents("resources", "resource-created.json"), Created),
@@ -108,7 +119,8 @@ class ResourceSerializationSuite extends SerializationSuite with ResourceInstanc
     (refreshed, loadEvents("resources", "resource-refreshed.json"), Refreshed),
     (tagged, loadEvents("resources", "resource-tagged.json"), Tagged),
     (deprecated, loadEvents("resources", "resource-deprecated.json"), Deprecated),
-    (tagDeleted, loadEvents("resources", "resource-tag-deleted.json"), TagDeleted)
+    (tagDeleted, loadEvents("resources", "resource-tag-deleted.json"), TagDeleted),
+    (schemaUpdated, loadEvents("resources", "resource-schema-updated.json"), Updated)
   )
 
   resourcesMapping.foreach { case (event, (database, sse), action) =>

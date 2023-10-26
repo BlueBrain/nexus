@@ -199,6 +199,12 @@ object ResourceRejection {
   final case class SchemaIsDeprecated(schemaId: Iri) extends ResourceRejection(s"Schema '$schemaId' is deprecated.")
 
   /**
+    * Rejection returned when attempting to do an operation that requires an explicit schema but the schema is not
+    * provided.
+    */
+  final case object NoSchemaProvided extends ResourceRejection(s"A schema is required but was not provided.")
+
+  /**
     * Signals a rejection caused when interacting with other APIs when fetching a resource
     */
   final case class ProjectContextRejection(rejection: ContextRejection)
