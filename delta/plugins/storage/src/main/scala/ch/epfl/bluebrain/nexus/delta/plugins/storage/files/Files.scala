@@ -49,7 +49,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, SuccessE
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{CompiledProjection, ExecutionStrategy, ProjectionMetadata, Supervisor}
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
-import monix.bio.{IO => BIO, Task}
+import monix.bio.Task
 
 import java.util.UUID
 
@@ -67,7 +67,8 @@ final class Files(
     config: StorageTypeConfig
 )(implicit
     uuidF: UUIDF,
-    system: ClassicActorSystem
+    system: ClassicActorSystem,
+    contextShift: ContextShift[IO]
 ) {
 
   implicit private val kamonComponent: KamonMetricComponent = KamonMetricComponent(entityType.value)
@@ -349,13 +350,15 @@ final class Files(
       _         <- validateAuth(id.project, storage.value.storageValue.readPermission)
       s          = fetchFile(storage.value, attributes, file.id)
       mediaType  = attributes.mediaType.getOrElse(`application/octet-stream`)
-    } yield FileResponse(attributes.filename, mediaType, attributes.bytes, s)
+    } yield FileResponse(attributes.filename, mediaType, attributes.bytes, s.toBIO[FileRejection])
   }.span("fetchFileContent")
 
-  private def fetchFile(storage: Storage, attr: FileAttributes, fileId: Iri): BIO[FileRejection, AkkaSource] =
+  private def fetchFile(storage: Storage, attr: FileAttributes, fileId: Iri): IO[AkkaSource] =
     FetchFile(storage, remoteDiskStorageClient, config)
       .apply(attr)
-      .mapError(FetchRejection(fileId, storage.id, _))
+      .adaptError {
+        case e: FetchFileRejection => FetchRejection(fileId, storage.id, e)
+      }
 
   /**
     * Fetch the last version of a file

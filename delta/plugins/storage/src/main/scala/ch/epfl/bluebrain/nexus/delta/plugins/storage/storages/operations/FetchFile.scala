@@ -2,13 +2,12 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri
+import cats.effect.{ContextShift, IO}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
-import monix.bio.IO
 
 trait FetchFile {
 
@@ -18,7 +17,7 @@ trait FetchFile {
     * @param attributes
     *   the file attributes
     */
-  def apply(attributes: FileAttributes): IO[FetchFileRejection, AkkaSource]
+  def apply(attributes: FileAttributes): IO[AkkaSource]
 
   /**
     * Fetches the file with the passed parameters.
@@ -26,7 +25,7 @@ trait FetchFile {
     * @param path
     *   the file path
     */
-  def apply(path: Uri.Path): IO[FetchFileRejection, AkkaSource]
+  def apply(path: Uri.Path): IO[AkkaSource]
 }
 
 object FetchFile {
@@ -35,7 +34,7 @@ object FetchFile {
     * Construct a [[FetchFile]] from the given ''storage''.
     */
   def apply(storage: Storage, client: RemoteDiskStorageClient, config: StorageTypeConfig)(implicit
-      as: ActorSystem
+      as: ActorSystem, contextShift: ContextShift[IO]
   ): FetchFile =
     storage match {
       case storage: Storage.DiskStorage       => storage.fetchFile

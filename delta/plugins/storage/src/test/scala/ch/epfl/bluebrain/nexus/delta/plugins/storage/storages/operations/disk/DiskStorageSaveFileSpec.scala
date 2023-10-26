@@ -17,13 +17,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.testkit.remotestorage.RemoteStorageDocker
-import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
 import io.circe.Json
 import monix.execution.Scheduler
 import org.scalatest.BeforeAndAfterAll
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
 
 import java.nio.file.{Files, Paths}
 import java.util.UUID
@@ -32,10 +29,7 @@ import scala.reflect.io.Directory
 class DiskStorageSaveFileSpec
     extends TestKit(ActorSystem("DiskStorageSaveFileSpec"))
     with AkkaSourceHelpers
-    with AnyWordSpecLike
-    with Matchers
-    with BIOValues
-    with EitherValues
+    with BioSpec
     with BeforeAndAfterAll {
 
   private val volume = AbsolutePath(Files.createTempDirectory("disk-access")).rightValue
