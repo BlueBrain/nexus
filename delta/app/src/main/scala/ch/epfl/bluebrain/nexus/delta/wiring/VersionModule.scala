@@ -12,7 +12,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.PluginDescri
 import ch.epfl.bluebrain.nexus.delta.sdk.{PriorityRoute, ServiceDependency}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import izumi.distage.model.definition.{Id, ModuleDef}
-import monix.execution.Scheduler
 
 /**
   * Version module wiring config.
@@ -29,11 +28,10 @@ object VersionModule extends ModuleDef {
         aclCheck: AclCheck,
         plugins: List[PluginDescription],
         dependencies: Set[ServiceDependency],
-        s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
     ) =>
-      VersionRoutes(identities, aclCheck, plugins, dependencies, cfg.description)(cfg.http.baseUri, s, cr, ordering)
+      VersionRoutes(identities, aclCheck, plugins, dependencies.toList, cfg.description)(cfg.http.baseUri, cr, ordering)
   }
 
   many[PriorityRoute].add { (route: VersionRoutes) =>
