@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.dependency
 
 import cats.effect.IO
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.sdk.ServiceDependency
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
@@ -28,5 +29,5 @@ class PostgresServiceDependency(xas: Transactors) extends ServiceDependency {
           }
         case Nil                => ServiceDescription.unresolved(serviceName)
       }
-      .handleErrorWith(_ => IO.pure(ServiceDescription.unresolved(serviceName)))
+      .handleError(_ => ServiceDescription.unresolved(serviceName))
 }
