@@ -35,7 +35,7 @@ object RdfExceptionHandler {
       case err: IdentityError             => discardEntityAndForceEmit(err)
       case err: PermissionsRejection      => discardEntityAndForceEmit(err)
       case err: AuthTokenError            => discardEntityAndForceEmit(err)
-      case AuthorizationFailed            => discardEntityAndForceEmit(AuthorizationFailed: ServiceError)
+      case err: AuthorizationFailed       => discardEntityAndForceEmit(err: ServiceError)
       case err: RdfError                  => discardEntityAndForceEmit(err)
       case err: EntityStreamSizeException => discardEntityAndForceEmit(err)
       case err: Throwable                 =>

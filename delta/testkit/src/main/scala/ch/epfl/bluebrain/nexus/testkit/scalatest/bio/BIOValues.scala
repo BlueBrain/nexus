@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.testkit.scalatest.bio
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
 import org.scalactic.source
+import monix.bio.Cause.{Error, Termination}
 import org.scalatest.matchers.should.Matchers.fail
 import org.scalatest.{Assertion, Assertions, Suite}
 
@@ -85,4 +86,23 @@ final class IOValuesOps[E, A](private val io: IO[E, A])(implicit E: ClassTag[E])
         )
     }
   }
+
+  def terminated[T <: Throwable](implicit T: ClassTag[T]): UIO[Unit] =
+    io.redeemCause(
+      {
+        case Error(err)        =>
+          fail(
+            s"Wrong raised error type caught, expected terminal: '${T.runtimeClass.getName}', actual typed: '${err.getClass.getName}'"
+          )
+        case Termination(T(_)) => ()
+        case Termination(t)    =>
+          fail(
+            s"Wrong raised error type caught, expected terminal: '${T.runtimeClass.getName}', actual terminal: '${t.getClass.getName}'"
+          )
+      },
+      a =>
+        fail(
+          s"Expected raising error, but returned successful response with type '${a.getClass.getName}'"
+        )
+    )
 }

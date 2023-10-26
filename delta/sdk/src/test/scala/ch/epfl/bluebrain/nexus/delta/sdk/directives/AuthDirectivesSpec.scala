@@ -78,7 +78,7 @@ class AuthDirectivesSpec extends RouteHelpers with TestHelpers with Matchers wit
       }
     }
 
-  private val authExceptionHandler: ExceptionHandler = ExceptionHandler { case AuthorizationFailed =>
+  private val authExceptionHandler: ExceptionHandler = ExceptionHandler { case AuthorizationFailed(_) =>
     complete(StatusCodes.Forbidden)
   }
 

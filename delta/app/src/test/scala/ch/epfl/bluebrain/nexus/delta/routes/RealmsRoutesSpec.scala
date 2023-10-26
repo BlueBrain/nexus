@@ -95,8 +95,7 @@ class RealmsRoutesSpec extends BaseRouteSpec with IOFromMap {
       val input = json"""{"name": "${githubName.value}", "openIdConfig": "$githubOpenId", "logo": "$githubLogo"}"""
 
       Put("/v1/realms/github", input.toEntity) ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
 
@@ -142,15 +141,13 @@ class RealmsRoutesSpec extends BaseRouteSpec with IOFromMap {
     "fail to fetch a realm  without realms/read permission" in {
       aclCheck.subtract(AclAddress.Root, Anonymous -> Set(realmsPermissions.read)).accepted
       Get("/v1/realms/github") ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
 
     "fail to list realms  without realms/read permission" in {
       Get("/v1/realms") ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
 

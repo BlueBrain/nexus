@@ -130,8 +130,7 @@ class ResourcesTrialRoutesSpec extends BaseRouteSpec with ResourceInstanceFixtur
     "fail to generate a resource for a user without access" in {
       val payload = json"""{ "resource": $validSource }"""
       Post(s"/v1/trial/resources/$projectRef/", payload.toEntity) ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
 
@@ -201,8 +200,7 @@ class ResourcesTrialRoutesSpec extends BaseRouteSpec with ResourceInstanceFixtur
 
     "fail to validate for a user without access" in {
       Get(s"/v1/resources/$projectRef/_/myId/validate") ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
 

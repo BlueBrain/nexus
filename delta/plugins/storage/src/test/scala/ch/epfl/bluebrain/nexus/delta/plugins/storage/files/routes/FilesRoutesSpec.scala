@@ -154,8 +154,7 @@ class FilesRoutesSpec
 
     "fail to create a file without disk/write permission" in {
       Post("/v1/files/org/proj", entity()) ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
 
@@ -192,8 +191,7 @@ class FilesRoutesSpec
 
     "fail to create a file without s3/write permission" in {
       Put("/v1/files/org/proj/file1?storage=s3-storage", entity()) ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
 
@@ -248,8 +246,7 @@ class FilesRoutesSpec
     "fail to update a file without disk/write permission" in {
       aclCheck.subtract(AclAddress.Root, Anonymous -> Set(diskWrite)).accepted
       Put(s"/v1/files/org/proj/file1?rev=1", s3FieldsJson.toEntity) ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
 
@@ -305,8 +302,7 @@ class FilesRoutesSpec
 
     "fail to deprecate a file without files/write permission" in {
       Delete(s"/v1/files/org/proj/$uuid?rev=1") ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
 
@@ -345,8 +341,7 @@ class FilesRoutesSpec
     "fail to fetch a file without s3/read permission" in {
       forAll(List("", "?rev=1", "?tags=mytag")) { suffix =>
         Get(s"/v1/files/org/proj/file1$suffix") ~> Accept(`*/*`) ~> routes ~> check {
-          response.status shouldEqual StatusCodes.Forbidden
-          response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+          response.shouldBeForbidden
           response.headers should not contain varyHeader
         }
       }
@@ -414,8 +409,7 @@ class FilesRoutesSpec
       forAll(endpoints) { endpoint =>
         forAll(List("", "?rev=1", "?tags=mytag")) { suffix =>
           Get(s"$endpoint$suffix") ~> Accept(`application/ld+json`) ~> routes ~> check {
-            response.status shouldEqual StatusCodes.Forbidden
-            response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+            response.shouldBeForbidden
             response.headers should not contain varyHeader
           }
         }
