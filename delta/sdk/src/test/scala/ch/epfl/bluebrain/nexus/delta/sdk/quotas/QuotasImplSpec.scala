@@ -10,12 +10,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.quotas.model.QuotaRejection.QuotaReache
 import ch.epfl.bluebrain.nexus.delta.sdk.quotas.model.QuotaRejection.QuotasDisabled
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import monix.bio.UIO
 
 import java.time.Instant
 
-class QuotasImplSpec extends BioSpec {
+class QuotasImplSpec extends CatsEffectSpec {
 
   private val project  = ProjectRef.unsafe("myorg", "myproject")
   private val project2 = ProjectRef.unsafe("myorg", "myproject2")
