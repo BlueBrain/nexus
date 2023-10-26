@@ -77,10 +77,12 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           api: JsonLdApi,
           clock: Clock[IO],
           uuidF: UUIDF,
-          as: ActorSystem[Nothing]
+          as: ActorSystem[Nothing],
+          cs: ContextShift[IO]
       ) =>
         implicit val classicAs: actor.ActorSystem         = as.classicSystem
         implicit val storageTypeConfig: StorageTypeConfig = cfg.storages.storageTypeConfig
+        implicit val contextShift: ContextShift[IO]       = cs
         Storages(
           fetchContext.mapRejection(StorageRejection.ProjectContextRejection),
           contextResolution,
