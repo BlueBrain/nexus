@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.resources.model
 
 import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
+import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
@@ -19,7 +20,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionRepor
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
-import ch.epfl.bluebrain.nexus.delta.sourcing.rejection.Rejection
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
 
@@ -226,7 +226,8 @@ object ResourceRejection {
         case InvalidJsonLdFormat(_, rdf)                 => obj.add("rdf", rdf.asJson)
         case InvalidResource(_, _, report, expanded)     =>
           obj.addContext(contexts.shacl).add("details", report.json).add("expanded", expanded.json)
-        case InvalidSchemaRejection(_, _, report)        => obj.add("report", report.asJson)
+        case InvalidSchemaRejection(_, _, report)        =>
+          obj.addContext(contexts.resolvers).add("report", report.asJson)
         case IncorrectRev(provided, expected)            => obj.add("provided", provided.asJson).add("expected", expected.asJson)
         case _                                           => obj
       }

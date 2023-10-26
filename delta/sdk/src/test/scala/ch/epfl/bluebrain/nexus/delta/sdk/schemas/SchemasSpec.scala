@@ -1,13 +1,16 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.schemas
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
+import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclShapesGraph
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas._
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaRejection.{IncorrectRev, InvalidSchema, ReservedSchemaId, ResourceAlreadyExists, RevisionNotFound, SchemaIsDeprecated, SchemaNotFound}
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.{SchemaCommand, SchemaEvent, SchemaState}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.Fixtures
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
@@ -22,6 +25,9 @@ class SchemasSpec extends CatsEffectSpec with Fixtures {
   implicit override val api: JsonLdApi = JsonLdJavaApi.lenient
 
   "The Schemas state machine" when {
+
+    implicit val shaclShaclShapes: ShaclShapesGraph = ShaclShapesGraph.shaclShaclShapes.accepted
+
     val epoch   = Instant.EPOCH
     val time2   = Instant.ofEpochMilli(10L)
     val subject = User("myuser", Label.unsafe("myrealm"))
@@ -37,10 +43,13 @@ class SchemasSpec extends CatsEffectSpec with Fixtures {
     val sourceUpdated = source.replace("targetClass" -> "nxv:Custom", "nxv:Other")
     val schemaUpdated = SchemaGen.schema(myId, project.value.ref, sourceUpdated)
 
+    val eval: (Option[SchemaState], SchemaCommand) => IO[SchemaEvent] =
+      evaluate(ValidateSchema.apply)
+
     "evaluating an incoming command" should {
 
       "create a new event from a CreateSchema command" in {
-        evaluate(None, CreateSchema(myId, project.value.ref, source, compacted, expanded, subject)).accepted shouldEqual
+        eval(None, CreateSchema(myId, project.value.ref, source, compacted, expanded, subject)).accepted shouldEqual
           SchemaCreated(myId, project.value.ref, source, compacted, expanded, 1, epoch, subject)
       }
 
@@ -48,7 +57,7 @@ class SchemasSpec extends CatsEffectSpec with Fixtures {
         val compacted = schemaUpdated.compacted
         val expanded  = schemaUpdated.expanded
 
-        evaluate(
+        eval(
           Some(SchemaGen.currentState(schema)),
           UpdateSchema(myId, project.value.ref, sourceUpdated, compacted, expanded, 1, subject)
         ).accepted shouldEqual
@@ -56,7 +65,7 @@ class SchemasSpec extends CatsEffectSpec with Fixtures {
       }
 
       "create a new event from a TagSchema command" in {
-        evaluate(
+        eval(
           Some(SchemaGen.currentState(schema, rev = 2)),
           TagSchema(myId, project.value.ref, 1, UserTag.unsafe("myTag"), 2, subject)
         ).accepted shouldEqual
@@ -65,7 +74,7 @@ class SchemasSpec extends CatsEffectSpec with Fixtures {
 
       "create a new event from a DeleteSchemaTag command" in {
         val tag = UserTag.unsafe("myTag")
-        evaluate(
+        eval(
           Some(SchemaGen.currentState(schema, rev = 2).copy(tags = Tags(tag -> 1))),
           DeleteSchemaTag(myId, project.value.ref, tag, 2, subject)
         ).accepted shouldEqual
@@ -76,7 +85,7 @@ class SchemasSpec extends CatsEffectSpec with Fixtures {
 
         val current = SchemaGen.currentState(schema, rev = 2)
 
-        evaluate(Some(current), DeprecateSchema(myId, project.value.ref, 2, subject)).accepted shouldEqual
+        eval(Some(current), DeprecateSchema(myId, project.value.ref, 2, subject)).accepted shouldEqual
           SchemaDeprecated(myId, project.value.ref, 3, epoch, subject)
       }
 
@@ -89,7 +98,7 @@ class SchemasSpec extends CatsEffectSpec with Fixtures {
           current -> DeprecateSchema(myId, project.value.ref, 2, subject)
         )
         forAll(list) { case (state, cmd) =>
-          evaluate(Some(state), cmd).rejected shouldEqual IncorrectRev(provided = 2, expected = 1)
+          eval(Some(state), cmd).rejected shouldEqual IncorrectRev(provided = 2, expected = 1)
         }
       }
 
@@ -104,13 +113,13 @@ class SchemasSpec extends CatsEffectSpec with Fixtures {
           Some(current) -> UpdateSchema(myId, project.value.ref, wrongSource, compacted, expanded, 1, subject)
         )
         forAll(list) { case (state, cmd) =>
-          evaluate(state, cmd).rejectedWith[InvalidSchema]
+          eval(state, cmd).rejectedWith[InvalidSchema]
         }
       }
 
       "reject with ResourceAlreadyExists (schema)" in {
         val current = SchemaGen.currentState(schema)
-        evaluate(Some(current), CreateSchema(myId, project.value.ref, source, compacted, expanded, subject))
+        eval(Some(current), CreateSchema(myId, project.value.ref, source, compacted, expanded, subject))
           .rejectedWith[ResourceAlreadyExists]
       }
 
@@ -122,7 +131,7 @@ class SchemasSpec extends CatsEffectSpec with Fixtures {
           None -> DeprecateSchema(myId, project.value.ref, 1, subject)
         )
         forAll(list) { case (state, cmd) =>
-          evaluate(state, cmd).rejectedWith[SchemaNotFound]
+          eval(state, cmd).rejectedWith[SchemaNotFound]
         }
       }
 
@@ -133,12 +142,12 @@ class SchemasSpec extends CatsEffectSpec with Fixtures {
           current -> DeprecateSchema(myId, project.value.ref, 1, subject)
         )
         forAll(list) { case (state, cmd) =>
-          evaluate(Some(state), cmd).rejectedWith[SchemaIsDeprecated]
+          eval(Some(state), cmd).rejectedWith[SchemaIsDeprecated]
         }
       }
 
       "reject with RevisionNotFound" in {
-        evaluate(
+        eval(
           Some(SchemaGen.currentState(schema)),
           TagSchema(myId, project.value.ref, 3, UserTag.unsafe("myTag"), 1, subject)
         ).rejected shouldEqual RevisionNotFound(provided = 3, current = 1)
@@ -147,7 +156,7 @@ class SchemasSpec extends CatsEffectSpec with Fixtures {
       "reject with ReservedSchemaId" in {
         val reserved = schemas + "myid"
 
-        evaluate(
+        eval(
           None,
           CreateSchema(reserved, project.value.ref, source, compacted, expanded, subject)
         ).rejected shouldEqual ReservedSchemaId(reserved)

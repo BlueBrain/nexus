@@ -1,10 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.kernel.syntax
 import cats.Functor
 import cats.effect.IO
+import cats.implicits.catsSyntaxApplicativeError
 import cats.syntax.functor._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import com.typesafe.scalalogging.Logger
 import monix.bio.{IO => BIO, Task, UIO}
+
+import scala.reflect.ClassTag
 
 trait IOSyntax {
 
@@ -17,6 +21,11 @@ trait IOSyntax {
 
   implicit final def taskSyntaxLogErrors[A](task: Task[A]): TaskOps[A] = new TaskOps(task)
 
+  implicit final def ioSyntaxLogErrors[A](io: IO[A]): IOOps[A] = new IOOps(io)
+
+  implicit final def ioRetryStrategyOps[A](io: IO[A]): IORetryStrategyOps[A] =
+    new IORetryStrategyOps[A](io)
+
   implicit final def ioFunctorOps[A, F[_]: Functor](io: IO[F[A]]): IOFunctorOps[A, F] = new IOFunctorOps(io)
 }
 
@@ -26,6 +35,16 @@ final class BIORetryStrategyOps[E, A](private val io: BIO[E, A]) extends AnyVal 
     * Apply the retry strategy on the provided IO
     */
   def retry(retryStrategy: RetryStrategy[E]): BIO[E, A] = RetryStrategy.use(io, retryStrategy)
+
+}
+
+final class IORetryStrategyOps[A](private val io: IO[A]) extends AnyVal {
+
+  /**
+    * Apply the retry strategy on the provided IO
+    */
+  def retry[E <: Throwable](retryStrategy: RetryStrategy[E])(implicit E: ClassTag[E]): IO[A] =
+    RetryStrategy.use(io.toBIO[E], retryStrategy)
 
 }
 
@@ -51,7 +70,6 @@ final class TaskOps[A](private val task: Task[A]) extends AnyVal {
     task.onErrorHandleWith { ex =>
       UIO.delay(logger.warn(s"A Task is hiding an error while '$action'", ex)) >> UIO.terminate(ex)
     }
-
 }
 
 final class IOFunctorOps[A, F[_]: Functor](private val io: IO[F[A]]) {
@@ -65,4 +83,11 @@ final class IOFunctorOps[A, F[_]: Functor](private val io: IO[F[A]]) {
     *   a new [[F]] with value being the result of applying [[f]] to the value of old [[F]]
     */
   def mapValue[B](f: A => B): IO[F[B]] = io.map(_.map(f))
+}
+
+final class IOOps[A](private val task: IO[A]) extends AnyVal {
+  def logErrors(action: String)(implicit logger: Logger): IO[A] =
+    task.onError { ex =>
+      IO.delay(logger.warn(s"Error during: '$action'", ex))
+    }
 }

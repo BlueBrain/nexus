@@ -1,12 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.testplugin
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.sdk.PriorityRoute
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.PluginDescription
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Name}
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.{Plugin, PluginDef}
 import izumi.distage.model.Locator
 import izumi.distage.model.definition.ModuleDef
-import monix.bio.Task
 
 case class TestPluginDef() extends PluginDef {
 
@@ -23,6 +23,6 @@ case class TestPluginDef() extends PluginDef {
 
   override val info: PluginDescription = PluginDescription(Name.unsafe("testplugin"), "0.1.0")
 
-  override def initialize(locator: Locator): Task[Plugin] = Task.pure(locator.get[TestPlugin])
+  override def initialize(locator: Locator): IO[Plugin] = IO.pure(locator.get[TestPlugin])
 
 }

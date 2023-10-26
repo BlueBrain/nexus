@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
@@ -64,19 +65,21 @@ final class ProjectsRoutes(
 
   implicit val paginationConfig: PaginationConfig = config.pagination
 
-  private def projectsSearchParams(implicit caller: Caller): Directive1[ProjectSearchParams] =
-    (searchParams & parameter("label".?)).tmap { case (deprecated, rev, createdBy, updatedBy, label) =>
-      val fetchAllCached = aclCheck.fetchAll.memoizeOnSuccess
-      ProjectSearchParams(
-        None,
-        deprecated,
-        rev,
-        createdBy,
-        updatedBy,
-        label,
-        proj => aclCheck.authorizeFor(proj.ref, projectsPermissions.read, fetchAllCached)
-      )
+  private def projectsSearchParams(implicit caller: Caller): Directive1[ProjectSearchParams] = {
+    onSuccess(aclCheck.fetchAll.unsafeToFuture()).flatMap { allAcls =>
+      (searchParams & parameter("label".?)).tmap { case (deprecated, rev, createdBy, updatedBy, label) =>
+        ProjectSearchParams(
+          None,
+          deprecated,
+          rev,
+          createdBy,
+          updatedBy,
+          label,
+          proj => aclCheck.authorizeFor(proj.ref, projectsPermissions.read, allAcls).toUIO
+        )
+      }
     }
+  }
 
   private def provisionProject(implicit caller: Caller): Directive0 = onSuccess(
     projectProvisioning(caller.subject).runToFuture

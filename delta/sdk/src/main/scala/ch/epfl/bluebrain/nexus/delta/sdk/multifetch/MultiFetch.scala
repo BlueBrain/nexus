@@ -1,12 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.multifetch
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
 import ch.epfl.bluebrain.nexus.delta.sdk.multifetch.model.MultiFetchResponse.Result._
 import ch.epfl.bluebrain.nexus.delta.sdk.multifetch.model.{MultiFetchRequest, MultiFetchResponse}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources
-import monix.bio.UIO
 
 /**
   * Allows to fetch multiple resources of different types in one request.
@@ -16,30 +16,29 @@ import monix.bio.UIO
   */
 trait MultiFetch {
 
-  def apply(request: MultiFetchRequest)(implicit caller: Caller): UIO[MultiFetchResponse]
+  def apply(request: MultiFetchRequest)(implicit caller: Caller): IO[MultiFetchResponse]
 
 }
 
 object MultiFetch {
   def apply(
       aclCheck: AclCheck,
-      fetchResource: MultiFetchRequest.Input => UIO[Option[JsonLdContent[_, _]]]
+      fetchResource: MultiFetchRequest.Input => IO[Option[JsonLdContent[_, _]]]
   ): MultiFetch =
     new MultiFetch {
       override def apply(request: MultiFetchRequest)(implicit
           caller: Caller
-      ): UIO[MultiFetchResponse] = {
-        val fetchAllCached = aclCheck.fetchAll.memoizeOnSuccess
+      ): IO[MultiFetchResponse] = aclCheck.fetchAll.flatMap { allAcls =>
         request.resources
           .traverse { input =>
-            aclCheck.authorizeFor(input.project, resources.read, fetchAllCached).flatMap {
+            aclCheck.authorizeFor(input.project, resources.read, allAcls).flatMap {
               case true  =>
                 fetchResource(input).map {
                   _.map(Success(input.id, input.project, _))
                     .getOrElse(NotFound(input.id, input.project))
                 }
               case false =>
-                UIO.pure(AuthorizationFailed(input.id, input.project))
+                IO.pure(AuthorizationFailed(input.id, input.project))
             }
           }
           .map { resources =>

@@ -71,7 +71,7 @@ class OrganizationDeleterSuite extends CatsEffectSuite with ConfigFixtures {
   }
 
   def createOrgAndAcl(org: Label): IO[Unit] = for {
-    _ <- acls.replace(Acl(AclAddress.fromOrg(org), subject -> Set(permission)), 0).toCatsIO
+    _ <- acls.replace(Acl(AclAddress.fromOrg(org), subject -> Set(permission)), 0)
     _ <- orgs.create(org, None)
   } yield ()
 

@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.sourcing.rejection
+package ch.epfl.bluebrain.nexus.delta.kernel.error
 
 /**
   * Parent type for rejections

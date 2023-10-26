@@ -75,7 +75,7 @@ class ElasticSearchViewsQuerySuite
     (alice.subject, AclAddress.Project(project1.ref), Set(queryPermission, permissions.read, permissions.write)),
     // Charlie has access to views in project 2
     (charlie.subject, AclAddress.Project(project2.ref), Set(queryPermission, permissions.read))
-  ).runSyncUnsafe()
+  ).accepted
 
   private val mappings = jsonObjectContentOf("defaults/default-mapping.json")
 

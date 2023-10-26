@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.multifetch
 
 import cats.data.NonEmptyList
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ResourceGen
@@ -15,10 +16,9 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.BioSuite
-import monix.bio.UIO
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 
-class MultiFetchSuite extends BioSuite with TestHelpers with Fixtures {
+class MultiFetchSuite extends CatsEffectSuite with TestHelpers with Fixtures {
 
   implicit private val subject: Subject = Identity.User("user", Label.unsafe("realm"))
   implicit private val caller: Caller   = Caller.unsafe(subject)
@@ -27,7 +27,7 @@ class MultiFetchSuite extends BioSuite with TestHelpers with Fixtures {
   private val project2 = ProjectRef.unsafe("org", "proj2")
 
   private val permissions = Set(Permissions.resources.read)
-  private val aclCheck    = AclSimpleCheck((subject, project1, permissions)).runSyncUnsafe()
+  private val aclCheck    = AclSimpleCheck((subject, project1, permissions)).accepted
 
   private val successId      = nxv + "success"
   private val successContent =
@@ -39,8 +39,8 @@ class MultiFetchSuite extends BioSuite with TestHelpers with Fixtures {
     (input: MultiFetchRequest.Input) => {
       input match {
         case MultiFetchRequest.Input(Latest(`successId`), `project1`) =>
-          UIO.some(successContent)
-        case _                                                        => UIO.none
+          IO.pure(Some(successContent))
+        case _                                                        => IO.none
       }
     }
 
@@ -67,7 +67,7 @@ class MultiFetchSuite extends BioSuite with TestHelpers with Fixtures {
       )
     )
 
-    multiFetch(request).assert(expected)
+    multiFetch(request).assertEquals(expected)
   }
 
   test("Return only unauthorized for a user with no access") {
@@ -80,7 +80,7 @@ class MultiFetchSuite extends BioSuite with TestHelpers with Fixtures {
       )
     )
 
-    multiFetch(request)(Caller.Anonymous).assert(expected)
+    multiFetch(request)(Caller.Anonymous).assertEquals(expected)
   }
 
 }

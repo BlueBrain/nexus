@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.testkit.mu.bio
 
 import ch.epfl.bluebrain.nexus.testkit.bio.IOFixedClock
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsIOValues
 import ch.epfl.bluebrain.nexus.testkit.mu.{CollectionAssertions, EitherAssertions, EitherValues, NexusSuite}
 import monix.bio.IO
 import monix.execution.Scheduler
@@ -14,6 +15,7 @@ abstract class BioSuite
     with BioAssertions
     with BIOValues
     with BIOStreamAssertions
+    with CatsIOValues
     with CollectionAssertions
     with EitherAssertions
     with EitherValues

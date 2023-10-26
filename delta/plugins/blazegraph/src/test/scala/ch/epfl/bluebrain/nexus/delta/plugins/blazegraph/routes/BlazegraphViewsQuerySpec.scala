@@ -7,6 +7,7 @@ import cats.data.NonEmptySet
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig.AlwaysGiveUp
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsQuery.BlazegraphQueryContext
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.SparqlNTriples
@@ -41,8 +42,9 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit._
 import ch.epfl.bluebrain.nexus.testkit.blazegraph.BlazegraphDocker
 import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
 import ch.epfl.bluebrain.nexus.testkit.scalatest.{EitherValues, TestMatchers}
-import monix.bio.IO
+import monix.bio.{IO => BIO}
 import monix.execution.Scheduler
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
@@ -60,6 +62,7 @@ class BlazegraphViewsQuerySpec(docker: BlazegraphDocker)
     with Matchers
     with EitherValues
     with OptionValues
+    with CatsIOValues
     with CirceLiteral
     with TestHelpers
     with TestMatchers
@@ -72,7 +75,7 @@ class BlazegraphViewsQuerySpec(docker: BlazegraphDocker)
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(6.seconds, 100.millis)
 
   private val noopSlowQueryLogger: BlazegraphSlowQueryLogger = new BlazegraphSlowQueryLogger {
-    override def apply[E, A](context: BlazegraphQueryContext, query: IO[E, A]): IO[E, A] = query
+    override def apply[E, A](context: BlazegraphQueryContext, query: BIO[E, A]): BIO[E, A] = query
   }
 
   implicit private val sc: Scheduler                = Scheduler.global
@@ -181,7 +184,7 @@ class BlazegraphViewsQuerySpec(docker: BlazegraphDocker)
       (alice.subject, AclAddress.Project(project1.ref), Set(queryPermission)),
       (bob.subject, AclAddress.Root, Set(queryPermission)),
       (Anonymous, AclAddress.Project(project2.ref), Set(queryPermission))
-    ).flatMap { acls =>
+    ).toUIO.flatMap { acls =>
       BlazegraphViewsQuery(acls, fetchContext, views, client, noopSlowQueryLogger, "prefix", xas)
     }.accepted
 

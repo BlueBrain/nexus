@@ -16,12 +16,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectBase
 import ch.epfl.bluebrain.nexus.delta.sdk.views.IndexingRev
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.BioSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import io.circe.{Json, JsonObject}
 
 import java.util.UUID
 
-class CompositeViewFactorySuite extends BioSuite {
+class CompositeViewFactorySuite extends CatsEffectSuite {
 
   implicit private val projectBase: ProjectBase = ProjectBase.unsafe(iri"http://localhost/project")
   private val uuid                              = UUID.randomUUID()
@@ -93,7 +93,7 @@ class CompositeViewFactorySuite extends BioSuite {
   test("Create the matching source from the project source field with a defined id") {
     CompositeViewFactory
       .create(projectSourceFields)
-      .assert(
+      .assertEquals(
         projectSourceId -> ProjectSource(projectSourceId, uuid, schemas, types, tag, includeDeprecated)
       )
   }
@@ -102,7 +102,7 @@ class CompositeViewFactorySuite extends BioSuite {
     val expectedId = projectBase.iri / uuid.toString
     CompositeViewFactory
       .create(projectSourceFields.copy(id = None))
-      .assert(
+      .assertEquals(
         expectedId -> ProjectSource(expectedId, uuid, schemas, types, tag, includeDeprecated)
       )
   }
@@ -110,7 +110,7 @@ class CompositeViewFactorySuite extends BioSuite {
   test("Create the matching source from the cross project source field with a defined id") {
     CompositeViewFactory
       .create(crossSourceFields)
-      .assert(
+      .assertEquals(
         crossSourceId -> CrossProjectSource(
           crossSourceId,
           uuid,
@@ -127,7 +127,7 @@ class CompositeViewFactorySuite extends BioSuite {
   test("Create the matching source from the remote project source field with a defined id") {
     CompositeViewFactory
       .create(remoteSourceFields)
-      .assert(
+      .assertEquals(
         remoteSourceId -> RemoteProjectSource(
           remoteSourceId,
           uuid,
@@ -145,7 +145,7 @@ class CompositeViewFactorySuite extends BioSuite {
     val nextRev = IndexingRev(5)
     CompositeViewFactory
       .create(esProjectionFields, nextRev)
-      .assert(
+      .assertEquals(
         esProjectionId -> ElasticSearchProjection(
           esProjectionId,
           uuid,
@@ -169,7 +169,7 @@ class CompositeViewFactorySuite extends BioSuite {
     val nextRev = IndexingRev(5)
     CompositeViewFactory
       .create(blazegraphProjectionFields, nextRev)
-      .assert(
+      .assertEquals(
         blazegraphProjectionId -> SparqlProjection(
           blazegraphProjectionId,
           uuid,
@@ -187,7 +187,7 @@ class CompositeViewFactorySuite extends BioSuite {
   test("Create a source when upserting a non-existing source") {
     CompositeViewFactory
       .upsert(projectSourceFields, _ => None)
-      .assert(
+      .assertEquals(
         projectSourceId -> ProjectSource(projectSourceId, uuid, schemas, types, tag, includeDeprecated)
       )
   }
@@ -197,14 +197,14 @@ class CompositeViewFactorySuite extends BioSuite {
     CompositeViewFactory
       .upsert(projectSourceFields, _ => Some(current))
       .map(_._2.uuid)
-      .assert(current.uuid)
+      .assertEquals(current.uuid)
   }
 
   test("Create a projection when upserting a non-existing projection") {
     val nextRev = IndexingRev(5)
     CompositeViewFactory
       .upsert(blazegraphProjectionFields, _ => None, nextRev, false)
-      .assert(
+      .assertEquals(
         blazegraphProjectionId -> SparqlProjection(
           blazegraphProjectionId,
           uuid,
@@ -238,7 +238,7 @@ class CompositeViewFactorySuite extends BioSuite {
       .map { case (_, p) =>
         p.uuid -> p.indexingRev
       }
-      .assert(current.uuid -> projectionRev)
+      .assertEquals(current.uuid -> projectionRev)
   }
 
   test("Preserve the uuid and update the indexing rev when source has changed.") {
@@ -260,7 +260,7 @@ class CompositeViewFactorySuite extends BioSuite {
       .map { case (_, p) =>
         p.uuid -> p.indexingRev
       }
-      .assert(current.uuid -> nextRev)
+      .assertEquals(current.uuid -> nextRev)
   }
 
   test("Preserve the uuid and update the indexing rev when the projection has changed.") {
@@ -282,6 +282,6 @@ class CompositeViewFactorySuite extends BioSuite {
       .map { case (_, p) =>
         p.uuid -> p.indexingRev
       }
-      .assert(current.uuid -> nextRev)
+      .assertEquals(current.uuid -> nextRev)
   }
 }

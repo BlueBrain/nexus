@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
+import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclShapesGraph
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.SchemasRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction.AggregateIndexingAction
@@ -24,7 +25,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.{ResolverContextResolution, R
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.{Schema, SchemaEvent}
-import ch.epfl.bluebrain.nexus.delta.sdk.schemas.{SchemaImports, Schemas, SchemasImpl}
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.{SchemaImports, Schemas, SchemasImpl, ValidateSchema}
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import izumi.distage.model.definition.{Id, ModuleDef}
@@ -35,11 +36,17 @@ import izumi.distage.model.definition.{Id, ModuleDef}
 object SchemasModule extends ModuleDef {
   implicit private val classLoader: ClassLoader = getClass.getClassLoader
 
+  make[ValidateSchema].fromEffect { (api: JsonLdApi, rcr: RemoteContextResolution @Id("aggregate")) =>
+    ShaclShapesGraph.shaclShaclShapes.map(ValidateSchema(api, _, rcr))
+
+  }
+
   make[Schemas].from {
     (
         fetchContext: FetchContext[ContextRejection],
         schemaImports: SchemaImports,
         api: JsonLdApi,
+        validate: ValidateSchema,
         resolverContextResolution: ResolverContextResolution,
         config: AppConfig,
         xas: Transactors,
@@ -50,6 +57,7 @@ object SchemasModule extends ModuleDef {
         fetchContext.mapRejection(ProjectContextRejection),
         schemaImports,
         resolverContextResolution,
+        validate,
         config.schemas,
         xas
       )(api, clock, uuidF)

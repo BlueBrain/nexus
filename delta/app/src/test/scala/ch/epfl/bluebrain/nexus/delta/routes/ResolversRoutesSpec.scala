@@ -110,7 +110,8 @@ class ResolversRoutesSpec extends BaseRouteSpec {
       fetchResource(ref, project).flatMap {
         case Some(c) => IO.pure(Some(c))
         case None    => fetchSchema(ref, project)
-      }
+      },
+    excludeDeprecated = false
   )
 
   private val fetchContext    = FetchContextDummy[ResolverRejection](List(project, project2), ProjectContextRejection)

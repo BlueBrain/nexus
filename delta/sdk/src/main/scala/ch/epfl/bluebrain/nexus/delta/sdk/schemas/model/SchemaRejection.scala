@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.schemas.model
 
 import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
+import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
@@ -18,7 +19,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{ResolverResolutionReje
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
-import ch.epfl.bluebrain.nexus.delta.sourcing.rejection.Rejection
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
 
@@ -214,6 +214,7 @@ object SchemaRejection {
         case InvalidSchema(_, report)                                                         => obj.addContext(contexts.shacl).add("details", report.json)
         case InvalidSchemaResolution(_, schemaImports, resourceImports, nonOntologyResources) =>
           obj
+            .addContext(contexts.resolvers)
             .add("schemaImports", importsAsJson(schemaImports))
             .add("resourceImports", importsAsJson(resourceImports))
             .add("nonOntologyResources", nonOntologyResources.asJson)

@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.kernel.kamon
 import cats.effect.{ContextShift, ExitCase, IO, Timer}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
+import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import com.typesafe.config.Config
 import kamon.tag.TagSet
 import kamon.trace.Span
@@ -62,7 +63,7 @@ object KamonMonitoringCats {
       component: String,
       tags: Map[String, Any] = Map.empty,
       takeSamplingDecision: Boolean = true
-  )(io: IO[A]): IO[A] =
+  )(io: IO[A]): IO[A]                                                                      = {
     if (enabled)
       buildSpan(name, component, tags).bracketCase(_ => io) {
         case (span, ExitCase.Completed)    => finishSpan(span, takeSamplingDecision)
@@ -70,6 +71,7 @@ object KamonMonitoringCats {
         case (span, ExitCase.Canceled)     => finishSpan(span.tag("cancel", value = true), takeSamplingDecision)
       }
     else io
+  }.onError { case e: Rejection => logger.info(e)(e.getMessage) }
 
   private def buildSpan(name: String, component: String, tags: Map[String, Any]): IO[Span] =
     IO {

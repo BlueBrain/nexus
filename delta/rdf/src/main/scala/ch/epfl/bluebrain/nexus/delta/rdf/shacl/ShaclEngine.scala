@@ -1,23 +1,19 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.shacl
 
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.ioStreamOf
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxsh
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
-import monix.bio.IO
-import org.apache.jena.graph.Factory.createDefaultGraph
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import org.apache.jena.query.{Dataset, DatasetFactory}
 import org.apache.jena.rdf.model._
-import org.apache.jena.util.FileUtils
 import org.topbraid.jenax.util.JenaDatatypes
-import org.topbraid.shacl.arq.SHACLFunctions
 import org.topbraid.shacl.engine.{Constraint, ShapesGraph}
-import org.topbraid.shacl.validation.{ValidationEngine, ValidationEngineConfiguration, ValidationUtil}
+import org.topbraid.shacl.validation.{ValidationEngine, ValidationEngineConfiguration}
 
 import java.net.URI
 import java.util
-import scala.util.{Failure, Success, Try}
 
 /**
   * Extend the [[ValidationEngine]] form TopQuadrant in order to add triples to the report with the number of
@@ -50,20 +46,6 @@ final class ShaclEngine private (dataset: Dataset, shapesGraphURI: URI, shapesGr
 }
 
 object ShaclEngine {
-  implicit private val classLoader: ClassLoader = getClass.getClassLoader
-  private val shaclGraphIO: IO[String, Graph]   =
-    ioStreamOf("shacl-shacl.ttl")
-      .mapError(_.toString)
-      .map { is =>
-        val model            = ModelFactory
-          .createModelForGraph(createDefaultGraph())
-          .read(is, "http://www.w3.org/ns/shacl-shacl#", FileUtils.langTurtle)
-        val finalShapesModel = ValidationUtil.ensureToshTriplesExist(model)
-        // Make sure all sh:Functions are registered
-        SHACLFunctions.registerFunctions(finalShapesModel)
-        Graph.unsafe(DatasetFactory.create(finalShapesModel).asDatasetGraph())
-      }
-      .memoize
 
   /**
     * Validates a given graph against the SHACL shapes spec.
@@ -78,12 +60,8 @@ object ShaclEngine {
   def apply(
       shapesGraph: Graph,
       reportDetails: Boolean
-  )(implicit api: JsonLdApi): IO[String, ValidationReport] =
-    for {
-      shaclGraph <- shaclGraphIO
-      shapes      = ShaclShapesGraph(shaclGraph)
-      report     <- apply(shapesGraph, shapes, validateShapes = true, reportDetails = reportDetails)
-    } yield report
+  )(implicit api: JsonLdApi, shaclShapesGraph: ShaclShapesGraph, rcr: RemoteContextResolution): IO[ValidationReport] =
+    apply(shapesGraph, shaclShapesGraph, validateShapes = true, reportDetails = reportDetails)
 
   /**
     * Validates a given data Graph against all shapes from a given shapes Model.
@@ -101,7 +79,7 @@ object ShaclEngine {
       dataGraph: Graph,
       shapesGraph: Graph,
       reportDetails: Boolean
-  )(implicit api: JsonLdApi): IO[String, ValidationReport] =
+  )(implicit api: JsonLdApi, rcr: RemoteContextResolution): IO[ValidationReport] =
     apply(dataGraph, ShaclShapesGraph(shapesGraph), validateShapes = false, reportDetails)
 
   /**
@@ -123,7 +101,7 @@ object ShaclEngine {
       shapesGraph: ShaclShapesGraph,
       validateShapes: Boolean,
       reportDetails: Boolean
-  )(implicit api: JsonLdApi): IO[String, ValidationReport] =
+  )(implicit api: JsonLdApi, rcr: RemoteContextResolution): IO[ValidationReport] =
     apply(DatasetFactory.wrap(graph.value), shapesGraph, validateShapes, reportDetails)
 
   private def apply(
@@ -131,7 +109,7 @@ object ShaclEngine {
       shapesGraph: ShaclShapesGraph,
       validateShapes: Boolean,
       reportDetails: Boolean
-  )(implicit api: JsonLdApi): IO[String, ValidationReport] = {
+  )(implicit api: JsonLdApi, rcr: RemoteContextResolution): IO[ValidationReport] = {
     // Create Dataset that contains both the data model and the shapes model
     // (here, using a temporary URI for the shapes graph)
     dataset.addNamedModel(shapesGraph.uri.toString, shapesGraph.model)
@@ -139,12 +117,9 @@ object ShaclEngine {
     engine.setConfiguration(
       new ValidationEngineConfiguration().setReportDetails(reportDetails).setValidateShapes(validateShapes)
     )
-    Try {
+    IO.delay {
       engine.applyEntailments()
       engine.validateAll()
-    } match {
-      case Failure(ex)       => IO.raiseError(ex.getMessage)
-      case Success(resource) => ValidationReport(resource)
-    }
+    }.flatMap(ValidationReport(_))
   }
 }

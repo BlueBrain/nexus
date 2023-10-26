@@ -15,15 +15,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
-import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.JsonObject
 
 class SearchScopeInitializationSpec
-    extends BioSpec
+    extends CatsEffectSpec
     with DoobieScalaTestFixture
     with CompositeViewsFixture
-    with CatsIOValues
     with Fixtures {
 
   implicit val baseUri: BaseUri = BaseUri.withoutPrefix("http://localhost")

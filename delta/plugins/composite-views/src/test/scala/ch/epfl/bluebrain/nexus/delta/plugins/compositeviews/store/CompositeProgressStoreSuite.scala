@@ -10,12 +10,12 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionProgress
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.BioSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import munit.AnyFixture
 
 import java.time.Instant
 
-class CompositeProgressStoreSuite extends BioSuite with Doobie.Fixture with Doobie.Assertions {
+class CompositeProgressStoreSuite extends CatsEffectSuite with Doobie.Fixture with Doobie.Assertions {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 
@@ -45,10 +45,12 @@ class CompositeProgressStoreSuite extends BioSuite with Doobie.Fixture with Doob
   private val view2         = IndexingViewRef(view2Ref, indexingRev)
   private val view2Progress = ProjectionProgress(Offset.At(999L), Instant.EPOCH, 514, 140, 0)
 
+  private val noProgress = Map.empty[CompositeBranch, ProjectionProgress]
+
   // Check that view 2 is not affected by changes on view 1
   private def assertView2 = {
     val expected = Map(mainBranch1 -> view2Progress, rebuildBranch1 -> view2Progress)
-    store.progress(view2).assert(expected)
+    store.progress(view2).assertEquals(expected)
   }
 
   // Save progress for view 1
@@ -61,7 +63,7 @@ class CompositeProgressStoreSuite extends BioSuite with Doobie.Fixture with Doob
     } yield ()
 
   test("Return no progress") {
-    store.progress(view).assert(Map.empty)
+    store.progress(view).assertEquals(noProgress)
   }
 
   test("Save progress for all branches and views") {
@@ -80,7 +82,7 @@ class CompositeProgressStoreSuite extends BioSuite with Doobie.Fixture with Doob
       rebuildBranch2 -> rebuildProgress2
     )
     for {
-      _ <- store.progress(view).assert(expected)
+      _ <- store.progress(view).assertEquals(expected)
       _ <- assertView2
     } yield ()
   }
@@ -96,7 +98,7 @@ class CompositeProgressStoreSuite extends BioSuite with Doobie.Fixture with Doob
     for {
       _ <- store.save(view, mainBranch1, newProgress)
       _ <- store.save(view, rebuildBranch1, rebuildProgress1)
-      _ <- store.progress(view).assert(expected)
+      _ <- store.progress(view).assertEquals(expected)
       _ <- assertView2
     } yield ()
   }
@@ -104,7 +106,7 @@ class CompositeProgressStoreSuite extends BioSuite with Doobie.Fixture with Doob
   test("Delete progresses for the view") {
     for {
       _ <- store.deleteAll(view)
-      _ <- store.progress(view).assert(Map.empty)
+      _ <- store.progress(view).assertEquals(noProgress)
       _ <- assertView2
     } yield ()
   }
@@ -120,7 +122,7 @@ class CompositeProgressStoreSuite extends BioSuite with Doobie.Fixture with Doob
     for {
       _ <- saveView1
       _ <- store.restart(fr)
-      _ <- store.progress(view).assert(expected)
+      _ <- store.progress(view).assertEquals(expected)
       _ <- assertView2
     } yield ()
   }
@@ -136,7 +138,7 @@ class CompositeProgressStoreSuite extends BioSuite with Doobie.Fixture with Doob
     for {
       _ <- saveView1
       _ <- store.restart(fr)
-      _ <- store.progress(view).assert(expected)
+      _ <- store.progress(view).assertEquals(expected)
       _ <- assertView2
     } yield ()
   }
@@ -152,7 +154,7 @@ class CompositeProgressStoreSuite extends BioSuite with Doobie.Fixture with Doob
     for {
       _ <- saveView1
       _ <- store.restart(pr)
-      _ <- store.progress(view).assert(expected)
+      _ <- store.progress(view).assertEquals(expected)
       _ <- assertView2
     } yield ()
   }

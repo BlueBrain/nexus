@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.acls
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddressFilter.{AnyOrganization, AnyOrganizationAnyProject, AnyProject}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclEvent.{AclAppended, AclDeleted, AclReplaced, AclSubtracted}
@@ -15,28 +16,19 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Group, 
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
-import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
-import monix.bio.UIO
-import monix.execution.Scheduler
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import org.scalatest.CancelAfterFailure
 
 import java.time.Instant
 
-class AclsImplSpec
-    extends BioSpec
-    with DoobieScalaTestFixture
-    with CatsIOValues
-    with CancelAfterFailure
-    with ConfigFixtures {
+class AclsImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with CancelAfterFailure with ConfigFixtures {
 
-  val epoch: Instant                = Instant.EPOCH
-  val realm: Label                  = Label.unsafe("realm")
-  val realm2: Label                 = Label.unsafe("myrealm2")
-  implicit val subject: Subject     = Identity.User("user", realm)
-  implicit val caller: Caller       = Caller.unsafe(subject)
-  implicit val scheduler: Scheduler = Scheduler.global
-  implicit val baseUri: BaseUri     = BaseUri("http://localhost", Label.unsafe("v1"))
+  val epoch: Instant            = Instant.EPOCH
+  val realm: Label              = Label.unsafe("realm")
+  val realm2: Label             = Label.unsafe("myrealm2")
+  implicit val subject: Subject = Identity.User("user", realm)
+  implicit val caller: Caller   = Caller.unsafe(subject)
+  implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
 
   val user: Identity  = subject
   val group: Identity = Group("mygroup", realm2)
@@ -71,7 +63,7 @@ class AclsImplSpec
 
   "An ACLs implementation" should {
     lazy val acls: Acls = AclsImpl(
-      UIO.pure(minimumPermissions),
+      IO.pure(minimumPermissions),
       Acls.findUnknownRealms(_, Set(realm, realm2)),
       minimumPermissions,
       AclsConfig(eventLogConfig),

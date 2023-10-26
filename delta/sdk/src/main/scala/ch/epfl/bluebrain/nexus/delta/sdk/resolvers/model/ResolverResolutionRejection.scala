@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model
 
+import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
@@ -8,7 +9,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.rejection.Rejection
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
 
@@ -93,13 +93,11 @@ object ResolverResolutionRejection {
       extends ResolutionFetchRejection(s"The resource was not found in project '$projectRef'.")
 
   /**
-    * Rejection returned when attempting to interact with a resource providing an id that cannot be resolved to an Iri.
-    *
-    * @param id
-    *   the resource identifier
+    * Rejection returned when attempting to fetch a deprecation resource using a resolver when the deprecation check is
+    * enforced
     */
-  final case class InvalidId(id: String)
-      extends ResolutionFetchRejection(s"The identifier '$id' cannot be expanded to an Iri.")
+  final case class ResourceIsDeprecated(id: Iri, projectRef: ProjectRef)
+      extends ResolutionFetchRejection(s"The resource is deprecated in project '$projectRef'.")
 
   /**
     * Rejection the rejection when attempting to resolve with an invalid resolver (i.e deprecated, not found, invalid

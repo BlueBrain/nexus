@@ -4,12 +4,12 @@ import akka.actor.typed.ActorSystem
 import akka.actor.typed.scaladsl.adapter._
 import akka.actor.{ActorSystem => ActorSystemClassic}
 import akka.http.scaladsl.Http
-import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route, RouteResult}
 import cats.effect.{ExitCode, IO, IOApp, Resource}
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.config.{AppConfig, BuildInfo}
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.{KamonMonitoring, KamonMonitoringCats}
 import ch.epfl.bluebrain.nexus.delta.plugin.PluginsLoader.PluginLoaderConfig
 import ch.epfl.bluebrain.nexus.delta.plugin.{PluginsLoader, WiringInitializer}
@@ -62,7 +62,7 @@ object Main extends IOApp {
       config: PluginLoaderConfig
   ): IO[(AppConfig, Config, ClassLoader, List[PluginDef])] =
     for {
-      (classLoader, pluginDefs) <- toCatsIO(PluginsLoader(config).load)
+      (classLoader, pluginDefs) <- PluginsLoader(config).load
       _                         <- logPlugins(pluginDefs)
       enabledDefs                = pluginDefs.filter(_.enabled)
       _                         <- validatePriority(enabledDefs)

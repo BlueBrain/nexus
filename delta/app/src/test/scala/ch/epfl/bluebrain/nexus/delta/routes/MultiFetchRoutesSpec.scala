@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.routes
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.server.Route
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ResourceGen
@@ -17,7 +18,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 import io.circe.Json
-import monix.bio.UIO
 
 class MultiFetchRoutesSpec extends BaseRouteSpec {
 
@@ -32,7 +32,7 @@ class MultiFetchRoutesSpec extends BaseRouteSpec {
   private val project2 = ProjectRef.unsafe("org", "proj2")
 
   private val permissions = Set(Permissions.resources.read)
-  private val aclCheck    = AclSimpleCheck((alice, project1, permissions)).runSyncUnsafe()
+  private val aclCheck    = AclSimpleCheck((alice, project1, permissions)).accepted
 
   private val successId      = nxv + "success"
   private val successContent =
@@ -45,8 +45,8 @@ class MultiFetchRoutesSpec extends BaseRouteSpec {
     (input: MultiFetchRequest.Input) => {
       input match {
         case MultiFetchRequest.Input(Latest(`successId`), `project1`) =>
-          UIO.some(successContent)
-        case _                                                        => UIO.none
+          IO.pure(Some(successContent))
+        case _                                                        => IO.none
       }
     }
 

@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.routes
 import akka.http.scaladsl.model.headers.`Last-Event-ID`
 import akka.http.scaladsl.model.{MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.Route
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViewsGen
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef.ActiveViewDef
@@ -69,7 +70,7 @@ class CompositeViewsIndexingRoutesSpec extends CompositeViewsRoutesFixtures {
 
   private val details: CompositeIndexingDetails = new CompositeIndexingDetails(
     (_) =>
-      UIO.pure(
+      IO.pure(
         CompositeProgress(
           Map(
             CompositeBranch(projectSource.id, esProjection.id, Main)         ->
@@ -79,7 +80,7 @@ class CompositeViewsIndexingRoutesSpec extends CompositeViewsRoutesFixtures {
           )
         )
       ),
-    (_, _, _) => UIO.some(RemainingElems(10, nowPlus5)),
+    (_, _, _) => IO.pure(Some(RemainingElems(10, nowPlus5))),
     "prefix"
   )
 

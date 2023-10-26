@@ -22,6 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit._
 import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
 import monix.execution.Scheduler
 import org.scalatest.CancelAfterFailure
 
@@ -29,6 +30,7 @@ import java.util.UUID
 
 class ElasticSearchViewsRoutesFixtures
     extends RouteHelpers
+    with CatsIOValues
     with DoobieScalaTestFixture
     with CirceLiteral
     with CirceEq

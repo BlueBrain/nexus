@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.projections
 
+import cats.effect.IO
 import cats.effect.concurrent.Ref
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeRestart.FullRestart
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.store.{CompositeProgressStore, CompositeRestartStore}
@@ -14,15 +15,17 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionProgress
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.{BioSuite, PatienceConfig}
+import ch.epfl.bluebrain.nexus.testkit.mu.bio.PatienceConfig
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import fs2.Stream
-import monix.bio.Task
+
 import munit.AnyFixture
 
 import java.time.Instant
 import scala.concurrent.duration._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 
-class CompositeProjectionsSuite extends BioSuite with Doobie.Fixture with Doobie.Assertions with ConfigFixtures {
+class CompositeProjectionsSuite extends CatsEffectSuite with Doobie.Fixture with Doobie.Assertions with ConfigFixtures {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 
@@ -57,7 +60,7 @@ class CompositeProjectionsSuite extends BioSuite with Doobie.Fixture with Doobie
   // Check that view 2 is not affected by changes on view 1
   private def assertView2 = {
     val expected = Map(mainBranch1 -> view2Progress)
-    compositeProgressStore.progress(view2).assert(expected)
+    compositeProgressStore.progress(view2).assertEquals(expected)
   }
 
   // Save progress for view 1
@@ -80,7 +83,7 @@ class CompositeProjectionsSuite extends BioSuite with Doobie.Fixture with Doobie
     )
 
     for {
-      _ <- projections.progress(view).assert(expected)
+      _ <- projections.progress(view).assertEquals(expected)
       _ <- assertView2
     } yield ()
   }
@@ -88,9 +91,9 @@ class CompositeProjectionsSuite extends BioSuite with Doobie.Fixture with Doobie
   test("Save a composite restart and reset progress") {
     val restart = FullRestart(viewRef, Instant.EPOCH, Anonymous)
     for {
-      value   <- Ref.of[Task, Int](0)
-      inc      = Stream.eval(value.getAndUpdate(_ + 1)) ++ Stream.never[Task]
-      _       <- inc.through(projections.handleRestarts(viewRef)).compile.drain.start
+      value   <- Ref.of[IO, Int](0)
+      inc      = Stream.eval(value.getAndUpdate(_ + 1)) ++ Stream.never[IO]
+      _       <- toCatsIO(inc.translate(ioToTaskK).through(projections.handleRestarts(viewRef)).compile.drain).start
       _       <- value.get.eventually(1)
       _       <- compositeRestartStore.save(restart)
       expected = CompositeProgress(
@@ -106,7 +109,7 @@ class CompositeProjectionsSuite extends BioSuite with Doobie.Fixture with Doobie
   test("Delete all progress") {
     for {
       _ <- projections.deleteAll(view)
-      _ <- projections.progress(view).assert(CompositeProgress(Map.empty))
+      _ <- projections.progress(view).assertEquals(CompositeProgress(Map.empty))
     } yield ()
 
   }
