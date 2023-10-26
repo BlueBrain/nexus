@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.DiskStorageSaveFile
@@ -14,15 +15,15 @@ import java.nio.file.Files
 class StorageDeletionTaskSuite extends BioSuite with StorageFixtures {
 
   test("Delete content from local storage") {
-    implicit val subject: Subject                 = Anonymous
-    val project                                   = ProjectRef.unsafe("org", "proj")
-    val storageStream: Stream[Task, StorageValue] =
+    implicit val subject: Subject               = Anonymous
+    val project                                 = ProjectRef.unsafe("org", "proj")
+    val storageStream: Stream[IO, StorageValue] =
       Stream(
         diskVal,
         s3Val,
         remoteVal
       )
-    val storageDir                                = diskVal.rootDirectory(project)
+    val storageDir                              = diskVal.rootDirectory(project)
     for {
       uuid        <- UUIDF.random()
       // We create the storage directory the same way as in real conditions, when the first

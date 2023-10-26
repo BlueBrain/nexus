@@ -1,5 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 
+import cats.effect.IO
+import cats.implicits.catsSyntaxFlatMapOps
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.taskToIoK
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageDeletionTask.{init, logger}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
@@ -7,19 +11,19 @@ import ch.epfl.bluebrain.nexus.delta.sdk.deletion.ProjectDeletionTask
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.model.ProjectDeletionReport
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import com.typesafe.scalalogging.Logger
 import fs2.Stream
-import monix.bio.{Task, UIO}
+import monix.bio.Task
+import org.typelevel.log4cats
 
 /**
   * Creates a project deletion step that deletes the directory associated to a local storage and all the physical files
   * written under it. No deletion occurs for other types of storage.
   */
-final class StorageDeletionTask(currentStorages: ProjectRef => Stream[Task, StorageValue]) extends ProjectDeletionTask {
+final class StorageDeletionTask(currentStorages: ProjectRef => Stream[IO, StorageValue]) extends ProjectDeletionTask {
 
   override def apply(project: ProjectRef)(implicit subject: Subject): Task[ProjectDeletionReport.Stage] =
-    UIO.delay(logger.info(s"Starting deletion of local files for $project")) >>
-      run(project)
+    (logger.info(s"Starting deletion of local files for $project") >>
+      run(project)).to[Task]
 
   private def run(project: ProjectRef) =
     currentStorages(project)
@@ -29,11 +33,11 @@ final class StorageDeletionTask(currentStorages: ProjectRef => Stream[Task, Stor
         case (acc, remote: RemoteDiskStorageValue) =>
           val message =
             s"Deletion of files for remote storages is yet to be implemented. Files in folder '${remote.folder}' will remain."
-          UIO.delay(logger.warn(message)).as(acc ++ message)
+          logger.warn(message).as(acc ++ message)
         case (acc, s3: S3StorageValue)             =>
           val message =
             s"Deletion of files for S3 storages is yet to be implemented. Files in bucket '${s3.bucket}' will remain."
-          UIO.delay(logger.warn(message)).as(acc ++ message)
+          logger.warn(message).as(acc ++ message)
       }
       .compile
       .lastOrError
@@ -41,28 +45,31 @@ final class StorageDeletionTask(currentStorages: ProjectRef => Stream[Task, Stor
   private def deleteRecursively(project: ProjectRef, disk: DiskStorageValue) = {
     val directory = disk.rootDirectory(project)
     if (directory.exists)
-      Task.delay {
+      IO.delay {
         if (!directory.deleteRecursively()) {
           s"Local directory '${directory.path}' could not be deleted."
         } else
           s"Local directory '${directory.path}' have been deleted."
       }
     else
-      Task.pure(s"Local directory '${directory.path}' does no exist.")
+      IO.pure(s"Local directory '${directory.path}' does no exist.")
   }
 
 }
 
 object StorageDeletionTask {
 
-  private val logger: Logger = Logger[StorageDeletionTask]
+  private val logger: log4cats.Logger[IO] = Logger.cats[StorageDeletionTask]
 
   private val init = ProjectDeletionReport.Stage.empty("storage")
 
   def apply(storages: Storages) =
     new StorageDeletionTask(project =>
-      storages.currentStorages(project).evalMapFilter {
-        _.map(_.value).toTask
-      }
+      storages
+        .currentStorages(project)
+        .evalMapFilter {
+          _.map(_.value).toTask
+        }
+        .translate(taskToIoK)
     )
 }
