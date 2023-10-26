@@ -437,10 +437,7 @@ class ElasticSearchViewsSpec extends BaseIntegrationSpec {
     }
 
     "fail to fetch mapping without permission" in {
-      deltaClient.get[Json](s"/views/$fullId/test-resource:cell-view/_mapping", Anonymous) { (json, response) =>
-        response.status shouldEqual StatusCodes.Forbidden
-        json shouldEqual jsonContentOf("/iam/errors/unauthorized-access.json")
-      }
+      deltaClient.get[Json](s"/views/$fullId/test-resource:cell-view/_mapping", Anonymous) { expectForbidden }
     }
 
     "fail to fetch mapping for view that doesn't exist" in {

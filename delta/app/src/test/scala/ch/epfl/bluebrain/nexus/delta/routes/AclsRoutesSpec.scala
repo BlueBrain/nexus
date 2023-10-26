@@ -107,8 +107,7 @@ class AclsRoutesSpec extends BaseRouteSpec {
       forAll(paths) { case (path, address) =>
         val json = aclJson(userAcl(address)).removeKeys("_path")
         Put(s"/v1/acls$path", json.toEntity) ~> asUser ~> routes ~> check {
-          response.status shouldEqual StatusCodes.Forbidden
-          response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+          response.shouldBeForbidden
         }
       }
 

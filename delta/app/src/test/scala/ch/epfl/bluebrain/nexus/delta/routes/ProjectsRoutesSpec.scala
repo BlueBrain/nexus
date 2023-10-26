@@ -126,8 +126,7 @@ class ProjectsRoutesSpec extends BaseRouteSpec with IOFromMap {
     "fail to create a project without projects/create permission" in {
       aclCheck.append(AclAddress.Root, Anonymous -> Set(events.read)).accepted
       Put("/v1/projects/org1/proj", payload.toEntity) ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
 
@@ -195,8 +194,7 @@ class ProjectsRoutesSpec extends BaseRouteSpec with IOFromMap {
     "fail to update a project without projects/write permission" in {
       aclCheck.delete(AclAddress.Project(Label.unsafe("org1"), Label.unsafe("proj"))).accepted
       Put("/v1/projects/org1/proj?rev=1", payloadUpdated.toEntity) ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
 
@@ -236,8 +234,7 @@ class ProjectsRoutesSpec extends BaseRouteSpec with IOFromMap {
     "fail to deprecate a project without projects/write permission" in {
       aclCheck.subtract(AclAddress.Root, Anonymous -> Set(projectsPermissions.write)).accepted
       Delete("/v1/projects/org1/proj?rev=2") ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
 
@@ -325,8 +322,7 @@ class ProjectsRoutesSpec extends BaseRouteSpec with IOFromMap {
         )
       ) { path =>
         Get(path) ~> routes ~> check {
-          response.status shouldEqual StatusCodes.Forbidden
-          response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+          response.shouldBeForbidden
         }
       }
     }
@@ -470,8 +466,7 @@ class ProjectsRoutesSpec extends BaseRouteSpec with IOFromMap {
     "fail to get the project statistics without resources/read permission" in {
       aclCheck.subtract(AclAddress.Root, Anonymous -> Set(resources.read)).accepted
       Get("/v1/projects/org1/proj/statistics") ~> routes ~> check {
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
-        response.status shouldEqual StatusCodes.Forbidden
+        response.shouldBeForbidden
       }
     }
 
@@ -521,8 +516,7 @@ class ProjectsRoutesSpec extends BaseRouteSpec with IOFromMap {
 
     "fail to delete a project without projects/delete permission" in {
       Delete("/v1/projects/org1/proj?rev=3&prune=true") ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
 

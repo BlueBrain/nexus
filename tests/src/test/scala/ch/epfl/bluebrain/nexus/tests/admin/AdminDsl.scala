@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.tests.admin
 
-import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.{StatusCode, StatusCodes}
 import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.testkit.TestHelpers
 import ch.epfl.bluebrain.nexus.tests.Identity.Authenticated
 import ch.epfl.bluebrain.nexus.tests.Optics.{filterMetadataKeys, _}
 import ch.epfl.bluebrain.nexus.tests.config.TestsConfig
-import ch.epfl.bluebrain.nexus.tests.{CirceUnmarshalling, ExpectedResponse, HttpClient, Identity}
+import ch.epfl.bluebrain.nexus.tests.{CirceUnmarshalling, HttpClient, Identity}
 import io.circe.Json
 import org.scalatest.Assertion
 import org.scalatest.matchers.should.Matchers
@@ -82,25 +82,24 @@ class AdminDsl(cl: HttpClient, config: TestsConfig) extends TestHelpers with Cir
       id: String,
       description: String,
       authenticated: Authenticated,
-      expectedResponse: Option[ExpectedResponse] = None,
+      expectedStatus: Option[StatusCode] = None,
       ignoreConflict: Boolean = false
   ): IO[Assertion] =
-    updateOrganization(id, description, authenticated, 0, expectedResponse, ignoreConflict)
+    updateOrganization(id, description, authenticated, 0, expectedStatus, ignoreConflict)
 
   def updateOrganization(
       id: String,
       description: String,
       authenticated: Authenticated,
       rev: Int,
-      expectedResponse: Option[ExpectedResponse] = None,
+      expectedStatus: Option[StatusCode] = None,
       ignoreConflict: Boolean = false
   ): IO[Assertion] = {
     cl.put[Json](s"/orgs/$id${queryParams(rev)}", orgPayload(description), authenticated) { (json, response) =>
-      expectedResponse match {
-        case Some(e) =>
-          response.status shouldEqual e.statusCode
-          json shouldEqual e.json
-        case None    =>
+      expectedStatus match {
+        case Some(status) =>
+          response.status shouldEqual status
+        case None         =>
           if (ignoreConflict && response.status == StatusCodes.Conflict)
             succeed
           else {
@@ -167,7 +166,7 @@ class AdminDsl(cl: HttpClient, config: TestsConfig) extends TestHelpers with Cir
       projectId: String,
       json: Json,
       authenticated: Authenticated,
-      expectedResponse: Option[ExpectedResponse] = None
+      expectedResponse: Option[StatusCode] = None
   ): IO[Assertion] =
     updateProject(orgId, projectId, json, authenticated, 0, expectedResponse)
 
@@ -177,15 +176,14 @@ class AdminDsl(cl: HttpClient, config: TestsConfig) extends TestHelpers with Cir
       payload: Json,
       authenticated: Authenticated,
       rev: Int,
-      expectedResponse: Option[ExpectedResponse] = None
+      expectedResponse: Option[StatusCode] = None
   ): IO[Assertion] =
     logger.info(s"Creating/updating project $orgId/$projectId at revision $rev") >>
       cl.put[Json](s"/projects/$orgId/$projectId${queryParams(rev)}", payload, authenticated) { (json, response) =>
         expectedResponse match {
-          case Some(e) =>
-            response.status shouldEqual e.statusCode
-            json shouldEqual e.json
-          case None    =>
+          case Some(status) =>
+            response.status shouldEqual status
+          case None         =>
             if (rev == 0)
               response.status shouldEqual StatusCodes.Created
             else

@@ -60,8 +60,7 @@ class QuotasRoutesSpec extends BaseRouteSpec {
 
       "fail without quotas/read permissions" in {
         Get(s"/v1/quotas/org/project") ~> asAlice ~> routes ~> check {
-          response.status shouldEqual StatusCodes.Forbidden
-          response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+          response.shouldBeForbidden
         }
       }
     }

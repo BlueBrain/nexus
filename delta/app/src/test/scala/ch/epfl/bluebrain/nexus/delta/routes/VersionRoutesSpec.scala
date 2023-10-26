@@ -55,8 +55,7 @@ class VersionRoutesSpec extends BaseRouteSpec {
     "fail fetching plugins information without version/read permission" in {
       aclCheck.append(AclAddress.Root, Anonymous -> Set(events.read)).accepted
       Get("/v1/version") ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
 

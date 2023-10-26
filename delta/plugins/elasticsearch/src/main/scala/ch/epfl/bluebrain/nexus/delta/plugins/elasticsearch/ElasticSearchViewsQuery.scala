@@ -1,12 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import akka.http.scaladsl.model.Uri
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{AuthorizationFailed, DifferentElasticSearchViewType, ViewIsDeprecated, WrappedElasticSearchClientError}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{DifferentElasticSearchViewType, ViewIsDeprecated, WrappedElasticSearchClientError}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress.{Project => ProjectAcl}
+import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SortList
@@ -16,7 +18,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.{Json, JsonObject}
 import monix.bio.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 
 /**
   * Allows operations on Elasticsearch views
@@ -92,9 +93,9 @@ final class ElasticSearchViewsQueryImpl private[elasticsearch] (
       indices <- view match {
                    case v: IndexingView  =>
                      aclCheck
-                       .authorizeForOr(v.ref.project, v.permission)(AuthorizationFailed)
+                       .authorizeForOr(v.ref.project, v.permission)(AuthorizationFailed(v.ref.project, v.permission))
                        .as(Set(v.index))
-                       .toBIO[AuthorizationFailed]
+                       .toBIO[ElasticSearchViewRejection]
                    case v: AggregateView =>
                      aclCheck
                        .mapFilter[IndexingView, String](
@@ -114,9 +115,9 @@ final class ElasticSearchViewsQueryImpl private[elasticsearch] (
   )(implicit caller: Caller): IO[ElasticSearchViewRejection, Json] =
     for {
       view   <- aclCheck
-                  .authorizeForOr(project, permissions.write)(AuthorizationFailed)
+                  .authorizeForOr(project, permissions.write)(AuthorizationFailed(project, permissions.write))
                   .as(viewStore.fetch(id, project))
-                  .toBIO[AuthorizationFailed]
+                  .toBIO[ElasticSearchViewRejection]
       index  <- view.map {
                   case v: IndexingView  =>
                     IO.pure(v.index)

@@ -101,13 +101,11 @@ class ElemRoutesSpec extends BaseRouteSpec with CirceLiteral with IOFromMap {
 
       forAll(endpoints) { endpoint =>
         Get(endpoint) ~> `Last-Event-ID`("2") ~> routes ~> check {
-          response.status shouldEqual StatusCodes.Forbidden
-          response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+          response.shouldBeForbidden
         }
 
         Head(endpoint) ~> routes ~> check {
-          response.status shouldEqual StatusCodes.Forbidden
-          response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+          response.shouldBeForbidden
         }
       }
     }

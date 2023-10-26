@@ -102,8 +102,7 @@ class BlazegraphViewsIndexingRoutesSpec extends BlazegraphViewRoutesFixtures wit
     )
     forAll(endpoints) { endpoint =>
       Get(endpoint) ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("routes/errors/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
   }
@@ -150,8 +149,7 @@ class BlazegraphViewsIndexingRoutesSpec extends BlazegraphViewRoutesFixtures wit
   "fail to restart offset from view without resources/write permission" in {
 
     Delete(s"$viewEndpoint/offset") ~> routes ~> check {
-      response.status shouldEqual StatusCodes.Forbidden
-      response.asJson shouldEqual jsonContentOf("/routes/errors/authorization-failed.json")
+      response.shouldBeForbidden
     }
   }
 
@@ -175,8 +173,7 @@ class BlazegraphViewsIndexingRoutesSpec extends BlazegraphViewRoutesFixtures wit
     )
     forAll(endpoints) { endpoint =>
       Get(endpoint) ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("/routes/errors/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
   }
