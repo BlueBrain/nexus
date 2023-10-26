@@ -9,8 +9,7 @@ import cats.effect.{ExitCode, IO, IOApp, Resource}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.config.{AppConfig, BuildInfo}
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
-import ch.epfl.bluebrain.nexus.delta.kernel.kamon.{KamonMonitoring, KamonMonitoringCats}
+import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMonitoringCats
 import ch.epfl.bluebrain.nexus.delta.plugin.PluginsLoader.PluginLoaderConfig
 import ch.epfl.bluebrain.nexus.delta.plugin.{PluginsLoader, WiringInitializer}
 import ch.epfl.bluebrain.nexus.delta.sdk.PriorityRoute
@@ -154,7 +153,7 @@ object Main extends IOApp {
         s"Failed to perform an http binding on ${cfg.http.interface}:${cfg.http.port}"
       ) >> plugins
         .traverse(_.stop())
-        .timeout(30.seconds) >> KamonMonitoring.terminate
+        .timeout(30.seconds) >> KamonMonitoringCats.terminate
     }
 
     val release = IO.fromFuture(IO(as.terminate()))
