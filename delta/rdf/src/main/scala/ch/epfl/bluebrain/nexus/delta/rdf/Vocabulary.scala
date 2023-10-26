@@ -160,6 +160,7 @@ object Vocabulary {
     val score                 = Metadata("score")
     val self                  = Metadata("self")
     val source                = Metadata("source")
+    val tags                  = Metadata("tags")
     val tokenEndpoint         = Metadata("tokenEndpoint")
     val total                 = Metadata("total")
     val types                 = Metadata("types")
