@@ -51,6 +51,7 @@ final class RemoteDiskStorageClient(client: HttpClient, getAuthToken: AuthTokenP
     client
       .fromJsonTo[ResolvedServiceDescription](Get(baseUri.base))
       .toCatsIO
+      .map(_.copy(name = serviceName))
       .widen[ServiceDescription]
       .timeout(3.seconds)
       .recover(_ => ServiceDescription.unresolved(serviceName))
