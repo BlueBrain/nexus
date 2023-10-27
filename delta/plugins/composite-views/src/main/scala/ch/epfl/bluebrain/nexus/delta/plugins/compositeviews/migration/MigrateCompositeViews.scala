@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.migration
 
+import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
@@ -12,20 +13,19 @@ import doobie.implicits._
 import fs2.Stream
 import io.circe.Json
 import io.circe.syntax.EncoderOps
-import monix.bio.Task
 
 /**
   * Migration of composite views to inject index rev with the current rev value
   */
 final class MigrateCompositeViews(xas: Transactors) {
 
-  def run: Task[(Int, Int)] = {
+  def run: IO[(Int, Int)] = {
     for {
       _              <- Stream.eval(logger.info("Starting composite views migration"))
       migratedEvents <- migrateEvents
       migratedStates <- migrateStates
     } yield (migratedEvents, migratedStates)
-  }.compile.last.map(_.getOrElse((0, 0))).tapEval { count =>
+  }.compile.last.map(_.getOrElse((0, 0))).flatTap { count =>
     logger.info(s"Composite views migration is now complete with $count events/states updated")
   }
 
@@ -36,7 +36,7 @@ final class MigrateCompositeViews(xas: Transactors) {
           _.traverse { case (org, project, id, rev, value) =>
             val migrated = injectRev(value, rev)
             updateEvent(org, project, id, rev, migrated)
-          }.transact(xas.write)
+          }.transact(xas.writeCE)
         }
         .map { list =>
           Option.when(list.nonEmpty)((count + list.size, count + list.size))
@@ -53,7 +53,7 @@ final class MigrateCompositeViews(xas: Transactors) {
           _.traverse { case (org, project, id, tag, rev, value) =>
             val migrated = injectRev(value, rev)
             updateState(org, project, id, tag, migrated)
-          }.transact(xas.write)
+          }.transact(xas.writeCE)
         }
         .map { list =>
           Option.when(list.nonEmpty)((count + list.size, count + list.size))
@@ -67,7 +67,7 @@ final class MigrateCompositeViews(xas: Transactors) {
 
 object MigrateCompositeViews {
 
-  private val logger: Logger = Logger[MigrateCompositeViews]
+  private val logger = Logger.cats[MigrateCompositeViews]
 
   private[migration] def eventsToMigrate(xas: Transactors) =
     sql"""SELECT org, project, id, rev, value
@@ -78,7 +78,7 @@ object MigrateCompositeViews {
          |LIMIT 500""".stripMargin
       .query[(Label, Label, Iri, Int, Json)]
       .to[List]
-      .transact(xas.read)
+      .transact(xas.readCE)
 
   private[migration] def updateEvent(org: Label, project: Label, id: Iri, rev: Int, value: Json) =
     sql"""
@@ -111,7 +111,7 @@ object MigrateCompositeViews {
          |LIMIT 500""".stripMargin
       .query[(Label, Label, Iri, Tag, Int, Json)]
       .to[List]
-      .transact(xas.read)
+      .transact(xas.readCE)
 
   private[migration] def updateState(org: Label, project: Label, id: Iri, tag: Tag, value: Json) =
     sql"""

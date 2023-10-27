@@ -1,7 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.migration
 
+import cats.effect.IO
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.CatsEffectsClasspathResourceUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.migration.MigrateCompositeViews.{eventsToMigrate, statesToMigrate}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.migration.MigrateCompositeViewsSuite.{loadEvent, loadState}
@@ -11,20 +12,20 @@ import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, Tag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import doobie.postgres.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.BioSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import doobie.Get
 import munit.{AnyFixture, Location}
 import doobie.implicits._
 import io.circe.syntax.EncoderOps
 import io.circe.JsonObject
-import monix.bio.IO
 
 import java.time.Instant
 
-class MigrateCompositeViewsSuite extends BioSuite with Doobie.Fixture with ClasspathResourceUtils {
+class MigrateCompositeViewsSuite extends CatsEffectSuite with Doobie.Fixture with CatsEffectsClasspathResourceUtils {
 
   private val proj = ProjectRef.unsafe("myorg", "myproj")
 
@@ -46,7 +47,7 @@ class MigrateCompositeViewsSuite extends BioSuite with Doobie.Fixture with Class
 
   test("Insert states and events and run migration") {
     for {
-      _ <- initPartitions(xas, proj)
+      _ <- initPartitions(xas, proj).toCatsIO
       // Events to migrate
       _ <- loadEvent("migration/event-created.json")
       _ <- loadEvent("migration/event-updated.json")
@@ -60,7 +61,7 @@ class MigrateCompositeViewsSuite extends BioSuite with Doobie.Fixture with Class
       _ <- loadState(UserTag.unsafe("v1.0"), "composite-views/database/view-state.json")
       _ <- eventsToMigrate(xas).map(_.assertSize(2))
       _ <- statesToMigrate(xas).map(_.assertSize(2))
-      _ <- new MigrateCompositeViews(xas).run.assert((2, 2))
+      _ <- new MigrateCompositeViews(xas).run.assertEquals((2, 2))
       // Making sure all has been updated
       _ <- eventsToMigrate(xas).map(_.assertSize(0))
       _ <- statesToMigrate(xas).map(_.assertSize(0))
@@ -99,7 +100,7 @@ class MigrateCompositeViewsSuite extends BioSuite with Doobie.Fixture with Class
   }
 }
 
-object MigrateCompositeViewsSuite extends ClasspathResourceUtils {
+object MigrateCompositeViewsSuite extends CatsEffectsClasspathResourceUtils {
 
   def extractIdentifiers(json: JsonObject) = IO.fromOption {
     for {
@@ -108,7 +109,7 @@ object MigrateCompositeViewsSuite extends ClasspathResourceUtils {
       id         <- json("id").flatMap(_.asString)
       rev        <- json("rev").flatMap(_.asNumber.flatMap(_.toInt))
     } yield (project, id, rev)
-  }
+  }(new IllegalArgumentException("Could not extract project/id/rev from the json payload"))
 
   def loadEvent(jsonPath: String)(implicit xas: Transactors, classLoader: ClassLoader) = {
     def insert(project: ProjectRef, id: String, rev: Int, json: JsonObject) =
@@ -130,7 +131,7 @@ object MigrateCompositeViewsSuite extends ClasspathResourceUtils {
            |  $rev,
            |  ${json.asJson},
            |  ${Instant.EPOCH}
-           | )""".stripMargin.update.run.void.transact(xas.write)
+           | )""".stripMargin.update.run.void.transact(xas.writeCE)
 
     for {
       json               <- ioJsonObjectContentOf(jsonPath)
@@ -163,7 +164,7 @@ object MigrateCompositeViewsSuite extends ClasspathResourceUtils {
            |  ${json.asJson},
            |  ${false},
            |  ${Instant.EPOCH}
-           | )""".stripMargin.update.run.void.transact(xas.write)
+           | )""".stripMargin.update.run.void.transact(xas.writeCE)
 
     for {
       json               <- ioJsonObjectContentOf(jsonPath)

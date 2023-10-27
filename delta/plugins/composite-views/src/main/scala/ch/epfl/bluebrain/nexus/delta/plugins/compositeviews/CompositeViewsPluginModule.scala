@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
 import akka.actor.typed.ActorSystem
 import cats.effect.{Clock, ContextShift, IO}
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
@@ -43,7 +44,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionErrors
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeChain, ReferenceRegistry, Supervisor}
 import distage.ModuleDef
 import izumi.distage.model.definition.Id
-import monix.bio.Task
 import monix.execution.Scheduler
 
 class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
@@ -241,15 +241,13 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         config: CompositeViewsConfig,
         xas: Transactors
     ) =>
-      toCatsIO(
-        Task.when(isCompositeMigrationRunning)(new MigrateCompositeViews(xas).run.void) >>
-          CompositeViewsCoordinator(
-            compositeViews,
-            supervisor,
-            lifecycle,
-            config
-          )
-      )
+      IO.whenA(isCompositeMigrationRunning)(new MigrateCompositeViews(xas).run.void) >>
+        CompositeViewsCoordinator(
+          compositeViews,
+          supervisor,
+          lifecycle,
+          config
+        )
   }
 
   many[ProjectDeletionTask].add { (views: CompositeViews) => CompositeViewsDeletionTask(views) }
