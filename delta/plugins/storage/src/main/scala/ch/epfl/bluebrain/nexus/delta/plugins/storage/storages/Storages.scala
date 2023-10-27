@@ -1,11 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 
-import cats.effect.Clock
+import cats.effect.{Clock, IO}
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.ioToTaskK
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOInstant, UUIDF}
+import ch.epfl.bluebrain.nexus.delta.kernel.{Logger, Mapper}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageCommand._
@@ -28,14 +28,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
+import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, EntityType, ProjectRef, ResourceRef}
-import ch.epfl.bluebrain.nexus.delta.sourcing._
-import com.typesafe.scalalogging.Logger
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
 import fs2.Stream
 import io.circe.Json
-import monix.bio.{IO, Task, UIO}
+import org.typelevel.log4cats
 
 import java.time.Instant
 
@@ -64,10 +64,10 @@ final class Storages private (
   def create(
       projectRef: ProjectRef,
       source: Json
-  )(implicit caller: Caller): IO[StorageRejection, StorageResource] = {
+  )(implicit caller: Caller): IO[StorageResource] = {
     for {
-      pc                   <- fetchContext.onCreate(projectRef)
-      (iri, storageFields) <- sourceDecoder(projectRef, pc, source)
+      pc                   <- fetchContext.onCreate(projectRef).toCatsIO
+      (iri, storageFields) <- sourceDecoder(projectRef, pc, source).toCatsIO
       res                  <- eval(CreateStorage(iri, projectRef, storageFields, source, caller.subject))
       _                    <- unsetPreviousDefaultIfRequired(projectRef, res)
     } yield res
@@ -87,11 +87,11 @@ final class Storages private (
       id: IdSegment,
       projectRef: ProjectRef,
       source: Json
-  )(implicit caller: Caller): IO[StorageRejection, StorageResource] = {
+  )(implicit caller: Caller): IO[StorageResource] = {
     for {
-      pc            <- fetchContext.onCreate(projectRef)
-      iri           <- expandIri(id, pc)
-      storageFields <- sourceDecoder(projectRef, pc, iri, source)
+      pc            <- fetchContext.onCreate(projectRef).toCatsIO
+      iri           <- expandIri(id, pc).toCatsIO
+      storageFields <- sourceDecoder(projectRef, pc, iri, source).toCatsIO
       res           <- eval(CreateStorage(iri, projectRef, storageFields, source, caller.subject))
       _             <- unsetPreviousDefaultIfRequired(projectRef, res)
     } yield res
@@ -111,10 +111,10 @@ final class Storages private (
       id: IdSegment,
       projectRef: ProjectRef,
       storageFields: StorageFields
-  )(implicit caller: Caller): IO[StorageRejection, StorageResource] = {
+  )(implicit caller: Caller): IO[StorageResource] = {
     for {
-      pc    <- fetchContext.onCreate(projectRef)
-      iri   <- expandIri(id, pc)
+      pc    <- fetchContext.onCreate(projectRef).toCatsIO
+      iri   <- expandIri(id, pc).toCatsIO
       source = storageFields.toJson(iri)
       res   <- eval(CreateStorage(iri, projectRef, storageFields, source, caller.subject))
       _     <- unsetPreviousDefaultIfRequired(projectRef, res)
@@ -138,7 +138,7 @@ final class Storages private (
       projectRef: ProjectRef,
       rev: Int,
       source: Json
-  )(implicit caller: Caller): IO[StorageRejection, StorageResource] =
+  )(implicit caller: Caller): IO[StorageResource] =
     update(id, projectRef, rev, source, unsetPreviousDefault = true)
 
   private def update(
@@ -147,13 +147,13 @@ final class Storages private (
       rev: Int,
       source: Json,
       unsetPreviousDefault: Boolean
-  )(implicit caller: Caller): IO[StorageRejection, StorageResource] = {
+  )(implicit caller: Caller): IO[StorageResource] = {
     for {
-      pc            <- fetchContext.onModify(projectRef)
-      iri           <- expandIri(id, pc)
-      storageFields <- sourceDecoder(projectRef, pc, iri, source)
+      pc            <- fetchContext.onModify(projectRef).toCatsIO
+      iri           <- expandIri(id, pc).toCatsIO
+      storageFields <- sourceDecoder(projectRef, pc, iri, source).toCatsIO
       res           <- eval(UpdateStorage(iri, projectRef, storageFields, source, rev, caller.subject))
-      _             <- IO.when(unsetPreviousDefault)(unsetPreviousDefaultIfRequired(projectRef, res))
+      _             <- IO.whenA(unsetPreviousDefault)(unsetPreviousDefaultIfRequired(projectRef, res))
     } yield res
   }.span("updateStorage")
 
@@ -174,10 +174,10 @@ final class Storages private (
       projectRef: ProjectRef,
       rev: Int,
       storageFields: StorageFields
-  )(implicit caller: Caller): IO[StorageRejection, StorageResource] = {
+  )(implicit caller: Caller): IO[StorageResource] = {
     for {
-      pc    <- fetchContext.onModify(projectRef)
-      iri   <- expandIri(id, pc)
+      pc    <- fetchContext.onModify(projectRef).toCatsIO
+      iri   <- expandIri(id, pc).toCatsIO
       source = storageFields.toJson(iri)
       res   <- eval(UpdateStorage(iri, projectRef, storageFields, source, rev, caller.subject))
       _     <- unsetPreviousDefaultIfRequired(projectRef, res)
@@ -204,10 +204,10 @@ final class Storages private (
       tag: UserTag,
       tagRev: Int,
       rev: Int
-  )(implicit subject: Subject): IO[StorageRejection, StorageResource] = {
+  )(implicit subject: Subject): IO[StorageResource] = {
     for {
-      pc  <- fetchContext.onModify(projectRef)
-      iri <- expandIri(id, pc)
+      pc  <- fetchContext.onModify(projectRef).toCatsIO
+      iri <- expandIri(id, pc).toCatsIO
       res <- eval(TagStorage(iri, projectRef, tagRev, tag, rev, subject))
     } yield res
   }.span("tagStorage")
@@ -226,10 +226,10 @@ final class Storages private (
       id: IdSegment,
       projectRef: ProjectRef,
       rev: Int
-  )(implicit subject: Subject): IO[StorageRejection, StorageResource] = {
+  )(implicit subject: Subject): IO[StorageResource] = {
     for {
-      pc  <- fetchContext.onModify(projectRef)
-      iri <- expandIri(id, pc)
+      pc  <- fetchContext.onModify(projectRef).toCatsIO
+      iri <- expandIri(id, pc).toCatsIO
       res <- eval(DeprecateStorage(iri, projectRef, rev, subject))
     } yield res
   }.span("deprecateStorage")
@@ -242,11 +242,13 @@ final class Storages private (
     * @param project
     *   the project where the storage belongs
     */
-  def fetch[R](
+  def fetch[R <: Throwable](
       resourceRef: ResourceRef,
       project: ProjectRef
-  )(implicit rejectionMapper: Mapper[StorageFetchRejection, R]): IO[R, StorageResource] =
-    fetch(IdSegmentRef(resourceRef), project).mapError(rejectionMapper.to)
+  )(implicit rejectionMapper: Mapper[StorageFetchRejection, R]): IO[StorageResource] =
+    fetch(IdSegmentRef(resourceRef), project).adaptError { case err: StorageFetchRejection =>
+      rejectionMapper.to(err)
+    }
 
   /**
     * Fetch the last version of a storage
@@ -256,10 +258,10 @@ final class Storages private (
     * @param project
     *   the project where the storage belongs
     */
-  def fetch(id: IdSegmentRef, project: ProjectRef): IO[StorageFetchRejection, StorageResource] = {
+  def fetch(id: IdSegmentRef, project: ProjectRef): IO[StorageResource] = {
     for {
-      pc      <- fetchContext.onRead(project)
-      iri     <- expandIri(id.value, pc)
+      pc      <- fetchContext.onRead(project).toCatsIO
+      iri     <- expandIri(id.value, pc).toCatsIO
       notFound = StorageNotFound(iri, project)
       state   <- id match {
                    case Latest(_)        => log.stateOr(project, iri, notFound)
@@ -271,8 +273,11 @@ final class Storages private (
     } yield state.toResource
   }.span("fetchStorage")
 
-  private def fetchDefaults(project: ProjectRef): Stream[Task, StorageResource] =
-    log.currentStates(Scope.Project(project), _.toResource).filter(_.value.default)
+  private def fetchDefaults(project: ProjectRef): Stream[IO, StorageResource] =
+    log
+      .currentStates(Scope.Project(project), _.toResource)
+      .translate(taskToIoK)
+      .filter(_.value.default)
 
   /**
     * Fetches the default storage for a project.
@@ -280,18 +285,18 @@ final class Storages private (
     * @param project
     *   the project where to look for the default storage
     */
-  def fetchDefault(project: ProjectRef): IO[StorageRejection, StorageResource] = {
+  def fetchDefault(project: ProjectRef): IO[StorageResource] = {
     for {
-      defaultOpt <- fetchDefaults(project).reduce(updatedByDesc.min(_, _)).head.compile.last.hideErrors
-      default    <- IO.fromOption(defaultOpt, DefaultStorageNotFound(project))
+      defaultOpt <- fetchDefaults(project).reduce(updatedByDesc.min(_, _)).head.compile.last
+      default    <- IO.fromOption(defaultOpt)(DefaultStorageNotFound(project))
     } yield default
   }.span("fetchDefaultStorage")
 
   /**
     * Return the existing storages in a project in a finite stream
     */
-  def currentStorages(project: ProjectRef): ElemStream[StorageState] =
-    log.currentStates(Scope.Project(project)).translate(ioToTaskK).map {
+  def currentStorages(project: ProjectRef): Stream[IO, Elem[StorageState]] =
+    log.currentStates(Scope.Project(project)).map {
       _.toElem { s => Some(s.project) }
     }
 
@@ -299,7 +304,7 @@ final class Storages private (
       project: ProjectRef,
       current: StorageResource
   ) =
-    IO.when(current.value.default) {
+    IO.whenA(current.value.default) {
       fetchDefaults(project)
         .filter(_.id != current.id)
         .evalTap { storage =>
@@ -312,20 +317,24 @@ final class Storages private (
         }
         .compile
         .drain
-        .hideErrors >> UIO.unit
+        .void
     }
 
-  private def logFailureAndContinue[A](io: IO[StorageRejection, A]): UIO[Unit] =
-    io.mapError(err => logger.warn(err.reason)).attempt >> UIO.unit
+  private def logFailureAndContinue[A](io: IO[A]): IO[Unit] = {
+    io.onError { case err: StorageRejection =>
+      logger.warn(err.reason)
+    }.attemptNarrow[StorageRejection]
+      .void
+  }
 
-  private def eval(cmd: StorageCommand): IO[StorageRejection, StorageResource] =
-    log.evaluate(cmd.project, cmd.id, cmd).map(_._2.toResource)
+  private def eval(cmd: StorageCommand): IO[StorageResource] =
+    log.evaluate(cmd.project, cmd.id, cmd).toCatsIO.map(_._2.toResource)
 }
 
 object Storages {
 
   type StorageLog    = ScopedEventLog[Iri, StorageState, StorageCommand, StorageEvent, StorageRejection]
-  type StorageAccess = (Iri, StorageValue) => IO[StorageNotAccessible, Unit]
+  type StorageAccess = (Iri, StorageValue) => IO[Unit]
 
   /**
     * The storage entity type.
@@ -341,7 +350,7 @@ object Storages {
     */
   val mappings: ApiMappings = ApiMappings("storage" -> storageSchema, "defaultStorage" -> defaultStorageId)
 
-  implicit private[storages] val logger: Logger = Logger[Storages]
+  implicit private[storages] val logger: log4cats.Logger[IO] = Logger.cats[Storages]
 
   private[storages] def next(state: Option[StorageState], event: StorageEvent): Option[StorageState] = {
 
@@ -384,17 +393,17 @@ object Storages {
 
   private[storages] def evaluate(
       access: StorageAccess,
-      fetchPermissions: UIO[Set[Permission]],
+      fetchPermissions: IO[Set[Permission]],
       config: StorageTypeConfig
   )(
       state: Option[StorageState],
       cmd: StorageCommand
-  )(implicit clock: Clock[UIO]): IO[StorageRejection, StorageEvent] = {
+  )(implicit clock: Clock[IO]): IO[StorageEvent] = {
 
     def isDescendantOrEqual(target: AbsolutePath, parent: AbsolutePath): Boolean =
       target == parent || target.value.descendantOf(parent.value)
 
-    def verifyAllowedDiskVolume(id: Iri, value: StorageValue): IO[StorageNotAccessible, Unit] =
+    def verifyAllowedDiskVolume(id: Iri, value: StorageValue): IO[Unit] =
       value match {
         case d: DiskStorageValue if !config.disk.allowedVolumes.exists(isDescendantOrEqual(d.volume, _)) =>
           val err = s"Volume '${d.volume}' not allowed. Allowed volumes: '${config.disk.allowedVolumes.mkString(",")}'"
@@ -407,9 +416,9 @@ object Storages {
         config.amazon.as(StorageType.S3Storage) ++
         config.remoteDisk.as(StorageType.RemoteDiskStorage)
 
-    def validateAndReturnValue(id: Iri, fields: StorageFields): IO[StorageRejection, StorageValue] =
+    def validateAndReturnValue(id: Iri, fields: StorageFields): IO[StorageValue] =
       for {
-        value <- IO.fromOption(fields.toValue(config), InvalidStorageType(id, fields.tpe, allowedStorageTypes))
+        value <- IO.fromOption(fields.toValue(config))(InvalidStorageType(id, fields.tpe, allowedStorageTypes))
         _     <- validatePermissions(fields)
         _     <- access(id, value)
         _     <- verifyAllowedDiskVolume(id, value)
@@ -437,7 +446,7 @@ object Storages {
       case None    =>
         for {
           value   <- validateAndReturnValue(c.id, c.fields)
-          instant <- IOUtils.instant
+          instant <- IOInstant.now
         } yield StorageCreated(c.id, c.project, value, c.source, 1, instant, c.subject)
       case Some(_) =>
         IO.raiseError(ResourceAlreadyExists(c.id, c.project))
@@ -452,7 +461,7 @@ object Storages {
       case Some(s)                                =>
         for {
           value   <- validateAndReturnValue(c.id, c.fields)
-          instant <- IOUtils.instant
+          instant <- IOInstant.now
         } yield StorageUpdated(c.id, c.project, value, c.source, s.rev + 1, instant, c.subject)
     }
 
@@ -461,14 +470,14 @@ object Storages {
       case Some(s) if s.rev != c.rev                          => IO.raiseError(IncorrectRev(c.rev, s.rev))
       case Some(s) if c.targetRev <= 0 || c.targetRev > s.rev => IO.raiseError(RevisionNotFound(c.targetRev, s.rev))
       case Some(s)                                            =>
-        IOUtils.instant.map(StorageTagAdded(c.id, c.project, s.value.tpe, c.targetRev, c.tag, s.rev + 1, _, c.subject))
+        IOInstant.now.map(StorageTagAdded(c.id, c.project, s.value.tpe, c.targetRev, c.tag, s.rev + 1, _, c.subject))
     }
 
     def deprecate(c: DeprecateStorage) = state match {
       case None                      => IO.raiseError(StorageNotFound(c.id, c.project))
       case Some(s) if s.rev != c.rev => IO.raiseError(IncorrectRev(c.rev, s.rev))
       case Some(s) if s.deprecated   => IO.raiseError(StorageIsDeprecated(c.id))
-      case Some(s)                   => IOUtils.instant.map(StorageDeprecated(c.id, c.project, s.value.tpe, s.rev + 1, _, c.subject))
+      case Some(s)                   => IOInstant.now.map(StorageDeprecated(c.id, c.project, s.value.tpe, s.rev + 1, _, c.subject))
     }
 
     cmd match {
@@ -482,13 +491,13 @@ object Storages {
   def definition(
       config: StorageTypeConfig,
       access: StorageAccess,
-      fetchPermissions: UIO[Set[Permission]]
+      fetchPermissions: IO[Set[Permission]]
   )(implicit
-      clock: Clock[UIO]
+      clock: Clock[IO]
   ): ScopedEntityDefinition[Iri, StorageState, StorageCommand, StorageEvent, StorageRejection] =
     ScopedEntityDefinition(
       entityType,
-      StateMachine(None, evaluate(access, fetchPermissions, config), next),
+      StateMachine(None, evaluate(access, fetchPermissions, config)(_, _).toBIO[StorageRejection], next),
       StorageEvent.serializer,
       StorageState.serializer,
       Tagger[StorageEvent](
@@ -514,16 +523,16 @@ object Storages {
   def apply(
       fetchContext: FetchContext[StorageFetchRejection],
       contextResolution: ResolverContextResolution,
-      fetchPermissions: UIO[Set[Permission]],
+      fetchPermissions: IO[Set[Permission]],
       access: StorageAccess,
       xas: Transactors,
       config: StoragesConfig,
       serviceAccount: ServiceAccount
   )(implicit
       api: JsonLdApi,
-      clock: Clock[UIO],
+      clock: Clock[IO],
       uuidF: UUIDF
-  ): Task[Storages] = {
+  ): IO[Storages] = {
     implicit val rcr: RemoteContextResolution = contextResolution.rcr
 
     StorageDecoderConfiguration.apply
