@@ -5,7 +5,9 @@ import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.model.{HttpEntity, StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import akka.util.ByteString
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{SparqlQueryClientDummy, SparqlResults}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.ProjectContextRejection
@@ -27,7 +29,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import io.circe.Json
 import io.circe.syntax._
-import monix.bio.UIO
 
 class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures {
 
@@ -58,7 +59,7 @@ class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures {
     fetchContext,
     ResolverContextResolution(rcr),
     alwaysValidate,
-    _ => UIO.unit,
+    _ => IO.unit,
     eventLogConfig,
     prefix,
     xas
@@ -71,7 +72,7 @@ class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures {
     Map("resource-incoming-outgoing" -> linksResults)
   )
 
-  private val groupDirectives = DeltaSchemeDirectives(fetchContext, _ => UIO.none, _ => UIO.none)
+  private val groupDirectives = DeltaSchemeDirectives(fetchContext, _ => IO.none.toUIO, _ => IO.none.toUIO)
   private lazy val routes     =
     Route.seal(
       BlazegraphViewsRoutesHandler(

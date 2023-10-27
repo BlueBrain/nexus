@@ -6,8 +6,8 @@ import akka.testkit.TestKit
 import cats.data.NonEmptySet
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig.AlwaysGiveUp
-import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
+import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsQuery.BlazegraphQueryContext
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.SparqlNTriples
@@ -184,7 +184,7 @@ class BlazegraphViewsQuerySpec(docker: BlazegraphDocker)
       (alice.subject, AclAddress.Project(project1.ref), Set(queryPermission)),
       (bob.subject, AclAddress.Root, Set(queryPermission)),
       (Anonymous, AclAddress.Project(project2.ref), Set(queryPermission))
-    ).toUIO.flatMap { acls =>
+    ).flatMap { acls =>
       BlazegraphViewsQuery(acls, fetchContext, views, client, noopSlowQueryLogger, "prefix", xas)
     }.accepted
 

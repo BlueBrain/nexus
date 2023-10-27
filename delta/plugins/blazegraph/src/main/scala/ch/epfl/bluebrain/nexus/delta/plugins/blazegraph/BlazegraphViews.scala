@@ -1,10 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
-import cats.effect.Clock
+import cats.effect.{Clock, IO}
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.ioToTaskK
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOInstant, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.IndexingViewDef
@@ -37,7 +37,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import io.circe.Json
-import monix.bio.{IO, Task, UIO}
 
 import java.util.UUID
 
@@ -48,7 +47,7 @@ final class BlazegraphViews(
     log: BlazegraphLog,
     fetchContext: FetchContext[BlazegraphViewRejection],
     sourceDecoder: JsonLdSourceResolvingDecoder[BlazegraphViewRejection, BlazegraphViewValue],
-    createNamespace: ViewResource => IO[BlazegraphViewRejection, Unit],
+    createNamespace: ViewResource => IO[Unit],
     prefix: String
 ) {
 
@@ -62,10 +61,10 @@ final class BlazegraphViews(
     * @param source
     *   the payload to create the view
     */
-  def create(project: ProjectRef, source: Json)(implicit caller: Caller): IO[BlazegraphViewRejection, ViewResource] = {
+  def create(project: ProjectRef, source: Json)(implicit caller: Caller): IO[ViewResource] = {
     for {
-      pc               <- fetchContext.onCreate(project)
-      (iri, viewValue) <- sourceDecoder(project, pc, source)
+      pc               <- fetchContext.onCreate(project).toCatsIO
+      (iri, viewValue) <- sourceDecoder(project, pc, source).toCatsIO
       res              <- eval(CreateBlazegraphView(iri, project, viewValue, source, caller.subject))
       _                <- createNamespace(res)
     } yield res
@@ -85,11 +84,11 @@ final class BlazegraphViews(
       id: IdSegment,
       project: ProjectRef,
       source: Json
-  )(implicit caller: Caller): IO[BlazegraphViewRejection, ViewResource] = {
+  )(implicit caller: Caller): IO[ViewResource] = {
     for {
-      pc        <- fetchContext.onCreate(project)
-      iri       <- expandIri(id, pc)
-      viewValue <- sourceDecoder(project, pc, iri, source)
+      pc        <- fetchContext.onCreate(project).toCatsIO
+      iri       <- expandIri(id, pc).toCatsIO
+      viewValue <- sourceDecoder(project, pc, iri, source).toCatsIO
       res       <- eval(CreateBlazegraphView(iri, project, viewValue, source, caller.subject))
       _         <- createNamespace(res)
     } yield res
@@ -106,10 +105,10 @@ final class BlazegraphViews(
     */
   def create(id: IdSegment, project: ProjectRef, view: BlazegraphViewValue)(implicit
       subject: Subject
-  ): IO[BlazegraphViewRejection, ViewResource] = {
+  ): IO[ViewResource] = {
     for {
-      pc    <- fetchContext.onCreate(project)
-      iri   <- expandIri(id, pc)
+      pc    <- fetchContext.onCreate(project).toCatsIO
+      iri   <- expandIri(id, pc).toCatsIO
       source = view.toJson(iri)
       res   <- eval(CreateBlazegraphView(iri, project, view, source, subject))
       _     <- createNamespace(res)
@@ -132,11 +131,11 @@ final class BlazegraphViews(
       project: ProjectRef,
       rev: Int,
       source: Json
-  )(implicit caller: Caller): IO[BlazegraphViewRejection, ViewResource] = {
+  )(implicit caller: Caller): IO[ViewResource] = {
     for {
-      pc        <- fetchContext.onModify(project)
-      iri       <- expandIri(id, pc)
-      viewValue <- sourceDecoder(project, pc, iri, source)
+      pc        <- fetchContext.onModify(project).toCatsIO
+      iri       <- expandIri(id, pc).toCatsIO
+      viewValue <- sourceDecoder(project, pc, iri, source).toCatsIO
       res       <- eval(UpdateBlazegraphView(iri, project, viewValue, rev, source, caller.subject))
       _         <- createNamespace(res)
     } yield res
@@ -156,10 +155,10 @@ final class BlazegraphViews(
     */
   def update(id: IdSegment, project: ProjectRef, rev: Int, view: BlazegraphViewValue)(implicit
       subject: Subject
-  ): IO[BlazegraphViewRejection, ViewResource] = {
+  ): IO[ViewResource] = {
     for {
-      pc    <- fetchContext.onModify(project)
-      iri   <- expandIri(id, pc)
+      pc    <- fetchContext.onModify(project).toCatsIO
+      iri   <- expandIri(id, pc).toCatsIO
       source = view.toJson(iri)
       res   <- eval(UpdateBlazegraphView(iri, project, view, rev, source, subject))
       _     <- createNamespace(res)
@@ -186,10 +185,10 @@ final class BlazegraphViews(
       tag: UserTag,
       tagRev: Int,
       rev: Int
-  )(implicit subject: Subject): IO[BlazegraphViewRejection, ViewResource] = {
+  )(implicit subject: Subject): IO[ViewResource] = {
     for {
-      pc  <- fetchContext.onModify(project)
-      iri <- expandIri(id, pc)
+      pc  <- fetchContext.onModify(project).toCatsIO
+      iri <- expandIri(id, pc).toCatsIO
       res <- eval(TagBlazegraphView(iri, project, tagRev, tag, rev, subject))
       _   <- createNamespace(res)
     } yield res
@@ -209,10 +208,10 @@ final class BlazegraphViews(
       id: IdSegment,
       project: ProjectRef,
       rev: Int
-  )(implicit subject: Subject): IO[BlazegraphViewRejection, ViewResource] = {
+  )(implicit subject: Subject): IO[ViewResource] = {
     for {
-      pc  <- fetchContext.onModify(project)
-      iri <- expandIri(id, pc)
+      pc  <- fetchContext.onModify(project).toCatsIO
+      iri <- expandIri(id, pc).toCatsIO
       res <- eval(DeprecateBlazegraphView(iri, project, rev, subject))
     } yield res
   }.span("deprecateBlazegraphView")
@@ -229,7 +228,7 @@ final class BlazegraphViews(
     */
   private[blazegraph] def internalDeprecate(id: Iri, project: ProjectRef, rev: Int)(implicit
       subject: Subject
-  ): IO[BlazegraphViewRejection, Unit] =
+  ): IO[Unit] =
     eval(DeprecateBlazegraphView(id, project, rev, subject)).void
 
   /**
@@ -240,13 +239,13 @@ final class BlazegraphViews(
     * @param project
     *   the project to which the view belongs
     */
-  def fetch(id: IdSegmentRef, project: ProjectRef): IO[BlazegraphViewRejection, ViewResource] =
+  def fetch(id: IdSegmentRef, project: ProjectRef): IO[ViewResource] =
     fetchState(id, project).map(_.toResource)
 
   def fetchState(
       id: IdSegmentRef,
       project: ProjectRef
-  ): IO[BlazegraphViewRejection, BlazegraphViewState] = {
+  ): IO[BlazegraphViewState] = {
     for {
       pc      <- fetchContext.onRead(project)
       iri     <- expandIri(id.value, pc)
@@ -272,7 +271,7 @@ final class BlazegraphViews(
   def fetchIndexingView(
       id: IdSegmentRef,
       project: ProjectRef
-  ): IO[BlazegraphViewRejection, ActiveViewDef] =
+  ): IO[ActiveViewDef] =
     fetchState(id, project).flatMap { state =>
       IndexingViewDef(state, prefix) match {
         case Some(viewDef) =>
@@ -293,7 +292,7 @@ final class BlazegraphViews(
     */
   def currentIndexingViews(project: ProjectRef): ElemStream[IndexingViewDef] =
     log.currentStates(Scope.Project(project)).translate(ioToTaskK).evalMapFilter { envelope =>
-      Task.pure(toIndexViewDef(envelope))
+      IO.pure(toIndexViewDef(envelope)).toBIO[BlazegraphViewRejection]
     }
 
   /**
@@ -301,7 +300,7 @@ final class BlazegraphViews(
     */
   def currentIndexingViews: ElemStream[IndexingViewDef] =
     log.currentStates(Scope.Root).translate(ioToTaskK).evalMapFilter { envelope =>
-      Task.pure(toIndexViewDef(envelope))
+      IO.pure(toIndexViewDef(envelope)).toBIO[BlazegraphViewRejection]
     }
 
   /**
@@ -309,7 +308,7 @@ final class BlazegraphViews(
     */
   def indexingViews(start: Offset): ElemStream[IndexingViewDef] =
     log.states(Scope.Root, start).translate(ioToTaskK).evalMapFilter { envelope =>
-      Task.pure(toIndexViewDef(envelope))
+      IO.pure(toIndexViewDef(envelope)).toBIO[BlazegraphViewRejection]
     }
 
   private def toIndexViewDef(envelope: Envelope[BlazegraphViewState]) =
@@ -317,7 +316,7 @@ final class BlazegraphViews(
       IndexingViewDef(v, prefix)
     }
 
-  private def eval(cmd: BlazegraphViewCommand): IO[BlazegraphViewRejection, ViewResource] =
+  private def eval(cmd: BlazegraphViewCommand): IO[ViewResource] =
     log.evaluate(cmd.project, cmd.id, cmd).map(_._2.toResource)
 }
 
@@ -420,15 +419,15 @@ object BlazegraphViews {
   private[blazegraph] def evaluate(
       validate: ValidateBlazegraphView
   )(state: Option[BlazegraphViewState], cmd: BlazegraphViewCommand)(implicit
-      clock: Clock[UIO],
+      clock: Clock[IO],
       uuidF: UUIDF
-  ): IO[BlazegraphViewRejection, BlazegraphViewEvent] = {
+  ): IO[BlazegraphViewEvent] = {
 
     def create(c: CreateBlazegraphView) = state match {
       case None    =>
         for {
           _ <- validate(c.value)
-          t <- IOUtils.instant
+          t <- IOInstant.now
           u <- uuidF()
         } yield BlazegraphViewCreated(c.id, c.project, u, c.value, c.source, 1, t, c.subject)
       case Some(_) => IO.raiseError(ResourceAlreadyExists(c.id, c.project))
@@ -446,7 +445,7 @@ object BlazegraphViews {
       case Some(s)                               =>
         for {
           _ <- validate(c.value)
-          t <- IOUtils.instant
+          t <- IOInstant.now
         } yield BlazegraphViewUpdated(c.id, c.project, s.uuid, c.value, c.source, s.rev + 1, t, c.subject)
     }
 
@@ -458,7 +457,7 @@ object BlazegraphViews {
       case Some(s) if c.targetRev <= 0 || c.targetRev > s.rev =>
         IO.raiseError(RevisionNotFound(c.targetRev, s.rev))
       case Some(s)                                            =>
-        IOUtils.instant.map(
+        IOInstant.now.map(
           BlazegraphViewTagAdded(c.id, c.project, s.value.tpe, s.uuid, c.targetRev, c.tag, s.rev + 1, _, c.subject)
         )
     }
@@ -471,7 +470,7 @@ object BlazegraphViews {
       case Some(s) if s.deprecated   =>
         IO.raiseError(ViewIsDeprecated(c.id))
       case Some(s)                   =>
-        IOUtils.instant.map(BlazegraphViewDeprecated(c.id, c.project, s.value.tpe, s.uuid, s.rev + 1, _, c.subject))
+        IOInstant.now.map(BlazegraphViewDeprecated(c.id, c.project, s.value.tpe, s.uuid, s.rev + 1, _, c.subject))
     }
 
     cmd match {
@@ -482,7 +481,7 @@ object BlazegraphViews {
     }
   }
 
-  def definition(validate: ValidateBlazegraphView)(implicit clock: Clock[UIO], uuidF: UUIDF): ScopedEntityDefinition[
+  def definition(validate: ValidateBlazegraphView)(implicit clock: Clock[IO], uuidF: UUIDF): ScopedEntityDefinition[
     Iri,
     BlazegraphViewState,
     BlazegraphViewCommand,
@@ -493,7 +492,7 @@ object BlazegraphViews {
       entityType,
       StateMachine(
         None,
-        evaluate(validate),
+        evaluate(validate)(_, _).toBIO[BlazegraphViewRejection],
         next
       ),
       BlazegraphViewEvent.serializer,
@@ -534,9 +533,9 @@ object BlazegraphViews {
       xas: Transactors
   )(implicit
       api: JsonLdApi,
-      clock: Clock[UIO],
+      clock: Clock[IO],
       uuidF: UUIDF
-  ): Task[BlazegraphViews] = {
+  ): IO[BlazegraphViews] = {
     val createNameSpace = (v: ViewResource) =>
       v.value match {
         case i: IndexingBlazegraphView =>
@@ -544,6 +543,7 @@ object BlazegraphViews {
             .createNamespace(BlazegraphViews.namespace(i, prefix))
             .mapError(WrappedBlazegraphClientError.apply)
             .void
+            .toCatsIO
         case _                         => IO.unit
       }
     apply(fetchContext, contextResolution, validate, createNameSpace, eventLogConfig, prefix, xas)
@@ -553,15 +553,15 @@ object BlazegraphViews {
       fetchContext: FetchContext[BlazegraphViewRejection],
       contextResolution: ResolverContextResolution,
       validate: ValidateBlazegraphView,
-      createNamespace: ViewResource => IO[BlazegraphViewRejection, Unit],
+      createNamespace: ViewResource => IO[Unit],
       eventLogConfig: EventLogConfig,
       prefix: String,
       xas: Transactors
   )(implicit
       api: JsonLdApi,
-      clock: Clock[UIO],
+      clock: Clock[IO],
       uuidF: UUIDF
-  ): Task[BlazegraphViews] = {
+  ): IO[BlazegraphViews] = {
     implicit val rcr: RemoteContextResolution = contextResolution.rcr
 
     BlazegraphDecoderConfiguration.apply

@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes
 import akka.http.scaladsl.model.headers.`Last-Event-ID`
 import akka.http.scaladsl.model.{MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.Route
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.IndexingViewDef.ActiveViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{InvalidResourceId, ProjectContextRejection, ViewNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
@@ -24,7 +25,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.FailedElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionProgress
 import ch.epfl.bluebrain.nexus.testkit.bio.IOFromMap
 import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
-import monix.bio.IO
 
 import java.time.Instant
 import scala.concurrent.duration._
