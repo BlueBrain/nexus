@@ -81,6 +81,8 @@ object ResourceEvent {
     *   the instant when this event was created
     * @param subject
     *   the subject which created this event
+    * @param tag
+    *   an optional user-specified tag attached to the resource on creation
     */
   final case class ResourceCreated(
       id: Iri,
@@ -126,6 +128,8 @@ object ResourceEvent {
     *   the instant when this event was created
     * @param subject
     *   the subject which created this event
+    * @param tag
+    *   an optional user-specified tag attached to the resource on update
     */
   final case class ResourceUpdated(
       id: Iri,
@@ -140,7 +144,8 @@ object ResourceEvent {
       remoteContexts: Set[RemoteContextRef] = Set.empty,
       rev: Int,
       instant: Instant,
-      subject: Subject
+      subject: Subject,
+      tag: Option[UserTag]
   ) extends ResourceEvent
 
   final case class ResourceSchemaUpdated(

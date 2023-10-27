@@ -6,6 +6,7 @@
   "_project": "http://localhost/v1/projects/myorg/myproj",
   "_resourceId": "https://bluebrain.github.io/nexus/vocabulary/myId",
   "_rev": 2,
+  "tag": "mytag",
   "_schemaProject": "http://localhost/v1/projects/myorg/myproj",
   "_source": {
     "@context": [

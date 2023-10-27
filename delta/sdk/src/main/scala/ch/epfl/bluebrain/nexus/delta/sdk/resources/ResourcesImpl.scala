@@ -69,14 +69,15 @@ final class ResourcesImpl private (
       projectRef: ProjectRef,
       schemaOpt: Option[IdSegment],
       rev: Int,
-      source: Json
+      source: Json,
+      tag: Option[UserTag]
   )(implicit caller: Caller): IO[DataResource] = {
     for {
       projectContext <- fetchContext.onModify(projectRef).toCatsIO
       iri            <- expandIri(id, projectContext).toCatsIO
       schemeRefOpt   <- expandResourceRef(schemaOpt, projectContext)
       jsonld         <- sourceParser(projectRef, projectContext, iri, source).toCatsIO
-      res            <- eval(UpdateResource(iri, projectRef, schemeRefOpt, source, jsonld, rev, caller))
+      res            <- eval(UpdateResource(iri, projectRef, schemeRefOpt, source, jsonld, rev, caller, tag))
     } yield res
   }.span("updateResource")
 

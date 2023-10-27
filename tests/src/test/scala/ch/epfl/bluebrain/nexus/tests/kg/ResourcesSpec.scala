@@ -410,6 +410,21 @@ class ResourcesSpec extends BaseIntegrationSpec {
         }
       }
     }
+
+    "allow updating with a tag" in {
+      val payload = SimpleResource.sourcePayload(4)
+      val tag     = genString()
+
+      thereIsASchemaIn(project1) { schema =>
+        thereIsAResourceWithSchema(project1, schema) { id =>
+          val updateWithTag =
+            deltaClient.put[Json](s"/resources/$project1/$schema/$id?rev=1&tag=$tag", payload, Rick)(expectOk)
+          val fetchByTag    = deltaClient.get[Json](s"/resources/$project1/$schema/$id?tag=$tag", Rick)(expectOk)
+
+          (updateWithTag >> fetchByTag).accepted
+        }
+      }
+    }
   }
 
   "tagging a resource" should {
