@@ -1,6 +1,6 @@
 {
   "@context": "https://bbp.neuroshapes.org",
-  "@id": "https://bbp.epfl.ch/data/synapse",
+  "@id": "https://bbp.epfl.ch/data/synapse-two-pathways",
   "@type": [
     "Entity",
     "Parameter",
@@ -13,10 +13,10 @@
   "synapticPathway": {
     "postSynaptic": [
       {
-        "@id": "http://api.brain-map.org/api/v2/data/Structure/453",
-        "about": "BrainRegion",
-        "label": "Somatosensory areas",
-        "notation": "SS"
+        "@id": "http://api.brain-map.org/api/v2/data/Structure/454",
+        "about": "OtherBrainRegion",
+        "label": "Other somatosensory areas",
+        "notation": "OSS"
       }
     ],
     "preSynaptic": [

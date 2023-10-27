@@ -32,6 +32,7 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
   private val simulationCampaignId = "https://bbp.epfl.ch/data/simulation-campaign"
   private val simulationId         = "https://bbp.epfl.ch/data/simulation"
   private val synapseId            = "https://bbp.epfl.ch/data/synapse"
+  private val synapseTwoPathwaysId = "https://bbp.epfl.ch/data/synapse-two-pathways"
   private val detailedCircuitId    = "https://bbp.epfl.ch/data/detailed-circuit"
 
   // the resources that should appear in the search index
@@ -43,6 +44,7 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
     "/kg/search/neuron-morphology.json",
     "/kg/search/neuron-density.json",
     "/kg/search/synapse.json",
+    "/kg/search/synapse-two-pathways.json",
     "/kg/search/layer-thickness.json",
     "/kg/search/bouton-density.json",
     "/kg/search/detailed-circuit.json",
@@ -787,43 +789,53 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
       }
     }
 
-    "have the correct pre synaptic pathway" in {
-      val query    = queryField(synapseId, "preSynapticPathway")
-      val expected =
-        json"""{
-          "preSynapticPathway": [
-            {
-              "@id": "http://api.brain-map.org/api/v2/data/Structure/453",
-              "about": "https://bbp.epfl.ch/neurosciencegraph/data/BrainRegion",
-              "label": "Somatosensory areas",
-              "notation": "SS"
-            }
-          ]
-        }
-      """
-
-      assertOneSource(query) { json =>
-        json should equalIgnoreArrayOrder(expected)
-      }
-    }
-
-    "have the correct post synaptic pathway" in {
-      val query    = queryField(synapseId, "postSynapticPathway")
-      val expected =
-        json"""{
-          "postSynapticPathway": [
+    "have the correct synaptic pathways when they are different" in {
+      assertOneSource(queryDocument(synapseTwoPathwaysId)) { json =>
+        json should have(
+          field(
+            "preSynapticPathway",
+            json"""[
+              {
+                "@id": "http://api.brain-map.org/api/v2/data/Structure/453",
+                "about": "https://bbp.epfl.ch/neurosciencegraph/data/BrainRegion",
+                "label": "Somatosensory areas",
+                "notation": "SS"
+              }
+            ]"""
+          )
+        )
+        json should have(
+          field(
+            "postSynapticPathway",
+            json"""[
               {
                 "@id": "http://api.brain-map.org/api/v2/data/Structure/454",
                 "about": "https://bbp.epfl.ch/neurosciencegraph/data/OtherBrainRegion",
                 "label": "Other somatosensory areas",
                 "notation": "OSS"
               }
-            ]
-        }
-      """
+            ]"""
+          )
+        )
+      }
 
-      assertOneSource(query) { json =>
-        json should equalIgnoreArrayOrder(expected)
+    }
+
+    "have the correct synaptic pathways when they are the same" in {
+      val singlePathway =
+        json"""
+          [
+            {
+              "@id": "http://api.brain-map.org/api/v2/data/Structure/453",
+              "about": "https://bbp.epfl.ch/neurosciencegraph/data/BrainRegion",
+              "label": "Somatosensory areas",
+              "notation": "SS"
+            }
+          ]"""
+
+      assertOneSource(queryDocument(synapseId)) { json =>
+        json should have(field("preSynapticPathway", singlePathway))
+        json should have(field("postSynapticPathway", singlePathway))
       }
     }
   }
@@ -833,7 +845,10 @@ class SearchConfigIndexingSpec extends BaseIntegrationSpec {
     * the requested field
     */
   private def queryField(id: String, field: String) =
-    jsonContentOf("/kg/search/id-query.json", "id" -> id, "field" -> field)
+    jsonContentOf("/kg/search/id-query-single-field.json", "id" -> id, "field" -> field)
+
+  private def queryDocument(id: String)             =
+    jsonContentOf("/kg/search/id-query.json", "id" -> id)
 
   /** Post a resource across all defined projects in the suite */
   private def postResource(resourcePath: String): IO[List[Assertion]] = {
