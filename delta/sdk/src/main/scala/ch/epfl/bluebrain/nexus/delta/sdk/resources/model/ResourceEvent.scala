@@ -129,7 +129,7 @@ object ResourceEvent {
     * @param subject
     *   the subject which created this event
     * @param tag
-    *   an optional user-specified tag attached to the resource on update
+    *   an optional user-specified tag attached to the current resource revision when updated
     */
   final case class ResourceUpdated(
       id: Iri,
