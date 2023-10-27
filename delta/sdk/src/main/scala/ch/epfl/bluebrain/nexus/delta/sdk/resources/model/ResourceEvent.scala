@@ -82,7 +82,7 @@ object ResourceEvent {
     * @param subject
     *   the subject which created this event
     * @param tag
-    *   an optional user-specified tag attached to the resource on creation
+    *   an optional user-specified tag attached to the first revision of this resource
     */
   final case class ResourceCreated(
       id: Iri,
