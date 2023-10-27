@@ -216,14 +216,15 @@ final class Files(
       id: FileId,
       storageId: Option[IdSegment],
       rev: Int,
-      entity: HttpEntity
+      entity: HttpEntity,
+      tag: Option[UserTag]
   )(implicit caller: Caller): IO[FileResource] = {
     for {
       (iri, pc)             <- id.expandIri(fetchContext.onModify)
-      _                     <- test(UpdateFile(iri, id.project, testStorageRef, testStorageType, testAttributes, rev, caller.subject))
+      _                     <- test(UpdateFile(iri, id.project, testStorageRef, testStorageType, testAttributes, rev, caller.subject, tag))
       (storageRef, storage) <- fetchActiveStorage(storageId, id.project, pc)
       attributes            <- extractFileAttributes(iri, entity, storage)
-      res                   <- eval(UpdateFile(iri, id.project, storageRef, storage.tpe, attributes, rev, caller.subject))
+      res                   <- eval(UpdateFile(iri, id.project, storageRef, storage.tpe, attributes, rev, caller.subject, tag))
     } yield res
   }.span("updateFile")
 
@@ -251,16 +252,17 @@ final class Files(
       filename: Option[String],
       mediaType: Option[ContentType],
       path: Uri.Path,
-      rev: Int
+      rev: Int,
+      tag: Option[UserTag]
   )(implicit caller: Caller): IO[FileResource] = {
     for {
       (iri, pc)             <- id.expandIri(fetchContext.onModify)
-      _                     <- test(UpdateFile(iri, id.project, testStorageRef, testStorageType, testAttributes, rev, caller.subject))
+      _                     <- test(UpdateFile(iri, id.project, testStorageRef, testStorageType, testAttributes, rev, caller.subject, tag))
       (storageRef, storage) <- fetchActiveStorage(storageId, id.project, pc)
       resolvedFilename      <- IO.fromOption(filename.orElse(path.lastSegment))(InvalidFileLink(iri))
       description           <- FileDescription(resolvedFilename, mediaType)
       attributes            <- linkFile(storage, path, description, iri)
-      res                   <- eval(UpdateFile(iri, id.project, storageRef, storage.tpe, attributes, rev, caller.subject))
+      res                   <- eval(UpdateFile(iri, id.project, storageRef, storage.tpe, attributes, rev, caller.subject, tag))
     } yield res
   }.span("updateLink")
 
@@ -578,7 +580,7 @@ object Files {
     }
 
     def updated(e: FileUpdated): Option[FileState] = state.map { s =>
-      s.copy(rev = e.rev, storage = e.storage, storageType = e.storageType, attributes = e.attributes, updatedAt = e.instant, updatedBy = e.subject)
+      s.copy(rev = e.rev, storage = e.storage, storageType = e.storageType, attributes = e.attributes, tags = s.tags ++ Tags(e.tag, e.rev), updatedAt = e.instant, updatedBy = e.subject)
     }
 
     def updatedAttributes(e: FileAttributesUpdated): Option[FileState] =  state.map { s =>
@@ -628,7 +630,7 @@ object Files {
       case Some(s) if s.attributes.digest == NotComputedDigest => IO.raiseError(DigestNotComputed(c.id))
       case Some(s)                                             =>
         IOInstant.now
-          .map(FileUpdated(c.id, c.project, c.storage, c.storageType, c.attributes, s.rev + 1, _, c.subject))
+          .map(FileUpdated(c.id, c.project, c.storage, c.storageType, c.attributes, s.rev + 1, _, c.subject, c.tag))
     }
 
     def updateAttributes(c: UpdateFileAttributes) = state match {
@@ -695,7 +697,8 @@ object Files {
       FileState.serializer,
       Tagger[FileEvent](
         {
-          case f: FileCreated  => f.tag.flatMap(t => Some(t -> f.rev))
+          case f: FileCreated  => f.tag.map(t => t -> f.rev)
+          case f: FileUpdated  => f.tag.map(t => t -> f.rev)
           case f: FileTagAdded => Some(f.tag -> f.targetRev)
           case _               => None
         },

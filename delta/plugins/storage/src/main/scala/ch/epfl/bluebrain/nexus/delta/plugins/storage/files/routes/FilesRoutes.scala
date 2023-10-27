@@ -132,21 +132,22 @@ final class FilesRoutes(
                                   )
                                 }
                               )
-                            case (Some(rev), storage, _) =>
+                            case (Some(rev), storage, tag) =>
                               concat(
                                 // Update a Link
                                 entity(as[LinkFile]) { case LinkFile(filename, mediaType, path) =>
                                   emit(
                                     files
-                                      .updateLink(fileId, storage, filename, mediaType, path, rev)
+                                      .updateLink(fileId, storage, filename, mediaType, path, rev, tag)
                                       .index(mode)
                                       .attemptNarrow[FileRejection]
                                   )
                                 },
                                 // Update a file
                                 extractRequestEntity { entity =>
+                                  println(s"HIHI we should hit here, id: $id")
                                   emit(
-                                    files.update(fileId, storage, rev, entity).index(mode).attemptNarrow[FileRejection]
+                                    files.update(fileId, storage, rev, entity, tag).index(mode).attemptNarrow[FileRejection].flatTap(e => IO(println(s"ERROR for id $id: ${e.leftMap(_.reason)}")))
                                   )
                                 }
                               )

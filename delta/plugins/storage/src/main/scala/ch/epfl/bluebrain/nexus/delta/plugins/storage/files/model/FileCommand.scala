@@ -55,6 +55,8 @@ object FileCommand {
     *   the file attributes
     * @param subject
     *   the identity associated to this command
+    * @param tag
+    *   an optional user-specified tag attached to the file on creation
     */
   final case class CreateFile(
       id: Iri,
@@ -83,6 +85,8 @@ object FileCommand {
     *   the file attributes
     * @param subject
     *   the identity associated to this command
+    * @param tag
+    *   an optional user-specified tag attached to the current file revision when updated
     */
   final case class UpdateFile(
       id: Iri,
@@ -91,7 +95,8 @@ object FileCommand {
       storageType: StorageType,
       attributes: FileAttributes,
       rev: Int,
-      subject: Subject
+      subject: Subject,
+      tag: Option[UserTag]
   ) extends FileCommand
 
   /**

@@ -267,6 +267,46 @@ class FilesRoutesSpec
       }
     }
 
+    "update and tag a file in one request" in {
+      givenAFile { id =>
+        givenAUserWithDiskReadWritePermissions { _ =>
+//          val userCreds = addCredentials(OAuth2BearerToken(user))
+          Put(s"/v1/files/org/proj/$id?rev=1&tag=mytag", entity(s"${genString()}.txt")) ~> routes ~> check {
+            status shouldEqual StatusCodes.OK
+          }
+          Get(s"/v1/files/org/proj/$id?tag=mytag") ~> Accept(`*/*`) ~> routes ~> check {
+            status shouldEqual StatusCodes.OK
+          }
+        }
+      }
+    }
+
+    def givenAFile(test: String => Assertion): Assertion = {
+      val id = genString()
+      Put(s"/v1/files/org/proj/$id", entity(s"${genString()}.txt")) ~> routes ~> check {
+        status shouldEqual StatusCodes.Created
+      }
+      test(id)
+    }
+
+    def givenAUserWithDiskReadWritePermissions(test: String => Assertion): Assertion = {
+      val userId = genString()
+      val user: User = User(userId, realm)
+      val perms = Set(
+        permissions.read,
+        permissions.write,
+        storagesPermissions.write,
+        events.read,
+        s3Read,
+        s3Write,
+        diskRead,
+        diskWrite
+      )
+      val c: Caller = Caller(user, Set(user, Anonymous, Authenticated(realm), Group("group", realm)))
+      aclCheck.append(AclAddress.Root, c.subject -> perms).accepted
+      test(userId)
+    }
+
     "fail to update a file link using a storage that does not allow it" in {
       val payload = json"""{"filename": "my.txt", "path": "my/file.txt", "mediaType": "text/plain"}"""
       Put("/v1/files/org/proj/file1?rev=3", payload.toEntity) ~> routes ~> check {
