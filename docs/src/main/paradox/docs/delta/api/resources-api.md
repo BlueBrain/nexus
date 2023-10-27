@@ -91,9 +91,11 @@ Response
 This alternative endpoint to create a resource is useful in case the json payload does not contain an `@id` but you want 
 to specify one. The @id will be specified in the last segment of the endpoint URI.
 ```
-PUT /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}
+PUT /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}?tag={tag}
   {...}
 ```
+
+... where `{tag}` is an optional tag associated with the first revision of this resource. 
 
 The `{schema_id}` has the same behaviour as @ref:[the creation using post operation](#create-using-post).
 
@@ -119,10 +121,13 @@ In order to ensure a client does not perform any changes to a resource without h
 the resource, the last revision needs to be passed as a query parameter.
 
 ```
-PUT /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}?rev={previous_rev}
+PUT /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}?rev={previous_rev}&tag={tag}
   {...}
 ```
-... where `{previous_rev}` is the last known revision number for the resource.
+... where 
+
+- `{previous_rev}` is the last known revision number for the resource.
+- `{tag}` is an optional tag associated with the revision `{previous_rev}`.
 
 The `{schema_id}` segment allows to define an existing SHACL schema to validate the resource with:
 
