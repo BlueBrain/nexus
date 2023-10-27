@@ -19,7 +19,8 @@ import shapeless.Typeable
   *   a context to compute the compacted JSON-LD for of the [[GraphResource]]
   */
 final class GraphResourceToDocument(context: ContextValue, includeContext: Boolean)(implicit
-    cr: RemoteContextResolution
+    cr: RemoteContextResolution,
+    jsonLdOptions: JsonLdOptions
 ) extends Pipe {
   override type In  = GraphResource
   override type Out = Json
@@ -33,9 +34,8 @@ final class GraphResourceToDocument(context: ContextValue, includeContext: Boole
 
   /** Given a [[GraphResource]] returns a JSON-LD created from the merged graph and metadata graph */
   def graphToDocument(element: GraphResource): Task[Option[Json]] = {
-    implicit val jsonLdOptions = JsonLdOptions.AlwaysEmbed
-    val graph                  = element.graph ++ element.metadataGraph
-    val json                   =
+    val graph = element.graph ++ element.metadataGraph
+    val json  =
       if (element.source.isEmpty())
         graph
           .toCompactedJsonLd(context)

@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax.kamonSyntax
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
@@ -25,7 +26,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import fs2.Chunk
 import monix.bio.Task
 import shapeless.Typeable
@@ -123,7 +123,6 @@ final class Batch[SinkFormat](
   /** Replaces the graph of a provided [[GraphResource]] by extracting its new graph from the provided (full) graph. */
   private def replaceGraph(gr: GraphResource, fullGraph: Graph) = {
     implicit val api: JsonLdApi = JsonLdJavaApi.lenient
-    implicit val options        = JsonLdOptions.AlwaysEmbed
     fullGraph
       .replaceRootNode(iri"${gr.id}/alias")
       .toCompactedJsonLd(ContextValue.empty)
@@ -200,7 +199,8 @@ object CompositeSink {
       common: String,
       cfg: CompositeViewsConfig
   )(implicit rcr: RemoteContextResolution): ElasticSearchProjection => CompositeSink = { target =>
-    val esSink =
+    implicit val jsonLdOptions: JsonLdOptions = JsonLdOptions.AlwaysEmbed
+    val esSink                                =
       ElasticSearchSink.states(
         esClient,
         cfg.elasticsearchBatch.maxElements,

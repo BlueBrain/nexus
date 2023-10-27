@@ -89,10 +89,9 @@ abstract class ResourceShift[State <: ScopedState, A, M](
   private def toGraphResource(project: ProjectRef, resource: ResourceF[A])(implicit
       cr: RemoteContextResolution
   ): IO[GraphResource] = {
-    implicit val jsonLdOptions = JsonLdOptions.AlwaysEmbed
-    val content                = resourceToContent(resource)
-    val metadata               = content.metadata
-    val id                     = resource.resolvedId
+    val content  = resourceToContent(resource)
+    val metadata = content.metadata
+    val id       = resource.resolvedId
     for {
       graph             <- valueJsonLdEncoder.graph(resource.value).toCatsIO
       rootGraph          = graph.replaceRootNode(id)
