@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 import cats.effect.IO
 import cats.implicits.catsSyntaxFlatMapOps
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.taskToIoK
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageDeletionTask.{init, logger}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
@@ -68,8 +67,7 @@ object StorageDeletionTask {
       storages
         .currentStorages(project)
         .evalMapFilter {
-          _.map(_.value).toTask
+          _.map(_.value).toIO
         }
-        .translate(taskToIoK)
     )
 }

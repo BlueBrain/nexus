@@ -31,7 +31,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, EntityType, ProjectRef, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
 import fs2.Stream
 import io.circe.Json
 import org.typelevel.log4cats
@@ -294,8 +295,8 @@ final class Storages private (
   /**
     * Return the existing storages in a project in a finite stream
     */
-  def currentStorages(project: ProjectRef): ElemStream[StorageState] =
-    log.currentStates(Scope.Project(project)).translate(ioToTaskK).map {
+  def currentStorages(project: ProjectRef): Stream[IO, Elem[StorageState]] =
+    log.currentStates(Scope.Project(project)).map {
       _.toElem { s => Some(s.project) }
     }
 
