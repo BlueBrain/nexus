@@ -44,7 +44,10 @@ class JiraRoutes(
   private def extractUser: Directive1[User] = extractCaller.flatMap {
     _.subject match {
       case u: User => provide(u)
-      case _       => failWith(AuthorizationFailed)
+      case _       =>
+        extractRequest.flatMap { request =>
+          failWith(AuthorizationFailed(request))
+        }
     }
   }
 

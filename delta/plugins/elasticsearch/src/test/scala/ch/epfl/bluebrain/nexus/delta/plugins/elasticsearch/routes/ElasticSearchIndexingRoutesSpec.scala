@@ -132,8 +132,7 @@ class ElasticSearchIndexingRoutesSpec extends ElasticSearchViewsRoutesFixtures w
     )
     forAll(endpoints) { endpoint =>
       Get(endpoint) ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("/routes/errors/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
   }
@@ -180,8 +179,7 @@ class ElasticSearchIndexingRoutesSpec extends ElasticSearchViewsRoutesFixtures w
     aclCheck.subtract(AclAddress.Root, Anonymous -> Set(esPermissions.write)).accepted
 
     Delete(s"$viewEndpoint/offset") ~> routes ~> check {
-      response.status shouldEqual StatusCodes.Forbidden
-      response.asJson shouldEqual jsonContentOf("/routes/errors/authorization-failed.json")
+      response.shouldBeForbidden
     }
   }
 
@@ -204,8 +202,7 @@ class ElasticSearchIndexingRoutesSpec extends ElasticSearchViewsRoutesFixtures w
     )
     forAll(endpoints) { endpoint =>
       Get(endpoint) ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("/routes/errors/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
   }

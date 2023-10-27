@@ -92,8 +92,7 @@ class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures {
     "fail to create a view without permission" in {
       aclCheck.append(AclAddress.Root, Anonymous -> Set(events.read)).accepted
       Post("/v1/views/org/proj", indexingSource.toEntity) ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("routes/errors/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
     "create an indexing view" in {
@@ -150,8 +149,7 @@ class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures {
     }
     "fail to update a view without permission" in {
       Put("/v1/views/org/proj/aggregate-view?rev=1", aggregateSource.toEntity) ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("routes/errors/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
     "update a view" in {
@@ -178,8 +176,7 @@ class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures {
 
     "fail to deprecate a view without permission" in {
       Delete("/v1/views/org/proj/indexing-view?rev=3") ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("routes/errors/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
     "reject a deprecation of a view without rev" in {
@@ -205,9 +202,7 @@ class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures {
 
     "fail to fetch a view without permission" in {
       Get("/v1/views/org/proj/indexing-view") ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("routes/errors/authorization-failed.json")
-
+        response.shouldBeForbidden
       }
     }
     "fetch a view" in {
@@ -319,8 +314,7 @@ class BlazegraphViewsRoutesSpec extends BlazegraphViewRoutesFixtures {
         )
       ) { req =>
         req ~> routes ~> check {
-          response.status shouldEqual StatusCodes.Forbidden
-          response.asJson shouldEqual jsonContentOf("routes/errors/authorization-failed.json")
+          response.shouldBeForbidden
         }
       }
     }

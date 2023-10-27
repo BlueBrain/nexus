@@ -3,9 +3,9 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultViewId, permissions, ResourcesSearchParams}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.DefaultSearchRequest.{OrgSearch, ProjectSearch, RootSearch}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.ElasticSearchQueryError.AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
+import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SortList
 import ch.epfl.bluebrain.nexus.delta.sdk.views.View.IndexingView
@@ -104,7 +104,7 @@ class DefaultViewsQuerySuite extends BioSuite {
   }
 
   test(s"Raise an error for $project2 for a user with limited access on '$project1'") {
-    defaultViewsQuery.list(project2Search)(charlie).error(AuthorizationFailed)
+    defaultViewsQuery.list(project2Search)(charlie).terminated[AuthorizationFailed]
   }
 
   test(s"List only '$project1' default view in '$org' for a user with limited access on '$project1'") {
@@ -116,14 +116,14 @@ class DefaultViewsQuerySuite extends BioSuite {
   }
 
   test(s"Raise an error for $project1 for Anonymous") {
-    defaultViewsQuery.list(project1Search)(anon).error(AuthorizationFailed)
+    defaultViewsQuery.list(project1Search)(anon).terminated[AuthorizationFailed]
   }
 
   test(s"Raise an error for $org for Anonymous") {
-    defaultViewsQuery.list(org1Search)(anon).error(AuthorizationFailed)
+    defaultViewsQuery.list(org1Search)(anon).terminated[AuthorizationFailed]
   }
 
   test(s"Raise an error for root for Anonymous") {
-    defaultViewsQuery.list(rootSearch)(anon).error(AuthorizationFailed)
+    defaultViewsQuery.list(rootSearch)(anon).terminated[AuthorizationFailed]
   }
 }

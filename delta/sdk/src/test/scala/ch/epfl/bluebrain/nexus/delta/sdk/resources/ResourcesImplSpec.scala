@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionRepor
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{ResolverResolutionRejection, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.NexusSource.DecodingOption
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.Resource
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{BlankResourceId, IncorrectRev, InvalidJsonLdFormat, InvalidResource, InvalidSchemaRejection, ProjectContextRejection, ReservedResourceId, ResourceAlreadyExists, ResourceIsDeprecated, ResourceNotFound, RevisionNotFound, SchemaIsDeprecated, TagNotFound, UnexpectedResourceId, UnexpectedResourceSchema}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, DataResource}
@@ -441,6 +441,50 @@ class ResourcesImplSpec
           .refresh("nxv:myid6", projectRef, None)
           .rejectedWith[ResourceIsDeprecated]
       }
+    }
+
+    "updating a resource schema" should {
+
+      val id           = nxv + "schemaUpdate"
+      val sourceWithId = source deepMerge json"""{"@id": "$id"}"""
+
+      val nonExistentResourceId = iri"http://does.not.exist"
+      val nonExistentSchemaId   = iri"http://does.not.exist"
+      val nonExistentProject    = ProjectRef(Label.unsafe("not"), Label.unsafe("there"))
+
+      "reject if the resource doesn't exist" in {
+        resources
+          .updateAttachedSchema(nonExistentResourceId, projectRef, schema3.id)
+          .rejectedWith[ResourceNotFound]
+      }
+
+      "reject if the schema doesn't exist" in {
+        resources.create(id, projectRef, schema1.id, sourceWithId, None).accepted
+        resources
+          .updateAttachedSchema(id, projectRef, nonExistentSchemaId)
+          .rejectedWith[InvalidSchemaRejection]
+      }
+
+      "fetch if the provided schema is the existing resource schema" in {
+        val fetched = resources.updateAttachedSchema(id, projectRef, schema1.id).accepted
+        fetched.rev shouldEqual 1
+        fetched.schema.iri shouldEqual schema1.id
+      }
+
+      "reject if the project doesn't exist" in {
+        resources
+          .updateAttachedSchema(id, nonExistentProject, schema3.id)
+          .rejectedWith[ProjectContextRejection]
+      }
+
+      "succeed" in {
+        val updated = resources.updateAttachedSchema(id, projectRef, schema3.id).accepted
+        updated.schema.iri shouldEqual schema3.id
+
+        val fetched = resources.fetch(id, projectRef, None).accepted
+        fetched.schema.iri shouldEqual schema3.id
+      }
+
     }
 
     "tagging a resource" should {

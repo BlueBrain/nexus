@@ -8,9 +8,10 @@ import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef.ActiveViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.projectionIndex
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.ElasticSearchProjection
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{AuthorizationFailed, WrappedElasticSearchClientError}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.WrappedElasticSearchClientError
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.HttpResult
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
@@ -97,7 +98,8 @@ object ElasticSearchQuery {
         for {
           view       <- fetchView(id, project)
           projection <- fetchProjection(view, projectionId)
-          _          <- aclCheck.authorizeForOr(project, projection.permission)(AuthorizationFailed).toBIO[AuthorizationFailed]
+          _          <-
+            aclCheck.authorizeForOr(project, projection.permission)(AuthorizationFailed(project, projection.permission))
           index       = projectionIndex(projection, view.uuid, prefix).value
           search     <- elasticSearchQuery(query, Set(index), qp).mapError(WrappedElasticSearchClientError)
         } yield search
@@ -130,6 +132,8 @@ object ElasticSearchQuery {
             p => p.permission,
             p => projectionIndex(p, view.uuid, prefix).value
           )
-          .flatTap { indices => IO.raiseWhen(indices.isEmpty)(AuthorizationFailed) }
+          .flatTap { indices =>
+            IO.raiseWhen(indices.isEmpty)(AuthorizationFailed(s"No projection is accessible for view '${view.ref}'."))
+          }
     }
 }

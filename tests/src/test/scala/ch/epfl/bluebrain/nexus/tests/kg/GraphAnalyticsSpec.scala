@@ -85,10 +85,7 @@ final class GraphAnalyticsSpec extends BaseIntegrationSpec {
     }
 
     "fail to query when unauthorized" in {
-      deltaClient.post[Json](s"/graph-analytics/$ref/_search", matchPerson1, Anonymous) { (json, response) =>
-        response.status shouldEqual StatusCodes.Forbidden
-        json shouldEqual jsonContentOf("/iam/errors/unauthorized-access.json")
-      }
+      deltaClient.post[Json](s"/graph-analytics/$ref/_search", matchPerson1, Anonymous) { expectForbidden }
     }
 
     "query for person1" in eventually {

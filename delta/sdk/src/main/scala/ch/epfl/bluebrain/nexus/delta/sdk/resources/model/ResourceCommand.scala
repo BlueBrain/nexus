@@ -1,6 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resources.model
 
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdResult
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
@@ -46,6 +48,12 @@ object ResourceCommand {
     def project: ProjectRef
     def schemaOpt: Option[ResourceRef]
     def rev: Int
+  }
+
+  /** A [[ModifyCommand]] to use when the schema is not optional */
+  trait ModifyCommandWithSchema extends ModifyCommand {
+    def schemaRef: ResourceRef
+    def schemaOpt: Option[ResourceRef] = schemaRef.some
   }
 
   /**
@@ -135,6 +143,34 @@ object ResourceCommand {
       caller: Caller
   ) extends ResourceCommand
       with ModifyCommand {
+    def subject: Subject = caller.subject
+  }
+
+  /**
+    * Command that signals the intent to update the schema attached to a resource
+    *
+    * @param id
+    *   resource identifier
+    * @param project
+    *   project where the resource belongs
+    * @param schemaRef
+    *   schema of the resource
+    * @param expanded
+    *   expanded representation of the resource
+    * @param rev
+    *   last known revision of the resource
+    * @param caller
+    *   subject which created this event
+    */
+  final case class UpdateResourceSchema(
+      id: Iri,
+      project: ProjectRef,
+      schemaRef: ResourceRef,
+      expanded: ExpandedJsonLd,
+      rev: Int,
+      caller: Caller
+  ) extends ResourceCommand
+      with ModifyCommandWithSchema {
     def subject: Subject = caller.subject
   }
 

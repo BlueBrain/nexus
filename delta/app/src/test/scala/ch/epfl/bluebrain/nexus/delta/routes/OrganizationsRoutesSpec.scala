@@ -89,8 +89,7 @@ class OrganizationsRoutesSpec extends BaseRouteSpec with IOFromMap {
       val input = json"""{"description": "${org1.description.value}"}"""
 
       Put("/v1/orgs/org1", input.toEntity) ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
 
@@ -256,8 +255,7 @@ class OrganizationsRoutesSpec extends BaseRouteSpec with IOFromMap {
         )
       ) { path =>
         Get(path) ~> routes ~> check {
-          response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
-          response.status shouldEqual StatusCodes.Forbidden
+          response.shouldBeForbidden
         }
       }
     }

@@ -41,8 +41,7 @@ class PermissionsRoutesSpec extends BaseRouteSpec with CatsIOValues {
     "fail to fetch permissions without permissions/read permission" in {
       aclCheck.append(AclAddress.Root, Anonymous -> Set(permissionsPerms.write)).accepted
       Get("/v1/permissions") ~> Accept(`*/*`) ~> route ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
 
@@ -81,31 +80,27 @@ class PermissionsRoutesSpec extends BaseRouteSpec with CatsIOValues {
       aclCheck.subtract(AclAddress.Root, Anonymous -> Set(permissionsPerms.write)).accepted
       val replace = json"""{"permissions": ["${realms.write}"]}"""
       Put("/v1/permissions?rev=1", replace.toEntity) ~> Accept(`*/*`) ~> route ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
 
     "fail to append permissions without permissions/write permission" in {
       val append = json"""{"@type": "Append", "permissions": ["${realms.read}", "${orgs.read}"]}"""
       Patch("/v1/permissions?rev=2", append.toEntity) ~> Accept(`*/*`) ~> route ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
 
     "fail to subtract permissions without permissions/write permission" in {
       val subtract = json"""{"@type": "Subtract", "permissions": ["${realms.read}", "${realms.write}"]}"""
       Patch("/v1/permissions?rev=3", subtract.toEntity) ~> Accept(`*/*`) ~> route ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
 
     "fail to delete permissions without permissions/write permission" in {
       Delete("/v1/permissions?rev=4") ~> Accept(`*/*`) ~> route ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
 

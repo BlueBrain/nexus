@@ -2,7 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.sdk.projects
 
 import akka.http.scaladsl.model.{HttpHeader, StatusCode}
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.sdk.ProjectResource
+import ch.epfl.bluebrain.nexus.delta.sdk.error.SDKError
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection
@@ -14,7 +16,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import io.circe.{Encoder, JsonObject}
 import monix.bio.{IO, UIO}
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 
 import scala.collection.concurrent
 
@@ -97,7 +98,7 @@ object FetchContext {
   /**
     * A rejection allowing to align the different possible rejection when fetching a context
     */
-  sealed trait ContextRejection {
+  sealed trait ContextRejection extends SDKError {
 
     /**
       * The underlying rejection type
@@ -180,14 +181,17 @@ object FetchContext {
       override def onCreate(ref: ProjectRef)(implicit subject: Subject): IO[ContextRejection, ProjectContext] =
         quotas
           .reachedForResources(ref, subject)
-          .leftWiden[QuotaRejection]
-          .mapError[ContextRejection](e => ContextRejection(e)) >>
+          .adaptError { case e: QuotaRejection => ContextRejection(e) }
+          .toBIO[ContextRejection] >>
           onModify(ref)
 
       override def onModify(ref: ProjectRef)(implicit subject: Subject): IO[ContextRejection, ProjectContext] =
         for {
           _       <- fetchActiveOrganization(ref.organization).mapError(ContextRejection.apply(_))
-          _       <- quotas.reachedForEvents(ref, subject).leftWiden[QuotaRejection].mapError(ContextRejection.apply(_))
+          _       <- quotas
+                       .reachedForEvents(ref, subject)
+                       .adaptError { case e: QuotaRejection => ContextRejection(e) }
+                       .toBIO[ContextRejection]
           context <- onWrite(ref)
         } yield context
     }

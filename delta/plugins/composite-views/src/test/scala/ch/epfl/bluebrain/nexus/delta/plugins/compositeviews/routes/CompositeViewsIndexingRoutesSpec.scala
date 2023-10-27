@@ -123,8 +123,7 @@ class CompositeViewsIndexingRoutesSpec extends CompositeViewsRoutesFixtures {
       forAll(endpoints) { endpoint =>
         forAll(List(Get(endpoint), Delete(endpoint))) { req =>
           req ~> routes ~> check {
-            response.status shouldEqual StatusCodes.Forbidden
-            response.asJson shouldEqual jsonContentOf("routes/errors/authorization-failed.json")
+            response.shouldBeForbidden
           }
         }
       }
@@ -184,8 +183,7 @@ class CompositeViewsIndexingRoutesSpec extends CompositeViewsRoutesFixtures {
 
     "fail to fetch indexing description without permission" in {
       Get(s"$viewEndpoint/description") ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("routes/errors/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
 
@@ -245,8 +243,7 @@ class CompositeViewsIndexingRoutesSpec extends CompositeViewsRoutesFixtures {
       )
       forAll(endpoints) { endpoint =>
         Get(endpoint) ~> routes ~> check {
-          response.status shouldEqual StatusCodes.Forbidden
-          response.asJson shouldEqual jsonContentOf("/routes/errors/authorization-failed.json")
+          response.shouldBeForbidden
         }
       }
     }

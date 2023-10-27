@@ -1,18 +1,18 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.projects
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.{OrganizationIsDeprecated, OrganizationNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.{ProjectIsDeprecated, ProjectIsMarkedForDeletion, ProjectNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.quotas.Quotas
-import ch.epfl.bluebrain.nexus.delta.sdk.quotas.model.QuotaRejection.QuotaReached
 import ch.epfl.bluebrain.nexus.delta.sdk.quotas.model.QuotaRejection.QuotaReached.{QuotaEventsReached, QuotaResourcesReached}
 import ch.epfl.bluebrain.nexus.delta.sdk.quotas.model.{Quota, QuotaRejection}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.mu.bio.BioSuite
-import monix.bio.IO
+import monix.bio.{IO => BIO}
 
 class FetchContextSuite extends BioSuite {
 
@@ -21,10 +21,10 @@ class FetchContextSuite extends BioSuite {
   private val activeOrg     = Label.unsafe("org")
   private val deprecatedOrg = Label.unsafe("deprecated")
 
-  private def fetchActiveOrganization(label: Label): IO[OrganizationRejection, Unit] = label match {
-    case `activeOrg`     => IO.unit
-    case `deprecatedOrg` => IO.raiseError(OrganizationIsDeprecated(deprecatedOrg))
-    case _               => IO.raiseError(OrganizationNotFound(label))
+  private def fetchActiveOrganization(label: Label): BIO[OrganizationRejection, Unit] = label match {
+    case `activeOrg`     => BIO.unit
+    case `deprecatedOrg` => BIO.raiseError(OrganizationIsDeprecated(deprecatedOrg))
+    case _               => BIO.raiseError(OrganizationNotFound(label))
   }
 
   private val activeProject     = ProjectRef.unsafe("org", "proj")
@@ -36,25 +36,25 @@ class FetchContextSuite extends BioSuite {
     ProjectGen.project(deprecatedProject.organization.value, deprecatedProject.project.value)
 
   private def fetchProject(ref: ProjectRef) = ref match {
-    case `activeProject`     => IO.pure(ProjectGen.resourceFor(activeProjectValue))
+    case `activeProject`     => BIO.pure(ProjectGen.resourceFor(activeProjectValue))
     case `deletedProject`    =>
-      IO.pure(
+      BIO.pure(
         ProjectGen.resourceFor(
           ProjectGen.project(deletedProject.organization.value, deletedProject.project.value),
           markedForDeletion = true
         )
       )
-    case `deprecatedProject` => IO.pure(ProjectGen.resourceFor(deprecatedProjectValue, deprecated = true))
-    case _                   => IO.raiseError(ProjectNotFound(ref))
+    case `deprecatedProject` => BIO.pure(ProjectGen.resourceFor(deprecatedProjectValue, deprecated = true))
+    case _                   => BIO.raiseError(ProjectNotFound(ref))
   }
 
   private def quotas(resources: Boolean, events: Boolean) = new Quotas {
-    override def fetch(ref: ProjectRef): IO[QuotaRejection, Quota] = IO.pure(Quota(Some(0), Some(0)))
+    override def fetch(ref: ProjectRef): IO[Quota] = IO.pure(Quota(Some(0), Some(0)))
 
-    override def reachedForResources(ref: ProjectRef, subject: Subject): IO[QuotaReached, Unit] =
+    override def reachedForResources(ref: ProjectRef, subject: Subject): IO[Unit] =
       IO.raiseWhen(resources)(QuotaResourcesReached(ref, 0))
 
-    override def reachedForEvents(ref: ProjectRef, subject: Subject): IO[QuotaReached, Unit] =
+    override def reachedForEvents(ref: ProjectRef, subject: Subject): IO[Unit] =
       IO.raiseWhen(events)(QuotaEventsReached(ref, 0))
   }
 

@@ -2,15 +2,16 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
 import cats.effect.IO
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.Aux
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef.ActiveViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.{commonNamespace, projectionNamespace}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.SparqlProjection
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{AuthorizationFailed, WrappedBlazegraphClientError}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.WrappedBlazegraphClientError
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
@@ -115,7 +116,9 @@ object BlazegraphQuery {
         for {
           view       <- fetchView(id, project)
           permissions = view.sparqlProjections.map(_.permission)
-          _          <- aclCheck.authorizeForEveryOr(project, permissions)(AuthorizationFailed).toBIO[AuthorizationFailed]
+          _          <- aclCheck.authorizeForEveryOr(project, permissions)(
+                          AuthorizationFailed(s"Defined permissions on sparql projection on '${view.ref}' are missing.")
+                        )
           namespace   = commonNamespace(view.uuid, view.indexingRev, prefix)
           result     <- client.query(Set(namespace), query, responseType).mapError(WrappedBlazegraphClientError)
         } yield result
@@ -130,7 +133,8 @@ object BlazegraphQuery {
         for {
           view       <- fetchView(id, project)
           projection <- fetchProjection(view, projectionId)
-          _          <- aclCheck.authorizeForOr(project, projection.permission)(AuthorizationFailed).toBIO[AuthorizationFailed]
+          _          <-
+            aclCheck.authorizeForOr(project, projection.permission)(AuthorizationFailed(project, projection.permission))
           namespace   = projectionNamespace(projection, view.uuid, prefix)
           result     <- client.query(Set(namespace), query, responseType).mapError(WrappedBlazegraphClientError)
         } yield result
@@ -162,6 +166,8 @@ object BlazegraphQuery {
             p => p.permission,
             p => projectionNamespace(p, view.uuid, prefix)
           )
-          .flatTap { namespaces => IO.raiseWhen(namespaces.isEmpty)(AuthorizationFailed) }
+          .flatTap { namespaces =>
+            IO.raiseWhen(namespaces.isEmpty)(AuthorizationFailed(s"No views are accessible for view '${view.ref}'."))
+          }
     }
 }
