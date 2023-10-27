@@ -167,12 +167,12 @@ sealed trait Elem[+A] extends Product with Serializable {
   }
 
   /**
-   * Returns the value as an [[IO]], raising a error on the failed case
-   */
+    * Returns the value as an [[IO]], raising a error on the failed case
+    */
   def toIO: IO[Option[A]] = this match {
     case e: SuccessElem[A] => IO.pure(Some(e.value))
-    case f: FailedElem => IO.raiseError(f.throwable)
-    case _: DroppedElem => IO.none
+    case f: FailedElem     => IO.raiseError(f.throwable)
+    case _: DroppedElem    => IO.none
   }
 
   /**
