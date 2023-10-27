@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.statistics
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.EventMetricsProjection.{eventMetricsIndex, initMetricsIndex}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
@@ -12,15 +13,18 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.SupervisorSetup
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.SupervisorSetup.unapply
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.{BioSuite, PatienceConfig}
-import monix.bio.IO
+import ch.epfl.bluebrain.nexus.testkit.bio.BioRunContext
+import ch.epfl.bluebrain.nexus.testkit.mu.bio.{BIOValues, PatienceConfig}
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import munit.AnyFixture
 
 import scala.concurrent.duration.DurationInt
 
 class StoragesStatisticsSuite
-    extends BioSuite
+    extends CatsEffectSuite
+    with BioRunContext
     with ElasticSearchClientSetup.Fixture
+    with BIOValues
     with SupervisorSetup.Fixture
     with TestHelpers {
 
@@ -35,7 +39,7 @@ class StoragesStatisticsSuite
   private val indexPrefix = "delta"
   private val index       = eventMetricsIndex(indexPrefix)
 
-  private val stats = (client: ElasticSearchClient) =>
+  private def stats = (client: ElasticSearchClient) =>
     StoragesStatistics.apply(client, (storage, _) => IO.pure(Iri.unsafe(storage.toString)), indexPrefix)
 
   test("Run the event metrics projection") {

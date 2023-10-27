@@ -1,23 +1,23 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 
 import akka.http.scaladsl.model.Uri.Query
+import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.EventMetricsProjection.eventMetricsIndex
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageFetchRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageStatEntry
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.literal._
 import io.circe.{DecodingFailure, JsonObject}
-import monix.bio.{IO, UIO}
 
 trait StoragesStatistics {
 
   /**
     * Retrieve the current statistics for a given storage in the given project
     */
-  def get(idSegment: IdSegment, project: ProjectRef): IO[StorageFetchRejection, StorageStatEntry]
+  def get(idSegment: IdSegment, project: ProjectRef): IO[StorageStatEntry]
 
 }
 
@@ -35,18 +35,18 @@ object StoragesStatistics {
     */
   def apply(
       client: ElasticSearchClient,
-      fetchStorageId: (IdSegment, ProjectRef) => IO[StorageFetchRejection, Iri],
+      fetchStorageId: (IdSegment, ProjectRef) => IO[Iri],
       indexPrefix: String
   ): StoragesStatistics = {
     val search = (jsonObject: JsonObject) =>
-      client.search(jsonObject, Set(eventMetricsIndex(indexPrefix).value), Query.Empty)()
+      client.search(jsonObject, Set(eventMetricsIndex(indexPrefix).value), Query.Empty)().toCatsIO
 
     (idSegment: IdSegment, project: ProjectRef) => {
       for {
         storageId <- fetchStorageId(idSegment, project)
         query     <- storageStatisticsQuery(project, storageId)
-        result    <- search(query).hideErrors
-        stats     <- IO.fromEither(result.as[StorageStatEntry]).hideErrors
+        result    <- search(query)
+        stats     <- IO.fromEither(result.as[StorageStatEntry])
       } yield stats
     }
   }
@@ -59,9 +59,8 @@ object StoragesStatistics {
     * @return
     *   a query for the total number of files and the total size of a storage in a given project
     */
-  private def storageStatisticsQuery(projectRef: ProjectRef, storageId: Iri): UIO[JsonObject] =
-    IO.fromOption(
-      json"""
+  private def storageStatisticsQuery(projectRef: ProjectRef, storageId: Iri): IO[JsonObject] =
+    IO.fromOption(json"""
          {
           "query": {
             "bool": {
@@ -78,8 +77,6 @@ object StoragesStatistics {
           },
           "size": 0
         }
-        """.asObject,
-      DecodingFailure("Failed to decode ES statistics query.", List.empty)
-    ).hideErrors
+        """.asObject)(DecodingFailure("Failed to decode ES statistics query.", List.empty))
 
 }

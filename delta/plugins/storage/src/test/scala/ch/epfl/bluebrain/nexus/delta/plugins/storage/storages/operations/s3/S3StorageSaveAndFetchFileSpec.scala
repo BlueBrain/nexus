@@ -21,12 +21,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.testkit.minio.MinioDocker
 import ch.epfl.bluebrain.nexus.testkit.minio.MinioDocker._
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.Json
-import monix.execution.Scheduler
 import org.scalatest.{BeforeAndAfterAll, DoNotDiscover}
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
 import software.amazon.awssdk.regions.Region
 
 import java.util.UUID
@@ -34,14 +31,10 @@ import java.util.UUID
 @DoNotDiscover
 class S3StorageSaveAndFetchFileSpec(docker: MinioDocker)
     extends TestKit(ActorSystem("S3StorageSaveAndFetchFileSpec"))
-    with AnyWordSpecLike
+    with CatsEffectSpec
     with AkkaSourceHelpers
-    with Matchers
-    with BIOValues
     with StorageFixtures
     with BeforeAndAfterAll {
-
-  implicit private val sc: Scheduler = Scheduler.global
 
   private val iri      = iri"http://localhost/s3"
   private val uuid     = UUID.fromString("8049ba90-7cc6-4de5-93a1-802c04200dcc")
@@ -66,7 +59,7 @@ class S3StorageSaveAndFetchFileSpec(docker: MinioDocker)
       writePermission = write,
       maxFileSize = 20
     )
-    createBucket(storageValue).hideErrors.accepted
+    createBucket(storageValue).accepted
     storage = S3Storage(iri, project, storageValue, Tags.empty, Json.obj())
     attributes = FileAttributes(
       uuid,
@@ -81,7 +74,7 @@ class S3StorageSaveAndFetchFileSpec(docker: MinioDocker)
   }
 
   override protected def afterAll(): Unit = {
-    deleteBucket(storageValue).hideErrors.accepted
+    deleteBucket(storageValue).accepted
     super.afterAll()
   }
 
