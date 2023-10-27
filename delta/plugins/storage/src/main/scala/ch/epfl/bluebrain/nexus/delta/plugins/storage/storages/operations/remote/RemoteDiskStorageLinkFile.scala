@@ -14,7 +14,7 @@ import monix.bio.IO
 class RemoteDiskStorageLinkFile(storage: RemoteDiskStorage, client: RemoteDiskStorageClient) extends LinkFile {
 
   def apply(sourcePath: Uri.Path, description: FileDescription): IO[MoveFileRejection, FileAttributes] = {
-    val destinationPath = intermediateFolders(storage.project, description.uuid, description.filename)
+    val destinationPath = Uri.Path(intermediateFolders(storage.project, description.uuid, description.filename))
     client.moveFile(storage.value.folder, sourcePath, destinationPath)(storage.value.endpoint).map {
       case RemoteDiskStorageFileAttributes(location, bytes, digest, _) =>
         FileAttributes(

@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.archive.routes.ArchiveRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.FileNotFound
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{File, FileAttributes, FileRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{File, FileAttributes}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutesSpec
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{schemas, FileGen}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
@@ -30,6 +30,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{DeltaSchemeDirectives, FileResponse}
+import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
@@ -127,7 +128,7 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with TryValue
     val s = c.subject
     (id, p, s) match {
       case (_, _, `subjectNoFilePerms`) =>
-        IO.raiseError(FileRejection.AuthorizationFailed(AclAddress.Project(p), Permission.unsafe("disk/read")))
+        IO.raiseError(AuthorizationFailed(AclAddress.Project(p), Permission.unsafe("disk/read")))
       case (`fileId`, `projectRef`, _)  =>
         IO.pure(FileResponse("file.txt", ContentTypes.`text/plain(UTF-8)`, 12L, Source.single(ByteString(fileContent))))
       case (id, ref, _)                 =>
@@ -332,29 +333,25 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with TryValue
 
     "fail to fetch an archive json representation when lacking permissions" in {
       Get(s"/v1/archives/$projectRef/$uuid?ignoreNotFound=true") ~> acceptMeta ~> routes ~> check {
-        status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("responses/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
 
     "fail to download an archive when lacking permissions" in {
       Get(s"/v1/archives/$projectRef/$uuid?ignoreNotFound=true") ~> acceptAll ~> routes ~> check {
-        status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("responses/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
 
     "fail to download an archive when lacking file permissions" in {
       Get(s"/v1/archives/$projectRef/$uuid?ignoreNotFound=true") ~> asNoFilePerms ~> acceptAll ~> routes ~> check {
-        status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("responses/file-authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
 
     "fail to create an archive when lacking permissions" in {
       Post(s"/v1/archives/$projectRef", archive.toEntity) ~> routes ~> check {
-        status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("responses/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
 

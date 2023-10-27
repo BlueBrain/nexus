@@ -44,9 +44,6 @@ class IdResolutionSpec extends BaseIntegrationSpec {
   private val neurosciencegraphId        = s"$proxyIdBase/$neurosciencegraphSegment"
   private val encodedNeurosciencegraphId = UrlUtils.encode(neurosciencegraphId)
 
-  private val unauthorizedAccessErrorPayload =
-    jsonContentOf("iam/errors/unauthorized-access.json")
-
   override def beforeAll(): Unit = {
     super.beforeAll()
 
@@ -69,17 +66,11 @@ class IdResolutionSpec extends BaseIntegrationSpec {
   "Id resolution" should {
 
     "lead to an authorization failure for a user without permission" in {
-      deltaClient.get[Json](s"/resolve/$encodedUniqueId", Alice) { (json, response) =>
-        response.status shouldEqual StatusCodes.Forbidden
-        json shouldEqual unauthorizedAccessErrorPayload
-      }
+      deltaClient.get[Json](s"/resolve/$encodedUniqueId", Alice) { expectForbidden }
     }
 
     "lead to an authorization failure when trying to resolve a resource that does not exist" in {
-      deltaClient.get[Json](s"/resolve/unknownId", Bob) { (json, response) =>
-        response.status shouldEqual StatusCodes.Forbidden
-        json shouldEqual unauthorizedAccessErrorPayload
-      }
+      deltaClient.get[Json](s"/resolve/unknownId", Bob) { expectForbidden }
     }
 
     "resolve a single resource" in {

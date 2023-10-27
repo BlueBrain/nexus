@@ -98,8 +98,7 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures with
     "fail to create a view without views/write permission" in {
       aclCheck.append(AclAddress.Root, Anonymous -> Set(events.read)).accepted
       Post("/v1/views/myorg/myproject", payload.toEntity) ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("/routes/errors/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
 
@@ -153,8 +152,7 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures with
     "fail to update a view without views/write permission" in {
       aclCheck.subtract(AclAddress.Root, Anonymous -> Set(esPermissions.write)).accepted
       Put(s"/v1/views/myorg/myproject/myid?rev=1", payload.toEntity) ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("/routes/errors/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
 
@@ -192,8 +190,7 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures with
     "fail to deprecate a view without views/write permission" in {
       aclCheck.subtract(AclAddress.Root, Anonymous -> Set(esPermissions.write)).accepted
       Delete("/v1/views/myorg/myproject/myid?rev=3") ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("/routes/errors/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
 
@@ -243,8 +240,7 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures with
       forAll(endpoints) { endpoint =>
         forAll(List("", "?rev=1", "?tags=mytag")) { suffix =>
           Get(s"$endpoint$suffix") ~> routes ~> check {
-            response.status shouldEqual StatusCodes.Forbidden
-            response.asJson shouldEqual jsonContentOf("/routes/errors/authorization-failed.json")
+            response.shouldBeForbidden
           }
         }
       }

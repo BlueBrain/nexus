@@ -44,8 +44,7 @@ class SupervisionRoutesSpec extends BaseRouteSpec {
 
     "be forbidden without supervision/read permission" in {
       Get("/v1/supervision/projections") ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
 

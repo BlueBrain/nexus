@@ -23,6 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.FileResponse
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.Response.Complete
 import ch.epfl.bluebrain.nexus.delta.sdk.error.SDKError
+import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.AnnotatedSource
@@ -51,8 +52,6 @@ trait ArchiveDownload {
     *   the archive value
     * @param project
     *   the archive parent project
-    * @param format
-    *   the requested archive format
     * @param ignoreNotFound
     *   do not fail when resource references are not found
     * @param caller
@@ -180,11 +179,10 @@ object ArchiveDownload {
         // the required permissions are checked for each file content fetch
         val entry      = fetchFileContent(ref.ref, refProject, caller)
           .adaptError {
-            case _: FileRejection.FileNotFound                 => ResourceNotFound(ref.ref, project)
-            case _: FileRejection.TagNotFound                  => ResourceNotFound(ref.ref, project)
-            case _: FileRejection.RevisionNotFound             => ResourceNotFound(ref.ref, project)
-            case FileRejection.AuthorizationFailed(addr, perm) => AuthorizationFailed(addr, perm)
-            case other: FileRejection                          => WrappedFileRejection(other)
+            case _: FileRejection.FileNotFound     => ResourceNotFound(ref.ref, project)
+            case _: FileRejection.TagNotFound      => ResourceNotFound(ref.ref, project)
+            case _: FileRejection.RevisionNotFound => ResourceNotFound(ref.ref, project)
+            case other: FileRejection              => WrappedFileRejection(other)
           }
           .map { case FileResponse(fileMetadata, content) =>
             val path                        = pathOf(ref, project, fileMetadata.filename)

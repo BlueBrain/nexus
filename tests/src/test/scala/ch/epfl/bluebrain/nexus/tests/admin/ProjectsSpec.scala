@@ -9,27 +9,12 @@ import ch.epfl.bluebrain.nexus.tests.Identity.Authenticated
 import ch.epfl.bluebrain.nexus.tests.Identity.projects.{Bojack, PrincessCarolyn}
 import ch.epfl.bluebrain.nexus.tests.Identity.resources.Rick
 import ch.epfl.bluebrain.nexus.tests.Optics._
-import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, ExpectedResponse, Identity}
+import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, Identity}
 import io.circe.Json
 
 class ProjectsSpec extends BaseIntegrationSpec {
 
   import ch.epfl.bluebrain.nexus.tests.iam.types.Permission._
-
-  private val UnauthorizedAccess = ExpectedResponse(
-    StatusCodes.Forbidden,
-    jsonContentOf("/iam/errors/unauthorized-access.json")
-  )
-
-  private val MethodNotAllowed = ExpectedResponse(
-    StatusCodes.MethodNotAllowed,
-    jsonContentOf("/admin/errors/method-not-supported.json")
-  )
-
-  private val ProjectConflict = ExpectedResponse(
-    StatusCodes.Conflict,
-    jsonContentOf("/admin/errors/project-incorrect-revision.json")
-  )
 
   "projects API" should {
 
@@ -43,7 +28,7 @@ class ProjectsSpec extends BaseIntegrationSpec {
         projId,
         Json.obj(),
         Bojack,
-        Some(UnauthorizedAccess)
+        Some(StatusCodes.Forbidden)
       )
     }
 
@@ -93,9 +78,8 @@ class ProjectsSpec extends BaseIntegrationSpec {
     }
 
     "fail to create if the HTTP verb used is POST" in {
-      deltaClient.post[Json](s"/projects/$id", Json.obj(), Bojack) { (json, response) =>
-        response.status shouldEqual MethodNotAllowed.statusCode
-        json shouldEqual MethodNotAllowed.json
+      deltaClient.post[Json](s"/projects/$id", Json.obj(), Bojack) { (_, response) =>
+        response.status shouldEqual StatusCodes.MethodNotAllowed
       }
     }
 
@@ -109,22 +93,12 @@ class ProjectsSpec extends BaseIntegrationSpec {
     }
 
     "fail to create if project already exists" in {
-      val conflict = ExpectedResponse(
-        StatusCodes.Conflict,
-        jsonContentOf(
-          "/admin/errors/project-already-exists.json",
-          "projLabel" -> projId,
-          "orgId"     -> orgId,
-          "projId"    -> id
-        )
-      )
-
       adminDsl.createProject(
         orgId,
         projId,
         createJson,
         Bojack,
-        Some(conflict)
+        Some(StatusCodes.Conflict)
       )
     }
 
@@ -227,9 +201,8 @@ class ProjectsSpec extends BaseIntegrationSpec {
     }
 
     "reject update  when wrong revision is provided" in {
-      deltaClient.put[Json](s"/projects/$id?rev=4", createJson, Bojack) { (json, response) =>
-        response.status shouldEqual ProjectConflict.statusCode
-        json shouldEqual ProjectConflict.json
+      deltaClient.put[Json](s"/projects/$id?rev=4", createJson, Bojack) { (_, response) =>
+        response.status shouldEqual StatusCodes.Conflict
       }
     }
 

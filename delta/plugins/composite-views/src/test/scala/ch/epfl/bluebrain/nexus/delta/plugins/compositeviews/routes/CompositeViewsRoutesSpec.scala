@@ -101,8 +101,7 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
     "fail to create a view without permission" in {
       aclCheck.append(AclAddress.Root, Anonymous -> Set(events.read)).accepted
       Post("/v1/views/myorg/myproj", viewSource.toEntity) ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("routes/errors/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
 
@@ -123,8 +122,7 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
 
     "fail to update a view without permission" in {
       Put(s"/v1/views/myorg/myproj/$uuid?rev=1", viewSource.toEntity) ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("routes/errors/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
 
@@ -152,8 +150,7 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
 
     "fail to fetch a view without permission" in {
       Get(s"/v1/views/myorg/myproj/$uuid") ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("routes/errors/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
 
@@ -255,8 +252,7 @@ class CompositeViewsRoutesSpec extends CompositeViewsRoutesFixtures {
 
     "fail to deprecate a view without permission" in {
       Delete(s"/v1/views/myorg/myproj/$uuid?rev=3") ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("routes/errors/authorization-failed.json")
+        response.shouldBeForbidden
       }
     }
 

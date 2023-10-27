@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.{BodyPartEntity, Uri}
+import akka.http.scaladsl.model.BodyPartEntity
 import akka.stream.scaladsl.Sink
 import akka.util.ByteString
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
@@ -70,6 +70,6 @@ object SaveFile {
     *
     * Example: uuid = 12345678-90ab-cdef-abcd-1234567890ab {org}/{proj}/1/2/3/4/5/6/7/8/{filename}
     */
-  def intermediateFolders(ref: ProjectRef, uuid: UUID, filename: String): Uri.Path =
-    Uri.Path(s"$ref/${uuid.toString.toLowerCase.takeWhile(_ != '-').mkString("/")}/$filename")
+  def intermediateFolders(ref: ProjectRef, uuid: UUID, filename: String): String =
+    s"$ref/${uuid.toString.toLowerCase.takeWhile(_ != '-').mkString("/")}/$filename"
 }

@@ -13,7 +13,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.{RdfError, Vocabulary}
-import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
@@ -291,13 +290,6 @@ object CompositeViewRejection {
   final case class DecodingFailed(error: JsonLdDecoderError) extends CompositeViewRejection(error.getMessage)
 
   /**
-    * Rejection returned when attempting to query a Blazegraph index and the caller does not have the right permissions
-    * defined in the view.
-    */
-  final case object AuthorizationFailed extends CompositeViewRejection(ServiceError.AuthorizationFailed.reason)
-  type AuthorizationFailed = AuthorizationFailed.type
-
-  /**
     * Signals a rejection caused when interacting with the blazegraph client
     */
   final case class WrappedBlazegraphClientError(error: SparqlClientError) extends CompositeViewRejection(error.reason)
@@ -349,7 +341,6 @@ object CompositeViewRejection {
       case ResourceAlreadyExists(_, _)            => StatusCodes.Conflict
       case IncorrectRev(_, _)                     => StatusCodes.Conflict
       case ProjectContextRejection(rej)           => rej.status
-      case AuthorizationFailed                    => StatusCodes.Forbidden
       case WrappedElasticSearchClientError(error) => error.errorCode.getOrElse(StatusCodes.InternalServerError)
       case _                                      => StatusCodes.BadRequest
     }
