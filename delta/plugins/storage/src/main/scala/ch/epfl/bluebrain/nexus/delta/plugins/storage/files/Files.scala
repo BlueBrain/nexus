@@ -6,11 +6,11 @@ import akka.http.scaladsl.model.ContentTypes.`application/octet-stream`
 import akka.http.scaladsl.model.{ContentType, HttpEntity, Uri}
 import cats.effect.{Clock, ContextShift, IO}
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
-import ch.epfl.bluebrain.nexus.delta.kernel.cache.KeyValueStore
+import ch.epfl.bluebrain.nexus.delta.kernel.cache.LocalCache
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.{ioToTaskK, toCatsIOOps, toMonixBIOOps}
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOInstant, UUIDF}
+import ch.epfl.bluebrain.nexus.delta.kernel.{Logger, RetryStrategy}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.{ComputedDigest, NotComputedDigest}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
@@ -19,7 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.schemas.{files => fileSchema}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.{RemoteDiskStorageConfig, StorageTypeConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.{StorageFetchRejection, StorageIsDeprecated}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, Storage, StorageRejection, StorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.{FetchAttributeRejection, FetchFileRejection, SaveFileRejection}
@@ -43,13 +43,11 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, EntityType, ProjectRef, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, SuccessElem}
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{CompiledProjection, ExecutionStrategy, ProjectionMetadata, Supervisor}
-import com.typesafe.scalalogging.Logger
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
 import fs2.Stream
-import monix.bio.Task
 
 import java.util.UUID
 
@@ -464,10 +462,10 @@ final class Files(
     *   the offset to start from
     * @return
     */
-  private[files] def attributesUpdateStream(offset: Offset): ElemStream[Unit] = {
+  private[files] def attributesUpdateStream(offset: Offset): Stream[IO, Elem[Unit]] = {
     for {
       // The stream will start only if remote storage is enabled
-      retryStrategy <- Stream.iterable(config.remoteDisk).map { c =>
+      retryStrategy <- Stream.iterable[IO, RemoteDiskStorageConfig](config.remoteDisk).map { c =>
                          RetryStrategy[Throwable](
                            c.digestComputation,
                            {
@@ -475,11 +473,12 @@ final class Files(
                              case DigestNotComputed(_)                                                => true
                              case _                                                                   => false
                            },
-                           RetryStrategy.logError(logger, "file attributes update")
+                           RetryStrategy.logError(logger, "file attributes update")(_, _).toBIOThrowable
                          )
                        }
       // We cache storage information
-      storageCache  <- Stream.eval(KeyValueStore[ResourceRef.Revision, Storage]())
+      storageCache  <-
+        Stream.eval[IO, LocalCache[ResourceRef.Revision, Storage]](LocalCache[ResourceRef.Revision, Storage]())
       fetchStorage   = (f: FileState) =>
                          storageCache.getOrElseUpdate(
                            f.storage,
@@ -489,11 +488,9 @@ final class Files(
                              .adaptError { case e: StorageRejection =>
                                WrappedStorageRejection(e)
                              }
-                             .toBIO[StorageRejection]
                          )
       stream        <- log
                          .states(Scope.root, offset)
-                         .translate(ioToTaskK)
                          .map { envelope =>
                            envelope.value match {
                              case f
@@ -521,9 +518,9 @@ final class Files(
                          .evalMap {
                            _.traverse { f =>
                              for {
-                               _       <- Task.delay(logger.info(s"Updating attributes for file ${f.id} in ${f.project}"))
+                               _       <- logger.info(s"Updating attributes for file ${f.id} in ${f.project}")
                                storage <- fetchStorage(f)
-                               _       <- updateAttributes(f, storage).toBIO[FileRejection]
+                               _       <- updateAttributes(f, storage)
                              } yield ()
                            }.retry(retryStrategy)
                          }
@@ -559,7 +556,7 @@ final class Files(
 
 object Files {
 
-  private val logger: Logger = Logger[Files]
+  private val logger = Logger.cats[Files]
 
   /**
     * The file entity type.
@@ -752,16 +749,17 @@ object Files {
 
   val metadata: ProjectionMetadata = ProjectionMetadata("system", "file-attributes-update", None, None)
 
-  def startDigestStream(files: Files, supervisor: Supervisor, config: StorageTypeConfig): Task[Unit] =
-    Task.when(config.remoteDisk.isDefined) {
+  def startDigestStream(files: Files, supervisor: Supervisor, config: StorageTypeConfig): IO[Unit] =
+    IO.whenA(config.remoteDisk.isDefined) {
       supervisor
         .run(
           CompiledProjection.fromStream(
             metadata,
             ExecutionStrategy.PersistentSingleNode,
-            files.attributesUpdateStream
+            files.attributesUpdateStream(_).translate(ioToTaskK)
           )
         )
+        .toCatsIO
         .void
     }
 

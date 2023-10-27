@@ -188,7 +188,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
             )
           )
           .flatTap { files =>
-            toCatsIO(Files.startDigestStream(files, supervisor, storageTypeConfig))
+            Files.startDigestStream(files, supervisor, storageTypeConfig)
           }
     }
 
