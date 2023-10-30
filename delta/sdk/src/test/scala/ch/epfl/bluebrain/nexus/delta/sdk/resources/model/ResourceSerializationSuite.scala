@@ -55,7 +55,8 @@ class ResourceSerializationSuite extends SerializationSuite with ResourceInstanc
       remoteContextRefs,
       2,
       instant,
-      subject
+      subject,
+      Some(tag)
     )
   private val refreshed      = ResourceRefreshed(
     myId,
@@ -95,7 +96,7 @@ class ResourceSerializationSuite extends SerializationSuite with ResourceInstanc
       myId,
       projectRef,
       types,
-      UserTag.unsafe("mytag"),
+      tag,
       5,
       instant,
       subject
