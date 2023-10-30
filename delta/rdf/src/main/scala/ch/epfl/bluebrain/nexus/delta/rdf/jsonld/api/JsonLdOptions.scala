@@ -29,4 +29,5 @@ final case class JsonLdOptions(
 
 object JsonLdOptions {
   implicit val defaults: JsonLdOptions = JsonLdOptions()
+  val AlwaysEmbed: JsonLdOptions       = defaults.copy(embed = "@always")
 }
