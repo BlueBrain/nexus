@@ -23,14 +23,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.remotestorage.RemoteStorageDocker
-import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
 import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.Json
 import monix.execution.Scheduler
 import org.scalatest.concurrent.Eventually
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
-import org.scalatest.{BeforeAndAfterAll, DoNotDiscover, OptionValues}
+import org.scalatest.{BeforeAndAfterAll, DoNotDiscover}
 
 import java.util.UUID
 import scala.concurrent.ExecutionContext
@@ -38,11 +36,8 @@ import scala.concurrent.ExecutionContext
 @DoNotDiscover
 class RemoteStorageSaveAndFetchFileSpec(docker: RemoteStorageDocker)
     extends TestKit(ActorSystem("RemoteStorageSaveAndFetchFileSpec"))
-    with AnyWordSpecLike
+    with CatsEffectSpec
     with AkkaSourceHelpers
-    with OptionValues
-    with EitherValues
-    with Matchers
     with BIOValues
     with Eventually
     with BeforeAndAfterAll

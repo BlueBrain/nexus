@@ -1,4 +1,7 @@
 {
+  "_source": [
+    "{{field}}"
+  ],
   "query": {
     "bool": {
       "filter": [

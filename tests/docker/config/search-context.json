@@ -30,6 +30,12 @@
   "protocol": {
     "@container": "@set"
   },
+  "preSynapticPathway": {
+    "@container": "@set"
+  },
+  "postSynapticPathway": {
+    "@container": "@set"
+  },
   "project": {
     "@type": "@id"
   },

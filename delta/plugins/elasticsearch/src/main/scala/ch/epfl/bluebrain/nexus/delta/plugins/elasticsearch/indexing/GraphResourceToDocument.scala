@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing
 
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
@@ -19,7 +19,8 @@ import shapeless.Typeable
   *   a context to compute the compacted JSON-LD for of the [[GraphResource]]
   */
 final class GraphResourceToDocument(context: ContextValue, includeContext: Boolean)(implicit
-    cr: RemoteContextResolution
+    cr: RemoteContextResolution,
+    jsonLdOptions: JsonLdOptions
 ) extends Pipe {
   override type In  = GraphResource
   override type Out = Json

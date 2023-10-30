@@ -2,8 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage
 
 import akka.actor
 import akka.actor.typed.ActorSystem
-import cats.effect.{Clock, ContextShift, IO}
+import cats.effect.{Clock, ContextShift, IO, Timer}
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
@@ -25,7 +26,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction.AggregateIndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.auth.{AuthTokenProvider, Credentials}
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.ProjectDeletionTask
@@ -47,7 +47,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Supervisor
 import com.typesafe.config.Config
 import izumi.distage.model.definition.{Id, ModuleDef}
-import monix.bio.UIO
 import monix.execution.Scheduler
 
 /**
@@ -76,26 +75,26 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           cfg: StoragePluginConfig,
           serviceAccount: ServiceAccount,
           api: JsonLdApi,
-          clock: Clock[UIO],
+          clock: Clock[IO],
           uuidF: UUIDF,
-          as: ActorSystem[Nothing]
+          as: ActorSystem[Nothing],
+          cs: ContextShift[IO]
       ) =>
         implicit val classicAs: actor.ActorSystem         = as.classicSystem
         implicit val storageTypeConfig: StorageTypeConfig = cfg.storages.storageTypeConfig
-        toCatsIO(
-          Storages(
-            fetchContext.mapRejection(StorageRejection.ProjectContextRejection),
-            contextResolution,
-            permissions.fetchPermissionSet.toUIO,
-            StorageAccess.apply(_, _, remoteDiskStorageClient, storageTypeConfig),
-            xas,
-            cfg.storages,
-            serviceAccount
-          )(
-            api,
-            clock,
-            uuidF
-          )
+        implicit val contextShift: ContextShift[IO]       = cs
+        Storages(
+          fetchContext.mapRejection(StorageRejection.ProjectContextRejection),
+          contextResolution,
+          permissions.fetchPermissionSet.toUIO,
+          StorageAccess.apply(_, _, remoteDiskStorageClient, storageTypeConfig),
+          xas,
+          cfg.storages,
+          serviceAccount
+        )(
+          api,
+          clock,
+          uuidF
         )
     }
 
@@ -126,7 +125,6 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         indexingAction: AggregateIndexingAction,
         shift: Storage.Shift,
         baseUri: BaseUri,
-        s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering,
         fusionConfig: FusionConfig
@@ -141,7 +139,6 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           indexingAction(_, _, _)(shift)
         )(
           baseUri,
-          s,
           cr,
           ordering,
           fusionConfig
@@ -191,7 +188,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
             )
           )
           .flatTap { files =>
-            toCatsIO(Files.startDigestStream(files, supervisor, storageTypeConfig))
+            Files.startDigestStream(files, supervisor, storageTypeConfig)
           }
     }
 
@@ -230,13 +227,15 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         client: HttpClient @Id("storage"),
         as: ActorSystem[Nothing],
         authTokenProvider: AuthTokenProvider,
-        cfg: StorageTypeConfig
+        cfg: StorageTypeConfig,
+        cs: ContextShift[IO],
+        timer: Timer[IO]
     ) =>
       new RemoteDiskStorageClient(
         client,
         authTokenProvider,
         cfg.remoteDisk.map(_.credentials).getOrElse(Credentials.Anonymous)
-      )(as.classicSystem)
+      )(as.classicSystem, cs, timer)
   }
 
   many[ServiceDependency].addSet {
