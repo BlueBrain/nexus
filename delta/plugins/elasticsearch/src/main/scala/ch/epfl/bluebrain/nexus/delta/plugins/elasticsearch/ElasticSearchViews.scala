@@ -88,8 +88,8 @@ final class ElasticSearchViews private (
       value: ElasticSearchViewValue
   )(implicit subject: Subject): IO[ViewResource] = {
     for {
-      (iri, _)  <- expandWithContext(fetchContext.onCreate, project, id)
-      res <- eval(CreateElasticSearchView(iri, project, value, value.toJson(iri), subject))
+      (iri, _) <- expandWithContext(fetchContext.onCreate, project, id)
+      res      <- eval(CreateElasticSearchView(iri, project, value, value.toJson(iri), subject))
     } yield res
   }.span("createElasticSearchView")
 
@@ -132,9 +132,9 @@ final class ElasticSearchViews private (
       source: Json
   )(implicit caller: Caller): IO[ViewResource] = {
     for {
-      (iri, pc)  <- expandWithContext(fetchContext.onCreate, project, id)
-      value <- sourceDecoder(project, pc, iri, source)
-      res   <- eval(CreateElasticSearchView(iri, project, value, source, caller.subject))
+      (iri, pc) <- expandWithContext(fetchContext.onCreate, project, id)
+      value     <- sourceDecoder(project, pc, iri, source)
+      res       <- eval(CreateElasticSearchView(iri, project, value, source, caller.subject))
     } yield res
   }.span("createElasticSearchView")
 
@@ -159,8 +159,8 @@ final class ElasticSearchViews private (
       value: ElasticSearchViewValue
   )(implicit subject: Subject): IO[ViewResource] = {
     for {
-      (iri, _)  <- expandWithContext(fetchContext.onModify, project, id)
-      res <- eval(UpdateElasticSearchView(iri, project, rev, value, value.toJson(iri), subject))
+      (iri, _) <- expandWithContext(fetchContext.onModify, project, id)
+      res      <- eval(UpdateElasticSearchView(iri, project, rev, value, value.toJson(iri), subject))
     } yield res
   }.span("updateElasticSearchView")
 
@@ -185,9 +185,9 @@ final class ElasticSearchViews private (
       source: Json
   )(implicit caller: Caller): IO[ViewResource] = {
     for {
-      (iri, pc)  <- expandWithContext(fetchContext.onModify, project, id)
-      value <- sourceDecoder(project, pc, iri, source)
-      res   <- eval(UpdateElasticSearchView(iri, project, rev, value, source, caller.subject))
+      (iri, pc) <- expandWithContext(fetchContext.onModify, project, id)
+      value     <- sourceDecoder(project, pc, iri, source)
+      res       <- eval(UpdateElasticSearchView(iri, project, rev, value, source, caller.subject))
     } yield res
   }.span("updateElasticSearchView")
 
@@ -215,8 +215,8 @@ final class ElasticSearchViews private (
       rev: Int
   )(implicit subject: Subject): IO[ViewResource] = {
     for {
-      (iri, _)  <- expandWithContext(fetchContext.onModify, project, id)
-      res <- eval(TagElasticSearchView(iri, project, tagRev, tag, rev, subject))
+      (iri, _) <- expandWithContext(fetchContext.onModify, project, id)
+      res      <- eval(TagElasticSearchView(iri, project, tagRev, tag, rev, subject))
     } yield res
   }.span("tagElasticSearchView")
 
@@ -239,8 +239,8 @@ final class ElasticSearchViews private (
       rev: Int
   )(implicit subject: Subject): IO[ViewResource] = {
     for {
-      (iri, _)  <- expandWithContext(fetchContext.onModify, project, id)
-      res <- eval(DeprecateElasticSearchView(iri, project, rev, subject))
+      (iri, _) <- expandWithContext(fetchContext.onModify, project, id)
+      res      <- eval(DeprecateElasticSearchView(iri, project, rev, subject))
     } yield res
   }.span("deprecateElasticSearchView")
 
@@ -279,17 +279,17 @@ final class ElasticSearchViews private (
       project: ProjectRef
   ): IO[ElasticSearchViewState] = {
     for {
-      (iri, _)  <- expandWithContext(fetchContext.onRead, project, id.value)
-      state   <- stateOrNotFound(id, project, iri)
+      (iri, _) <- expandWithContext(fetchContext.onRead, project, id.value)
+      state    <- stateOrNotFound(id, project, iri)
     } yield state
   }.span("fetchElasticSearchView")
 
   private def stateOrNotFound(id: IdSegmentRef, project: ProjectRef, iri: Iri) = {
     val notFound = ViewNotFound(iri, project)
     id match {
-      case Latest(_) => log.stateOr(project, iri, notFound)
+      case Latest(_)        => log.stateOr(project, iri, notFound)
       case Revision(_, rev) => log.stateOr(project, iri, rev, notFound, RevisionNotFound)
-      case Tag(_, tag) => log.stateOr(project, iri, tag, notFound, TagNotFound(tag))
+      case Tag(_, tag)      => log.stateOr(project, iri, tag, notFound, TagNotFound(tag))
     }
   }.toCatsIO
 
@@ -322,25 +322,34 @@ final class ElasticSearchViews private (
     * Return the existing indexing views in a project in a finite stream
     */
   def currentIndexingViews(project: ProjectRef): ElemStream[IndexingViewDef] =
-    log.currentStates(Scope.Project(project)).evalMapFilter { envelope =>
-      IO.pure(toIndexViewDef(envelope))
-    }.translate(ioToTaskK)
+    log
+      .currentStates(Scope.Project(project))
+      .evalMapFilter { envelope =>
+        IO.pure(toIndexViewDef(envelope))
+      }
+      .translate(ioToTaskK)
 
   /**
     * Return all existing indexing views in a finite stream
     */
   def currentIndexingViews: ElemStream[IndexingViewDef] =
-    log.currentStates(Scope.Root).evalMapFilter { envelope =>
-      IO.pure(toIndexViewDef(envelope))
-    }.translate(ioToTaskK)
+    log
+      .currentStates(Scope.Root)
+      .evalMapFilter { envelope =>
+        IO.pure(toIndexViewDef(envelope))
+      }
+      .translate(ioToTaskK)
 
   /**
     * Return the indexing views in a non-ending stream
     */
   def indexingViews(start: Offset): ElemStream[IndexingViewDef] =
-    log.states(Scope.Root, start).evalMapFilter { envelope =>
-      IO.pure(toIndexViewDef(envelope))
-    }.translate(ioToTaskK)
+    log
+      .states(Scope.Root, start)
+      .evalMapFilter { envelope =>
+        IO.pure(toIndexViewDef(envelope))
+      }
+      .translate(ioToTaskK)
 
   private def toIndexViewDef(envelope: Envelope[ElasticSearchViewState]) =
     envelope.toElem { v => Some(v.project) }.traverse { v =>
@@ -350,13 +359,14 @@ final class ElasticSearchViews private (
   private def eval(cmd: ElasticSearchViewCommand): IO[ViewResource] =
     log
       .evaluate(cmd.project, cmd.id, cmd)
-      .map(_._2.toResource(defaultElasticsearchMapping, defaultElasticsearchSettings)).toCatsIO
+      .map(_._2.toResource(defaultElasticsearchMapping, defaultElasticsearchSettings))
+      .toCatsIO
 
   private def expandWithContext(
-                                 fetchCtx: ProjectRef => BIO[ElasticSearchViewRejection, ProjectContext],
-                                 ref: ProjectRef,
-                                 id: IdSegment
-                               ): IO[(Iri, ProjectContext)] =
+      fetchCtx: ProjectRef => BIO[ElasticSearchViewRejection, ProjectContext],
+      ref: ProjectRef,
+      id: IdSegment
+  ): IO[(Iri, ProjectContext)] =
     fetchCtx(ref).flatMap(pc => expandIri(id, pc).map(_ -> pc)).toCatsIO
 }
 
@@ -471,12 +481,9 @@ object ElasticSearchViews {
     }
 
     def update(c: UpdateElasticSearchView) = state match {
-      case None                                  =>
-        IO.raiseError(ViewNotFound(c.id, c.project))
-      case Some(s) if s.rev != c.rev             =>
-        IO.raiseError(IncorrectRev(c.rev, s.rev))
-      case Some(s) if s.deprecated               =>
-        IO.raiseError(ViewIsDeprecated(c.id))
+      case None                                  => IO.raiseError(ViewNotFound(c.id, c.project))
+      case Some(s) if s.rev != c.rev             => IO.raiseError(IncorrectRev(c.rev, s.rev))
+      case Some(s) if s.deprecated               => IO.raiseError(ViewIsDeprecated(c.id))
       case Some(s) if c.value.tpe != s.value.tpe =>
         IO.raiseError(DifferentElasticSearchViewType(s.id.toString, c.value.tpe, s.value.tpe))
       case Some(s)                               =>
@@ -488,12 +495,9 @@ object ElasticSearchViews {
     }
 
     def tag(c: TagElasticSearchView) = state match {
-      case None                                               =>
-        IO.raiseError(ViewNotFound(c.id, c.project))
-      case Some(s) if s.rev != c.rev                          =>
-        IO.raiseError(IncorrectRev(c.rev, s.rev))
-      case Some(s) if c.targetRev <= 0 || c.targetRev > s.rev =>
-        IO.raiseError(RevisionNotFound(c.targetRev, s.rev))
+      case None                                               => IO.raiseError(ViewNotFound(c.id, c.project))
+      case Some(s) if s.rev != c.rev                          => IO.raiseError(IncorrectRev(c.rev, s.rev))
+      case Some(s) if c.targetRev <= 0 || c.targetRev > s.rev => IO.raiseError(RevisionNotFound(c.targetRev, s.rev))
       case Some(s)                                            =>
         IOInstant.now.map(
           ElasticSearchViewTagAdded(c.id, c.project, s.value.tpe, s.uuid, c.targetRev, c.tag, s.rev + 1, _, c.subject)
@@ -501,12 +505,9 @@ object ElasticSearchViews {
     }
 
     def deprecate(c: DeprecateElasticSearchView) = state match {
-      case None                      =>
-        IO.raiseError(ViewNotFound(c.id, c.project))
-      case Some(s) if s.rev != c.rev =>
-        IO.raiseError(IncorrectRev(c.rev, s.rev))
-      case Some(s) if s.deprecated   =>
-        IO.raiseError(ViewIsDeprecated(c.id))
+      case None                      => IO.raiseError(ViewNotFound(c.id, c.project))
+      case Some(s) if s.rev != c.rev => IO.raiseError(IncorrectRev(c.rev, s.rev))
+      case Some(s) if s.deprecated   => IO.raiseError(ViewIsDeprecated(c.id))
       case Some(s)                   =>
         IOInstant.now.map(ElasticSearchViewDeprecated(c.id, c.project, s.value.tpe, s.uuid, s.rev + 1, _, c.subject))
     }

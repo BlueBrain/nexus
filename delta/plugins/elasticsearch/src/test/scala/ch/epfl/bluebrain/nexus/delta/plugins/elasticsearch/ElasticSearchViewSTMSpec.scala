@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import cats.data.NonEmptySet
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews.{evaluate, next}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewCommand._
@@ -17,21 +18,18 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.Json
-import monix.bio.IO
-import monix.execution.Scheduler
 
 import java.time.Instant
 import java.util.UUID
 
-class ElasticSearchViewSTMSpec extends BioSpec {
+class ElasticSearchViewSTMSpec extends CatsEffectSpec {
 
   "An ElasticSearch STM" when {
 
-    val uuid                   = UUID.randomUUID()
-    implicit val uuidF: UUIDF  = UUIDF.fixed(uuid)
-    implicit val sc: Scheduler = Scheduler.global
+    val uuid                  = UUID.randomUUID()
+    implicit val uuidF: UUIDF = UUIDF.fixed(uuid)
 
     val epoch       = Instant.EPOCH
     val epochPlus10 = Instant.EPOCH.plusMillis(10L)

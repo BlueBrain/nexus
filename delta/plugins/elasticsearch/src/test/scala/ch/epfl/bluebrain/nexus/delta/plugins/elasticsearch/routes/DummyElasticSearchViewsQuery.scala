@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
 
 import akka.http.scaladsl.model.Uri
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.ViewIsDeprecated
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, ElasticSearchViewsQuery}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
@@ -10,7 +10,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral._
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
-import monix.bio.IO
 
 private[routes] class DummyElasticSearchViewsQuery(views: ElasticSearchViews) extends ElasticSearchViewsQuery {
 
@@ -22,7 +21,7 @@ private[routes] class DummyElasticSearchViewsQuery(views: ElasticSearchViews) ex
       project: ProjectRef,
       query: JsonObject,
       qp: Uri.Query
-  )(implicit caller: Caller): IO[ElasticSearchViewRejection, Json] = {
+  )(implicit caller: Caller): IO[Json] = {
     for {
       view <- views.fetch(id, project)
       _    <- IO.raiseWhen(view.deprecated)(ViewIsDeprecated(view.id))
@@ -31,7 +30,7 @@ private[routes] class DummyElasticSearchViewsQuery(views: ElasticSearchViews) ex
     ).asJson deepMerge query.asJson
   }
 
-  def mapping(id: IdSegment, project: ProjectRef)(implicit caller: Caller): IO[ElasticSearchViewRejection, Json] =
+  def mapping(id: IdSegment, project: ProjectRef)(implicit caller: Caller): IO[Json] =
     IO.pure(json"""{"mappings": "mapping"}""")
 
 }

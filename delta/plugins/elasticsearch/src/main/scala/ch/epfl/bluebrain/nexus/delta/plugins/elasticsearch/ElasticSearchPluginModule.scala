@@ -90,15 +90,14 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         clock: Clock[IO],
         uuidF: UUIDF
     ) =>
-
-        ElasticSearchViews(
-          fetchContext.mapRejection(ProjectContextRejection),
-          contextResolution,
-          validateElasticSearchView,
-          config.eventLog,
-          config.prefix,
-          xas
-        )(api, clock, uuidF)
+      ElasticSearchViews(
+        fetchContext.mapRejection(ProjectContextRejection),
+        contextResolution,
+        validateElasticSearchView,
+        config.eventLog,
+        config.prefix,
+        xas
+      )(api, clock, uuidF)
 
   }
 
@@ -385,10 +384,10 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
   }
 
   make[ElasticSearchView.Shift].fromEffect { (views: ElasticSearchViews, base: BaseUri) =>
-      for {
-        defaultMapping  <- defaultElasticsearchMapping
-        defaultSettings <- defaultElasticsearchSettings
-      } yield ElasticSearchView.shift(views, defaultMapping, defaultSettings)(base)
+    for {
+      defaultMapping  <- defaultElasticsearchMapping
+      defaultSettings <- defaultElasticsearchSettings
+    } yield ElasticSearchView.shift(views, defaultMapping, defaultSettings)(base)
   }
 
   many[ResourceShift[_, _, _]].ref[ElasticSearchView.Shift]

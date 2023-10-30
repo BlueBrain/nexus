@@ -48,9 +48,12 @@ object ElasticSearchDeletionTask {
     new ElasticSearchDeletionTask(
       project => views.currentIndexingViews(project).evalMapFilter(_.toTask),
       (v: ActiveViewDef, subject: Subject) =>
-        views.internalDeprecate(v.ref.viewId, v.ref.project, v.rev)(subject).toBIO[ElasticSearchViewRejection].onErrorHandleWith { r =>
-          UIO.delay(logger.error(s"Deprecating '$v' resulted in error: '$r'."))
-        }
+        views
+          .internalDeprecate(v.ref.viewId, v.ref.project, v.rev)(subject)
+          .toBIO[ElasticSearchViewRejection]
+          .onErrorHandleWith { r =>
+            UIO.delay(logger.error(s"Deprecating '$v' resulted in error: '$r'."))
+          }
     )
 
 }

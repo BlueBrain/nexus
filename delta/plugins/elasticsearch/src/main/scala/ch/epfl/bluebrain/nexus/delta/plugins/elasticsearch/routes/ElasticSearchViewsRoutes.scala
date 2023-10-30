@@ -4,7 +4,6 @@ import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import cats.syntax.all._
-// TODO comment this out, follow the compiler
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.permissions.{read => Read, write => Write}
@@ -140,20 +139,32 @@ final class ElasticSearchViewsRoutes(
                 // Query an elasticsearch view
                 (pathPrefix("_search") & post & pathEndOrSingleSlash) {
                   (extractQueryParams & entity(as[JsonObject])) { (qp, query) =>
-                    emit(viewsQuery.query(id, ref, query, qp))
+                    emit(viewsQuery.query(id, ref, query, qp).attemptNarrow[ElasticSearchViewRejection])
                   }
                 },
                 // Fetch an elasticsearch view original source
                 (pathPrefix("source") & get & pathEndOrSingleSlash & idSegmentRef(id)) { id =>
                   authorizeFor(ref, Read).apply {
-                    emit(views.fetch(id, ref).map(_.value.source).attemptNarrow[ElasticSearchViewRejection].rejectOn[ViewNotFound])
+                    emit(
+                      views
+                        .fetch(id, ref)
+                        .map(_.value.source)
+                        .attemptNarrow[ElasticSearchViewRejection]
+                        .rejectOn[ViewNotFound]
+                    )
                   }
                 },
                 (pathPrefix("tags") & pathEndOrSingleSlash) {
                   concat(
                     // Fetch an elasticsearch view tags
                     (get & idSegmentRef(id) & authorizeFor(ref, Read)) { id =>
-                      emit(views.fetch(id, ref).map(_.value.tags).attemptNarrow[ElasticSearchViewRejection].rejectOn[ViewNotFound])
+                      emit(
+                        views
+                          .fetch(id, ref)
+                          .map(_.value.tags)
+                          .attemptNarrow[ElasticSearchViewRejection]
+                          .rejectOn[ViewNotFound]
+                      )
                     },
                     // Tag an elasticsearch view
                     (post & parameter("rev".as[Int])) { rev =>
