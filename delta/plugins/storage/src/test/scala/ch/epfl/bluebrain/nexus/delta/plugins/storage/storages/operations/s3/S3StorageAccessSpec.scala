@@ -10,22 +10,16 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.Mini
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions.{read, write}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.minio.MinioDocker
-import ch.epfl.bluebrain.nexus.testkit.TestHelpers
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import org.scalatest.concurrent.Eventually
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{BeforeAndAfterAll, DoNotDiscover}
 import software.amazon.awssdk.regions.Region
 
 @DoNotDiscover
 class S3StorageAccessSpec(docker: MinioDocker)
     extends TestKit(ActorSystem("S3StorageAccessSpec"))
-    with AnyWordSpecLike
-    with Matchers
-    with BIOValues
+    with CatsEffectSpec
     with Eventually
-    with TestHelpers
     with StorageFixtures
     with BeforeAndAfterAll {
 
@@ -42,11 +36,11 @@ class S3StorageAccessSpec(docker: MinioDocker)
       writePermission = write,
       maxFileSize = 20
     )
-    createBucket(storage).hideErrors.accepted
+    createBucket(storage).accepted
   }
 
   override protected def afterAll(): Unit =
-    deleteBucket(storage).hideErrors.accepted
+    deleteBucket(storage).accepted
 
   "An S3Storage access operations" should {
     val iri = iri"http://localhost/s3"

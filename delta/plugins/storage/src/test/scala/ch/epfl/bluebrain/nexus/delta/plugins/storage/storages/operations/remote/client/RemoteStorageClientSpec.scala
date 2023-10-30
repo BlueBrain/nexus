@@ -18,29 +18,19 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Name}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.remotestorage.RemoteStorageDocker
 import ch.epfl.bluebrain.nexus.testkit.remotestorage.RemoteStorageDocker.BucketName
-import ch.epfl.bluebrain.nexus.testkit.scalatest.EitherValues
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import monix.execution.Scheduler
 import org.scalatest.concurrent.Eventually
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{BeforeAndAfterAll, DoNotDiscover}
-
-import scala.concurrent.ExecutionContext
 
 @DoNotDiscover
 class RemoteStorageClientSpec(docker: RemoteStorageDocker)
     extends TestKit(ActorSystem("RemoteStorageClientSpec"))
-    with AnyWordSpecLike
-    with Matchers
-    with BIOValues
+    with CatsEffectSpec
     with AkkaSourceHelpers
     with Eventually
     with BeforeAndAfterAll
-    with EitherValues
     with ConfigFixtures {
-
-  implicit val ec: ExecutionContext = system.dispatcher
 
   private var client: RemoteDiskStorageClient      = _
   private var baseUri: BaseUri                     = _

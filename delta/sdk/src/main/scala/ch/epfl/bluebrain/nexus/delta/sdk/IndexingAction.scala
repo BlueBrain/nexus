@@ -39,9 +39,7 @@ trait IndexingAction {
     */
   def projections(project: ProjectRef, elem: Elem[GraphResource]): ElemStream[CompiledProjection]
 
-  def apply(project: ProjectRef, elem: Elem[GraphResource])(implicit
-      contextShift: ContextShift[IO]
-  ): IO[List[FailedElem]] = {
+  def apply(project: ProjectRef, elem: Elem[GraphResource]): IO[List[FailedElem]] = {
     for {
       // To collect the errors
       errorsRef <- Ref.of[IO, List[FailedElem]](List.empty)
