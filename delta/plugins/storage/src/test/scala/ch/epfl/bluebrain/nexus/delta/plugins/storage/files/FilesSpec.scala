@@ -363,14 +363,20 @@ class FilesSpec(docker: RemoteStorageDocker)
 
     "updating a file linking" should {
 
-      "succeed" in {
+      "succeed and tag" in {
         val path     = Uri.Path("my/file-4.txt")
         val tempAttr = attributes("file-4.txt").copy(digest = NotComputedDigest)
         val attr     = tempAttr.copy(location = Uri(s"file:///app/nexustest/nexus/${tempAttr.path}"), origin = Storage)
-        val expected = mkResource(file2, projectRef, remoteRev, attr, RemoteStorageType, rev = 3, tags = Tags(tag -> 1))
-        files
-          .updateLink(fileId("file2"), Some(remoteId), None, Some(`text/plain(UTF-8)`), path, 2, None)
-          .accepted shouldEqual expected
+        val newTag   = UserTag.unsafe(genString())
+        val expected =
+          mkResource(file2, projectRef, remoteRev, attr, RemoteStorageType, rev = 3, tags = Tags(tag -> 1, newTag -> 3))
+        val actual   = files
+          .updateLink(fileId("file2"), Some(remoteId), None, Some(`text/plain(UTF-8)`), path, 2, Some(newTag))
+          .accepted
+        val byTag    = files.fetch(FileId("file2", newTag, projectRef)).accepted
+
+        actual shouldEqual expected
+        byTag shouldEqual expected
       }
 
       "reject if file doesn't exists" in {

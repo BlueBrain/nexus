@@ -269,42 +269,19 @@ class FilesRoutesSpec
     }
 
     "update and tag a file in one request" in {
-      givenAuthedRoutesForUserWithPermissions(Set(diskRead, diskWrite)) { (user, myRoutes) =>
+      givenRoutesForUserWithPermissions(Set(diskRead, diskWrite)) { (user, route) =>
         val token = addCredentials(OAuth2BearerToken(user.subject))
 
         givenAFile { id =>
-          Put(s"/v1/files/org/proj/$id?rev=1&tag=mytag", entity(s"${genString()}.txt")) ~> token ~> myRoutes ~> check {
+          Put(s"/v1/files/org/proj/$id?rev=1&tag=mytag", entity(s"$id.txt")) ~> token ~> route ~> check {
             status shouldEqual StatusCodes.OK
           }
 
-          Get(s"/v1/files/org/proj/$id?tag=mytag") ~> Accept(`*/*`) ~> token ~> myRoutes ~> check {
+          Get(s"/v1/files/org/proj/$id?tag=mytag") ~> Accept(`*/*`) ~> token ~> route ~> check {
             status shouldEqual StatusCodes.OK
           }
         }
       }
-    }
-
-    def givenAFile(test: String => Assertion): Assertion = {
-      val id = genString()
-      Put(s"/v1/files/org/proj/$id", entity(s"${genString()}.txt")) ~> routes ~> check {
-        status shouldEqual StatusCodes.Created
-      }
-      test(id)
-    }
-
-    def givenAuthedRoutesForUserWithPermissions(perms: Set[Permission])(test: (User, Route) => Assertion): Assertion = {
-      givenAUserWithPermissions(perms) { (user, caller) =>
-        val authedRoutes = routesWithIdentities(IdentitiesDummy(caller))
-        test(user, authedRoutes)
-      }
-    }
-
-    def givenAUserWithPermissions(perms: Set[Permission])(test: (User, Caller) => Assertion): Assertion = {
-      val userId     = genString()
-      val user: User = User(userId, realm)
-      val c: Caller  = Caller(user, Set(user, Anonymous, Authenticated(realm), Group("group", realm)))
-      aclCheck.append(AclAddress.Root, c.subject -> perms).accepted
-      test(user, c)
     }
 
     "fail to update a file link using a storage that does not allow it" in {
@@ -542,6 +519,30 @@ class FilesRoutesSpec
         response.header[Location].value.uri shouldEqual Uri("https://bbp.epfl.ch/nexus/web/org/project/resources/file1")
       }
     }
+  }
+
+  def givenAFile(test: String => Assertion): Assertion = {
+    val id = genString()
+    Put(s"/v1/files/org/proj/$id", entity(s"${genString()}.txt")) ~> routes ~> check {
+      status shouldEqual StatusCodes.Created
+    }
+    test(id)
+  }
+
+  def givenRoutesForUserWithPermissions(
+      perms: Set[Permission]
+  )(test: (User, Route) => Assertion): Assertion =
+    givenAUserWithPermissions(perms) { (user, caller) =>
+      val authedRoutes = routesWithIdentities(IdentitiesDummy(caller))
+      test(user, authedRoutes)
+    }
+
+  def givenAUserWithPermissions(perms: Set[Permission])(test: (User, Caller) => Assertion): Assertion = {
+    val userId     = genString()
+    val user: User = User(userId, realm)
+    val c: Caller  = Caller(user, Set(user, Anonymous, Authenticated(realm), Group("group", realm)))
+    aclCheck.append(AclAddress.Root, c.subject -> perms).accepted
+    test(user, c)
   }
 }
 

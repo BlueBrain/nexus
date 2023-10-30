@@ -86,7 +86,7 @@ object FileCommand {
     * @param subject
     *   the identity associated to this command
     * @param tag
-    *   an optional user-specified tag attached to the current file revision when updated
+    *   an optional user-specified tag attached to the latest revision
     */
   final case class UpdateFile(
       id: Iri,

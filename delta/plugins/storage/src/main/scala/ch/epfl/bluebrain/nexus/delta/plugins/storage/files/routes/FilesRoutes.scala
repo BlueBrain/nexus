@@ -126,6 +126,7 @@ final class FilesRoutes(
                                 },
                                 // Create a file with id segment
                                 extractRequestEntity { entity =>
+                                  println(s"DTBDTB or only here?")
                                   emit(
                                     Created,
                                     files.create(fileId, storage, entity, tag).index(mode).attemptNarrow[FileRejection]
@@ -146,7 +147,10 @@ final class FilesRoutes(
                                 // Update a file
                                 extractRequestEntity { entity =>
                                   emit(
-                                    files.update(fileId, storage, rev, entity, tag).index(mode).attemptNarrow[FileRejection]
+                                    files
+                                      .update(fileId, storage, rev, entity, tag)
+                                      .index(mode)
+                                      .attemptNarrow[FileRejection]
                                   )
                                 }
                               )

@@ -117,7 +117,7 @@ object FileEvent {
     * @param subject
     *   the subject which created this event
     * @param tag
-    *   an optional user-specified tag attached to the current file revision when updated
+    *   an optional user-specified tag attached to the latest revision
     */
   final case class FileUpdated(
       id: Iri,
