@@ -914,7 +914,7 @@ lazy val compilation = {
   Seq(
     scalaVersion                           := scalaCompilerVersion,
     scalacOptions                          ~= { options: Seq[String] => options.filterNot(Set("-Wself-implicit", "-Xlint:infer-any", "-Wnonunit-statement")) },
-    javaSpecificationVersion               := "17",
+    javaSpecificationVersion               := "11",
     javacOptions                          ++= Seq(
       "-source",
       javaSpecificationVersion.value,
