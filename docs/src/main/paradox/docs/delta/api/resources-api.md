@@ -127,7 +127,7 @@ PUT /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}?rev={pre
 ... where 
 
 - `{previous_rev}` is the last known revision number for the resource.
-- `{tag}` is an optional tag associated with the revision `{previous_rev}`.
+- `{tag}` is an optional tag associated with the same revision as the current update. For example, if `previous_rev` is 2, both the updated payload and `tag` will be associated with revision 3; the new latest revision. 
 
 The `{schema_id}` segment allows to define an existing SHACL schema to validate the resource with:
 

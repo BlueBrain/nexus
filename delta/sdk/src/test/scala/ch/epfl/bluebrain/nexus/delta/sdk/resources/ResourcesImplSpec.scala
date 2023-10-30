@@ -332,8 +332,21 @@ class ResourcesImplSpec
       "succeed" in {
         val updated      = source.removeKeys(keywords.id) deepMerge json"""{"number": 60}"""
         val expectedData = ResourceGen.resource(myId2, projectRef, updated, Revision(schema1.id, 1))
-        resources.update(myId2, projectRef, Some(schema1.id), 1, updated, None).accepted shouldEqual
-          mkResource(expectedData).copy(rev = 2)
+        val expected     = mkResource(expectedData).copy(rev = 2)
+        val actual       = resources.update(myId2, projectRef, Some(schema1.id), 1, updated, None).accepted
+        actual shouldEqual expected
+      }
+
+      "successfully tag" in {
+        val updated      = source.removeKeys(keywords.id) deepMerge json"""{"number": 60}"""
+        val newTag       = UserTag.unsafe(genString())
+        val expectedData =
+          ResourceGen.resource(myId10, projectRef, updated, Revision(schema1.id, 1), tags = Tags(tag -> 1, newTag -> 2))
+        val expected     = mkResource(expectedData).copy(rev = 2)
+        val actual       = resources.update(myId10, projectRef, Some(schema1.id), 1, updated, Some(newTag)).accepted
+        val byTag        = resources.fetch(IdSegmentRef(myId10, newTag), projectRef, None).accepted
+        actual shouldEqual expected
+        byTag shouldEqual expected
       }
 
       "succeed without specifying the schema" in {
