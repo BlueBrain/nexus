@@ -18,6 +18,7 @@ services:
       DELTA_PLUGINS: "/opt/docker/plugins/"
       DELTA_EXTERNAL_CONF: "/config/delta-postgres.conf"
       KAMON_ENABLED: "false"
+      JAVA_OPTS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005 --add-opens=java.base/java.lang=ALL-UNNAMED"
     image: bluebrain/nexus-delta:latest
     entrypoint:
       - '/bin/bash'
@@ -27,6 +28,7 @@ services:
         /opt/docker/bin/delta-app -Xmx4G
     ports:
       - 8080:8080
+      - 5005:5005
     volumes:
       - ./config:/config
       - /tmp:/default-volume

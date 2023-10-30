@@ -986,7 +986,7 @@ lazy val servicePackaging = {
     dockerUpdateLatest    := false,
     dockerChmodType       := DockerChmodType.UserGroupWriteExecute,
     dockerEnvVars         := Map(
-      "JAVA_OPTS" -> cglibFix
+      "JAVA_OPTS" -> s"$debugAttachable $cglibFix"
     )
   )
 }
@@ -1074,3 +1074,4 @@ addCommandAlias("plugins-unit-tests-with-coverage", unitTestsWithCoverageCommand
 
 // This option allows distage 1.0.10 to run on JDK 17+
 val cglibFix = "--add-opens=java.base/java.lang=ALL-UNNAMED"
+val debugAttachable = "-jvm-debug 5005"
