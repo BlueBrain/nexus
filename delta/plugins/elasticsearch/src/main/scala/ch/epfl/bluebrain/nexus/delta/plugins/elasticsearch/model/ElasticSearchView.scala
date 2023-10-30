@@ -26,7 +26,6 @@ import io.circe.parser.parse
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
 import monix.bio.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 
 import java.util.UUID
 import scala.annotation.nowarn
@@ -277,7 +276,7 @@ object ElasticSearchView {
   ): Shift =
     ResourceShift.withMetadata[ElasticSearchViewState, ElasticSearchView, Metadata](
       ElasticSearchViews.entityType,
-      (ref, project) => views.fetch(IdSegmentRef(ref), project).toCatsIO,
+      (ref, project) => views.fetch(IdSegmentRef(ref), project),
       state => state.toResource(defaultMapping, defaultSettings),
       value => JsonLdContent(value, value.value.source, Some(value.value.metadata))
     )

@@ -40,7 +40,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionErrors, Projections}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeChain, ReferenceRegistry, Supervisor}
 import izumi.distage.model.definition.{Id, ModuleDef}
-import monix.bio.UIO
 import monix.execution.Scheduler
 
 /**
@@ -88,10 +87,10 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         config: ElasticSearchViewsConfig,
         xas: Transactors,
         api: JsonLdApi,
-        clock: Clock[UIO],
+        clock: Clock[IO],
         uuidF: UUIDF
     ) =>
-      toCatsIO(
+
         ElasticSearchViews(
           fetchContext.mapRejection(ProjectContextRejection),
           contextResolution,
@@ -100,7 +99,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
           config.prefix,
           xas
         )(api, clock, uuidF)
-      )
+
   }
 
   make[ElasticSearchCoordinator].fromEffect {
@@ -183,7 +182,6 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         viewsQuery: ElasticSearchViewsQuery,
         shift: ElasticSearchView.Shift,
         baseUri: BaseUri,
-        s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering,
         fusionConfig: FusionConfig
@@ -197,7 +195,6 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         indexingAction(_, _, _)(shift)
       )(
         baseUri,
-        s,
         cr,
         ordering,
         fusionConfig
@@ -244,7 +241,6 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         projectionErrors: ProjectionErrors,
         schemeDirectives: DeltaSchemeDirectives,
         baseUri: BaseUri,
-        s: Scheduler,
         c: ContextShift[IO],
         cr: RemoteContextResolution @Id("aggregate"),
         esConfig: ElasticSearchViewsConfig,
@@ -262,7 +258,6 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
       )(
         baseUri,
         esConfig.pagination,
-        s,
         c,
         cr,
         ordering
@@ -390,12 +385,10 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
   }
 
   make[ElasticSearchView.Shift].fromEffect { (views: ElasticSearchViews, base: BaseUri) =>
-    toCatsIO(
       for {
         defaultMapping  <- defaultElasticsearchMapping
         defaultSettings <- defaultElasticsearchSettings
       } yield ElasticSearchView.shift(views, defaultMapping, defaultSettings)(base)
-    )
   }
 
   many[ResourceShift[_, _, _]].ref[ElasticSearchView.Shift]

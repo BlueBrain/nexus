@@ -1,11 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import cats.data.NonEmptySet
+import cats.effect.IO
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.toCatsIOOps
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViewJsonLdSourceDecoder.{toValue, ElasticSearchViewFields}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViewJsonLdSourceDecoder.{ElasticSearchViewFields, toValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, permissions, ElasticSearchViewRejection, ElasticSearchViewType, ElasticSearchViewValue}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchViewRejection, ElasticSearchViewType, ElasticSearchViewValue, contexts, permissions}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLdCursor
@@ -27,7 +29,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes._
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
-import monix.bio.{IO, Task}
 
 import scala.annotation.nowarn
 
@@ -42,20 +43,20 @@ class ElasticSearchViewJsonLdSourceDecoder private (
 
   def apply(ref: ProjectRef, context: ProjectContext, source: Json)(implicit
       caller: Caller
-  ): IO[ElasticSearchViewRejection, (Iri, ElasticSearchViewValue)] =
-    decoder(ref, context, mapJsonToString(source)).map { case (iri, fields) =>
+  ): IO[(Iri, ElasticSearchViewValue)] =
+    decoder(ref, context, mapJsonToString(source)).toCatsIO.map { case (iri, fields) =>
       iri -> toValue(fields)
     }
 
   def apply(ref: ProjectRef, context: ProjectContext, iri: Iri, source: Json)(implicit
       caller: Caller
-  ): IO[ElasticSearchViewRejection, ElasticSearchViewValue] =
+  ): IO[ElasticSearchViewValue] =
     decoder(
       ref,
       context,
       iri,
       mapJsonToString(source)
-    ).map(toValue)
+    ).toCatsIO.map(toValue)
 
   private def mapJsonToString(json: Json): Json = json
     .mapAllKeys("mapping", _.noSpaces.asJson)
@@ -196,7 +197,7 @@ object ElasticSearchViewJsonLdSourceDecoder {
 
   def apply(uuidF: UUIDF, contextResolution: ResolverContextResolution)(implicit
       api: JsonLdApi
-  ): Task[ElasticSearchViewJsonLdSourceDecoder] = {
+  ): IO[ElasticSearchViewJsonLdSourceDecoder] = {
     implicit val rcr: RemoteContextResolution = contextResolution.rcr
 
     ElasticSearchDecoderConfiguration.apply.map { implicit config =>

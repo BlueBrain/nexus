@@ -1,7 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts => nxvContexts, nxv, schemas}
+import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.CatsEffectsClasspathResourceUtils
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas, contexts => nxvContexts}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
@@ -11,7 +12,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 import com.typesafe.scalalogging.Logger
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
-import monix.bio.UIO
 
 package object model {
 
@@ -52,37 +52,34 @@ package object model {
 
   implicit private val logger: Logger = Logger("ElasticSearchPlugin")
 
+  // TODO can do this only once and inject them where they're need instead of memoizing?
+
   /**
     * Default elasticsearch mapping for a view
     */
-  val defaultElasticsearchMapping: UIO[JsonObject] = ClasspathResourceUtils
+  val defaultElasticsearchMapping: IO[JsonObject] = CatsEffectsClasspathResourceUtils
     .ioJsonObjectContentOf("defaults/default-mapping.json")
-    .logAndDiscardErrors("loading default elasticsearch mapping")
-    .memoize
+    .logErrors("loading default elasticsearch mapping")
 
   /**
     * Default elasticsearch settings for a view
     */
-  val defaultElasticsearchSettings: UIO[JsonObject] = ClasspathResourceUtils
+  val defaultElasticsearchSettings: IO[JsonObject] = CatsEffectsClasspathResourceUtils
     .ioJsonObjectContentOf("defaults/default-settings.json")
-    .logAndDiscardErrors("loading default elasticsearch settings")
-    .memoize
+    .logErrors("loading default elasticsearch settings")
 
-  val emptyResults: UIO[Json] = ClasspathResourceUtils
+  val emptyResults: IO[Json] = CatsEffectsClasspathResourceUtils
     .ioJsonObjectContentOf("defaults/empty-results.json")
-    .logAndDiscardErrors("loading empty elasticsearch results")
+    .logErrors("loading empty elasticsearch results")
     .map(_.asJson)
-    .memoize
 
   /** Mapping for the event metrics index */
-  val metricsMapping: UIO[JsonObject] = ClasspathResourceUtils
+  val metricsMapping: IO[JsonObject] = CatsEffectsClasspathResourceUtils
     .ioJsonObjectContentOf("metrics/metrics-mapping.json")
-    .logAndDiscardErrors("loading metrics mapping")
-    .memoize
+    .logErrors("loading metrics mapping")
 
   /** Settings for the event metrics index */
-  val metricsSettings: UIO[JsonObject] = ClasspathResourceUtils
+  val metricsSettings: IO[JsonObject] = CatsEffectsClasspathResourceUtils
     .ioJsonObjectContentOf("metrics/metrics-settings.json")
-    .logAndDiscardErrors("loading metrics settings")
-    .memoize
+    .logErrors("loading metrics settings")
 }

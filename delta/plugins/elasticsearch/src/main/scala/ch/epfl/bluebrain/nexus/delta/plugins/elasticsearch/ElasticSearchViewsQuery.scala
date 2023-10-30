@@ -13,11 +13,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SortList
 import ch.epfl.bluebrain.nexus.delta.sdk.views.View.{AggregateView, IndexingView}
-import ch.epfl.bluebrain.nexus.delta.sdk.views.{ViewRef, ViewsStore}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.{View, ViewRef, ViewsStore}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.{Json, JsonObject}
-import monix.bio.IO
+import cats.effect.IO
+import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
 
 /**
   * Allows operations on Elasticsearch views
@@ -42,7 +44,7 @@ trait ElasticSearchViewsQuery {
       project: ProjectRef,
       query: JsonObject,
       qp: Uri.Query
-  )(implicit caller: Caller): IO[ElasticSearchViewRejection, Json]
+  )(implicit caller: Caller): IO[Json]
 
   /**
     * Queries the elasticsearch index (or indices) managed by the view. We check for the caller to have the necessary
@@ -56,7 +58,7 @@ trait ElasticSearchViewsQuery {
     */
   def query(view: ViewRef, query: JsonObject, qp: Uri.Query)(implicit
       caller: Caller
-  ): IO[ElasticSearchViewRejection, Json] =
+  ): IO[Json] =
     this.query(view.viewId, view.project, query, qp)
 
   /**
@@ -69,7 +71,7 @@ trait ElasticSearchViewsQuery {
   def mapping(
       id: IdSegment,
       project: ProjectRef
-  )(implicit caller: Caller): IO[ElasticSearchViewRejection, Json]
+  )(implicit caller: Caller): IO[Json]
 
 }
 
@@ -82,58 +84,52 @@ final class ElasticSearchViewsQueryImpl private[elasticsearch] (
     client: ElasticSearchClient
 ) extends ElasticSearchViewsQuery {
 
-  def query(
+  override def query(
       id: IdSegment,
       project: ProjectRef,
       query: JsonObject,
       qp: Uri.Query
-  )(implicit caller: Caller): IO[ElasticSearchViewRejection, Json] = {
+  )(implicit caller: Caller): IO[Json] = {
     for {
-      view    <- viewStore.fetch(id, project)
-      indices <- view match {
-                   case v: IndexingView  =>
-                     aclCheck
-                       .authorizeForOr(v.ref.project, v.permission)(AuthorizationFailed(v.ref.project, v.permission))
-                       .as(Set(v.index))
-                       .toBIO[ElasticSearchViewRejection]
-                   case v: AggregateView =>
-                     aclCheck
-                       .mapFilter[IndexingView, String](
-                         v.views,
-                         v => ProjectAcl(v.ref.project) -> v.permission,
-                         _.index
-                       )
-                       .toUIO
-                 }
+      view    <- viewStore.fetch(id, project).toCatsIO
+      indices <- extractIndices(view)
       search  <- client.search(query, indices, qp)(SortList.empty).mapError(WrappedElasticSearchClientError)
     } yield search
   }
 
+  private def extractIndices(view: View)(implicit c: Caller): IO[Set[String]] = view match {
+      case v: IndexingView =>
+        aclCheck
+          .authorizeForOr(v.ref.project, v.permission)(AuthorizationFailed(v.ref.project, v.permission))
+          .as(Set(v.index))
+      case v: AggregateView =>
+        aclCheck.mapFilter[IndexingView, String](
+            v.views,
+            v => ProjectAcl(v.ref.project) -> v.permission,
+            _.index
+        )
+    }
+
   override def mapping(
       id: IdSegment,
       project: ProjectRef
-  )(implicit caller: Caller): IO[ElasticSearchViewRejection, Json] =
+  )(implicit caller: Caller): IO[Json] =
     for {
-      view   <- aclCheck
-                  .authorizeForOr(project, permissions.write)(AuthorizationFailed(project, permissions.write))
-                  .as(viewStore.fetch(id, project))
-                  .toBIO[ElasticSearchViewRejection]
-      index  <- view.map {
-                  case v: IndexingView  =>
-                    IO.pure(v.index)
-                  case _: AggregateView =>
-                    IO.raiseError(
-                      DifferentElasticSearchViewType(
-                        id.toString,
-                        ElasticSearchViewType.AggregateElasticSearch,
-                        ElasticSearchViewType.ElasticSearch
-                      )
-                    )
-                }
-      search <- index.flatMap { ind =>
-                  client.mapping(IndexLabel.unsafe(ind)).mapError(WrappedElasticSearchClientError)
-                }
+      _   <- aclCheck.authorizeForOr(project, permissions.write)(AuthorizationFailed(project, permissions.write))
+      view <- viewStore.fetch(id, project).toCatsIO
+      idx  <- indexOrError(view, id)
+      search <- client.mapping(IndexLabel.unsafe(idx)).toCatsIO.adaptError { case e: HttpClientError => WrappedElasticSearchClientError(e) }
     } yield search
+
+  private def indexOrError(view: View, id: IdSegment): IO[String] = view match {
+    case IndexingView(_, index, _) => index.pure[IO]
+    case _: AggregateView => IO.raiseError(
+      DifferentElasticSearchViewType(
+        id.toString,
+        ElasticSearchViewType.AggregateElasticSearch,
+        ElasticSearchViewType.ElasticSearch
+    ))
+  }
 
 }
 
@@ -149,7 +145,7 @@ object ElasticSearchViewsQuery {
     new ElasticSearchViewsQueryImpl(
       ViewsStore[ElasticSearchViewRejection, ElasticSearchViewState](
         ElasticSearchViewState.serializer,
-        views.fetchState(_, _),
+        views.fetchState(_, _).toBIO[ElasticSearchViewRejection],
         view =>
           IO.raiseWhen(view.deprecated)(ViewIsDeprecated(view.id)).as {
             view.value match {
@@ -164,7 +160,7 @@ object ElasticSearchViewsQuery {
                   )
                 )
             }
-          },
+          }.toBIO[ElasticSearchViewRejection],
         xas
       ),
       aclCheck,
