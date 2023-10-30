@@ -978,7 +978,7 @@ lazy val servicePackaging = {
       else version.value
     },
     Docker / daemonUser   := "nexus",
-    dockerBaseImage       := "eclipse-temurin:17-jre",
+    dockerBaseImage       := "eclipse-temurin:11-jre",
     dockerBuildxPlatforms := Seq("linux/arm64/v8", "linux/amd64"),
     dockerExposedPorts    := Seq(8080),
     dockerUsername        := Some("bluebrain"),
