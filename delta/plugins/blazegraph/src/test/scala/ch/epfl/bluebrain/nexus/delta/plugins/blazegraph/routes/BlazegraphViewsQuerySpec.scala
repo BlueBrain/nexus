@@ -234,7 +234,10 @@ class BlazegraphViewsQuerySpec(docker: BlazegraphDocker)
 
     "query an indexed view without permissions" in eventually {
       val proj = view1Proj1.project
-      viewsQuery.query(view1Proj1.viewId, proj, constructQuery, SparqlNTriples)(anon).terminated[AuthorizationFailed]
+      viewsQuery
+        .query(view1Proj1.viewId, proj, constructQuery, SparqlNTriples)(anon)
+        .toBIO[BlazegraphViewRejection]
+        .terminated[AuthorizationFailed]
     }
 
     "query a deprecated indexed view" in eventually {
