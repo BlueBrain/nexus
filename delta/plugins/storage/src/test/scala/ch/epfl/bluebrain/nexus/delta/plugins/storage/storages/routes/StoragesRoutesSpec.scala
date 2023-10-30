@@ -5,6 +5,7 @@ import akka.http.scaladsl.model.MediaTypes.`text/html`
 import akka.http.scaladsl.model.headers.{Accept, Location, OAuth2BearerToken}
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts => fileContexts}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.{ProjectContextRejection, StorageFetchRejection, StorageNotFound}
@@ -33,12 +34,10 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.bio.IOFromMap
 import io.circe.Json
-import monix.bio.IO
-import org.scalatest._
 
 import java.util.UUID
 
-class StoragesRoutesSpec extends BaseRouteSpec with TryValues with StorageFixtures with IOFromMap {
+class StoragesRoutesSpec extends BaseRouteSpec with StorageFixtures with IOFromMap {
 
   import akka.actor.typed.scaladsl.adapter._
   implicit private val typedSystem: ActorSystem[Nothing] = system.toTyped

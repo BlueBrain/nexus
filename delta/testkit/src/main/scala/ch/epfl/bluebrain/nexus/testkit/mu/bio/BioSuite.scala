@@ -1,15 +1,15 @@
 package ch.epfl.bluebrain.nexus.testkit.mu.bio
 
-import ch.epfl.bluebrain.nexus.testkit.bio.IOFixedClock
+import ch.epfl.bluebrain.nexus.testkit.bio.{BioRunContext, IOFixedClock}
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsIOValues
 import ch.epfl.bluebrain.nexus.testkit.mu.{CollectionAssertions, EitherAssertions, EitherValues, NexusSuite}
 import monix.bio.IO
-import monix.execution.Scheduler
 
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
 abstract class BioSuite
     extends NexusSuite
+    with BioRunContext
     with BioFixtures
     with BioFunFixtures
     with BioAssertions
@@ -20,8 +20,6 @@ abstract class BioSuite
     with EitherAssertions
     with EitherValues
     with IOFixedClock {
-
-  implicit protected val scheduler: Scheduler = Scheduler.global
 
   protected val ioTimeout: FiniteDuration = 45.seconds
 
