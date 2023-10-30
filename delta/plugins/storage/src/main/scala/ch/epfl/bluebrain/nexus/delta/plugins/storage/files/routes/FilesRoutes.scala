@@ -112,7 +112,7 @@ final class FilesRoutes(
                       concat(
                         (put & pathEndOrSingleSlash) {
                           parameters("rev".as[Int].?, "storage".as[IdSegment].?, "tag".as[UserTag].?) {
-                            case (None, storage, tag)    =>
+                            case (None, storage, tag)      =>
                               concat(
                                 // Link a file with id segment
                                 entity(as[LinkFile]) { case LinkFile(filename, mediaType, path) =>
@@ -145,9 +145,8 @@ final class FilesRoutes(
                                 },
                                 // Update a file
                                 extractRequestEntity { entity =>
-                                  println(s"HIHI we should hit here, id: $id")
                                   emit(
-                                    files.update(fileId, storage, rev, entity, tag).index(mode).attemptNarrow[FileRejection].flatTap(e => IO(println(s"ERROR for id $id: ${e.leftMap(_.reason)}")))
+                                    files.update(fileId, storage, rev, entity, tag).index(mode).attemptNarrow[FileRejection]
                                   )
                                 }
                               )

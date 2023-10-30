@@ -337,7 +337,9 @@ class FilesSpec(docker: RemoteStorageDocker)
       }
 
       "reject if project is deprecated" in {
-        files.update(FileId(file1, deprecatedProject.ref), None, 2, entity(), None).rejectedWith[ProjectContextRejection]
+        files
+          .update(FileId(file1, deprecatedProject.ref), None, 2, entity(), None)
+          .rejectedWith[ProjectContextRejection]
       }
     }
 

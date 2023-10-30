@@ -11,7 +11,7 @@ import io.circe.{Decoder, Encoder, Json, JsonObject}
 final case class Tags(value: Map[UserTag, Int]) extends AnyVal {
   def contains(tag: UserTag): Boolean = value.contains(tag)
   def +(tag: (UserTag, Int)): Tags    = Tags(value + tag)
-  def ++(tags: Tags): Tags = Tags(value ++ tags.value)
+  def ++(tags: Tags): Tags            = Tags(value ++ tags.value)
   def -(tag: UserTag): Tags           = Tags(value - tag)
   def tags: List[UserTag]             = value.keys.toList
 }

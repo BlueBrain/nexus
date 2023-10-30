@@ -27,7 +27,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.auth.{AuthTokenProvider, Credentials}
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.{Identities, IdentitiesDummy}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{Caller, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceUris}
@@ -73,7 +73,7 @@ class FilesRoutesSpec
 
   implicit private val caller: Caller =
     Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
-  private val identities              = IdentitiesDummy(caller)
+  private val aliceIdentities         = IdentitiesDummy(caller)
 
   private val asAlice = addCredentials(OAuth2BearerToken("alice"))
 
@@ -102,7 +102,7 @@ class FilesRoutesSpec
 
   private val aclCheck = AclSimpleCheck().accepted
 
-  lazy val storages: Storages = Storages(
+  lazy val storages: Storages                              = Storages(
     fetchContext.mapRejection(StorageRejection.ProjectContextRejection),
     ResolverContextResolution(rcr),
     IO.pure(allowedPerms.toSet),
@@ -111,7 +111,7 @@ class FilesRoutesSpec
     StoragesConfig(eventLogConfig, pagination, stCfg),
     ServiceAccount(User("nexus-sa", Label.unsafe("sa")))
   ).accepted
-  lazy val files: Files       =
+  lazy val files: Files                                    =
     Files(
       fetchContext.mapRejection(FileRejection.ProjectContextRejection),
       aclCheck,
@@ -122,10 +122,11 @@ class FilesRoutesSpec
       FilesConfig(eventLogConfig, MediaTypeDetectorConfig.Empty),
       remoteDiskStorageClient
     )(ceClock, uuidF, contextShift, typedSystem)
-  private val groupDirectives =
+  private val groupDirectives                              =
     DeltaSchemeDirectives(fetchContext, ioFromMap(uuid -> projectRef.organization), ioFromMap(uuid -> projectRef))
 
-  private lazy val routes     =
+  private lazy val routes                                  = routesWithIdentities(aliceIdentities)
+  private def routesWithIdentities(identities: Identities) =
     Route.seal(FilesRoutes(stCfg, identities, aclCheck, files, groupDirectives, IndexingAction.noop))
 
   private val diskIdRev = ResourceRef.Revision(dId, 1)
@@ -268,13 +269,15 @@ class FilesRoutesSpec
     }
 
     "update and tag a file in one request" in {
-      givenAFile { id =>
-        givenAUserWithDiskReadWritePermissions { _ =>
-//          val userCreds = addCredentials(OAuth2BearerToken(user))
-          Put(s"/v1/files/org/proj/$id?rev=1&tag=mytag", entity(s"${genString()}.txt")) ~> routes ~> check {
+      givenAuthedRoutesForUserWithPermissions(Set(diskRead, diskWrite)) { (user, myRoutes) =>
+        val token = addCredentials(OAuth2BearerToken(user.subject))
+
+        givenAFile { id =>
+          Put(s"/v1/files/org/proj/$id?rev=1&tag=mytag", entity(s"${genString()}.txt")) ~> token ~> myRoutes ~> check {
             status shouldEqual StatusCodes.OK
           }
-          Get(s"/v1/files/org/proj/$id?tag=mytag") ~> Accept(`*/*`) ~> routes ~> check {
+
+          Get(s"/v1/files/org/proj/$id?tag=mytag") ~> Accept(`*/*`) ~> token ~> myRoutes ~> check {
             status shouldEqual StatusCodes.OK
           }
         }
@@ -289,22 +292,19 @@ class FilesRoutesSpec
       test(id)
     }
 
-    def givenAUserWithDiskReadWritePermissions(test: String => Assertion): Assertion = {
-      val userId = genString()
+    def givenAuthedRoutesForUserWithPermissions(perms: Set[Permission])(test: (User, Route) => Assertion): Assertion = {
+      givenAUserWithPermissions(perms) { (user, caller) =>
+        val authedRoutes = routesWithIdentities(IdentitiesDummy(caller))
+        test(user, authedRoutes)
+      }
+    }
+
+    def givenAUserWithPermissions(perms: Set[Permission])(test: (User, Caller) => Assertion): Assertion = {
+      val userId     = genString()
       val user: User = User(userId, realm)
-      val perms = Set(
-        permissions.read,
-        permissions.write,
-        storagesPermissions.write,
-        events.read,
-        s3Read,
-        s3Write,
-        diskRead,
-        diskWrite
-      )
-      val c: Caller = Caller(user, Set(user, Anonymous, Authenticated(realm), Group("group", realm)))
+      val c: Caller  = Caller(user, Set(user, Anonymous, Authenticated(realm), Group("group", realm)))
       aclCheck.append(AclAddress.Root, c.subject -> perms).accepted
-      test(userId)
+      test(user, c)
     }
 
     "fail to update a file link using a storage that does not allow it" in {
