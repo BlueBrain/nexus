@@ -1,5 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
+import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.ioContentOf
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.{Aux, SparqlResultsJson}
@@ -10,7 +12,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.SparqlLink.{Sparql
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.slowqueries.BlazegraphSlowQueryLogger
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress.{Project => ProjectAcl}
@@ -28,7 +29,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.{ViewRef, ViewsStore}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import monix.bio.{IO, Task}
 
 import java.util.regex.Pattern.quote
 
@@ -48,7 +48,7 @@ trait BlazegraphViewsQuery {
       id: IdSegment,
       projectRef: ProjectRef,
       pagination: FromPagination
-  )(implicit caller: Caller, base: BaseUri): IO[BlazegraphViewRejection, SearchResults[SparqlLink]]
+  )(implicit caller: Caller, base: BaseUri): IO[SearchResults[SparqlLink]]
 
   /**
     * List outgoing links for a given resource.
@@ -67,7 +67,7 @@ trait BlazegraphViewsQuery {
       projectRef: ProjectRef,
       pagination: FromPagination,
       includeExternalLinks: Boolean
-  )(implicit caller: Caller, base: BaseUri): IO[BlazegraphViewRejection, SearchResults[SparqlLink]]
+  )(implicit caller: Caller, base: BaseUri): IO[SearchResults[SparqlLink]]
 
   /**
     * Queries the blazegraph namespace (or namespaces) managed by the view with the passed ''id''. We check for the
@@ -87,7 +87,7 @@ trait BlazegraphViewsQuery {
       project: ProjectRef,
       query: SparqlQuery,
       responseType: SparqlQueryResponseType.Aux[R]
-  )(implicit caller: Caller): IO[BlazegraphViewRejection, R]
+  )(implicit caller: Caller): IO[R]
 }
 
 object BlazegraphViewsQuery {
@@ -100,7 +100,7 @@ object BlazegraphViewsQuery {
       logSlowQueries: BlazegraphSlowQueryLogger,
       prefix: String,
       xas: Transactors
-  ): Task[BlazegraphViewsQuery] = {
+  ): IO[BlazegraphViewsQuery] = {
     implicit val cl: ClassLoader = this.getClass.getClassLoader
     for {
       incomingQuery             <- ioContentOf("blazegraph/incoming.txt")
@@ -108,22 +108,24 @@ object BlazegraphViewsQuery {
       outgoingScopedQuery       <- ioContentOf("blazegraph/outgoing_scoped.txt")
       viewsStore                 = ViewsStore[BlazegraphViewRejection, BlazegraphViewState](
                                      BlazegraphViewState.serializer,
-                                     views.fetchState,
+                                     views.fetchState(_, _).toBIO[BlazegraphViewRejection],
                                      view =>
-                                       IO.raiseWhen(view.deprecated)(ViewIsDeprecated(view.id)).as {
-                                         view.value match {
-                                           case _: AggregateBlazegraphViewValue =>
-                                             Left(view.id)
-                                           case i: IndexingBlazegraphViewValue  =>
-                                             Right(
-                                               IndexingView(
-                                                 ViewRef(view.project, view.id),
-                                                 BlazegraphViews.namespace(view.uuid, view.indexingRev, prefix),
-                                                 i.permission
+                                       IO.raiseWhen(view.deprecated)(ViewIsDeprecated(view.id))
+                                         .as {
+                                           view.value match {
+                                             case _: AggregateBlazegraphViewValue =>
+                                               Left(view.id)
+                                             case i: IndexingBlazegraphViewValue  =>
+                                               Right(
+                                                 IndexingView(
+                                                   ViewRef(view.project, view.id),
+                                                   BlazegraphViews.namespace(view.uuid, view.indexingRev, prefix),
+                                                   i.permission
+                                                 )
                                                )
-                                             )
+                                           }
                                          }
-                                       },
+                                         .toBIO[BlazegraphViewRejection],
                                      xas
                                    )
     } yield new BlazegraphViewsQuery {
@@ -139,10 +141,10 @@ object BlazegraphViewsQuery {
       override def incoming(id: IdSegment, projectRef: ProjectRef, pagination: FromPagination)(implicit
           caller: Caller,
           base: BaseUri
-      ): IO[BlazegraphViewRejection, SearchResults[SparqlLink]] =
+      ): IO[SearchResults[SparqlLink]] =
         for {
-          p        <- fetchContext.onRead(projectRef)
-          iri      <- expandIri(id, p)
+          p        <- fetchContext.onRead(projectRef).toCatsIO
+          iri      <- expandIri(id, p).toCatsIO
           q         = SparqlQuery(replace(incomingQuery, iri, pagination))
           bindings <- query(IriSegment(defaultViewId), projectRef, q, SparqlResultsJson)
           links     = toSparqlLinks(bindings.value)
@@ -153,10 +155,10 @@ object BlazegraphViewsQuery {
           projectRef: ProjectRef,
           pagination: FromPagination,
           includeExternalLinks: Boolean
-      )(implicit caller: Caller, base: BaseUri): IO[BlazegraphViewRejection, SearchResults[SparqlLink]] =
+      )(implicit caller: Caller, base: BaseUri): IO[SearchResults[SparqlLink]] =
         for {
-          p            <- fetchContext.onRead(projectRef)
-          iri          <- expandIri(id, p)
+          p            <- fetchContext.onRead(projectRef).toCatsIO
+          iri          <- expandIri(id, p).toCatsIO
           queryTemplate = if (includeExternalLinks) outgoingWithExternalQuery else outgoingScopedQuery
           q             = SparqlQuery(replace(queryTemplate, iri, pagination))
           bindings     <- query(IriSegment(defaultViewId), projectRef, q, SparqlResultsJson)
@@ -168,7 +170,7 @@ object BlazegraphViewsQuery {
           project: ProjectRef,
           query: SparqlQuery,
           responseType: Aux[R]
-      )(implicit caller: Caller): IO[BlazegraphViewRejection, R] =
+      )(implicit caller: Caller): IO[R] =
         for {
           view    <- viewsStore.fetch(id, project)
           p       <- fetchContext.onRead(project)

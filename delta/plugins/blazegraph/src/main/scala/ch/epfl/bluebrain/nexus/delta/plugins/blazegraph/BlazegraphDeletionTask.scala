@@ -1,8 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphDeletionTask.{init, logger}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.IndexingViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.IndexingViewDef.{ActiveViewDef, DeprecatedViewDef}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.ProjectDeletionTask
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.model.ProjectDeletionReport
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
@@ -45,9 +47,12 @@ object BlazegraphDeletionTask {
     new BlazegraphDeletionTask(
       project => views.currentIndexingViews(project).evalMapFilter(_.toTask),
       (v: ActiveViewDef, subject: Subject) =>
-        views.internalDeprecate(v.ref.viewId, v.ref.project, v.rev)(subject).onErrorHandleWith { r =>
-          UIO.delay(logger.error(s"Deprecating '$v' resulted in error: '$r'."))
-        }
+        views
+          .internalDeprecate(v.ref.viewId, v.ref.project, v.rev)(subject)
+          .toBIO[BlazegraphViewRejection]
+          .onErrorHandleWith { r =>
+            UIO.delay(logger.error(s"Deprecating '$v' resulted in error: '$r'."))
+          }
     )
 
 }
