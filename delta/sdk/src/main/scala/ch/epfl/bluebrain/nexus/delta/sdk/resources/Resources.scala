@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectBase, ProjectContext}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{IncorrectRev, InvalidResourceId, ResourceAlreadyExists, ResourceFetchRejection, ResourceIsDeprecated, ResourceNotFound, RevisionNotFound, TagNotFound, UnexpectedResourceSchema}
@@ -263,13 +263,8 @@ object Resources {
   /**
     * Expands the segment to a [[ResourceRef]]
     */
-  def expandResourceRef(segment: IdSegment, context: ProjectContext): IO[ResourceRef] =
-    expandResourceRef(segment, context, InvalidResourceId)
-
-  def expandResourceRef(segment: IdSegment, context: ProjectContext, notFound: String => Throwable): IO[ResourceRef] =
-    IO.fromOption(segment.toIri(context.apiMappings, context.base).map(ResourceRef(_)))(
-      notFound(segment.asString)
-    )
+  def expandResourceRef(segment: IdSegment, context: ProjectContext): Either[Throwable, ResourceRef] =
+    expandResourceRef(segment, context.apiMappings, context.base, InvalidResourceId)
 
   /**
     * Expands the segment to a [[ResourceRef]] if defined
@@ -277,11 +272,16 @@ object Resources {
   def expandResourceRef(
       segmentOpt: Option[IdSegment],
       context: ProjectContext
-  ): IO[Option[ResourceRef]] =
-    segmentOpt match {
-      case None         => IO.none
-      case Some(schema) => expandResourceRef(schema, context).map(Some.apply)
-    }
+  ): Either[Throwable, Option[ResourceRef]] =
+    segmentOpt.flatTraverse(expandResourceRef(_, context).map(_.some))
+
+  def expandResourceRef(
+      segment: IdSegment,
+      mappings: ApiMappings,
+      base: ProjectBase,
+      notFound: String => Throwable
+  ): Either[Throwable, ResourceRef] =
+    segment.toIri(mappings, base).map(ResourceRef(_)).toRight(notFound(segment.asString))
 
   private[delta] def next(state: Option[ResourceState], event: ResourceEvent): Option[ResourceState] = {
     // format: off
