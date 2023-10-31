@@ -4,6 +4,7 @@
     "https://bluebrain.github.io/nexus/contexts/files.json"
   ],
   "@type": "FileUpdated",
+  "tag": "mytag",
   "_attributes": {
     "_bytes": 12,
     "_digest": {
