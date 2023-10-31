@@ -20,15 +20,9 @@ object FilesCache {
   def mk(fetchFromResources: String => IO[JsonObject])(implicit t: Timer[IO]): IO[FilesCache] =
     MemoryCache.ofSingleImmutableMap[IO, String, JsonObject](None).map(mk(fetchFromResources, _))
 
-  def mk(fetchFromResources: String => IO[JsonObject], cache: MemoryCache[IO, String, JsonObject]): FilesCache = {
-    val updatingCache =
-      cache.setOnCacheMiss(resourcePath => fetchFromResources(resourcePath).flatMap(cache.insert(resourcePath, _)))
-
-    new FilesCache {
-      override def lookupLogErrors(resourcePath: String, msg: String): IO[JsonObject] =
-        OptionT(updatingCache.lookup(resourcePath))
-          .getOrElseF(fetchFromResources(resourcePath).flatTap(cache.insert(resourcePath, _)))
-          .logErrors(msg)
-    }
-  }
+  def mk(fetchFromResources: String => IO[JsonObject], cache: MemoryCache[IO, String, JsonObject]): FilesCache =
+    (resourcePath: String, msg: String) =>
+      OptionT(cache.lookup(resourcePath))
+        .getOrElseF(fetchFromResources(resourcePath).flatTap(cache.insert(resourcePath, _)))
+        .logErrors(msg)
 }
