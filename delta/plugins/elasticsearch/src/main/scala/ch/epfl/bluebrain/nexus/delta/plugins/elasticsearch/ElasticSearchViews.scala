@@ -439,7 +439,7 @@ object ElasticSearchViews {
       Option.when(state.isEmpty) {
         ElasticSearchViewState(e.id, e.project, e.uuid, e.value, e.source, Tags.empty, e.rev, IndexingRev.init, deprecated = false,  e.instant, e.subject, e.instant, e.subject)
       }
-      
+
     def updated(e: ElasticSearchViewUpdated): Option[ElasticSearchViewState] = state.map { s =>
       val newIndexingRev = nextIndexingRev(s.value, e.value, s.indexingRev, e.rev)
       s.copy(rev = e.rev, indexingRev = newIndexingRev, value = e.value, source = e.source, updatedAt = e.instant, updatedBy = e.subject)

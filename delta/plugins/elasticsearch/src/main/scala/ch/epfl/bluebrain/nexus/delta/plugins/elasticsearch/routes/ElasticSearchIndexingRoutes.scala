@@ -150,7 +150,7 @@ final class ElasticSearchIndexingRoutes(
                 },
                 // Get elasticsearch view mapping
                 (pathPrefix("_mapping") & get & pathEndOrSingleSlash) {
-                  emit(viewsQuery.mapping(id, ref))
+                  emit(viewsQuery.mapping(id, ref).attemptNarrow[ElasticSearchViewRejection])
                 }
               )
             }

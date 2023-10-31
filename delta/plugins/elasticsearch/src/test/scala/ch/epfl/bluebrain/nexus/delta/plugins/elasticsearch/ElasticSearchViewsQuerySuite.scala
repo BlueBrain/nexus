@@ -248,7 +248,7 @@ class ElasticSearchViewsQuerySuite
 
   // Match all resources and sort them by created date and date
   private val matchAllSorted                               = jobj"""{ "size": 100, "sort": [{ "_createdAt": "asc" }, { "@id": "asc" }] }"""
-//  private val sort                                         = SortList.byCreationDateAndId
+  //  private val sort                                         = SortList.byCreationDateAndId
   implicit private val defaultSort: Ordering[DataResource] = Ordering.by { r => r.createdAt -> r.id }
 
   /**

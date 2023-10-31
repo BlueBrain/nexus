@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
 import cats.data.NonEmptySet
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsGen.resourceFor
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection._
@@ -24,7 +25,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
 import io.circe.Json
 import io.circe.syntax._
-import monix.bio.UIO
 import monix.execution.Scheduler
 
 import java.util.UUID
@@ -86,11 +86,11 @@ class BlazegraphViewsSpec extends BioSpec with DoobieScalaTestFixture with Confi
       fetchContext,
       ResolverContextResolution(rcr),
       ValidateBlazegraphView(
-        UIO.pure(Set(permissions.query)),
+        IO.pure(Set(permissions.query)),
         2,
         xas
       ),
-      _ => UIO.unit,
+      _ => IO.unit,
       eventLogConfig,
       prefix,
       xas

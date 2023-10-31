@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query
 
 import akka.http.scaladsl.model.StatusCodes
+import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
@@ -15,7 +16,7 @@ import io.circe.{Encoder, JsonObject}
 /**
   * Enumeration of errors raised while querying the Elasticsearch indices
   */
-sealed abstract class ElasticSearchQueryError(val reason: String)
+sealed abstract class ElasticSearchQueryError(val reason: String) extends Rejection
 
 object ElasticSearchQueryError {
 

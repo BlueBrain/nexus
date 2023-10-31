@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query
 
 import akka.http.scaladsl.model.Uri
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
@@ -15,7 +16,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{AggregationResult, Search
 import ch.epfl.bluebrain.nexus.delta.sdk.views.View.IndexingView
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Scope, Transactors}
 import io.circe.JsonObject
-import monix.bio.{IO, UIO}
 
 /**
   * Allow to list resources from the default elasticsearch views
@@ -25,12 +25,12 @@ trait DefaultViewsQuery[Result, Aggregate] {
   /**
     * Retrieves a list of resources from the provided search request
     */
-  def list(searchRequest: DefaultSearchRequest)(implicit caller: Caller): IO[ElasticSearchQueryError, Result]
+  def list(searchRequest: DefaultSearchRequest)(implicit caller: Caller): IO[Result]
 
   /**
     * Retrieves aggregations for the provided search request
     */
-  def aggregate(searchRequest: DefaultSearchRequest)(implicit caller: Caller): IO[ElasticSearchQueryError, Aggregate]
+  def aggregate(searchRequest: DefaultSearchRequest)(implicit caller: Caller): IO[Aggregate]
 }
 
 object DefaultViewsQuery {
@@ -60,10 +60,10 @@ object DefaultViewsQuery {
   }
 
   def apply[Result, Aggregate](
-      fetchViews: Scope => UIO[List[IndexingView]],
+      fetchViews: Scope => IO[List[IndexingView]],
       aclCheck: AclCheck,
-      listAction: (DefaultSearchRequest, Set[IndexingView]) => IO[ElasticSearchQueryError, Result],
-      aggregateAction: (DefaultSearchRequest, Set[IndexingView]) => IO[ElasticSearchQueryError, Aggregate]
+      listAction: (DefaultSearchRequest, Set[IndexingView]) => IO[Result],
+      aggregateAction: (DefaultSearchRequest, Set[IndexingView]) => IO[Aggregate]
   ): DefaultViewsQuery[Result, Aggregate] = new DefaultViewsQuery[Result, Aggregate] {
 
     private def filterViews(scope: Scope)(implicit caller: Caller) =
@@ -78,13 +78,13 @@ object DefaultViewsQuery {
             .toUIO
         }
         .flatMap {
-          case views if views.isEmpty => IO.terminate(AuthorizationFailed("No views are accessible."))
+          case views if views.isEmpty => IO.raiseError(AuthorizationFailed("No views are accessible."))
           case views                  => IO.pure(views)
         }
 
     override def list(
         searchRequest: DefaultSearchRequest
-    )(implicit caller: Caller): IO[ElasticSearchQueryError, Result] =
+    )(implicit caller: Caller): IO[Result] =
       filterViews(searchRequest.scope).flatMap { views =>
         listAction(searchRequest, views)
       }
@@ -94,7 +94,7 @@ object DefaultViewsQuery {
       */
     override def aggregate(
         searchRequest: DefaultSearchRequest
-    )(implicit caller: Caller): IO[ElasticSearchQueryError, Aggregate] =
+    )(implicit caller: Caller): IO[Aggregate] =
       filterViews(searchRequest.scope).flatMap { views =>
         aggregateAction(searchRequest, views)
       }

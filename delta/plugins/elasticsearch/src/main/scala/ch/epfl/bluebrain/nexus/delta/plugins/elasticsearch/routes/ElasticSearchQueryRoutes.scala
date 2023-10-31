@@ -2,6 +2,8 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
 
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
+import cats.effect.IO
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.DefaultSearchRequest.{OrgSearch, ProjectSearch, RootSearch}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.{DefaultSearchRequest, DefaultViewsQuery, ElasticSearchQueryError}
@@ -9,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
+import ch.epfl.bluebrain.nexus.delta.sdk.ce.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
@@ -20,8 +22,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{AggregationResult, Pagina
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import io.circe.JsonObject
-import monix.bio.IO
-import monix.execution.Scheduler
 
 class ElasticSearchQueryRoutes(
     identities: Identities,
@@ -32,7 +32,6 @@ class ElasticSearchQueryRoutes(
 )(implicit
     baseUri: BaseUri,
     paginationConfig: PaginationConfig,
-    s: Scheduler,
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering,
     fetchContext: FetchContext[ElasticSearchQueryError]
@@ -146,23 +145,23 @@ class ElasticSearchQueryRoutes(
   private def list(request: DefaultSearchRequest)(implicit caller: Caller): Route =
     list(IO.pure(request))
 
-  private def list(request: IO[ElasticSearchQueryError, DefaultSearchRequest])(implicit caller: Caller): Route =
+  private def list(request: IO[DefaultSearchRequest])(implicit caller: Caller): Route =
     (get & paginated & extractUri) { (page, uri) =>
       implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[JsonObject]] =
         searchResultsJsonLdEncoder(ContextValue(contexts.searchMetadata), page, uri)
 
-      emit(request.flatMap(defaultViewsQuery.list))
+      emit(request.flatMap(defaultViewsQuery.list).attemptNarrow[ElasticSearchQueryError])
     }
 
   private def aggregate(request: DefaultSearchRequest)(implicit caller: Caller): Route =
     aggregate(IO.pure(request))
 
-  private def aggregate(request: IO[ElasticSearchQueryError, DefaultSearchRequest])(implicit caller: Caller): Route =
+  private def aggregate(request: IO[DefaultSearchRequest])(implicit caller: Caller): Route =
     (get & aggregated) {
       implicit val searchJsonLdEncoder: JsonLdEncoder[AggregationResult] =
         aggregationResultJsonLdEncoder(ContextValue(contexts.aggregations))
 
-      emit(request.flatMap(defaultViewsQuery.aggregate))
+      emit(request.flatMap(defaultViewsQuery.aggregate).attemptNarrow[ElasticSearchQueryError])
     }
 
 }

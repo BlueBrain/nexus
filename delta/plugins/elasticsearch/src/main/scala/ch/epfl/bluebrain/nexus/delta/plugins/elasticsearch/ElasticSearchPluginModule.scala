@@ -240,7 +240,6 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         schemeDirectives: DeltaSchemeDirectives,
         defaultViewsQuery: DefaultViewsQuery.Elasticsearch,
         baseUri: BaseUri,
-        s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering,
         resourcesToSchemaSet: Set[ResourceToSchemaMappings],
@@ -257,7 +256,6 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
       )(
         baseUri,
         esConfig.pagination,
-        s,
         cr,
         ordering,
         fetchContext.mapRejection(ElasticSearchQueryError.ProjectContextRejection)
@@ -305,7 +303,6 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         identities: Identities,
         aclCheck: AclCheck,
         idResolution: IdResolution,
-        s: Scheduler,
         ordering: JsonKeyOrdering,
         rcr: RemoteContextResolution @Id("aggregate"),
         fusionConfig: FusionConfig,
@@ -313,7 +310,6 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
     ) =>
       new IdResolutionRoutes(identities, aclCheck, idResolution)(
         baseUri,
-        s,
         ordering,
         rcr,
         fusionConfig

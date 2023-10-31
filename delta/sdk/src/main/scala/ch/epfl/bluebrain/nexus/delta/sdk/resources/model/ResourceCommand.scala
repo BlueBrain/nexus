@@ -112,7 +112,8 @@ object ResourceCommand {
       source: Json,
       jsonld: JsonLdResult,
       rev: Int,
-      caller: Caller
+      caller: Caller,
+      tag: Option[UserTag]
   ) extends ResourceCommand
       with ModifyCommand {
     def subject: Subject = caller.subject

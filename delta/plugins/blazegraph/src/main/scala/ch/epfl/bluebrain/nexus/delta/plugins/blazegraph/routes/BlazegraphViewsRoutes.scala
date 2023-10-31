@@ -3,8 +3,9 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes
 import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive0, Route}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView._
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.permissions.{read => Read, write => Write}
@@ -14,10 +15,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.{IndexingAction, IndexingMode}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.ce.DeltaDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaDirectives, DeltaSchemeDirectives}
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
@@ -27,9 +28,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, ResourceF}
+import ch.epfl.bluebrain.nexus.delta.sdk.{IndexingAction, IndexingMode}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.Json
-import monix.execution.Scheduler
 
 /**
   * The Blazegraph views routes
@@ -54,7 +55,6 @@ class BlazegraphViewsRoutes(
     index: IndexingAction.Execute[BlazegraphView]
 )(implicit
     baseUri: BaseUri,
-    s: Scheduler,
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering,
     pc: PaginationConfig,
@@ -83,8 +83,9 @@ class BlazegraphViewsRoutes(
                     Created,
                     views
                       .create(ref, source)
-                      .tapEval(indexUIO(ref, _, mode))
+                      .flatTap(indexUIO(ref, _, mode))
                       .mapValue(_.metadata)
+                      .attemptNarrow[BlazegraphViewRejection]
                       .rejectWhen(decodingFailedOrViewNotFound)
                   )
                 }
@@ -102,8 +103,9 @@ class BlazegraphViewsRoutes(
                                 Created,
                                 views
                                   .create(id, ref, source)
-                                  .tapEval(indexUIO(ref, _, mode))
+                                  .flatTap(indexUIO(ref, _, mode))
                                   .mapValue(_.metadata)
+                                  .attemptNarrow[BlazegraphViewRejection]
                                   .rejectWhen(decodingFailedOrViewNotFound)
                               )
                             case (Some(rev), source) =>
@@ -111,8 +113,9 @@ class BlazegraphViewsRoutes(
                               emit(
                                 views
                                   .update(id, ref, rev, source)
-                                  .tapEval(indexUIO(ref, _, mode))
+                                  .flatTap(indexUIO(ref, _, mode))
                                   .mapValue(_.metadata)
+                                  .attemptNarrow[BlazegraphViewRejection]
                                   .rejectWhen(decodingFailedOrViewNotFound)
                               )
                           }
@@ -124,8 +127,9 @@ class BlazegraphViewsRoutes(
                           emit(
                             views
                               .deprecate(id, ref, rev)
-                              .tapEval(indexUIO(ref, _, mode))
+                              .flatTap(indexUIO(ref, _, mode))
                               .mapValue(_.metadata)
+                              .attemptNarrow[BlazegraphViewRejection]
                               .rejectOn[ViewNotFound]
                           )
                         }
@@ -136,7 +140,12 @@ class BlazegraphViewsRoutes(
                           ref,
                           id,
                           authorizeFor(ref, Read).apply {
-                            emit(views.fetch(id, ref).rejectOn[ViewNotFound])
+                            emit(
+                              views
+                                .fetch(id, ref)
+                                .attemptNarrow[BlazegraphViewRejection]
+                                .rejectOn[ViewNotFound]
+                            )
                           }
                         )
                       }
@@ -148,7 +157,12 @@ class BlazegraphViewsRoutes(
                       // Query
                       ((get & parameter("query".as[SparqlQuery])) | (post & entity(as[SparqlQuery]))) { query =>
                         queryResponseType.apply { responseType =>
-                          emit(viewsQuery.query(id, ref, query, responseType).rejectOn[ViewNotFound])
+                          emit(
+                            viewsQuery
+                              .query(id, ref, query, responseType)
+                              .attemptNarrow[BlazegraphViewRejection]
+                              .rejectOn[ViewNotFound]
+                          )
                         }
                       }
                     )
@@ -157,7 +171,13 @@ class BlazegraphViewsRoutes(
                     concat(
                       // Fetch tags for a view
                       (get & idSegmentRef(id) & authorizeFor(ref, Read)) { id =>
-                        emit(views.fetch(id, ref).map(_.value.tags).rejectOn[ViewNotFound])
+                        emit(
+                          views
+                            .fetch(id, ref)
+                            .map(_.value.tags)
+                            .attemptNarrow[BlazegraphViewRejection]
+                            .rejectOn[ViewNotFound]
+                        )
                       },
                       // Tag a view
                       (post & parameter("rev".as[Int])) { rev =>
@@ -167,8 +187,9 @@ class BlazegraphViewsRoutes(
                               Created,
                               views
                                 .tag(id, ref, tag, tagRev, rev)
-                                .tapEval(indexUIO(ref, _, mode))
+                                .flatTap(indexUIO(ref, _, mode))
                                 .mapValue(_.metadata)
+                                .attemptNarrow[BlazegraphViewRejection]
                                 .rejectOn[ViewNotFound]
                             )
                           }
@@ -179,7 +200,13 @@ class BlazegraphViewsRoutes(
                   // Fetch a view original source
                   (pathPrefix("source") & get & pathEndOrSingleSlash & idSegmentRef(id)) { id =>
                     authorizeFor(ref, Read).apply {
-                      emit(views.fetch(id, ref).map(_.value.source).rejectOn[ViewNotFound])
+                      emit(
+                        views
+                          .fetch(id, ref)
+                          .map(_.value.source)
+                          .attemptNarrow[BlazegraphViewRejection]
+                          .rejectOn[ViewNotFound]
+                      )
                     }
                   },
                   //Incoming/outgoing links for views
@@ -216,7 +243,7 @@ class BlazegraphViewsRoutes(
           searchResultsJsonLdEncoder(ContextValue(Vocabulary.contexts.metadata), pagination, uri)
 
         authorizeFor(ref, Read).apply {
-          emit(viewsQuery.incoming(id, ref, pagination))
+          emit(viewsQuery.incoming(id, ref, pagination).attemptNarrow[BlazegraphViewRejection])
         }
       },
       (pathPrefix("outgoing") & fromPaginated & pathEndOrSingleSlash & extractUri & parameter(
@@ -226,7 +253,9 @@ class BlazegraphViewsRoutes(
           searchResultsJsonLdEncoder(ContextValue(Vocabulary.contexts.metadata), pagination, uri)
 
         authorizeFor(ref, Read).apply {
-          emit(viewsQuery.outgoing(id, ref, pagination, includeExternal))
+          emit(
+            viewsQuery.outgoing(id, ref, pagination, includeExternal).attemptNarrow[BlazegraphViewRejection]
+          )
         }
       }
     )
@@ -247,7 +276,6 @@ object BlazegraphViewsRoutes {
       index: IndexingAction.Execute[BlazegraphView]
   )(implicit
       baseUri: BaseUri,
-      s: Scheduler,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering,
       pc: PaginationConfig,

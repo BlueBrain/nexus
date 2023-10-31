@@ -112,7 +112,7 @@ final class FilesRoutes(
                       concat(
                         (put & pathEndOrSingleSlash) {
                           parameters("rev".as[Int].?, "storage".as[IdSegment].?, "tag".as[UserTag].?) {
-                            case (None, storage, tag)    =>
+                            case (None, storage, tag)      =>
                               concat(
                                 // Link a file with id segment
                                 entity(as[LinkFile]) { case LinkFile(filename, mediaType, path) =>
@@ -126,19 +126,20 @@ final class FilesRoutes(
                                 },
                                 // Create a file with id segment
                                 extractRequestEntity { entity =>
+                                  println(s"DTBDTB or only here?")
                                   emit(
                                     Created,
                                     files.create(fileId, storage, entity, tag).index(mode).attemptNarrow[FileRejection]
                                   )
                                 }
                               )
-                            case (Some(rev), storage, _) =>
+                            case (Some(rev), storage, tag) =>
                               concat(
                                 // Update a Link
                                 entity(as[LinkFile]) { case LinkFile(filename, mediaType, path) =>
                                   emit(
                                     files
-                                      .updateLink(fileId, storage, filename, mediaType, path, rev)
+                                      .updateLink(fileId, storage, filename, mediaType, path, rev, tag)
                                       .index(mode)
                                       .attemptNarrow[FileRejection]
                                   )
@@ -146,7 +147,10 @@ final class FilesRoutes(
                                 // Update a file
                                 extractRequestEntity { entity =>
                                   emit(
-                                    files.update(fileId, storage, rev, entity).index(mode).attemptNarrow[FileRejection]
+                                    files
+                                      .update(fileId, storage, rev, entity, tag)
+                                      .index(mode)
+                                      .attemptNarrow[FileRejection]
                                   )
                                 }
                               )

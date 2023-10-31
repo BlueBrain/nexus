@@ -56,12 +56,12 @@ class FilesStmSpec extends CatsEffectSpec with FileFixtures with StorageFixtures
       }
 
       "create a new event from a UpdateFile command" in {
-        val updateCmd = UpdateFile(id, projectRef, storageRef, DiskStorageType, attributes, 1, alice)
+        val updateCmd = UpdateFile(id, projectRef, storageRef, DiskStorageType, attributes, 1, alice, None)
         val current   =
           FileGen.state(id, projectRef, remoteStorageRef, attributes.copy(bytes = 1), RemoteStorageType)
 
         evaluate(Some(current), updateCmd).accepted shouldEqual
-          FileUpdated(id, projectRef, storageRef, DiskStorageType, attributes, 2, epoch, alice)
+          FileUpdated(id, projectRef, storageRef, DiskStorageType, attributes, 2, epoch, alice, None)
       }
 
       "create a new event from a UpdateFileAttributes command" in {
@@ -101,7 +101,7 @@ class FilesStmSpec extends CatsEffectSpec with FileFixtures with StorageFixtures
       "reject with IncorrectRev" in {
         val current  = FileGen.state(id, projectRef, storageRef, attributes)
         val commands = List(
-          UpdateFile(id, projectRef, storageRef, DiskStorageType, attributes, 2, alice),
+          UpdateFile(id, projectRef, storageRef, DiskStorageType, attributes, 2, alice, None),
           UpdateFileAttributes(id, projectRef, mediaType, 10, dig, 2, alice),
           TagFile(id, projectRef, targetRev = 1, myTag, 2, alice),
           DeleteFileTag(id, projectRef, myTag, 2, alice),
@@ -120,7 +120,7 @@ class FilesStmSpec extends CatsEffectSpec with FileFixtures with StorageFixtures
 
       "reject with FileNotFound" in {
         val commands = List(
-          UpdateFile(id, projectRef, storageRef, DiskStorageType, attributes, 2, alice),
+          UpdateFile(id, projectRef, storageRef, DiskStorageType, attributes, 2, alice, None),
           UpdateFileAttributes(id, projectRef, mediaType, 10, dig, 2, alice),
           TagFile(id, projectRef, targetRev = 1, myTag, 2, alice),
           DeleteFileTag(id, projectRef, myTag, 2, alice),
@@ -134,7 +134,7 @@ class FilesStmSpec extends CatsEffectSpec with FileFixtures with StorageFixtures
       "reject with FileIsDeprecated" in {
         val current  = FileGen.state(id, projectRef, storageRef, attributes, rev = 2, deprecated = true)
         val commands = List(
-          UpdateFile(id, projectRef, storageRef, DiskStorageType, attributes, 2, alice),
+          UpdateFile(id, projectRef, storageRef, DiskStorageType, attributes, 2, alice, None),
           UpdateFileAttributes(id, projectRef, mediaType, 10, dig, 2, alice),
           DeprecateFile(id, projectRef, 2, alice)
         )
@@ -151,7 +151,7 @@ class FilesStmSpec extends CatsEffectSpec with FileFixtures with StorageFixtures
 
       "reject with DigestNotComputed" in {
         val current = FileGen.state(id, projectRef, storageRef, attributes.copy(digest = NotComputedDigest))
-        val cmd     = UpdateFile(id, projectRef, storageRef, DiskStorageType, attributes, 1, alice)
+        val cmd     = UpdateFile(id, projectRef, storageRef, DiskStorageType, attributes, 1, alice, None)
         evaluate(Some(current), cmd).rejected shouldEqual DigestNotComputed(id)
       }
 
@@ -175,7 +175,7 @@ class FilesStmSpec extends CatsEffectSpec with FileFixtures with StorageFixtures
       }
 
       "from a new FileUpdated event" in {
-        val event = FileUpdated(id, projectRef, storageRef, DiskStorageType, attributes, 2, time2, alice)
+        val event = FileUpdated(id, projectRef, storageRef, DiskStorageType, attributes, 2, time2, alice, None)
         next(None, event) shouldEqual None
 
         val att     = attributes.copy(bytes = 1)
