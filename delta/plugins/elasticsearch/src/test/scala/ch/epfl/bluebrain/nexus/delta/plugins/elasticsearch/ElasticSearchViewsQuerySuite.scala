@@ -82,13 +82,11 @@ class ElasticSearchViewsQuerySuite
     (charlie.subject, AclAddress.Project(project2.ref), Set(queryPermission, permissions.read))
   ).accepted
 
-  private val mappings = jsonObjectContentOf("defaults/default-mapping.json")
-
   private val indexingValue: IndexingElasticSearchViewValue =
     IndexingElasticSearchViewValue(
       resourceTag = None,
       pipeline = List(PipeStep.noConfig(FilterDeprecated.ref), PipeStep.noConfig(DiscardMetadata.ref)),
-      mapping = Some(mappings),
+      mapping = Some(defaultMapping),
       settings = None,
       permission = queryPermission,
       context = None
@@ -201,11 +199,15 @@ class ElasticSearchViewsQuerySuite
       client.createIndex(_, _, _).void,
       prefix,
       10,
-      xas
+      xas,
+      defaultMapping,
+      defaultSettings
     ),
     eventLogConfig,
     prefix,
-    xas
+    xas,
+    defaultMapping,
+    defaultSettings
   ).unsafeRunSync()
 
   private lazy val viewsQuery = ElasticSearchViewsQuery(

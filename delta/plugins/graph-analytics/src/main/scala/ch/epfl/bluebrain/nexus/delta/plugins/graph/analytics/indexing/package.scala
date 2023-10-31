@@ -1,18 +1,21 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics
 
 import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.CatsEffectsClasspathResourceUtils.ioJsonObjectContentOf
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.config.GraphAnalyticsConfig.TermAggregationsConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import com.typesafe.scalalogging.Logger
+import com.typesafe.scalalogging.{Logger => ScalaLog}
 import io.circe.JsonObject
 import monix.bio.UIO
+import org.typelevel.log4cats.{Logger => Log4CatsLogger}
 
 package object indexing {
 
-  implicit private val classLoader: ClassLoader = getClass.getClassLoader
-  implicit private val logger: Logger           = Logger[GraphAnalytics]
+  implicit private val classLoader: ClassLoader     = getClass.getClassLoader
+  implicit private val scalaLogger: ScalaLog        = ScalaLog[GraphAnalytics]
+  implicit private val log4cats: Log4CatsLogger[IO] = Logger.cats[GraphAnalytics]
 
   val updateRelationshipsScriptId = "updateRelationships"
 

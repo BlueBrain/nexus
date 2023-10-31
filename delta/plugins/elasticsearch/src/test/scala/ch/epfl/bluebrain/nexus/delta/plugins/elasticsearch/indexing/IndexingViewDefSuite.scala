@@ -37,9 +37,9 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
 
   implicit private val batch: BatchConfig = BatchConfig(2, 10.millis)
 
-  private val defaultMapping  = jobj"""{"defaultMapping": {}}"""
-  private val defaultSettings = jobj"""{"defaultSettings": {}}"""
-  private val prefix          = "prefix"
+  private val defaultEsMapping  = jobj"""{"defaultEsMapping": {}}"""
+  private val defaultEsSettings = jobj"""{"defaultEsSettings": {}}"""
+  private val prefix            = "prefix"
 
   private val uuid             = UUID.fromString("f8468909-a797-4b10-8b5f-000cba337bfa")
   private val instant: Instant = Instant.EPOCH
@@ -99,7 +99,7 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
 
   test("Build an active view def with a custom mapping and settings") {
     assertEquals(
-      IndexingViewDef(state(indexingCustom), defaultMapping, defaultSettings, prefix),
+      IndexingViewDef(state(indexingCustom), defaultEsMapping, defaultEsSettings, prefix),
       Some(
         ActiveViewDef(
           viewRef,
@@ -119,7 +119,7 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
 
   test("Build an active view def with no mapping and settings defined") {
     assertEquals(
-      IndexingViewDef(state(indexingDefault), defaultMapping, defaultSettings, prefix),
+      IndexingViewDef(state(indexingDefault), defaultEsMapping, defaultEsSettings, prefix),
       Some(
         ActiveViewDef(
           viewRef,
@@ -127,8 +127,8 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
           indexingDefault.pipeChain,
           indexingDefault.selectFilter,
           IndexLabel.fromView("prefix", uuid, indexingRev),
-          defaultMapping,
-          defaultSettings,
+          defaultEsMapping,
+          defaultEsSettings,
           indexingDefault.context,
           indexingRev,
           rev
@@ -139,7 +139,7 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
 
   test("Build an deprecated view def") {
     assertEquals(
-      IndexingViewDef(state(indexingDefault).copy(deprecated = true), defaultMapping, defaultSettings, prefix),
+      IndexingViewDef(state(indexingDefault).copy(deprecated = true), defaultEsMapping, defaultEsSettings, prefix),
       Some(
         DeprecatedViewDef(
           viewRef
@@ -150,7 +150,7 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
 
   test("Ignore aggregate views") {
     assertEquals(
-      IndexingViewDef(state(aggregate), defaultMapping, defaultSettings, prefix),
+      IndexingViewDef(state(aggregate), defaultEsMapping, defaultEsSettings, prefix),
       None
     )
   }
@@ -162,8 +162,8 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
       Some(PipeChain(PipeRef.unsafe("xxx") -> ExpandedJsonLd.empty)),
       indexingDefault.selectFilter,
       IndexLabel.fromView("prefix", uuid, indexingRev),
-      defaultMapping,
-      defaultSettings,
+      defaultEsMapping,
+      defaultEsSettings,
       indexingDefault.context,
       indexingRev,
       rev
@@ -194,8 +194,8 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
       Some(PipeChain(FilterDeprecated())),
       indexingDefault.selectFilter,
       IndexLabel.fromView("prefix", uuid, indexingRev),
-      defaultMapping,
-      defaultSettings,
+      defaultEsMapping,
+      defaultEsSettings,
       indexingDefault.context,
       indexingRev,
       rev

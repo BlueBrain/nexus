@@ -411,25 +411,24 @@ object ElasticSearchViews {
       validate: ValidateElasticSearchView,
       eventLogConfig: EventLogConfig,
       prefix: String,
-      xas: Transactors
-  )(implicit api: JsonLdApi, clock: Clock[IO], uuidF: UUIDF): IO[ElasticSearchViews] = {
-    for {
-      sourceDecoder   <- ElasticSearchViewJsonLdSourceDecoder(uuidF, contextResolution)
-      defaultMapping  <- defaultElasticsearchMapping
-      defaultSettings <- defaultElasticsearchSettings
-    } yield new ElasticSearchViews(
-      ScopedEventLog(
-        definition(validate),
-        eventLogConfig,
-        xas
-      ),
-      fetchContext,
-      sourceDecoder,
-      defaultMapping,
-      defaultSettings,
-      prefix
+      xas: Transactors,
+      defaultMapping: JsonObject,
+      defaultSettings: JsonObject
+  )(implicit api: JsonLdApi, clock: Clock[IO], uuidF: UUIDF): IO[ElasticSearchViews] =
+    ElasticSearchViewJsonLdSourceDecoder(uuidF, contextResolution).map(decoder =>
+      new ElasticSearchViews(
+        ScopedEventLog(
+          definition(validate),
+          eventLogConfig,
+          xas
+        ),
+        fetchContext,
+        decoder,
+        defaultMapping,
+        defaultSettings,
+        prefix
+      )
     )
-  }
 
   private[elasticsearch] def next(
       state: Option[ElasticSearchViewState],

@@ -4,7 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.{AggregateElasticSearchView, IndexingElasticSearchView}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{ProjectContextRejection, ViewNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.permissions.{query => queryPermissions}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultElasticsearchMapping, defaultElasticsearchSettings, defaultViewId, ElasticSearchViewRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultViewId, ElasticSearchViewRejection}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schema => schemaorg}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
@@ -40,9 +40,6 @@ class ElasticSearchScopeInitializationSpec
   private val project  =
     ProjectGen.project("org", "project", uuid = uuid, orgUuid = uuid, base = projBase, mappings = am)
 
-  private val mapping  = defaultElasticsearchMapping.accepted
-  private val settings = defaultElasticsearchSettings.accepted
-
   private val fetchContext = FetchContextDummy[ElasticSearchViewRejection](
     List(project),
     ProjectContextRejection
@@ -54,7 +51,9 @@ class ElasticSearchScopeInitializationSpec
     ValidateElasticSearchView.always,
     eventLogConfig,
     "prefix",
-    xas
+    xas,
+    defaultMapping,
+    defaultSettings
   ).accepted
 
   private val defaultName        = "defaultName"
@@ -74,8 +73,8 @@ class ElasticSearchScopeInitializationSpec
             PipeStep.noConfig(DefaultLabelPredicates.ref),
             PipeStep.noConfig(SourceAsText.ref)
           )
-          v.mapping shouldEqual mapping
-          v.settings shouldEqual settings
+          v.mapping shouldEqual defaultMapping
+          v.settings shouldEqual defaultSettings
           v.permission shouldEqual queryPermissions
           v.name shouldEqual Some(defaultName)
           v.description shouldEqual Some(defaultDescription)

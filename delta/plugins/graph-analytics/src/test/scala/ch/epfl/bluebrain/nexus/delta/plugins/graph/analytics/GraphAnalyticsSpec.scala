@@ -4,6 +4,7 @@ import akka.actor.ActorSystem
 import akka.testkit.TestKit
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.toMonixBIOOps
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.Fixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchBulk, ElasticSearchClient}
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.config.GraphAnalyticsConfig.TermAggregationsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.AnalyticsGraph.{Edge, EdgePath, Node}
@@ -40,7 +41,8 @@ class GraphAnalyticsSpec(docker: ElasticSearchDocker)
     with BIOValues
     with IOFixedClock
     with ConfigFixtures
-    with Eventually {
+    with Eventually
+    with Fixtures {
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(10.seconds, Span(10, Millis))
 
@@ -55,7 +57,7 @@ class GraphAnalyticsSpec(docker: ElasticSearchDocker)
   )
 
   private lazy val endpoint                       = docker.esHostConfig.endpoint
-  private lazy val client                         = new ElasticSearchClient(HttpClient(), endpoint, 2000)
+  private lazy val client                         = new ElasticSearchClient(HttpClient(), endpoint, 2000, emptyResults)
   private val prefix                              = "test"
   private lazy val graphAnalytics: GraphAnalytics =
     GraphAnalytics(client, fetchContext, "test", TermAggregationsConfig(100, 300))

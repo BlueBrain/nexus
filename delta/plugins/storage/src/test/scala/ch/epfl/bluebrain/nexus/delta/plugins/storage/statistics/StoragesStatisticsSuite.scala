@@ -1,11 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.statistics
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.EventMetricsProjection.{eventMetricsIndex, initMetricsIndex}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.EventMetricsProjection.eventMetricsIndex
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchSink
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.metrics.MetricsStream.{metricsStream, projectRef1, projectRef2}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchFiles
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchClientSetup, EventMetricsProjection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesStatistics
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageStatEntry
@@ -14,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.SupervisorSetup
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.SupervisorSetup.unapply
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
 import ch.epfl.bluebrain.nexus.testkit.bio.BioRunContext
+import ch.epfl.bluebrain.nexus.testkit.elasticsearch.FilesCacheFixture
 import ch.epfl.bluebrain.nexus.testkit.mu.bio.{BIOValues, PatienceConfig}
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import munit.AnyFixture
@@ -26,7 +28,8 @@ class StoragesStatisticsSuite
     with ElasticSearchClientSetup.Fixture
     with BIOValues
     with SupervisorSetup.Fixture
-    with TestHelpers {
+    with TestHelpers
+    with FilesCacheFixture {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(esClient, supervisor)
 
@@ -35,16 +38,19 @@ class StoragesStatisticsSuite
   private lazy val client     = esClient()
   private lazy val (sv, _, _) = unapply(supervisor())
 
-  private lazy val sink   = ElasticSearchSink.events(client, 2, 50.millis, index, Refresh.False)
-  private val indexPrefix = "delta"
-  private val index       = eventMetricsIndex(indexPrefix)
+  private lazy val sink     = ElasticSearchSink.events(client, 2, 50.millis, index, Refresh.False)
+  private val indexPrefix   = "delta"
+  private val index         = eventMetricsIndex(indexPrefix)
+  private val files         = ElasticSearchFiles.mk(filesCache)
+  private lazy val mapping  = files.metricsMapping.accepted
+  private lazy val settings = files.metricsSettings.accepted
 
   private def stats = (client: ElasticSearchClient) =>
     StoragesStatistics.apply(client, (storage, _) => IO.pure(Iri.unsafe(storage.toString)), indexPrefix)
 
   test("Run the event metrics projection") {
-    val metricsProjection =
-      EventMetricsProjection(sink, sv, _ => metricsStream, initMetricsIndex(client, index))
+    val createIndex       = client.createIndex(index, Some(mapping), Some(settings)).void
+    val metricsProjection = EventMetricsProjection(sink, sv, _ => metricsStream, createIndex)
     metricsProjection.accepted
   }
 

@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.deletion
 
 import akka.http.scaladsl.model.Uri.Query
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchBulk, QueryBuilder}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchClientSetup, EventMetricsProjection}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchClientSetup, EventMetricsProjection, Fixtures}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.testkit.mu.bio.BioSuite
@@ -13,7 +13,8 @@ class EventMetricsDeletionTaskSuite
     extends BioSuite
     with ElasticSearchClientSetup.Fixture
     with CirceLiteral
-    with TestHelpers {
+    with TestHelpers
+    with Fixtures {
 
   implicit private val subject: Subject = Anonymous
 
@@ -44,7 +45,7 @@ class EventMetricsDeletionTaskSuite
 
     for {
       // Indexing and checking count
-      _ <- EventMetricsProjection.initMetricsIndex(client, index)
+      _ <- client.createIndex(index, Some(defaultMapping), Some(defaultSettings))
       _ <- client.bulk(operations)
       _ <- client.refresh(index)
       _ <- client.count(index.value).assert(4L)

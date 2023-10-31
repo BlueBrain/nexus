@@ -1,11 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import cats.data.NonEmptyChain
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.{ioToTaskK, toMonixBIOOps}
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.ioToTaskK
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchSink
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{metricsMapping, metricsSettings, ElasticSearchViewRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{BatchConfig, QueryConfig}
@@ -16,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.AsJson
 import ch.epfl.bluebrain.nexus.delta.sourcing.{MultiDecoder, Scope, Transactors}
+import io.circe.JsonObject
 import monix.bio.Task
 
 trait EventMetricsProjection
@@ -23,21 +23,6 @@ trait EventMetricsProjection
 object EventMetricsProjection {
   val projectionMetadata: ProjectionMetadata  = ProjectionMetadata("system", "event-metrics", None, None)
   val eventMetricsIndex: String => IndexLabel = prefix => IndexLabel.unsafe(s"${prefix}_project_metrics")
-
-  /**
-    * @param client
-    *   the elastic search client
-    * @param index
-    *   the index to be created at initialization
-    * @return
-    *   creates the metrics index using the client
-    */
-  def initMetricsIndex(client: ElasticSearchClient, index: IndexLabel): Task[Unit] =
-    for {
-      mappings <- metricsMapping.toBIO[ElasticSearchViewRejection]
-      settings <- metricsSettings.toBIO[ElasticSearchViewRejection]
-      _        <- client.createIndex(index, Some(mappings), Some(settings))
-    } yield ()
 
   /**
     * @param metricEncoders
@@ -66,7 +51,9 @@ object EventMetricsProjection {
       xas: Transactors,
       batchConfig: BatchConfig,
       queryConfig: QueryConfig,
-      indexPrefix: String
+      indexPrefix: String,
+      metricMappings: JsonObject,
+      metricsSettings: JsonObject
   ): Task[EventMetricsProjection] = {
     val allEntityTypes = metricEncoders.map(_.entityType).toList
 
@@ -81,7 +68,9 @@ object EventMetricsProjection {
     val sink =
       ElasticSearchSink.events(client, batchConfig.maxElements, batchConfig.maxInterval, index, Refresh.False)
 
-    apply(sink, supervisor, metrics, initMetricsIndex(client, index))
+    val createIndex = client.createIndex(index, Some(metricMappings), Some(metricsSettings)).void
+
+    apply(sink, supervisor, metrics, createIndex)
   }
 
   /**

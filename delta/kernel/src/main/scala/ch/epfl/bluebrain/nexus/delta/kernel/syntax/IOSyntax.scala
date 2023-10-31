@@ -9,6 +9,7 @@ import com.typesafe.scalalogging.Logger
 import monix.bio.{IO => BIO, Task, UIO}
 
 import scala.reflect.ClassTag
+import org.typelevel.log4cats.{Logger => Log4CatsLogger}
 
 trait IOSyntax {
 
@@ -85,9 +86,7 @@ final class IOFunctorOps[A, F[_]: Functor](private val io: IO[F[A]]) {
   def mapValue[B](f: A => B): IO[F[B]] = io.map(_.map(f))
 }
 
-final class IOOps[A](private val task: IO[A]) extends AnyVal {
-  def logErrors(action: String)(implicit logger: Logger): IO[A] =
-    task.onError { ex =>
-      IO.delay(logger.warn(s"Error during: '$action'", ex))
-    }
+final class IOOps[A](private val io: IO[A]) extends AnyVal {
+  def logErrors(action: String)(implicit logger: Log4CatsLogger[IO]): IO[A] =
+    io.onError(logger.warn(_)(s"Error during: '$action'"))
 }
