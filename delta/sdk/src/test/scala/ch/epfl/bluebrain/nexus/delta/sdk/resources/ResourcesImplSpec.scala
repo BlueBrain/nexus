@@ -332,21 +332,34 @@ class ResourcesImplSpec
       "succeed" in {
         val updated      = source.removeKeys(keywords.id) deepMerge json"""{"number": 60}"""
         val expectedData = ResourceGen.resource(myId2, projectRef, updated, Revision(schema1.id, 1))
-        resources.update(myId2, projectRef, Some(schema1.id), 1, updated).accepted shouldEqual
-          mkResource(expectedData).copy(rev = 2)
+        val expected     = mkResource(expectedData).copy(rev = 2)
+        val actual       = resources.update(myId2, projectRef, Some(schema1.id), 1, updated, None).accepted
+        actual shouldEqual expected
+      }
+
+      "successfully tag" in {
+        val updated      = source.removeKeys(keywords.id) deepMerge json"""{"number": 60}"""
+        val newTag       = UserTag.unsafe(genString())
+        val expectedData =
+          ResourceGen.resource(myId10, projectRef, updated, Revision(schema1.id, 1), tags = Tags(tag -> 1, newTag -> 2))
+        val expected     = mkResource(expectedData).copy(rev = 2)
+        val actual       = resources.update(myId10, projectRef, Some(schema1.id), 1, updated, Some(newTag)).accepted
+        val byTag        = resources.fetch(IdSegmentRef(myId10, newTag), projectRef, None).accepted
+        actual shouldEqual expected
+        byTag shouldEqual expected
       }
 
       "succeed without specifying the schema" in {
         val updated      = source.removeKeys(keywords.id) deepMerge json"""{"number": 65}"""
         val expectedData = ResourceGen.resource(myId2, projectRef, updated, Revision(schema1.id, 1))
-        resources.update("nxv:myid2", projectRef, None, 2, updated).accepted shouldEqual
+        resources.update("nxv:myid2", projectRef, None, 2, updated, None).accepted shouldEqual
           mkResource(expectedData).copy(rev = 3)
       }
 
       "succeed when changing the schema" in {
         val updatedSource   = source.removeKeys(keywords.id) deepMerge json"""{"number": 70}"""
         val newSchema       = Revision(schema3.id, 1)
-        val updatedResource = resources.update(myId2, projectRef, Some(newSchema.iri), 3, updatedSource).accepted
+        val updatedResource = resources.update(myId2, projectRef, Some(newSchema.iri), 3, updatedSource, None).accepted
 
         updatedResource.rev shouldEqual 4
         updatedResource.schema shouldEqual newSchema
@@ -354,38 +367,38 @@ class ResourcesImplSpec
 
       "reject if it doesn't exists" in {
         resources
-          .update(nxv + "other", projectRef, None, 1, json"""{"a": "b"}""")
+          .update(nxv + "other", projectRef, None, 1, json"""{"a": "b"}""", None)
           .rejectedWith[ResourceNotFound]
       }
 
       "reject if the revision passed is incorrect" in {
-        resources.update(myId, projectRef, None, 3, json"""{"a": "b"}""").rejected shouldEqual
+        resources.update(myId, projectRef, None, 3, json"""{"a": "b"}""", None).rejected shouldEqual
           IncorrectRev(provided = 3, expected = 1)
       }
 
       "reject if deprecated" in {
         resources.deprecate(myId3, projectRef, None, 1).accepted
         resources
-          .update(myId3, projectRef, None, 2, json"""{"a": "b"}""")
+          .update(myId3, projectRef, None, 2, json"""{"a": "b"}""", None)
           .rejectedWith[ResourceIsDeprecated]
         resources
-          .update("nxv:myid3", projectRef, None, 2, json"""{"a": "b"}""")
+          .update("nxv:myid3", projectRef, None, 2, json"""{"a": "b"}""", None)
           .rejectedWith[ResourceIsDeprecated]
       }
 
       "reject if it does not validate against its schema" in {
         val wrongSource = source.removeKeys(keywords.id) deepMerge json"""{"number": "wrong"}"""
-        resources.update(myId2, projectRef, Some(schema1.id), 4, wrongSource).rejectedWith[InvalidResource]
+        resources.update(myId2, projectRef, Some(schema1.id), 4, wrongSource, None).rejectedWith[InvalidResource]
       }
 
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
 
-        resources.update(myId, projectRef, None, 2, source).rejectedWith[ProjectContextRejection]
+        resources.update(myId, projectRef, None, 2, source, None).rejectedWith[ProjectContextRejection]
       }
 
       "reject if project is deprecated" in {
-        resources.update(myId, projectDeprecated.ref, None, 2, source).rejectedWith[ProjectContextRejection]
+        resources.update(myId, projectDeprecated.ref, None, 2, source, None).rejectedWith[ProjectContextRejection]
       }
     }
 

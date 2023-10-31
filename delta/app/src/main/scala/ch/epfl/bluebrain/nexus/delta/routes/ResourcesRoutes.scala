@@ -117,7 +117,7 @@ final class ResourcesRoutes(
                           put {
                             authorizeFor(ref, Write).apply {
                               (parameter("rev".as[Int].?) & pathEndOrSingleSlash & entity(as[NexusSource]) & tagParam) {
-                                case (None, source, tag)    =>
+                                case (None, source, tag)      =>
                                   // Create a resource with schema and id segments
                                   emit(
                                     Created,
@@ -128,11 +128,11 @@ final class ResourcesRoutes(
                                       .attemptNarrow[ResourceRejection]
                                       .rejectWhen(wrongJsonOrNotFound)
                                   )
-                                case (Some(rev), source, _) =>
+                                case (Some(rev), source, tag) =>
                                   // Update a resource
                                   emit(
                                     resources
-                                      .update(id, ref, schemaOpt, rev, source.value)
+                                      .update(id, ref, schemaOpt, rev, source.value, tag)
                                       .flatTap(indexUIO(ref, _, mode))
                                       .map(_.void)
                                       .attemptNarrow[ResourceRejection]
