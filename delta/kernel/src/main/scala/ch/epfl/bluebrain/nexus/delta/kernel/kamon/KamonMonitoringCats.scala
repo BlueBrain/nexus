@@ -71,7 +71,7 @@ object KamonMonitoringCats {
         case (span, ExitCase.Canceled)     => finishSpan(span.tag("cancel", value = true), takeSamplingDecision)
       }
     else io
-  }.onError { case e: Rejection => logger.info(e)(e.getMessage) }
+  }.onError { case e: Rejection => logger.debug(e)(e.getMessage) }
 
   private def buildSpan(name: String, component: String, tags: Map[String, Any]): IO[Span] =
     IO {
