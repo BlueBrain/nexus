@@ -109,14 +109,19 @@ final class ProjectsRoutes(
                           // Create project
                           authorizeFor(ref, projectsPermissions.create).apply {
                             entity(as[ProjectFields]) { fields =>
-                              emit(StatusCodes.Created, projects.create(ref, fields).mapValue(_.metadata))
+                              emit(
+                                StatusCodes.Created,
+                                projects.create(ref, fields).mapValue(_.metadata).attemptNarrow[ProjectRejection]
+                              )
                             }
                           }
                         case Some(rev) =>
                           // Update project
                           authorizeFor(ref, projectsPermissions.write).apply {
                             entity(as[ProjectFields]) { fields =>
-                              emit(projects.update(ref, rev, fields).mapValue(_.metadata))
+                              emit(
+                                projects.update(ref, rev, fields).mapValue(_.metadata).attemptNarrow[ProjectRejection]
+                              )
                             }
                           }
                       }
@@ -141,11 +146,11 @@ final class ProjectsRoutes(
                       parameters("rev".as[Int], "prune".?(false)) {
                         case (rev, true)  =>
                           authorizeFor(ref, projectsPermissions.delete).apply {
-                            emit(projects.delete(ref, rev).mapValue(_.metadata))
+                            emit(projects.delete(ref, rev).mapValue(_.metadata).attemptNarrow[ProjectRejection])
                           }
                         case (rev, false) =>
                           authorizeFor(ref, projectsPermissions.write).apply {
-                            emit(projects.deprecate(ref, rev).mapValue(_.metadata))
+                            emit(projects.deprecate(ref, rev).mapValue(_.metadata).attemptNarrow[ProjectRejection])
                           }
                       }
                     }
