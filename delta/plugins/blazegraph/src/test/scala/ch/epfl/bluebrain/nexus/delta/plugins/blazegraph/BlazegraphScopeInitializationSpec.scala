@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.{AggregateBlazegraphView, IndexingBlazegraphView}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{ProjectContextRejection, ViewNotFound}
@@ -15,8 +16,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
-import monix.bio.UIO
-import monix.execution.Scheduler
 
 import java.util.UUID
 
@@ -26,9 +25,8 @@ class BlazegraphScopeInitializationSpec
     with ConfigFixtures
     with Fixtures {
 
-  private val uuid                   = UUID.randomUUID()
-  implicit private val uuidF: UUIDF  = UUIDF.fixed(uuid)
-  implicit private val sc: Scheduler = Scheduler.global
+  private val uuid                  = UUID.randomUUID()
+  implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
 
   private val prefix = "prefix"
 
@@ -51,7 +49,7 @@ class BlazegraphScopeInitializationSpec
     fetchContext,
     ResolverContextResolution(rcr),
     alwaysValidate,
-    _ => UIO.unit,
+    _ => IO.unit,
     eventLogConfig,
     prefix,
     xas
