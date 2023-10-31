@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.routes
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
+import cats.data.OptionT
 import cats.effect.{ContextShift, IO}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
@@ -162,12 +163,7 @@ final class ProjectsRoutes(
                     authorizeFor(ref, resources.read).apply {
                       val stats = projectsStatistics.get(ref).toCatsIO
                       emit(
-                        stats
-                          .flatMap {
-                            case Some(value) => IO(value)
-                            case None        => IO.raiseError(ProjectNotFound(ref))
-                          }
-                          .attemptNarrow[ProjectRejection]
+                        OptionT(stats).toRight[ProjectRejection](ProjectNotFound(ref)).value
                       )
                     }
                   }

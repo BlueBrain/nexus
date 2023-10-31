@@ -1,8 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.provisioning
 
 import cats.effect.{ContextShift, IO}
-import cats.implicits.catsSyntaxMonadError
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.error.FormatError
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.Acls
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.{Acl, AclAddress, AclRejection}
@@ -76,17 +75,19 @@ object ProjectProvisioning {
       val acl = Acl(AclAddress.Project(projectRef), user -> provisioningConfig.permissions)
       for {
         _ <- appendAcls(acl)
-               .toBIO[AclRejection]
-               .onErrorRecover { case _: AclRejection.IncorrectRev | _: AclRejection.NothingToBeUpdated => () }
-               .mapError(UnableToSetAcls)
+               .recoverWith {
+                 case _: AclRejection.IncorrectRev       => IO.unit
+                 case _: AclRejection.NothingToBeUpdated => IO.unit
+               }
+               .adaptError { case r: AclRejection => UnableToSetAcls(r) }
         _ <- projects
                .create(
                  projectRef,
                  provisioningConfig.fields
                )(user, contextShift)
-               .toBIO[ProjectRejection]
-               .onErrorRecover { case _: ProjectAlreadyExists => () }
-               .mapError(UnableToCreateProject)
+               .void
+               .recoverWith { case _: ProjectAlreadyExists => IO.unit }
+               .adaptError { case r: ProjectRejection => UnableToCreateProject(r) }
       } yield ()
     }
 
@@ -98,7 +99,7 @@ object ProjectProvisioning {
               proj      <-
                 IO.fromEither(Label.sanitized(subject)).adaptError { case e: FormatError => InvalidProjectLabel(e) }
               projectRef = ProjectRef(org, proj)
-              exists    <- projects.fetch(projectRef).map(_ => true).handleErrorWith(_ => IO(false))
+              exists    <- projects.fetch(projectRef).as(true).handleError(_ => false)
               _         <- IO.whenA(!exists)(provisionOnNotFound(projectRef, user, provisioningConfig))
             } yield ()
           case None      => IO.unit
