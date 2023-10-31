@@ -3,9 +3,11 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
 import akka.http.scaladsl.model.headers.Location
 import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import akka.http.scaladsl.server.Route
+import cats.effect.IO
+import cats.implicits.catsSyntaxOptionId
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.IdResolution
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.{DefaultSearchRequest, DefaultViewsQuery, ElasticSearchQueryError}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.{DefaultSearchRequest, DefaultViewsQuery}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.DummyDefaultViewsQuery.{aggregationResponse, Aggregation, Result}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -15,7 +17,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{AggregationResult, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import io.circe.Decoder
-import monix.bio.{IO, UIO}
 
 class IdResolutionRoutesSuite extends ElasticSearchViewsRoutesFixtures {
 
@@ -26,7 +27,7 @@ class IdResolutionRoutesSuite extends ElasticSearchViewsRoutesFixtures {
   private val successContent =
     ResourceGen.jsonLdContent(successId, projectRef, jsonResource)
   private def fetchResource  =
-    (_: ResourceRef, _: ProjectRef) => UIO.some(successContent)
+    (_: ResourceRef, _: ProjectRef) => IO.pure(successContent.some)
 
   implicit private val f: FusionConfig = fusionConfig
 
@@ -36,12 +37,12 @@ class IdResolutionRoutesSuite extends ElasticSearchViewsRoutesFixtures {
     new DefaultViewsQuery[Result, Aggregation] {
       override def list(searchRequest: DefaultSearchRequest)(implicit
           caller: Caller
-      ): IO[ElasticSearchQueryError, Result] =
+      ): IO[Result] =
         IO.pure(SearchResults(1, List(listResponse)))
 
       override def aggregate(searchRequest: DefaultSearchRequest)(implicit
           caller: Caller
-      ): IO[ElasticSearchQueryError, Aggregation] =
+      ): IO[Aggregation] =
         IO.pure(AggregationResult(1, aggregationResponse))
     }
 

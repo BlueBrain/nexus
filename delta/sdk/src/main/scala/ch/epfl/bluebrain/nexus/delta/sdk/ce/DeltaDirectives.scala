@@ -121,19 +121,18 @@ trait DeltaDirectives extends UriDirectives {
     */
   def emitOrFusionRedirect(projectRef: ProjectRef, id: IdSegmentRef, emitDelta: Route)(implicit
       config: FusionConfig
-  ): Route =
+  ): Route = {
+    val resourceBase =
+      config.base / projectRef.organization.value / projectRef.project.value / "resources" / id.value.asString
     emitOrFusionRedirect(
-      IO.pure {
-        val resourceBase =
-          config.base / projectRef.organization.value / projectRef.project.value / "resources" / id.value.asString
-        id match {
-          case _: Latest        => resourceBase
-          case Revision(_, rev) => resourceBase.withQuery(Uri.Query("rev" -> rev.toString))
-          case Tag(_, tag)      => resourceBase.withQuery(Uri.Query("tag" -> tag.value))
-        }
+      id match {
+        case _: Latest        => resourceBase
+        case Revision(_, rev) => resourceBase.withQuery(Uri.Query("rev" -> rev.toString))
+        case Tag(_, tag)      => resourceBase.withQuery(Uri.Query("tag" -> tag.value))
       },
       emitDelta
     )
+  }
 
   /**
     * If the `Accept` header is set to `text/html`, redirect to the matching project page in fusion if the feature is
@@ -141,14 +140,14 @@ trait DeltaDirectives extends UriDirectives {
     */
   def emitOrFusionRedirect(projectRef: ProjectRef, emitDelta: Route)(implicit config: FusionConfig): Route =
     emitOrFusionRedirect(
-      IO.pure(config.base / "admin" / projectRef.organization.value / projectRef.project.value),
+      config.base / "admin" / projectRef.organization.value / projectRef.project.value,
       emitDelta
     )
 
-  private def emitOrFusionRedirect(fusionUri: IO[Uri], emitDelta: Route)(implicit config: FusionConfig) =
+  def emitOrFusionRedirect(fusionUri: Uri, emitDelta: Route)(implicit config: FusionConfig): Route =
     extractRequest { req =>
       if (config.enableRedirects && req.header[Accept].exists(_.mediaRanges.contains(fusionRange))) {
-        emitRedirect(SeeOther, fusionUri)
+        emitRedirect(SeeOther, IO.pure(fusionUri))
       } else
         emitDelta
     }
@@ -173,6 +172,10 @@ trait DeltaDirectives extends UriDirectives {
   /** Injects a `Vary: Accept,Accept-Encoding` into the response */
   def varyAcceptHeaders: Directive0 =
     vary(Set(Accept.name, `Accept-Encoding`.name))
+
+  /** The URI of fusion's id resolution endpoint */
+  def fusionResolveUri(id: Uri)(implicit config: FusionConfig): Uri =
+    config.base / "resolve" / id.toString
 
   private def vary(headers: Set[String]): Directive0 =
     respondWithHeader(RawHeader("Vary", headers.mkString(",")))

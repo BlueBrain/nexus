@@ -2,8 +2,8 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import akka.actor.typed.ActorSystem
 import cats.effect.{Clock, ContextShift, IO}
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.deletion.{ElasticSearchDeletionTask, EventMetricsDeletionTask}
@@ -207,7 +207,6 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         schemeDirectives: DeltaSchemeDirectives,
         defaultViewsQuery: DefaultViewsQuery.Elasticsearch,
         baseUri: BaseUri,
-        s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering,
         resourcesToSchemaSet: Set[ResourceToSchemaMappings],
@@ -224,7 +223,6 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
       )(
         baseUri,
         esConfig.pagination,
-        s,
         cr,
         ordering,
         fetchContext.mapRejection(ElasticSearchQueryError.ProjectContextRejection)
@@ -272,7 +270,6 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         identities: Identities,
         aclCheck: AclCheck,
         idResolution: IdResolution,
-        s: Scheduler,
         ordering: JsonKeyOrdering,
         rcr: RemoteContextResolution @Id("aggregate"),
         fusionConfig: FusionConfig,
@@ -280,7 +277,6 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
     ) =>
       new IdResolutionRoutes(identities, aclCheck, idResolution)(
         baseUri,
-        s,
         ordering,
         rcr,
         fusionConfig
