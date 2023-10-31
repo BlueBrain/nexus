@@ -116,6 +116,8 @@ object FileEvent {
     *   the instant this event was created
     * @param subject
     *   the subject which created this event
+    * @param tag
+    *   an optional user-specified tag attached to the latest revision
     */
   final case class FileUpdated(
       id: Iri,
@@ -125,7 +127,8 @@ object FileEvent {
       attributes: FileAttributes,
       rev: Int,
       instant: Instant,
-      subject: Subject
+      subject: Subject,
+      tag: Option[UserTag]
   ) extends FileEvent
 
   /**

@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import cats.effect.{ContextShift, IO}
-import cats.implicits.catsSyntaxApplicativeError
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.IndexingViewDef.ActiveViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection._
@@ -16,8 +16,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.ce.DeltaDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaDirectives, DeltaSchemeDirectives}
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
@@ -32,8 +33,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionErrors, Pro
 import io.circe.Encoder
 import io.circe.generic.semiauto.deriveEncoder
 import io.circe.syntax._
-import monix.bio.{IO => BIO}
-import monix.execution.Scheduler
+
 class BlazegraphViewsIndexingRoutes(
     fetch: FetchIndexingView,
     identities: Identities,
@@ -43,7 +43,6 @@ class BlazegraphViewsIndexingRoutes(
     schemeDirectives: DeltaSchemeDirectives
 )(implicit
     baseUri: BaseUri,
-    s: Scheduler,
     c: ContextShift[IO],
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering,
@@ -74,6 +73,7 @@ class BlazegraphViewsIndexingRoutes(
                   emit(
                     fetch(id, ref)
                       .flatMap(v => projections.statistics(ref, v.selectFilter, v.projection))
+                      .attemptNarrow[BlazegraphViewRejection]
                       .rejectOn[ViewNotFound]
                   )
                 }
@@ -84,7 +84,7 @@ class BlazegraphViewsIndexingRoutes(
                   concat(
                     (pathPrefix("sse") & lastEventId) { offset =>
                       emit(
-                        fetch(id, ref).toCatsIO
+                        fetch(id, ref)
                           .map { view =>
                             projectionErrors.sses(view.ref.project, view.ref.viewId, offset)
                           }
@@ -100,6 +100,7 @@ class BlazegraphViewsIndexingRoutes(
                             .flatMap { view =>
                               projectionErrors.search(view.ref, pagination, timeRange)
                             }
+                            .attemptNarrow[BlazegraphViewRejection]
                             .rejectOn[ViewNotFound]
                         )
                     }
@@ -114,6 +115,7 @@ class BlazegraphViewsIndexingRoutes(
                     emit(
                       fetch(id, ref)
                         .flatMap(v => projections.offset(v.projection))
+                        .attemptNarrow[BlazegraphViewRejection]
                         .rejectOn[ViewNotFound]
                     )
                   },
@@ -123,6 +125,7 @@ class BlazegraphViewsIndexingRoutes(
                       fetch(id, ref)
                         .flatMap { r => projections.scheduleRestart(r.projection) }
                         .as(Offset.start)
+                        .attemptNarrow[BlazegraphViewRejection]
                         .rejectOn[ViewNotFound]
                     )
                   }
@@ -137,7 +140,7 @@ class BlazegraphViewsIndexingRoutes(
 
 object BlazegraphViewsIndexingRoutes {
 
-  type FetchIndexingView = (IdSegment, ProjectRef) => BIO[BlazegraphViewRejection, ActiveViewDef]
+  type FetchIndexingView = (IdSegment, ProjectRef) => IO[ActiveViewDef]
 
   /**
     * @return
@@ -152,7 +155,6 @@ object BlazegraphViewsIndexingRoutes {
       schemeDirectives: DeltaSchemeDirectives
   )(implicit
       baseUri: BaseUri,
-      s: Scheduler,
       c: ContextShift[IO],
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering,

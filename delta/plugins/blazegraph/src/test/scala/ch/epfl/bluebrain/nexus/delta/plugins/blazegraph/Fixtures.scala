@@ -1,11 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.contexts.{blazegraph, blazegraphMetadata}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
-import monix.bio.IO
 
 trait Fixtures {
   implicit private val cl: ClassLoader = getClass.getClassLoader

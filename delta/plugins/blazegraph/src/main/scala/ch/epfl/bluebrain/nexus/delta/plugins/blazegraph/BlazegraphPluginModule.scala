@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
 import akka.actor.typed.ActorSystem
 import cats.effect.{Clock, ContextShift, IO}
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.config.BlazegraphViewsConfig
@@ -15,7 +16,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction.AggregateIndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.ProjectDeletionTask
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
@@ -37,7 +37,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionErrors, Projections}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{ReferenceRegistry, Supervisor}
 import izumi.distage.model.definition.{Id, ModuleDef}
-import monix.bio.UIO
 import monix.execution.Scheduler
 
 /**
@@ -122,20 +121,18 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
           config: BlazegraphViewsConfig,
           xas: Transactors,
           api: JsonLdApi,
-          clock: Clock[UIO],
+          clock: Clock[IO],
           uuidF: UUIDF
       ) =>
-        toCatsIO(
-          BlazegraphViews(
-            fetchContext.mapRejection(ProjectContextRejection),
-            contextResolution,
-            validate,
-            client,
-            config.eventLog,
-            config.prefix,
-            xas
-          )(api, clock, uuidF)
-        )
+        BlazegraphViews(
+          fetchContext.mapRejection(ProjectContextRejection),
+          contextResolution,
+          validate,
+          client,
+          config.eventLog,
+          config.prefix,
+          xas
+        )(api, clock, uuidF)
     }
 
   make[BlazegraphCoordinator].fromEffect {
@@ -170,16 +167,14 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         cfg: BlazegraphViewsConfig,
         xas: Transactors
     ) =>
-      toCatsIO(
-        BlazegraphViewsQuery(
-          aclCheck,
-          fetchContext.mapRejection(ProjectContextRejection),
-          views,
-          client,
-          slowQueryLogger,
-          cfg.prefix,
-          xas
-        )
+      BlazegraphViewsQuery(
+        aclCheck,
+        fetchContext.mapRejection(ProjectContextRejection),
+        views,
+        client,
+        slowQueryLogger,
+        cfg.prefix,
+        xas
       )
   }
 
@@ -194,7 +189,6 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         shift: BlazegraphView.Shift,
         baseUri: BaseUri,
         cfg: BlazegraphViewsConfig,
-        s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering,
         fusionConfig: FusionConfig
@@ -208,7 +202,6 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         indexingAction(_, _, _)(shift)
       )(
         baseUri,
-        s,
         cr,
         ordering,
         cfg.pagination,
@@ -226,7 +219,6 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         schemeDirectives: DeltaSchemeDirectives,
         baseUri: BaseUri,
         cfg: BlazegraphViewsConfig,
-        s: Scheduler,
         c: ContextShift[IO],
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
@@ -240,7 +232,6 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         schemeDirectives
       )(
         baseUri,
-        s,
         c,
         cr,
         ordering,

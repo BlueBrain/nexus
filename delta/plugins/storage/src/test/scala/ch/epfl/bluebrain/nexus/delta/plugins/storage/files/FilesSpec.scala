@@ -317,27 +317,29 @@ class FilesSpec(docker: RemoteStorageDocker)
     "updating a file" should {
 
       "succeed" in {
-        files.update(fileId("file1"), None, 1, entity()).accepted shouldEqual
+        files.update(fileId("file1"), None, 1, entity(), None).accepted shouldEqual
           FileGen.resourceFor(file1, projectRef, diskRev, attributes(), rev = 2, createdBy = bob, updatedBy = bob)
       }
 
       "reject if file doesn't exists" in {
-        files.update(fileIdIri(nxv + "other"), None, 1, entity()).rejectedWith[FileNotFound]
+        files.update(fileIdIri(nxv + "other"), None, 1, entity(), None).rejectedWith[FileNotFound]
       }
 
       "reject if storage does not exist" in {
-        files.update(fileId("file1"), Some(storage), 2, entity()).rejected shouldEqual
+        files.update(fileId("file1"), Some(storage), 2, entity(), None).rejected shouldEqual
           WrappedStorageRejection(StorageNotFound(storageIri, projectRef))
       }
 
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
 
-        files.update(FileId(file1, projectRef), None, 2, entity()).rejectedWith[ProjectContextRejection]
+        files.update(FileId(file1, projectRef), None, 2, entity(), None).rejectedWith[ProjectContextRejection]
       }
 
       "reject if project is deprecated" in {
-        files.update(FileId(file1, deprecatedProject.ref), None, 2, entity()).rejectedWith[ProjectContextRejection]
+        files
+          .update(FileId(file1, deprecatedProject.ref), None, 2, entity(), None)
+          .rejectedWith[ProjectContextRejection]
       }
     }
 
@@ -361,32 +363,38 @@ class FilesSpec(docker: RemoteStorageDocker)
 
     "updating a file linking" should {
 
-      "succeed" in {
+      "succeed and tag" in {
         val path     = Uri.Path("my/file-4.txt")
         val tempAttr = attributes("file-4.txt").copy(digest = NotComputedDigest)
         val attr     = tempAttr.copy(location = Uri(s"file:///app/nexustest/nexus/${tempAttr.path}"), origin = Storage)
-        val expected = mkResource(file2, projectRef, remoteRev, attr, RemoteStorageType, rev = 3, tags = Tags(tag -> 1))
-        files
-          .updateLink(fileId("file2"), Some(remoteId), None, Some(`text/plain(UTF-8)`), path, 2)
-          .accepted shouldEqual expected
+        val newTag   = UserTag.unsafe(genString())
+        val expected =
+          mkResource(file2, projectRef, remoteRev, attr, RemoteStorageType, rev = 3, tags = Tags(tag -> 1, newTag -> 3))
+        val actual   = files
+          .updateLink(fileId("file2"), Some(remoteId), None, Some(`text/plain(UTF-8)`), path, 2, Some(newTag))
+          .accepted
+        val byTag    = files.fetch(FileId("file2", newTag, projectRef)).accepted
+
+        actual shouldEqual expected
+        byTag shouldEqual expected
       }
 
       "reject if file doesn't exists" in {
         files
-          .updateLink(fileIdIri(nxv + "other"), None, None, None, Uri.Path.Empty, 1)
+          .updateLink(fileIdIri(nxv + "other"), None, None, None, Uri.Path.Empty, 1, None)
           .rejectedWith[FileNotFound]
       }
 
       "reject if digest is not computed" in {
         files
-          .updateLink(fileId("file2"), None, None, None, Uri.Path.Empty, 3)
+          .updateLink(fileId("file2"), None, None, None, Uri.Path.Empty, 3, None)
           .rejectedWith[DigestNotComputed]
       }
 
       "reject if storage does not exist" in {
         val storage = nxv + "other-storage"
         files
-          .updateLink(fileId("file1"), Some(storage), None, None, Uri.Path.Empty, 2)
+          .updateLink(fileId("file1"), Some(storage), None, None, Uri.Path.Empty, 2, None)
           .rejected shouldEqual
           WrappedStorageRejection(StorageNotFound(storage, projectRef))
       }
@@ -395,13 +403,13 @@ class FilesSpec(docker: RemoteStorageDocker)
         val projectRef = ProjectRef(org, Label.unsafe("other"))
 
         files
-          .updateLink(FileId(file1, projectRef), None, None, None, Uri.Path.Empty, 2)
+          .updateLink(FileId(file1, projectRef), None, None, None, Uri.Path.Empty, 2, None)
           .rejectedWith[ProjectContextRejection]
       }
 
       "reject if project is deprecated" in {
         files
-          .updateLink(FileId(file1, deprecatedProject.ref), None, None, None, Uri.Path.Empty, 2)
+          .updateLink(FileId(file1, deprecatedProject.ref), None, None, None, Uri.Path.Empty, 2, None)
           .rejectedWith[ProjectContextRejection]
       }
     }

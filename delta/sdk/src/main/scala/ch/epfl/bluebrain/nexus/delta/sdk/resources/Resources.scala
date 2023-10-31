@@ -87,7 +87,8 @@ trait Resources {
       projectRef: ProjectRef,
       schemaOpt: Option[IdSegment],
       rev: Int,
-      source: Json
+      source: Json,
+      tag: Option[UserTag]
   )(implicit caller: Caller): IO[DataResource]
 
   /**
@@ -288,8 +289,8 @@ object Resources {
       ResourceState(e.id, e.project, e.schemaProject, e.source, e.compacted, e.expanded, e.remoteContexts, e.rev, deprecated = false, e.schema, e.types, Tags(e.tag, e.rev), e.instant, e.subject, e.instant, e.subject)
     }
 
-    def updated(e: ResourceUpdated): Option[ResourceState] = state.map {
-      _.copy(rev = e.rev, types = e.types, schema = e.schema, schemaProject = e.schemaProject, source = e.source, compacted = e.compacted, expanded = e.expanded, remoteContexts = e.remoteContexts, updatedAt = e.instant, updatedBy = e.subject)
+    def updated(e: ResourceUpdated): Option[ResourceState] = state.map { s =>
+      s.copy(rev = e.rev, types = e.types, schema = e.schema, schemaProject = e.schemaProject, source = e.source, compacted = e.compacted, expanded = e.expanded, remoteContexts = e.remoteContexts, tags = s.tags ++ Tags(e.tag, e.rev), updatedAt = e.instant, updatedBy = e.subject)
     }
 
     def refreshed(e: ResourceRefreshed): Option[ResourceState] = state.map {
@@ -402,7 +403,7 @@ object Resources {
         schemaRef                   = u.schemaOpt.getOrElse(ResourceRef.Latest(s.schema.iri))
         (schemaRev, schemaProject) <- validate(u.id, expanded, schemaRef, s.project, u.caller)
         time                       <- IOInstant.now
-      } yield ResourceUpdated(u.id, u.project, schemaRev, schemaProject, types, u.source, compacted, expanded, remoteContextRefs, s.rev + 1, time, u.subject)
+      } yield ResourceUpdated(u.id, u.project, schemaRev, schemaProject, types, u.source, compacted, expanded, remoteContextRefs, s.rev + 1, time, u.subject, u.tag)
       // format: on
     }
 
@@ -477,7 +478,8 @@ object Resources {
       ResourceState.serializer,
       Tagger[ResourceEvent](
         {
-          case r: ResourceCreated  => r.tag.flatMap(t => Some(t -> r.rev))
+          case r: ResourceCreated  => r.tag.map(t => t -> r.rev)
+          case r: ResourceUpdated  => r.tag.map(t => t -> r.rev)
           case r: ResourceTagAdded => Some(r.tag -> r.targetRev)
           case _                   => None
         },

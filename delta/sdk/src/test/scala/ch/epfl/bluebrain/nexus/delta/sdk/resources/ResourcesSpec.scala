@@ -90,7 +90,7 @@ class ResourcesSpec extends CatsEffectSpec with CirceLiteral with ValidateResour
             )
             eval(
               Some(current),
-              UpdateResource(myId, projectRef, schemaOptCmd, newSource, newJsonLd, 1, caller)
+              UpdateResource(myId, projectRef, schemaOptCmd, newSource, newJsonLd, 1, caller, Some(tag))
             ).accepted shouldEqual
               ResourceUpdated(
                 myId,
@@ -104,7 +104,8 @@ class ResourcesSpec extends CatsEffectSpec with CirceLiteral with ValidateResour
                 newRemoteContextRefs,
                 2,
                 epoch,
-                subject
+                subject,
+                Some(tag)
               )
         }
       }
@@ -173,7 +174,7 @@ class ResourcesSpec extends CatsEffectSpec with CirceLiteral with ValidateResour
       "reject with IncorrectRev" in {
         val current = ResourceGen.currentState(myId, projectRef, source, jsonld)
         val list    = List(
-          current -> UpdateResource(myId, projectRef, None, source, jsonld, 2, caller),
+          current -> UpdateResource(myId, projectRef, None, source, jsonld, 2, caller, None),
           current -> TagResource(myId, projectRef, None, 1, UserTag.unsafe("tag"), 2, subject),
           current -> DeleteResourceTag(myId, projectRef, None, UserTag.unsafe("tag"), 2, subject),
           current -> DeprecateResource(myId, projectRef, None, 2, subject)
@@ -185,7 +186,7 @@ class ResourcesSpec extends CatsEffectSpec with CirceLiteral with ValidateResour
 
       "reject with ResourceNotFound" in {
         val list = List(
-          None -> UpdateResource(myId, projectRef, None, source, jsonld, 1, caller),
+          None -> UpdateResource(myId, projectRef, None, source, jsonld, 1, caller, None),
           None -> TagResource(myId, projectRef, None, 1, UserTag.unsafe("myTag"), 1, subject),
           None -> DeprecateResource(myId, projectRef, None, 1, subject)
         )
@@ -197,7 +198,7 @@ class ResourcesSpec extends CatsEffectSpec with CirceLiteral with ValidateResour
       "reject with ResourceIsDeprecated" in {
         val current = ResourceGen.currentState(myId, projectRef, source, jsonld, deprecated = true)
         val list    = List(
-          current -> UpdateResource(myId, projectRef, None, source, jsonld, 1, caller),
+          current -> UpdateResource(myId, projectRef, None, source, jsonld, 1, caller, None),
           current -> DeprecateResource(myId, projectRef, None, 1, subject)
         )
         forAll(list) { case (state, cmd) =>
@@ -289,7 +290,8 @@ class ResourcesSpec extends CatsEffectSpec with CirceLiteral with ValidateResour
             remoteContexts,
             1,
             time2,
-            subject
+            subject,
+            None
           )
         ) shouldEqual None
 
@@ -307,7 +309,8 @@ class ResourcesSpec extends CatsEffectSpec with CirceLiteral with ValidateResour
             remoteContexts,
             2,
             time2,
-            subject
+            subject,
+            None
           )
         ).value shouldEqual
           current.copy(
