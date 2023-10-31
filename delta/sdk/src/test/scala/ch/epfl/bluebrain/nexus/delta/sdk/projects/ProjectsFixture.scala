@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.projects
 
-import cats.effect.Clock
+import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.ScopeInitialization
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
@@ -10,14 +10,13 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.testkit.mu.bio.ResourceFixture
-import monix.bio.UIO
 
 import java.util.UUID
 
 object ProjectsFixture {
 
   def init(fetchOrgs: FetchOrganization, apiMappings: ApiMappings, config: ProjectsConfig)(implicit
-      clock: Clock[UIO],
+      clock: Clock[IO],
       cl: ClassLoader
   ): ResourceFixture.TaskFixture[(Transactors, Projects)] = {
     implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
@@ -32,14 +31,14 @@ object ProjectsFixture {
       config: ProjectsConfig
   )(implicit
       base: BaseUri,
-      clock: Clock[UIO],
+      clock: Clock[IO],
       uuidF: UUIDF,
       cl: ClassLoader
   ): ResourceFixture.TaskFixture[(Transactors, Projects)] =
     ResourceFixture.suiteLocal(
       "projects",
       Doobie.resource().map { xas =>
-        (xas, ProjectsImpl(fetchOrgs, _ => UIO.unit, scopeInitializations, apiMappings, config, xas))
+        (xas, ProjectsImpl(fetchOrgs, _ => IO.unit, scopeInitializations, apiMappings, config, xas))
       }
     )
 

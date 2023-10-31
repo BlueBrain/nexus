@@ -149,7 +149,7 @@ object FetchContext {
     apply(
       organizations.fetchActiveOrganization(_).void.toBIO[OrganizationRejection],
       projects.defaultApiMappings,
-      projects.fetch,
+      projects.fetch(_).toBIO[ProjectNotFound],
       quotas
     )
 

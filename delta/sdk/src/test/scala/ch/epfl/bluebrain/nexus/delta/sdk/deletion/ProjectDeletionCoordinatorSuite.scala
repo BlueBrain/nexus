@@ -1,7 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.deletion
 
+import cats.effect.IO
 import cats.effect.concurrent.Ref
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.ProjectDeletionCoordinator.{Active, Noop}
@@ -22,15 +24,16 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityDependency.DependsOn
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.BioSuite
+import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import doobie.implicits._
-import monix.bio.{IO, Task, UIO}
+import monix.bio.Task
 import munit.AnyFixture
 
 import java.time.Instant
 import java.util.UUID
 
-class ProjectDeletionCoordinatorSuite extends BioSuite with ConfigFixtures {
+class ProjectDeletionCoordinatorSuite extends CatsEffectSuite with CatsRunContext with ConfigFixtures {
 
   implicit private val subject: Subject = Identity.User("Bob", Label.unsafe("realm"))
 
@@ -40,7 +43,7 @@ class ProjectDeletionCoordinatorSuite extends BioSuite with ConfigFixtures {
   private val orgUuid = UUID.randomUUID()
 
   private def fetchOrg: FetchOrganization = {
-    case `org` => UIO.pure(Organization(org, orgUuid, None))
+    case `org` => IO.pure(Organization(org, orgUuid, None))
     case other => IO.raiseError(WrappedOrganizationRejection(OrganizationNotFound(other)))
   }
 
@@ -72,12 +75,12 @@ class ProjectDeletionCoordinatorSuite extends BioSuite with ConfigFixtures {
   private val taskStage = ProjectDeletionReport.Stage.empty("test")
 
   private def initCoordinator(config: DeletionConfig) =
-    Ref.of[Task, Set[ProjectRef]](Set.empty).map { deleted =>
+    Ref.of[IO, Set[ProjectRef]](Set.empty).map { deleted =>
       val deletionTask: ProjectDeletionTask = new ProjectDeletionTask {
         override def apply(project: ProjectRef)(implicit
             subject: Subject
         ): Task[ProjectDeletionReport.Stage] =
-          deleted.update(_ + project).as(taskStage)
+          deleted.update(_ + project).as(taskStage).toTask
       }
       (deleted, ProjectDeletionCoordinator(projects, Set(deletionTask), config, serviceAccount, xas))
     }
@@ -118,33 +121,37 @@ class ProjectDeletionCoordinatorSuite extends BioSuite with ConfigFixtures {
   }
 
   test("Returned a noop instance when project deletion is disabled") {
-    initCoordinator(deletionDisabled).map(_._2).assert(ProjectDeletionCoordinator.Noop)
+    initCoordinator(deletionDisabled).map(_._2).assertEquals(ProjectDeletionCoordinator.Noop)
   }
 
   test("Run the deletion coordinator") {
     for {
       (deleted, c)      <- initCoordinator(deletionEnabled)
-      _                 <- assertPartitions(3)
+      _                 <- assertPartitions(3).toCatsIO
       // Running the coordinator
       activeCoordinator <- c match {
                              case Noop           => fail("We should have an active coordinator as deletion is enabled.")
-                             case active: Active => active.run(Offset.start).compile.drain.as(active)
+                             case active: Active =>
+                               active.run(Offset.start).translate(taskToIoK).compile.drain.as(active)
                            }
       // Checking that the deletion task has only be run for the expected project
-      _                 <- deleted.get.assert(Set(markedAsDeleted), s"The deletion task should only contain '$markedAsDeleted'.")
+      _                 <- deleted.get.assertEquals(Set(markedAsDeleted), s"The deletion task should only contain '$markedAsDeleted'.")
       // Checking that the deletion report has been saved
-      savedReports      <- activeCoordinator.list(markedAsDeleted)
+      savedReports      <- activeCoordinator.list(markedAsDeleted).toCatsIO
       _                  = savedReports.assertOneElem
       expectedReport     = ProjectDeletionReport(markedAsDeleted, Instant.EPOCH, Instant.EPOCH, subject, Vector(taskStage))
       _                  = savedReports.assertContains(expectedReport)
       // The project to be deleted should not be exist anymore while the others should remain
       _                 <- projects.fetch(active)
       _                 <- projects.fetch(deprecated)
-      _                 <- projects.fetch(markedAsDeleted).error(ProjectNotFound(markedAsDeleted))
+      _                 <- projects.fetch(markedAsDeleted).intercept(ProjectNotFound(markedAsDeleted))
       // Checking that the partitions have been correctly deleted
-      _                 <- assertPartitions(2)
+      _                 <- assertPartitions(2).toCatsIO
       // Checking that the dependencies have been cleared
-      _                 <- EntityDependencyStore.directDependencies(markedAsDeleted, entityToDelete, xas).assert(Set.empty)
+      _                 <- EntityDependencyStore
+                             .directDependencies(markedAsDeleted, entityToDelete, xas)
+                             .toCatsIO
+                             .assertEquals(Set.empty[DependsOn])
     } yield ()
   }
 
