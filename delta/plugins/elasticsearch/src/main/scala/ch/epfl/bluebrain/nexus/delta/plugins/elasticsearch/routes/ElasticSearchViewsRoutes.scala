@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
 import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.permissions.{read => Read, write => Write}
@@ -12,8 +12,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.ce.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
@@ -21,9 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.{Json, JsonObject}
-import monix.execution.Scheduler
 
 /**
   * The elasticsearch views routes
@@ -50,7 +48,6 @@ final class ElasticSearchViewsRoutes(
     index: IndexingAction.Execute[ElasticSearchView]
 )(implicit
     baseUri: BaseUri,
-    s: Scheduler,
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering,
     fusionConfig: FusionConfig
@@ -60,9 +57,6 @@ final class ElasticSearchViewsRoutes(
     with RdfMarshalling {
 
   import schemeDirectives._
-
-  private def indexUIO(project: ProjectRef, resource: ResourceF[ElasticSearchView], mode: IndexingMode) =
-    index(project, resource, mode).toUIO
 
   def routes: Route =
     pathPrefix("views") {
@@ -77,8 +71,9 @@ final class ElasticSearchViewsRoutes(
                     Created,
                     views
                       .create(ref, source)
-                      .tapEval(indexUIO(ref, _, mode))
+                      .flatTap(index(ref, _, mode))
                       .mapValue(_.metadata)
+                      .attemptNarrow[ElasticSearchViewRejection]
                       .rejectWhen(decodingFailedOrViewNotFound)
                   )
                 }
@@ -98,8 +93,9 @@ final class ElasticSearchViewsRoutes(
                               Created,
                               views
                                 .create(id, ref, source)
-                                .tapEval(indexUIO(ref, _, mode))
+                                .flatTap(index(ref, _, mode))
                                 .mapValue(_.metadata)
+                                .attemptNarrow[ElasticSearchViewRejection]
                                 .rejectWhen(decodingFailedOrViewNotFound)
                             )
                           case (Some(rev), source) =>
@@ -107,8 +103,9 @@ final class ElasticSearchViewsRoutes(
                             emit(
                               views
                                 .update(id, ref, rev, source)
-                                .tapEval(indexUIO(ref, _, mode))
+                                .flatTap(index(ref, _, mode))
                                 .mapValue(_.metadata)
+                                .attemptNarrow[ElasticSearchViewRejection]
                                 .rejectWhen(decodingFailedOrViewNotFound)
                             )
                         }
@@ -120,8 +117,9 @@ final class ElasticSearchViewsRoutes(
                         emit(
                           views
                             .deprecate(id, ref, rev)
-                            .tapEval(indexUIO(ref, _, mode))
+                            .flatTap(index(ref, _, mode))
                             .mapValue(_.metadata)
+                            .attemptNarrow[ElasticSearchViewRejection]
                             .rejectWhen(decodingFailedOrViewNotFound)
                         )
                       }
@@ -132,7 +130,7 @@ final class ElasticSearchViewsRoutes(
                         ref,
                         id,
                         authorizeFor(ref, Read).apply {
-                          emit(views.fetch(id, ref).rejectOn[ViewNotFound])
+                          emit(views.fetch(id, ref).attemptNarrow[ElasticSearchViewRejection].rejectOn[ViewNotFound])
                         }
                       )
                     }
@@ -141,20 +139,32 @@ final class ElasticSearchViewsRoutes(
                 // Query an elasticsearch view
                 (pathPrefix("_search") & post & pathEndOrSingleSlash) {
                   (extractQueryParams & entity(as[JsonObject])) { (qp, query) =>
-                    emit(viewsQuery.query(id, ref, query, qp))
+                    emit(viewsQuery.query(id, ref, query, qp).attemptNarrow[ElasticSearchViewRejection])
                   }
                 },
                 // Fetch an elasticsearch view original source
                 (pathPrefix("source") & get & pathEndOrSingleSlash & idSegmentRef(id)) { id =>
                   authorizeFor(ref, Read).apply {
-                    emit(views.fetch(id, ref).map(_.value.source).rejectOn[ViewNotFound])
+                    emit(
+                      views
+                        .fetch(id, ref)
+                        .map(_.value.source)
+                        .attemptNarrow[ElasticSearchViewRejection]
+                        .rejectOn[ViewNotFound]
+                    )
                   }
                 },
                 (pathPrefix("tags") & pathEndOrSingleSlash) {
                   concat(
                     // Fetch an elasticsearch view tags
                     (get & idSegmentRef(id) & authorizeFor(ref, Read)) { id =>
-                      emit(views.fetch(id, ref).map(_.value.tags).rejectOn[ViewNotFound])
+                      emit(
+                        views
+                          .fetch(id, ref)
+                          .map(_.value.tags)
+                          .attemptNarrow[ElasticSearchViewRejection]
+                          .rejectOn[ViewNotFound]
+                      )
                     },
                     // Tag an elasticsearch view
                     (post & parameter("rev".as[Int])) { rev =>
@@ -164,8 +174,9 @@ final class ElasticSearchViewsRoutes(
                             Created,
                             views
                               .tag(id, ref, tag, tagRev, rev)
-                              .tapEval(indexUIO(ref, _, mode))
+                              .flatTap(index(ref, _, mode))
                               .mapValue(_.metadata)
+                              .attemptNarrow[ElasticSearchViewRejection]
                               .rejectWhen(decodingFailedOrViewNotFound)
                           )
                         }
@@ -196,7 +207,6 @@ object ElasticSearchViewsRoutes {
       index: IndexingAction.Execute[ElasticSearchView]
   )(implicit
       baseUri: BaseUri,
-      s: Scheduler,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering,
       fusionConfig: FusionConfig

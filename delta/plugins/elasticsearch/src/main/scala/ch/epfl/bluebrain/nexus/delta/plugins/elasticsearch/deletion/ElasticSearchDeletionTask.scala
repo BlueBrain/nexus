@@ -1,9 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.deletion
 
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.toMonixBIOOps
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.deletion.ElasticSearchDeletionTask.{init, logger}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.IndexingViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.IndexingViewDef.{ActiveViewDef, DeprecatedViewDef}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.ProjectDeletionTask
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.model.ProjectDeletionReport
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
@@ -46,9 +48,12 @@ object ElasticSearchDeletionTask {
     new ElasticSearchDeletionTask(
       project => views.currentIndexingViews(project).evalMapFilter(_.toTask),
       (v: ActiveViewDef, subject: Subject) =>
-        views.internalDeprecate(v.ref.viewId, v.ref.project, v.rev)(subject).onErrorHandleWith { r =>
-          UIO.delay(logger.error(s"Deprecating '$v' resulted in error: '$r'."))
-        }
+        views
+          .internalDeprecate(v.ref.viewId, v.ref.project, v.rev)(subject)
+          .toBIO[ElasticSearchViewRejection]
+          .onErrorHandleWith { r =>
+            UIO.delay(logger.error(s"Deprecating '$v' resulted in error: '$r'."))
+          }
     )
 
 }

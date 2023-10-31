@@ -264,8 +264,11 @@ object Resources {
     * Expands the segment to a [[ResourceRef]]
     */
   def expandResourceRef(segment: IdSegment, context: ProjectContext): IO[ResourceRef] =
+    expandResourceRef(segment, context, InvalidResourceId)
+
+  def expandResourceRef(segment: IdSegment, context: ProjectContext, notFound: String => Throwable): IO[ResourceRef] =
     IO.fromOption(segment.toIri(context.apiMappings, context.base).map(ResourceRef(_)))(
-      InvalidResourceId(segment.asString)
+      notFound(segment.asString)
     )
 
   /**

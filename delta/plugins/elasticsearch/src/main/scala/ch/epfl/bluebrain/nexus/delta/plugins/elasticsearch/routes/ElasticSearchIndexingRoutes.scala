@@ -4,7 +4,7 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import cats.effect.{ContextShift, IO}
 import cats.implicits.catsSyntaxApplicativeError
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.toCatsIOOps
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViewsQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.IndexingViewDef.ActiveViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection._
@@ -17,8 +17,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.ce.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
@@ -34,8 +34,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionErrors, Pro
 import io.circe.Encoder
 import io.circe.generic.semiauto.deriveEncoder
 import io.circe.syntax._
-import monix.bio.{IO => BIO}
-import monix.execution.Scheduler
 
 /**
   * The elasticsearch views routes
@@ -64,7 +62,6 @@ final class ElasticSearchIndexingRoutes(
 )(implicit
     baseUri: BaseUri,
     paginationConfig: PaginationConfig,
-    s: Scheduler,
     c: ContextShift[IO],
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering
@@ -92,7 +89,8 @@ final class ElasticSearchIndexingRoutes(
                   authorizeFor(ref, Read).apply {
                     emit(
                       fetch(id, ref)
-                        .flatMap(v => projections.statistics(ref, v.selectFilter, v.projection))
+                        .flatMap(v => projections.statistics(ref, v.selectFilter, v.projection).toCatsIO)
+                        .attemptNarrow[ElasticSearchViewRejection]
                         .rejectOn[ViewNotFound]
                     )
                   }
@@ -103,7 +101,7 @@ final class ElasticSearchIndexingRoutes(
                     concat(
                       (pathPrefix("sse") & lastEventId) { offset =>
                         emit(
-                          fetch(id, ref).toCatsIO
+                          fetch(id, ref)
                             .map { view =>
                               projectionErrors.sses(view.ref.project, view.ref.viewId, offset)
                             }
@@ -117,8 +115,9 @@ final class ElasticSearchIndexingRoutes(
                           emit(
                             fetch(id, ref)
                               .flatMap { view =>
-                                projectionErrors.search(view.ref, pagination, timeRange)
+                                projectionErrors.search(view.ref, pagination, timeRange).toCatsIO
                               }
+                              .attemptNarrow[ElasticSearchViewRejection]
                               .rejectOn[ViewNotFound]
                           )
                       }
@@ -132,7 +131,8 @@ final class ElasticSearchIndexingRoutes(
                     (get & authorizeFor(ref, Read)) {
                       emit(
                         fetch(id, ref)
-                          .flatMap(v => projections.offset(v.projection))
+                          .flatMap(v => projections.offset(v.projection).toCatsIO)
+                          .attemptNarrow[ElasticSearchViewRejection]
                           .rejectOn[ViewNotFound]
                       )
                     },
@@ -140,8 +140,9 @@ final class ElasticSearchIndexingRoutes(
                     (delete & authorizeFor(ref, Write)) {
                       emit(
                         fetch(id, ref)
-                          .flatMap { v => projections.scheduleRestart(v.projection) }
+                          .flatMap { v => projections.scheduleRestart(v.projection).toCatsIO }
                           .as(Offset.start)
+                          .attemptNarrow[ElasticSearchViewRejection]
                           .rejectOn[ViewNotFound]
                       )
                     }
@@ -149,7 +150,7 @@ final class ElasticSearchIndexingRoutes(
                 },
                 // Get elasticsearch view mapping
                 (pathPrefix("_mapping") & get & pathEndOrSingleSlash) {
-                  emit(viewsQuery.mapping(id, ref))
+                  emit(viewsQuery.mapping(id, ref).attemptNarrow[ElasticSearchViewRejection])
                 }
               )
             }
@@ -161,7 +162,7 @@ final class ElasticSearchIndexingRoutes(
 
 object ElasticSearchIndexingRoutes {
 
-  type FetchIndexingView = (IdSegment, ProjectRef) => BIO[ElasticSearchViewRejection, ActiveViewDef]
+  type FetchIndexingView = (IdSegment, ProjectRef) => IO[ActiveViewDef]
 
   /**
     * @return
@@ -178,7 +179,6 @@ object ElasticSearchIndexingRoutes {
   )(implicit
       baseUri: BaseUri,
       paginationConfig: PaginationConfig,
-      s: Scheduler,
       c: ContextShift[IO],
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering

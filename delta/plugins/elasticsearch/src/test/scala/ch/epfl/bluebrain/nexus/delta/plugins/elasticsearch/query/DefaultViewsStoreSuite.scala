@@ -9,12 +9,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.Scope
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, Tag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStoreFixture
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.{BioSuite, ResourceFixture}
+import ch.epfl.bluebrain.nexus.testkit.mu.bio.ResourceFixture
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import munit.AnyFixture
 
 import java.util.UUID
 
-class DefaultViewsStoreSuite extends BioSuite {
+class DefaultViewsStoreSuite extends CatsEffectSuite {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(defaultViewsStore)
 
@@ -89,14 +90,14 @@ class DefaultViewsStoreSuite extends BioSuite {
   }
 
   test(s"Get non-deprecated default views in '$project1'") {
-    findDefaultRefs(Scope.Project(project1)).assert(List(defaultView1))
+    findDefaultRefs(Scope.Project(project1)).assertEquals(List(defaultView1))
   }
 
   test(s"Get non-deprecated default views in '$org'") {
-    findDefaultRefs(Scope.Org(org)).assert(List(defaultView1, defaultView2))
+    findDefaultRefs(Scope.Org(org)).assertEquals(List(defaultView1, defaultView2))
   }
 
   test(s"Get non-deprecated in all orgs") {
-    findDefaultRefs(Scope.Root).assert(List(defaultView1, defaultView2, defaultView3))
+    findDefaultRefs(Scope.Root).assertEquals(List(defaultView1, defaultView2, defaultView3))
   }
 }

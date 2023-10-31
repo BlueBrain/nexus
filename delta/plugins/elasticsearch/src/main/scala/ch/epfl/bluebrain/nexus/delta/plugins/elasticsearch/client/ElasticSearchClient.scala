@@ -9,6 +9,7 @@ import akka.http.scaladsl.model.headers.BasicHttpCredentials
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy.logError
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.toMonixBIOOps
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.BulkResponse.MixedOutcomes.Outcome
@@ -435,7 +436,7 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
       sort: SortList = SortList.empty
   ): HttpResult[Json] =
     if (indices.isEmpty)
-      emptyResults
+      emptyResults.toBIO[HttpClientError]
     else {
       val (indexPath, q) = indexPathAndQuery(indices, QueryBuilder(query))
       val searchEndpoint = (endpoint / indexPath / searchPath).withQuery(Uri.Query(defaultQuery ++ qp.toMap))

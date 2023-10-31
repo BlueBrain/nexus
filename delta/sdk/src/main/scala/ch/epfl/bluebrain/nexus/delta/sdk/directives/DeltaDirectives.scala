@@ -180,10 +180,6 @@ trait DeltaDirectives extends UriDirectives {
   def fusionLoginUri(implicit config: FusionConfig): UIO[Uri] =
     UIO.pure { config.base / "login" }
 
-  /** The URI of fusion's id resolution endpoint */
-  def fusionResolveUri(id: Uri)(implicit config: FusionConfig): UIO[Uri] =
-    UIO.pure { config.base / "resolve" / id.toString }
-
   /** Injects a `Vary: Accept,Accept-Encoding` into the response */
   def varyAcceptHeaders: Directive0 =
     vary(Set(Accept.name, `Accept-Encoding`.name))

@@ -1,5 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query
 
+import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.toCatsIOOps
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.ElasticSearchQueryError.InvalidResourceId
@@ -10,7 +12,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectBase}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Scope
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
-import monix.bio.IO
 
 /**
   * Search request on default elasticsearch views
@@ -56,9 +57,10 @@ object DefaultSearchRequest {
         pagination: Pagination,
         sort: SortList,
         schema: IdSegment
-    )(fetchContext: FetchContext[ElasticSearchQueryError]): IO[ElasticSearchQueryError, ProjectSearch] =
+    )(fetchContext: FetchContext[ElasticSearchQueryError]): IO[ProjectSearch] =
       fetchContext
         .onRead(ref)
+        .toCatsIO
         .flatMap { context =>
           expandResourceRef(schema, context.apiMappings, context.base)
         }
@@ -73,7 +75,7 @@ object DefaultSearchRequest {
     /** An apply method that uses default values for pagination and sorting */
     def apply(ref: ProjectRef, params: ResourcesSearchParams, schema: IdSegment)(
         fetchContext: FetchContext[ElasticSearchQueryError]
-    ): IO[ElasticSearchQueryError, ProjectSearch] =
+    ): IO[ProjectSearch] =
       apply(ref, params, Pagination.OnePage, SortList.empty, schema)(fetchContext)
   }
 
@@ -88,7 +90,7 @@ object DefaultSearchRequest {
   object OrgSearch {
     def apply(label: Label, params: ResourcesSearchParams, pagination: Pagination, sort: SortList, schema: IdSegment)(
         fetchContext: FetchContext[ElasticSearchQueryError]
-    ): IO[ElasticSearchQueryError, OrgSearch] =
+    ): IO[OrgSearch] =
       expandResourceRef(schema, fetchContext).map { resourceRef =>
         OrgSearch(label, params.withSchema(resourceRef), pagination, sort)
       }
@@ -109,7 +111,7 @@ object DefaultSearchRequest {
   object RootSearch {
     def apply(params: ResourcesSearchParams, pagination: Pagination, sort: SortList, schema: IdSegment)(
         fetchContext: FetchContext[ElasticSearchQueryError]
-    ): IO[ElasticSearchQueryError, RootSearch] =
+    ): IO[RootSearch] =
       expandResourceRef(schema, fetchContext).map { resourceRef =>
         RootSearch(params.withSchema(resourceRef), pagination, sort)
       }
@@ -122,16 +124,15 @@ object DefaultSearchRequest {
   private def expandResourceRef(
       segment: IdSegment,
       fetchContext: FetchContext[ElasticSearchQueryError]
-  ): IO[InvalidResourceId, ResourceRef] =
+  ): IO[ResourceRef] =
     expandResourceRef(segment, fetchContext.defaultApiMappings, ProjectBase(iri""))
 
   private def expandResourceRef(
       segment: IdSegment,
       mappings: ApiMappings,
       base: ProjectBase
-  ): IO[InvalidResourceId, ResourceRef] =
-    IO.fromOption(
-      segment.toIri(mappings, base).map(ResourceRef(_)),
+  ): IO[ResourceRef] =
+    IO.fromOption(segment.toIri(mappings, base).map(ResourceRef(_)))(
       InvalidResourceId(segment.asString)
     )
 
