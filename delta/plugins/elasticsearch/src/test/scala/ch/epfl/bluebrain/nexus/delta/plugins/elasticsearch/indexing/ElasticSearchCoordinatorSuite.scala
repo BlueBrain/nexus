@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.IndexingViewDef.{ActiveViewDef, DeprecatedViewDef}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, Fixtures}
@@ -16,18 +17,22 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionErr.CouldNotFindP
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.SupervisorSetup.unapply
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.{BioSuite, PatienceConfig}
+import ch.epfl.bluebrain.nexus.testkit.mu.bio.PatienceConfig
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import fs2.Stream
 import fs2.concurrent.SignallingRef
 import io.circe.Json
-import monix.bio.Task
 import munit.AnyFixture
 
 import java.time.Instant
 import scala.collection.mutable.{Set => MutableSet}
 import scala.concurrent.duration._
 
-class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture with CirceLiteral with Fixtures {
+class ElasticSearchCoordinatorSuite
+    extends CatsEffectSuite
+    with SupervisorSetup.Fixture
+    with CirceLiteral
+    with Fixtures {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(supervisor)
 
@@ -96,7 +101,7 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
     indexingRev,
     rev
   )
-  private val resumeSignal    = SignallingRef[Task, Boolean](false).runSyncUnsafe()
+  private val resumeSignal    = SignallingRef[IO, Boolean](false).unsafeRunSync()
 
   // Streams 4 elements until signal is set to true and then a failed item, 1 updated view and 1 deprecated view
   private def viewStream: ElemStream[IndexingViewDef] =
@@ -136,7 +141,7 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
         value = view3,
         rev = 1
       )
-    ) ++ Stream.never[Task].interruptWhen(resumeSignal) ++ Stream(
+    ) ++ Stream.never[IO].interruptWhen(resumeSignal) ++ Stream(
       FailedElem(
         tpe = ElasticSearchViews.entityType,
         id = nxv + "failed_coord",
@@ -194,12 +199,12 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
              (_: PipeChain) => Left(CouldNotFindPipeErr(unknownPipe)),
              sv,
              (_: ActiveViewDef) => new NoopSink[Json],
-             (v: ActiveViewDef) => Task.delay(createdIndices.add(v.index)).void,
-             (v: ActiveViewDef) => Task.delay(deletedIndices.add(v.index)).void
+             (v: ActiveViewDef) => IO.delay(createdIndices.add(v.index)).void,
+             (v: ActiveViewDef) => IO.delay(deletedIndices.add(v.index)).void
            )
       _ <- sv.describe(ElasticSearchCoordinator.metadata.name)
              .map(_.map(_.progress))
-             .eventuallySome(ProjectionProgress(Offset.at(4L), Instant.EPOCH, 4, 1, 1))
+             .eventually(Some(ProjectionProgress(Offset.at(4L), Instant.EPOCH, 4, 1, 1)))
     } yield ()
   }
 
@@ -207,7 +212,7 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
     for {
       _ <- sv.describe(view1.projection)
              .map(_.map(_.status))
-             .eventuallySome(ExecutionStatus.Completed)
+             .eventually(Some(ExecutionStatus.Completed))
       _ <- projections.progress(view1.projection).assertSome(expectedViewProgress)
       _  = assert(createdIndices.contains(view1.index), s"The index for '${view1.ref.viewId}' should have been created.")
     } yield ()
@@ -217,7 +222,7 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
     for {
       _ <- sv.describe(view2.projection)
              .map(_.map(_.status))
-             .eventuallySome(ExecutionStatus.Completed)
+             .eventually(Some(ExecutionStatus.Completed))
       _ <- projections.progress(view2.projection).assertSome(expectedViewProgress)
       _  = assert(createdIndices.contains(view2.index), s"The index for '${view2.ref.viewId}' should have been created.")
     } yield ()
@@ -271,13 +276,13 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
       _ <- resumeSignal.set(true)
       _ <- sv.describe(ElasticSearchCoordinator.metadata.name)
              .map(_.map(_.progress))
-             .eventuallySome(ProjectionProgress(Offset.at(8L), Instant.EPOCH, 8, 1, 2))
+             .eventually(Some(ProjectionProgress(Offset.at(8L), Instant.EPOCH, 8, 1, 2)))
     } yield ()
   }
 
   test("View 1 is deprecated so it is stopped, the progress and the index should be deleted.") {
     for {
-      _ <- sv.describe(view1.projection).eventuallyNone
+      _ <- sv.describe(view1.projection).eventually(None)
       _ <- projections.progress(view1.projection).assertNone
       _  = assert(deletedIndices.contains(view1.index), s"The index for '${view1.ref.viewId}' should have been deleted.")
     } yield ()
@@ -287,7 +292,7 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
     "View 2 is updated so the previous projection should be stopped, the previous progress and the index should be deleted."
   ) {
     for {
-      _ <- sv.describe(view2.projection).eventuallyNone
+      _ <- sv.describe(view2.projection).eventually(None)
       _ <- projections.progress(view2.projection).assertNone
       _  = assert(deletedIndices.contains(view2.index), s"The index for '${view2.ref.viewId}' should have been deleted.")
     } yield ()
@@ -297,7 +302,7 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
     for {
       _ <- sv.describe(updatedView2.projection)
              .map(_.map(_.status))
-             .eventuallySome(ExecutionStatus.Completed)
+             .eventually(Some(ExecutionStatus.Completed))
       _ <- projections.progress(updatedView2.projection).assertSome(expectedViewProgress)
       _  = assert(
              createdIndices.contains(updatedView2.index),

@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
 import akka.http.scaladsl.server.RouteConcatenation
-import cats.effect.{Clock, IO}
+import cats.effect.{Clock, IO, Timer}
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
@@ -32,7 +32,8 @@ object AclsModule extends ModuleDef {
         permissions: Permissions,
         config: AppConfig,
         xas: Transactors,
-        clock: Clock[IO]
+        clock: Clock[IO],
+        timer: Timer[IO]
     ) =>
       acls.AclsImpl(
         permissions.fetchPermissionSet.toUIO,
@@ -40,7 +41,7 @@ object AclsModule extends ModuleDef {
         permissions.minimum,
         config.acls,
         xas
-      )(clock)
+      )(clock, timer)
   }
 
   make[AclCheck].from { (acls: Acls) => AclCheck(acls) }

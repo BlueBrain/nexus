@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.state
 
+import cats.effect.{IO, Timer}
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.taskToIoK
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.IriInstances
@@ -18,7 +18,7 @@ import doobie._
 import doobie.implicits._
 import doobie.postgres.implicits._
 import io.circe.Decoder
-import monix.bio.IO
+import monix.bio.{IO => BIO}
 
 /**
   * Allows to save/fetch [[ScopedState]] from the database
@@ -63,12 +63,12 @@ trait ScopedStateStore[Id, S <: ScopedState] {
   /**
     * Returns the latest state
     */
-  def get(ref: ProjectRef, id: Id): IO[UnknownState, S]
+  def get(ref: ProjectRef, id: Id): BIO[UnknownState, S]
 
   /**
     * Returns the state at the given tag
     */
-  def get(ref: ProjectRef, id: Id, tag: Tag): IO[StateNotFound, S]
+  def get(ref: ProjectRef, id: Id, tag: Tag): BIO[StateNotFound, S]
 
   /**
     * Fetches latest states from the given type from the beginning.
@@ -189,7 +189,7 @@ object ScopedStateStore {
       serializer: Serializer[Id, S],
       config: QueryConfig,
       xas: Transactors
-  ): ScopedStateStore[Id, S] = new ScopedStateStore[Id, S] {
+  )(implicit timer: Timer[IO]): ScopedStateStore[Id, S] = new ScopedStateStore[Id, S] {
 
     import IriInstances._
     implicit val putId: Put[Id]      = serializer.putId
@@ -260,19 +260,19 @@ object ScopedStateStore {
         .option
         .map(_.isDefined)
 
-    override def get(ref: ProjectRef, id: Id): IO[UnknownState, S] =
+    override def get(ref: ProjectRef, id: Id): BIO[UnknownState, S] =
       getValue(ref, id, Latest).transact(xas.read).hideErrors.flatMap { s =>
-        IO.fromOption(s, UnknownState)
+        BIO.fromOption(s, UnknownState)
       }
 
-    override def get(ref: ProjectRef, id: Id, tag: Tag): IO[StateNotFound, S] = {
+    override def get(ref: ProjectRef, id: Id, tag: Tag): BIO[StateNotFound, S] = {
       for {
         value  <- getValue(ref, id, tag)
         exists <- value.fold(exists(ref, id))(_ => true.pure[ConnectionIO])
       } yield value -> exists
     }.transact(xas.read).hideErrors.flatMap { case (s, exists) =>
       val error = if (exists) TagNotFound else UnknownState
-      IO.fromOption(s, error)
+      BIO.fromOption(s, error)
     }
 
     private def states(
@@ -292,7 +292,7 @@ object ScopedStateStore {
         _.offset,
         config.copy(refreshStrategy = strategy),
         xas
-      ).translate(taskToIoK)
+      )
 
     override def currentStates(scope: Scope, tag: Tag, offset: Offset): EnvelopeStream[S] =
       states(scope, tag, offset, RefreshStrategy.Stop)

@@ -1,7 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.projects
 
-import cats.effect.{Clock, ContextShift, IO}
+import cats.effect.{Clock, ContextShift, IO, Timer}
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination
@@ -20,7 +21,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import com.typesafe.scalalogging.Logger
 import fs2.Stream
 
 final class ProjectsImpl private (
@@ -70,11 +70,11 @@ final class ProjectsImpl private (
 
   override def deprecate(ref: ProjectRef, rev: Int)(implicit caller: Subject): IO[ProjectResource] =
     eval(DeprecateProject(ref, rev, caller)).span("deprecateProject") <*
-      IO.delay(logger.info(s"Project '$ref' has been deprecated."))
+      logger.info(s"Project '$ref' has been deprecated.")
 
   override def delete(ref: ProjectRef, rev: Int)(implicit caller: Subject): IO[ProjectResource] =
     eval(DeleteProject(ref, rev, caller)).span("deleteProject") <*
-      IO.delay(logger.info(s"Project '$ref' has been marked as deleted."))
+      logger.info(s"Project '$ref' has been marked as deleted.")
 
   override def fetch(ref: ProjectRef): IO[ProjectResource] =
     log
@@ -107,7 +107,7 @@ final class ProjectsImpl private (
     log.currentStates(Scope.root).map(_.value.project)
 
   override def states(offset: Offset): ElemStream[ProjectState] =
-    log.states(Scope.root, offset).translate(ioToTaskK).map {
+    log.states(Scope.root, offset).map {
       _.toElem { p => Some(p.project) }
     }
 
@@ -121,7 +121,7 @@ object ProjectsImpl {
   type ProjectsLog =
     ScopedEventLog[ProjectRef, ProjectState, ProjectCommand, ProjectEvent, ProjectRejection]
 
-  private val logger: Logger = Logger[ProjectsImpl]
+  private val logger = Logger.cats[ProjectsImpl]
 
   /**
     * Constructs a [[Projects]] instance.
@@ -136,6 +136,7 @@ object ProjectsImpl {
   )(implicit
       base: BaseUri,
       clock: Clock[IO],
+      timer: Timer[IO],
       uuidF: UUIDF
   ): Projects =
     new ProjectsImpl(

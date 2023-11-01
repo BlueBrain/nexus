@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
-import cats.effect.{Clock, IO}
+import cats.effect.{Clock, IO, Timer}
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMinPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
@@ -51,6 +51,7 @@ object ResourcesModule extends ModuleDef {
         api: JsonLdApi,
         xas: Transactors,
         clock: Clock[IO],
+        timer: Timer[IO],
         uuidF: UUIDF
     ) =>
       ResourcesImpl(
@@ -62,6 +63,7 @@ object ResourcesModule extends ModuleDef {
       )(
         api,
         clock,
+        timer,
         uuidF
       )
   }

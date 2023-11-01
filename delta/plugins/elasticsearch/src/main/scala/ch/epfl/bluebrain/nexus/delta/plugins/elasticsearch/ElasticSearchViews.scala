@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
-import cats.effect.{Clock, IO}
+import cats.effect.{Clock, IO, Timer}
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.{ioToTaskK, toCatsIOOps, toMonixBIOOps}
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.{toCatsIOOps, toMonixBIOOps}
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOInstant, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews._
@@ -327,7 +327,6 @@ final class ElasticSearchViews private (
       .evalMapFilter { envelope =>
         IO.pure(toIndexViewDef(envelope))
       }
-      .translate(ioToTaskK)
 
   /**
     * Return all existing indexing views in a finite stream
@@ -338,7 +337,6 @@ final class ElasticSearchViews private (
       .evalMapFilter { envelope =>
         IO.pure(toIndexViewDef(envelope))
       }
-      .translate(ioToTaskK)
 
   /**
     * Return the indexing views in a non-ending stream
@@ -349,7 +347,6 @@ final class ElasticSearchViews private (
       .evalMapFilter { envelope =>
         IO.pure(toIndexViewDef(envelope))
       }
-      .translate(ioToTaskK)
 
   private def toIndexViewDef(envelope: Envelope[ElasticSearchViewState]) =
     envelope.toElem { v => Some(v.project) }.traverse { v =>
@@ -412,7 +409,7 @@ object ElasticSearchViews {
       eventLogConfig: EventLogConfig,
       prefix: String,
       xas: Transactors
-  )(implicit api: JsonLdApi, clock: Clock[IO], uuidF: UUIDF): IO[ElasticSearchViews] = {
+  )(implicit api: JsonLdApi, clock: Clock[IO], timer: Timer[IO], uuidF: UUIDF): IO[ElasticSearchViews] = {
     for {
       sourceDecoder   <- ElasticSearchViewJsonLdSourceDecoder(uuidF, contextResolution)
       defaultMapping  <- defaultElasticsearchMapping

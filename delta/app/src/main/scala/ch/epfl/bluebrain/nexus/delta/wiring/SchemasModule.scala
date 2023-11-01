@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
-import cats.effect.{Clock, ContextShift, IO}
+import cats.effect.{Clock, ContextShift, IO, Timer}
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
@@ -51,6 +51,7 @@ object SchemasModule extends ModuleDef {
         config: AppConfig,
         xas: Transactors,
         clock: Clock[IO],
+        timer: Timer[IO],
         uuidF: UUIDF
     ) =>
       SchemasImpl(
@@ -60,7 +61,7 @@ object SchemasModule extends ModuleDef {
         validate,
         config.schemas,
         xas
-      )(api, clock, uuidF)
+      )(api, clock, timer, uuidF)
   }
 
   make[SchemaImports].from {

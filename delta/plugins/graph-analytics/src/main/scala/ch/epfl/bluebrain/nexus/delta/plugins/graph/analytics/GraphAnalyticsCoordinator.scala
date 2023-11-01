@@ -1,7 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics
 
+import cats.effect.{ContextShift, IO, Timer}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.GraphAnalytics.{index, projectionName}
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.config.GraphAnalyticsConfig
@@ -12,7 +14,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
-import monix.bio.Task
 
 sealed trait GraphAnalyticsCoordinator
 
@@ -20,7 +21,7 @@ object GraphAnalyticsCoordinator {
 
   /** If indexing is disabled we can only log */
   final private case object Noop extends GraphAnalyticsCoordinator {
-    def log: Task[Unit] =
+    def log: IO[Unit] =
       logger.info("Graph Analytics indexing has been disabled via config")
   }
 
@@ -44,9 +45,10 @@ object GraphAnalyticsCoordinator {
       analyticsStream: GraphAnalyticsStream,
       supervisor: Supervisor,
       sink: ProjectRef => Sink,
-      createIndex: ProjectRef => Task[Unit],
-      deleteIndex: ProjectRef => Task[Unit]
-  ) extends GraphAnalyticsCoordinator {
+      createIndex: ProjectRef => IO[Unit],
+      deleteIndex: ProjectRef => IO[Unit]
+  )(implicit timer: Timer[IO], cs: ContextShift[IO])
+      extends GraphAnalyticsCoordinator {
 
     def run(offset: Offset): ElemStream[Unit] =
       fetchProjects(offset).evalMap {
@@ -56,8 +58,8 @@ object GraphAnalyticsCoordinator {
         }
       }
 
-    private def compile(project: ProjectRef): Task[CompiledProjection] =
-      Task.fromEither(
+    private def compile(project: ProjectRef): IO[CompiledProjection] =
+      IO.fromEither(
         CompiledProjection.compile(
           analyticsMetadata(project),
           ExecutionStrategy.PersistentSingleNode,
@@ -67,7 +69,7 @@ object GraphAnalyticsCoordinator {
       )
 
     // Start the analysis projection for the given project
-    private def start(project: ProjectRef): Task[Unit] =
+    private def start(project: ProjectRef): IO[Unit] =
       for {
         compiled <- compile(project)
         status   <- supervisor.describe(compiled.metadata.name)
@@ -84,7 +86,7 @@ object GraphAnalyticsCoordinator {
       } yield ()
 
     // Destroy the analysis for the given project and deletes the related Elasticsearch index
-    private def destroy(project: ProjectRef): Task[Unit] = {
+    private def destroy(project: ProjectRef): IO[Unit] = {
       logger.info(s"Project '$project' has been marked as deleted, stopping the graph analysis...") >>
         supervisor
           .destroy(
@@ -97,7 +99,7 @@ object GraphAnalyticsCoordinator {
   }
 
   final val id                                        = nxv + "graph-analytics"
-  private val logger: Logger                          = Logger[GraphAnalyticsCoordinator]
+  private val logger                                  = Logger.cats[GraphAnalyticsCoordinator]
   private[analytics] val metadata: ProjectionMetadata = ProjectionMetadata("system", "ga-coordinator", None, None)
 
   private def analyticsMetadata(project: ProjectRef) = ProjectionMetadata(
@@ -128,7 +130,7 @@ object GraphAnalyticsCoordinator {
       supervisor: Supervisor,
       client: ElasticSearchClient,
       config: GraphAnalyticsConfig
-  ): Task[GraphAnalyticsCoordinator] =
+  )(implicit timer: Timer[IO], cs: ContextShift[IO]): IO[GraphAnalyticsCoordinator] =
     if (config.indexingEnabled) {
       val coordinator = apply(
         projects.states(_).map(_.map { p => ProjectDef(p.project, p.markedForDeletion) }),
@@ -143,14 +145,14 @@ object GraphAnalyticsCoordinator {
           ),
         ref =>
           graphAnalyticsMappings.flatMap { mappings =>
-            client.createIndex(index(config.prefix, ref), Some(mappings), None)
+            client.createIndex(index(config.prefix, ref), Some(mappings), None).toCatsIO
           }.void,
-        ref => client.deleteIndex(index(config.prefix, ref)).void
+        ref => client.deleteIndex(index(config.prefix, ref)).toCatsIO.void
       )
 
       for {
         script <- scriptContent
-        _      <- client.createScript(updateRelationshipsScriptId, script)
+        _      <- client.createScript(updateRelationshipsScriptId, script).toCatsIO
         c      <- coordinator
       } yield c
     } else {
@@ -162,9 +164,9 @@ object GraphAnalyticsCoordinator {
       analyticsStream: GraphAnalyticsStream,
       supervisor: Supervisor,
       sink: ProjectRef => Sink,
-      createIndex: ProjectRef => Task[Unit],
-      deleteIndex: ProjectRef => Task[Unit]
-  ): Task[GraphAnalyticsCoordinator] = {
+      createIndex: ProjectRef => IO[Unit],
+      deleteIndex: ProjectRef => IO[Unit]
+  )(implicit timer: Timer[IO], cs: ContextShift[IO]): IO[GraphAnalyticsCoordinator] = {
     val coordinator =
       new Active(fetchProjects, analyticsStream, supervisor, sink, createIndex, deleteIndex)
     supervisor

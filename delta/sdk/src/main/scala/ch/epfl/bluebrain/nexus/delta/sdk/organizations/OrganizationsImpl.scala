@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.organizations
 
 import cats.effect.IO._
-import cats.effect.{Clock, ContextShift, IO}
+import cats.effect.{Clock, ContextShift, IO, Timer}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
@@ -96,7 +96,8 @@ object OrganizationsImpl {
   )(implicit
       clock: Clock[IO],
       uuidf: UUIDF,
-      contextShift: ContextShift[IO]
+      contextShift: ContextShift[IO],
+      timer: Timer[IO]
   ): Organizations =
     new OrganizationsImpl(
       GlobalEventLog(Organizations.definition, config.eventLog, xas),

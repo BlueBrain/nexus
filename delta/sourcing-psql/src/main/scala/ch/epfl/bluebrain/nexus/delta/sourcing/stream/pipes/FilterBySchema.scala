@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
@@ -12,7 +13,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.FilterBySchema.Filter
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, PipeDef, PipeRef}
 import io.circe.syntax.EncoderOps
 import io.circe.{Json, JsonObject}
-import monix.bio.Task
 import shapeless.Typeable
 
 /**
@@ -25,9 +25,9 @@ class FilterBySchema(config: FilterBySchemaConfig) extends Pipe {
   override def inType: Typeable[GraphResource]  = Typeable[GraphResource]
   override def outType: Typeable[GraphResource] = Typeable[GraphResource]
 
-  override def apply(element: SuccessElem[GraphResource]): Task[Elem[GraphResource]] =
-    if (config.types.isEmpty || config.types.contains(element.value.schema.iri)) Task.pure(element)
-    else Task.pure(element.dropped)
+  override def apply(element: SuccessElem[GraphResource]): IO[Elem[GraphResource]] =
+    if (config.types.isEmpty || config.types.contains(element.value.schema.iri)) IO.pure(element)
+    else IO.pure(element.dropped)
 
 }
 

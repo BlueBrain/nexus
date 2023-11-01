@@ -1,15 +1,15 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.deletion
 
-import cats.effect.Clock
+import cats.effect.{Clock, IO, Timer}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.model.ProjectDeletionReport
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.ProjectsConfig.DeletionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectState
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{Projects, ProjectsConfig}
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef}
@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
-import monix.bio.{Task, UIO}
+//import monix.bio.Task
 
 /**
   * Stream to delete project from the system after those are marked as deleted
@@ -42,12 +42,12 @@ object ProjectDeletionCoordinator {
       deletionConfig: DeletionConfig,
       serviceAccount: ServiceAccount,
       deletionStore: ProjectDeletionStore
-  )(implicit clock: Clock[UIO])
+  )(implicit clock: Clock[IO], timer: Timer[IO])
       extends ProjectDeletionCoordinator {
 
     implicit private val serviceAccountSubject: Subject = serviceAccount.subject
 
-    def run(offset: Offset): Stream[Task, Elem[Unit]] =
+    def run(offset: Offset): Stream[IO, Elem[Unit]] =
       fetchProjects(offset).evalMap {
         _.traverse {
           case project if project.markedForDeletion =>
@@ -58,14 +58,14 @@ object ProjectDeletionCoordinator {
               s"attempting to delete project ${project.project}"
             )
             delete(project).retry(retryStrategy)
-          case _                                    => Task.unit
+          case _                                    => IO.unit
         }
       }
 
-    private[deletion] def delete(project: ProjectState) =
+    private[deletion] def delete(project: ProjectState): IO[Unit] =
       for {
-        _         <- Task.delay(logger.warn(s"Starting deletion of project ${project.project}"))
-        now       <- IOUtils.instant
+        _         <- IO.delay(logger.warn(s"Starting deletion of project ${project.project}"))
+        now       <- IOInstant.now
         // Running preliminary tasks before deletion like deprecating and stopping views,
         // removing acl related to the project, etc...
         initReport = ProjectDeletionReport(project.project, project.updatedAt, now, project.updatedBy)
@@ -74,13 +74,13 @@ object ProjectDeletionCoordinator {
                          task(project.project).map(report ++ _)
                        }
         // Waiting for events issued by deletion tasks to be taken into account
-        _         <- Task.sleep(deletionConfig.propagationDelay)
+        _         <- IO.sleep(deletionConfig.propagationDelay)
         // Delete the events and states and save the deletion report
         _         <- deletionStore.deleteAndSaveReport(report)
-        _         <- Task.delay(logger.info(s"Project ${project.project} has been successfully deleted."))
+        _         <- IO.delay(logger.info(s"Project ${project.project} has been successfully deleted."))
       } yield ()
 
-    private[deletion] def list(project: ProjectRef): Task[List[ProjectDeletionReport]] =
+    private[deletion] def list(project: ProjectRef): IO[List[ProjectDeletionReport]] =
       deletionStore.list(project)
   }
 
@@ -93,7 +93,7 @@ object ProjectDeletionCoordinator {
       deletionConfig: ProjectsConfig.DeletionConfig,
       serviceAccount: ServiceAccount,
       xas: Transactors
-  )(implicit clock: Clock[UIO]): ProjectDeletionCoordinator =
+  )(implicit clock: Clock[IO], timer: Timer[IO]): ProjectDeletionCoordinator =
     if (deletionConfig.enabled) {
       new Active(
         projects.states,
@@ -116,10 +116,10 @@ object ProjectDeletionCoordinator {
       serviceAccount: ServiceAccount,
       supervisor: Supervisor,
       xas: Transactors
-  )(implicit clock: Clock[UIO]): Task[ProjectDeletionCoordinator] = {
+  )(implicit clock: Clock[IO], timer: Timer[IO]): IO[ProjectDeletionCoordinator] = {
     val stream = apply(projects, deletionTasks, deletionConfig, serviceAccount, xas)
     stream match {
-      case Noop           => Task.delay(logger.info("Projection deletion is disabled.")).as(Noop)
+      case Noop           => IO.delay(logger.info("Projection deletion is disabled.")).as(Noop)
       case active: Active =>
         val metadata: ProjectionMetadata = ProjectionMetadata("system", "project-deletion", None, None)
         supervisor

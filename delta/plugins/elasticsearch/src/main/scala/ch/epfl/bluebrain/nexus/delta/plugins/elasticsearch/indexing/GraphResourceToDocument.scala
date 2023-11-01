@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
@@ -10,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Pipe
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, PipeRef}
 import io.circe.{Json, JsonObject}
 import io.circe.syntax.EncoderOps
-import monix.bio.Task
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import shapeless.Typeable
 
 /**
@@ -33,24 +34,26 @@ final class GraphResourceToDocument(context: ContextValue, includeContext: Boole
   implicit private val api: JsonLdApi = JsonLdJavaApi.lenient
 
   /** Given a [[GraphResource]] returns a JSON-LD created from the merged graph and metadata graph */
-  def graphToDocument(element: GraphResource): Task[Option[Json]] = {
+  def graphToDocument(element: GraphResource): IO[Option[Json]] = {
     val graph = element.graph ++ element.metadataGraph
     val json  =
       if (element.source.isEmpty())
         graph
           .toCompactedJsonLd(context)
+          .toCatsIO
           .map(ld => injectContext(ld.obj.asJson))
       else {
         val id = getSourceId(element.source).getOrElse(element.id.toString)
         (graph -- graph.rootTypesGraph)
           .toCompactedJsonLd(context)
+          .toCatsIO
           .map(ld => injectContext(mergeJsonLd(element.source, ld.json)))
           .map(json => injectId(json, id))
       }
     json.map(j => Option.when(!j.isEmpty())(j))
   }
 
-  override def apply(element: SuccessElem[GraphResource]): Task[Elem[Json]] =
+  override def apply(element: SuccessElem[GraphResource]): IO[Elem[Json]] =
     element.evalMapFilter(graphToDocument)
 
   private def getSourceId(source: Json): Option[String] =

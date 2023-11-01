@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.deletion
 
+import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.model.ProjectDeletionReport
 import ch.epfl.bluebrain.nexus.delta.sourcing.{EntityDependencyStore, PartitionInit, Transactors}
@@ -9,19 +10,18 @@ import doobie.util.fragment.Fragment
 import doobie.ConnectionIO
 import doobie.implicits._
 import io.circe.syntax.EncoderOps
-import monix.bio.Task
 
 final private[deletion] class ProjectDeletionStore(xas: Transactors) {
 
   /**
     * Delete the project partitions and save the report
     */
-  def deleteAndSaveReport(report: ProjectDeletionReport): Task[Unit] =
+  def deleteAndSaveReport(report: ProjectDeletionReport): IO[Unit] =
     (
       deleteProject(report.project) >>
         EntityDependencyStore.deleteAll(report.project) >>
         saveReport(report)
-    ).transact(xas.write)
+    ).transact(xas.writeCE)
 
   /**
     * Delete partitions of the projects in events and states
@@ -40,10 +40,10 @@ final private[deletion] class ProjectDeletionStore(xas: Transactors) {
   /**
     * List reports for the given project
     */
-  def list(project: ProjectRef): Task[List[ProjectDeletionReport]] =
+  def list(project: ProjectRef): IO[List[ProjectDeletionReport]] =
     sql"""SELECT value FROM deleted_project_reports WHERE value->>'project' = $project"""
       .query[ProjectDeletionReport]
       .to[List]
-      .transact(xas.read)
+      .transact(xas.readCE)
 
 }

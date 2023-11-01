@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model
 
 import cats.Monoid
+import cats.effect.IO
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.JsonLdDocument.Reference
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.JsonLdEntry.ObjectEntry
@@ -11,7 +12,6 @@ import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.syntax.EncoderOps
 import io.circe.{Encoder, Json, JsonObject}
-import monix.bio.UIO
 
 import scala.annotation.nowarn
 
@@ -55,8 +55,8 @@ object JsonLdDocument {
     */
   def fromExpanded(
       expanded: ExpandedJsonLd,
-      findRelationships: Set[Iri] => UIO[Map[Iri, Set[Iri]]]
-  ): UIO[JsonLdDocument] = {
+      findRelationships: Set[Iri] => IO[Map[Iri, Set[Iri]]]
+  ): IO[JsonLdDocument] = {
 
     def innerEntry(json: Json, path: Vector[Iri], isInArray: Boolean): JsonLdDocument = {
 

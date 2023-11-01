@@ -1,27 +1,28 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
+import cats.effect.IO
 import cats.effect.concurrent.Ref
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ExecutionStatus.{Completed, Ignored, Running, Stopped}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ExecutionStrategy.{EveryNode, PersistentSingleNode, TransientSingleNode}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionProgress.NoProgress
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.SupervisorSuite.UnstableDestroy
-import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.SupervisorSetup.unapply
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.{BioSuite, PatienceConfig}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.SupervisorSuite.UnstableDestroy
+import ch.epfl.bluebrain.nexus.testkit.mu.bio.PatienceConfig
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import fs2.Stream
-import monix.bio.Task
 import munit.AnyFixture
 
 import java.time.Instant
 import scala.concurrent.duration._
 
-class SupervisorSuite extends BioSuite with SupervisorSetup.Fixture with Doobie.Assertions {
+class SupervisorSuite extends CatsEffectSuite with SupervisorSetup.Fixture with Doobie.Assertions {
 
   implicit private val patienceConfig: PatienceConfig = PatienceConfig(1.second, 50.millis)
   implicit private val subject: Subject               = Anonymous
@@ -37,7 +38,7 @@ class SupervisorSuite extends BioSuite with SupervisorSetup.Fixture with Doobie.
 
   private val rev = 1
 
-  private def evalStream(start: Task[Unit]) =
+  private def evalStream(start: IO[Unit]) =
     (_: Offset) =>
       Stream.eval(start) >> Stream
         .range(1, 21)
@@ -49,7 +50,7 @@ class SupervisorSuite extends BioSuite with SupervisorSetup.Fixture with Doobie.
 
   private def startProjection(metadata: ProjectionMetadata, strategy: ExecutionStrategy) =
     for {
-      started <- Ref.of[Task, Boolean](false)
+      started <- Ref.of[IO, Boolean](false)
       compiled = CompiledProjection.fromStream(metadata, strategy, evalStream(started.set(true)))
       _       <- sv.run(compiled).eventually(Running)
       _       <- started.get.eventually(true)
@@ -58,22 +59,22 @@ class SupervisorSuite extends BioSuite with SupervisorSetup.Fixture with Doobie.
   private def assertCrash(metadata: ProjectionMetadata, strategy: ExecutionStrategy) = {
     val expectedException = new IllegalStateException("The stream crashed unexpectedly.")
     for {
-      started   <- Ref.of[Task, Boolean](false)
+      started   <- Ref.of[IO, Boolean](false)
       projection =
         CompiledProjection.fromStream(
           metadata,
           strategy,
-          evalStream(started.set(true)).map(_ >> Stream.raiseError[Task](expectedException))
+          evalStream(started.set(true)).map(_ >> Stream.raiseError[IO](expectedException))
         )
       _         <- sv.run(projection).eventually(Running)
       _         <- started.get.eventually(true)
     } yield ()
   }
 
-  private def assertDestroy(metadata: ProjectionMetadata, onDestroy: Task[Unit]) =
+  private def assertDestroy(metadata: ProjectionMetadata, onDestroy: IO[Unit]) =
     for {
       _ <- sv.destroy(metadata.name, onDestroy).assertSome(Stopped)
-      _ <- sv.describe(metadata.name).eventuallyNone
+      _ <- sv.describe(metadata.name).eventually(None)
       _ <- projections.progress(metadata.name).assertNone
     } yield ()
 
@@ -85,8 +86,8 @@ class SupervisorSuite extends BioSuite with SupervisorSetup.Fixture with Doobie.
       progress: ProjectionProgress
   ) =
     sv.describe(metadata.name)
-      .eventuallySome(
-        SupervisedDescription(metadata, executionStrategy, restarts, status, progress)
+      .eventually(
+        Some(SupervisedDescription(metadata, executionStrategy, restarts, status, progress))
       )
 
   private def assertWatchRestarts(offset: Offset, processed: Long, discarded: Long) = {
@@ -100,21 +101,21 @@ class SupervisorSuite extends BioSuite with SupervisorSetup.Fixture with Doobie.
 
   test("Ignore a projection when it is meant to run on another node") {
     for {
-      flag      <- Ref.of[Task, Boolean](false)
+      flag      <- Ref.of[IO, Boolean](false)
       projection =
         CompiledProjection.fromStream(
           ignoredByNode1,
           TransientSingleNode,
           evalStream(flag.set(true))
         )
-      _         <- sv.run(projection).assert(Ignored)
-      _         <- Task.sleep(100.millis)
+      _         <- sv.run(projection).assertEquals(Ignored)
+      _         <- IO.sleep(100.millis)
       // The projection should still be ignored and should not have made any progress
       _         <- assertDescribe(ignoredByNode1, TransientSingleNode, 0, Ignored, NoProgress)
       // No progress has been saved in database either
       _         <- projections.progress(ignoredByNode1.name).assertNone
       // This means the stream has never been started
-      _         <- flag.get.assert(false)
+      _         <- flag.get.assertEquals(false)
     } yield ()
   }
 
@@ -131,7 +132,7 @@ class SupervisorSuite extends BioSuite with SupervisorSetup.Fixture with Doobie.
   test("Cannot fetch ignored projection descriptions (by default)") {
     val watchProgress = ProjectionProgress(Offset.at(1L), Instant.EPOCH, 1, 1, 0)
     sv.getRunningProjections()
-      .assert(
+      .assertEquals(
         List(
           SupervisedDescription(
             metadata = Supervisor.watchRestartMetadata,
@@ -173,7 +174,7 @@ class SupervisorSuite extends BioSuite with SupervisorSetup.Fixture with Doobie.
   }
 
   test("Destroy a projection running on every node") {
-    assertDestroy(random, Task.unit)
+    assertDestroy(random, IO.unit)
   }
 
   test("Run a transient projection when it is meant to run on this node") {
@@ -187,7 +188,7 @@ class SupervisorSuite extends BioSuite with SupervisorSetup.Fixture with Doobie.
   }
 
   test("Destroy a registered transient projection") {
-    assertDestroy(runnableByNode1, Task.unit)
+    assertDestroy(runnableByNode1, IO.unit)
   }
 
   test("Run a persistent projection when it is meant to run on this node") {
@@ -221,7 +222,7 @@ class SupervisorSuite extends BioSuite with SupervisorSetup.Fixture with Doobie.
   }
 
   test("Destroy a registered persistent projection") {
-    assertDestroy(runnableByNode1, Task.unit)
+    assertDestroy(runnableByNode1, IO.unit)
   }
 
   test("Should restart a failing projection") {
@@ -232,7 +233,7 @@ class SupervisorSuite extends BioSuite with SupervisorSetup.Fixture with Doobie.
   }
 
   test("Destroy a failing projection") {
-    assertDestroy(runnableByNode1, Task.unit)
+    assertDestroy(runnableByNode1, IO.unit)
   }
 
   test("Obtain the correct running projections") {
@@ -269,13 +270,13 @@ class SupervisorSuite extends BioSuite with SupervisorSetup.Fixture with Doobie.
       // Destroy the projection with a destroy method that fails and eventually succeeds
       unstableDestroy <- UnstableDestroy()
       _               <- assertDestroy(projection, unstableDestroy.attempt)
-      _               <- unstableDestroy.isCompleted.assert(true, "The destroy method should have completed")
+      _               <- unstableDestroy.isCompleted.assertEquals(true, "The destroy method should have completed")
     } yield ()
   }
 
   test("Run and properly destroy a projection with an failing destroy method") {
     val projection = ProjectionMetadata("test", "unstable-global-projection", None, None)
-    val alwaysFail = Task.raiseError(new IllegalStateException("Fail !"))
+    val alwaysFail = IO.raiseError(new IllegalStateException("Fail !"))
     for {
       _ <- startProjection(projection, EveryNode)
       _ <- assertDestroy(projection, alwaysFail)
@@ -288,20 +289,20 @@ object SupervisorSuite {
   /**
     * Creates a destroy method which eventually succeeds after a couple of failures
     */
-  final class UnstableDestroy(count: Ref[Task, Int], completed: Ref[Task, Boolean]) {
-    def attempt: Task[Unit] = count
+  final class UnstableDestroy(count: Ref[IO, Int], completed: Ref[IO, Boolean]) {
+    def attempt: IO[Unit] = count
       .updateAndGet(_ + 1)
-      .flatMap { i => Task.raiseWhen(i < 2)(new IllegalStateException(s"'$i' is lower than 2.")) }
-      .tapEval { _ => completed.set(true) }
+      .flatMap { i => IO.raiseWhen(i < 2)(new IllegalStateException(s"'$i' is lower than 2.")) }
+      .flatTap { _ => completed.set(true) }
 
-    def isCompleted: Task[Boolean] = completed.get
+    def isCompleted: IO[Boolean] = completed.get
   }
 
   object UnstableDestroy {
-    def apply(): Task[UnstableDestroy] =
+    def apply(): IO[UnstableDestroy] =
       for {
-        count     <- Ref.of[Task, Int](0)
-        completed <- Ref.of[Task, Boolean](false)
+        count     <- Ref.of[IO, Int](0)
+        completed <- Ref.of[IO, Boolean](false)
       } yield new UnstableDestroy(count, completed)
   }
 

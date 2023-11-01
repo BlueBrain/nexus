@@ -1,11 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing
 
+import cats.data.NonEmptyMapImpl.catsDataInstancesForNonEmptyMap
 import cats.data.{NonEmptyChain, NonEmptyMap}
-import cats.effect.ExitCase
+import cats.effect.{ContextShift, ExitCase, IO, Timer}
 import cats.effect.ExitCase.{Canceled, Completed, Error}
 import cats.effect.concurrent.Ref
 import cats.kernel.Semigroup
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.GraphResourceToNTriples
@@ -24,7 +24,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
 import fs2.{Pipe, Stream}
-import monix.bio.{Task, UIO}
 
 import java.util.UUID
 
@@ -44,7 +43,7 @@ sealed trait CompositeViewDef extends Product with Serializable {
 
 object CompositeViewDef {
 
-  private val logger: Logger = Logger[CompositeViewDef]
+  private val logger = Logger.cats[CompositeViewDef]
 
   /**
     * Active view eligible to be run as a projection by the supervisor
@@ -185,9 +184,9 @@ object CompositeViewDef {
       compilePipeChain: PipeChain.Compile,
       graphStream: CompositeGraphStream,
       compositeProjections: CompositeProjections
-  ): Task[CompiledProjection] = {
-    val metadata                              = view.metadata
-    val fetchProgress: UIO[CompositeProgress] = compositeProjections.progress(view.indexingRef).toUIO
+  )(implicit timer: Timer[IO], cs: ContextShift[IO]): IO[CompiledProjection] = {
+    val metadata                             = view.metadata
+    val fetchProgress: IO[CompositeProgress] = compositeProjections.progress(view.indexingRef)
 
     def compileSource =
       CompositeViewDef.compileSource(
@@ -200,12 +199,12 @@ object CompositeViewDef {
 
     def compileTarget = CompositeViewDef.compileTarget(compilePipeChain, sinks.projectionSink(view, _))(_)
 
-    def compileAll(progressRef: Ref[Task, CompositeProgress]) = {
+    def compileAll(progressRef: Ref[IO, CompositeProgress]) = {
       def rebuild: ElemPipe[Unit, Unit] = CompositeViewDef.rebuild(
         view.ref,
         view.value.rebuildStrategy,
         CompositeViewDef.rebuildWhen(view, progressRef, fetchProgress, graphStream),
-        compositeProjections.resetRebuild(view.ref).toUIO
+        compositeProjections.resetRebuild(view.ref)
       )
 
       compile(
@@ -226,8 +225,8 @@ object CompositeViewDef {
     }
 
     for {
-      initProgress <- fetchProgress.absorb
-      progressRef  <- Ref.of[Task, CompositeProgress](initProgress)
+      initProgress <- fetchProgress
+      progressRef  <- Ref.of[IO, CompositeProgress](initProgress)
       projection   <- compileAll(progressRef)
     } yield projection
   }
@@ -252,22 +251,22 @@ object CompositeViewDef {
     */
   def compile(
       view: ActiveViewDef,
-      fetchProgress: UIO[CompositeProgress],
-      compileSource: CompositeViewSource => Task[(Iri, Source, Source, Operation)],
-      compileTarget: CompositeViewProjection => Task[(Iri, Operation)],
+      fetchProgress: IO[CompositeProgress],
+      compileSource: CompositeViewSource => IO[(Iri, Source, Source, Operation)],
+      compileTarget: CompositeViewProjection => IO[(Iri, Operation)],
       rebuild: ElemPipe[Unit, Unit],
       restarts: ElemPipe[Unit, Unit],
       closeBranch: (CompositeBranch, ProjectionProgress) => Operation
-  ): Task[ElemStream[Unit]] = {
+  )(implicit timer: Timer[IO], cs: ContextShift[IO]): IO[ElemStream[Unit]] = {
     // We override the default implementation in FS2 (where it appends the two streams)
     implicit val semigroup: Semigroup[ElemStream[Unit]] = (x: ElemStream[Unit], y: ElemStream[Unit]) => x.merge(y)
 
     val sources = NonEmptyChain.fromNonEmptyList(view.value.sources.toNel.map(_._2))
     val targets = NonEmptyChain.fromNonEmptyList(view.value.projections.toNel.map(_._2))
 
-    def startLog(sourceId: Iri, branch: String)                                  =
+    def startLog(sourceId: Iri, branch: String)                                =
       logger.debug(s"Running '$branch' branch for source '$sourceId' of composite view '${view.ref}'.")
-    def finalizeLog[E](sourceId: Iri, branch: String): ExitCase[E] => Task[Unit] = {
+    def finalizeLog[E](sourceId: Iri, branch: String): ExitCase[E] => IO[Unit] = {
       case Completed =>
         logger.debug(s"Completed '$branch' branch for source '$sourceId' of composite view '${view.ref}'.")
       case Error(e)  =>
@@ -297,7 +296,7 @@ object CompositeViewDef {
                               }
                           )
       start             = Stream.eval(
-                            fetchProgress.tapEval { progress =>
+                            fetchProgress.flatTap { progress =>
                               logger.info(s"Starting composite view '${view.ref}' with offset $progress.")
                             }
                           )
@@ -316,19 +315,19 @@ object CompositeViewDef {
   def rebuild[A](
       view: ViewRef,
       rebuildStrategy: Option[RebuildStrategy],
-      predicate: UIO[Boolean],
-      resetProgress: UIO[Unit]
-  ): Pipe[Task, A, A] = { stream =>
+      predicate: IO[Boolean],
+      resetProgress: IO[Unit]
+  )(implicit timer: Timer[IO], cs: ContextShift[IO]): Pipe[IO, A, A] = { stream =>
     rebuildStrategy match {
       case Some(Interval(fixedRate)) =>
-        val rebuildWhen       = Stream.awakeEvery[Task](fixedRate).flatMap(_ => Stream.eval(predicate))
-        val waitingForRebuild = Stream.never[Task].interruptWhen(rebuildWhen).drain
+        val rebuildWhen       = Stream.awakeEvery[IO](fixedRate).flatMap(_ => Stream.eval(predicate))
+        val waitingForRebuild = Stream.never[IO].interruptWhen(rebuildWhen).drain
         Stream.eval(logger.debug(s"Rebuild has been defined at $fixedRate for view '$view'.")) >>
           (waitingForRebuild ++ Stream.eval(resetProgress).drain ++ stream).repeat
       case None                      =>
         // No rebuild strategy has been defined
         Stream.eval(logger.debug(s"No rebuild strategy has been defined for view '$view'.")) >>
-          Stream.empty[Task]
+          Stream.empty[IO]
     }
   }
 
@@ -342,20 +341,20 @@ object CompositeViewDef {
     */
   def rebuildWhen(
       view: ActiveViewDef,
-      progressRef: Ref[Task, CompositeProgress],
-      fetchProgress: UIO[CompositeProgress],
+      progressRef: Ref[IO, CompositeProgress],
+      fetchProgress: IO[CompositeProgress],
       graphStream: CompositeGraphStream
-  ): UIO[Boolean] = {
+  ): IO[Boolean] = {
 
-    def test(condition: Boolean, message: String): UIO[Boolean] =
-      UIO.when(condition)(logger.debug(message)).as(condition)
+    def test(condition: Boolean, message: String): IO[Boolean] =
+      IO.whenA(condition)(logger.debug(message)).as(condition)
 
     def checkSource(
         s: CompositeViewSource,
         progress: CompositeProgress,
         previousProgress: CompositeProgress
-    ): UIO[RebuildCondition] =
-      progress.sourceMainOffset(s.id).fold(UIO.pure(RebuildCondition.start)) { offset =>
+    ): IO[RebuildCondition] =
+      progress.sourceMainOffset(s.id).fold(IO.pure(RebuildCondition.start)) { offset =>
         for {
           diffMain    <- test(
                            !previousProgress.sourceMainOffset(s.id).contains(offset),
@@ -369,14 +368,14 @@ object CompositeViewDef {
           noRemaining <-
             if (diffOffset)
               graphStream.remaining(s, view.ref.project)(offset).map(r => r.isEmpty || r.exists(_.count == 0L))
-            else UIO.pure(false)
+            else IO.pure(false)
           _           <- test(noRemaining, s"The main branch for source '${s.id}' in view '${view.ref}' completed indexing.")
         } yield RebuildCondition(diffOffset, noRemaining)
       }
 
     for {
       newProgress      <- fetchProgress
-      previousProgress <- progressRef.getAndSet(newProgress).hideErrors
+      previousProgress <- progressRef.getAndSet(newProgress)
       condition        <- view.value.sources
                             .reduceMapM(checkSource(_, newProgress, previousProgress))
                             .map { r => r.diffOffset && r.noRemaining }
@@ -417,9 +416,9 @@ object CompositeViewDef {
       source: Source,
       sourceOperation: Operation,
       targets: NonEmptyChain[(Iri, Operation)],
-      fetchProgress: UIO[CompositeProgress],
+      fetchProgress: IO[CompositeProgress],
       closeBranch: (CompositeBranch, ProjectionProgress) => Operation
-  ): ElemStream[Unit] =
+  )(implicit timer: Timer[IO], cs: ContextShift[IO]): ElemStream[Unit] =
     Stream.eval(fetchProgress).flatMap { progress =>
       val sourceOffset = progress.sourceMainOffset(sourceId)
       val main         = for {
@@ -434,7 +433,7 @@ object CompositeViewDef {
         result      <- source.through(sourceOperation).flatMap(_.broadcastThrough(mainTargets))
       } yield result
       main match {
-        case Left(e)       => Stream.raiseError[Task](e)
+        case Left(e)       => Stream.raiseError[IO](e)
         case Right(source) => source.apply(sourceOffset.getOrElse(Offset.start))
       }
     }
@@ -456,9 +455,9 @@ object CompositeViewDef {
       sourceId: Iri,
       source: Source,
       targets: NonEmptyChain[(Iri, Operation)],
-      fetchProgress: UIO[CompositeProgress],
+      fetchProgress: IO[CompositeProgress],
       closeBranch: (CompositeBranch, ProjectionProgress) => Operation
-  ): ElemStream[Unit] =
+  )(implicit timer: Timer[IO], cs: ContextShift[IO]): ElemStream[Unit] =
     Stream.eval(fetchProgress).flatMap { progress =>
       val sourceOffset = progress.sourceRebuildOffset(sourceId)
       val rebuild      = for {
@@ -473,7 +472,7 @@ object CompositeViewDef {
         result         <- source.broadcastThrough(rebuildTargets)
       } yield result
       rebuild match {
-        case Left(e)       => Stream.raiseError[Task](e)
+        case Left(e)       => Stream.raiseError[IO](e)
         case Right(source) =>
           source.apply(sourceOffset.getOrElse(Offset.start))
       }
@@ -525,8 +524,8 @@ object CompositeViewDef {
       graphStream: CompositeGraphStream,
       sink: Sink,
       projectionTypes: Set[Iri]
-  )(source: CompositeViewSource): Task[(Iri, Source, Source, Operation)] =
-    Task.fromEither {
+  )(source: CompositeViewSource): IO[(Iri, Source, Source, Operation)] =
+    IO.fromEither {
       for {
         pipes        <- source.pipeChain.traverse(compilePipeChain)
         // We apply `Operation.tap` as we want to keep the GraphResource for the rest of the stream
@@ -554,7 +553,7 @@ object CompositeViewDef {
   def compileTarget(
       compilePipeChain: PipeChain.Compile,
       targetSink: CompositeViewProjection => Sink
-  )(target: CompositeViewProjection): Task[(Iri, Operation)] = Task.fromEither {
+  )(target: CompositeViewProjection): IO[(Iri, Operation)] = IO.fromEither {
     val sink = targetSink(target)
     val tail = NonEmptyChain(sink: Operation)
 

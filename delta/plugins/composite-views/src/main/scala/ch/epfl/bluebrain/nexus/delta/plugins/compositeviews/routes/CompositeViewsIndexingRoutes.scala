@@ -4,7 +4,6 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import cats.effect.{ContextShift, IO}
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.BlazegraphViewsDirectives
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef.ActiveViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection._
@@ -123,7 +122,7 @@ class CompositeViewsIndexingRoutes(
                         emit(
                           fetchView(id, ref)
                             .flatMap { view =>
-                              toCatsIO(projectionErrors.search(view.ref, pagination, timeRange))
+                              projectionErrors.search(view.ref, pagination, timeRange)
                             }
                             .attemptNarrow[CompositeViewRejection]
                             .rejectOn[ViewNotFound]

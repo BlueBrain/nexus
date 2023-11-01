@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.schemas
 
-import cats.effect.{Clock, IO}
+import cats.effect.{Clock, IO, Timer}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
@@ -170,7 +170,7 @@ object SchemasImpl {
       validate: ValidateSchema,
       config: SchemasConfig,
       xas: Transactors
-  )(implicit api: JsonLdApi, clock: Clock[IO], uuidF: UUIDF): Schemas = {
+  )(implicit api: JsonLdApi, clock: Clock[IO], timer: Timer[IO], uuidF: UUIDF): Schemas = {
     val parser =
       new JsonLdSourceResolvingParser[SchemaRejection](
         List(contexts.shacl, contexts.schemasMetadata),

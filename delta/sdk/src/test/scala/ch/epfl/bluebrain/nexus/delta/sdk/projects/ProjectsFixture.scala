@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.projects
 
-import cats.effect.{Clock, IO}
+import cats.effect.{Clock, IO, Timer}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.ScopeInitialization
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
@@ -17,6 +17,7 @@ object ProjectsFixture {
 
   def init(fetchOrgs: FetchOrganization, apiMappings: ApiMappings, config: ProjectsConfig)(implicit
       clock: Clock[IO],
+      timer: Timer[IO],
       cl: ClassLoader
   ): ResourceFixture.TaskFixture[(Transactors, Projects)] = {
     implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
@@ -32,6 +33,7 @@ object ProjectsFixture {
   )(implicit
       base: BaseUri,
       clock: Clock[IO],
+      timer: Timer[IO],
       uuidF: UUIDF,
       cl: ClassLoader
   ): ResourceFixture.TaskFixture[(Transactors, Projects)] =

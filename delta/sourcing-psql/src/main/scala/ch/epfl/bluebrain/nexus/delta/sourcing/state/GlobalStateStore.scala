@@ -1,8 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.state
 
-import cats.effect.IO
+import cats.effect.{IO, Timer}
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.taskToIoK
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Serializer, Transactors}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
@@ -71,7 +70,7 @@ object GlobalStateStore {
       serializer: Serializer[Id, S],
       config: QueryConfig,
       xas: Transactors
-  ): GlobalStateStore[Id, S] = new GlobalStateStore[Id, S] {
+  )(implicit timer: Timer[IO]): GlobalStateStore[Id, S] = new GlobalStateStore[Id, S] {
 
     import IriInstances._
     implicit val putId: Put[Id]      = serializer.putId
@@ -133,7 +132,7 @@ object GlobalStateStore {
         _.offset,
         config.copy(refreshStrategy = strategy),
         xas
-      ).translate(taskToIoK)
+      )
 
     override def currentStates(offset: Offset): EnvelopeStream[S] = states(offset, RefreshStrategy.Stop)
 

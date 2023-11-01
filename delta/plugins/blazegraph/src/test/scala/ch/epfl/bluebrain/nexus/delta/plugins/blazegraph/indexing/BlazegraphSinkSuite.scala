@@ -1,10 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing
 
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphClientSetup
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.InvalidIri
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Graph, NTriples}
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
@@ -13,14 +14,19 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.BioSuite
+import ch.epfl.bluebrain.nexus.testkit.bio.BioRunContext
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import fs2.Chunk
 import munit.AnyFixture
 
 import java.time.Instant
 import scala.concurrent.duration._
 
-class BlazegraphSinkSuite extends BioSuite with BlazegraphClientSetup.Fixture with TestHelpers {
+class BlazegraphSinkSuite
+    extends CatsEffectSuite
+    with BioRunContext
+    with BlazegraphClientSetup.Fixture
+    with TestHelpers {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(blazegraphClient)
 
@@ -67,6 +73,7 @@ class BlazegraphSinkSuite extends BioSuite with BlazegraphClientSetup.Fixture wi
   private def query(namespace: String) =
     client
       .query(Set(namespace), constructQuery, SparqlQueryResponseType.SparqlNTriples)
+      .toCatsIO
       .map { response => Graph(response.value).toOption }
 
   test("Create the namespace") {
@@ -78,7 +85,7 @@ class BlazegraphSinkSuite extends BioSuite with BlazegraphClientSetup.Fixture wi
     val expected = createGraph(allResources)
 
     for {
-      _ <- sink.apply(asElems(allResources)).assert(input.map(_.void))
+      _ <- sink.apply(asElems(allResources)).assertEquals(input.map(_.void))
       _ <- query(namespace).assertSome(expected)
     } yield ()
   }
@@ -89,7 +96,7 @@ class BlazegraphSinkSuite extends BioSuite with BlazegraphClientSetup.Fixture wi
     val expected = createGraph(Chunk(resource1Id -> resource1Ntriples, resource3Id -> resource3Ntriples))
 
     for {
-      _ <- sink.apply(input).assert(input.map(_.void))
+      _ <- sink.apply(input).assertEquals(input.map(_.void))
       _ <- query(namespace).assertSome(expected)
     } yield ()
 
@@ -102,7 +109,7 @@ class BlazegraphSinkSuite extends BioSuite with BlazegraphClientSetup.Fixture wi
     val expected = createGraph(Chunk(resource1Id -> resource1Ntriples, resource3Id -> resource3Ntriples))
 
     for {
-      _ <- sink.apply(chunk).assert(chunk.map(_.failed(InvalidIri)))
+      _ <- sink.apply(chunk).assertEquals(chunk.map(_.failed(InvalidIri)))
       _ <- query(namespace).assertSome(expected)
     } yield ()
   }
@@ -120,7 +127,7 @@ class BlazegraphSinkSuite extends BioSuite with BlazegraphClientSetup.Fixture wi
     val expected = createGraph(Chunk(resource2Id -> resource2Ntriples, resource1Id -> resource1NtriplesUpdated))
 
     for {
-      _ <- client.createNamespace(namespace).assert(true)
+      _ <- client.createNamespace(namespace).toCatsIO.assertEquals(true)
       _ <- sink.apply(asElems(input))
       _ <- query(namespace).assertSome(expected)
     } yield ()
@@ -143,7 +150,7 @@ class BlazegraphSinkSuite extends BioSuite with BlazegraphClientSetup.Fixture wi
     val expected = createGraph(Chunk.singleton(resource2Id -> resource2Ntriples))
 
     for {
-      _ <- client.createNamespace(namespace).assert(true)
+      _ <- client.createNamespace(namespace).toCatsIO.assertEquals(true)
       _ <- sink.apply(chunk)
       _ <- query(namespace).assertSome(expected)
     } yield ()

@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.GraphAnalyticsCoordinator.ProjectDef
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.GraphAnalyticsResult.Noop
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.{GraphAnalyticsResult, GraphAnalyticsStream}
@@ -11,17 +12,17 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.SupervisorSetup.unapply
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.{BioSuite, PatienceConfig}
+import ch.epfl.bluebrain.nexus.testkit.mu.bio.PatienceConfig
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import fs2.Stream
 import fs2.concurrent.SignallingRef
-import monix.bio.Task
 import munit.AnyFixture
 
 import java.time.Instant
 import scala.collection.mutable.{Set => MutableSet}
 import scala.concurrent.duration._
 
-class GraphAnalyticsCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
+class GraphAnalyticsCoordinatorSuite extends CatsEffectSuite with SupervisorSetup.Fixture {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(supervisor)
 
@@ -43,14 +44,14 @@ class GraphAnalyticsCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtu
   private def failed[A](ref: ProjectRef, id: Iri, error: Throwable, offset: Long): Elem[A] =
     FailedElem(tpe = Projects.entityType, id, Some(ref), Instant.EPOCH, Offset.at(offset), error, 1)
 
-  private val resumeSignal = SignallingRef[Task, Boolean](false).runSyncUnsafe()
+  private val resumeSignal = SignallingRef[IO, Boolean](false).unsafeRunSync()
 
   // Stream 2 elements until signal is set to true and then 2 more
   private def projectStream: ElemStream[ProjectDef] =
     Stream(
       success(project1, project1Id, ProjectDef(project1, markedForDeletion = false), 1L),
       success(project2, project2Id, ProjectDef(project2, markedForDeletion = false), 2L)
-    ) ++ Stream.never[Task].interruptWhen(resumeSignal) ++
+    ) ++ Stream.never[IO].interruptWhen(resumeSignal) ++
       Stream(
         success(project1, project1Id, ProjectDef(project1, markedForDeletion = false), 3L),
         success(project2, project2Id, ProjectDef(project2, markedForDeletion = true), 4L)
@@ -86,12 +87,12 @@ class GraphAnalyticsCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtu
              graphAnalysisStream,
              sv,
              _ => sink,
-             (ref: ProjectRef) => Task.delay(createdIndices.add(ref)).void,
-             (ref: ProjectRef) => Task.delay(deletedIndices.add(ref)).void
+             (ref: ProjectRef) => IO.delay(createdIndices.add(ref)).void,
+             (ref: ProjectRef) => IO.delay(deletedIndices.add(ref)).void
            )
       _ <- sv.describe(GraphAnalyticsCoordinator.metadata.name)
              .map(_.map(_.progress))
-             .eventuallySome(ProjectionProgress(Offset.at(2L), Instant.EPOCH, 2, 0, 0))
+             .eventually(Some(ProjectionProgress(Offset.at(2L), Instant.EPOCH, 2, 0, 0)))
     } yield ()
   }
 
@@ -100,7 +101,7 @@ class GraphAnalyticsCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtu
     for {
       _ <- sv.describe(projectionName)
              .map(_.map(_.status))
-             .eventuallySome(ExecutionStatus.Completed)
+             .eventually(Some(ExecutionStatus.Completed))
       _ <- projections.progress(projectionName).assertSome(expectedAnalysisProgress)
       _  = assert(createdIndices.contains(project1), s"The index for '$project1' should have been created.")
     } yield ()
@@ -111,7 +112,7 @@ class GraphAnalyticsCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtu
     for {
       _ <- sv.describe(projectionName)
              .map(_.map(_.status))
-             .eventuallySome(ExecutionStatus.Completed)
+             .eventually(Some(ExecutionStatus.Completed))
       _ <- projections.progress(projectionName).assertSome(expectedAnalysisProgress)
       _  = assert(createdIndices.contains(project2), s"The index for '$project2' should have been created.")
     } yield ()
@@ -122,14 +123,14 @@ class GraphAnalyticsCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtu
       _ <- resumeSignal.set(true)
       _ <- sv.describe(GraphAnalyticsCoordinator.metadata.name)
              .map(_.map(_.progress))
-             .eventuallySome(ProjectionProgress(Offset.at(4L), Instant.EPOCH, 4, 0, 0))
+             .eventually(Some(ProjectionProgress(Offset.at(4L), Instant.EPOCH, 4, 0, 0)))
     } yield ()
   }
 
   test(s"Projection for '$project1' should not be restarted by the new project state.") {
     val projectionName = s"ga-$project1"
     for {
-      _ <- sv.describe(projectionName).map(_.map(_.restarts)).eventuallySome(0)
+      _ <- sv.describe(projectionName).map(_.map(_.restarts)).eventually(Some(0))
       _ <- projections.progress(projectionName).assertSome(expectedAnalysisProgress)
     } yield ()
   }
@@ -137,7 +138,7 @@ class GraphAnalyticsCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtu
   test(s"'$project2' is marked for deletion, the associated projection should be destroyed.") {
     val projectionName = s"ga-$project2"
     for {
-      _ <- sv.describe(projectionName).eventuallyNone
+      _ <- sv.describe(projectionName).eventually(None)
       _ <- projections.progress(projectionName).assertNone
       _  = assert(deletedIndices.contains(project2), s"The index for '$project2' should have been deleted.")
     } yield ()

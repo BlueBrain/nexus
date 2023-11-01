@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
@@ -11,7 +12,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Pipe
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.DataConstructQuery.DataConstructQueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, PipeDef, PipeRef}
 import io.circe.{Json, JsonObject}
-import monix.bio.Task
 import shapeless.Typeable
 
 /**
@@ -24,10 +24,10 @@ class DataConstructQuery(config: DataConstructQueryConfig) extends Pipe {
   override def inType: Typeable[GraphResource]  = Typeable[GraphResource]
   override def outType: Typeable[GraphResource] = Typeable[GraphResource]
 
-  override def apply(element: SuccessElem[GraphResource]): Task[Elem[GraphResource]] =
+  override def apply(element: SuccessElem[GraphResource]): IO[Elem[GraphResource]] =
     element.value.graph.transform(config.query) match {
-      case Left(err)       => Task.pure(element.failed(err))
-      case Right(newGraph) => Task.pure(element.copy(value = element.value.copy(graph = newGraph)))
+      case Left(err)       => IO.pure(element.failed(err))
+      case Right(newGraph) => IO.pure(element.copy(value = element.value.copy(graph = newGraph)))
     }
 
 }

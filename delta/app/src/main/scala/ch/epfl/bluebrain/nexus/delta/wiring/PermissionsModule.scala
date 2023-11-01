@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
-import cats.effect.{Clock, IO}
+import cats.effect.{Clock, IO, Timer}
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
@@ -24,11 +24,11 @@ import izumi.distage.model.definition.{Id, ModuleDef}
 object PermissionsModule extends ModuleDef {
   implicit private val classLoader: ClassLoader = getClass.getClassLoader
 
-  make[Permissions].from { (cfg: AppConfig, xas: Transactors, clock: Clock[IO]) =>
+  make[Permissions].from { (cfg: AppConfig, xas: Transactors, clock: Clock[IO], timer: Timer[IO]) =>
     PermissionsImpl(
       cfg.permissions,
       xas
-    )(clock)
+    )(clock, timer)
   }
 
   make[PermissionsRoutes].from {

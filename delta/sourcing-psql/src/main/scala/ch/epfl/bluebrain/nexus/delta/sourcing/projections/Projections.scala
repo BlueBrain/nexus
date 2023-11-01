@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.projections
 
-import cats.effect.Clock
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils
+import cats.effect.{Clock, IO, Timer}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef}
@@ -10,7 +10,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.projections.model.ProjectionRestar
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.{SelectFilter, StreamingQuery}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{ProjectionMetadata, ProjectionProgress, ProjectionStore}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{ProgressStatistics, Transactors}
-import monix.bio.UIO
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -22,7 +21,7 @@ trait Projections {
     * @param name
     *   the name of the projection
     */
-  def progress(name: String): UIO[Option[ProjectionProgress]]
+  def progress(name: String): IO[Option[ProjectionProgress]]
 
   /**
     * Retrieves the offset for a given projection.
@@ -30,7 +29,7 @@ trait Projections {
     * @param name
     *   the name of the projection
     */
-  def offset(name: String): UIO[Offset] = progress(name).map(_.fold[Offset](Offset.start)(_.offset))
+  def offset(name: String): IO[Offset] = progress(name).map(_.fold[Offset](Offset.start)(_.offset))
 
   /**
     * Saves a projection offset.
@@ -40,7 +39,7 @@ trait Projections {
     * @param progress
     *   the offset to save
     */
-  def save(metadata: ProjectionMetadata, progress: ProjectionProgress): UIO[Unit]
+  def save(metadata: ProjectionMetadata, progress: ProjectionProgress): IO[Unit]
 
   /**
     * Resets the progress of a projection to 0, and the instants (createdAt, updatedAt) to the time of the reset
@@ -48,7 +47,7 @@ trait Projections {
     * @param name
     *   the name of the projection to reset
     */
-  def reset(name: String): UIO[Unit]
+  def reset(name: String): IO[Unit]
 
   /**
     * Deletes a projection offset if found.
@@ -56,14 +55,14 @@ trait Projections {
     * @param name
     *   the name of the projection
     */
-  def delete(name: String): UIO[Unit]
+  def delete(name: String): IO[Unit]
 
   /**
     * Schedules a restart for the given projection at the given offset
     * @param projectionName
     *   the name of the projection
     */
-  def scheduleRestart(projectionName: String)(implicit subject: Subject): UIO[Unit]
+  def scheduleRestart(projectionName: String)(implicit subject: Subject): IO[Unit]
 
   /**
     * Get scheduled projection restarts from a given offset
@@ -78,12 +77,12 @@ trait Projections {
     *   the identifier of the restart
     * @return
     */
-  def acknowledgeRestart(id: Offset): UIO[Unit]
+  def acknowledgeRestart(id: Offset): IO[Unit]
 
   /**
     * Deletes projection restarts older than the configured period
     */
-  def deleteExpiredRestarts(): UIO[Unit]
+  def deleteExpiredRestarts(): IO[Unit]
 
   /**
     * Returns the statistics for the given projection in the given project
@@ -95,39 +94,40 @@ trait Projections {
     * @param projectionId
     *   the projection id for which the statistics are computed
     */
-  def statistics(project: ProjectRef, selectFilter: SelectFilter, projectionId: String): UIO[ProgressStatistics]
+  def statistics(project: ProjectRef, selectFilter: SelectFilter, projectionId: String): IO[ProgressStatistics]
 }
 
 object Projections {
 
   def apply(xas: Transactors, config: QueryConfig, restartTtl: FiniteDuration)(implicit
-      clock: Clock[UIO]
+      clock: Clock[IO],
+      timer: Timer[IO]
   ): Projections =
     new Projections {
       private val projectionStore        = ProjectionStore(xas, config)
       private val projectionRestartStore = new ProjectionRestartStore(xas, config)
 
-      override def progress(name: String): UIO[Option[ProjectionProgress]] = projectionStore.offset(name)
+      override def progress(name: String): IO[Option[ProjectionProgress]] = projectionStore.offset(name)
 
-      override def save(metadata: ProjectionMetadata, progress: ProjectionProgress): UIO[Unit] =
+      override def save(metadata: ProjectionMetadata, progress: ProjectionProgress): IO[Unit] =
         projectionStore.save(metadata, progress)
 
-      override def reset(name: String): UIO[Unit] = projectionStore.reset(name)
+      override def reset(name: String): IO[Unit] = projectionStore.reset(name)
 
-      override def delete(name: String): UIO[Unit] = projectionStore.delete(name)
+      override def delete(name: String): IO[Unit] = projectionStore.delete(name)
 
-      override def scheduleRestart(projectionName: String)(implicit subject: Subject): UIO[Unit] = {
-        IOUtils.instant.flatMap { now =>
+      override def scheduleRestart(projectionName: String)(implicit subject: Subject): IO[Unit] = {
+        IOInstant.now.flatMap { now =>
           projectionRestartStore.save(ProjectionRestart(projectionName, now, subject))
         }
       }
 
       override def restarts(offset: Offset): ElemStream[ProjectionRestart] = projectionRestartStore.stream(offset)
 
-      override def acknowledgeRestart(id: Offset): UIO[Unit] = projectionRestartStore.acknowledge(id)
+      override def acknowledgeRestart(id: Offset): IO[Unit] = projectionRestartStore.acknowledge(id)
 
-      override def deleteExpiredRestarts(): UIO[Unit] =
-        IOUtils.instant.flatMap { now =>
+      override def deleteExpiredRestarts(): IO[Unit] =
+        IOInstant.now.flatMap { now =>
           projectionRestartStore.deleteExpired(now.minusMillis(restartTtl.toMillis))
         }
 
@@ -135,7 +135,7 @@ object Projections {
           project: ProjectRef,
           selectFilter: SelectFilter,
           projectionId: String
-      ): UIO[ProgressStatistics] =
+      ): IO[ProgressStatistics] =
         for {
           current   <- progress(projectionId)
           remaining <-

@@ -1,18 +1,18 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing
 
+import cats.effect.IO
 import cats.effect.concurrent.Ref
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.cache.KeyValueStore
+import ch.epfl.bluebrain.nexus.delta.kernel.cache.LocalCache
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViewsFixture
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewDef.ActiveViewDef
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.BioSuite
-import monix.bio.Task
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 
 import java.util.UUID
 
-class CompositeViewsCoordinatorSuite extends BioSuite with CompositeViewsFixture {
+class CompositeViewsCoordinatorSuite extends CatsEffectSuite with CompositeViewsFixture {
 
   private val existingViewRef                    = ViewRef(projectRef, nxv + "my-view")
   private val anotherView                        = ViewRef(projectRef, nxv + "another-view")
@@ -27,11 +27,11 @@ class CompositeViewsCoordinatorSuite extends BioSuite with CompositeViewsFixture
   private def cleanup(newView: CompositeViewDef, cachedViews: List[ActiveViewDef]) = {
     for {
       // Creates the cache
-      cache        <- KeyValueStore[ViewRef, ActiveViewDef]().tapEval { c =>
+      cache        <- LocalCache[ViewRef, ActiveViewDef]().flatTap { c =>
                         cachedViews.traverse { v => c.put(v.ref, v) }
                       }
       // The destroy action
-      destroyed    <- Ref.of[Task, Option[ActiveViewDef]](None)
+      destroyed    <- Ref.of[IO, Option[ActiveViewDef]](None)
       destroy       = (active: ActiveViewDef, _: CompositeViewDef) =>
                         destroyed.getAndUpdate {
                           case Some(current) =>

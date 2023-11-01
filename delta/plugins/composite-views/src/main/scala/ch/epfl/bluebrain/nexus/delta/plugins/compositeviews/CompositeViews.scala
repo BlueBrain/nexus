@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
-import cats.effect.{Clock, IO}
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.ioToTaskK
+import cats.effect.{Clock, IO, Timer}
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax.kamonSyntax
@@ -15,7 +15,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewE
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.serialization.CompositeViewFieldsJsonLdSourceDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
@@ -30,12 +29,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, Projects}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.views.IndexingRev
 import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
+import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityDependency.DependsOn
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing._
 import io.circe.Json
 
 /**
@@ -308,19 +307,19 @@ final class CompositeViews private (
     * Return all existing views for the given project in a finite stream
     */
   def currentViews(project: ProjectRef): ElemStream[CompositeViewDef] =
-    log.currentStates(Scope.Project(project)).translate(ioToTaskK).map(toCompositeViewDef)
+    log.currentStates(Scope.Project(project)).map(toCompositeViewDef)
 
   /**
     * Return all existing indexing views in a finite stream
     */
   def currentViews: ElemStream[CompositeViewDef] =
-    log.currentStates(Scope.Root).translate(ioToTaskK).map(toCompositeViewDef)
+    log.currentStates(Scope.Root).map(toCompositeViewDef)
 
   /**
     * Return the indexing views in a non-ending stream
     */
   def views(start: Offset): ElemStream[CompositeViewDef] =
-    log.states(Scope.Root, start).translate(ioToTaskK).map(toCompositeViewDef)
+    log.states(Scope.Root, start).map(toCompositeViewDef)
 
   private def toCompositeViewDef(envelope: Envelope[CompositeViewState]) =
     envelope.toElem { v => Some(v.project) }.map { v =>
@@ -497,6 +496,7 @@ object CompositeViews {
   )(implicit
       api: JsonLdApi,
       clock: Clock[IO],
+      timer: Timer[IO],
       uuidF: UUIDF
   ): IO[CompositeViews] =
     IO

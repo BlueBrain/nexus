@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig.MaximumCumulativeDelayConfig
 import ch.epfl.bluebrain.nexus.testkit.mu.bio.PatienceConfig
 import monix.bio.UIO
-import munit.{Assertions, FailException, Location}
+import munit.{Assertions, Compare, FailException, Location}
 
 import scala.reflect.ClassTag
 import scala.util.control.NonFatal
@@ -16,13 +16,13 @@ import scala.util.control.NonFatal
   * Adapted from: from
   * https://github.com/typelevel/munit-cats-effect/blob/main/core/src/main/scala/munit/CatsEffectAssertions.scala
   */
-trait CatsEffectMUnitAssertions { self: Assertions =>
+trait CatsEffectAssertions { self: Assertions =>
 
   def assertIO[A, B](
       obtained: IO[A],
       returns: B,
       clue: => Any = "values are not the same"
-  )(implicit loc: Location, ev: B <:< A): IO[Unit] =
+  )(implicit loc: Location, compare: Compare[A, B]): IO[Unit] =
     obtained.flatMap(a => IO(assertEquals(a, returns, clue)))
 
   protected def assertIO_(
@@ -157,7 +157,7 @@ trait CatsEffectMUnitAssertions { self: Assertions =>
     def assertEquals[B](
         expected: B,
         clue: => Any = "values are not the same"
-    )(implicit loc: Location, ev: B <:< A): IO[Unit] =
+    )(implicit loc: Location, compare: Compare[A, B]): IO[Unit] =
       assertIO(io, expected, clue)
 
     /**
@@ -193,6 +193,12 @@ trait CatsEffectMUnitAssertions { self: Assertions =>
       */
     def intercept[T <: Throwable](expectedError: T)(implicit T: ClassTag[T], loc: Location): IO[T] =
       interceptErrorIO[T](expectedError)(io)
+
+    def assertError[T <: Throwable](f: T => Boolean)(implicit T: ClassTag[T], loc: Location): IO[Unit] =
+      interceptIO[T](io).map(f).flatMap {
+        case true  => IO.unit
+        case false => IO.delay(fail(s"assertion failed"))
+      }
 
     def eventually(expected: A, retryWhen: Throwable => Boolean)(implicit patience: PatienceConfig): IO[Unit] = {
       val strategy = RetryStrategy[Throwable](
@@ -247,5 +253,3 @@ trait CatsEffectMUnitAssertions { self: Assertions =>
     def assertNone: IO[Unit]              = assertIO(io, None, "the Option was not empty")
   }
 }
-
-object CatsEffectMUnitAssertions extends Assertions with CatsEffectMUnitAssertions

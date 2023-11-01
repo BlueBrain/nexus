@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.sse
 
 import akka.http.scaladsl.model.sse.ServerSentEvent
-import cats.effect.IO
+import cats.effect.{IO, Timer}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.LocalCache
@@ -138,7 +138,7 @@ object SseEventLog {
       fetchProject: ProjectRef => IO[(UUID, UUID)],
       config: SseConfig,
       xas: Transactors
-  )(implicit jo: JsonKeyOrdering): IO[SseEventLog] =
+  )(implicit jo: JsonKeyOrdering, timer: Timer[IO]): IO[SseEventLog] =
     LocalCache
       .lru[ProjectRef, (UUID, UUID)](config.cache)
       .map { cache =>
