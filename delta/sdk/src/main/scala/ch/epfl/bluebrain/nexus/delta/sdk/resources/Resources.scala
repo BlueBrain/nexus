@@ -461,6 +461,7 @@ object Resources {
     def undeprecate(c: UndeprecateResource) =
       for {
         s    <- stateWhereResourceExists(c)
+        _    <- raiseWhenDifferentSchema(c, s)
         _    <- IO.raiseWhen(!s.deprecated)(ResourceIsNotDeprecated(c.id))
         time <- IOInstant.now
       } yield ResourceUndeprecated(c.id, c.project, s.types, s.rev + 1, time, c.subject)
