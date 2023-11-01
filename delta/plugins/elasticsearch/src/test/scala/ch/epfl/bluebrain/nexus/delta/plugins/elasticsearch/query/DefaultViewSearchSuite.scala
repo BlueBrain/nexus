@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query
 
 import akka.http.scaladsl.model.Uri
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.toCatsIOOps
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.kernel.search.{Pagination, TimeRange}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchBulk, IndexLabel}
@@ -23,7 +24,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.Resource
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.BioSuite
+import ch.epfl.bluebrain.nexus.testkit.bio.BioRunContext
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
 import io.circe.syntax.EncoderOps
 import io.circe.{Decoder, Json, JsonObject}
@@ -33,7 +35,8 @@ import munit.{AnyFixture, Location}
 import java.time.Instant
 
 class DefaultViewSearchSuite
-    extends BioSuite
+    extends CatsEffectSuite
+    with BioRunContext
     with ElasticSearchClientSetup.Fixture
     with TestHelpers
     with CirceLiteral
@@ -143,6 +146,7 @@ class DefaultViewSearchSuite
   private def paginatedSearch(params: ResourcesSearchParams, pagination: Pagination, sort: SortList) =
     client
       .search(params, Set(defaultIndex.value), Uri.Query.Empty)(pagination, sort)
+      .toCatsIO
 
   private def aggregate(params: ResourcesSearchParams) =
     client.aggregate(params, Set(defaultIndex.value), Uri.Query.Empty, 100)
@@ -213,7 +217,7 @@ class DefaultViewSearchSuite
     (s"resources with tag ${myTag.value}", byTag, List(bbp))
   ).foreach { case (testName, params, expected) =>
     test(s"Search: $testName") {
-      search(params).map(Ids.extractAll).assert(expected.map(_.id))
+      search(params).map(Ids.extractAll).assertEquals(expected.map(_.id))
     }
   }
 

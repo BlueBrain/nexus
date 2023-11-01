@@ -2,8 +2,8 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import akka.actor.typed.ActorSystem
 import cats.effect.{Clock, ContextShift, IO}
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.deletion.{ElasticSearchDeletionTask, EventMetricsDeletionTask}
@@ -40,7 +40,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionErrors, Projections}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeChain, ReferenceRegistry, Supervisor}
 import izumi.distage.model.definition.{Id, ModuleDef}
-import monix.bio.UIO
 import monix.execution.Scheduler
 
 /**
@@ -88,19 +87,18 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         config: ElasticSearchViewsConfig,
         xas: Transactors,
         api: JsonLdApi,
-        clock: Clock[UIO],
+        clock: Clock[IO],
         uuidF: UUIDF
     ) =>
-      toCatsIO(
-        ElasticSearchViews(
-          fetchContext.mapRejection(ProjectContextRejection),
-          contextResolution,
-          validateElasticSearchView,
-          config.eventLog,
-          config.prefix,
-          xas
-        )(api, clock, uuidF)
-      )
+      ElasticSearchViews(
+        fetchContext.mapRejection(ProjectContextRejection),
+        contextResolution,
+        validateElasticSearchView,
+        config.eventLog,
+        config.prefix,
+        xas
+      )(api, clock, uuidF)
+
   }
 
   make[ElasticSearchCoordinator].fromEffect {
@@ -183,7 +181,6 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         viewsQuery: ElasticSearchViewsQuery,
         shift: ElasticSearchView.Shift,
         baseUri: BaseUri,
-        s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering,
         fusionConfig: FusionConfig
@@ -197,7 +194,6 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         indexingAction(_, _, _)(shift)
       )(
         baseUri,
-        s,
         cr,
         ordering,
         fusionConfig
@@ -211,7 +207,6 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         schemeDirectives: DeltaSchemeDirectives,
         defaultViewsQuery: DefaultViewsQuery.Elasticsearch,
         baseUri: BaseUri,
-        s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering,
         resourcesToSchemaSet: Set[ResourceToSchemaMappings],
@@ -228,7 +223,6 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
       )(
         baseUri,
         esConfig.pagination,
-        s,
         cr,
         ordering,
         fetchContext.mapRejection(ElasticSearchQueryError.ProjectContextRejection)
@@ -244,7 +238,6 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         projectionErrors: ProjectionErrors,
         schemeDirectives: DeltaSchemeDirectives,
         baseUri: BaseUri,
-        s: Scheduler,
         c: ContextShift[IO],
         cr: RemoteContextResolution @Id("aggregate"),
         esConfig: ElasticSearchViewsConfig,
@@ -262,7 +255,6 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
       )(
         baseUri,
         esConfig.pagination,
-        s,
         c,
         cr,
         ordering
@@ -278,7 +270,6 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         identities: Identities,
         aclCheck: AclCheck,
         idResolution: IdResolution,
-        s: Scheduler,
         ordering: JsonKeyOrdering,
         rcr: RemoteContextResolution @Id("aggregate"),
         fusionConfig: FusionConfig,
@@ -286,7 +277,6 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
     ) =>
       new IdResolutionRoutes(identities, aclCheck, idResolution)(
         baseUri,
-        s,
         ordering,
         rcr,
         fusionConfig
@@ -390,12 +380,10 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
   }
 
   make[ElasticSearchView.Shift].fromEffect { (views: ElasticSearchViews, base: BaseUri) =>
-    toCatsIO(
-      for {
-        defaultMapping  <- defaultElasticsearchMapping
-        defaultSettings <- defaultElasticsearchSettings
-      } yield ElasticSearchView.shift(views, defaultMapping, defaultSettings)(base)
-    )
+    for {
+      defaultMapping  <- defaultElasticsearchMapping
+      defaultSettings <- defaultElasticsearchSettings
+    } yield ElasticSearchView.shift(views, defaultMapping, defaultSettings)(base)
   }
 
   many[ResourceShift[_, _, _]].ref[ElasticSearchView.Shift]

@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.MediaTypes.`text/html`
 import akka.http.scaladsl.model.headers.{Accept, Location}
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{permissions => esPermissions, ElasticSearchViewRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, ValidateElasticSearchView}
@@ -23,7 +24,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.PipeChain
 import ch.epfl.bluebrain.nexus.testkit.bio.IOFromMap
 import io.circe.Json
-import monix.bio.{IO, UIO}
+import monix.bio.UIO
 
 class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures with IOFromMap {
 
@@ -65,8 +66,8 @@ class ElasticSearchViewsRoutesSpec extends ElasticSearchViewsRoutesFixtures with
     ResolverContextResolution(rcr),
     ValidateElasticSearchView(
       PipeChain.validate(_, registry),
-      UIO.pure(allowedPerms),
-      (_, _, _) => IO.unit,
+      IO.pure(allowedPerms),
+      (_, _, _) => UIO.unit,
       "prefix",
       5,
       xas

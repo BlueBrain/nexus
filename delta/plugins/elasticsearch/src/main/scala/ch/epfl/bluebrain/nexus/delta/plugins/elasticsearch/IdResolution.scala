@@ -1,10 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.IdResolutionResponse._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.DefaultSearchRequest.RootSearch
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.{DefaultViewsQuery, ElasticSearchQueryError}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.DefaultViewsQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
@@ -21,7 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{SearchResults, SortList}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
 import io.circe.JsonObject
-import monix.bio.{IO, UIO}
+import monix.bio.{IO => BIO}
 
 import java.rmi.UnexpectedException
 
@@ -33,7 +34,7 @@ import java.rmi.UnexpectedException
   */
 class IdResolution(
     defaultViewsQuery: DefaultViewsQuery.Elasticsearch,
-    fetchResource: (ResourceRef, ProjectRef) => UIO[Option[JsonLdContent[_, _]]]
+    fetchResource: (ResourceRef, ProjectRef) => IO[Option[JsonLdContent[_, _]]]
 ) {
 
   /**
@@ -50,11 +51,11 @@ class IdResolution(
     */
   def resolve(
       iri: Iri
-  )(implicit caller: Caller): IO[ElasticSearchQueryError, Result] = {
+  )(implicit caller: Caller): IO[Result] = {
     val locate  = ResourcesSearchParams(id = Some(iri))
     val request = RootSearch(locate, FromPagination(0, 10000), SortList.empty)
 
-    def fetchSingleResult: ProjectRef => UIO[Result] = { projectRef =>
+    def fetchSingleResult: ProjectRef => IO[Result] = { projectRef =>
       val resourceRef = ResourceRef(iri)
       fetchResource(resourceRef, projectRef)
         .map {
@@ -62,7 +63,7 @@ class IdResolution(
         }
         .flatMap {
           case Some(result) => IO.pure(result)
-          case None         => IO.terminate(new UnexpectedException("Resource found in ES payload but could not be fetched."))
+          case None         => IO.raiseError(new UnexpectedException("Resource found in ES payload but could not be fetched."))
         }
     }
 
@@ -70,9 +71,9 @@ class IdResolution(
       .list(request)
       .flatMap { searchResults =>
         searchResults.results match {
-          case Nil         => IO.terminate(AuthorizationFailed("No resource matches the provided id."))
+          case Nil         => IO.raiseError(AuthorizationFailed("No resource matches the provided id."))
           case Seq(result) => projectRefFromSource(result.source).flatMap(fetchSingleResult)
-          case _           => UIO.pure(MultipleResults(searchResults))
+          case _           => IO.pure(MultipleResults(searchResults))
         }
       }
   }
@@ -82,8 +83,8 @@ class IdResolution(
     source("_project")
       .flatMap(_.as[Iri].toOption)
       .flatMap(projectRefFromIri) match {
-      case Some(projectRef) => UIO.pure(projectRef)
-      case None             => UIO.terminate(new UnexpectedException("Could not read '_project' field as IRI."))
+      case Some(projectRef) => IO.pure(projectRef)
+      case None             => IO.raiseError(new UnexpectedException("Could not read '_project' field as IRI."))
     }
 
   private val projectRefRegex =
@@ -123,7 +124,7 @@ object IdResolutionResponse {
 
       override def expand(
           value: Result
-      )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, ExpandedJsonLd] =
+      )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): BIO[RdfError, ExpandedJsonLd] =
         value match {
           case SingleResult(_, _, content)    => encoder(content).expand(content.resource)
           case MultipleResults(searchResults) => searchJsonLdEncoder.expand(searchResults)
@@ -131,7 +132,7 @@ object IdResolutionResponse {
 
       override def compact(
           value: Result
-      )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, CompactedJsonLd] =
+      )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): BIO[RdfError, CompactedJsonLd] =
         value match {
           case SingleResult(_, _, content)    => encoder(content).compact(content.resource)
           case MultipleResults(searchResults) => searchJsonLdEncoder.compact(searchResults)

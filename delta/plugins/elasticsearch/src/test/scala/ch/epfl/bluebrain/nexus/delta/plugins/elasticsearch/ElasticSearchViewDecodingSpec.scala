@@ -15,13 +15,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.{PipeStep, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes._
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.literal._
-import monix.execution.Scheduler.Implicits.global
 
 import java.util.UUID
 
-class ElasticSearchViewDecodingSpec extends BioSpec with Fixtures {
+class ElasticSearchViewDecodingSpec extends CatsEffectSpec with Fixtures {
 
   private val ref     = ProjectRef.unsafe("org", "proj")
   private val context = ProjectContext.unsafe(
@@ -36,7 +35,7 @@ class ElasticSearchViewDecodingSpec extends BioSpec with Fixtures {
 
   implicit private val caller: Caller = Caller.Anonymous
   private val decoder                 =
-    ElasticSearchViewJsonLdSourceDecoder(uuidF, resolverContext).runSyncUnsafe()
+    ElasticSearchViewJsonLdSourceDecoder(uuidF, resolverContext).unsafeRunSync()
 
   "An IndexingElasticSearchViewValue" should {
     val mapping  = json"""{ "dynamic": false }""".asObject.value

@@ -1,5 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
+import cats.effect.IO
+import cats.implicits.catsSyntaxOptionId
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.IdResolutionResponse.{MultipleResults, SingleResult}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.IdResolutionSuite.searchResults
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultViewId, permissions}
@@ -19,11 +21,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers.jsonContentOf
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.BioSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import io.circe.{Json, JsonObject}
-import monix.bio.UIO
 
-class IdResolutionSuite extends BioSuite with Fixtures {
+class IdResolutionSuite extends CatsEffectSuite with Fixtures {
 
   private val realm         = Label.unsafe("myrealm")
   private val alice: Caller = Caller(User("Alice", realm), Set(User("Alice", realm), Group("users", realm)))
@@ -41,7 +42,7 @@ class IdResolutionSuite extends BioSuite with Fixtures {
     (alice.subject, AclAddress.Root, Set(permissions.read)) // Alice has full access
   )
 
-  private def fetchViews = UIO.pure {
+  private def fetchViews = IO.pure {
     val viewRefs = List(defaultView, defaultView2)
     viewRefs.map { ref => IndexingView(ref, "index", permissions.read) }
   }
@@ -50,8 +51,8 @@ class IdResolutionSuite extends BioSuite with Fixtures {
     DefaultViewsQuery(
       _ => fetchViews,
       aclCheck,
-      (_: DefaultSearchRequest, _: Set[IndexingView]) => UIO.pure(searchResults),
-      (_: DefaultSearchRequest, _: Set[IndexingView]) => UIO.pure(AggregationResult(0, JsonObject.empty))
+      (_: DefaultSearchRequest, _: Set[IndexingView]) => IO.pure(searchResults),
+      (_: DefaultSearchRequest, _: Set[IndexingView]) => IO.pure(AggregationResult(0, JsonObject.empty))
     )
 
   private val iri = iri"https://bbp.epfl.ch/data/resource"
@@ -61,7 +62,7 @@ class IdResolutionSuite extends BioSuite with Fixtures {
     ResourceGen.jsonLdContent(successId, project1, jsonContentOf("resources/resource.json", "id" -> successId))
 
   private def fetchResource  =
-    (_: ResourceRef, _: ProjectRef) => UIO.some(successContent)
+    (_: ResourceRef, _: ProjectRef) => IO.pure(successContent.some)
 
   private val res = JsonObject(
     "@id"      -> Json.fromString(iri.toString),
@@ -72,14 +73,14 @@ class IdResolutionSuite extends BioSuite with Fixtures {
     val noListingResults = defaultViewsQuery(searchResults(Seq.empty))
     new IdResolution(noListingResults, fetchResource)
       .resolve(iri)(alice)
-      .terminated[AuthorizationFailed]
+      .intercept[AuthorizationFailed]
   }
 
   test("Single listing result leads to the resource being fetched") {
     val singleListingResult = defaultViewsQuery(searchResults(Seq(res)))
     new IdResolution(singleListingResult, fetchResource)
       .resolve(iri)(alice)
-      .assert(SingleResult(ResourceRef(iri), project1, successContent))
+      .assertEquals(SingleResult(ResourceRef(iri), project1, successContent))
   }
 
   test("Multiple listing results lead to search results") {
@@ -87,7 +88,7 @@ class IdResolutionSuite extends BioSuite with Fixtures {
     val multipleQueryResults = defaultViewsQuery(searchRes)
     new IdResolution(multipleQueryResults, fetchResource)
       .resolve(iri)(alice)
-      .assert(MultipleResults(searchRes))
+      .assertEquals(MultipleResults(searchRes))
   }
 
 }

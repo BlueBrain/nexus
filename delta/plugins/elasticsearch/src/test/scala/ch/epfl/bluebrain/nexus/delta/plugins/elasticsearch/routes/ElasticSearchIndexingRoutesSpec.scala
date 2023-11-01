@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
 import akka.http.scaladsl.model.headers.`Last-Event-ID`
 import akka.http.scaladsl.model.{MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.Route
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, ValidateElasticSearchView}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel
@@ -28,7 +29,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.FailedElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeChain, ProjectionProgress}
 import ch.epfl.bluebrain.nexus.testkit.bio.IOFromMap
 import io.circe.JsonObject
-import monix.bio.{IO, UIO}
+import monix.bio.UIO
 
 import java.time.Instant
 import scala.concurrent.duration._
@@ -84,8 +85,8 @@ class ElasticSearchIndexingRoutesSpec extends ElasticSearchViewsRoutesFixtures w
     ResolverContextResolution(rcr),
     ValidateElasticSearchView(
       PipeChain.validate(_, registry),
-      UIO.pure(allowedPerms),
-      (_, _, _) => IO.unit,
+      IO.pure(allowedPerms),
+      (_, _, _) => UIO.unit,
       "prefix",
       5,
       xas

@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import cats.data.NonEmptySet
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{DifferentElasticSearchViewType, IncorrectRev, InvalidPipeline, InvalidViewReferences, PermissionIsNotDefined, ProjectContextRejection, ResourceAlreadyExists, RevisionNotFound, TagNotFound, TooManyViewReferences, ViewIsDeprecated, ViewNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
@@ -25,15 +26,15 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.PipeChain
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{FilterBySchema, FilterByType, FilterDeprecated}
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.Json
 import io.circe.literal._
-import monix.bio.{IO, UIO}
+import monix.bio.UIO
 
 import java.time.Instant
 import java.util.UUID
 
-class ElasticSearchViewsSpec extends BioSpec with DoobieScalaTestFixture with ConfigFixtures with Fixtures {
+class ElasticSearchViewsSpec extends CatsEffectSpec with DoobieScalaTestFixture with ConfigFixtures with Fixtures {
 
   private val realm                  = Label.unsafe("myrealm")
   implicit private val alice: Caller = Caller(User("Alice", realm), Set(User("Alice", realm), Group("users", realm)))
@@ -137,8 +138,8 @@ class ElasticSearchViewsSpec extends BioSpec with DoobieScalaTestFixture with Co
       ResolverContextResolution(rcr),
       ValidateElasticSearchView(
         PipeChain.validate(_, registry),
-        UIO.pure(Set(queryPermissions)),
-        (_, _, _) => IO.unit,
+        IO.pure(Set(queryPermissions)),
+        (_, _, _) => UIO.unit,
         "prefix",
         2,
         xas

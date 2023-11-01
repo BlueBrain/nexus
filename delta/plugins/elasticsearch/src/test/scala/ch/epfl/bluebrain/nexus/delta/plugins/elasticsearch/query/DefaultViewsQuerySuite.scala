@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultViewId, permissions, ResourcesSearchParams}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.DefaultSearchRequest.{OrgSearch, ProjectSearch, RootSearch}
@@ -13,10 +14,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.Scope
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.BioSuite
-import monix.bio.UIO
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 
-class DefaultViewsQuerySuite extends BioSuite {
+class DefaultViewsQuerySuite extends CatsEffectSuite {
 
   private val realm           = Label.unsafe("myrealm")
   private val alice: Caller   = Caller(User("Alice", realm), Set(User("Alice", realm), Group("users", realm)))
@@ -45,7 +45,7 @@ class DefaultViewsQuerySuite extends BioSuite {
     (charlie.subject, AclAddress.Project(project1), Set(permissions.read))
   )
 
-  private def fetchViews(predicate: Scope) = UIO.pure {
+  private def fetchViews(predicate: Scope) = IO.pure {
     val viewRefs = predicate match {
       case Scope.Root             => List(defaultView, defaultView2, defaultView3)
       case Scope.Org(`org`)       => List(defaultView, defaultView2)
@@ -58,10 +58,7 @@ class DefaultViewsQuerySuite extends BioSuite {
     }
   }
 
-  private def action(views: Set[IndexingView]): UIO[List[ViewRef]] =
-    UIO.pure {
-      views.toList.map { v => v.ref }
-    }
+  private def action(views: Set[IndexingView]): IO[List[ViewRef]] = IO.pure(views.toList.map { v => v.ref })
 
   private val defaultViewsQuery: DefaultViewsQuery[List[ViewRef], List[ViewRef]] = DefaultViewsQuery(
     fetchViews,
@@ -76,54 +73,54 @@ class DefaultViewsQuerySuite extends BioSuite {
   private val rootSearch     = RootSearch(ResourcesSearchParams(), Pagination.OnePage, SortList.empty)
 
   test(s"List default view for '$project1' a user with full access") {
-    defaultViewsQuery.list(project1Search)(bob).assert(List(defaultView))
+    defaultViewsQuery.list(project1Search)(bob).assertEquals(List(defaultView))
   }
 
   test(s"List all default views in '$org' a user with full access") {
-    defaultViewsQuery.list(org1Search)(bob).assert(List(defaultView, defaultView2))
+    defaultViewsQuery.list(org1Search)(bob).assertEquals(List(defaultView, defaultView2))
   }
 
   test(s"List all default views in 'root' for a user with full access") {
-    defaultViewsQuery.list(rootSearch)(bob).assert(List(defaultView, defaultView2, defaultView3))
+    defaultViewsQuery.list(rootSearch)(bob).assertEquals(List(defaultView, defaultView2, defaultView3))
   }
 
   test(s"List default view for for '$project1' for a user with limited access on '$org'") {
-    defaultViewsQuery.list(project1Search)(alice).assert(List(defaultView))
+    defaultViewsQuery.list(project1Search)(alice).assertEquals(List(defaultView))
   }
 
   test(s"List all default views in '$org' for a user with limited access on '$org'") {
-    defaultViewsQuery.list(org1Search)(alice).assert(List(defaultView, defaultView2))
+    defaultViewsQuery.list(org1Search)(alice).assertEquals(List(defaultView, defaultView2))
   }
 
   test(s"List only '$org' default views on 'root' in for a user with limited access on '$org'") {
-    defaultViewsQuery.list(rootSearch)(alice).assert(List(defaultView, defaultView2))
+    defaultViewsQuery.list(rootSearch)(alice).assertEquals(List(defaultView, defaultView2))
   }
 
   test(s"List default view for '$project1' for a user with limited access on '$project1'") {
-    defaultViewsQuery.list(project1Search)(charlie).assert(List(defaultView))
+    defaultViewsQuery.list(project1Search)(charlie).assertEquals(List(defaultView))
   }
 
   test(s"Raise an error for $project2 for a user with limited access on '$project1'") {
-    defaultViewsQuery.list(project2Search)(charlie).terminated[AuthorizationFailed]
+    defaultViewsQuery.list(project2Search)(charlie).intercept[AuthorizationFailed]
   }
 
   test(s"List only '$project1' default view in '$org' for a user with limited access on '$project1'") {
-    defaultViewsQuery.list(org1Search)(charlie).assert(List(defaultView))
+    defaultViewsQuery.list(org1Search)(charlie).assertEquals(List(defaultView))
   }
 
   test(s"List only '$project1' default view in 'root' for a user with limited access on '$project1'") {
-    defaultViewsQuery.list(rootSearch)(charlie).assert(List(defaultView))
+    defaultViewsQuery.list(rootSearch)(charlie).assertEquals(List(defaultView))
   }
 
   test(s"Raise an error for $project1 for Anonymous") {
-    defaultViewsQuery.list(project1Search)(anon).terminated[AuthorizationFailed]
+    defaultViewsQuery.list(project1Search)(anon).intercept[AuthorizationFailed]
   }
 
   test(s"Raise an error for $org for Anonymous") {
-    defaultViewsQuery.list(org1Search)(anon).terminated[AuthorizationFailed]
+    defaultViewsQuery.list(org1Search)(anon).intercept[AuthorizationFailed]
   }
 
   test(s"Raise an error for root for Anonymous") {
-    defaultViewsQuery.list(rootSearch)(anon).terminated[AuthorizationFailed]
+    defaultViewsQuery.list(rootSearch)(anon).intercept[AuthorizationFailed]
   }
 }

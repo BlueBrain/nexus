@@ -2,7 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import akka.http.scaladsl.model.Uri.Query
 import cats.data.NonEmptySet
+import cats.effect.IO
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.toCatsIOOps
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViewsQuerySuite.Sample
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchBulk
@@ -30,7 +32,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Group, 
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{DiscardMetadata, FilterDeprecated}
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.BioSuite
+import ch.epfl.bluebrain.nexus.testkit.bio.BioRunContext
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
 import io.circe.syntax.EncoderOps
 import io.circe.{Decoder, Json, JsonObject}
@@ -40,8 +43,9 @@ import munit.{AnyFixture, Location}
 import java.time.Instant
 
 class ElasticSearchViewsQuerySuite
-    extends BioSuite
+    extends CatsEffectSuite
     with Doobie.Fixture
+    with BioRunContext // to use ES client setup fixture
     with ElasticSearchClientSetup.Fixture
     with CirceLiteral
     with TestHelpers
@@ -193,7 +197,7 @@ class ElasticSearchViewsQuerySuite
     ResolverContextResolution(rcr),
     ValidateElasticSearchView(
       _ => Right(()),
-      UIO.pure(Set(queryPermission)),
+      IO.pure(Set(queryPermission)),
       client.createIndex(_, _, _).void,
       prefix,
       10,
@@ -202,7 +206,7 @@ class ElasticSearchViewsQuerySuite
     eventLogConfig,
     prefix,
     xas
-  ).runSyncUnsafe()
+  ).unsafeRunSync()
 
   private lazy val viewsQuery = ElasticSearchViewsQuery(
     aclCheck,
@@ -258,24 +262,24 @@ class ElasticSearchViewsQuerySuite
     views.flatMap { view => resources.map(_.asResourceF(view)) }.sorted.map(_.id)
 
   test("Init views and populate indices") {
-    implicit val caller: Caller = alice
-    val createIndexingViews     = allIndexingViews.traverse { viewRef =>
+    implicit val caller: Caller         = alice
+    val createIndexingViews             = allIndexingViews.traverse { viewRef =>
       views.create(viewRef.viewId, viewRef.project, indexingValue)
     }
-    val populateIndexingViews   = allIndexingViews.traverse { ref =>
+    val populateIndexingViews: IO[Unit] = allIndexingViews.traverse { ref =>
       for {
         view <- views.fetchIndexingView(ref.viewId, ref.project)
         bulk <- allResources.traverse { r =>
-                  r.asDocument(ref).map { d =>
+                  r.asDocument(ref).toCatsIO.map { d =>
                     // We create a unique id across all indices
                     ElasticSearchBulk.Index(view.index, genString(), d)
                   }
                 }
-        _    <- client.bulk(bulk)
+        _    <- client.bulk(bulk).toCatsIO
         // We refresh explicitly
-        _    <- client.refresh(view.index)
+        _    <- client.refresh(view.index).toCatsIO
       } yield ()
-    }
+    }.void
 
     val createAggregateViews = for {
       _ <- views.create(aggregate1.viewId, aggregate1.project, aggregate1Views)
@@ -291,8 +295,8 @@ class ElasticSearchViewsQuerySuite
     }
 
     (createIndexingViews >> populateIndexingViews >> createAggregateViews >> createCycle).void
-      .assert(())
-      .runSyncUnsafe()
+      .assertEquals(())
+      .unsafeRunSync()
   }
 
   test("Query for all documents in a view") {
@@ -301,12 +305,12 @@ class ElasticSearchViewsQuerySuite
     viewsQuery
       .query(view1Proj1, matchAllSorted, noParameters)
       .map(Ids.extractAll)
-      .assert(expectedIds)
+      .assertEquals(expectedIds)
   }
 
   test("Query a view without permissions") {
     implicit val caller: Caller = anon
-    viewsQuery.query(view1Proj1, JsonObject.empty, Query.Empty).terminated[AuthorizationFailed]
+    viewsQuery.query(view1Proj1, JsonObject.empty, Query.Empty).intercept[AuthorizationFailed]
   }
 
   test("Query the deprecated view should raise an deprecation error") {
@@ -317,7 +321,7 @@ class ElasticSearchViewsQuerySuite
       _ <- views.deprecate(deprecated.viewId, deprecated.project, 1)
       _ <- viewsQuery
              .query(deprecated, matchAllSorted, noParameters)
-             .error(ViewIsDeprecated(deprecated.viewId))
+             .intercept(ViewIsDeprecated(deprecated.viewId))
     } yield ()
   }
 
@@ -328,7 +332,7 @@ class ElasticSearchViewsQuerySuite
     viewsQuery
       .query(aggregate2, matchAllSorted, noParameters)
       .map(Ids.extractAll)
-      .assert(expectedIds)
+      .assertEquals(expectedIds)
   }
 
   test("Query an aggregate view with a user with limited access") {
@@ -338,7 +342,7 @@ class ElasticSearchViewsQuerySuite
     viewsQuery
       .query(aggregate2, matchAllSorted, noParameters)
       .map(Ids.extractAll)
-      .assert(expectedIds)
+      .assertEquals(expectedIds)
   }
 
   test("Query an aggregate view with a user with no access") {
@@ -347,34 +351,35 @@ class ElasticSearchViewsQuerySuite
     viewsQuery
       .query(aggregate2, matchAllSorted, noParameters)
       .map(Ids.extractAll)
-      .assert(expectedIds)
+      .assertEquals(expectedIds)
   }
 
   test("Obtaining the mapping without permission should fail") {
     implicit val caller: Caller = anon
     viewsQuery
       .mapping(view1Proj1.viewId, project1.ref)
-      .terminated[AuthorizationFailed]
+      .intercept[AuthorizationFailed]
   }
 
   test("Obtaining the mapping for a view that doesn't exist in the project should fail") {
     implicit val caller: Caller = alice
     viewsQuery
       .mapping(view1Proj2.viewId, project1.ref)
-      .assertError(_ == ViewNotFound(view1Proj2.viewId, project1.ref))
+      .intercept(ViewNotFound(view1Proj2.viewId, project1.ref))
   }
 
   test("Obtaining the mapping on an aggregate view should fail") {
     implicit val caller: Caller = alice
     viewsQuery
       .mapping(aggregate1.viewId, project1.ref)
-      .assertError(
-        _ == DifferentElasticSearchViewType(
+      .intercept(
+        DifferentElasticSearchViewType(
           aggregate1.viewId.toString,
           ElasticSearchViewType.AggregateElasticSearch,
           ElasticSearchViewType.ElasticSearch
         )
       )
+
   }
 
   test("Obtaining the mapping with views/write permission should succeed") {

@@ -1,11 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import cats.data.NonEmptyChain
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.ioToTaskK
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.{ioToTaskK, toMonixBIOOps}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchSink
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{metricsMapping, metricsSettings}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{metricsMapping, metricsSettings, ElasticSearchViewRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.ScopedEventMetricEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{BatchConfig, QueryConfig}
@@ -34,8 +34,8 @@ object EventMetricsProjection {
     */
   def initMetricsIndex(client: ElasticSearchClient, index: IndexLabel): Task[Unit] =
     for {
-      mappings <- metricsMapping
-      settings <- metricsSettings
+      mappings <- metricsMapping.toBIO[ElasticSearchViewRejection]
+      settings <- metricsSettings.toBIO[ElasticSearchViewRejection]
       _        <- client.createIndex(index, Some(mappings), Some(settings))
     } yield ()
 
