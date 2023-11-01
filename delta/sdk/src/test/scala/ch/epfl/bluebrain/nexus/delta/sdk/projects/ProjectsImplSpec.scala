@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.projects
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -17,13 +18,19 @@ import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, ScopeInitializationLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
+import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
-import monix.bio.{IO, UIO}
+import monix.bio.UIO
 import org.scalatest.CancelAfterFailure
 
 import java.util.UUID
 
-class ProjectsImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with CancelAfterFailure with ConfigFixtures {
+class ProjectsImplSpec
+    extends CatsEffectSpec
+    with CatsRunContext
+    with DoobieScalaTestFixture
+    with CancelAfterFailure
+    with ConfigFixtures {
 
   implicit private val subject: Subject = Identity.User("user", Label.unsafe("realm"))
   implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
@@ -56,8 +63,8 @@ class ProjectsImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with C
   private val config = ProjectsConfig(eventLogConfig, pagination, cacheConfig, deletionConfig)
 
   private def fetchOrg: FetchOrganization = {
-    case `org1`          => UIO.pure(Organization(org1, orgUuid, None))
-    case `org2`          => UIO.pure(Organization(org2, orgUuid, None))
+    case `org1`          => IO.pure(Organization(org1, orgUuid, None))
+    case `org2`          => IO.pure(Organization(org2, orgUuid, None))
     case `orgDeprecated` => IO.raiseError(WrappedOrganizationRejection(OrganizationIsDeprecated(orgDeprecated)))
     case other           => IO.raiseError(WrappedOrganizationRejection(OrganizationNotFound(other)))
   }
@@ -69,7 +76,7 @@ class ProjectsImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with C
   private val validateDeletion: ValidateProjectDeletion = {
     case `ref`        => IO.unit
     case `anotherRef` => IO.raiseError(anotherRefIsReferenced)
-    case _            => IO.terminate(new IllegalArgumentException(s"Only '$ref' and '$anotherRef' are expected here"))
+    case _            => IO.raiseError(new IllegalArgumentException(s"Only '$ref' and '$anotherRef' are expected here"))
   }
 
   private lazy val (scopeInitLog, projects) = ScopeInitializationLog().map { scopeInitLog =>
@@ -94,7 +101,7 @@ class ProjectsImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with C
     )
 
     "create another project" in {
-      val project = projects.create(anotherRef, anotherPayload)(Identity.Anonymous).accepted
+      val project = projects.create(anotherRef, anotherPayload)(Identity.Anonymous, contextShift).accepted
 
       project shouldEqual anotherProjResource
 
