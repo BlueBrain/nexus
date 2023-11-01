@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
 import cats.effect.IO
 import cats.implicits.catsSyntaxFlatMapOps
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphDeletionTask.{init, logger}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.IndexingViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.IndexingViewDef.{ActiveViewDef, DeprecatedViewDef}
@@ -9,7 +10,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.deletion.ProjectDeletionTask
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.model.ProjectDeletionReport
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import com.typesafe.scalalogging.Logger
 import fs2.Stream
 
 /**
@@ -22,7 +22,7 @@ final class BlazegraphDeletionTask(
 ) extends ProjectDeletionTask {
 
   override def apply(project: ProjectRef)(implicit subject: Subject): IO[ProjectDeletionReport.Stage] =
-    IO.delay(logger.info(s"Starting deprecation of Blazegraph views for '$project'")) >>
+    logger.info(s"Starting deprecation of Blazegraph views for '$project'") >>
       run(project)
 
   private def run(project: ProjectRef)(implicit subject: Subject) =
@@ -38,7 +38,7 @@ final class BlazegraphDeletionTask(
 }
 
 object BlazegraphDeletionTask {
-  private val logger: Logger = Logger[BlazegraphDeletionTask]
+  private val logger = Logger.cats[BlazegraphDeletionTask]
 
   private val init = ProjectDeletionReport.Stage.empty("blazegraph")
 
@@ -47,7 +47,7 @@ object BlazegraphDeletionTask {
       project => views.currentIndexingViews(project).evalMapFilter(_.toIO),
       (v: ActiveViewDef, subject: Subject) =>
         views.internalDeprecate(v.ref.viewId, v.ref.project, v.rev)(subject).handleErrorWith { r =>
-          IO.delay(logger.error(s"Deprecating '$v' resulted in error: '$r'."))
+          logger.error(s"Deprecating '$v' resulted in error: '$r'.")
         }
     )
 

@@ -23,7 +23,7 @@ final class ElasticSearchDeletionTask(
 ) extends ProjectDeletionTask {
 
   override def apply(project: ProjectRef)(implicit subject: Subject): IO[ProjectDeletionReport.Stage] =
-    IO.delay(logger.info(s"Starting deprecation of Elasticsearch views for '$project'")) >>
+    logger.info(s"Starting deprecation of Elasticsearch views for '$project'") >>
       run(project)
 
   private def run(project: ProjectRef)(implicit subject: Subject) =

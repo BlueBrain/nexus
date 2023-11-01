@@ -22,7 +22,7 @@ final class CompositeViewsDeletionTask(
     deprecate: (ActiveViewDef, Subject) => IO[Unit]
 ) extends ProjectDeletionTask {
   override def apply(project: ProjectRef)(implicit subject: Subject): IO[ProjectDeletionReport.Stage] =
-    IO.delay(logger.info(s"Starting deprecation of composite views for '$project'")) >>
+    logger.info(s"Starting deprecation of composite views for '$project'") >>
       run(project)
 
   private def run(project: ProjectRef)(implicit subject: Subject) =

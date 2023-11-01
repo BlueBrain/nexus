@@ -98,7 +98,7 @@ class BlazegraphViewsIndexingRoutes(
                         emit(
                           fetch(id, ref)
                             .flatMap { view =>
-                              projectionErrors.search(view.ref, pagination, timeRange).toUIO
+                              projectionErrors.search(view.ref, pagination, timeRange)
                             }
                             .attemptNarrow[BlazegraphViewRejection]
                             .rejectOn[ViewNotFound]
