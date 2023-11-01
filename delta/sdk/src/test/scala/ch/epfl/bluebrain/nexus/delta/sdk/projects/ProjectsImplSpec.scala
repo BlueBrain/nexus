@@ -20,7 +20,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
-import monix.bio.UIO
 import org.scalatest.CancelAfterFailure
 
 import java.util.UUID
@@ -222,14 +221,14 @@ class ProjectsImplSpec
 
     "list projects without filters nor pagination" in {
       val results =
-        projects.list(FromPagination(0, 10), ProjectSearchParams(filter = _ => UIO.pure(true)), order).accepted
+        projects.list(FromPagination(0, 10), ProjectSearchParams(filter = _ => IO.pure(true)), order).accepted
 
       results shouldEqual SearchResults(2L, Vector(resource, anotherProjResource))
     }
 
     "list projects without filers but paginated" in {
       val results =
-        projects.list(FromPagination(0, 1), ProjectSearchParams(filter = _ => UIO.pure(true)), order).accepted
+        projects.list(FromPagination(0, 1), ProjectSearchParams(filter = _ => IO.pure(true)), order).accepted
 
       results shouldEqual SearchResults(2L, Vector(resource))
     }
@@ -239,7 +238,7 @@ class ProjectsImplSpec
         projects
           .list(
             FromPagination(0, 10),
-            ProjectSearchParams(deprecated = Some(true), filter = _ => UIO.pure(true)),
+            ProjectSearchParams(deprecated = Some(true), filter = _ => IO.pure(true)),
             order
           )
           .accepted
@@ -252,7 +251,7 @@ class ProjectsImplSpec
         projects
           .list(
             FromPagination(0, 10),
-            ProjectSearchParams(organization = Some(anotherRef.organization), filter = _ => UIO.pure(true)),
+            ProjectSearchParams(organization = Some(anotherRef.organization), filter = _ => IO.pure(true)),
             order
           )
           .accepted
@@ -265,7 +264,7 @@ class ProjectsImplSpec
         projects
           .list(
             FromPagination(0, 10),
-            ProjectSearchParams(createdBy = Some(Identity.Anonymous), filter = _ => UIO.pure(true)),
+            ProjectSearchParams(createdBy = Some(Identity.Anonymous), filter = _ => IO.pure(true)),
             order
           )
           .accepted

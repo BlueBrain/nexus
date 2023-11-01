@@ -98,7 +98,7 @@ final class ProjectsImpl private (
     SearchResults(
       log
         .currentStates(params.organization.fold(Scope.root)(Scope.Org), _.toResource(defaultApiMappings))
-        .evalFilter(params.matches),
+        .evalFilter(params.matches(_).toUIO),
       pagination,
       ordering
     ).span("listProjects")

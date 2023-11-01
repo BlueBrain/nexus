@@ -78,7 +78,7 @@ final class OrganizationsImpl private (
       log
         .currentStates(_.toResource)
         .translate(ioToTaskK)
-        .evalFilter(params.matches),
+        .evalFilter(params.matches(_).toUIO),
       pagination,
       ordering
     ).span("listOrganizations")

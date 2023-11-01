@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.organizations
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.OrganizationGen.{organization, resourceFor}
@@ -14,8 +15,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
-import monix.bio.UIO
-import monix.execution.Scheduler
 import org.scalatest.CancelAfterFailure
 
 import java.time.Instant
@@ -34,8 +33,6 @@ class OrganizationsImplSpec
 
   val epoch: Instant            = Instant.EPOCH
   implicit val subject: Subject = Identity.User("user", Label.unsafe("realm"))
-
-  implicit val scheduler: Scheduler = Scheduler.global
 
   val description  = Some("my description")
   val description2 = Some("my other description")
@@ -91,15 +88,15 @@ class OrganizationsImplSpec
     "list organizations" in {
       val result1 = orgs.fetch(label).accepted
       val result2 = orgs.fetch(label2).accepted
-      val filter  = OrganizationSearchParams(deprecated = Some(true), rev = Some(3), filter = _ => UIO.pure(true))
+      val filter  = OrganizationSearchParams(deprecated = Some(true), rev = Some(3), filter = _ => IO.pure(true))
       val order   = ResourceF.defaultSort[Organization]
 
       orgs
-        .list(FromPagination(0, 1), OrganizationSearchParams(filter = _ => UIO.pure(true)), order)
+        .list(FromPagination(0, 1), OrganizationSearchParams(filter = _ => IO.pure(true)), order)
         .accepted shouldEqual
         UnscoredSearchResults(2L, Vector(UnscoredResultEntry(result1)))
       orgs
-        .list(FromPagination(0, 10), OrganizationSearchParams(filter = _ => UIO.pure(true)), order)
+        .list(FromPagination(0, 10), OrganizationSearchParams(filter = _ => IO.pure(true)), order)
         .accepted shouldEqual
         UnscoredSearchResults(2L, Vector(UnscoredResultEntry(result1), UnscoredResultEntry(result2)))
       orgs.list(FromPagination(0, 10), filter, order).accepted shouldEqual

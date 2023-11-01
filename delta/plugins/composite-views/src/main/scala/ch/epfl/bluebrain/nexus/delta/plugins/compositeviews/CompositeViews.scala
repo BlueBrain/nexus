@@ -298,7 +298,7 @@ final class CompositeViews private (
   ): IO[UnscoredSearchResults[ViewResource]] = {
     val scope = params.project.fold[Scope](Scope.Root)(ref => Scope.Project(ref))
     SearchResults(
-      log.currentStates(scope, _.toResource).evalFilter(params.matches),
+      log.currentStates(scope, _.toResource).evalFilter(params.matches(_).toTask),
       pagination,
       ordering
     ).span("listCompositeViews")
