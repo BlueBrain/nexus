@@ -361,7 +361,7 @@ object Acls {
   def projectDeletionTask(acls: Acls): ProjectDeletionTask = new ProjectDeletionTask {
     override def apply(project: ProjectRef)(implicit subject: Subject): Task[ProjectDeletionReport.Stage] = {
       val report = ProjectDeletionReport.Stage("acls", "The acl has been deleted.")
-      acls.purge(project).as(report).toTask
+      acls.purge(project).toTask.as(report)
     }
   }
 }

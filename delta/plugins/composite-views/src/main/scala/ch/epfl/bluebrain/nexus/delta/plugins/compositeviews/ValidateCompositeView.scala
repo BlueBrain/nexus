@@ -45,7 +45,7 @@ object ValidateCompositeView {
       aclCheck.authorizeForOr(cpSource.project, events.read, cpSource.identities)(CrossProjectSourceForbidden(cpSource))
 
     def validateProject(cpSource: CrossProjectSource) =
-      projects.fetch(cpSource.project).mapError(_ => CrossProjectSourceProjectNotFound(cpSource)).void
+      projects.fetch(cpSource.project).orRaise(CrossProjectSourceProjectNotFound(cpSource)).void
 
     def validatePermission(permission: Permission) =
       fetchPermissions.flatMap { perms =>

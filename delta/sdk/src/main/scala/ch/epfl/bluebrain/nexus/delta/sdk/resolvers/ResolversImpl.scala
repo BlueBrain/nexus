@@ -154,7 +154,7 @@ final class ResolversImpl private (
   ): IO[UnscoredSearchResults[ResolverResource]] = {
     val scope = params.project.fold[Scope](Scope.Root)(ref => Scope.Project(ref))
     SearchResults(
-      log.currentStates(scope, _.toResource).evalFilter(params.matches),
+      log.currentStates(scope, _.toResource).evalFilter(params.matches(_).toUIO),
       pagination,
       ordering
     ).span("listResolvers")

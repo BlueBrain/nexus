@@ -75,7 +75,7 @@ class OrganizationDeleterSuite extends CatsEffectSuite with ConfigFixtures {
     _ <- orgs.create(org, None)
   } yield ()
 
-  def createProj() = projects.create(projRef, fields).toCatsIO
+  def createProj() = projects.create(projRef, fields)
 
   def deleteOrg(org: Label): IO[Either[OrganizationNonEmpty, Unit]] =
     orgDeleter.delete(org).attemptNarrow[OrganizationNonEmpty]
@@ -83,7 +83,7 @@ class OrganizationDeleterSuite extends CatsEffectSuite with ConfigFixtures {
   def assertDeletionFailed(result: Either[OrganizationNonEmpty, Unit]) = for {
     eventPartitionDeleted <- orgPartitionIsDeleted("scoped_events", org1)
     statePartitionDeleted <- orgPartitionIsDeleted("scoped_states", org1)
-    fetchedProject        <- projects.fetch(projRef).toCatsIO
+    fetchedProject        <- projects.fetch(projRef)
     orgResult             <- orgs.fetch(org1).map(_.value.label)
     aclExists             <- acls.fetch(AclAddress.fromOrg(org1)).attempt.map(_.isRight)
   } yield {

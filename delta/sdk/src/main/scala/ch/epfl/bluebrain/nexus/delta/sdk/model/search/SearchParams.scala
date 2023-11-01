@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.search
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas => nxvschemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
@@ -10,7 +11,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.Resolver
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
-import monix.bio.UIO
 
 /**
   * Enumeration of the possible Search Parameters
@@ -22,7 +22,7 @@ trait SearchParams[A] {
   def updatedBy: Option[Subject]
   def types: Set[Iri]
   def schema: Option[ResourceRef]
-  def filter: A => UIO[Boolean]
+  def filter: A => IO[Boolean]
 
   /**
     * Checks whether a ''resource'' matches the current [[SearchParams]].
@@ -30,8 +30,8 @@ trait SearchParams[A] {
     * @param resource
     *   a resource
     */
-  def matches(resource: ResourceF[A]): UIO[Boolean] =
-    UIO
+  def matches(resource: ResourceF[A]): IO[Boolean] =
+    IO
       .pure(
         rev.forall(_ == resource.rev) &&
           deprecated.forall(_ == resource.deprecated) &&
@@ -67,12 +67,12 @@ object SearchParams {
       rev: Option[Int] = None,
       createdBy: Option[Subject] = None,
       updatedBy: Option[Subject] = None,
-      filter: Realm => UIO[Boolean] = _ => UIO.pure(true)
+      filter: Realm => IO[Boolean] = _ => IO.pure(true)
   ) extends SearchParams[Realm] {
     override val types: Set[Iri]             = Set(nxv.Realm)
     override val schema: Option[ResourceRef] = Some(Latest(nxvschemas.realms))
 
-    override def matches(resource: ResourceF[Realm]): UIO[Boolean] =
+    override def matches(resource: ResourceF[Realm]): IO[Boolean] =
       super.matches(resource).map(_ && issuer.forall(_ == resource.value.issuer))
   }
 
@@ -106,11 +106,11 @@ object SearchParams {
       createdBy: Option[Subject] = None,
       updatedBy: Option[Subject] = None,
       label: Option[String] = None,
-      filter: Organization => UIO[Boolean]
+      filter: Organization => IO[Boolean]
   ) extends SearchParams[Organization] {
-    override val types: Set[Iri]                                          = Set(nxv.Organization)
-    override val schema: Option[ResourceRef]                              = Some(Latest(nxvschemas.organizations))
-    override def matches(resource: ResourceF[Organization]): UIO[Boolean] =
+    override val types: Set[Iri]                                         = Set(nxv.Organization)
+    override val schema: Option[ResourceRef]                             = Some(Latest(nxvschemas.organizations))
+    override def matches(resource: ResourceF[Organization]): IO[Boolean] =
       super
         .matches(resource)
         .map(_ && label.forall(lb => resource.value.label.value.toLowerCase.contains(lb.toLowerCase.trim)))
@@ -141,12 +141,12 @@ object SearchParams {
       createdBy: Option[Subject] = None,
       updatedBy: Option[Subject] = None,
       label: Option[String] = None,
-      filter: Project => UIO[Boolean]
+      filter: Project => IO[Boolean]
   ) extends SearchParams[Project] {
     override val types: Set[Iri]             = Set(nxv.Project)
     override val schema: Option[ResourceRef] = Some(Latest(nxvschemas.projects))
 
-    override def matches(resource: ResourceF[Project]): UIO[Boolean] =
+    override def matches(resource: ResourceF[Project]): IO[Boolean] =
       super
         .matches(resource)
         .map(
@@ -181,11 +181,11 @@ object SearchParams {
       createdBy: Option[Subject] = None,
       updatedBy: Option[Subject] = None,
       types: Set[Iri] = Set(nxv.Resolver),
-      filter: Resolver => UIO[Boolean]
+      filter: Resolver => IO[Boolean]
   ) extends SearchParams[Resolver] {
     override val schema: Option[ResourceRef] = Some(Latest(nxvschemas.resolvers))
 
-    override def matches(resource: ResourceF[Resolver]): UIO[Boolean] =
+    override def matches(resource: ResourceF[Resolver]): IO[Boolean] =
       super.matches(resource).map(_ && project.forall(_ == resource.value.project))
 
   }

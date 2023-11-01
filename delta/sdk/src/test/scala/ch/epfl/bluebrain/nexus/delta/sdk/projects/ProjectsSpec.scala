@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.projects
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schema, xsd}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{OrganizationGen, ProjectGen}
@@ -12,16 +13,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, PrefixIri}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BioSpec
-import monix.bio.IO
-import monix.execution.Scheduler
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 
 import java.time.Instant
 
-class ProjectsSpec extends BioSpec {
+class ProjectsSpec extends CatsEffectSpec {
 
   "The Projects state machine" when {
-    implicit val sc: Scheduler  = Scheduler.global
     val epoch                   = Instant.EPOCH
     val time2                   = Instant.ofEpochMilli(10L)
     val am                      = ApiMappings("xsd" -> xsd.base, "Person" -> schema.Person)
@@ -60,7 +58,7 @@ class ProjectsSpec extends BioSpec {
     val validateDeletion: ValidateProjectDeletion = {
       case `ref`  => IO.unit
       case `ref2` => IO.raiseError(ref2IsReferenced)
-      case _      => IO.terminate(new IllegalArgumentException(s"Only '$ref' and '$ref2' are expected here"))
+      case _      => IO.raiseError(new IllegalArgumentException(s"Only '$ref' and '$ref2' are expected here"))
     }
 
     implicit val uuidF: UUIDF = UUIDF.fixed(uuid)
