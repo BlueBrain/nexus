@@ -196,6 +196,26 @@ trait Resources {
   )(implicit caller: Subject): IO[DataResource]
 
   /**
+    * Undeprecates an existing resource.
+    *
+    * @param id
+    *   the identifier that will be expanded to the Iri of the resource
+    * @param projectRef
+    *   the project reference where the resource belongs
+    * @param schemaOpt
+    *   the optional identifier that will be expanded to the schema reference of the resource. A None value uses the
+    *   currently available resource schema reference.
+    * @param rev
+    *   the revision of the resource
+    */
+  def undeprecate(
+      id: IdSegment,
+      projectRef: ProjectRef,
+      schemaOpt: Option[IdSegment],
+      rev: Int
+  )(implicit caller: Subject): IO[DataResource]
+
+  /**
     * Fetches a resource state.
     *
     * @param id

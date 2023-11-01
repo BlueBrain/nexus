@@ -148,6 +148,18 @@ final class ResourcesImpl private (
       res                   <- eval(DeprecateResource(iri, projectRef, schemeRefOpt, rev, caller))
     } yield res).span("deprecateResource")
 
+  override def undeprecate(
+      id: IdSegment,
+      projectRef: ProjectRef,
+      schemaOpt: Option[IdSegment],
+      rev: Int
+  )(implicit caller: Subject): IO[DataResource] =
+    (for {
+      (iri, projectContext) <- expandWithContext(fetchContext.onModify, projectRef, id)
+      schemaRefOpt          <- expandResourceRef(schemaOpt, projectContext)
+      res                   <- eval(UndeprecateResource(iri, projectRef, schemaRefOpt, rev, caller))
+    } yield res).span("undeprecateResource")
+
   def fetchState(
       id: IdSegmentRef,
       projectRef: ProjectRef,

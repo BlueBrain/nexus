@@ -28,7 +28,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
-import org.scalatest.CancelAfterFailure
+import org.scalatest.{Assertion, CancelAfterFailure}
 
 import java.util.UUID
 
@@ -600,6 +600,59 @@ class ResourcesImplSpec
 
     }
 
+    "undeprecating a resource" should {
+
+      "succeed" in {
+        givenADeprecatedResource { id =>
+          resources.undeprecate(id, projectRef, Some(schemas.resources), 2).accepted.deprecated shouldEqual false
+          resources.fetch(id, projectRef, None).accepted.deprecated shouldEqual false
+        }
+      }
+
+      "reject if resource does not exist" in {
+        givenADeprecatedResource { _ =>
+          val wrongId = nxv + genString()
+          resources
+            .undeprecate(wrongId, projectRef, None, 2)
+            .assertRejected[ResourceNotFound]
+        }
+      }
+
+      "reject if resource is revision is incorrect" in {
+        givenADeprecatedResource { id =>
+          resources
+            .undeprecate(id, projectRef, None, 4)
+            .assertRejected[IncorrectRev]
+        }
+      }
+
+      "reject if resource is not deprecated" in {
+        givenAResource { id =>
+          resources
+            .undeprecate(id, projectRef, None, 1)
+            .assertRejected[ResourceIsNotDeprecated]
+        }
+      }
+
+      "reject if schema does not match" in {
+        givenADeprecatedResource { id =>
+          resources
+            .undeprecate(id, projectRef, Some(schema1.id), 2)
+            .assertRejected[UnexpectedResourceSchema]
+        }
+      }
+
+      "reject if project does not exist" in {
+        givenADeprecatedResource { id =>
+          val wrongProject = ProjectRef(Label.unsafe(genString()), Label.unsafe(genString()))
+          resources
+            .undeprecate(id, wrongProject, None, 2)
+            .assertRejected[ProjectContextRejection]
+        }
+      }
+
+    }
+
     "fetching a resource" should {
       val schemaRev          = Revision(resourceSchema.iri, 1)
       val expectedData       = ResourceGen.resource(myId, projectRef, source, schemaRev)
@@ -692,5 +745,24 @@ class ResourcesImplSpec
         resources.deleteTag(myId, projectRef, Some(schemas.resources), tag, 3).rejectedWith[TagNotFound]
       }
     }
+
+    /** Provides a newly created resource for assertion. Latest revision is 1 */
+    def givenAResource(assertion: IdSegment => Assertion): Assertion = {
+      val id        = nxv + genString()
+      val newSource = json"""{ "@id": "$id", "some": "content" }"""
+
+      resources.create(id, projectRef, resourceSchema, newSource, None).accepted
+      resources.fetch(id, projectRef, None).accepted
+
+      assertion(id)
+    }
+
+    /** Provides a deprecated resource for assertion. Latest revision is 2 */
+    def givenADeprecatedResource(assertion: IdSegment => Assertion): Assertion =
+      givenAResource { id =>
+        resources.deprecate(id, projectRef, Some(schemas.resources), 1).accepted.deprecated shouldEqual true
+        resources.fetch(id, projectRef, None).accepted.deprecated shouldEqual true
+        assertion(id)
+      }
   }
 }

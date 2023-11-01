@@ -20,6 +20,11 @@ trait CatsIOValues {
     def assertRejectedEquals[E](expected: E)(implicit pos: source.Position, EE: ClassTag[E]): Assertion =
       assertResult(expected)(rejectedWith[E])
 
+    def assertRejected[E](implicit pos: source.Position, EE: ClassTag[E]): Assertion = {
+      rejectedWith[E]
+      succeed
+    }
+
     def rejectedWith[E](implicit pos: source.Position, EE: ClassTag[E]): E = {
       io.attempt.accepted match {
         case Left(EE(value)) => value
