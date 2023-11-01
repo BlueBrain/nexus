@@ -20,7 +20,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionRepor
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{Resolver, ResolverRejection, ResolverResolutionRejection, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.{ResolverResource, ResourceShifts}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, ProjectRef, ResourceRef}
-import monix.bio.{IO => BIO}
 
 import java.time.Instant
 import scala.collection.immutable.VectorMap
@@ -233,7 +232,7 @@ object ResolverResolution {
 
   type ResolverResolutionResult[R] = (ResolverReport, Option[R])
 
-  private val resolverSearchParams = ResolverSearchParams(deprecated = Some(false), filter = _ => BIO.pure(true))
+  private val resolverSearchParams = ResolverSearchParams(deprecated = Some(false), filter = _ => IO.pure(true))
 
   private val resolverOrdering: Ordering[ResolverResource] = Ordering[Instant] on (r => r.createdAt)
 

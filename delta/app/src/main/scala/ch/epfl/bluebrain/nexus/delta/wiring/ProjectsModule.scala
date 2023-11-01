@@ -1,16 +1,15 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
-import cats.effect.{Clock, IO}
+import cats.effect.{Clock, ContextShift, IO}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.toMonixBIOOps
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.ProjectsRoutes
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.{AclCheck, Acls}
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.{ProjectDeletionCoordinator, ProjectDeletionTask}
@@ -59,7 +58,7 @@ object ProjectsModule extends ModuleDef {
         mappings: ApiMappingsCollection,
         xas: Transactors,
         baseUri: BaseUri,
-        clock: Clock[UIO],
+        clock: Clock[IO],
         uuidF: UUIDF
     ) =>
       IO.pure(
@@ -84,8 +83,14 @@ object ProjectsModule extends ModuleDef {
   }
 
   make[ProjectProvisioning].from {
-    (acls: Acls, projects: Projects, config: AppConfig, serviceAccount: ServiceAccount) =>
-      ProjectProvisioning(acls, projects, config.automaticProvisioning, serviceAccount)
+    (
+        acls: Acls,
+        projects: Projects,
+        config: AppConfig,
+        serviceAccount: ServiceAccount,
+        contextShift: ContextShift[IO]
+    ) =>
+      ProjectProvisioning(acls, projects, config.automaticProvisioning, serviceAccount)(contextShift)
   }
 
   make[FetchContext[ContextRejection]].fromEffect {
@@ -134,18 +139,18 @@ object ProjectsModule extends ModuleDef {
         projectProvisioning: ProjectProvisioning,
         schemeDirectives: DeltaSchemeDirectives,
         baseUri: BaseUri,
-        s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering,
-        fusionConfig: FusionConfig
+        fusionConfig: FusionConfig,
+        contextShift: ContextShift[IO]
     ) =>
       new ProjectsRoutes(identities, aclCheck, projects, projectsStatistics, projectProvisioning, schemeDirectives)(
         baseUri,
         config.projects,
-        s,
         cr,
         ordering,
-        fusionConfig
+        fusionConfig,
+        contextShift
       )
   }
 

@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection._
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.quotas.Quotas
 import ch.epfl.bluebrain.nexus.delta.sdk.quotas.model.QuotaRejection
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
@@ -149,14 +149,14 @@ object FetchContext {
     apply(
       organizations.fetchActiveOrganization(_).void.toBIO[OrganizationRejection],
       projects.defaultApiMappings,
-      projects.fetch,
+      projects.fetch(_).toBIO[ProjectRejection],
       quotas
     )
 
   def apply(
       fetchActiveOrganization: Label => IO[OrganizationRejection, Unit],
       dam: ApiMappings,
-      fetchProject: ProjectRef => IO[ProjectNotFound, ProjectResource],
+      fetchProject: ProjectRef => IO[ProjectRejection, ProjectResource],
       quotas: Quotas
   ): FetchContext[ContextRejection] =
     new FetchContext[ContextRejection] {

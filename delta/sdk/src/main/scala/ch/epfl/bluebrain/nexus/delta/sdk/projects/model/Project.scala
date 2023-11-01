@@ -10,7 +10,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.Project.{Metadata, Source}
 import ch.epfl.bluebrain.nexus.delta.sdk.{OrderingFields, ResourceShift}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import io.circe.Encoder
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
@@ -164,7 +163,7 @@ object Project {
   def shift(projects: Projects, defaultMappings: ApiMappings)(implicit baseUri: BaseUri): Shift =
     ResourceShift.withMetadata[ProjectState, Project, Metadata](
       Projects.entityType,
-      (_, ref) => projects.fetch(ref).toCatsIO,
+      (_, ref) => projects.fetch(ref),
       state => state.toResource(defaultMappings),
       value => JsonLdContent(value, value.value.asJson, Some(value.value.metadata))
     )

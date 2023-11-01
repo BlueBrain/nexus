@@ -42,7 +42,8 @@ class ProjectDeletionRunner(projects: Projects, config: ProjectDeletionConfig, p
 
   private def deleteProject(pr: ProjectResource): IO[Unit] = {
     implicit val caller: Subject = Identity.Anonymous
-    toCatsIO(projects.delete(pr.value.ref, pr.rev))
+    projects
+      .delete(pr.value.ref, pr.rev)
       .handleErrorWith(e => logger.error(s"Error deleting project from plugin: $e"))
       .void
   }
