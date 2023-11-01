@@ -8,14 +8,14 @@
   "number": 24,
   "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/unconstrained.json",
   "_createdAt": "1970-01-01T00:00:00Z",
-  "_createdBy": "http://localhost/v1/anonymous",
-  "_deprecated": true,
+  "_createdBy": "http://localhost/v1/realms/wonderland/users/bob",
+  "_deprecated": false,
   "_incoming": "{{self}}/incoming",
   "_outgoing": "{{self}}/outgoing",
   "_project": "http://localhost/v1/projects/myorg/myproject",
-  "_rev": 10,
+  "_rev": 1,
   "_schemaProject": "http://localhost/v1/projects/myorg/myproject",
   "_self": "{{self}}",
   "_updatedAt": "1970-01-01T00:00:00Z",
-  "_updatedBy": "http://localhost/v1/anonymous"
+  "_updatedBy": "http://localhost/v1/realms/wonderland/users/bob"
 }
