@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resolvers
 
 import cats.data.NonEmptyList
+import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
@@ -28,7 +29,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
-import monix.bio.UIO
 import org.scalatest.CancelAfterFailure
 
 import java.util.UUID
@@ -726,7 +726,7 @@ class ResolversImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with 
         val results = resolvers
           .list(
             FromPagination(0, 10),
-            ResolverSearchParams(deprecated = Some(true), filter = _ => UIO.pure(true)),
+            ResolverSearchParams(deprecated = Some(true), filter = _ => IO.pure(true)),
             order
           )
           .accepted
@@ -739,7 +739,7 @@ class ResolversImplSpec extends CatsEffectSpec with DoobieScalaTestFixture with 
         val results = resolvers
           .list(
             FromPagination(0, 10),
-            ResolverSearchParams(createdBy = Some(alice.subject), filter = _ => UIO.pure(true)),
+            ResolverSearchParams(createdBy = Some(alice.subject), filter = _ => IO.pure(true)),
             order
           )
           .accepted

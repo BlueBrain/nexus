@@ -1,12 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import monix.bio.UIO
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 
 /**
   * Search parameters for Composite views.
@@ -33,12 +32,12 @@ final case class CompositeViewSearchParams(
     createdBy: Option[Subject] = None,
     updatedBy: Option[Subject] = None,
     types: Set[Iri] = Set.empty,
-    filter: CompositeView => UIO[Boolean]
+    filter: CompositeView => IO[Boolean]
 ) extends SearchParams[CompositeView] {
 
   override val schema: Option[ResourceRef] = Some(model.schema)
 
-  override def matches(resource: ViewResource): UIO[Boolean] =
+  override def matches(resource: ViewResource): IO[Boolean] =
     super.matches(resource).map(_ && project.forall(_ == resource.value.project))
 
 }
