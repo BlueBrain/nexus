@@ -252,4 +252,27 @@ object ResourceCommand {
       subject: Subject
   ) extends ResourceCommand
       with ModifyCommand
+
+  /**
+    * Command that signals the intent to undeprecate a resource.
+    *
+    * @param id
+    *   the resource identifier
+    * @param project
+    *   the project where the resource belongs
+    * @param schemaOpt
+    *   the optional schema of the resource. A None value ignores the schema from this operation
+    * @param rev
+    *   the last known revision of the resource
+    * @param subject
+    *   the subject which created this event
+    */
+  final case class UndeprecateResource(
+      id: Iri,
+      project: ProjectRef,
+      schemaOpt: Option[ResourceRef],
+      rev: Int,
+      subject: Subject
+  ) extends ResourceCommand
+      with ModifyCommand
 }

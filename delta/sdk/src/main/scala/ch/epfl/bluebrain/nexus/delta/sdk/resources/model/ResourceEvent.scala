@@ -284,6 +284,31 @@ object ResourceEvent {
       subject: Subject
   ) extends ResourceEvent
 
+  /**
+    * Event representing a resource undeprecation.
+    *
+    * @param id
+    *   the resource identifier
+    * @param project
+    *   the project where the resource belongs
+    * @param types
+    *   the collection of known resource types
+    * @param rev
+    *   the resource revision
+    * @param instant
+    *   the instant when this event was created
+    * @param subject
+    *   the subject which created this event
+    */
+  final case class ResourceUndeprecated(
+      id: Iri,
+      project: ProjectRef,
+      types: Set[Iri],
+      rev: Int,
+      instant: Instant,
+      subject: Subject
+  ) extends ResourceEvent
+
   @nowarn("cat=unused")
   val serializer: Serializer[Iri, ResourceEvent] = {
     import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.CompactedJsonLd.Database._
@@ -316,6 +341,7 @@ object ResourceEvent {
             case _: ResourceTagAdded      => Tagged
             case _: ResourceTagDeleted    => TagDeleted
             case _: ResourceDeprecated    => Deprecated
+            case _: ResourceUndeprecated  => Undeprecated
             case _: ResourceSchemaUpdated => Updated
           },
           event.id,

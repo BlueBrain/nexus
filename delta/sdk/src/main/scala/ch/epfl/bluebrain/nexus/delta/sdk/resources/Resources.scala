@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectBase, ProjectContext}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceEvent._
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{IncorrectRev, InvalidResourceId, ResourceAlreadyExists, ResourceFetchRejection, ResourceIsDeprecated, ResourceNotFound, RevisionNotFound, TagNotFound, UnexpectedResourceSchema}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{IncorrectRev, InvalidResourceId, ResourceAlreadyExists, ResourceFetchRejection, ResourceIsDeprecated, ResourceIsNotDeprecated, ResourceNotFound, RevisionNotFound, TagNotFound, UnexpectedResourceSchema}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{ResourceCommand, ResourceEvent, ResourceRejection, ResourceState}
 import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
@@ -315,6 +315,10 @@ object Resources {
       _.copy(rev = e.rev, deprecated = true, updatedAt = e.instant, updatedBy = e.subject)
     }
 
+    def undeprecated(e: ResourceUndeprecated): Option[ResourceState] = state.map {
+      _.copy(rev = e.rev, deprecated = false, updatedAt = e.instant, updatedBy = e.subject)
+    }
+
     event match {
       case e: ResourceCreated       => created(e)
       case e: ResourceUpdated       => updated(e)
@@ -322,6 +326,7 @@ object Resources {
       case e: ResourceTagAdded      => tagAdded(e)
       case e: ResourceTagDeleted    => tagDeleted(e)
       case e: ResourceDeprecated    => deprecated(e)
+      case e: ResourceUndeprecated  => undeprecated(e)
       case e: ResourceSchemaUpdated => resourceSchemaUpdated(e)
     }
   }
@@ -453,6 +458,13 @@ object Resources {
       } yield ResourceDeprecated(c.id, c.project, s.types, s.rev + 1, time, c.subject)
     }
 
+    def undeprecate(c: UndeprecateResource) =
+      for {
+        s    <- stateWhereResourceExists(c)
+        _    <- IO.raiseWhen(!s.deprecated)(ResourceIsNotDeprecated(c.id))
+        time <- IOInstant.now
+      } yield ResourceUndeprecated(c.id, c.project, s.types, s.rev + 1, time, c.subject)
+
     cmd match {
       case c: CreateResource       => create(c)
       case c: UpdateResource       => update(c)
@@ -460,6 +472,7 @@ object Resources {
       case c: TagResource          => tag(c)
       case c: DeleteResourceTag    => deleteTag(c)
       case c: DeprecateResource    => deprecate(c)
+      case c: UndeprecateResource  => undeprecate(c)
       case c: UpdateResourceSchema => updateResourceSchema(c)
     }
   }
