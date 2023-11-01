@@ -9,7 +9,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.projections.Composit
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.CompositeGraphStream
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ExecutionStrategy.TransientSingleNode
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{CompiledProjection, PipeChain}
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 
 /**
   * Handle the different life stages of a composite view projection
@@ -60,20 +59,20 @@ object CompositeProjectionLifeCycle {
       sink: CompositeSinks,
       compositeProjections: CompositeProjections
   )(implicit timer: Timer[IO], cs: ContextShift[IO]): CompositeProjectionLifeCycle = {
-    def init(view: ActiveViewDef): IO[Unit] = spaces.init(view).toCatsIO
+    def init(view: ActiveViewDef): IO[Unit] = spaces.init(view)
 
     def index(view: ActiveViewDef): IO[CompiledProjection] =
       CompositeViewDef.compile(view, sink, compilePipeChain, graphStream, compositeProjections)
 
     def destroyAll(view: ActiveViewDef): IO[Unit] =
       for {
-        _ <- spaces.destroyAll(view).toCatsIO
+        _ <- spaces.destroyAll(view)
         _ <- compositeProjections.deleteAll(view.indexingRef)
       } yield ()
 
     def destroyProjection(view: ActiveViewDef, projection: CompositeViewProjection): IO[Unit] =
       for {
-        _ <- spaces.destroyProjection(view, projection).toCatsIO
+        _ <- spaces.destroyProjection(view, projection)
         _ <- compositeProjections.partialRebuild(view.ref, projection.id)
       } yield ()
 

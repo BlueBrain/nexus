@@ -19,7 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeVi
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.Queries.{batchQuery, singleQuery}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.{CrossProjectSource, ProjectSource, RemoteProjectSource}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{permissions, CompositeView, CompositeViewSource}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeView, CompositeViewSource, permissions}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.projections.CompositeProjections
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.store.CompositeRestartStore
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.CompositeBranch.Run.{Main, Rebuild}
@@ -147,9 +147,9 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
   // Transforming data as elems
   private def elem[A <: Music](project: ProjectRef, value: A, offset: Long, deprecated: Boolean = false, rev: Int = 1)(
       implicit jsonldEncoder: JsonLdEncoder[A]
-  ) = {
+  ): IO[SuccessElem[GraphResource]] = {
     for {
-      graph     <- jsonldEncoder.graph(value)
+      graph     <- jsonldEncoder.graph(value).toCatsIO
       entityType = EntityType(value.getClass.getSimpleName)
       resource   = GraphResource(
                      entityType,
@@ -333,12 +333,12 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
 
     for {
       // Initialise the namespaces and indices
-      _ <- spaces.init(view).toCatsIO
+      _ <- spaces.init(view)
       _ <- bgClient.existsNamespace(commonNs).toCatsIO.assertEquals(true)
       _ <- bgClient.existsNamespace(sparqlNamespace).toCatsIO.assertEquals(true)
       _ <- esClient.existsIndex(elasticIndex).toCatsIO.assertEquals(true)
       // Delete them on destroy
-      _ <- spaces.destroyAll(view).toCatsIO
+      _ <- spaces.destroyAll(view)
       _ <- bgClient.existsNamespace(commonNs).toCatsIO.assertEquals(false)
       _ <- bgClient.existsNamespace(sparqlNamespace).toCatsIO.assertEquals(false)
       _ <- esClient.existsIndex(elasticIndex).toCatsIO.assertEquals(false)
@@ -358,17 +358,17 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
 
     for {
       // Initialise the namespaces and indices
-      _ <- spaces.init(view).toCatsIO
+      _ <- spaces.init(view)
       _ <- bgClient.existsNamespace(commonNs).toCatsIO.assertEquals(true)
       _ <- bgClient.existsNamespace(sparqlNamespace).toCatsIO.assertEquals(true)
       _ <- esClient.existsIndex(elasticIndex).toCatsIO.assertEquals(true)
       // Delete the blazegraph projection
-      _ <- spaces.destroyProjection(view, blazegraphProjection).toCatsIO
+      _ <- spaces.destroyProjection(view, blazegraphProjection)
       _ <- bgClient.existsNamespace(commonNs).toCatsIO.assertEquals(true)
       _ <- bgClient.existsNamespace(sparqlNamespace).toCatsIO.assertEquals(false)
       _ <- esClient.existsIndex(elasticIndex).toCatsIO.assertEquals(true)
       // Delete the elasticsearch projection
-      _ <- spaces.destroyProjection(view, elasticSearchProjection).toCatsIO
+      _ <- spaces.destroyProjection(view, elasticSearchProjection)
       _ <- bgClient.existsNamespace(commonNs).toCatsIO.assertEquals(true)
       _ <- bgClient.existsNamespace(sparqlNamespace).toCatsIO.assertEquals(false)
       _ <- esClient.existsIndex(elasticIndex).toCatsIO.assertEquals(false)
@@ -378,7 +378,7 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
   private def start(view: ActiveViewDef) = {
     for {
       compiled <- CompositeViewDef.compile(view, sinks, PipeChain.compile(_, registry), compositeStream, projections)
-      _        <- spaces.init(view).toCatsIO
+      _        <- spaces.init(view)
       _        <- Projection(compiled, IO.none, _ => IO.unit, _ => IO.unit)(batchConfig, timer, contextShift)
     } yield compiled
   }
@@ -416,19 +416,28 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
     )
 
     for {
+      _ <- IO.delay(println("starting"))
       compiled <- start(view)
+      _ <- IO.delay(println("1"))
       _         = assertEquals(compiled.metadata, expectedMetadata)
       _        <- mainCompleted.get.map(_.get(project1)).eventually(Some(1))
+      _ <- IO.delay(println("2"))
       _        <- mainCompleted.get.map(_.get(project2)).eventually(Some(1))
+      _ <- IO.delay(println("3"))
       _        <- mainCompleted.get.map(_.get(project3)).eventually(Some(1))
+      _ <- IO.delay(println("4"))
       _        <- rebuildCompleted.get.assertEquals(Map.empty[ProjectRef, Int])
+      _ <- IO.delay(println("5"))
       _        <- projections.progress(view.indexingRef).eventually(expectedProgress)
+      _ <- IO.delay(println("6"))
       _        <- checkElasticSearchDocuments(
                     elasticIndex,
                     jsonContentOf("indexing/result_muse.json"),
                     jsonContentOf("indexing/result_red_hot.json")
                   ).eventually(())
-      _        <- checkBlazegraphTriples(sparqlNamespace, contentOf("indexing/result.nt")).toCatsIO.eventually(())
+      _ <- IO.delay(println("7"))
+      _        <- checkBlazegraphTriples(sparqlNamespace, contentOf("indexing/result.nt")).toCatsIO
+      _ <- IO.delay(println("8"))
     } yield ()
   }
 
@@ -566,7 +575,7 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
     } yield ()
   }
 
-  private def checkElasticSearchDocuments(index: IndexLabel, expected: Json*) = {
+  private def checkElasticSearchDocuments(index: IndexLabel, expected: Json*): IO[Unit] = {
     val page = FromPagination(0, 5000)
     for {
       _       <- esClient.refresh(index).toCatsIO
