@@ -36,7 +36,7 @@ final case class Transactors(
   def streamingCE: Transactor[IO] = streaming.mapK(BIO.liftTo)
 
   def execDDL(ddl: String)(implicit cl: ClassLoader): Task[Unit] =
-    ClasspathResourceUtils.ioContentOf(ddl).flatMap(Fragment.const0(_).update.run.transact(write)).void
+    ClasspathResourceUtils.bioContentOf(ddl).flatMap(Fragment.const0(_).update.run.transact(write)).void
 
   def execDDLs(ddls: List[String])(implicit cl: ClassLoader): Task[Unit] =
     ddls.traverse(execDDL).void

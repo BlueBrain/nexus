@@ -24,7 +24,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
-import monix.execution.Scheduler.Implicits.global
 import org.scalatest.matchers.should.Matchers
 
 class AuthDirectivesSpec extends RouteHelpers with TestHelpers with Matchers with CatsIOValues {

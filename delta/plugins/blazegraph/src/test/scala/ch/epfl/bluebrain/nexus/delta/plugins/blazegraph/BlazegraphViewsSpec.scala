@@ -25,7 +25,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.Json
 import io.circe.syntax._
-import monix.execution.Scheduler
 
 import java.util.UUID
 
@@ -37,7 +36,6 @@ class BlazegraphViewsSpec extends CatsEffectSpec with DoobieScalaTestFixture wit
 
     val prefix = "prefix"
 
-    implicit val sc: Scheduler  = Scheduler.global
     val realm                   = Label.unsafe("myrealm")
     val bob                     = User("Bob", realm)
     implicit val caller: Caller = Caller(bob, Set(bob, Group("mygroup", realm), Authenticated(realm)))

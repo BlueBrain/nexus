@@ -19,7 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeVi
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.Queries.{batchQuery, singleQuery}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.{CrossProjectSource, ProjectSource, RemoteProjectSource}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeView, CompositeViewSource, permissions}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{permissions, CompositeView, CompositeViewSource}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.projections.CompositeProjections
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.store.CompositeRestartStore
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.CompositeBranch.Run.{Main, Rebuild}
@@ -383,6 +383,11 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
     } yield compiled
   }
 
+  private val resultMuse: Json     = jsonContentOf("indexing/result_muse.json")
+  private val resultRedHot: Json   = jsonContentOf("indexing/result_red_hot.json")
+  private val resultMuseMetadata   = jsonContentOf("indexing/result_muse_metadata.json")
+  private val resultRedHotMetadata = jsonContentOf("indexing/result_red_hot_metadata.json")
+
   test("Indexing resources without rebuild") {
     val uuid   = UUID.randomUUID()
     val viewId = iri"https://bbp.epfl.ch/composite"
@@ -416,28 +421,19 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
     )
 
     for {
-      _ <- IO.delay(println("starting"))
       compiled <- start(view)
-      _ <- IO.delay(println("1"))
       _         = assertEquals(compiled.metadata, expectedMetadata)
       _        <- mainCompleted.get.map(_.get(project1)).eventually(Some(1))
-      _ <- IO.delay(println("2"))
       _        <- mainCompleted.get.map(_.get(project2)).eventually(Some(1))
-      _ <- IO.delay(println("3"))
       _        <- mainCompleted.get.map(_.get(project3)).eventually(Some(1))
-      _ <- IO.delay(println("4"))
       _        <- rebuildCompleted.get.assertEquals(Map.empty[ProjectRef, Int])
-      _ <- IO.delay(println("5"))
       _        <- projections.progress(view.indexingRef).eventually(expectedProgress)
-      _ <- IO.delay(println("6"))
       _        <- checkElasticSearchDocuments(
                     elasticIndex,
-                    jsonContentOf("indexing/result_muse.json"),
-                    jsonContentOf("indexing/result_red_hot.json")
+                    resultMuse,
+                    resultRedHot
                   ).eventually(())
-      _ <- IO.delay(println("7"))
       _        <- checkBlazegraphTriples(sparqlNamespace, contentOf("indexing/result.nt")).toCatsIO
-      _ <- IO.delay(println("8"))
     } yield ()
   }
 
@@ -473,8 +469,8 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
       _ <- rebuildCompleted.get.assertEquals(Map.empty[ProjectRef, Int])
       _ <- checkElasticSearchDocuments(
              elasticIndex,
-             jsonContentOf("indexing/result_muse_metadata.json"),
-             jsonContentOf("indexing/result_red_hot_metadata.json")
+             resultMuseMetadata,
+             resultRedHotMetadata
            ).eventually(())
       _ <- checkBlazegraphTriples(sparqlNamespace, contentOf("indexing/result_metadata.nt")).toCatsIO.eventually(())
     } yield ()
@@ -519,8 +515,8 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
         _ <- projections.progress(view.indexingRef).eventually(expectedProgress)
         _ <- checkElasticSearchDocuments(
                elasticIndex,
-               jsonContentOf("indexing/result_muse.json"),
-               jsonContentOf("indexing/result_red_hot.json")
+               resultMuse,
+               resultRedHot
              ).eventually(())
         _ <- checkBlazegraphTriples(sparqlNamespace, contentOf("indexing/result.nt")).toCatsIO.eventually(())
       } yield ()
@@ -569,8 +565,8 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
       _ <- rebuildCompleted.get.assertEquals(Map.empty[ProjectRef, Int])
       _ <- checkElasticSearchDocuments(
              elasticIndex,
-             jsonContentOf("indexing/result_muse.json").deepMerge(contextJson.removeKeys(keywords.id)),
-             jsonContentOf("indexing/result_red_hot.json").deepMerge(contextJson.removeKeys(keywords.id))
+             resultMuse.deepMerge(contextJson.removeKeys(keywords.id)),
+             resultRedHot.deepMerge(contextJson.removeKeys(keywords.id))
            ).eventually(())
     } yield ()
   }

@@ -18,9 +18,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{Resource, ResourceGene
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Revision
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
-import munit.Location
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
+import munit.Location
 
 import java.util.UUID
 
@@ -101,7 +100,7 @@ class ResourcesTrialSuite extends CatsEffectSuite with ValidateResourceFixture w
     val anotherSchema = nxv + "anotherSchema"
     for {
       schemaSource <-
-        ioJsonContentOf("resources/schema.json").map(_.addContext(contexts.shacl, contexts.schemasMetadata)).toCatsIO
+        ioJsonContentOf("resources/schema.json").map(_.addContext(contexts.shacl, contexts.schemasMetadata))
       schema       <- SchemaGen
                         .schemaAsync(anotherSchema, project.ref, schemaSource.removeKeys(keywords.id))
                         .map(SchemaGen.resourceFor(_))

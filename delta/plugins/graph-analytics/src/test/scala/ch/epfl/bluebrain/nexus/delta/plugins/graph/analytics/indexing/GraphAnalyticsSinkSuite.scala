@@ -71,7 +71,7 @@ class GraphAnalyticsSinkSuite
   private val file1     = iri"http://localhost/file1"
 
   private def loadExpanded(path: String): IO[ExpandedJsonLd] =
-    ioJsonContentOf(path)
+    bioJsonContentOf(path)
       .flatMap { json =>
         Task.fromEither(ExpandedJsonLd.expanded(json))
       }
@@ -136,9 +136,9 @@ class GraphAnalyticsSinkSuite
       // - `resource2` with no reference resolved
       // - `deprecatedResource` with only metadata, resolution is skipped
       _                  <- client.count(index.value).toCatsIO.eventually(3L)
-      expected1          <- ioJsonContentOf("result/resource1.json").toCatsIO
-      expected2          <- ioJsonContentOf("result/resource2.json").toCatsIO
-      expectedDeprecated <- ioJsonContentOf("result/resource_deprecated.json").toCatsIO
+      expected1          <- ioJsonContentOf("result/resource1.json")
+      expected2          <- ioJsonContentOf("result/resource2.json")
+      expectedDeprecated <- ioJsonContentOf("result/resource_deprecated.json")
       _                  <- client.getSource[Json](index, resource1.toString).toCatsIO.eventually(expected1)
       _                  <- client.getSource[Json](index, resource2.toString).toCatsIO.eventually(expected2)
       _                  <- client.getSource[Json](index, deprecatedResource.toString).toCatsIO.eventually(expectedDeprecated)
@@ -168,8 +168,8 @@ class GraphAnalyticsSinkSuite
       // The reference to file1 should have been resolved and introduced as a relationship
       // The update query should not have an effect on the other resource
       _         <- client.refresh(index).toCatsIO
-      expected1 <- ioJsonContentOf("result/resource1_updated.json").toCatsIO
-      expected2 <- ioJsonContentOf("result/resource2.json").toCatsIO
+      expected1 <- ioJsonContentOf("result/resource1_updated.json")
+      expected2 <- ioJsonContentOf("result/resource2.json")
       _         <- client.count(index.value).toCatsIO.eventually(3L)
       _         <- client.getSource[Json](index, resource1.toString).toCatsIO.eventually(expected1)
       _         <- client.getSource[Json](index, resource2.toString).toCatsIO.eventually(expected2)
