@@ -99,6 +99,8 @@ class ResourcesImplSpec
     xas
   )
 
+  private val simpleSourcePaylod = (id: IdSegment) => json"""{ "@id": "$id", "some": "content" }"""
+
   "The Resources operations bundle" when {
 
     // format: off
@@ -568,6 +570,7 @@ class ResourcesImplSpec
         val expectedData = ResourceGen.resource(myId4, projectRef, sourceWithId, Revision(schema1.id, 1))
         val resource     = resources.deprecate(myId4, projectRef, Some(schema1.id), 1).accepted
         resource shouldEqual mkResource(expectedData).copy(rev = 2, deprecated = true)
+        assertDeprecated(myId4, projectRef)
       }
 
       "reject if it doesn't exists" in {
@@ -575,27 +578,37 @@ class ResourcesImplSpec
       }
 
       "reject if the revision passed is incorrect" in {
-        resources.deprecate(myId, projectRef, None, 3).rejected shouldEqual
-          IncorrectRev(provided = 3, expected = 2)
+        givenAResource { id =>
+          resources
+            .deprecate(id, projectRef, None, 3)
+            .assertRejectedEquals(IncorrectRev(3, 1))
+          assertRemainsActive(id, projectRef)
+        }
       }
 
       "reject if deprecated" in {
-        resources.deprecate(myId4, projectRef, None, 2).rejectedWith[ResourceIsDeprecated]
-        resources.deprecate("nxv:myid4", projectRef, None, 2).rejectedWith[ResourceIsDeprecated]
+        givenADeprecatedResource { id =>
+          resources.deprecate(id, projectRef, None, 2).assertRejectedWith[ResourceIsDeprecated]
+          assertRemainsDeprecated(id, projectRef)
+        }
       }
 
       "reject if schemas do not match" in {
-        resources.deprecate(myId2, projectRef, Some(schemas.resources), 4).rejectedWith[UnexpectedResourceSchema]
+        givenAResource { id =>
+          resources.deprecate(id, projectRef, Some(schema1.id), 1).assertRejectedWith[UnexpectedResourceSchema]
+          assertRemainsActive(id, projectRef)
+        }
       }
 
       "reject if project does not exist" in {
-        val projectRef = ProjectRef(org, Label.unsafe("other"))
-
-        resources.deprecate(myId, projectRef, None, 1).rejectedWith[ProjectContextRejection]
+        givenAResource { id =>
+          val wrongProject = ProjectRef(org, Label.unsafe("other"))
+          resources.deprecate(id, wrongProject, None, 1).assertRejectedWith[ProjectContextRejection]
+        }
       }
 
       "reject if project is deprecated" in {
-        resources.deprecate(myId, projectDeprecated.ref, None, 1).rejectedWith[ProjectContextRejection]
+        resources.deprecate(nxv + "id", projectDeprecated.ref, None, 1).assertRejectedWith[ProjectContextRejection]
       }
 
     }
@@ -605,7 +618,7 @@ class ResourcesImplSpec
       "succeed" in {
         givenADeprecatedResource { id =>
           resources.undeprecate(id, projectRef, None, 2).accepted.deprecated shouldEqual false
-          resources.fetch(id, projectRef, None).accepted.deprecated shouldEqual false
+          assertActive(id, projectRef)
         }
       }
 
@@ -623,7 +636,7 @@ class ResourcesImplSpec
           resources
             .undeprecate(id, projectRef, None, 4)
             .assertRejectedWith[IncorrectRev]
-          resources.fetch(id, projectRef, None).accepted.deprecated shouldEqual true
+          assertRemainsDeprecated(id, projectRef)
         }
       }
 
@@ -632,7 +645,7 @@ class ResourcesImplSpec
           resources
             .undeprecate(id, projectRef, None, 1)
             .assertRejectedWith[ResourceIsNotDeprecated]
-          resources.fetch(id, projectRef, None).accepted.deprecated shouldEqual false
+          assertRemainsActive(id, projectRef)
         }
       }
 
@@ -641,7 +654,7 @@ class ResourcesImplSpec
           resources
             .undeprecate(id, projectRef, Some(schema1.id), 2)
             .assertRejectedWith[UnexpectedResourceSchema]
-          resources.fetch(id, projectRef, None).accepted.deprecated shouldEqual true
+          assertRemainsDeprecated(id, projectRef)
         }
       }
 
@@ -751,12 +764,9 @@ class ResourcesImplSpec
 
     /** Provides a newly created resource for assertion. Latest revision is 1 */
     def givenAResource(assertion: IdSegment => Assertion): Assertion = {
-      val id        = nxv + genString()
-      val newSource = json"""{ "@id": "$id", "some": "content" }"""
-
-      resources.create(id, projectRef, resourceSchema, newSource, None).accepted
+      val id = nxv + genString()
+      resources.create(id, projectRef, resourceSchema, simpleSourcePaylod(id), None).accepted
       resources.fetch(id, projectRef, None).accepted
-
       assertion(id)
     }
 
@@ -767,5 +777,14 @@ class ResourcesImplSpec
         resources.fetch(id, projectRef, None).accepted.deprecated shouldEqual true
         assertion(id)
       }
+
+    def assertDeprecated(id: IdSegment, projectRef: ProjectRef, schema: Option[IdSegment] = None)        =
+      resources.fetch(id, projectRef, schema).accepted.deprecated shouldEqual true
+    def assertRemainsDeprecated(id: IdSegment, projectRef: ProjectRef, schema: Option[IdSegment] = None) =
+      assertDeprecated(id, projectRef, schema)
+    def assertActive(id: IdSegment, projectRef: ProjectRef, schema: Option[IdSegment] = None)            =
+      resources.fetch(id, projectRef, schema).accepted.deprecated shouldEqual false
+    def assertRemainsActive(id: IdSegment, projectRef: ProjectRef, schema: Option[IdSegment] = None)     =
+      assertActive(id, projectRef, schema)
   }
 }
