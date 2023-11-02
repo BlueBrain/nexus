@@ -8,7 +8,10 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ElemPipe
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.FailedElem
 import fs2.concurrent.SignallingRef
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Projection.logger
 
+import java.util.concurrent.TimeoutException
 import scala.concurrent.duration.FiniteDuration
 
 /**
@@ -66,6 +69,9 @@ final class Projection private[stream] (
         case _                         => false
       }
       .timeout(timeout)
+      .recoverWith { case _: TimeoutException =>
+        logger.error(s"Timeout waiting for completion on projection $name") >> executionStatus
+      }
 
   /**
     * Stops the projection. Has no effect if the projection is already stopped.
@@ -81,6 +87,7 @@ final class Projection private[stream] (
 
 object Projection {
 
+  val logger                                                              = Logger.cats[Projection]
   private val persistInit: (List[FailedElem], Option[ProjectionProgress]) = (List.empty[FailedElem], None)
 
   def persist[A](
