@@ -40,17 +40,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
-import ch.epfl.bluebrain.nexus.testkit._
 import ch.epfl.bluebrain.nexus.testkit.blazegraph.BlazegraphDocker
-import ch.epfl.bluebrain.nexus.testkit.scalatest.bio.BIOValues
-import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
-import ch.epfl.bluebrain.nexus.testkit.scalatest.{EitherValues, TestMatchers}
+import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import monix.bio.{IO => BIO}
 import monix.execution.Scheduler
 import org.scalatest.concurrent.Eventually
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
-import org.scalatest.{CancelAfterFailure, DoNotDiscover, Inspectors, OptionValues}
+import org.scalatest.{CancelAfterFailure, DoNotDiscover, Inspectors}
 
 import java.time.Instant
 import scala.concurrent.duration._
@@ -58,19 +53,11 @@ import scala.concurrent.duration._
 @DoNotDiscover
 class BlazegraphViewsQuerySpec(docker: BlazegraphDocker)
     extends TestKit(ActorSystem("BlazegraphViewsQuerySpec"))
-    with AnyWordSpecLike
+    with CatsEffectSpec
     with DoobieScalaTestFixture
-    with Matchers
-    with EitherValues
-    with OptionValues
-    with CatsIOValues
-    with CirceLiteral
-    with TestHelpers
-    with TestMatchers
     with CancelAfterFailure
     with Inspectors
     with ConfigFixtures
-    with BIOValues
     with Fixtures
     with Eventually {
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(6.seconds, 100.millis)

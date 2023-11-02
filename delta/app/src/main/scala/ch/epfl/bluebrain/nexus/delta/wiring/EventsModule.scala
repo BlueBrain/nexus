@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
-import cats.effect.{ContextShift, IO}
+import cats.effect.{ContextShift, IO, Timer}
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
@@ -32,7 +32,8 @@ object EventsModule extends ModuleDef {
         projects: Projects,
         sseEncoders: Set[SseEncoder[_]],
         xas: Transactors,
-        jo: JsonKeyOrdering
+        jo: JsonKeyOrdering,
+        timer: Timer[IO]
     ) =>
       SseEventLog(
         sseEncoders,
@@ -40,11 +41,11 @@ object EventsModule extends ModuleDef {
         projects.fetch(_).map { p => (p.value.organizationUuid, p.value.uuid) },
         config.sse,
         xas
-      )(jo)
+      )(jo, timer)
   }
 
-  make[SseElemStream].from { (qc: QueryConfig, xas: Transactors) =>
-    SseElemStream(qc, xas)
+  make[SseElemStream].from { (qc: QueryConfig, xas: Transactors, timer: Timer[IO]) =>
+    SseElemStream(qc, xas)(timer)
   }
 
   make[EventsRoutes].from {

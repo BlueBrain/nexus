@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
 import akka.actor.typed.ActorSystem
-import cats.effect.{Clock, ContextShift, IO}
+import cats.effect.{Clock, ContextShift, IO, Timer}
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
@@ -60,15 +60,13 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
   }
 
   make[BlazegraphSlowQueryDeleter].fromEffect {
-    (supervisor: Supervisor, store: BlazegraphSlowQueryStore, cfg: BlazegraphViewsConfig) =>
-      toCatsIO(
-        BlazegraphSlowQueryDeleter.start(
-          supervisor,
-          store,
-          cfg.slowQueries.logTtl,
-          cfg.slowQueries.deleteExpiredLogsEvery
-        )
-      )
+    (supervisor: Supervisor, store: BlazegraphSlowQueryStore, cfg: BlazegraphViewsConfig, timer: Timer[IO]) =>
+      BlazegraphSlowQueryDeleter.start(
+        supervisor,
+        store,
+        cfg.slowQueries.logTtl,
+        cfg.slowQueries.deleteExpiredLogsEvery
+      )(timer)
   }
 
   make[BlazegraphSlowQueryLogger].from { (cfg: BlazegraphViewsConfig, store: BlazegraphSlowQueryStore) =>
@@ -122,6 +120,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
           xas: Transactors,
           api: JsonLdApi,
           clock: Clock[IO],
+          timer: Timer[IO],
           uuidF: UUIDF
       ) =>
         BlazegraphViews(
@@ -132,7 +131,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
           config.eventLog,
           config.prefix,
           xas
-        )(api, clock, uuidF)
+        )(api, clock, timer, uuidF)
     }
 
   make[BlazegraphCoordinator].fromEffect {
@@ -143,18 +142,18 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         supervisor: Supervisor,
         client: BlazegraphClient @Id("blazegraph-indexing-client"),
         config: BlazegraphViewsConfig,
-        baseUri: BaseUri
+        baseUri: BaseUri,
+        timer: Timer[IO],
+        cs: ContextShift[IO]
     ) =>
-      toCatsIO(
-        BlazegraphCoordinator(
-          views,
-          graphStream,
-          registry,
-          supervisor,
-          client,
-          config
-        )(baseUri)
-      )
+      BlazegraphCoordinator(
+        views,
+        graphStream,
+        registry,
+        supervisor,
+        client,
+        config
+      )(baseUri, timer, cs)
   }
 
   make[BlazegraphViewsQuery].fromEffect {
@@ -297,9 +296,11 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         registry: ReferenceRegistry,
         client: BlazegraphClient @Id("blazegraph-indexing-client"),
         config: BlazegraphViewsConfig,
-        baseUri: BaseUri
+        baseUri: BaseUri,
+        timer: Timer[IO],
+        cs: ContextShift[IO]
     ) =>
-      BlazegraphIndexingAction(views, registry, client, config.syncIndexingTimeout)(baseUri)
+      BlazegraphIndexingAction(views, registry, client, config.syncIndexingTimeout)(baseUri, timer, cs)
   }
 
   make[BlazegraphView.Shift].from { (views: BlazegraphViews, base: BaseUri) =>

@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import cats.effect.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.CatsEffectsClasspathResourceUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts => nxvContexts, nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
@@ -9,9 +10,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
-import com.typesafe.scalalogging.Logger
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
+import org.typelevel.log4cats
 
 package object model {
 
@@ -50,7 +51,7 @@ package object model {
 
   implicit private val cl: ClassLoader = getClass.getClassLoader
 
-  implicit private val logger: Logger = Logger("ElasticSearchPlugin")
+  implicit private val logger: log4cats.Logger[IO] = Logger.cats[ElasticSearchPlugin.type]
 
   // TODO can do this only once and inject them where they're need instead of memoizing?
 

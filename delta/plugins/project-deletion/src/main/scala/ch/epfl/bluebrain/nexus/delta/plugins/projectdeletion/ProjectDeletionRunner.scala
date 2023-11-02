@@ -85,7 +85,6 @@ object ProjectDeletionRunner {
       .fixedRate[IO](config.idleCheckPeriod)
       .evalMap(_ => runner.projectDeletionPass)
       .drain
-      .translate(ioToUioK)
 
     val compiledProjection =
       CompiledProjection.fromStream(projectionMetadata, ExecutionStrategy.TransientSingleNode, _ => continuousStream)

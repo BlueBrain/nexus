@@ -18,12 +18,10 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionProgress
 import ch.epfl.bluebrain.nexus.testkit.mu.bio.PatienceConfig
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import fs2.Stream
-
 import munit.AnyFixture
 
 import java.time.Instant
 import scala.concurrent.duration._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 
 class CompositeProjectionsSuite extends CatsEffectSuite with Doobie.Fixture with Doobie.Assertions with ConfigFixtures {
 
@@ -93,7 +91,7 @@ class CompositeProjectionsSuite extends CatsEffectSuite with Doobie.Fixture with
     for {
       value   <- Ref.of[IO, Int](0)
       inc      = Stream.eval(value.getAndUpdate(_ + 1)) ++ Stream.never[IO]
-      _       <- toCatsIO(inc.translate(ioToTaskK).through(projections.handleRestarts(viewRef)).compile.drain).start
+      _       <- inc.through(projections.handleRestarts(viewRef)).compile.drain.start
       _       <- value.get.eventually(1)
       _       <- compositeRestartStore.save(restart)
       expected = CompositeProgress(

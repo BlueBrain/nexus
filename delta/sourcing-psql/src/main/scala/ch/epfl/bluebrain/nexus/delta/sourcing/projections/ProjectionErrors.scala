@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.projections
 
-import cats.effect.Clock
+import cats.effect.{Clock, IO}
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.kernel.search.TimeRange
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -11,7 +11,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.FailedElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionMetadata
 import fs2.Stream
-import monix.bio.{Task, UIO}
 
 trait ProjectionErrors {
 
@@ -23,7 +22,7 @@ trait ProjectionErrors {
     * @param failures
     *   the FailedElem to save
     */
-  def saveFailedElems(metadata: ProjectionMetadata, failures: List[FailedElem]): UIO[Unit]
+  def saveFailedElems(metadata: ProjectionMetadata, failures: List[FailedElem]): IO[Unit]
 
   /**
     * Get available failed elem entries for a given projection (provided by project and id), starting from a failed elem
@@ -40,7 +39,7 @@ trait ProjectionErrors {
       projectionProject: ProjectRef,
       projectionId: Iri,
       offset: Offset
-  ): Stream[Task, FailedElemLogRow]
+  ): Stream[IO, FailedElemLogRow]
 
   /**
     * Get available failed elem entries for a given projection by projection name, starting from a failed elem offset.
@@ -51,7 +50,7 @@ trait ProjectionErrors {
     *   failed elem offset
     * @return
     */
-  def failedElemEntries(projectionName: String, offset: Offset): Stream[Task, FailedElemLogRow]
+  def failedElemEntries(projectionName: String, offset: Offset): Stream[IO, FailedElemLogRow]
 
   /**
     * Return the total of errors for the given projection on a time window ordered by instant
@@ -63,7 +62,7 @@ trait ProjectionErrors {
     * @param timeRange
     *   the time range to restrict on
     */
-  def count(project: ProjectRef, projectionId: Iri, timeRange: TimeRange): UIO[Long]
+  def count(project: ProjectRef, projectionId: Iri, timeRange: TimeRange): IO[Long]
 
   /**
     * Return a list of errors for the given projection on a time window ordered by instant
@@ -82,30 +81,30 @@ trait ProjectionErrors {
       projectionId: Iri,
       pagination: FromPagination,
       timeRange: TimeRange
-  ): UIO[List[FailedElemLogRow]]
+  ): IO[List[FailedElemLogRow]]
 
 }
 
 object ProjectionErrors {
 
-  def apply(xas: Transactors, config: QueryConfig)(implicit clock: Clock[UIO]): ProjectionErrors =
+  def apply(xas: Transactors, config: QueryConfig)(implicit clock: Clock[IO]): ProjectionErrors =
     new ProjectionErrors {
 
       private val store = FailedElemLogStore(xas, config)
 
-      override def saveFailedElems(metadata: ProjectionMetadata, failures: List[FailedElem]): UIO[Unit] =
+      override def saveFailedElems(metadata: ProjectionMetadata, failures: List[FailedElem]): IO[Unit] =
         store.save(metadata, failures)
 
       override def failedElemEntries(
           projectionProject: ProjectRef,
           projectionId: Iri,
           offset: Offset
-      ): Stream[Task, FailedElemLogRow] = store.stream(projectionProject, projectionId, offset)
+      ): Stream[IO, FailedElemLogRow] = store.stream(projectionProject, projectionId, offset)
 
-      override def failedElemEntries(projectionName: String, offset: Offset): Stream[Task, FailedElemLogRow] =
+      override def failedElemEntries(projectionName: String, offset: Offset): Stream[IO, FailedElemLogRow] =
         store.stream(projectionName, offset)
 
-      override def count(project: ProjectRef, projectionId: Iri, timeRange: TimeRange): UIO[Long] =
+      override def count(project: ProjectRef, projectionId: Iri, timeRange: TimeRange): IO[Long] =
         store.count(project, projectionId, timeRange)
 
       override def list(
@@ -113,7 +112,7 @@ object ProjectionErrors {
           projectionId: Iri,
           pagination: FromPagination,
           timeRange: TimeRange
-      ): UIO[List[FailedElemLogRow]] = store.list(project, projectionId, pagination, timeRange)
+      ): IO[List[FailedElemLogRow]] = store.list(project, projectionId, pagination, timeRange)
     }
 
 }

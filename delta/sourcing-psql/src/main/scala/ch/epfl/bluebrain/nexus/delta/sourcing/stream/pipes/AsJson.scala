@@ -1,21 +1,21 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Pipe
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, PipeDef}
 import io.circe.syntax.EncoderOps
 import io.circe.{Encoder, Json}
-import monix.bio.Task
 import shapeless.Typeable
 
 object AsJson {
 
   private val label = Label.unsafe("asJson")
 
-  private def elemValueToJson[A: Encoder]: SuccessElem[A] => Task[Elem[Json]] =
+  private def elemValueToJson[A: Encoder]: SuccessElem[A] => IO[Elem[Json]] =
     elem =>
-      Task.pure {
+      IO.pure {
         elem.copy(value = elem.value.asJson)
       }
 

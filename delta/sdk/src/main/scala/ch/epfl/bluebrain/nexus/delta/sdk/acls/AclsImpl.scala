@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.acls
 
-import cats.effect.{Clock, IO}
+import cats.effect.{Clock, IO, Timer}
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.sdk._
@@ -120,7 +120,7 @@ object AclsImpl {
       minimum: Set[Permission],
       config: AclsConfig,
       xas: Transactors
-  )(implicit clock: Clock[IO]): Acls =
+  )(implicit clock: Clock[IO], timer: Timer[IO]): Acls =
     new AclsImpl(
       GlobalEventLog(Acls.definition(fetchPermissionSet, findUnknownRealms), config.eventLog, xas),
       minimum

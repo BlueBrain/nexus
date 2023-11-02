@@ -14,11 +14,11 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ReferenceRegistry
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.SelectPredicates.SelectPredicatesConfig
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.BioSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 
 import java.time.Instant
 
-class SelectPredicatesSuite extends BioSuite {
+class SelectPredicatesSuite extends CatsEffectSuite {
 
   private val base    = iri"http://localhost"
   private val instant = Instant.now()
@@ -71,28 +71,28 @@ class SelectPredicatesSuite extends BioSuite {
 
   test("Produce an empty graph if the predicate set is empty") {
     val expected = element.copy(value = element.value.copy(graph = Graph.empty(base / "id"), types = Set.empty))
-    pipe(Set.empty).apply(element).assert(expected)
+    pipe(Set.empty).apply(element).assertEquals(expected)
   }
 
   test(s"Retain only the '${rdfs.label}' predicate") {
     val graph    = Graph.empty(base / "id").add(rdfs.label, "active")
     val expected = element.copy(value = element.value.copy(graph = graph, types = Set.empty))
-    pipe(Set(rdfs.label)).apply(element).assert(expected)
+    pipe(Set(rdfs.label)).apply(element).assertEquals(expected)
   }
 
   test(s"Retain the '${rdfs.label}' and the '${rdf.tpe}' predicate with the default pipe") {
     val graph    = Graph.empty(base / "id").add(rdfs.label, "active").add(rdf.tpe, pullRequestType)
     val expected = element.copy(value = element.value.copy(graph = graph, types = Set(pullRequestType)))
-    defaultPipe.apply(element).assert(expected)
+    defaultPipe.apply(element).assertEquals(expected)
   }
 
   test(s"Retain only the '${rdfs.label}' predicate for a file if '$fileType' is not a forward type") {
     val graph    = Graph.empty(base / "id").add(rdfs.label, "active")
     val expected = fileElem.copy(value = fileElem.value.copy(graph = graph, types = Set.empty))
-    pipe(Set(rdfs.label)).apply(fileElem).assert(expected)
+    pipe(Set(rdfs.label)).apply(fileElem).assertEquals(expected)
   }
 
   test(s"Do not apply any modifications for a forward type '$fileType' for the default predicate") {
-    defaultPipe.apply(fileElem).assert(fileElem)
+    defaultPipe.apply(fileElem).assertEquals(fileElem)
   }
 }

@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 
-import cats.effect.{Clock, IO}
+import cats.effect.{Clock, IO, Timer}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
@@ -531,6 +531,7 @@ object Storages {
   )(implicit
       api: JsonLdApi,
       clock: Clock[IO],
+      timer: Timer[IO],
       uuidF: UUIDF
   ): IO[Storages] = {
     implicit val rcr: RemoteContextResolution = contextResolution.rcr

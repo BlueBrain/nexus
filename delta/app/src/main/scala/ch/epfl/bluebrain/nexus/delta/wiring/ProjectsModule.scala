@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
-import cats.effect.{Clock, ContextShift, IO}
+import cats.effect.{Clock, ContextShift, IO, Timer}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
@@ -31,7 +31,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Supervisor
 import izumi.distage.model.definition.{Id, ModuleDef}
-import monix.bio.UIO
 import monix.execution.Scheduler
 
 /**
@@ -59,6 +58,7 @@ object ProjectsModule extends ModuleDef {
         xas: Transactors,
         baseUri: BaseUri,
         clock: Clock[IO],
+        timer: Timer[IO],
         uuidF: UUIDF
     ) =>
       IO.pure(
@@ -74,7 +74,7 @@ object ProjectsModule extends ModuleDef {
           mappings.merge,
           config.projects,
           xas
-        )(baseUri, clock, uuidF)
+        )(baseUri, clock, timer, uuidF)
       )
   }
 
@@ -106,18 +106,17 @@ object ProjectsModule extends ModuleDef {
         serviceAccount: ServiceAccount,
         supervisor: Supervisor,
         xas: Transactors,
-        clock: Clock[UIO]
+        clock: Clock[IO],
+        timer: Timer[IO]
     ) =>
-      toCatsIO(
-        ProjectDeletionCoordinator(
-          projects,
-          deletionTasks,
-          config.projects.deletion,
-          serviceAccount,
-          supervisor,
-          xas
-        )(clock)
-      )
+      ProjectDeletionCoordinator(
+        projects,
+        deletionTasks,
+        config.projects.deletion,
+        serviceAccount,
+        supervisor,
+        xas
+      )(clock, timer)
   }
 
   make[UUIDCache].fromEffect { (config: AppConfig, xas: Transactors) =>

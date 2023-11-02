@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing
 
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.ioJsonObjectContentOf
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.bioJsonObjectContentOf
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import com.typesafe.scalalogging.Logger
 import io.circe.JsonObject
@@ -20,7 +20,7 @@ object GraphAnalyticsView {
 
   implicit private val logger: Logger = Logger[GraphAnalyticsView]
 
-  private val mappings = ioJsonObjectContentOf("elasticsearch/mappings.json")
+  private val mappings = bioJsonObjectContentOf("elasticsearch/mappings.json")
 
   val default: UIO[GraphAnalyticsView] = mappings
     .map(GraphAnalyticsView(_))

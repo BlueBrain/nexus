@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
-import cats.effect.IO
+import cats.effect.{IO, Timer}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.sourcing.EvaluationError.{EvaluationFailure, EvaluationTimeout}
@@ -131,7 +131,7 @@ object GlobalEventLog {
       definition: GlobalEntityDefinition[Id, S, Command, E, Rejection],
       config: EventLogConfig,
       xas: Transactors
-  ): GlobalEventLog[Id, S, Command, E, Rejection] =
+  )(implicit timer: Timer[IO]): GlobalEventLog[Id, S, Command, E, Rejection] =
     apply(
       GlobalEventStore(definition.tpe, definition.eventSerializer, config.queryConfig, xas),
       GlobalStateStore(definition.tpe, definition.stateSerializer, config.queryConfig, xas),

@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import akka.actor.typed.ActorSystem
-import cats.effect.{Clock, ContextShift, IO}
+import cats.effect.{Clock, ContextShift, IO, Timer}
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchV
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.deletion.{ElasticSearchDeletionTask, EventMetricsDeletionTask}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchCoordinator
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.ProjectContextRejection
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, defaultElasticsearchMapping, defaultElasticsearchSettings, schema => viewsSchemaId, ElasticSearchView, ElasticSearchViewEvent}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, defaultElasticsearchMapping, defaultElasticsearchSettings, schema => viewsSchemaId, ElasticSearchView, ElasticSearchViewEvent, ElasticSearchViewRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.{DefaultViewsQuery, ElasticSearchQueryError}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
@@ -88,6 +88,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         xas: Transactors,
         api: JsonLdApi,
         clock: Clock[IO],
+        timer: Timer[IO],
         uuidF: UUIDF
     ) =>
       ElasticSearchViews(
@@ -97,8 +98,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         config.eventLog,
         config.prefix,
         xas
-      )(api, clock, uuidF)
-
+      )(api, clock, timer, uuidF)
   }
 
   make[ElasticSearchCoordinator].fromEffect {
@@ -109,18 +109,18 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         supervisor: Supervisor,
         client: ElasticSearchClient,
         config: ElasticSearchViewsConfig,
+        timer: Timer[IO],
+        cs: ContextShift[IO],
         cr: RemoteContextResolution @Id("aggregate")
     ) =>
-      toCatsIO(
-        ElasticSearchCoordinator(
-          views,
-          graphStream,
-          registry,
-          supervisor,
-          client,
-          config
-        )(cr)
-      )
+      ElasticSearchCoordinator(
+        views,
+        graphStream,
+        registry,
+        supervisor,
+        client,
+        config
+      )(cr, timer, cs)
   }
 
   make[EventMetricsProjection].fromEffect {
@@ -129,19 +129,19 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         xas: Transactors,
         supervisor: Supervisor,
         client: ElasticSearchClient,
-        config: ElasticSearchViewsConfig
+        config: ElasticSearchViewsConfig,
+        timer: Timer[IO],
+        cs: ContextShift[IO]
     ) =>
-      toCatsIO(
-        EventMetricsProjection(
-          metricEncoders,
-          supervisor,
-          client,
-          xas,
-          config.batch,
-          config.metricsQuery,
-          config.prefix
-        )
-      )
+      EventMetricsProjection(
+        metricEncoders,
+        supervisor,
+        client,
+        xas,
+        config.batch,
+        config.metricsQuery,
+        config.prefix
+      )(timer, cs)
   }
 
   make[ElasticSearchViewsQuery].from {
@@ -247,7 +247,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
       new ElasticSearchIndexingRoutes(
         identities,
         aclCheck,
-        views.fetchIndexingView(_, _),
+        views.fetchIndexingView(_, _).toBIO[ElasticSearchViewRejection],
         projections,
         projectionErrors,
         schemeDirectives,
@@ -374,9 +374,15 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         registry: ReferenceRegistry,
         client: ElasticSearchClient,
         config: ElasticSearchViewsConfig,
-        cr: RemoteContextResolution @Id("aggregate")
+        cr: RemoteContextResolution @Id("aggregate"),
+        timer: Timer[IO],
+        cs: ContextShift[IO]
     ) =>
-      ElasticSearchIndexingAction(views, registry, client, config.syncIndexingTimeout, config.syncIndexingRefresh)(cr)
+      ElasticSearchIndexingAction(views, registry, client, config.syncIndexingTimeout, config.syncIndexingRefresh)(
+        cr,
+        timer,
+        cs
+      )
   }
 
   make[ElasticSearchView.Shift].fromEffect { (views: ElasticSearchViews, base: BaseUri) =>

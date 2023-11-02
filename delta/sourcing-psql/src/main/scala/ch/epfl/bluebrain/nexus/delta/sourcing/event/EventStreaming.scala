@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.event
 
 import cats.data.NonEmptyList
+import cats.effect.{IO, Timer}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Scope.Root
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Envelope, EnvelopeStream}
@@ -19,7 +20,7 @@ object EventStreaming {
       offset: Offset,
       config: QueryConfig,
       xas: Transactors
-  )(implicit md: MultiDecoder[A]): EnvelopeStream[A] = {
+  )(implicit md: MultiDecoder[A], timer: Timer[IO]): EnvelopeStream[A] = {
     val typeIn = NonEmptyList.fromList(types).map { types => Fragments.in(fr"type", types) }
 
     Envelope.streamA(
@@ -43,7 +44,7 @@ object EventStreaming {
       offset: Offset,
       config: QueryConfig,
       xas: Transactors
-  )(implicit md: MultiDecoder[A]): EnvelopeStream[A] = {
+  )(implicit md: MultiDecoder[A], timer: Timer[IO]): EnvelopeStream[A] = {
     val typeIn = NonEmptyList.fromList(types).map { types => Fragments.in(fr"type", types) }
 
     Envelope.streamA(

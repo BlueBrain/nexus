@@ -1,10 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.store
 
-import cats.effect.{Clock, IO}
+import cats.effect.{Clock, IO, Timer}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeRestart
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeRestart.entityType
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.store.CompositeRestartStore.logger
@@ -21,7 +20,6 @@ import doobie.postgres.implicits._
 import fs2.Stream
 import io.circe.Json
 import io.circe.syntax.EncoderOps
-import monix.bio.Task
 
 import java.time.Instant
 
@@ -108,7 +106,8 @@ object CompositeRestartStore {
     *   the projection config
     */
   def deleteExpired(store: CompositeRestartStore, supervisor: Supervisor, config: ProjectionConfig)(implicit
-      clock: Clock[IO]
+      clock: Clock[IO],
+      timer: Timer[IO]
   ): IO[Unit] = {
     val deleteExpiredRestarts =
       IOInstant.now.flatMap { now =>
@@ -121,8 +120,8 @@ object CompositeRestartStore {
           ExecutionStrategy.TransientSingleNode,
           _ =>
             Stream
-              .awakeEvery[Task](config.deleteExpiredEvery)
-              .evalTap(_ => deleteExpiredRestarts.toUIO)
+              .awakeEvery[IO](config.deleteExpiredEvery)
+              .evalTap(_ => deleteExpiredRestarts)
               .drain
         )
       )

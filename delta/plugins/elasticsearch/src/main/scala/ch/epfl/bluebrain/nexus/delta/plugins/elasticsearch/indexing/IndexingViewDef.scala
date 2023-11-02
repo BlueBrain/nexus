@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing
 
 import cats.data.NonEmptyChain
+import cats.effect.{ContextShift, IO, Timer}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel
@@ -17,7 +18,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
 import com.typesafe.scalalogging.Logger
 import io.circe.JsonObject
-import monix.bio.Task
 
 /**
   * Definition of a view to build a projection
@@ -98,7 +98,7 @@ object IndexingViewDef {
       compilePipeChain: PipeChain => Either[ProjectionErr, Operation],
       elems: ElemStream[GraphResource],
       sink: Sink
-  )(implicit cr: RemoteContextResolution): Task[CompiledProjection] =
+  )(implicit cr: RemoteContextResolution, timer: Timer[IO], cs: ContextShift[IO]): IO[CompiledProjection] =
     compile(v, compilePipeChain, _ => elems, sink)
 
   def compile(
@@ -106,7 +106,7 @@ object IndexingViewDef {
       compilePipeChain: PipeChain => Either[ProjectionErr, Operation],
       graphStream: GraphResourceStream,
       sink: Sink
-  )(implicit cr: RemoteContextResolution): Task[CompiledProjection] =
+  )(implicit cr: RemoteContextResolution, timer: Timer[IO], cs: ContextShift[IO]): IO[CompiledProjection] =
     compile(v, compilePipeChain, graphStream.continuous(v.ref.project, v.selectFilter, _), sink)
 
   private def compile(
@@ -114,7 +114,7 @@ object IndexingViewDef {
       compilePipeChain: PipeChain => Either[ProjectionErr, Operation],
       stream: Offset => ElemStream[GraphResource],
       sink: Sink
-  )(implicit cr: RemoteContextResolution): Task[CompiledProjection] = {
+  )(implicit cr: RemoteContextResolution, timer: Timer[IO], cs: ContextShift[IO]): IO[CompiledProjection] = {
 
     val mergedContext        = v.context.fold(defaultContext) { defaultContext.merge(_) }
     val postPipes: Operation = new GraphResourceToDocument(mergedContext, false)
@@ -131,8 +131,8 @@ object IndexingViewDef {
                     )
     } yield projection
 
-    Task.fromEither(compiled).tapError { e =>
-      Task.delay(logger.error(s"View '${v.ref}' could not be compiled.", e))
+    IO.fromEither(compiled).onError { e =>
+      IO.delay(logger.error(s"View '${v.ref}' could not be compiled.", e))
     }
   }
 }

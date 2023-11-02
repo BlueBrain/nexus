@@ -1,8 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.event
 
-import cats.effect.IO
+import cats.effect.{IO, Timer}
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.taskToIoK
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Serializer, Transactors}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.GlobalEvent
@@ -76,7 +75,7 @@ object GlobalEventStore {
       serializer: Serializer[Id, E],
       config: QueryConfig,
       xas: Transactors
-  ): GlobalEventStore[Id, E] =
+  )(implicit timer: Timer[IO]): GlobalEventStore[Id, E] =
     new GlobalEventStore[Id, E] {
 
       import IriInstances._
@@ -125,7 +124,7 @@ object GlobalEventStore {
           _.offset,
           config.copy(refreshStrategy = strategy),
           xas
-        ).translate(taskToIoK)
+        )
 
       override def currentEvents(offset: Offset): Stream[IO, Envelope[E]] = events(offset, RefreshStrategy.Stop)
 

@@ -2,17 +2,20 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.Uri.Query
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchClientSetup
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{IndexLabel, QueryBuilder}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchSink.BulkUpdateException
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.BioSuite
+import ch.epfl.bluebrain.nexus.testkit.bio.BioRunContext
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import fs2.Chunk
 import io.circe.Json
 import munit.AnyFixture
@@ -20,7 +23,11 @@ import munit.AnyFixture
 import java.time.Instant
 import scala.concurrent.duration._
 
-class ElasticSearchSinkSuite extends BioSuite with ElasticSearchClientSetup.Fixture with CirceLiteral {
+class ElasticSearchSinkSuite
+    extends CatsEffectSuite
+    with BioRunContext
+    with ElasticSearchClientSetup.Fixture
+    with CirceLiteral {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(esClient)
 
@@ -51,18 +58,19 @@ class ElasticSearchSinkSuite extends BioSuite with ElasticSearchClientSetup.Fixt
     DroppedElem(membersEntity, id, None, Instant.EPOCH, offset, rev)
 
   test("Create the index") {
-    client.createIndex(index, None, None).assert(true)
+    client.createIndex(index, None, None).toCatsIO.assertEquals(true)
   }
 
   test("Index a chunk of documents and retrieve them") {
     val chunk = asChunk(members)
 
     for {
-      _ <- sink.apply(chunk).assert(chunk.map(_.void))
+      _ <- sink.apply(chunk).assertEquals(chunk.map(_.void))
       _ <- client
              .search(QueryBuilder.empty, Set(index.value), Query.Empty)
+             .toCatsIO
              .map(_.sources.toSet)
-             .assert(members.flatMap(_._2.asObject))
+             .assertEquals(members.flatMap(_._2.asObject))
     } yield ()
   }
 
@@ -70,11 +78,12 @@ class ElasticSearchSinkSuite extends BioSuite with ElasticSearchClientSetup.Fixt
     val chunk = Chunk(brian, alice).map { case (id, _) => dropped(id, Offset.at(members.size.toLong + 1)) }
 
     for {
-      _ <- sink.apply(chunk).assert(chunk.map(_.void))
+      _ <- sink.apply(chunk).assertEquals(chunk.map(_.void))
       _ <- client
              .search(QueryBuilder.empty, Set(index.value), Query.Empty)
+             .toCatsIO
              .map(_.sources.toSet)
-             .assert(Set(bob, judy).flatMap(_._2.asObject))
+             .assertEquals(Set(bob, judy).flatMap(_._2.asObject))
     } yield ()
   }
 
@@ -113,8 +122,9 @@ class ElasticSearchSinkSuite extends BioSuite with ElasticSearchClientSetup.Fixt
       _       = assert(result.lift(2).flatMap(_.toOption).contains(()))
       _      <- client
                   .search(QueryBuilder.empty, Set(index.value), Query.Empty)
+                  .toCatsIO
                   .map(_.sources.toSet)
-                  .assert(Set(bob, judy, alice).flatMap(_._2.asObject))
+                  .assertEquals(Set(bob, judy, alice).flatMap(_._2.asObject))
     } yield ()
   }
 
@@ -128,9 +138,9 @@ class ElasticSearchSinkSuite extends BioSuite with ElasticSearchClientSetup.Fixt
     val sink  = ElasticSearchSink.states(client, 2, 50.millis, index, Refresh.True)
 
     for {
-      _ <- client.createIndex(index, None, None).assert(true)
-      _ <- sink.apply(chunk).assert(chunk.map(_.void))
-      _ <- client.getSource[Json](index, charlie_2._1.toString).assert(charlie_2._2)
+      _ <- client.createIndex(index, None, None).toCatsIO.assertEquals(true)
+      _ <- sink.apply(chunk).assertEquals(chunk.map(_.void))
+      _ <- client.getSource[Json](index, charlie_2._1.toString).toCatsIO.assertEquals(charlie_2._2)
     } yield ()
   }
 
@@ -147,9 +157,12 @@ class ElasticSearchSinkSuite extends BioSuite with ElasticSearchClientSetup.Fixt
     val sink = ElasticSearchSink.states(client, 2, 50.millis, index, Refresh.True)
 
     for {
-      _ <- client.createIndex(index, None, None).assert(true)
-      _ <- sink.apply(chunk).assert(chunk.map(_.void))
-      _ <- client.getSource[Json](index, charlie._1.toString).assertError(_.errorCode.contains(StatusCodes.NotFound))
+      _ <- client.createIndex(index, None, None).toCatsIO.assertEquals(true)
+      _ <- sink.apply(chunk).assertEquals(chunk.map(_.void))
+      _ <- client
+             .getSource[Json](index, charlie._1.toString)
+             .toCatsIO
+             .assertError[HttpClientError](_.errorCode.contains(StatusCodes.NotFound))
     } yield ()
   }
 

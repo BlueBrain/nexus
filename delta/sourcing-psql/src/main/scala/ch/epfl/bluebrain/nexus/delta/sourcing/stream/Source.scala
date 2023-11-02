@@ -1,13 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
 import cats.data.NonEmptyChain
+import cats.effect.{ContextShift, IO, Timer}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ElemStream
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionErr.{SourceOutMatchErr, SourceOutPipeInMatchErr}
 import fs2.Stream
-import monix.bio.Task
 import shapeless.Typeable
 
 /**
@@ -46,16 +46,18 @@ trait Source { self =>
     * @return
     *   an [[fs2.Stream]] of elements of this Source's Out type
     */
-  def apply(offset: Offset): Stream[Task, Elem[Out]]
+  def apply(offset: Offset): Stream[IO, Elem[Out]]
 
-  def through(operation: Operation): Either[SourceOutPipeInMatchErr, Source] =
+  def through(
+      operation: Operation
+  )(implicit timer: Timer[IO], cs: ContextShift[IO]): Either[SourceOutPipeInMatchErr, Source] =
     Either.cond(
       outType.describe == operation.inType.describe,
       new Source {
         override type Out = operation.Out
         override def outType: Typeable[operation.Out] = operation.outType
 
-        override def apply(offset: Offset): Stream[Task, Elem[operation.Out]] =
+        override def apply(offset: Offset): Stream[IO, Elem[operation.Out]] =
           self
             .apply(offset)
             .map {
@@ -71,14 +73,14 @@ trait Source { self =>
       SourceOutPipeInMatchErr(self, operation)
     )
 
-  private[stream] def merge(that: Source): Either[SourceOutMatchErr, Source] =
+  private[stream] def merge(that: Source)(implicit cs: ContextShift[IO]): Either[SourceOutMatchErr, Source] =
     Either.cond(
       self.outType.describe == that.outType.describe,
       new Source {
         override type Out = self.Out
         override def outType: Typeable[self.Out] = self.outType
 
-        override def apply(offset: Offset): Stream[Task, Elem[Out]] =
+        override def apply(offset: Offset): Stream[IO, Elem[Out]] =
           self
             .apply(offset)
             .merge(that.apply(offset).map {
@@ -95,7 +97,7 @@ trait Source { self =>
 
   def broadcastThrough(
       operations: NonEmptyChain[Operation]
-  ): Either[SourceOutPipeInMatchErr, Source.Aux[Unit]] =
+  )(implicit cs: ContextShift[IO], timer: Timer[IO]): Either[SourceOutPipeInMatchErr, Source.Aux[Unit]] =
     operations
       .traverse { operation =>
         Either.cond(
@@ -109,7 +111,7 @@ trait Source { self =>
           override type Out = Unit
           override def outType: Typeable[Unit] = Typeable[Unit]
 
-          override def apply(offset: Offset): Stream[Task, Elem[Unit]] =
+          override def apply(offset: Offset): Stream[IO, Elem[Unit]] =
             self
               .apply(offset)
               .broadcastThrough(verified.toList.map { _.asFs2 }: _*)
@@ -130,6 +132,6 @@ object Source {
 
       override def outType: Typeable[A] = Typeable[A]
 
-      override def apply(offset: Offset): Stream[Task, Elem[A]] = stream(offset)
+      override def apply(offset: Offset): Stream[IO, Elem[A]] = stream(offset)
     }
 }

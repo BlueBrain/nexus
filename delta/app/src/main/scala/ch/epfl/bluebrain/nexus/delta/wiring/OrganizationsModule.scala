@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
-import cats.effect.{Clock, ContextShift, IO}
+import cats.effect.{Clock, ContextShift, IO, Timer}
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
@@ -33,13 +33,14 @@ object OrganizationsModule extends ModuleDef {
         clock: Clock[IO],
         uuidF: UUIDF,
         xas: Transactors,
-        contextShift: ContextShift[IO]
+        contextShift: ContextShift[IO],
+        timer: Timer[IO]
     ) =>
       OrganizationsImpl(
         scopeInitializations,
         config.organizations,
         xas
-      )(clock, uuidF, contextShift)
+      )(clock, uuidF, contextShift, timer)
   }
 
   make[OrganizationDeleter].from { (xas: Transactors) =>

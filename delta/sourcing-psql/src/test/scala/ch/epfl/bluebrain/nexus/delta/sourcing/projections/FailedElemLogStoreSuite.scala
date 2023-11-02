@@ -14,13 +14,17 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.FailedElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionMetadata
 import ch.epfl.bluebrain.nexus.testkit.MutableClock
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.BioSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import munit.{AnyFixture, Location}
 
 import java.time.Instant
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
-class FailedElemLogStoreSuite extends BioSuite with MutableClock.Fixture with Doobie.Fixture with Doobie.Assertions {
+class FailedElemLogStoreSuite
+    extends CatsEffectSuite
+    with MutableClock.Fixture
+    with Doobie.Fixture
+    with Doobie.Assertions {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie, clock)
 
@@ -85,7 +89,7 @@ class FailedElemLogStoreSuite extends BioSuite with MutableClock.Fixture with Do
     store
       .list(project, projectionId, pagination, timeRange)
       .map(_.map(_.failedElemData.offset))
-      .assert(expectedOffsets)
+      .assertEquals(expectedOffsets)
   }
 
   test("Insert empty list of failures") {
@@ -136,7 +140,7 @@ class FailedElemLogStoreSuite extends BioSuite with MutableClock.Fixture with Do
   }
 
   test(s"Count all failures") {
-    store.count(project1, projection12, TimeRange.Anytime).assert(3L)
+    store.count(project1, projection12, TimeRange.Anytime).assertEquals(3L)
   }
 
   test(s"Paginate failures to get one result") {
@@ -153,7 +157,7 @@ class FailedElemLogStoreSuite extends BioSuite with MutableClock.Fixture with Do
   }
 
   test(s"Count failures after a given time") {
-    store.count(project1, projection12, after).assert(2L)
+    store.count(project1, projection12, after).assertEquals(2L)
   }
 
   private val before = TimeRange.Before(fail3.instant)
@@ -162,7 +166,7 @@ class FailedElemLogStoreSuite extends BioSuite with MutableClock.Fixture with Do
   }
 
   test(s"Count failures before a given time") {
-    store.count(project1, projection12, before).assert(2L)
+    store.count(project1, projection12, before).assertEquals(2L)
   }
 
   private val between = TimeRange.Between(fail2.instant.plusMillis(1L), fail3.instant.plusMillis(1L))
@@ -171,7 +175,7 @@ class FailedElemLogStoreSuite extends BioSuite with MutableClock.Fixture with Do
   }
 
   test(s"Count failures within the time window") {
-    store.count(project1, projection12, between).assert(1L)
+    store.count(project1, projection12, between).assertEquals(1L)
   }
 
   test("Purge failures after predefined ttl") {
@@ -181,15 +185,15 @@ class FailedElemLogStoreSuite extends BioSuite with MutableClock.Fixture with Do
     def timeTravel(duration: FiniteDuration) = mutableClock.set(Instant.EPOCH.plusMillis(duration.toMillis))
 
     for {
-      _ <- store.count.assert(5L)
+      _ <- store.count.assertEquals(5L)
       _ <- timeTravel(failedElemTtl - 500.millis)
       _ <- purgeElemFailures()
       // no elements are deleted after 13 days
-      _ <- store.count.assert(5L)
+      _ <- store.count.assertEquals(5L)
       _ <- timeTravel(failedElemTtl + 10.seconds)
       _ <- purgeElemFailures()
       // all elements were deleted after 14 days
-      _ <- store.count.assert(0L)
+      _ <- store.count.assertEquals(0L)
     } yield ()
   }
 

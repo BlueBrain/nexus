@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
-import cats.effect.{Clock, IO}
+import cats.effect.{Clock, IO, Timer}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
@@ -291,24 +291,24 @@ final class BlazegraphViews(
     * Return the existing indexing views in a project in a finite stream
     */
   def currentIndexingViews(project: ProjectRef): ElemStream[IndexingViewDef] =
-    log.currentStates(Scope.Project(project)).translate(ioToTaskK).evalMapFilter { envelope =>
-      IO.pure(toIndexViewDef(envelope)).toBIO[BlazegraphViewRejection]
+    log.currentStates(Scope.Project(project)).evalMapFilter { envelope =>
+      IO.pure(toIndexViewDef(envelope))
     }
 
   /**
     * Return all existing indexing views in a finite stream
     */
   def currentIndexingViews: ElemStream[IndexingViewDef] =
-    log.currentStates(Scope.Root).translate(ioToTaskK).evalMapFilter { envelope =>
-      IO.pure(toIndexViewDef(envelope)).toBIO[BlazegraphViewRejection]
+    log.currentStates(Scope.Root).evalMapFilter { envelope =>
+      IO.pure(toIndexViewDef(envelope))
     }
 
   /**
     * Return the indexing views in a non-ending stream
     */
   def indexingViews(start: Offset): ElemStream[IndexingViewDef] =
-    log.states(Scope.Root, start).translate(ioToTaskK).evalMapFilter { envelope =>
-      IO.pure(toIndexViewDef(envelope)).toBIO[BlazegraphViewRejection]
+    log.states(Scope.Root, start).evalMapFilter { envelope =>
+      IO.pure(toIndexViewDef(envelope))
     }
 
   private def toIndexViewDef(envelope: Envelope[BlazegraphViewState]) =
@@ -534,6 +534,7 @@ object BlazegraphViews {
   )(implicit
       api: JsonLdApi,
       clock: Clock[IO],
+      timer: Timer[IO],
       uuidF: UUIDF
   ): IO[BlazegraphViews] = {
     val createNameSpace = (v: ViewResource) =>
@@ -560,6 +561,7 @@ object BlazegraphViews {
   )(implicit
       api: JsonLdApi,
       clock: Clock[IO],
+      timer: Timer[IO],
       uuidF: UUIDF
   ): IO[BlazegraphViews] = {
     implicit val rcr: RemoteContextResolution = contextResolution.rcr

@@ -4,10 +4,10 @@ import akka.actor.typed.ActorSystem
 import akka.actor.{ActorSystem => ClassicActorSystem}
 import akka.http.scaladsl.model.ContentTypes.`application/octet-stream`
 import akka.http.scaladsl.model.{ContentType, HttpEntity, Uri}
-import cats.effect.{Clock, ContextShift, IO}
+import cats.effect.{Clock, ContextShift, IO, Timer}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.cache.LocalCache
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.{ioToTaskK, toCatsIOOps, toMonixBIOOps}
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.{toCatsIOOps, toMonixBIOOps}
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOInstant, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.kernel.{Logger, RetryStrategy}
@@ -734,6 +734,7 @@ object Files {
   )(implicit
       clock: Clock[IO],
       uuidF: UUIDF,
+      timer: Timer[IO],
       cs: ContextShift[IO],
       as: ActorSystem[Nothing]
   ): Files = {
@@ -759,10 +760,9 @@ object Files {
           CompiledProjection.fromStream(
             metadata,
             ExecutionStrategy.PersistentSingleNode,
-            files.attributesUpdateStream(_).translate(ioToTaskK)
+            files.attributesUpdateStream(_)
           )
         )
-        .toCatsIO
         .void
     }
 

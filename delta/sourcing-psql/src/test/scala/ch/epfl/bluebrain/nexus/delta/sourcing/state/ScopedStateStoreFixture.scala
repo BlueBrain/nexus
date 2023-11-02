@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.state
 
-import cats.effect.Resource
+import cats.effect.{IO, Resource, Timer}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Serializer, Transactors}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
@@ -19,7 +19,9 @@ object ScopedStateStoreFixture {
   def store[Id, S <: ScopedState](
       tpe: EntityType,
       serializer: Serializer[Id, S]
-  )(saveLatest: List[S], saveTagged: List[(UserTag, S)]): Resource[Task, (Transactors, ScopedStateStore[Id, S])] =
+  )(saveLatest: List[S], saveTagged: List[(UserTag, S)])(implicit
+      timer: Timer[IO]
+  ): Resource[Task, (Transactors, ScopedStateStore[Id, S])] =
     Doobie.resource()(getClass.getClassLoader).evalMap { xas =>
       val stateStore = ScopedStateStore(tpe, serializer, queryConfig, xas)
       (

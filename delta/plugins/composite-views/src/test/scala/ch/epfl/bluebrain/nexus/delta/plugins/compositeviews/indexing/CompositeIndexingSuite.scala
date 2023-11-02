@@ -4,8 +4,8 @@ import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.Uri.Query
 import cats.Semigroup
 import cats.data.NonEmptyList
-import cats.effect.Resource
 import cats.effect.concurrent.Ref
+import cats.effect.{IO, Resource}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination.FromPagination
@@ -52,8 +52,9 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{DiscardMetadata, FilterByType, FilterDeprecated}
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.ResourceFixture.TaskFixture
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.{BioSuite, PatienceConfig, ResourceFixture}
+import ch.epfl.bluebrain.nexus.testkit.bio.BioRunContext
+import ch.epfl.bluebrain.nexus.testkit.mu.bio.PatienceConfig
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.{CatsEffectSuite, ResourceFixture}
 import ch.epfl.bluebrain.nexus.testkit.mu.{JsonAssertions, TextAssertions}
 import fs2.Stream
 import io.circe.generic.extras.Configuration
@@ -61,7 +62,6 @@ import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.generic.semiauto.deriveEncoder
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
-import monix.bio.{Task, UIO}
 import munit.AnyFixture
 
 import java.time.Instant
@@ -71,7 +71,7 @@ import scala.concurrent.duration.DurationInt
 class SingleCompositeIndexingSuite extends CompositeIndexingSuite(SinkConfig.Single, singleQuery)
 class BatchCompositeIndexingSuite  extends CompositeIndexingSuite(SinkConfig.Batch, batchQuery)
 
-trait CompositeIndexingFixture extends BioSuite {
+trait CompositeIndexingFixture extends CatsEffectSuite with BioRunContext {
 
   implicit private val baseUri: BaseUri             = BaseUri("http://localhost", Label.unsafe("v1"))
   implicit private val rcr: RemoteContextResolution = RemoteContextResolution.never
@@ -86,22 +86,23 @@ trait CompositeIndexingFixture extends BioSuite {
       elasticsearchBatch = batchConfig
     )
 
-  private def resource(sinkConfig: SinkConfig): Resource[Task, Setup] = {
-    (Doobie.resource(), ElasticSearchClientSetup.resource(), BlazegraphClientSetup.resource()).parMapN {
-      case (xas, esClient, bgClient) =>
+  private def resource(sinkConfig: SinkConfig): Resource[IO, Setup] = {
+    (Doobie.resource(), ElasticSearchClientSetup.resource(), BlazegraphClientSetup.resource())
+      .parMapN { case (xas, esClient, bgClient) =>
         val compositeRestartStore = new CompositeRestartStore(xas)
         val projections           =
           CompositeProjections(compositeRestartStore, xas, queryConfig, batchConfig, 3.seconds)
         val spaces                = CompositeSpaces(prefix, esClient, bgClient)
         val sinks                 = CompositeSinks(prefix, esClient, bgClient, compositeConfig.copy(sinkConfig = sinkConfig))
         Setup(esClient, bgClient, projections, spaces, sinks)
-    }
+      }
+      .mapK(taskToIoK)
   }
 
-  def suiteLocalFixture(name: String, sinkConfig: SinkConfig): TaskFixture[Setup] =
+  def suiteLocalFixture(name: String, sinkConfig: SinkConfig): ResourceFixture.IOFixture[Setup] =
     ResourceFixture.suiteLocal(name, resource(sinkConfig))
 
-  def compositeIndexing(sinkConfig: SinkConfig): ResourceFixture.TaskFixture[Setup] =
+  def compositeIndexing(sinkConfig: SinkConfig): ResourceFixture.IOFixture[Setup] =
     suiteLocalFixture("compositeIndexing", sinkConfig)
 
 }
@@ -146,9 +147,9 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
   // Transforming data as elems
   private def elem[A <: Music](project: ProjectRef, value: A, offset: Long, deprecated: Boolean = false, rev: Int = 1)(
       implicit jsonldEncoder: JsonLdEncoder[A]
-  ) = {
+  ): IO[SuccessElem[GraphResource]] = {
     for {
-      graph     <- jsonldEncoder.graph(value)
+      graph     <- jsonldEncoder.graph(value).toCatsIO
       entityType = EntityType(value.getClass.getSimpleName)
       resource   = GraphResource(
                      entityType,
@@ -200,12 +201,12 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
   // Elems for project 3
   private val elems3: ElemStream[GraphResource] = Stream.eval(elem(project3, theGateway, 7L))
 
-  private val mainCompleted    = Ref.unsafe[Task, Map[ProjectRef, Int]](Map.empty)
-  private val rebuildCompleted = Ref.unsafe[Task, Map[ProjectRef, Int]](Map.empty)
+  private val mainCompleted    = Ref.unsafe[IO, Map[ProjectRef, Int]](Map.empty)
+  private val rebuildCompleted = Ref.unsafe[IO, Map[ProjectRef, Int]](Map.empty)
 
   private def resetCompleted = mainCompleted.set(Map.empty) >> rebuildCompleted.set(Map.empty)
 
-  private def increment(map: Ref[Task, Map[ProjectRef, Int]], project: ProjectRef) =
+  private def increment(map: Ref[IO, Map[ProjectRef, Int]], project: ProjectRef) =
     map.update(_.updatedWith(project)(_.map(_ + 1).orElse(Some(1))))
 
   private val compositeStream = new CompositeGraphStream {
@@ -229,7 +230,7 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
 
     override def main(source: CompositeViewSource, project: ProjectRef): Source = {
       val (p, s) = stream(source, project)
-      Source(_ => s.onFinalize(increment(mainCompleted, p)) ++ Stream.never[Task])
+      Source(_ => s.onFinalize(increment(mainCompleted, p)) ++ Stream.never[IO])
     }
 
     override def rebuild(source: CompositeViewSource, project: ProjectRef, projectionTypes: Set[Iri]): Source = {
@@ -237,11 +238,10 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
       Source(_ => s.onFinalize(increment(rebuildCompleted, p)))
     }
 
-    override def remaining(source: CompositeViewSource, project: ProjectRef): Offset => UIO[Option[RemainingElems]] = {
+    override def remaining(source: CompositeViewSource, project: ProjectRef): Offset => IO[Option[RemainingElems]] = {
       offset =>
         stream(source, project)._2.compile.last
           .map(_.map { e => RemainingElems(e.offset.value - offset.value, e.instant) })
-          .hideErrors
     }
   }
 
@@ -334,14 +334,14 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
     for {
       // Initialise the namespaces and indices
       _ <- spaces.init(view)
-      _ <- bgClient.existsNamespace(commonNs).assert(true)
-      _ <- bgClient.existsNamespace(sparqlNamespace).assert(true)
-      _ <- esClient.existsIndex(elasticIndex).assert(true)
+      _ <- bgClient.existsNamespace(commonNs).toCatsIO.assertEquals(true)
+      _ <- bgClient.existsNamespace(sparqlNamespace).toCatsIO.assertEquals(true)
+      _ <- esClient.existsIndex(elasticIndex).toCatsIO.assertEquals(true)
       // Delete them on destroy
       _ <- spaces.destroyAll(view)
-      _ <- bgClient.existsNamespace(commonNs).assert(false)
-      _ <- bgClient.existsNamespace(sparqlNamespace).assert(false)
-      _ <- esClient.existsIndex(elasticIndex).assert(false)
+      _ <- bgClient.existsNamespace(commonNs).toCatsIO.assertEquals(false)
+      _ <- bgClient.existsNamespace(sparqlNamespace).toCatsIO.assertEquals(false)
+      _ <- esClient.existsIndex(elasticIndex).toCatsIO.assertEquals(false)
     } yield ()
   }
 
@@ -359,19 +359,19 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
     for {
       // Initialise the namespaces and indices
       _ <- spaces.init(view)
-      _ <- bgClient.existsNamespace(commonNs).assert(true)
-      _ <- bgClient.existsNamespace(sparqlNamespace).assert(true)
-      _ <- esClient.existsIndex(elasticIndex).assert(true)
+      _ <- bgClient.existsNamespace(commonNs).toCatsIO.assertEquals(true)
+      _ <- bgClient.existsNamespace(sparqlNamespace).toCatsIO.assertEquals(true)
+      _ <- esClient.existsIndex(elasticIndex).toCatsIO.assertEquals(true)
       // Delete the blazegraph projection
       _ <- spaces.destroyProjection(view, blazegraphProjection)
-      _ <- bgClient.existsNamespace(commonNs).assert(true)
-      _ <- bgClient.existsNamespace(sparqlNamespace).assert(false)
-      _ <- esClient.existsIndex(elasticIndex).assert(true)
+      _ <- bgClient.existsNamespace(commonNs).toCatsIO.assertEquals(true)
+      _ <- bgClient.existsNamespace(sparqlNamespace).toCatsIO.assertEquals(false)
+      _ <- esClient.existsIndex(elasticIndex).toCatsIO.assertEquals(true)
       // Delete the elasticsearch projection
       _ <- spaces.destroyProjection(view, elasticSearchProjection)
-      _ <- bgClient.existsNamespace(commonNs).assert(true)
-      _ <- bgClient.existsNamespace(sparqlNamespace).assert(false)
-      _ <- esClient.existsIndex(elasticIndex).assert(false)
+      _ <- bgClient.existsNamespace(commonNs).toCatsIO.assertEquals(true)
+      _ <- bgClient.existsNamespace(sparqlNamespace).toCatsIO.assertEquals(false)
+      _ <- esClient.existsIndex(elasticIndex).toCatsIO.assertEquals(false)
     } yield ()
   }
 
@@ -379,9 +379,14 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
     for {
       compiled <- CompositeViewDef.compile(view, sinks, PipeChain.compile(_, registry), compositeStream, projections)
       _        <- spaces.init(view)
-      _        <- Projection(compiled, UIO.none, _ => UIO.unit, _ => UIO.unit)(batchConfig)
+      _        <- Projection(compiled, IO.none, _ => IO.unit, _ => IO.unit)(batchConfig, timer, contextShift)
     } yield compiled
   }
+
+  private val resultMuse: Json     = jsonContentOf("indexing/result_muse.json")
+  private val resultRedHot: Json   = jsonContentOf("indexing/result_red_hot.json")
+  private val resultMuseMetadata   = jsonContentOf("indexing/result_muse_metadata.json")
+  private val resultRedHotMetadata = jsonContentOf("indexing/result_red_hot_metadata.json")
 
   test("Indexing resources without rebuild") {
     val uuid   = UUID.randomUUID()
@@ -418,17 +423,17 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
     for {
       compiled <- start(view)
       _         = assertEquals(compiled.metadata, expectedMetadata)
-      _        <- mainCompleted.get.map(_.get(project1)).eventuallySome(1)
-      _        <- mainCompleted.get.map(_.get(project2)).eventuallySome(1)
-      _        <- mainCompleted.get.map(_.get(project3)).eventuallySome(1)
-      _        <- rebuildCompleted.get.assert(Map.empty)
-      _        <- projections.progress(view.indexingRef).toUIO.eventually(expectedProgress)
+      _        <- mainCompleted.get.map(_.get(project1)).eventually(Some(1))
+      _        <- mainCompleted.get.map(_.get(project2)).eventually(Some(1))
+      _        <- mainCompleted.get.map(_.get(project3)).eventually(Some(1))
+      _        <- rebuildCompleted.get.assertEquals(Map.empty[ProjectRef, Int])
+      _        <- projections.progress(view.indexingRef).eventually(expectedProgress)
       _        <- checkElasticSearchDocuments(
                     elasticIndex,
-                    jsonContentOf("indexing/result_muse.json"),
-                    jsonContentOf("indexing/result_red_hot.json")
+                    resultMuse,
+                    resultRedHot
                   ).eventually(())
-      _        <- checkBlazegraphTriples(sparqlNamespace, contentOf("indexing/result.nt")).eventually(())
+      _        <- checkBlazegraphTriples(sparqlNamespace, contentOf("indexing/result.nt")).toCatsIO
     } yield ()
   }
 
@@ -458,16 +463,16 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
     for {
       _ <- resetCompleted
       _ <- start(view)
-      _ <- mainCompleted.get.map(_.get(project1)).eventuallySome(1)
-      _ <- mainCompleted.get.map(_.get(project2)).eventuallySome(1)
-      _ <- mainCompleted.get.map(_.get(project3)).eventuallySome(1)
-      _ <- rebuildCompleted.get.assert(Map.empty)
+      _ <- mainCompleted.get.map(_.get(project1)).eventually(Some(1))
+      _ <- mainCompleted.get.map(_.get(project2)).eventually(Some(1))
+      _ <- mainCompleted.get.map(_.get(project3)).eventually(Some(1))
+      _ <- rebuildCompleted.get.assertEquals(Map.empty[ProjectRef, Int])
       _ <- checkElasticSearchDocuments(
              elasticIndex,
-             jsonContentOf("indexing/result_muse_metadata.json"),
-             jsonContentOf("indexing/result_red_hot_metadata.json")
+             resultMuseMetadata,
+             resultRedHotMetadata
            ).eventually(())
-      _ <- checkBlazegraphTriples(sparqlNamespace, contentOf("indexing/result_metadata.nt")).eventually(())
+      _ <- checkBlazegraphTriples(sparqlNamespace, contentOf("indexing/result_metadata.nt")).toCatsIO.eventually(())
     } yield ()
   }
 
@@ -507,32 +512,32 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
 
     def checkIndexingState =
       for {
-        _ <- projections.progress(view.indexingRef).toUIO.eventually(expectedProgress)
+        _ <- projections.progress(view.indexingRef).eventually(expectedProgress)
         _ <- checkElasticSearchDocuments(
                elasticIndex,
-               jsonContentOf("indexing/result_muse.json"),
-               jsonContentOf("indexing/result_red_hot.json")
+               resultMuse,
+               resultRedHot
              ).eventually(())
-        _ <- checkBlazegraphTriples(sparqlNamespace, contentOf("indexing/result.nt")).eventually(())
+        _ <- checkBlazegraphTriples(sparqlNamespace, contentOf("indexing/result.nt")).toCatsIO.eventually(())
       } yield ()
 
     for {
       _ <- resetCompleted
       _ <- start(view)
-      _ <- mainCompleted.get.map(_.get(project1)).eventuallySome(1)
-      _ <- mainCompleted.get.map(_.get(project2)).eventuallySome(1)
-      _ <- mainCompleted.get.map(_.get(project3)).eventuallySome(1)
-      _ <- rebuildCompleted.get.map(_.get(project1)).eventuallySome(1)
-      _ <- rebuildCompleted.get.map(_.get(project2)).eventuallySome(1)
-      _ <- rebuildCompleted.get.map(_.get(project3)).eventuallySome(1)
+      _ <- mainCompleted.get.map(_.get(project1)).eventually(Some(1))
+      _ <- mainCompleted.get.map(_.get(project2)).eventually(Some(1))
+      _ <- mainCompleted.get.map(_.get(project3)).eventually(Some(1))
+      _ <- rebuildCompleted.get.map(_.get(project1)).eventually(Some(1))
+      _ <- rebuildCompleted.get.map(_.get(project2)).eventually(Some(1))
+      _ <- rebuildCompleted.get.map(_.get(project3)).eventually(Some(1))
       _ <- checkIndexingState
-      _ <- projections.scheduleFullRestart(viewRef)(Anonymous).toUIO
-      _ <- mainCompleted.get.map(_.get(project1)).eventuallySome(2)
-      _ <- mainCompleted.get.map(_.get(project2)).eventuallySome(2)
-      _ <- mainCompleted.get.map(_.get(project3)).eventuallySome(2)
-      _ <- rebuildCompleted.get.map(_.get(project1)).eventuallySome(2)
-      _ <- rebuildCompleted.get.map(_.get(project2)).eventuallySome(2)
-      _ <- rebuildCompleted.get.map(_.get(project3)).eventuallySome(2)
+      _ <- projections.scheduleFullRestart(viewRef)(Anonymous)
+      _ <- mainCompleted.get.map(_.get(project1)).eventually(Some(2))
+      _ <- mainCompleted.get.map(_.get(project2)).eventually(Some(2))
+      _ <- mainCompleted.get.map(_.get(project3)).eventually(Some(2))
+      _ <- rebuildCompleted.get.map(_.get(project1)).eventually(Some(2))
+      _ <- rebuildCompleted.get.map(_.get(project2)).eventually(Some(2))
+      _ <- rebuildCompleted.get.map(_.get(project3)).eventually(Some(2))
       _ <- checkIndexingState
     } yield ()
   }
@@ -554,27 +559,29 @@ abstract class CompositeIndexingSuite(sinkConfig: SinkConfig, query: SparqlConst
     for {
       _ <- resetCompleted
       _ <- start(view)
-      _ <- mainCompleted.get.map(_.get(project1)).eventuallySome(1)
-      _ <- mainCompleted.get.map(_.get(project2)).eventuallySome(1)
-      _ <- mainCompleted.get.map(_.get(project3)).eventuallySome(1)
-      _ <- rebuildCompleted.get.assert(Map.empty)
+      _ <- mainCompleted.get.map(_.get(project1)).eventually(Some(1))
+      _ <- mainCompleted.get.map(_.get(project2)).eventually(Some(1))
+      _ <- mainCompleted.get.map(_.get(project3)).eventually(Some(1))
+      _ <- rebuildCompleted.get.assertEquals(Map.empty[ProjectRef, Int])
       _ <- checkElasticSearchDocuments(
              elasticIndex,
-             jsonContentOf("indexing/result_muse.json").deepMerge(contextJson.removeKeys(keywords.id)),
-             jsonContentOf("indexing/result_red_hot.json").deepMerge(contextJson.removeKeys(keywords.id))
+             resultMuse.deepMerge(contextJson.removeKeys(keywords.id)),
+             resultRedHot.deepMerge(contextJson.removeKeys(keywords.id))
            ).eventually(())
     } yield ()
   }
 
-  private def checkElasticSearchDocuments(index: IndexLabel, expected: Json*) = {
+  private def checkElasticSearchDocuments(index: IndexLabel, expected: Json*): IO[Unit] = {
     val page = FromPagination(0, 5000)
     for {
-      _       <- esClient.refresh(index)
-      results <- esClient.search(
-                   QueryBuilder.empty.withSort(SortList(List(Sort("@id")))).withPage(page),
-                   Set(index.value),
-                   Query.Empty
-                 )
+      _       <- esClient.refresh(index).toCatsIO
+      results <- esClient
+                   .search(
+                     QueryBuilder.empty.withSort(SortList(List(Sort("@id")))).withPage(page),
+                     Set(index.value),
+                     Query.Empty
+                   )
+                   .toCatsIO
       _        = assertEquals(results.sources.size, expected.size)
       _        = results.sources.zip(expected).foreach { case (obtained, expected) =>
                    obtained.asJson.equalsIgnoreArrayOrder(expected)

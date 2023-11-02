@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.sse
 
 import akka.http.scaladsl.model.sse.ServerSentEvent
-import cats.effect.IO
+import cats.effect.{IO, Timer}
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling.defaultPrinter
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
@@ -11,7 +11,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.query.{RefreshStrategy, SelectFilt
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{Elem, RemainingElems}
 import io.circe.syntax.EncoderOps
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 
 trait SseElemStream {
 
@@ -57,10 +56,10 @@ object SseElemStream {
   /**
     * Create a [[SseElemStream]]
     */
-  def apply(qc: QueryConfig, xas: Transactors): SseElemStream = new SseElemStream {
+  def apply(qc: QueryConfig, xas: Transactors)(implicit timer: Timer[IO]): SseElemStream = new SseElemStream {
 
     override def continuous(project: ProjectRef, selectFilter: SelectFilter, start: Offset): ServerSentEventStream =
-      StreamingQuery.elems(project, start, selectFilter, qc, xas).map(toServerSentEvent).translate(taskToIoK)
+      StreamingQuery.elems(project, start, selectFilter, qc, xas).map(toServerSentEvent)
 
     override def currents(project: ProjectRef, selectFilter: SelectFilter, start: Offset): ServerSentEventStream =
       StreamingQuery
@@ -72,14 +71,13 @@ object SseElemStream {
           xas
         )
         .map(toServerSentEvent)
-        .translate(taskToIoK)
 
     override def remaining(
         project: ProjectRef,
         selectFilter: SelectFilter,
         start: Offset
     ): IO[Option[RemainingElems]] =
-      StreamingQuery.remaining(project, selectFilter, start, xas).toCatsIO
+      StreamingQuery.remaining(project, selectFilter, start, xas)
   }
 
   private[sse] def toServerSentEvent(elem: Elem[Unit]): ServerSentEvent = {

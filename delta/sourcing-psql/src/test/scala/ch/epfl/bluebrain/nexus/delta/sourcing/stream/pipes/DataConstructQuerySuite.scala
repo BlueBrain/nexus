@@ -13,11 +13,11 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.DataConstructQuery.DataConstructQueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{pipes, ReferenceRegistry}
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.BioSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 
 import java.time.Instant
 
-class DataConstructQuerySuite extends BioSuite {
+class DataConstructQuerySuite extends CatsEffectSuite {
 
   private val base    = iri"http://localhost"
   private val instant = Instant.now()
@@ -69,7 +69,7 @@ class DataConstructQuerySuite extends BioSuite {
          |}""".stripMargin
     val expectedGraph = Graph.empty(base / "id").add(rdfs.label, "ACTIVE")
     val expected      = element.copy(value = element.value.copy(graph = expectedGraph))
-    pipe(query).apply(element).assert(expected)
+    pipe(query).apply(element).assertEquals(expected)
   }
 
 }

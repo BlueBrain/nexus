@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.{CrossProjectSource, ProjectSource, RemoteProjectSource}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -9,7 +10,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{RemainingElems, Source}
 import io.circe.Json
-import monix.bio.UIO
 
 /**
   * Allows to compute the stream operations from a [[CompositeViewSource]]
@@ -43,7 +43,7 @@ trait CompositeGraphStream {
     * @param project
     *   the enclosing project
     */
-  def remaining(source: CompositeViewSource, project: ProjectRef): Offset => UIO[Option[RemainingElems]]
+  def remaining(source: CompositeViewSource, project: ProjectRef): Offset => IO[Option[RemainingElems]]
 
 }
 
@@ -82,7 +82,7 @@ object CompositeGraphStream {
       }
     }
 
-    override def remaining(source: CompositeViewSource, project: ProjectRef): Offset => UIO[Option[RemainingElems]] =
+    override def remaining(source: CompositeViewSource, project: ProjectRef): Offset => IO[Option[RemainingElems]] =
       source match {
         case p: ProjectSource       => local.remaining(project, p.selectFilter, _)
         case c: CrossProjectSource  => local.remaining(c.project, c.selectFilter, _)

@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.model
 
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.taskToIoK
+import cats.effect.{IO, Timer}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.{MultiDecoder, Transactors}
@@ -14,7 +14,6 @@ import doobie._
 import doobie.postgres.implicits._
 import doobie.util.query.Query0
 import io.circe.{Decoder, Json}
-import monix.bio.Task
 
 import java.time.Instant
 import scala.annotation.nowarn
@@ -81,8 +80,8 @@ object Envelope {
       query: Offset => Query0[Envelope[Json]],
       xas: Transactors,
       cfg: QueryConfig
-  )(implicit md: MultiDecoder[A]): EnvelopeStream[A] =
-    streamFA(start, query, xas, cfg, (tpe, json) => Task.pure(md.decodeJson(tpe, json).toOption))
+  )(implicit md: MultiDecoder[A], timer: Timer[IO]): EnvelopeStream[A] =
+    streamFA(start, query, xas, cfg, (tpe, json) => IO.pure(md.decodeJson(tpe, json).toOption))
 
   /**
     * Stream results for the provided query from the start offset. The refresh strategy in the query configuration
@@ -106,12 +105,11 @@ object Envelope {
       query: Offset => Query0[Envelope[Json]],
       xas: Transactors,
       cfg: QueryConfig,
-      decode: (EntityType, Json) => Task[Option[A]]
-  ): EnvelopeStream[A] =
+      decode: (EntityType, Json) => IO[Option[A]]
+  )(implicit timer: Timer[IO]): EnvelopeStream[A] =
     StreamingQuery[Envelope[Json]](start, query, _.offset, cfg, xas)
       // evalMapFilter re-chunks to 1, the following 2 statements do the same but preserve the chunks
       .evalMapChunk(e => decode(e.tpe, e.value).map(_.map(a => e.copy(value = a))))
       .collect { case Some(e) => e }
-      .translate(taskToIoK)
 
 }

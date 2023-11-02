@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.query
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
@@ -11,6 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.StreamingQuerySuite.Release
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
@@ -18,20 +20,18 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedEl
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.RemainingElems
 import ch.epfl.bluebrain.nexus.delta.sourcing.tombstone.TombstoneStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.{PullRequest, Serializer}
-import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.BioSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import doobie.implicits._
 import fs2.Chunk
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredCodec
 import io.circe.{Codec, DecodingFailure, Json}
-import monix.bio.Task
 import munit.AnyFixture
 
 import java.time.Instant
 import scala.annotation.nowarn
 
-class StreamingQuerySuite extends BioSuite with Doobie.Fixture {
+class StreamingQuerySuite extends CatsEffectSuite with Doobie.Fixture {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 
@@ -78,7 +78,7 @@ class StreamingQuerySuite extends BioSuite with Doobie.Fixture {
   private val release21 = Release(nxv + "c", project2, rev, Instant.EPOCH, Anonymous, Instant.EPOCH, alice)
 
   private def decodeValue(entityType: EntityType, json: Json) =
-    Task.fromEither {
+    IO.fromEither {
       entityType match {
         case PullRequest.entityType => PullRequestState.serializer.codec.decodeJson(json).map(_.id)
         case Release.entityType     => Release.serializer.codec.decodeJson(json).map(_.id)
@@ -128,8 +128,8 @@ class StreamingQuerySuite extends BioSuite with Doobie.Fixture {
       SuccessElem(PullRequest.entityType, id4, Some(project1), Instant.EPOCH, Offset.at(15L), id4, rev)
     )
 
-    iri.compile.toList.assert(expected)
-    void.compile.toList.assert(expected.map(_.void))
+    iri.compile.toList.assertEquals(expected)
+    void.compile.toList.assertEquals(expected.map(_.void))
   }
 
   test("Running a stream on latest states on project 1 from offset 3") {
@@ -141,8 +141,8 @@ class StreamingQuerySuite extends BioSuite with Doobie.Fixture {
       SuccessElem(PullRequest.entityType, id4, Some(project1), Instant.EPOCH, Offset.at(15L), id4, rev)
     )
 
-    iri.compile.toList.assert(expected)
-    void.compile.toList.assert(expected.map(_.void))
+    iri.compile.toList.assertEquals(expected)
+    void.compile.toList.assertEquals(expected.map(_.void))
   }
 
   test("Running a stream on latest states on project 1 from the beginning, filtering for types") {
@@ -153,8 +153,8 @@ class StreamingQuerySuite extends BioSuite with Doobie.Fixture {
       SuccessElem(PullRequest.entityType, id4, Some(project1), Instant.EPOCH, Offset.at(15L), id4, rev)
     )
 
-    iri.compile.toList.assert(expected)
-    void.compile.toList.assert(expected.map(_.void))
+    iri.compile.toList.assertEquals(expected)
+    void.compile.toList.assertEquals(expected.map(_.void))
   }
 
   test(s"Running a stream on states with tag '${customTag.value}' on project 1 from the beginning") {
@@ -170,8 +170,8 @@ class StreamingQuerySuite extends BioSuite with Doobie.Fixture {
       SuccessElem(PullRequest.entityType, id4, Some(project1), Instant.EPOCH, Offset.at(17L), id4, rev)
     )
 
-    iri.compile.toList.assert(expected)
-    void.compile.toList.assert(expected.map(_.void))
+    iri.compile.toList.assertEquals(expected)
+    void.compile.toList.assertEquals(expected.map(_.void))
   }
 
   test(s"Running a stream on states with tag '${customTag.value}' on project 1 from offset 11") {
@@ -183,15 +183,15 @@ class StreamingQuerySuite extends BioSuite with Doobie.Fixture {
       SuccessElem(PullRequest.entityType, id4, Some(project1), Instant.EPOCH, Offset.at(17L), id4, rev)
     )
 
-    iri.compile.toList.assert(expected)
-    void.compile.toList.assert(expected.map(_.void))
+    iri.compile.toList.assertEquals(expected)
+    void.compile.toList.assertEquals(expected.map(_.void))
   }
 
   test("Running a stream on latest states on project 1 from the beginning with an incomplete decode function") {
     def decodingFailure(entityType: EntityType)              =
       DecodingFailure(s"No decoding is available for entity type $entityType", List.empty)
     def incompleteDecode(entityType: EntityType, json: Json) =
-      Task.fromEither {
+      IO.fromEither {
         entityType match {
           case PullRequest.entityType => PullRequestState.serializer.codec.decodeJson(json).map(_.id)
           case _                      => Left(decodingFailure(entityType))
@@ -199,7 +199,7 @@ class StreamingQuerySuite extends BioSuite with Doobie.Fixture {
       }
 
     val result = StreamingQuery.elems[Iri](project1, Offset.start, SelectFilter.latest, qc, xas, incompleteDecode)
-    result.compile.toList.assert(
+    result.compile.toList.assertEquals(
       List(
         SuccessElem(PullRequest.entityType, id1, Some(project1), Instant.EPOCH, Offset.at(1L), id1, rev),
         SuccessElem(PullRequest.entityType, id2, Some(project1), Instant.EPOCH, Offset.at(2L), id2, rev),

@@ -20,7 +20,6 @@ import ch.epfl.bluebrain.nexus.testkit.CirceEq
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import io.circe.Json
 import io.circe.syntax._
-import monix.execution.Scheduler
 
 import java.time.Instant
 
@@ -33,8 +32,7 @@ class CompositeViewsSpec
   private val realm                  = Label.unsafe("myrealm")
   implicit private val alice: Caller = Caller(User("Alice", realm), Set(User("Alice", realm), Group("users", realm)))
 
-  implicit private val scheduler: Scheduler = Scheduler.global
-  implicit private val baseUri: BaseUri     = BaseUri("http://localhost", Label.unsafe("v1"))
+  implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
 
   "CompositeViews" should {
     val apiMappings       = ApiMappings("nxv" -> nxv.base)

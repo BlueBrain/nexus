@@ -123,7 +123,7 @@ class BlazegraphViewsIndexingRoutes(
                   (delete & authorizeFor(ref, Write)) {
                     emit(
                       fetch(id, ref)
-                        .flatMap { r => projections.scheduleRestart(r.projection) }
+                        .flatMap { r => projections.scheduleRestart(r.projection).toUIO }
                         .as(Offset.start)
                         .attemptNarrow[BlazegraphViewRejection]
                         .rejectOn[ViewNotFound]

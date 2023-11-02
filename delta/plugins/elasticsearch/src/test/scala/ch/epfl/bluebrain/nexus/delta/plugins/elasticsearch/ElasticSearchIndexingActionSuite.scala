@@ -14,7 +14,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestState
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestState.PullRequestActive
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.SelectFilter
@@ -176,7 +175,6 @@ class ElasticSearchIndexingActionSuite extends CatsEffectSuite with CirceLiteral
 
     indexingAction
       .projections(project, elem)
-      .translate(taskToIoK)
       .fold(emptyAcc) {
         case (acc, s: SuccessElem[_]) => acc.success(s.id)
         case (acc, d: DroppedElem)    => acc.drop(d.id)

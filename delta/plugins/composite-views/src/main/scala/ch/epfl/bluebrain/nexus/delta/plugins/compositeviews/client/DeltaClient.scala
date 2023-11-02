@@ -153,7 +153,6 @@ object DeltaClient {
               Stream.empty
           }
         }
-        .translate(ioToTaskK)
     }
 
     private def typeQuery(types: Set[Iri])               =

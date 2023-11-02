@@ -10,7 +10,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeInde
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.CompositeBranch.Run
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.stream.{CompositeBranch, CompositeGraphStream, CompositeProgress}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.views.IndexingViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.ProgressStatistics

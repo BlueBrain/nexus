@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.routes
 
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
@@ -9,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.SupervisionRoutes.SupervisionBundle
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.emit
+import ch.epfl.bluebrain.nexus.delta.sdk.ce.DeltaDirectives.emit
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.UriDirectives.baseUriPrefix
 import ch.epfl.bluebrain.nexus.delta.sdk.directives._
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
@@ -19,16 +20,13 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{SupervisedDescription, Sup
 import io.circe.Encoder
 import io.circe.generic.semiauto.deriveEncoder
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
-import monix.bio.UIO
-import monix.execution.Scheduler
 
 class SupervisionRoutes(
     identities: Identities,
     aclCheck: AclCheck,
-    supervised: UIO[List[SupervisedDescription]]
+    supervised: IO[List[SupervisedDescription]]
 )(implicit
     baseUri: BaseUri,
-    s: Scheduler,
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering
 ) extends AuthDirectives(identities, aclCheck) {
@@ -42,7 +40,7 @@ class SupervisionRoutes(
           get {
             operationName(s"$prefixSegment/supervision/projections") {
               authorizeFor(AclAddress.Root, supervision.read).apply {
-                emit(supervised.hideErrors.map(SupervisionBundle))
+                emit(supervised.map(SupervisionBundle))
               }
             }
           }
@@ -67,7 +65,6 @@ object SupervisionRoutes {
       supervisor: Supervisor
   )(implicit
       baseUri: BaseUri,
-      s: Scheduler,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering
   ): SupervisionRoutes =

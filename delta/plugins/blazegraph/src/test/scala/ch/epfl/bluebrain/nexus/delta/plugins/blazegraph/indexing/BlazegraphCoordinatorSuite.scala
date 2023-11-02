@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing
 
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.IndexingViewDef.{ActiveViewDef, DeprecatedViewDef}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -15,17 +16,17 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedEl
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionErr.CouldNotFindPipeErr
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.SupervisorSetup.unapply
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.{BioSuite, PatienceConfig}
+import ch.epfl.bluebrain.nexus.testkit.mu.bio.PatienceConfig
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import fs2.Stream
 import fs2.concurrent.SignallingRef
-import monix.bio.Task
 import munit.AnyFixture
 
 import java.time.Instant
 import scala.collection.mutable.{Set => MutableSet}
 import scala.concurrent.duration._
 
-class BlazegraphCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
+class BlazegraphCoordinatorSuite extends CatsEffectSuite with SupervisorSetup.Fixture {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(supervisor)
 
@@ -83,7 +84,7 @@ class BlazegraphCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
     rev
   )
 
-  private val resumeSignal = SignallingRef[Task, Boolean](false).runSyncUnsafe()
+  private val resumeSignal = SignallingRef[IO, Boolean](false).unsafeRunSync()
 
   // Streams 4 elements until signal is set to true and then a failed item, 1 updated view and 1 deprecated view
   private def viewStream: ElemStream[IndexingViewDef] =
@@ -123,7 +124,7 @@ class BlazegraphCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
         value = view3,
         rev = 1
       )
-    ) ++ Stream.never[Task].interruptWhen(resumeSignal) ++ Stream(
+    ) ++ Stream.never[IO].interruptWhen(resumeSignal) ++ Stream(
       FailedElem(
         tpe = BlazegraphViews.entityType,
         id = nxv + "failed_coord",
@@ -181,12 +182,12 @@ class BlazegraphCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
              (_: PipeChain) => Left(CouldNotFindPipeErr(unknownPipe)),
              sv,
              (_: ActiveViewDef) => new NoopSink[NTriples],
-             (v: ActiveViewDef) => Task.delay(createdIndices.add(v.namespace)).void,
-             (v: ActiveViewDef) => Task.delay(deletedIndices.add(v.namespace)).void
+             (v: ActiveViewDef) => IO.delay(createdIndices.add(v.namespace)).void,
+             (v: ActiveViewDef) => IO.delay(deletedIndices.add(v.namespace)).void
            )
       _ <- sv.describe(BlazegraphCoordinator.metadata.name)
              .map(_.map(_.progress))
-             .eventuallySome(ProjectionProgress(Offset.at(4L), Instant.EPOCH, 4, 1, 1))
+             .eventually(Some(ProjectionProgress(Offset.at(4L), Instant.EPOCH, 4, 1, 1)))
     } yield ()
   }
 
@@ -194,7 +195,7 @@ class BlazegraphCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
     for {
       _ <- sv.describe(view1.projection)
              .map(_.map(_.status))
-             .eventuallySome(ExecutionStatus.Completed)
+             .eventually(Some(ExecutionStatus.Completed))
       _ <- projections.progress(view1.projection).assertSome(expectedViewProgress)
       _  = assert(
              createdIndices.contains(view1.namespace),
@@ -207,7 +208,7 @@ class BlazegraphCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
     for {
       _ <- sv.describe(view2.projection)
              .map(_.map(_.status))
-             .eventuallySome(ExecutionStatus.Completed)
+             .eventually(Some(ExecutionStatus.Completed))
       _ <- projections.progress(view2.projection).assertSome(expectedViewProgress)
       _  = assert(
              createdIndices.contains(view2.namespace),
@@ -264,13 +265,13 @@ class BlazegraphCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
       _ <- resumeSignal.set(true)
       _ <- sv.describe(BlazegraphCoordinator.metadata.name)
              .map(_.map(_.progress))
-             .eventuallySome(ProjectionProgress(Offset.at(8L), Instant.EPOCH, 8, 1, 2))
+             .eventually(Some(ProjectionProgress(Offset.at(8L), Instant.EPOCH, 8, 1, 2)))
     } yield ()
   }
 
   test("View 1 is deprecated so it is stopped, the progress and the index should be deleted.") {
     for {
-      _ <- sv.describe(view1.projection).eventuallyNone
+      _ <- sv.describe(view1.projection).eventually(None)
       _ <- projections.progress(view1.projection).assertNone
       _  = assert(
              deletedIndices.contains(view1.namespace),
@@ -283,7 +284,7 @@ class BlazegraphCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
     "View 2 is updated so the previous projection should be stopped, the previous progress and the index should be deleted."
   ) {
     for {
-      _ <- sv.describe(view2.projection).eventuallyNone
+      _ <- sv.describe(view2.projection).eventually(None)
       _ <- projections.progress(view2.projection).assertNone
       _  = assert(
              deletedIndices.contains(view2.namespace),
@@ -296,7 +297,7 @@ class BlazegraphCoordinatorSuite extends BioSuite with SupervisorSetup.Fixture {
     for {
       _ <- sv.describe(updatedView2.projection)
              .map(_.map(_.status))
-             .eventuallySome(ExecutionStatus.Completed)
+             .eventually(Some(ExecutionStatus.Completed))
       _ <- projections.progress(updatedView2.projection).assertSome(expectedViewProgress)
       _  = assert(
              createdIndices.contains(updatedView2.namespace),

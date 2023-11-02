@@ -11,11 +11,11 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.BioSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 
 import java.time.Instant
 
-class RemoteGraphStreamSuite extends BioSuite with TestHelpers {
+class RemoteGraphStreamSuite extends CatsEffectSuite with TestHelpers {
 
   private val metadataPredicates = MetadataPredicates(
     Set(
@@ -56,14 +56,14 @@ class RemoteGraphStreamSuite extends BioSuite with TestHelpers {
     val nQuadsNoSchema = NQuads(contentOf("remote/resource-no-schema.nq"), id)
     RemoteGraphStream
       .fromNQuads(elem, project, nQuadsNoSchema, metadataPredicates)
-      .error(MissingPredicate(nxv.constrainedBy.iri))
+      .intercept(MissingPredicate(nxv.constrainedBy.iri))
   }
 
   test("Fail when deprecated predicate is missing") {
     val nQuadsNoDeprecated = NQuads(contentOf("remote/resource-no-deprecated.nq"), id)
     RemoteGraphStream
       .fromNQuads(elem, project, nQuadsNoDeprecated, metadataPredicates)
-      .error(MissingPredicate(nxv.deprecated.iri))
+      .intercept(MissingPredicate(nxv.deprecated.iri))
   }
 
 }

@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing
 
 import cats.data.NonEmptyMapImpl
+import cats.effect.IO
 import cats.effect.concurrent.Ref
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViewsFixture
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeProjectionLifeCycle.Hook
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeProjectionLifeCycleSuite.DestroyResult
@@ -13,14 +13,14 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.views.{IndexingRev, IndexingViewRef, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.{BioSuite, PatienceConfig}
-import monix.bio.{Task, UIO}
+import ch.epfl.bluebrain.nexus.testkit.mu.bio.PatienceConfig
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import munit.Location
 
 import java.util.UUID
 import scala.concurrent.duration._
 
-class CompositeProjectionLifeCycleSuite extends BioSuite with CompositeViewsFixture {
+class CompositeProjectionLifeCycleSuite extends CatsEffectSuite with CompositeViewsFixture {
 
   implicit private val batch: BatchConfig             = BatchConfig(2, 10.millis)
   implicit private val patienceConfig: PatienceConfig = PatienceConfig(500.millis, 10.millis)
@@ -32,39 +32,39 @@ class CompositeProjectionLifeCycleSuite extends BioSuite with CompositeViewsFixt
   private val firstHookView = nxv + "first-hook"
   private val allHooksView  = nxv + "all-hooks"
 
-  private def createHook(name: String, test: ViewRef => Boolean, ref: Ref[Task, Set[String]]): Hook =
+  private def createHook(name: String, test: ViewRef => Boolean, ref: Ref[IO, Set[String]]): Hook =
     (view: CompositeViewDef.ActiveViewDef) => {
       Option.when(test(view.ref)) {
-        ref.mapK(taskToIoK).update {
+        ref.update {
           _ + name
         }
       }
     }
-  private def assertViewHooks(view: ActiveViewDef, hooks: Set[String])(implicit loc: Location)      =
+  private def assertViewHooks(view: ActiveViewDef, hooks: Set[String])(implicit loc: Location)    =
     for {
-      triggeredHooks <- Ref.of[Task, Set[String]](Set.empty)
-      indexing       <- Ref.of[Task, Option[ViewRef]](None)
+      triggeredHooks <- Ref.of[IO, Set[String]](Set.empty)
+      indexing       <- Ref.of[IO, Option[ViewRef]](None)
       firstHook       = createHook(firstHookName, _.viewId != noHookView, triggeredHooks)
       secondHook      = createHook(secondHookName, _.viewId == allHooksView, triggeredHooks)
       lifecycle       = CompositeProjectionLifeCycle(
                           Set(firstHook, secondHook),
-                          _ => Task.unit,
+                          _ => IO.unit,
                           view => {
                             val metadata   = ProjectionMetadata("test", "lifecycle")
                             val projection =
-                              CompiledProjection.fromTask(metadata, ExecutionStrategy.TransientSingleNode, Task.unit)
+                              CompiledProjection.fromTask(metadata, ExecutionStrategy.TransientSingleNode, IO.unit)
                             indexing.update { _ => Some(view.ref) }.as(projection)
                           },
-                          _ => Task.unit,
-                          (_, _) => Task.unit
+                          _ => IO.unit,
+                          (_, _) => IO.unit
                         )
       compiled       <- lifecycle.build(view)
-      projection     <- Projection(compiled, UIO.none, _ => UIO.unit, _ => UIO.unit)
+      projection     <- Projection(compiled, IO.none, _ => IO.unit, _ => IO.unit)
       _              <- projection.executionStatus.eventually(ExecutionStatus.Completed)
       // Asserting hooks
       _              <- triggeredHooks.get.eventually(hooks)
       // If no hook have been provided then we expect to fall back on indexing
-      _              <- indexing.get.assert(Option.when(hooks.isEmpty)(view.ref))
+      _              <- indexing.get.assertEquals(Option.when(hooks.isEmpty)(view.ref))
     } yield ()
 
   test("Fall back to indexing when no hook is matched by the view") {
@@ -84,11 +84,11 @@ class CompositeProjectionLifeCycleSuite extends BioSuite with CompositeViewsFixt
 
   private def destroyOnChange(prev: ActiveViewDef, next: CompositeViewDef) =
     for {
-      ref      <- Ref.of[Task, DestroyResult](DestroyResult.skipped)
+      ref      <- Ref.of[IO, DestroyResult](DestroyResult.skipped)
       lifecycle = CompositeProjectionLifeCycle(
                     Set.empty,
-                    _ => Task.unit,
-                    _ => Task.raiseError(new IllegalStateException("Index operation should not be called")),
+                    _ => IO.unit,
+                    _ => IO.raiseError(new IllegalStateException("Index operation should not be called")),
                     view => ref.set(DestroyAll(view.indexingRef)),
                     (view, projection) =>
                       ref.update {
@@ -149,19 +149,19 @@ class CompositeProjectionLifeCycleSuite extends BioSuite with CompositeViewsFixt
     val previous = activeView(existingViewRef, 1)
     val next     = activeView(anotherView, 2)
 
-    destroyOnChange(previous, next).terminated[IllegalArgumentException]
+    destroyOnChange(previous, next).intercept[IllegalArgumentException]
   }
 
   test("Destroy fully a view that has been deprecated") {
     val previous = activeView(existingViewRef, 1)
     val next     = deprecatedView(existingViewRef)
-    destroyOnChange(previous, next).assert(DestroyAll(previous.indexingRef))
+    destroyOnChange(previous, next).assertEquals(DestroyAll(previous.indexingRef))
   }
 
   test("Destroy fully a view when sources have been updated") {
     val previous = activeView(existingViewRef, 3, IndexingRev(2))
     val next     = activeView(existingViewRef, 4, IndexingRev(4))
-    destroyOnChange(previous, next).assert(DestroyAll(previous.indexingRef))
+    destroyOnChange(previous, next).assertEquals(DestroyAll(previous.indexingRef))
   }
 
   test("Destroy partially a view when a projection has been updated") {
@@ -169,7 +169,7 @@ class CompositeProjectionLifeCycleSuite extends BioSuite with CompositeViewsFixt
       activeView(existingViewRef, 3, esProjection.id -> IndexingRev(2), blazegraphProjection.id -> IndexingRev(1))
     val next     =
       activeView(existingViewRef, 4, esProjection.id -> IndexingRev(2), blazegraphProjection.id -> IndexingRev(4))
-    destroyOnChange(previous, next).assert(DestroyProjection(previous.indexingRef, Set(blazegraphProjection.id)))
+    destroyOnChange(previous, next).assertEquals(DestroyProjection(previous.indexingRef, Set(blazegraphProjection.id)))
   }
 
   test("Destroy partially a view when several projections have been updated") {
@@ -177,7 +177,7 @@ class CompositeProjectionLifeCycleSuite extends BioSuite with CompositeViewsFixt
       activeView(existingViewRef, 3, esProjection.id -> IndexingRev(2), blazegraphProjection.id -> IndexingRev(1))
     val next     =
       activeView(existingViewRef, 4, esProjection.id -> IndexingRev(4), blazegraphProjection.id -> IndexingRev(4))
-    destroyOnChange(previous, next).assert(
+    destroyOnChange(previous, next).assertEquals(
       DestroyProjection(previous.indexingRef, Set(esProjection.id, blazegraphProjection.id))
     )
   }
@@ -185,13 +185,13 @@ class CompositeProjectionLifeCycleSuite extends BioSuite with CompositeViewsFixt
   test("Destroy partially a view when a projection is removed") {
     val previous = activeView(existingViewRef, 3)
     val next     = activeView(existingViewRef, 4, Set(esProjection.id))
-    destroyOnChange(previous, next).assert(DestroyProjection(previous.indexingRef, Set(blazegraphProjection.id)))
+    destroyOnChange(previous, next).assertEquals(DestroyProjection(previous.indexingRef, Set(blazegraphProjection.id)))
   }
 
   test("Do not perform any destroy operation on a view when no indexing configuration has been updated") {
     val previous = activeView(existingViewRef, 3)
     val next     = activeView(existingViewRef, 4)
-    destroyOnChange(previous, next).assert(Skipped)
+    destroyOnChange(previous, next).assertEquals(Skipped)
   }
 }
 

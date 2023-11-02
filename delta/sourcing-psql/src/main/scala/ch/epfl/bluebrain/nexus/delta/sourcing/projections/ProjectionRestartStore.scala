@@ -1,5 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.projections
 
+import cats.effect.{IO, Timer}
+import cats.implicits.toFlatMapOps
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ElemStream
@@ -15,37 +17,33 @@ import doobie.implicits._
 import doobie.postgres.implicits._
 import io.circe.Json
 import io.circe.syntax.EncoderOps
-import monix.bio.UIO
 
 import java.time.Instant
 
 /**
   * Persistent operations for projections restart
   */
-final class ProjectionRestartStore(xas: Transactors, config: QueryConfig) {
+final class ProjectionRestartStore(xas: Transactors, config: QueryConfig)(implicit timer: Timer[IO]) {
 
-  def save(restart: ProjectionRestart): UIO[Unit] =
+  def save(restart: ProjectionRestart): IO[Unit] =
     sql"""INSERT INTO public.projection_restarts (name, value, instant, acknowledged)
            |VALUES (${restart.name}, ${restart.asJson} ,${restart.instant}, false)
            |""".stripMargin.update.run
-      .transact(xas.write)
+      .transact(xas.writeCE)
       .void
-      .hideErrors
 
-  def acknowledge(id: Offset): UIO[Unit] =
+  def acknowledge(id: Offset): IO[Unit] =
     sql"""UPDATE public.projection_restarts SET acknowledged = true
          |WHERE ordering = ${id.value}
          |""".stripMargin.update.run
-      .transact(xas.write)
+      .transact(xas.writeCE)
       .void
-      .hideErrors
 
-  def deleteExpired(instant: Instant): UIO[Unit] =
+  def deleteExpired(instant: Instant): IO[Unit] =
     sql"""DELETE FROM public.projection_restarts WHERE instant < $instant""".update.run
-      .transact(xas.write)
-      .hideErrors
-      .tapEval { deleted =>
-        UIO.when(deleted > 0)(UIO.delay(logger.info(s"Deleted $deleted projection restarts.")))
+      .transact(xas.writeCE)
+      .flatTap { deleted =>
+        IO.whenA(deleted > 0)(IO.delay(logger.info(s"Deleted $deleted projection restarts.")))
       }
       .void
 

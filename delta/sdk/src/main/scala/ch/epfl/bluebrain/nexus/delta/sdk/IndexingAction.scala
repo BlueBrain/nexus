@@ -2,10 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 
 import cats.data.NonEmptyList
 import cats.effect.concurrent.Ref
-import cats.effect.{ContextShift, IO}
+import cats.effect.{ContextShift, IO, Timer}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction.logger
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingMode.{Async, Sync}
@@ -16,7 +15,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{CompiledProjection, Elem, Projection}
-import monix.bio.UIO
 
 import scala.concurrent.duration._
 
@@ -39,13 +37,15 @@ trait IndexingAction {
     */
   def projections(project: ProjectRef, elem: Elem[GraphResource]): ElemStream[CompiledProjection]
 
-  def apply(project: ProjectRef, elem: Elem[GraphResource]): IO[List[FailedElem]] = {
+  def apply(project: ProjectRef, elem: Elem[GraphResource])(implicit
+      timer: Timer[IO],
+      cs: ContextShift[IO]
+  ): IO[List[FailedElem]] = {
     for {
       // To collect the errors
       errorsRef <- Ref.of[IO, List[FailedElem]](List.empty)
       // We build and start the projections where the resource will apply
       _         <- projections(project, elem)
-                     .translate(taskToIoK)
                      .evalMap {
                        case s: SuccessElem[CompiledProjection] =>
                          runProjection(s.value, failed => errorsRef.update(_ ++ failed))
@@ -58,9 +58,12 @@ trait IndexingAction {
     } yield errors
   }
 
-  private def runProjection(compiled: CompiledProjection, saveFailedElems: List[FailedElem] => IO[Unit]) = toCatsIO {
+  private def runProjection(compiled: CompiledProjection, saveFailedElems: List[FailedElem] => IO[Unit])(implicit
+      timer: Timer[IO],
+      cs: ContextShift[IO]
+  ) = {
     for {
-      projection <- Projection(compiled, UIO.none, _ => UIO.unit, saveFailedElems(_).toUIO)
+      projection <- Projection(compiled, IO.none, _ => IO.unit, saveFailedElems(_))
       _          <- projection.waitForCompletion(timeout)
       // We stop the projection if it has not complete yet
       _          <- projection.stop()
@@ -84,6 +87,7 @@ object IndexingAction {
     */
   final class AggregateIndexingAction(private val internal: NonEmptyList[IndexingAction])(implicit
       contextShift: ContextShift[IO],
+      timer: Timer[IO],
       cr: RemoteContextResolution
   ) {
 
@@ -107,7 +111,7 @@ object IndexingAction {
   object AggregateIndexingAction {
     def apply(
         internal: NonEmptyList[IndexingAction]
-    )(implicit contextShift: ContextShift[IO], cr: RemoteContextResolution): AggregateIndexingAction =
+    )(implicit timer: Timer[IO], contextShift: ContextShift[IO], cr: RemoteContextResolution): AggregateIndexingAction =
       new AggregateIndexingAction(internal)
   }
 }

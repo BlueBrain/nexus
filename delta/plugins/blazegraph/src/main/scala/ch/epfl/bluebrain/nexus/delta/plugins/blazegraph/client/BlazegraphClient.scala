@@ -39,7 +39,7 @@ class BlazegraphClient(
   private val serviceName    = Name.unsafe("blazegraph")
 
   private val defaultProperties =
-    ClasspathResourceUtils.ioPropertiesOf("blazegraph/index.properties").hideErrors.memoizeOnSuccess
+    ClasspathResourceUtils.bioPropertiesOf("blazegraph/index.properties").hideErrors.memoizeOnSuccess
 
   override def query[R <: SparqlQueryResponse](
       indices: Iterable[String],
