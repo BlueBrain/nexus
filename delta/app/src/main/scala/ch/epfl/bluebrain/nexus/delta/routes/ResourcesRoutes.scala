@@ -178,6 +178,7 @@ final class ResourcesRoutes(
                             resources
                               .undeprecate(id, ref, schemaOpt, rev)
                               .flatTap(indexUIO(ref, _, mode))
+                              .map(_.void)
                               .attemptNarrow[ResourceRejection]
                               .rejectWhen(wrongJsonOrNotFound)
                           )

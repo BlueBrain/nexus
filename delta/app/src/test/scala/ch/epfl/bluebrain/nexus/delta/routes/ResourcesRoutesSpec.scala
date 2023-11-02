@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.routes
 
 import akka.http.scaladsl.model.MediaTypes.`text/html`
 import akka.http.scaladsl.model.headers.{Accept, Location, OAuth2BearerToken, RawHeader}
-import akka.http.scaladsl.model.{StatusCodes, Uri}
+import akka.http.scaladsl.model.{RequestEntity, StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import cats.effect.IO
 import cats.implicits.catsSyntaxOptionId
@@ -77,7 +77,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues
   private val myId                            = nxv + "myid" // Resource created against no schema with id present on the payload
   private def encodeWithBase(id: String)      = UrlUtils.encode((nxv + id).toString)
   private val payload                         = jsonContentOf("resources/resource.json", "id" -> myId)
-  private def payloadF(id: String)            = jsonContentOf("resources/resource.json", "id" -> (nxv + id))
+  private def simplePayload(id: String)       = jsonContentOf("resources/resource.json", "id" -> (nxv + id))
   private val payloadWithoutId                = payload.removeKeys(keywords.id)
   private val payloadWithBlankId              = jsonContentOf("resources/resource.json", "id" -> "")
   private val payloadWithUnderscoreFields     =
@@ -132,9 +132,11 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues
   private lazy val routes = routesWithDecodingOption(DecodingOption.Strict)._1
 
   private val payloadUpdated             = payload deepMerge json"""{"name": "Alice", "address": null}"""
-  private def payloadUpdated(id: String) = payloadF(id) deepMerge json"""{"name": "Alice", "address": null}"""
+  private def payloadUpdated(id: String) = simplePayload(id) deepMerge json"""{"name": "Alice", "address": null}"""
 
   private val varyHeader = RawHeader("Vary", "Accept,Accept-Encoding")
+
+  private val resourceCtx = json"""{"@context": ["${contexts.metadata}", {"@vocab": "${nxv.base}"}]}"""
 
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -158,7 +160,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues
       )
       forAll(endpoints) { case (endpoint, schema) =>
         val id = genString()
-        Post(endpoint, payloadF(id).toEntity) ~> asWriter ~> routes ~> check {
+        Post(endpoint, simplePayload(id).toEntity) ~> asWriter ~> routes ~> check {
           status shouldEqual StatusCodes.Created
           response.asJson shouldEqual standardWriterMetadata(id, schema = schema)
         }
@@ -173,7 +175,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues
       val (routes, resources) = routesWithDecodingOption(DecodingOption.Strict)
       forAll(endpoints) { case (endpoint, schema) =>
         val id = genString()
-        Post(endpoint, payloadF(id).toEntity) ~> asWriter ~> routes ~> check {
+        Post(endpoint, simplePayload(id).toEntity) ~> asWriter ~> routes ~> check {
           status shouldEqual StatusCodes.Created
           response.asJson shouldEqual standardWriterMetadata(id, schema = schema)
           lookupResourceByTag(resources, nxv + id) should contain(tag)
@@ -188,7 +190,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues
       )
       forAll(endpoints) { case (endpoint, schema) =>
         val id = genString()
-        Put(endpoint(id), payloadF(id).toEntity) ~> asWriter ~> routes ~> check {
+        Put(endpoint(id), simplePayload(id).toEntity) ~> asWriter ~> routes ~> check {
           status shouldEqual StatusCodes.Created
           response.asJson shouldEqual standardWriterMetadata(id, schema = schema)
         }
@@ -203,7 +205,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues
       val (routes, resources) = routesWithDecodingOption(DecodingOption.Strict)
       forAll(endpoints) { case (endpoint, schema) =>
         val id = genString()
-        Put(endpoint(id), payloadF(id).toEntity) ~> asWriter ~> routes ~> check {
+        Put(endpoint(id), simplePayload(id).toEntity) ~> asWriter ~> routes ~> check {
           status shouldEqual StatusCodes.Created
           response.asJson shouldEqual standardWriterMetadata(id, schema = schema)
           lookupResourceByTag(resources, nxv + id) should contain(tag)
@@ -216,7 +218,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues
 
     "reject the creation of a resource which already exists" in {
       givenAResource { id =>
-        Put(s"/v1/resources/myorg/myproject/_/$id", payloadF(id).toEntity) ~> asWriter ~> routes ~> check {
+        Put(s"/v1/resources/myorg/myproject/_/$id", simplePayload(id).toEntity) ~> asWriter ~> routes ~> check {
           println(response.asJson)
           status shouldEqual StatusCodes.Conflict
           response.asJson shouldEqual
@@ -414,11 +416,23 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues
       }
     }
 
+    "fail to undeprecate an non-deprecated resource" in {
+      givenAResource { id =>
+        Put(s"/v1/resources/myorg/myproject/_/$id/undeprecate?rev=1") ~> asWriter ~> routes ~> check {
+          response.status shouldEqual StatusCodes.BadRequest
+          response.asJson shouldEqual jsonContentOf(
+            "/resources/errors/resource-not-deprecated.json",
+            "id" -> (nxv + id)
+          )
+        }
+      }
+    }
+
     "undeprecate a resource" in {
       givenADeprecatedResource { id =>
         Put(s"/v1/resources/myorg/myproject/_/$id/undeprecate?rev=2") ~> asWriter ~> routes ~> check {
-          println(response.asJson)
           response.status shouldEqual StatusCodes.OK
+          response.asJson shouldEqual standardWriterMetadata(id, rev = 3, deprecated = false)
         }
       }
     }
@@ -477,14 +491,12 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues
       }
     }
 
-    val resourceCtx = json"""{"@context": ["${contexts.metadata}", {"@vocab": "${nxv.base}"}]}"""
-
     "fetch a resource" in {
       givenAResource { id =>
         Get(s"/v1/resources/myorg/myproject/_/$id") ~> asReader ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           val meta = standardWriterMetadata(id, tpe = "Custom")
-          response.asJson shouldEqual payloadF(id).dropNullValues.deepMerge(meta).deepMerge(resourceCtx)
+          response.asJson shouldEqual simplePayload(id).deepMerge(meta).deepMerge(resourceCtx)
           response.headers should contain(varyHeader)
         }
       }
@@ -501,11 +513,11 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues
           s"/v1/resources/myorg/myproject/$mySchema/$id?tag=$myTag",
           s"/v1/resources/$uuid/$uuid/_/$id?tag=$myTag"
         )
-        val meta = standardWriterMetadata(id, schema = schema1.id, tpe = "Custom")
+        val meta      = standardWriterMetadata(id, schema = schema1.id, tpe = "Custom")
         forAll(endpoints) { endpoint =>
           Get(endpoint) ~> asReader ~> routes ~> check {
             status shouldEqual StatusCodes.OK
-            response.asJson shouldEqual payloadF(id).deepMerge(meta).deepMerge(resourceCtx)
+            response.asJson shouldEqual simplePayload(id).deepMerge(meta).deepMerge(resourceCtx)
             response.headers should contain(varyHeader)
           }
         }
@@ -516,15 +528,36 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues
       givenAResource { id =>
         Get(s"/v1/resources/myorg/myproject/_/$id/source") ~> asReader ~> routes ~> check {
           status shouldEqual StatusCodes.OK
-          response.asJson shouldEqual payloadF(id)
+          response.asJson shouldEqual simplePayload(id)
+        }
+      }
+    }
+
+    "fetch a resource where the source has a null value" in {
+      val payloadWithNullField = (id: String) => simplePayload(id) deepMerge json"""{ "empty": null }"""
+      givenAResourceWithPayload(payloadWithNullField(_).toEntity(Printer.noSpaces)) { id =>
+        Get(s"/v1/resources/myorg/myproject/_/$id") ~> asReader ~> routes ~> check {
+          response.asJson shouldEqual
+            payloadWithNullField(id).dropNullValues
+              .deepMerge(standardWriterMetadata(id, tpe = "Custom"))
+              .deepMerge(resourceCtx)
+        }
+      }
+    }
+
+    "fetch a resource original payload where the source has a null value" in {
+      val payloadWithNullField = (id: String) => json"""{ "@id": "$id", "empty": null }"""
+      givenAResourceWithPayload(payloadWithNullField(_).toEntity(Printer.noSpaces)) { id =>
+        Get(s"/v1/resources/myorg/myproject/_/$id/source") ~> asReader ~> routes ~> check {
+          response.asJson shouldEqual payloadWithNullField(id)
         }
       }
     }
 
     "fetch a resource remote contexts" in {
-      val id      = genString()
-      val payload = payloadF(id).deepMerge(resourceCtx)
-      Post("/v1/resources/myorg/myproject", payload.toEntity) ~> asWriter ~> routes ~> check {
+      val id             = genString()
+      val payloadWithCtx = simplePayload(id).deepMerge(resourceCtx)
+      Post("/v1/resources/myorg/myproject", payloadWithCtx.toEntity) ~> asWriter ~> routes ~> check {
         status shouldEqual StatusCodes.Created
       }
 
@@ -604,7 +637,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues
         forAll(endpoints) { endpoint =>
           Get(endpoint) ~> asReader ~> routes ~> check {
             status shouldEqual StatusCodes.OK
-            response.asJson shouldEqual payloadF(id).deepMerge(meta)
+            response.asJson shouldEqual simplePayload(id).deepMerge(meta)
             response.headers should contain(varyHeader)
           }
         }
@@ -625,7 +658,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues
         forAll(endpoints) { endpoint =>
           Get(endpoint) ~> asReader ~> routes ~> check {
             status shouldEqual StatusCodes.OK
-            response.asJson shouldEqual payloadF(id)
+            response.asJson shouldEqual simplePayload(id)
             response.headers should contain(varyHeader)
           }
         }
@@ -774,30 +807,41 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues
       writer
     )
 
-  private def givenAResourceWithSchemaAndTag(schema: Option[String], tag: Option[String])(
+  private def givenAResourceWithSchemaAndTag(
+      schema: Option[String],
+      tag: Option[String],
+      payload: String => RequestEntity = simplePayload(_).toEntity
+  )(
       assertion: String => Assertion
   ): Assertion = {
     val id            = genString()
     val schemaSegment = schema.getOrElse("_")
     val tagSegment    = tag.map(t => s"?tag=$t").getOrElse("")
-    Post(s"/v1/resources/$projectRef/$schemaSegment$tagSegment", payloadF(id).toEntity) ~> asWriter ~> routes ~> check {
+    Post(s"/v1/resources/$projectRef/$schemaSegment$tagSegment", payload(id)) ~> asWriter ~> routes ~> check {
       status shouldEqual StatusCodes.Created
     }
     assertion(id)
   }
 
   private def givenAResourceWithSchema(schemaName: String)(assertion: String => Assertion): Assertion = {
-    givenAResourceWithSchemaAndTag(Some(schemaName), None)(assertion)
+    givenAResourceWithSchemaAndTag(Some(schemaName), None, simplePayload(_).toEntity)(assertion)
   }
 
+  /** Provides a simple resource to assert on. The latest revision is 1. */
   private def givenAResource(assertion: String => Assertion): Assertion = {
-    givenAResourceWithSchemaAndTag(None, None)(assertion)
+    givenAResourceWithSchemaAndTag(None, None, simplePayload(_).toEntity)(assertion)
   }
 
+  private def givenAResourceWithPayload(payload: String => RequestEntity)(assertion: String => Assertion): Assertion = {
+    givenAResourceWithSchemaAndTag(None, None, payload)(assertion)
+  }
+
+  /** Provides a resource with a tag on revision 1. The latest revision is 1 */
   private def givenAResourceWithTag(tag: String)(assertion: String => Assertion): Assertion = {
-    givenAResourceWithSchemaAndTag(None, Some(tag))(assertion)
+    givenAResourceWithSchemaAndTag(None, Some(tag), simplePayload(_).toEntity)(assertion)
   }
 
+  /** Provides a deprecate resource to assert on. The latest revision is 2. */
   private def givenADeprecatedResource(assertion: String => Assertion): Assertion =
     givenAResource { id =>
       Delete(s"/v1/resources/$projectRef/_/$id?rev=1") ~> asWriter ~> routes ~> check {

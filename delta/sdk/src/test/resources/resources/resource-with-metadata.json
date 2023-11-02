@@ -2,7 +2,6 @@
   "@context": "https://bluebrain.github.io/nexus/contexts/metadata.json",
   "@id": "{{id}}",
   "@type": "https://bluebrain.github.io/nexus/vocabulary/Custom",
-  "address": null,
   "bool": false,
   "name": "Alex",
   "number": 24,
