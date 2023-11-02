@@ -10,6 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SortList
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectBase}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
 import ch.epfl.bluebrain.nexus.delta.sourcing.Scope
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
 
@@ -62,7 +63,7 @@ object DefaultSearchRequest {
         .onRead(ref)
         .toCatsIO
         .flatMap { context =>
-          expandResourceRef(schema, context.apiMappings, context.base)
+          IO.fromEither(expandResourceRef(schema, context.apiMappings, context.base))
         }
         .map { schemaRef =>
           ProjectSearch(ref, params.withSchema(schemaRef), pagination, sort: SortList)
@@ -90,7 +91,7 @@ object DefaultSearchRequest {
   object OrgSearch {
     def apply(label: Label, params: ResourcesSearchParams, pagination: Pagination, sort: SortList, schema: IdSegment)(
         fetchContext: FetchContext[ElasticSearchQueryError]
-    ): IO[OrgSearch] =
+    ): Either[Throwable, OrgSearch] =
       expandResourceRef(schema, fetchContext).map { resourceRef =>
         OrgSearch(label, params.withSchema(resourceRef), pagination, sort)
       }
@@ -111,7 +112,7 @@ object DefaultSearchRequest {
   object RootSearch {
     def apply(params: ResourcesSearchParams, pagination: Pagination, sort: SortList, schema: IdSegment)(
         fetchContext: FetchContext[ElasticSearchQueryError]
-    ): IO[RootSearch] =
+    ): Either[Throwable, RootSearch] =
       expandResourceRef(schema, fetchContext).map { resourceRef =>
         RootSearch(params.withSchema(resourceRef), pagination, sort)
       }
@@ -124,16 +125,13 @@ object DefaultSearchRequest {
   private def expandResourceRef(
       segment: IdSegment,
       fetchContext: FetchContext[ElasticSearchQueryError]
-  ): IO[ResourceRef] =
+  ): Either[Throwable, ResourceRef] =
     expandResourceRef(segment, fetchContext.defaultApiMappings, ProjectBase(iri""))
 
   private def expandResourceRef(
       segment: IdSegment,
       mappings: ApiMappings,
       base: ProjectBase
-  ): IO[ResourceRef] =
-    IO.fromOption(segment.toIri(mappings, base).map(ResourceRef(_)))(
-      InvalidResourceId(segment.asString)
-    )
+  ): Either[Throwable, ResourceRef] = Resources.expandResourceRef(segment, mappings, base, InvalidResourceId)
 
 }
