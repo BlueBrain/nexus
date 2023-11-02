@@ -10,7 +10,7 @@ Nexus consists of different products, such as:
 
 In this tutorial, you'll learn to interact with the knowledge graph through these different tools. Nexus can be used for any kind of data although this tutorial focuses on neuroscience data.
 
-> This tutorial is also part of the @link:[edX EPFL Simulation Neuroscience MOOC](https://www.edx.org/learn/biology/ecole-polytechnique-federale-de-lausanne-simulation-neuroscience/).
+> This tutorial is also part of the @link:[edX EPFL Simulation Neuroscience MOOC](https://www.edx.org/learn/neuroscience/ecole-polytechnique-federale-de-lausanne-simulation-neuroscience).
 
 In @ref:[Step 0](try-nexus.md#step-0-python-setup), you'll learn to setup your Python environment if you want to run the Jupyter notebooks locally. You can skip this step if you use Binder or Google Colaboratory (preferred).
 
@@ -807,8 +807,8 @@ jupyter notebook MOOC_Content_based_Recommender_System_using_Blue_Brain_Nexus.ip
 
 Well done! You have now completed the last part of this tutorial. To learn more, scroll down or navigate to our documentation, or start contributing to our Github repositories.
 
-If you have reached this tutorial via the @link:[Simulation Neuroscience MOOC](https://www.edx.org/learn/biology/ecole-polytechnique-federale-de-lausanne-simulation-neuroscience/),
-you can now head back to the @link:[edX platform](https://www.edx.org/learn/biology/ecole-polytechnique-federale-de-lausanne-simulation-neuroscience/) and complete this week assignment.
+If you have reached this tutorial via the @link:[Simulation Neuroscience MOOC](https://www.edx.org/learn/neuroscience/ecole-polytechnique-federale-de-lausanne-simulation-neuroscience),
+you can now head back to the @link:[edX platform](https://www.edx.org/learn/neuroscience/ecole-polytechnique-federale-de-lausanne-simulation-neuroscience) and complete this week assignment.
 
 ## Learn More
 
