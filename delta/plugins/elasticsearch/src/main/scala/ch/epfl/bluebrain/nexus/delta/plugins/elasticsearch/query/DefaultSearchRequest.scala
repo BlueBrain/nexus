@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query
 
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.toCatsIOOps
+import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.query.ElasticSearchQueryError.InvalidResourceId
@@ -91,7 +92,7 @@ object DefaultSearchRequest {
   object OrgSearch {
     def apply(label: Label, params: ResourcesSearchParams, pagination: Pagination, sort: SortList, schema: IdSegment)(
         fetchContext: FetchContext[ElasticSearchQueryError]
-    ): Either[Throwable, OrgSearch] =
+    ): Either[Rejection, OrgSearch] =
       expandResourceRef(schema, fetchContext).map { resourceRef =>
         OrgSearch(label, params.withSchema(resourceRef), pagination, sort)
       }
@@ -112,7 +113,7 @@ object DefaultSearchRequest {
   object RootSearch {
     def apply(params: ResourcesSearchParams, pagination: Pagination, sort: SortList, schema: IdSegment)(
         fetchContext: FetchContext[ElasticSearchQueryError]
-    ): Either[Throwable, RootSearch] =
+    ): Either[Rejection, RootSearch] =
       expandResourceRef(schema, fetchContext).map { resourceRef =>
         RootSearch(params.withSchema(resourceRef), pagination, sort)
       }
@@ -125,13 +126,13 @@ object DefaultSearchRequest {
   private def expandResourceRef(
       segment: IdSegment,
       fetchContext: FetchContext[ElasticSearchQueryError]
-  ): Either[Throwable, ResourceRef] =
+  ): Either[Rejection, ResourceRef] =
     expandResourceRef(segment, fetchContext.defaultApiMappings, ProjectBase(iri""))
 
   private def expandResourceRef(
       segment: IdSegment,
       mappings: ApiMappings,
       base: ProjectBase
-  ): Either[Throwable, ResourceRef] = Resources.expandResourceRef(segment, mappings, base, InvalidResourceId)
+  ): Either[Rejection, ResourceRef] = Resources.expandResourceRef(segment, mappings, base, InvalidResourceId)
 
 }
