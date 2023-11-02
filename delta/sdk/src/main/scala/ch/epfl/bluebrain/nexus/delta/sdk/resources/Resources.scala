@@ -4,6 +4,7 @@ import cats.effect.{Clock, IO}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
+import ch.epfl.bluebrain.nexus.delta.kernel.error.Rejection
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOInstant
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
@@ -263,7 +264,7 @@ object Resources {
   /**
     * Expands the segment to a [[ResourceRef]]
     */
-  def expandResourceRef(segment: IdSegment, context: ProjectContext): Either[Throwable, ResourceRef] =
+  def expandResourceRef(segment: IdSegment, context: ProjectContext): Either[Rejection, ResourceRef] =
     expandResourceRef(segment, context.apiMappings, context.base, InvalidResourceId)
 
   /**
@@ -272,15 +273,15 @@ object Resources {
   def expandResourceRef(
       segmentOpt: Option[IdSegment],
       context: ProjectContext
-  ): Either[Throwable, Option[ResourceRef]] =
+  ): Either[Rejection, Option[ResourceRef]] =
     segmentOpt.flatTraverse(expandResourceRef(_, context).map(_.some))
 
   def expandResourceRef(
       segment: IdSegment,
       mappings: ApiMappings,
       base: ProjectBase,
-      notFound: String => Throwable
-  ): Either[Throwable, ResourceRef] =
+      notFound: String => Rejection
+  ): Either[Rejection, ResourceRef] =
     segment.toIri(mappings, base).map(ResourceRef(_)).toRight(notFound(segment.asString))
 
   private[delta] def next(state: Option[ResourceState], event: ResourceEvent): Option[ResourceState] = {
