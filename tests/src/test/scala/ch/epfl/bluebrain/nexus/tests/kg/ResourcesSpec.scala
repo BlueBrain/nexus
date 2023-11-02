@@ -518,7 +518,7 @@ class ResourcesSpec extends BaseIntegrationSpec {
 
     "lead to an empty resource listing" in {
       givenAResource(project1) { id =>
-        val deprecate       = deltaClient.delete(s"/resources/$project1/_/$id?rev=1", Rick) { expectOk }
+        val deprecate         = deltaClient.delete(s"/resources/$project1/_/$id?rev=1", Rick) { expectOk }
         val fetchEmptyListing =
           deltaClient.get[Json](s"/resources/$project1?locate=$id", Rick) { (json, _) =>
             _total.getOption(json) should contain(0)
