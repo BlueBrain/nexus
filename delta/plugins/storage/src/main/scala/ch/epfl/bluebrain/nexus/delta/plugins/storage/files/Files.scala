@@ -604,6 +604,10 @@ object Files {
       s.copy(rev = e.rev, deprecated = true, updatedAt = e.instant, updatedBy = e.subject)
     }
 
+    def undeprecated(e: FileUndeprecated): Option[FileState] = state.map { s =>
+      s.copy(rev = e.rev, deprecated = false, updatedAt = e.instant, updatedBy = e.subject)
+    }
+
     event match {
       case e: FileCreated           => created(e)
       case e: FileUpdated           => updated(e)
@@ -611,6 +615,7 @@ object Files {
       case e: FileTagAdded          => tagAdded(e)
       case e: FileTagDeleted        => tagDeleted(e)
       case e: FileDeprecated        => deprecated(e)
+      case e: FileUndeprecated      => undeprecated(e)
     }
   }
 
