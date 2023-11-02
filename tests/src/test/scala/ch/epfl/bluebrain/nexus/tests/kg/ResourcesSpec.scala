@@ -516,6 +516,18 @@ class ResourcesSpec extends BaseIntegrationSpec {
       }
     }
 
+    "lead to an empty resource listing" in {
+      givenAResource(project1) { id =>
+        val deprecate       = deltaClient.delete(s"/resources/$project1/_/$id?rev=1", Rick) { expectOk }
+        val fetchEmptyListing =
+          deltaClient.get[Json](s"/resources/$project1?locate=$id", Rick) { (json, _) =>
+            _total.getOption(json) should contain(0)
+          }
+        deprecate.accepted
+        eventually { fetchEmptyListing }
+      }
+    }
+
   }
 
   "undeprecating a resource" should {
@@ -538,6 +550,19 @@ class ResourcesSpec extends BaseIntegrationSpec {
           _deprecated.getOption(json) should contain(false)
         }
         (undeprecate >> fetchUndeprecated).accepted
+      }
+    }
+
+    "allow finding an undeprecated resource in the listing" in {
+      givenADeprecatedResource(project1) { id =>
+        val undeprecate  =
+          deltaClient.put(s"/resources/$project1/_/$id/undeprecate?rev=2", JsonObject.empty.toJson, Rick) { expectOk }
+        val fetchListing =
+          deltaClient.get[Json](s"/resources/$project1?locate=$id", Rick) { (json, _) =>
+            _total.getOption(json) should contain(1)
+          }
+        undeprecate.accepted
+        eventually { fetchListing }
       }
     }
 
