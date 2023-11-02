@@ -156,7 +156,7 @@ final class ResourcesImpl private (
   )(implicit caller: Subject): IO[DataResource] =
     (for {
       (iri, projectContext) <- expandWithContext(fetchContext.onModify, projectRef, id)
-      schemaRefOpt          <- expandResourceRef(schemaOpt, projectContext)
+      schemaRefOpt          <- IO.fromEither(expandResourceRef(schemaOpt, projectContext))
       res                   <- eval(UndeprecateResource(iri, projectRef, schemaRefOpt, rev, caller))
     } yield res).span("undeprecateResource")
 

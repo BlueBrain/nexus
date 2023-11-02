@@ -9,13 +9,13 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.tests.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.tests.Identity.resources.{Morty, Rick}
-import ch.epfl.bluebrain.nexus.tests.Optics.admin._constrainedBy
+import ch.epfl.bluebrain.nexus.tests.Optics.admin.{_constrainedBy, _deprecated}
 import ch.epfl.bluebrain.nexus.tests.Optics.listing._total
 import ch.epfl.bluebrain.nexus.tests.Optics.{filterKey, filterMetadataKeys}
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Resources
 import ch.epfl.bluebrain.nexus.tests.resources.SimpleResource
 import ch.epfl.bluebrain.nexus.tests.{BaseIntegrationSpec, Optics, SchemaPayload}
-import io.circe.Json
+import io.circe.{Json, JsonObject}
 import io.circe.optics.JsonPath.root
 import monocle.Optional
 import org.scalatest.Assertion
@@ -398,9 +398,9 @@ class ResourcesSpec extends BaseIntegrationSpec {
           } >>
             deltaClient.get[Json](s"/resources/$project1/$schema/$id?rev=2", Rick)(_)
 
-      thereIsASchemaIn(project1) { firstSchema =>
-        thereIsASchemaIn(project1) { newSchema =>
-          thereIsAResourceWithSchema(project1, firstSchema) { id =>
+      givenASchemaIn(project1) { firstSchema =>
+        givenASchemaIn(project1) { newSchema =>
+          givenAResourceWithSchema(project1, firstSchema) { id =>
             val expectedSchema = "http://delta:8080/v1/resources/" + project1 + s"/_/$newSchema"
             updateResourceAndSchema(id, newSchema) { (json, response) =>
               response.status shouldEqual StatusCodes.OK
@@ -415,8 +415,8 @@ class ResourcesSpec extends BaseIntegrationSpec {
       val payload = SimpleResource.sourcePayload(4)
       val tag     = genString()
 
-      thereIsASchemaIn(project1) { schema =>
-        thereIsAResourceWithSchema(project1, schema) { id =>
+      givenASchemaIn(project1) { schema =>
+        givenAResourceWithSchema(project1, schema) { id =>
           val updateWithTag =
             deltaClient.put[Json](s"/resources/$project1/$schema/$id?rev=1&tag=$tag", payload, Rick)(expectOk)
           val fetchByTag    = deltaClient.get[Json](s"/resources/$project1/$schema/$id?tag=$tag", Rick)(expectOk)
@@ -496,6 +496,51 @@ class ResourcesSpec extends BaseIntegrationSpec {
           response.status shouldEqual StatusCodes.OK
         }
     }
+  }
+
+  "deprecating a resource" should {
+
+    "fail without authorization" in {
+      givenAResource(project1) { id =>
+        deltaClient.delete[Json](s"/resources/$project1/_/$id?rev=1", Anonymous) { expectForbidden }.accepted
+      }
+    }
+
+    "succeed" in {
+      givenAResource(project1) { id =>
+        val deprecate       = deltaClient.delete(s"/resources/$project1/_/$id?rev=1", Rick) { expectOk }
+        val fetchDeprecated = deltaClient.get[Json](s"/resources/$project1/_/$id", Rick) { (json, _) =>
+          _deprecated.getOption(json) should contain(true)
+        }
+        (deprecate >> fetchDeprecated).accepted
+      }
+    }
+
+  }
+
+  "undeprecating a resource" should {
+
+    "fail without authorization" in {
+      givenADeprecatedResource(project1) { id =>
+        deltaClient
+          .put(s"/resources/$project1/_/$id/undeprecate?rev=2", JsonObject.empty.toJson, Anonymous) {
+            expectForbidden
+          }
+          .accepted
+      }
+    }
+
+    "succeed" in {
+      givenADeprecatedResource(project1) { id =>
+        val undeprecate       =
+          deltaClient.put(s"/resources/$project1/_/$id/undeprecate?rev=2", JsonObject.empty.toJson, Rick) { expectOk }
+        val fetchUndeprecated = deltaClient.get[Json](s"/resources/$project1/_/$id", Rick) { case (json, _) =>
+          _deprecated.getOption(json) should contain(false)
+        }
+        (undeprecate >> fetchUndeprecated).accepted
+      }
+    }
+
   }
 
   "check consistency of responses" in {
@@ -637,9 +682,9 @@ class ResourcesSpec extends BaseIntegrationSpec {
   "updating the schema of a resource" should {
 
     "succeed" in {
-      thereIsASchemaIn(project1) { firstSchema =>
-        thereIsASchemaIn(project1) { newSchema =>
-          thereIsAResourceWithSchema(project1, firstSchema) { id =>
+      givenASchemaIn(project1) { firstSchema =>
+        givenASchemaIn(project1) { newSchema =>
+          givenAResourceWithSchema(project1, firstSchema) { id =>
             deltaClient
               .put[Json](s"/resources/$project1/$newSchema/$id/update-schema", Json.Null, Rick) { (_, response) =>
                 response.status shouldEqual StatusCodes.OK
@@ -672,22 +717,18 @@ class ResourcesSpec extends BaseIntegrationSpec {
 
   }
 
-  /**
-    * Ensure there is a new simple resource in the given project that can be used in a further assertion
-    *
-    * @param assertion
-    *   An assertion that can use the newly created resource
-    */
-  private def thereIsAResourceWithSchema(projectRef: String, schema: String)(
+  private def givenAResourceWithSchemaAndTag(projectRef: String, schema: Option[String], tag: Option[String])(
       assertion: String => Assertion
   ): Assertion = {
-    val resourceName = genString()
-    val payload      = SimpleResource
+    val resourceName  = genString()
+    val payload       = SimpleResource
       .sourcePayload(5)
       .deepMerge(json"""{"@id": "$resourceName"}""")
+    val schemaSegment = schema.getOrElse("_")
+    val tagParameter  = tag.map(t => s"?tag=$t").getOrElse("")
 
     deltaClient
-      .post[Json](s"/resources/$projectRef/$schema", payload, Rick) { (_, response) =>
+      .post[Json](s"/resources/$projectRef/$schemaSegment$tagParameter", payload, Rick) { (_, response) =>
         response.status shouldEqual StatusCodes.Created
       }
       .accepted
@@ -695,12 +736,26 @@ class ResourcesSpec extends BaseIntegrationSpec {
     assertion(resourceName)
   }
 
-  /**
-    * Ensure there is a new simple schema in the given project that can be used in a further assertion
-    * @param assertion
-    *   An assertion that can use the newly created schema
-    */
-  private def thereIsASchemaIn(projectRef: String)(assertion: String => Assertion) = {
+  private def givenAResourceWithSchema(projectRef: String, schema: String)(
+      assertion: String => Assertion
+  ): Assertion =
+    givenAResourceWithSchemaAndTag(projectRef, schema.some, none) { assertion }
+
+  private def givenAResource(projectRef: String)(assertion: String => Assertion): Assertion =
+    givenAResourceWithSchemaAndTag(projectRef, none, none) { assertion }
+
+  private def givenADeprecatedResource(projectRef: String)(assertion: String => Assertion): Assertion =
+    givenAResource(projectRef) { id =>
+      deltaClient
+        .delete[Json](s"/resources/$projectRef/_/$id?rev=1", Rick) { (json, response) =>
+          response.status shouldEqual StatusCodes.OK
+          _deprecated.getOption(json) should contain(true)
+        }
+        .accepted
+      assertion(id)
+    }
+
+  private def givenASchemaIn(projectRef: String)(assertion: String => Assertion) = {
     val schemaName    = genString()
     val schemaPayload = SchemaPayload.loadSimpleNoId()
 

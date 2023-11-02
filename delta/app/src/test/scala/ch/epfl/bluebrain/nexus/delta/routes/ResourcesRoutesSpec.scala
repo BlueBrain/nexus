@@ -827,24 +827,20 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues
     * Provides a resource with a schema to assert on. The latest revision is 1. Note that the schema needs to be
     * available in the context where this is used.
     */
-  private def givenAResourceWithSchema(schemaName: String)(assertion: String => Assertion): Assertion = {
+  private def givenAResourceWithSchema(schemaName: String)(assertion: String => Assertion): Assertion =
     givenAResourceWithSchemaAndTag(Some(schemaName), None, simplePayload(_).toEntity)(assertion)
-  }
 
   /** Provides a simple resource to assert on. The latest revision is 1. */
-  private def givenAResource(assertion: String => Assertion): Assertion = {
+  private def givenAResource(assertion: String => Assertion): Assertion =
     givenAResourceWithSchemaAndTag(None, None, simplePayload(_).toEntity)(assertion)
-  }
 
   /** Provides a resource with a specific payload to assert on. The latest revision is 1. */
-  private def givenAResourceWithPayload(payload: String => RequestEntity)(assertion: String => Assertion): Assertion = {
+  private def givenAResourceWithPayload(payload: String => RequestEntity)(assertion: String => Assertion): Assertion =
     givenAResourceWithSchemaAndTag(None, None, payload)(assertion)
-  }
 
   /** Provides a resource with a tag on revision 1. The latest revision is 1 */
-  private def givenAResourceWithTag(tag: String)(assertion: String => Assertion): Assertion = {
+  private def givenAResourceWithTag(tag: String)(assertion: String => Assertion): Assertion =
     givenAResourceWithSchemaAndTag(None, Some(tag), simplePayload(_).toEntity)(assertion)
-  }
 
   /** Provides a deprecate resource to assert on. The latest revision is 2. */
   private def givenADeprecatedResource(assertion: String => Assertion): Assertion =
