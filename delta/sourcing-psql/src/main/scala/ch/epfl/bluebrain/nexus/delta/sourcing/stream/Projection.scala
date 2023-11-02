@@ -2,8 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
 import cats.effect.concurrent.Ref
 import cats.effect.{ContextShift, ExitCase, Fiber, IO, Timer}
-import cats.implicits._
-import cats.implicits.{catsSyntaxFlatMapIdOps, catsSyntaxFlatMapOps, catsSyntaxMonad}
+import cats.implicits.catsSyntaxFlatMapOps
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ElemPipe
