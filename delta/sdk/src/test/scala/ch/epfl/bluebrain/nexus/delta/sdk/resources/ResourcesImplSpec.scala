@@ -604,7 +604,7 @@ class ResourcesImplSpec
 
       "succeed" in {
         givenADeprecatedResource { id =>
-          resources.undeprecate(id, projectRef, Some(schemas.resources), 2).accepted.deprecated shouldEqual false
+          resources.undeprecate(id, projectRef, None, 2).accepted.deprecated shouldEqual false
           resources.fetch(id, projectRef, None).accepted.deprecated shouldEqual false
         }
       }
@@ -623,6 +623,7 @@ class ResourcesImplSpec
           resources
             .undeprecate(id, projectRef, None, 4)
             .assertRejected[IncorrectRev]
+          resources.fetch(id, projectRef, None).accepted.deprecated shouldEqual true
         }
       }
 
@@ -631,6 +632,7 @@ class ResourcesImplSpec
           resources
             .undeprecate(id, projectRef, None, 1)
             .assertRejected[ResourceIsNotDeprecated]
+          resources.fetch(id, projectRef, None).accepted.deprecated shouldEqual false
         }
       }
 
@@ -639,6 +641,7 @@ class ResourcesImplSpec
           resources
             .undeprecate(id, projectRef, Some(schema1.id), 2)
             .assertRejected[UnexpectedResourceSchema]
+          resources.fetch(id, projectRef, None).accepted.deprecated shouldEqual true
         }
       }
 
