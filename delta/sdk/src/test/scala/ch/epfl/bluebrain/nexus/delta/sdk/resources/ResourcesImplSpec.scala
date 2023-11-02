@@ -614,7 +614,7 @@ class ResourcesImplSpec
           val wrongId = nxv + genString()
           resources
             .undeprecate(wrongId, projectRef, None, 2)
-            .assertRejected[ResourceNotFound]
+            .assertRejectedWith[ResourceNotFound]
         }
       }
 
@@ -622,7 +622,7 @@ class ResourcesImplSpec
         givenADeprecatedResource { id =>
           resources
             .undeprecate(id, projectRef, None, 4)
-            .assertRejected[IncorrectRev]
+            .assertRejectedWith[IncorrectRev]
           resources.fetch(id, projectRef, None).accepted.deprecated shouldEqual true
         }
       }
@@ -631,7 +631,7 @@ class ResourcesImplSpec
         givenAResource { id =>
           resources
             .undeprecate(id, projectRef, None, 1)
-            .assertRejected[ResourceIsNotDeprecated]
+            .assertRejectedWith[ResourceIsNotDeprecated]
           resources.fetch(id, projectRef, None).accepted.deprecated shouldEqual false
         }
       }
@@ -640,7 +640,7 @@ class ResourcesImplSpec
         givenADeprecatedResource { id =>
           resources
             .undeprecate(id, projectRef, Some(schema1.id), 2)
-            .assertRejected[UnexpectedResourceSchema]
+            .assertRejectedWith[UnexpectedResourceSchema]
           resources.fetch(id, projectRef, None).accepted.deprecated shouldEqual true
         }
       }
@@ -650,7 +650,7 @@ class ResourcesImplSpec
           val wrongProject = ProjectRef(Label.unsafe(genString()), Label.unsafe(genString()))
           resources
             .undeprecate(id, wrongProject, None, 2)
-            .assertRejected[ProjectContextRejection]
+            .assertRejectedWith[ProjectContextRejection]
         }
       }
 
