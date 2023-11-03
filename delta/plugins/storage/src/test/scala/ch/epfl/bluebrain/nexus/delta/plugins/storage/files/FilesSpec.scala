@@ -495,6 +495,7 @@ class FilesSpec(docker: RemoteStorageDocker)
       "succeed" in {
         givenADeprecatedFile { id =>
           files.undeprecate(id, 2).accepted.deprecated shouldEqual false
+          assertActive(id)
         }
       }
 
@@ -505,12 +506,14 @@ class FilesSpec(docker: RemoteStorageDocker)
       "reject if file is not deprecated" in {
         givenAFile { id =>
           files.undeprecate(id, 1).assertRejectedWith[FileIsNotDeprecated]
+          assertRemainsActive(id)
         }
       }
 
       "reject if the revision passed is incorrect" in {
         givenADeprecatedFile { id =>
           files.undeprecate(id, 3).assertRejectedEquals(IncorrectRev(3, 2))
+          assertRemainsDeprecated(id)
         }
       }
 
@@ -634,6 +637,13 @@ class FilesSpec(docker: RemoteStorageDocker)
         assertion(id)
       }
     }
+
+    def assertRemainsDeprecated(id: FileId): Assertion =
+      files.fetch(id).accepted.deprecated shouldEqual true
+    def assertActive(id: FileId): Assertion            =
+      files.fetch(id).accepted.deprecated shouldEqual false
+    def assertRemainsActive(id: FileId): Assertion     =
+      assertActive(id)
   }
 
 }
