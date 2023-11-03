@@ -126,7 +126,6 @@ final class FilesRoutes(
                                 },
                                 // Create a file with id segment
                                 extractRequestEntity { entity =>
-                                  println(s"DTBDTB or only here?")
                                   emit(
                                     Created,
                                     files.create(fileId, storage, entity, tag).index(mode).attemptNarrow[FileRejection]
@@ -168,6 +167,7 @@ final class FilesRoutes(
                             )
                           }
                         },
+
                         // Fetch a file
                         (get & idSegmentRef(id)) { id =>
                           emitOrFusionRedirect(ref, id, fetch(FileId(id, ref)))
@@ -211,6 +211,17 @@ final class FilesRoutes(
                               .rejectOn[FileNotFound]
                           )
                         }
+                      )
+                    }
+                  },
+                  (pathPrefix("undeprecate") & put & parameter("rev".as[Int])) { rev =>
+                    authorizeFor(ref, Write).apply {
+                      emit(
+                        files
+                          .undeprecate(fileId, rev)
+                          .index(mode)
+                          .attemptNarrow[FileRejection]
+                          .rejectOn[FileNotFound]
                       )
                     }
                   }

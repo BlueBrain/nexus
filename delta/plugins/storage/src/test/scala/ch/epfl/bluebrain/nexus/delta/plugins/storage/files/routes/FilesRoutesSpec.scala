@@ -351,6 +351,46 @@ class FilesRoutesSpec
       }
     }
 
+    "fail to undeprecate a file without files/write permission" in {
+      givenADeprecatedFile { id =>
+        Put(s"/v1/files/org/proj/$id/undeprecate?rev=2") ~> asReader ~> routes ~> check {
+          response.shouldBeForbidden
+        }
+      }
+    }
+
+    "undeprecate a file" in {
+      givenADeprecatedFile { id =>
+        Put(s"/v1/files/org/proj/$id/undeprecate?rev=2") ~> asWriter ~> routes ~> check {
+          status shouldEqual StatusCodes.OK
+          response.asJson shouldEqual
+            fileMetadata(projectRef, nxv + id, attributes(id), diskIdRev, rev = 3, deprecated = false)
+
+          Get(s"/v1/files/org/proj/$id") ~> Accept(`*/*`) ~> asReader ~> routes ~> check {
+            status shouldEqual StatusCodes.OK
+          }
+        }
+      }
+    }
+
+    "reject the undeprecation of a file without rev" in {
+      givenADeprecatedFile { id =>
+        Put(s"/v1/files/org/proj/$id/undeprecate") ~> asWriter ~> routes ~> check {
+          status shouldEqual StatusCodes.BadRequest
+          response.asJson shouldEqual jsonContentOf("/errors/missing-query-param.json", "field" -> "rev")
+        }
+      }
+    }
+
+    "reject the undeprecation of a file that is not deprecated" in {
+      givenAFile { id =>
+        Put(s"/v1/files/org/proj/$id/undeprecate?rev=1") ~> asWriter ~> routes ~> check {
+          status shouldEqual StatusCodes.BadRequest
+          response.asJson shouldEqual jsonContentOf("/errors/file-is-not-deprecated.json", "id" -> (nxv + id))
+        }
+      }
+    }
+
     "tag a file" in {
       val payload = json"""{"tag": "mytag", "rev": 1}"""
       Post("/v1/files/org/proj/file1/tags?rev=3", payload.toEntity) ~> asWriter ~> routes ~> check {
@@ -526,27 +566,19 @@ class FilesRoutesSpec
 
   def givenAFile(test: String => Assertion): Assertion = {
     val id = genString()
-    Put(s"/v1/files/org/proj/$id", entity(s"${genString()}.txt")) ~> asWriter ~> routes ~> check {
+    Put(s"/v1/files/org/proj/$id", entity(s"$id")) ~> asWriter ~> routes ~> check {
       status shouldEqual StatusCodes.Created
     }
     test(id)
   }
 
-  def givenRoutesForUserWithPermissions(
-      perms: Set[Permission]
-  )(test: (User, Route) => Assertion): Assertion =
-    givenAUserWithPermissions(perms) { (user, caller) =>
-      val authedRoutes = routesWithIdentities(IdentitiesDummy(caller))
-      test(user, authedRoutes)
+  def givenADeprecatedFile(test: String => Assertion): Assertion =
+    givenAFile { id =>
+      Delete(s"/v1/files/org/proj/$id?rev=1") ~> asWriter ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+      }
+      test(id)
     }
-
-  def givenAUserWithPermissions(perms: Set[Permission])(test: (User, Caller) => Assertion): Assertion = {
-    val userId     = genString()
-    val user: User = User(userId, realm)
-    val c: Caller  = Caller(user, Set(user, Anonymous, Authenticated(realm), Group("group", realm)))
-    aclCheck.append(AclAddress.Root, c.subject -> perms).accepted
-    test(user, c)
-  }
 
   def fileMetadata(
       project: ProjectRef,
