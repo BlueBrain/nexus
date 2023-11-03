@@ -19,7 +19,7 @@ import monix.bio.Task
 import org.scalatest.Suite
 
 import java.nio.file.{Files => JavaFiles}
-import java.util.UUID
+import java.util.{Base64, UUID}
 
 trait FileFixtures extends EitherValues with BIOValues {
 
@@ -41,6 +41,7 @@ trait FileFixtures extends EitherValues with BIOValues {
   val fileTagged               = nxv + "fileTagged"
   val fileTagged2              = nxv + "fileTagged2"
   val file1Encoded             = UrlUtils.encode(file1.toString)
+  val encodeId                 = (id: String) => UrlUtils.encode((nxv + id).toString)
   val generatedId              = project.base.iri / uuid.toString
   val generatedId2             = project.base.iri / uuid2.toString
 
@@ -82,4 +83,9 @@ trait FileFixtures extends EitherValues with BIOValues {
         Multipart.FormData.BodyPart("file", HttpEntity(`text/plain(UTF-8)`, "0" * size), Map("filename" -> filename))
       )
       .toEntity()
+
+  def base64encode(input: String) = {
+    val encodedBytes = Base64.getEncoder.encode(input.getBytes("UTF-8"))
+    new String(encodedBytes, "UTF-8")
+  }
 }

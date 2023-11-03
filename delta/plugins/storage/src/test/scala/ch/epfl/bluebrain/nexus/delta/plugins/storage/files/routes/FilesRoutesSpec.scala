@@ -140,7 +140,7 @@ class FilesRoutesSpec
 
   private val diskIdRev = ResourceRef.Revision(dId, 1)
   private val s3IdRev   = ResourceRef.Revision(s3Id, 2)
-  private val tag       = UserTag.unsafe("mytag")
+  private val tag       = "mytag"
 
   private val varyHeader = RawHeader("Vary", "Accept,Accept-Encoding")
 
@@ -185,9 +185,10 @@ class FilesRoutesSpec
           status shouldEqual StatusCodes.Created
           val attr      = attributes(id = uuid2)
           val expected  = fileMetadata(projectRef, generatedId2, attr, diskIdRev)
-          val fileByTag = files.fetch(FileId(generatedId2, tag, projectRef)).accepted
+          val userTag   = UserTag.unsafe(tag)
+          val fileByTag = files.fetch(FileId(generatedId2, userTag, projectRef)).accepted
           response.asJson shouldEqual expected
-          fileByTag.value.tags.tags should contain(tag)
+          fileByTag.value.tags.tags should contain(userTag)
         }
       }
     }
@@ -208,11 +209,12 @@ class FilesRoutesSpec
     }
 
     "create a file on s3 with an authenticated user and provided id" in {
-      Put("/v1/files/org/proj/file1?storage=s3-storage", entity("file2.txt")) ~> asS3Writer ~> routes ~> check {
+      val id = genString()
+      Put(s"/v1/files/org/proj/$id?storage=s3-storage", entity(id)) ~> asS3Writer ~> routes ~> check {
         status shouldEqual StatusCodes.Created
-        val attr = attributes("file2.txt")
+        val attr = attributes(id)
         response.asJson shouldEqual
-          fileMetadata(projectRef, file1, attr, s3IdRev, createdBy = s3writer, updatedBy = s3writer)
+          fileMetadata(projectRef, nxv + id, attr, s3IdRev, createdBy = s3writer, updatedBy = s3writer)
       }
     }
 
@@ -225,17 +227,20 @@ class FilesRoutesSpec
           status shouldEqual StatusCodes.Created
           val attr      = attributes("fileTagged.txt", id = uuid2)
           val expected  = fileMetadata(projectRef, fileTagged, attr, s3IdRev, createdBy = s3writer, updatedBy = s3writer)
-          val fileByTag = files.fetch(FileId(generatedId2, tag, projectRef)).accepted
+          val userTag = UserTag.unsafe(tag)
+          val fileByTag = files.fetch(FileId(generatedId2, userTag, projectRef)).accepted
           response.asJson shouldEqual expected
-          fileByTag.value.tags.tags should contain(tag)
+          fileByTag.value.tags.tags should contain(userTag)
         }
       }
     }
 
     "reject the creation of a file which already exists" in {
-      Put("/v1/files/org/proj/file1", entity()) ~> asWriter ~> routes ~> check {
-        status shouldEqual StatusCodes.Conflict
-        response.asJson shouldEqual jsonContentOf("/files/errors/already-exists.json", "id" -> file1)
+      givenAFile { id =>
+        Put(s"/v1/files/org/proj/$id", entity()) ~> asWriter ~> routes ~> check {
+          status shouldEqual StatusCodes.Conflict
+          response.asJson shouldEqual jsonContentOf("/files/errors/already-exists.json", "id" -> (nxv + id))
+        }
       }
     }
 
@@ -258,23 +263,27 @@ class FilesRoutesSpec
     }
 
     "fail to update a file without disk/write permission" in {
-      Put(s"/v1/files/org/proj/file1?rev=1", s3FieldsJson.toEntity) ~> routes ~> check {
-        response.shouldBeForbidden
+      givenAFile { id =>
+        Put(s"/v1/files/org/proj/$id?rev=1", s3FieldsJson.toEntity) ~> routes ~> check {
+          response.shouldBeForbidden
+        }
       }
     }
 
     "update a file" in {
-      val endpoints = List(
-        "/v1/files/org/proj/file1",
-        s"/v1/files/org/proj/$file1Encoded"
-      )
-      forAll(endpoints.zipWithIndex) { case (endpoint, idx) =>
-        val filename = s"file-idx-$idx.txt"
-        Put(s"$endpoint?rev=${idx + 1}", entity(filename)) ~> asWriter ~> routes ~> check {
-          status shouldEqual StatusCodes.OK
-          val attr = attributes(filename)
-          response.asJson shouldEqual
-            fileMetadata(projectRef, file1, attr, diskIdRev, rev = idx + 2, createdBy = s3writer)
+      givenAFile { id =>
+        val endpoints = List(
+          s"/v1/files/org/proj/$id",
+          s"/v1/files/org/proj/${encodeId(id)}"
+        )
+        forAll(endpoints.zipWithIndex) { case (endpoint, idx) =>
+          val filename = s"file-idx-$idx.txt"
+          Put(s"$endpoint?rev=${idx + 1}", entity(filename)) ~> asWriter ~> routes ~> check {
+            status shouldEqual StatusCodes.OK
+            val attr = attributes(filename)
+            response.asJson shouldEqual
+              fileMetadata(projectRef, nxv + id, attr, diskIdRev, rev = idx + 2)
+          }
         }
       }
     }
@@ -291,63 +300,78 @@ class FilesRoutesSpec
     }
 
     "fail to update a file link using a storage that does not allow it" in {
-      val payload = json"""{"filename": "my.txt", "path": "my/file.txt", "mediaType": "text/plain"}"""
-      Put("/v1/files/org/proj/file1?rev=3", payload.toEntity) ~> asWriter ~> routes ~> check {
-        status shouldEqual StatusCodes.BadRequest
-        response.asJson shouldEqual
-          jsonContentOf("files/errors/unsupported-operation.json", "id" -> file1, "storageId" -> dId)
+      givenAFile { id =>
+        val payload = json"""{"filename": "my.txt", "path": "my/file.txt", "mediaType": "text/plain"}"""
+        Put(s"/v1/files/org/proj/$id?rev=1", payload.toEntity) ~> asWriter ~> routes ~> check {
+          status shouldEqual StatusCodes.BadRequest
+          response.asJson shouldEqual
+            jsonContentOf("files/errors/unsupported-operation.json", "id" -> (nxv + id), "storageId" -> dId)
+        }
       }
     }
 
     "reject the update of a non-existent file" in {
-      Put("/v1/files/org/proj/myid10?rev=1", entity("other.txt")) ~> asWriter ~> routes ~> check {
+      val nonExistentFile = genString()
+      Put(s"/v1/files/org/proj/$nonExistentFile?rev=1", entity("other.txt")) ~> asWriter ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
         response.asJson shouldEqual
-          jsonContentOf("/files/errors/not-found.json", "id" -> (nxv + "myid10"), "proj" -> "org/proj")
+          jsonContentOf("/files/errors/not-found.json", "id" -> (nxv + nonExistentFile), "proj" -> "org/proj")
       }
     }
 
     "reject the update of a non-existent file storage" in {
-      Put("/v1/files/org/proj/file1?rev=3&storage=not-exist", entity("other.txt")) ~> asWriter ~> routes ~> check {
-        status shouldEqual StatusCodes.NotFound
-        response.asJson shouldEqual
-          jsonContentOf("/storages/errors/not-found.json", "id" -> (nxv + "not-exist"), "proj" -> projectRef)
+      givenAFile { id =>
+        Put(s"/v1/files/org/proj/$id?rev=1&storage=not-exist", entity("other.txt")) ~> asWriter ~> routes ~> check {
+          status shouldEqual StatusCodes.NotFound
+          response.asJson shouldEqual
+            jsonContentOf("/storages/errors/not-found.json", "id" -> (nxv + "not-exist"), "proj" -> projectRef)
+        }
       }
     }
 
     "reject the update of a file at a non-existent revision" in {
-      Put("/v1/files/org/proj/file1?rev=10", entity("other.txt")) ~> asWriter ~> routes ~> check {
-        status shouldEqual StatusCodes.Conflict
-        response.asJson shouldEqual
-          jsonContentOf("/files/errors/incorrect-rev.json", "provided" -> 10, "expected" -> 3)
+      givenAFile { id =>
+        Put(s"/v1/files/org/proj/$id?rev=10", entity("other.txt")) ~> asWriter ~> routes ~> check {
+          status shouldEqual StatusCodes.Conflict
+          response.asJson shouldEqual
+            jsonContentOf("/files/errors/incorrect-rev.json", "provided" -> 10, "expected" -> 1)
+        }
       }
     }
 
     "fail to deprecate a file without files/write permission" in {
-      Delete(s"/v1/files/org/proj/$uuid?rev=1") ~> routes ~> check {
-        response.shouldBeForbidden
+      givenAFile { id =>
+        Delete(s"/v1/files/org/proj/$id?rev=1") ~> routes ~> check {
+          response.shouldBeForbidden
+        }
       }
     }
 
     "deprecate a file" in {
-      Delete(s"/v1/files/org/proj/$uuid?rev=1") ~> asWriter ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
-        val attr = attributes()
-        response.asJson shouldEqual fileMetadata(projectRef, generatedId, attr, diskIdRev, rev = 2, deprecated = true)
+      givenAFile { id =>
+        Delete(s"/v1/files/org/proj/$id?rev=1") ~> asWriter ~> routes ~> check {
+          status shouldEqual StatusCodes.OK
+          val attr = attributes(id)
+          response.asJson shouldEqual fileMetadata(projectRef, nxv + id, attr, diskIdRev, rev = 2, deprecated = true)
+        }
       }
     }
 
     "reject the deprecation of a file without rev" in {
-      Delete("/v1/files/org/proj/file1") ~> asWriter ~> routes ~> check {
-        status shouldEqual StatusCodes.BadRequest
-        response.asJson shouldEqual jsonContentOf("/errors/missing-query-param.json", "field" -> "rev")
+      givenAFile { id =>
+        Delete(s"/v1/files/org/proj/$id") ~> asWriter ~> routes ~> check {
+          status shouldEqual StatusCodes.BadRequest
+          response.asJson shouldEqual jsonContentOf("/errors/missing-query-param.json", "field" -> "rev")
+        }
       }
     }
 
     "reject the deprecation of an already deprecated file" in {
-      Delete(s"/v1/files/org/proj/$uuid?rev=2") ~> asWriter ~> routes ~> check {
-        status shouldEqual StatusCodes.BadRequest
-        response.asJson shouldEqual jsonContentOf("/files/errors/file-deprecated.json", "id" -> generatedId)
+      givenADeprecatedFile { id =>
+        Delete(s"/v1/files/org/proj/$id?rev=2") ~> asWriter ~> routes ~> check {
+          status shouldEqual StatusCodes.BadRequest
+          response.asJson shouldEqual jsonContentOf("/files/errors/file-deprecated.json", "id" -> (nxv + id))
+        }
       }
     }
 
@@ -392,84 +416,20 @@ class FilesRoutesSpec
     }
 
     "tag a file" in {
-      val payload = json"""{"tag": "mytag", "rev": 1}"""
-      Post("/v1/files/org/proj/file1/tags?rev=3", payload.toEntity) ~> asWriter ~> routes ~> check {
-        status shouldEqual StatusCodes.Created
-        val attr = attributes("file-idx-1.txt")
-        response.asJson shouldEqual fileMetadata(projectRef, file1, attr, diskIdRev, rev = 4, createdBy = s3writer)
+      givenAFile { id =>
+        val payload = json"""{"tag": "mytag", "rev": 1}"""
+        Post(s"/v1/files/org/proj/$id/tags?rev=1", payload.toEntity) ~> asWriter ~> routes ~> check {
+          status shouldEqual StatusCodes.Created
+          val attr = attributes(id)
+          response.asJson shouldEqual fileMetadata(projectRef, nxv + id, attr, diskIdRev, rev = 2)
+        }
       }
     }
 
     "fail to fetch a file without s3/read permission" in {
-      forAll(List("", "?rev=1", "?tags=mytag")) { suffix =>
-        Get(s"/v1/files/org/proj/file1$suffix") ~> Accept(`*/*`) ~> routes ~> check {
-          response.shouldBeForbidden
-          response.headers should not contain varyHeader
-        }
-      }
-    }
-
-    "fail to fetch a file when the accept header does not match file media type" in {
-      forAll(List("", "?rev=1", "?tags=mytag")) { suffix =>
-        Get(s"/v1/files/org/proj/file1$suffix") ~> Accept(`video/*`) ~> asReader ~> routes ~> check {
-          response.status shouldEqual StatusCodes.NotAcceptable
-          response.asJson shouldEqual jsonContentOf("errors/content-type.json", "expected" -> "text/plain")
-          response.headers should not contain varyHeader
-        }
-      }
-    }
-
-    "fetch a file" in {
-      forAll(List(Accept(`*/*`), Accept(`text/*`))) { accept =>
-        forAll(
-          List("/v1/files/org/proj/file1", "/v1/resources/org/proj/_/file1", "/v1/resources/org/proj/file/file1")
-        ) { endpoint =>
-          Get(endpoint) ~> accept ~> asReader ~> routes ~> check {
-            status shouldEqual StatusCodes.OK
-            contentType.value shouldEqual `text/plain(UTF-8)`.value
-            val filename64 = "ZmlsZS1pZHgtMS50eHQ=" // file-idx-1.txt
-            header("Content-Disposition").value.value() shouldEqual
-              s"""attachment; filename="=?UTF-8?B?$filename64?=""""
-            response.asString shouldEqual content
-            response.headers should contain(varyHeader)
-          }
-        }
-      }
-    }
-
-    "fetch a file by rev and tag" in {
-      val endpoints = List(
-        s"/v1/files/$uuid/$uuid/file1",
-        s"/v1/resources/$uuid/$uuid/_/file1",
-        s"/v1/resources/$uuid/$uuid/file/file1",
-        "/v1/files/org/proj/file1",
-        "/v1/resources/org/proj/_/file1",
-        "/v1/resources/org/proj/file/file1",
-        s"/v1/files/org/proj/$file1Encoded",
-        s"/v1/resources/org/proj/_/$file1Encoded",
-        s"/v1/resources/org/proj/file/$file1Encoded"
-      )
-      forAll(endpoints) { endpoint =>
-        forAll(List("rev=1", "tag=mytag")) { param =>
-          Get(s"$endpoint?$param") ~> Accept(`*/*`) ~> asReader ~> routes ~> check {
-            status shouldEqual StatusCodes.OK
-            contentType.value shouldEqual `text/plain(UTF-8)`.value
-            val filename64 = "ZmlsZTIudHh0" // file2.txt
-            header("Content-Disposition").value.value() shouldEqual
-              s"""attachment; filename="=?UTF-8?B?$filename64?=""""
-            response.asString shouldEqual content
-            response.headers should contain(varyHeader)
-          }
-        }
-      }
-    }
-
-    "fail to fetch a file metadata without resources/read permission" in {
-      val endpoints =
-        List("/v1/files/org/proj/file1", "/v1/files/org/proj/file1/tags", "/v1/resources/org/proj/_/file1/tags")
-      forAll(endpoints) { endpoint =>
-        forAll(List("", "?rev=1", "?tags=mytag")) { suffix =>
-          Get(s"$endpoint$suffix") ~> Accept(`application/ld+json`) ~> routes ~> check {
+      givenATaggedFile(tag) { id =>
+        forAll(List("", "?rev=1", s"?tags=$tag")) { suffix =>
+          Get(s"/v1/files/org/proj/$id$suffix") ~> Accept(`*/*`) ~> routes ~> check {
             response.shouldBeForbidden
             response.headers should not contain varyHeader
           }
@@ -477,89 +437,192 @@ class FilesRoutesSpec
       }
     }
 
+    "fail to fetch a file when the accept header does not match file media type" in {
+      givenATaggedFile(tag) { id =>
+        forAll(List("", "?rev=1", s"?tags=$tag")) { suffix =>
+          Get(s"/v1/files/org/proj/$id$suffix") ~> Accept(`video/*`) ~> asReader ~> routes ~> check {
+            response.status shouldEqual StatusCodes.NotAcceptable
+            response.asJson shouldEqual jsonContentOf("errors/content-type.json", "expected" -> "text/plain")
+            response.headers should not contain varyHeader
+          }
+        }
+      }
+    }
+
+    "fetch a file" in {
+      givenAFile { id =>
+        forAll(List(Accept(`*/*`), Accept(`text/*`))) { accept =>
+          forAll(
+            List(s"/v1/files/org/proj/$id", s"/v1/resources/org/proj/_/$id", s"/v1/resources/org/proj/file/$id")
+          ) { endpoint =>
+            Get(endpoint) ~> accept ~> asReader ~> routes ~> check {
+              status shouldEqual StatusCodes.OK
+              contentType.value shouldEqual `text/plain(UTF-8)`.value
+              header("Content-Disposition").value.value() shouldEqual
+                s"""attachment; filename="=?UTF-8?B?${base64encode(id)}?=""""
+              response.asString shouldEqual content
+              response.headers should contain(varyHeader)
+            }
+          }
+        }
+      }
+    }
+
+    "fetch a file by rev and tag" in {
+      givenATaggedFile(tag) { id =>
+        val endpoints = List(
+          s"/v1/files/$uuid/$uuid/$id",
+          s"/v1/resources/$uuid/$uuid/_/$id",
+          s"/v1/resources/$uuid/$uuid/file/$id",
+          s"/v1/files/org/proj/$id",
+          s"/v1/resources/org/proj/_/$id",
+          s"/v1/resources/org/proj/file/$id",
+          s"/v1/files/org/proj/${encodeId(id)}",
+          s"/v1/resources/org/proj/_/${encodeId(id)}",
+          s"/v1/resources/org/proj/file/${encodeId(id)}"
+        )
+        forAll(endpoints) { endpoint =>
+          forAll(List("rev=1", s"tag=$tag")) { param =>
+            Get(s"$endpoint?$param") ~> Accept(`*/*`) ~> asReader ~> routes ~> check {
+              status shouldEqual StatusCodes.OK
+              contentType.value shouldEqual `text/plain(UTF-8)`.value
+              header("Content-Disposition").value.value() shouldEqual
+                s"""attachment; filename="=?UTF-8?B?${base64encode(id)}?=""""
+              response.asString shouldEqual content
+              response.headers should contain(varyHeader)
+            }
+          }
+        }
+      }
+    }
+
+    "fail to fetch a file metadata without resources/read permission" in {
+      givenATaggedFile(tag) { id =>
+        val endpoints =
+          List(s"/v1/files/org/proj/$id", s"/v1/files/org/proj/$id/tags", s"/v1/resources/org/proj/_/$id/tags")
+        forAll(endpoints) { endpoint =>
+          forAll(List("", "?rev=1", s"?tags=$tag")) { suffix =>
+            Get(s"$endpoint$suffix") ~> Accept(`application/ld+json`) ~> routes ~> check {
+              response.shouldBeForbidden
+              response.headers should not contain varyHeader
+            }
+          }
+        }
+      }
+    }
+
     "fetch a file metadata" in {
-      Get("/v1/files/org/proj/file1") ~> Accept(`application/ld+json`) ~> asReader ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
-        val attr = attributes("file-idx-1.txt")
-        response.asJson shouldEqual fileMetadata(projectRef, file1, attr, diskIdRev, rev = 4, createdBy = s3writer)
-        response.headers should contain(varyHeader)
+      givenAFile { id =>
+        Get(s"/v1/files/org/proj/$id") ~> Accept(`application/ld+json`) ~> asReader ~> routes ~> check {
+          status shouldEqual StatusCodes.OK
+          val attr = attributes(id)
+          response.asJson shouldEqual fileMetadata(projectRef, nxv + id, attr, diskIdRev)
+          response.headers should contain(varyHeader)
+        }
       }
     }
 
     "fetch a file metadata by rev and tag" in {
-      val attr      = attributes("file2.txt")
-      val endpoints = List(
-        s"/v1/files/$uuid/$uuid/file1",
-        s"/v1/resources/$uuid/$uuid/_/file1",
-        s"/v1/resources/$uuid/$uuid/file/file1",
-        "/v1/files/org/proj/file1",
-        "/v1/resources/org/proj/_/file1",
-        s"/v1/files/org/proj/$file1Encoded",
-        s"/v1/resources/org/proj/_/$file1Encoded"
-      )
-      forAll(endpoints) { endpoint =>
-        forAll(List("rev=1", "tag=mytag")) { param =>
-          Get(s"$endpoint?$param") ~> Accept(`application/ld+json`) ~> asReader ~> routes ~> check {
-            status shouldEqual StatusCodes.OK
-            response.asJson shouldEqual
-              fileMetadata(projectRef, file1, attr, s3IdRev, createdBy = s3writer, updatedBy = s3writer)
-            response.headers should contain(varyHeader)
+      givenATaggedFile(tag) { id =>
+        val attr      = attributes(id)
+        val endpoints = List(
+          s"/v1/files/$uuid/$uuid/$id",
+          s"/v1/resources/$uuid/$uuid/_/$id",
+          s"/v1/resources/$uuid/$uuid/file/$id",
+          s"/v1/files/org/proj/$id",
+          s"/v1/resources/org/proj/_/$id",
+          s"/v1/files/org/proj/${encodeId(id)}",
+          s"/v1/resources/org/proj/_/${encodeId(id)}"
+        )
+        forAll(endpoints) { endpoint =>
+          forAll(List("rev=1", s"tag=$tag")) { param =>
+            Get(s"$endpoint?$param") ~> Accept(`application/ld+json`) ~> asReader ~> routes ~> check {
+              status shouldEqual StatusCodes.OK
+              response.asJson shouldEqual
+                fileMetadata(projectRef, nxv + id, attr, diskIdRev)
+              response.headers should contain(varyHeader)
+            }
           }
         }
       }
     }
 
     "fetch the file tags" in {
-      Get("/v1/resources/org/proj/_/file1/tags?rev=1") ~> asReader ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual json"""{"tags": []}""".addContext(contexts.tags)
-      }
-      Get("/v1/files/org/proj/file1/tags") ~> asReader ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual json"""{"tags": [{"rev": 1, "tag": "mytag"}]}""".addContext(contexts.tags)
+      givenAFile { id =>
+        val taggingPayload = json"""{"tag": "$tag", "rev": 1}"""
+        Post(s"/v1/files/org/proj/$id/tags?rev=1", taggingPayload.toEntity) ~> asWriter ~> routes ~> check {
+          status shouldEqual StatusCodes.Created
+        }
+        Get(s"/v1/resources/org/proj/_/$id/tags?rev=1") ~> asReader ~> routes ~> check {
+          status shouldEqual StatusCodes.OK
+          response.asJson shouldEqual json"""{"tags": []}""".addContext(contexts.tags)
+        }
+        Get(s"/v1/files/org/proj/$id/tags") ~> asReader ~> routes ~> check {
+          status shouldEqual StatusCodes.OK
+          response.asJson shouldEqual json"""{"tags": [{"rev": 1, "tag": "$tag"}]}""".addContext(contexts.tags)
+        }
       }
     }
 
     "return not found if tag not found" in {
-      Get("/v1/files/org/proj/file1?tag=myother") ~> Accept(`application/ld+json`) ~> asReader ~> routes ~> check {
-        status shouldEqual StatusCodes.NotFound
-        response.asJson shouldEqual jsonContentOf("/errors/tag-not-found.json", "tag" -> "myother")
+      givenATaggedFile("mytag") { id =>
+        Get(s"/v1/files/org/proj/$id?tag=myother") ~> Accept(`application/ld+json`) ~> asReader ~> routes ~> check {
+          status shouldEqual StatusCodes.NotFound
+          response.asJson shouldEqual jsonContentOf("/errors/tag-not-found.json", "tag" -> "myother")
+        }
       }
     }
 
     "reject if provided rev and tag simultaneously" in {
-      Get("/v1/files/org/proj/file1?tag=mytag&rev=1") ~> Accept(`application/ld+json`) ~> asReader ~> routes ~> check {
-        status shouldEqual StatusCodes.BadRequest
-        response.asJson shouldEqual jsonContentOf("/errors/tag-and-rev-error.json")
+      givenATaggedFile(tag) { id =>
+        Get(s"/v1/files/org/proj/$id?tag=$tag&rev=1") ~> Accept(`application/ld+json`) ~> asReader ~> routes ~> check {
+          status shouldEqual StatusCodes.BadRequest
+          response.asJson shouldEqual jsonContentOf("/errors/tag-and-rev-error.json")
+        }
       }
     }
 
-    "delete a tag on file" in {
-      Delete("/v1/files/org/proj/file1/tags/mytag?rev=4") ~> asWriter ~> routes ~> check {
-        val attr = attributes("file-idx-1.txt")
+    def deleteTag(id: String, tag: String, rev: Int) =
+      Delete(s"/v1/files/org/proj/$id/tags/$tag?rev=$rev") ~> asWriter ~> routes ~> check {
+        val attr = attributes(s"$id")
         status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual fileMetadata(projectRef, file1, attr, diskIdRev, rev = 5, createdBy = s3writer)
+        response.asJson shouldEqual fileMetadata(projectRef, nxv + id, attr, diskIdRev, rev = rev + 1)
+      }
+
+    "delete a tag on file" in {
+      givenATaggedFile(tag) { id =>
+        deleteTag(id, tag, 1)
       }
     }
 
     "not return the deleted tag" in {
-      Get("/v1/files/org/proj/file1/tags") ~> asReader ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual json"""{"tags": []}""".addContext(contexts.tags)
+      givenATaggedFile(tag) { id =>
+        deleteTag(id, tag, 1)
+        Get(s"/v1/files/org/proj/$id/tags") ~> asReader ~> routes ~> check {
+          status shouldEqual StatusCodes.OK
+          response.asJson shouldEqual json"""{"tags": []}""".addContext(contexts.tags)
+        }
       }
     }
 
     "fail to fetch file by the deleted tag" in {
-      Get("/v1/files/org/proj/file1?tag=mytag") ~> Accept(`application/ld+json`) ~> asReader ~> routes ~> check {
-        status shouldEqual StatusCodes.NotFound
-        response.asJson shouldEqual jsonContentOf("/errors/tag-not-found.json", "tag" -> "mytag")
+      givenATaggedFile(tag) { id =>
+        deleteTag(id, tag, 1)
+        Get(s"/v1/files/org/proj/$id?tag=$tag") ~> Accept(`application/ld+json`) ~> asReader ~> routes ~> check {
+          status shouldEqual StatusCodes.NotFound
+          response.asJson shouldEqual jsonContentOf("/errors/tag-not-found.json", "tag" -> "mytag")
+        }
       }
     }
 
     "redirect to fusion for the latest version if the Accept header is set to text/html" in {
-      Get("/v1/files/org/project/file1") ~> Accept(`text/html`) ~> routes ~> check {
-        response.status shouldEqual StatusCodes.SeeOther
-        response.header[Location].value.uri shouldEqual Uri("https://bbp.epfl.ch/nexus/web/org/project/resources/file1")
+      givenAFile { id =>
+        Get(s"/v1/files/org/project/$id") ~> Accept(`text/html`) ~> routes ~> check {
+          response.status shouldEqual StatusCodes.SeeOther
+          response.header[Location].value.uri shouldEqual Uri(
+            s"https://bbp.epfl.ch/nexus/web/org/project/resources/$id"
+          )
+        }
       }
     }
   }
@@ -567,6 +630,14 @@ class FilesRoutesSpec
   def givenAFile(test: String => Assertion): Assertion = {
     val id = genString()
     Put(s"/v1/files/org/proj/$id", entity(s"$id")) ~> asWriter ~> routes ~> check {
+      status shouldEqual StatusCodes.Created
+    }
+    test(id)
+  }
+
+  def givenATaggedFile(tag: String)(test: String => Assertion): Assertion = {
+    val id = genString()
+    Put(s"/v1/files/org/proj/$id?tag=$tag", entity(s"$id")) ~> asWriter ~> routes ~> check {
       status shouldEqual StatusCodes.Created
     }
     test(id)
