@@ -106,7 +106,7 @@ class ScopedEventLogSuite extends CatsEffectSuite with BioAssertions with BIOStr
     val expectedDependencies                        = Set(DependsOn(proj, id2))
     for {
       _        <- eventLog.evaluate(proj, id, Create(id, proj)).assertEquals((opened, state1))
-      _        <- eventStore.history(proj, id).assert(opened).toCatsIO
+      _        <- eventStore.history(proj, id).assert(opened)
       _        <- eventLog.stateOr(proj, id, NotFound).assertEquals(state1)
       // Check dependency on id2
       _        <- EntityDependencyStore.directDependencies(proj, id, xas).toCatsIO.assertEquals(expectedDependencies)
@@ -131,7 +131,7 @@ class ScopedEventLogSuite extends CatsEffectSuite with BioAssertions with BIOStr
   test("Tag and check that the state has also been successfully tagged as well") {
     for {
       _ <- eventLog.evaluate(proj, id, TagPR(id, proj, 2, 1)).assertEquals((tagged, state2))
-      _ <- eventStore.history(proj, id).assert(opened, tagged).toCatsIO
+      _ <- eventStore.history(proj, id).assert(opened, tagged)
       _ <- eventLog.stateOr(proj, id, NotFound).assertEquals(state2)
       _ <- eventLog.stateOr(proj, id, tag, NotFound, TagNotFound).assertEquals(state1)
     } yield ()
@@ -140,7 +140,7 @@ class ScopedEventLogSuite extends CatsEffectSuite with BioAssertions with BIOStr
   test("Dry run successfully a command without persisting anything") {
     for {
       _ <- eventLog.dryRun(proj, id, Merge(id, proj, 3)).assertEquals((merged, state3))
-      _ <- eventStore.history(proj, id).assert(opened, tagged).toCatsIO
+      _ <- eventStore.history(proj, id).assert(opened, tagged)
       _ <- eventLog.stateOr(proj, id, NotFound).assertEquals(state2)
     } yield ()
   }
@@ -148,7 +148,7 @@ class ScopedEventLogSuite extends CatsEffectSuite with BioAssertions with BIOStr
   test("Evaluate successfully merge command and store both event and state for an initial state") {
     for {
       _ <- eventLog.evaluate(proj, id, Merge(id, proj, 3)).assertEquals((merged, state3))
-      _ <- eventStore.history(proj, id).assert(opened, tagged, merged).toCatsIO
+      _ <- eventStore.history(proj, id).assert(opened, tagged, merged)
       _ <- eventLog.stateOr(proj, id, NotFound).assertEquals(state3)
     } yield ()
   }
@@ -168,7 +168,7 @@ class ScopedEventLogSuite extends CatsEffectSuite with BioAssertions with BIOStr
   test("Reject a command and persist nothing") {
     for {
       _ <- eventLog.evaluate(proj, id, Update(id, proj, 3)).intercept(PullRequestAlreadyClosed(id, proj))
-      _ <- eventStore.history(proj, id).assert(opened, tagged, merged).toCatsIO
+      _ <- eventStore.history(proj, id).assert(opened, tagged, merged)
       _ <- eventLog.stateOr(proj, id, NotFound).assertEquals(state3)
     } yield ()
   }
@@ -177,7 +177,7 @@ class ScopedEventLogSuite extends CatsEffectSuite with BioAssertions with BIOStr
     val boom = Boom(id, proj, "fail")
     for {
       _ <- eventLog.evaluate(proj, id, boom).intercept(EvaluationFailure(boom, "RuntimeException", boom.message))
-      _ <- eventStore.history(proj, id).assert(opened, tagged, merged).toCatsIO
+      _ <- eventStore.history(proj, id).assert(opened, tagged, merged)
       _ <- eventLog.stateOr(proj, id, NotFound).assertEquals(state3)
     } yield ()
   }
@@ -186,7 +186,7 @@ class ScopedEventLogSuite extends CatsEffectSuite with BioAssertions with BIOStr
     val never = Never(id, proj)
     for {
       _ <- eventLog.evaluate(proj, id, never).intercept(EvaluationTimeout(never, maxDuration))
-      _ <- eventStore.history(proj, id).assert(opened, tagged, merged).toCatsIO
+      _ <- eventStore.history(proj, id).assert(opened, tagged, merged)
       _ <- eventLog.stateOr(proj, id, NotFound).assertEquals(state3)
     } yield ()
   }

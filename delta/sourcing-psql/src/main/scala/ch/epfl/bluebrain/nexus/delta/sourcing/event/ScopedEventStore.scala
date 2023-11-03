@@ -40,17 +40,17 @@ trait ScopedEventStore[Id, E <: ScopedEvent] {
   /**
     * Fetches the history for the event up to the provided revision
     */
-  def history(ref: ProjectRef, id: Id, to: Option[Int]): Stream[Task, E]
+  def history(ref: ProjectRef, id: Id, to: Option[Int]): Stream[IO, E]
 
   /**
     * Fetches the history for the event up to the provided revision
     */
-  def history(ref: ProjectRef, id: Id, to: Int): Stream[Task, E] = history(ref, id, Some(to))
+  def history(ref: ProjectRef, id: Id, to: Int): Stream[IO, E] = history(ref, id, Some(to))
 
   /**
     * Fetches the history for the global event up to the last existing revision
     */
-  def history(ref: ProjectRef, id: Id): Stream[Task, E] = history(ref, id, None)
+  def history(ref: ProjectRef, id: Id): Stream[IO, E] = history(ref, id, None)
 
   /**
     * Allow to stream all current events within [[Envelope]] s
@@ -113,7 +113,7 @@ object ScopedEventStore {
       override def save(event: E, init: PartitionInit): doobie.ConnectionIO[Unit] =
         init.initializePartition("scoped_events") >> insertEvent(event)
 
-      override def history(ref: ProjectRef, id: Id, to: Option[Int]): Stream[Task, E] = {
+      override def history(ref: ProjectRef, id: Id, to: Option[Int]): Stream[IO, E] = {
         val select =
           fr"SELECT value FROM scoped_events" ++
             Fragments.whereAndOpt(
@@ -125,7 +125,7 @@ object ScopedEventStore {
             ) ++
             fr"ORDER BY rev"
 
-        select.query[E].streamWithChunkSize(config.batchSize).transact(xas.read)
+        select.query[E].streamWithChunkSize(config.batchSize).transact(xas.readCE)
       }
 
       private def events(

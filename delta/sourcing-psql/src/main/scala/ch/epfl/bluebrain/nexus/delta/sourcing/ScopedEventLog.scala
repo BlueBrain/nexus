@@ -236,7 +236,7 @@ object ScopedEventLog {
           notFound: => R,
           invalidRevision: (Int, Int) => R
       ): IO[S] =
-        stateMachine.computeState(eventStore.history(ref, id, rev)).toCatsIO.flatMap {
+        stateMachine.computeState(eventStore.history(ref, id, rev).translate(ioToTaskK)).toCatsIO.flatMap {
           case Some(s) if s.rev == rev => IO.pure(s)
           case Some(s)                 => IO.raiseError(invalidRevision(rev, s.rev))
           case None                    => IO.raiseError(notFound)
@@ -250,7 +250,7 @@ object ScopedEventLog {
               IO.pure(stateStore.save(state, tag, Noop))
             else
               stateMachine
-                .computeState(eventStore.history(ref, id, Some(rev)))
+                .computeState(eventStore.history(ref, id, Some(rev)).translate(ioToTaskK))
                 .toCatsIO
                 .map(_.fold(noop) { s => stateStore.save(s, tag, Noop) })
           }
