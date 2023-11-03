@@ -109,14 +109,14 @@ class ScopedEventLogSuite extends CatsEffectSuite with BioAssertions with BIOStr
       _        <- eventStore.history(proj, id).assert(opened)
       _        <- eventLog.stateOr(proj, id, NotFound).assertEquals(state1)
       // Check dependency on id2
-      _        <- EntityDependencyStore.directDependencies(proj, id, xas).toCatsIO.assertEquals(expectedDependencies)
-      _        <- EntityDependencyStore.recursiveDependencies(proj, id, xas).toCatsIO.assertEquals(expectedDependencies)
-      _        <- EntityDependencyStore.decodeDirectDependencies(proj, id, xas).toCatsIO.assertEquals(List.empty)
+      _        <- EntityDependencyStore.directDependencies(proj, id, xas).assertEquals(expectedDependencies)
+      _        <- EntityDependencyStore.recursiveDependencies(proj, id, xas).assertEquals(expectedDependencies)
+      _        <- EntityDependencyStore.decodeDirectDependencies(proj, id, xas).assertEquals(List.empty)
       // Create state for id2
       state1Id2 = state1.copy(id = id2)
       _        <- eventLog.evaluate(proj, id2, Create(id2, proj)).map(_._2).assertEquals(state1Id2)
       _        <- eventLog.stateOr(proj, id2, NotFound).assertEquals(state1Id2)
-      _        <- EntityDependencyStore.decodeDirectDependencies(proj, id, xas).toCatsIO.assertEquals(List(state1Id2))
+      _        <- EntityDependencyStore.decodeDirectDependencies(proj, id, xas).assertEquals(List(state1Id2))
     } yield ()
   }
 

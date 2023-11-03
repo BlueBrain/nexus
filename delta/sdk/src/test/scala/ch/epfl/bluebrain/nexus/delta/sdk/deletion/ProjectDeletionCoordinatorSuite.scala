@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk.deletion
 import cats.effect.IO
 import cats.effect.concurrent.Ref
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.deletion.ProjectDeletionCoordinator.{Active, Noop}
@@ -149,7 +148,6 @@ class ProjectDeletionCoordinatorSuite extends CatsEffectSuite with CatsRunContex
       // Checking that the dependencies have been cleared
       _                 <- EntityDependencyStore
                              .directDependencies(markedAsDeleted, entityToDelete, xas)
-                             .toCatsIO
                              .assertEquals(Set.empty[DependsOn])
     } yield ()
   }

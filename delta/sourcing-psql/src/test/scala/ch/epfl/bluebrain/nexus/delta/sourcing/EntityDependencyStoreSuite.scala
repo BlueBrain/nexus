@@ -8,20 +8,19 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityDependency.{DependsOn, ReferencedBy}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, User}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore
-import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
-import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.BioSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import doobie.implicits._
 import io.circe.Decoder
 import munit.AnyFixture
 
 import java.time.Instant
 
-class EntityDependencyStoreSuite extends BioSuite with CatsRunContext with Doobie.Fixture {
+class EntityDependencyStoreSuite extends CatsEffectSuite with Doobie.Fixture {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 
@@ -93,41 +92,41 @@ class EntityDependencyStoreSuite extends BioSuite with CatsRunContext with Doobi
   test("Fetch direct dependencies for id1") {
     EntityDependencyStore
       .directDependencies(proj, id1, xas)
-      .assert(
+      .assertEquals(
         Set(dependencyId2, dependencyId3)
       )
   }
 
   test("Fetch direct dependencies for id2") {
-    EntityDependencyStore.directDependencies(proj, id2, xas).assert(Set(dependencyId4))
+    EntityDependencyStore.directDependencies(proj, id2, xas).assertEquals(Set(dependencyId4))
   }
 
   test("Fetch direct dependencies for id3") {
-    EntityDependencyStore.directDependencies(proj, id3, xas).assert(Set.empty)
+    EntityDependencyStore.directDependencies(proj, id3, xas).assertEquals(Set.empty[DependsOn])
   }
 
   test(s"Fetch direct external references for $proj") {
     EntityDependencyStore
       .directExternalReferences(proj, xas)
-      .assert(Set.empty)
+      .assertEquals(Set.empty[ReferencedBy])
   }
 
   test(s"Fetch direct external references for $proj2") {
     EntityDependencyStore
       .directExternalReferences(proj2, xas)
-      .assert(
+      .assertEquals(
         Set(ReferencedBy(proj, id2))
       )
   }
 
   test("Fetch latest state values for direct dependencies of id1") {
-    EntityDependencyStore.decodeDirectDependencies(proj, id1, xas).assert(List(state2, state3), noTaggedStatesClue)
+    EntityDependencyStore.decodeDirectDependencies(proj, id1, xas).assertEquals(List(state2, state3), noTaggedStatesClue)
   }
 
   test("Fetch all dependencies for id1") {
     EntityDependencyStore
       .recursiveDependencies(proj, id1, xas)
-      .assert(
+      .assertEquals(
         Set(dependencyId2, dependencyId3, dependencyId4, dependencyId5)
       )
   }
@@ -135,7 +134,7 @@ class EntityDependencyStoreSuite extends BioSuite with CatsRunContext with Doobi
   test("Fetch latest state values for all dependencies for id1") {
     EntityDependencyStore
       .decodeRecursiveDependencies(proj, id1, xas)
-      .assert(List(state2, state3, state5), noTaggedStatesClue)
+      .assertEquals(List(state2, state3, state5), noTaggedStatesClue)
   }
 
   test("Introducing a dependency cycle") {
@@ -157,7 +156,7 @@ class EntityDependencyStoreSuite extends BioSuite with CatsRunContext with Doobi
   test("Fetch again all dependencies for id1 to check that cycles are prevented") {
     EntityDependencyStore
       .recursiveDependencies(proj, id1, xas)
-      .assert(
+      .assertEquals(
         Set(dependencyId2, dependencyId3, dependencyId4, dependencyId5)
       )
   }
@@ -165,17 +164,17 @@ class EntityDependencyStoreSuite extends BioSuite with CatsRunContext with Doobi
   test("Fetch latest state values for all dependencies for id1 to check that cycles are prevented") {
     EntityDependencyStore
       .decodeRecursiveDependencies(proj, id1, xas)
-      .assert(List(state2, state3, state5), noTaggedStatesClue)
+      .assertEquals(List(state2, state3, state5), noTaggedStatesClue)
   }
 
   test(s"Delete all dependencies for $proj") {
     for {
-      _ <- EntityDependencyStore.deleteAll(proj).transact(xas.write)
+      _ <- EntityDependencyStore.deleteAll(proj).transact(xas.writeCE)
       _ <- projEntities.traverse { id =>
              EntityDependencyStore
                .directDependencies(proj, id, xas)
-               .assert(
-                 Set.empty,
+               .assertEquals(
+                 Set.empty[DependsOn],
                  s"Dependencies for '$id' in '$proj' should have been deleted."
                )
            }

@@ -7,7 +7,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
 import ch.epfl.bluebrain.nexus.delta.sourcing.{EntityCheck, EntityDependencyStore, Transactors}
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 
 trait ValidateAggregate[Rejection] {
 
@@ -34,7 +33,7 @@ object ValidateAggregate {
       xas
     ) >> references.value.toList
       .foldLeftM(references.length) { (acc, ref) =>
-        EntityDependencyStore.recursiveDependencies(ref.project, ref.viewId, xas).toCatsIO.map { r =>
+        EntityDependencyStore.recursiveDependencies(ref.project, ref.viewId, xas).map { r =>
           acc + r.size
         }
       }
