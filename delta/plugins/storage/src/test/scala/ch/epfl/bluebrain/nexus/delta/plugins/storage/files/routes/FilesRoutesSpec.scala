@@ -69,9 +69,9 @@ class FilesRoutesSpec
       Vocabulary.contexts.search       -> ContextValue.fromFile("contexts/search.json")
     )
 
-  private val reader   = alice
-  private val writer   = bob
-  private val s3writer = charlie
+  private val reader   = User("reader", realm)
+  private val writer   = User("writer", realm)
+  private val s3writer = User("s3writer", realm)
 
   implicit private val callerReader: Caller   =
     Caller(reader, Set(reader, Anonymous, Authenticated(realm), Group("group", realm)))
@@ -81,17 +81,18 @@ class FilesRoutesSpec
     Caller(s3writer, Set(s3writer, Anonymous, Authenticated(realm), Group("group", realm)))
   private val identities                      = IdentitiesDummy(callerReader, callerWriter, callerS3Writer)
 
-  private val asReader   = addCredentials(OAuth2BearerToken("alice"))
-  private val asWriter   = addCredentials(OAuth2BearerToken("bob"))
-  private val asS3Writer = addCredentials(OAuth2BearerToken("charlie"))
+  private val asReader   = addCredentials(OAuth2BearerToken("reader"))
+  private val asWriter   = addCredentials(OAuth2BearerToken("writer"))
+  private val asS3Writer = addCredentials(OAuth2BearerToken("s3writer"))
 
   private val fetchContext = FetchContextDummy(Map(project.ref -> project.context))
 
-  private val s3Read        = Permission.unsafe("s3/read")
-  private val s3Write       = Permission.unsafe("s3/write")
-  private val diskRead      = Permission.unsafe("disk/read")
-  private val diskWrite     = Permission.unsafe("disk/write")
-  override val allowedPerms =
+  private val s3Read    = Permission.unsafe("s3/read")
+  private val s3Write   = Permission.unsafe("s3/write")
+  private val diskRead  = Permission.unsafe("disk/read")
+  private val diskWrite = Permission.unsafe("disk/write")
+
+  override val allowedPerms: Seq[Permission] =
     Seq(
       permissions.read,
       permissions.write,
@@ -145,23 +146,16 @@ class FilesRoutesSpec
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    // format: off
-//    aclCheck.append(AclAddress.Root, writer -> Set(storagesPermissions.write), callerWriter.subject -> Set(storagesPermissions.write)).accepted
-//    aclCheck.append(AclAddress.Root, writer -> Set(diskWrite), callerWriter.subject -> Set(diskWrite)).accepted
-//    aclCheck.append(AclAddress.Root, writer -> Set(diskRead), callerWriter.subject -> Set(diskRead)).accepted
-//    aclCheck.append(AclAddress.Root, writer -> Set(permissions.write), callerWriter.subject -> Set(permissions.write)).accepted
-//    aclCheck.append(AclAddress.Root, writer -> Set(permissions.read), callerWriter.subject -> Set(permissions.read)).accepted
 
     val writePermissions = Set(storagesPermissions.write, diskWrite, permissions.write)
-    val readPermissions = Set(diskRead, s3Read, permissions.read)
+    val readPermissions  = Set(diskRead, s3Read, permissions.read)
     aclCheck.append(AclAddress.Root, writer -> writePermissions, writer -> readPermissions).accepted
     aclCheck.append(AclAddress.Root, callerWriter.subject -> writePermissions).accepted
     aclCheck.append(AclAddress.Root, reader -> readPermissions).accepted
     aclCheck.append(AclAddress.Root, s3writer -> Set(s3Write), callerS3Writer.subject -> Set(s3Write)).accepted
-    // format: on
 
-    val defaults = json"""{"maxFileSize": 1000, "volume": "$path"}"""
-    val s3Perms  = json"""{"readPermission": "$s3Read", "writePermission": "$s3Write"}"""
+    val defaults         = json"""{"maxFileSize": 1000, "volume": "$path"}"""
+    val s3Perms          = json"""{"readPermission": "$s3Read", "writePermission": "$s3Write"}"""
     storages.create(s3Id, projectRef, diskFieldsJson deepMerge defaults deepMerge s3Perms)(callerWriter).accepted
     storages
       .create(dId, projectRef, diskFieldsJson deepMerge defaults deepMerge json"""{"capacity":5000}""")(callerWriter)
@@ -362,7 +356,7 @@ class FilesRoutesSpec
       Post("/v1/files/org/proj/file1/tags?rev=3", payload.toEntity) ~> asWriter ~> routes ~> check {
         status shouldEqual StatusCodes.Created
         val attr = attributes("file-idx-1.txt")
-        response.asJson shouldEqual fileMetadata(projectRef, file1, attr, diskIdRev, rev = 4, createdBy = charlie)
+        response.asJson shouldEqual fileMetadata(projectRef, file1, attr, diskIdRev, rev = 4, createdBy = s3writer)
       }
     }
 
