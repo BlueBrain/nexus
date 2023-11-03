@@ -41,7 +41,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.DoobieScalaTestFixture
 import ch.epfl.bluebrain.nexus.testkit.remotestorage.RemoteStorageDocker
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsEffectSpec
 import monix.execution.Scheduler
-import org.scalatest.DoNotDiscover
+import org.scalatest.{Assertion, DoNotDiscover}
 import org.scalatest.concurrent.Eventually
 
 import java.net.URLDecoder
@@ -490,6 +490,41 @@ class FilesSpec(docker: RemoteStorageDocker)
 
     }
 
+    "undeprecating a file" should {
+
+      "succeed" in {
+        givenADeprecatedFile { id =>
+          files.undeprecate(id, 2).accepted.deprecated shouldEqual false
+        }
+      }
+
+      "reject if file doesn't exists" in {
+        files.undeprecate(fileId("404"), 1).rejectedWith[FileNotFound]
+      }
+
+      "reject if file is not deprecated" in {
+        givenAFile { id =>
+          files.undeprecate(id, 1).assertRejectedWith[FileIsNotDeprecated]
+        }
+      }
+
+      "reject if the revision passed is incorrect" in {
+        givenADeprecatedFile { id =>
+          files.undeprecate(id, 3).assertRejectedEquals(IncorrectRev(3, 2))
+        }
+      }
+
+      "reject if project does not exist" in {
+        val wrongProject = ProjectRef(org, Label.unsafe("other"))
+        files.deprecate(FileId(nxv + "id", wrongProject), 1).rejectedWith[ProjectContextRejection]
+      }
+
+      "reject if project is deprecated" in {
+        files.undeprecate(FileId(nxv + "id", deprecatedProject.ref), 2).rejectedWith[ProjectContextRejection]
+      }
+
+    }
+
     "fetching a file" should {
       val resourceRev1 = mkResource(file1, projectRef, diskRev, attributes("myfile.txt"))
       val resourceRev4 = mkResource(file1, projectRef, diskRev, attributes(), rev = 4)
@@ -582,6 +617,22 @@ class FilesSpec(docker: RemoteStorageDocker)
         files.fetchContent(FileId(rdId, projectRef)).rejectedWith[ProjectContextRejection]
       }
 
+    }
+
+    def givenAFile(assertion: FileId => Assertion): Assertion = {
+      val filename = genString()
+      val id       = fileId(filename)
+      files.create(id, Some(diskId), randomEntity(filename, 1), None).accepted
+      files.fetch(id).accepted
+      assertion(id)
+    }
+
+    def givenADeprecatedFile(assertion: FileId => Assertion): Assertion = {
+      givenAFile { id =>
+        files.deprecate(id, 1).accepted
+        files.fetch(id).accepted.deprecated shouldEqual true
+        assertion(id)
+      }
     }
   }
 

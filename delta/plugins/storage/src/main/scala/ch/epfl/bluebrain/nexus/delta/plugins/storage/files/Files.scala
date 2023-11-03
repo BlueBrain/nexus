@@ -335,6 +335,26 @@ final class Files(
   }.span("deprecateFile")
 
   /**
+    * Undeprecate an existing file
+    *
+    * @param id
+    *   the file identifier to expand as the iri of the file
+    * @param projectRef
+    *   the project where the file belongs
+    * @param rev
+    *   the current revision of the file
+    */
+  def undeprecate(
+      id: FileId,
+      rev: Int
+  )(implicit subject: Subject): IO[FileResource] = {
+    for {
+      (iri, _) <- id.expandIri(fetchContext.onModify)
+      res      <- eval(UndeprecateFile(iri, id.project, rev, subject))
+    } yield res
+  }.span("undeprecateFile")
+
+  /**
     * Fetch the last version of a file content
     *
     * @param id
@@ -683,6 +703,14 @@ object Files {
         IOInstant.now.map(FileDeprecated(c.id, c.project, s.storage, s.storageType, s.rev + 1, _, c.subject))
     }
 
+    def undeprecate(c: UndeprecateFile) = state match {
+      case None                      => IO.raiseError(FileNotFound(c.id, c.project))
+      case Some(s) if s.rev != c.rev => IO.raiseError(IncorrectRev(c.rev, s.rev))
+      case Some(s) if !s.deprecated  => IO.raiseError(FileIsNotDeprecated(c.id))
+      case Some(s)                   =>
+        IOInstant.now.map(FileUndeprecated(c.id, c.project, s.storage, s.storageType, s.rev + 1, _, c.subject))
+    }
+
     cmd match {
       case c: CreateFile           => create(c)
       case c: UpdateFile           => update(c)
@@ -690,6 +718,7 @@ object Files {
       case c: TagFile              => tag(c)
       case c: DeleteFileTag        => deleteTag(c)
       case c: DeprecateFile        => deprecate(c)
+      case c: UndeprecateFile      => undeprecate(c)
     }
   }
 
