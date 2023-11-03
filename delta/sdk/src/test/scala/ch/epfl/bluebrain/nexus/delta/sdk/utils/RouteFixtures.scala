@@ -65,4 +65,5 @@ trait RouteFixtures {
   val realm: Label = Label.unsafe("wonderland")
   val alice: User  = User("alice", realm)
   val bob: User    = User("bob", realm)
+  val charlie: User = User("charlie", realm)
 }
