@@ -12,8 +12,12 @@ trait CatsIOValues {
   self: Suite =>
 
   implicit final class CatsIOValuesOps[A](private val io: IO[A]) {
-    def accepted: A =
-      io.unsafeRunTimed(45.seconds).getOrElse(fail("IO timed out during .accepted call"))
+    def accepted(implicit pos: source.Position): A = {
+      io.attempt.unsafeRunTimed(45.seconds).getOrElse(fail("IO timed out during .accepted call")) match {
+        case Left(e) => fail(s"IO failed when it was expected to succeed. Failure details: $e")
+        case Right(value) => value
+      }
+    }
 
     def rejected(implicit pos: source.Position): Throwable = rejectedWith[Throwable]
 
