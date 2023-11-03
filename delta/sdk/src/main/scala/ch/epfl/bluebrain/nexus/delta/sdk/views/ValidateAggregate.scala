@@ -1,25 +1,26 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.views
 
 import cats.data.NonEmptySet
+import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
 import ch.epfl.bluebrain.nexus.delta.sourcing.{EntityCheck, EntityDependencyStore, Transactors}
-import monix.bio.IO
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 
 trait ValidateAggregate[Rejection] {
 
   /**
     * Validate the reference tree to look up for unknown references and validates the number of nodes
     */
-  def apply(references: NonEmptySet[ViewRef]): IO[Rejection, Unit]
+  def apply(references: NonEmptySet[ViewRef]): IO[Unit]
 
 }
 
 object ValidateAggregate {
 
-  def apply[Rejection](
+  def apply[Rejection <: Throwable](
       entityType: EntityType,
       ifUnknown: Set[ViewRef] => Rejection,
       maxViewRefs: Int,
@@ -33,7 +34,7 @@ object ValidateAggregate {
       xas
     ) >> references.value.toList
       .foldLeftM(references.length) { (acc, ref) =>
-        EntityDependencyStore.recursiveDependencies(ref.project, ref.viewId, xas).map { r =>
+        EntityDependencyStore.recursiveDependencies(ref.project, ref.viewId, xas).toCatsIO.map { r =>
           acc + r.size
         }
       }

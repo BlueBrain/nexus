@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{InvalidViewReferences, PermissionIsNotDefined, TooManyViewReferences}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.{AggregateBlazegraphViewValue, IndexingBlazegraphViewValue}
@@ -27,7 +26,7 @@ object ValidateBlazegraphView {
         maxViewRefs,
         TooManyViewReferences,
         xas
-      )(v.views).toCatsIO
+      )(v.views)
     case v: IndexingBlazegraphViewValue  =>
       for {
         _ <- fetchPermissions.flatMap { perms =>

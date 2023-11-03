@@ -14,7 +14,6 @@ import doobie.implicits._
 import doobie.postgres.implicits._
 import fs2.Stream
 import io.circe.Decoder
-import monix.bio.Task
 
 /**
   * A
