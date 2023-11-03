@@ -171,6 +171,19 @@ final class ResourcesRoutes(
                           }
                         )
                       },
+                      // Undeprecate a resource
+                      (pathPrefix("undeprecate") & put & parameter("rev".as[Int])) { rev =>
+                        authorizeFor(ref, Write).apply {
+                          emit(
+                            resources
+                              .undeprecate(id, ref, schemaOpt, rev)
+                              .flatTap(indexUIO(ref, _, mode))
+                              .map(_.void)
+                              .attemptNarrow[ResourceRejection]
+                              .rejectWhen(wrongJsonOrNotFound)
+                          )
+                        }
+                      },
                       (pathPrefix("update-schema") & put & pathEndOrSingleSlash) {
                         authorizeFor(ref, Write).apply {
 

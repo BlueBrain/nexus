@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resources
 
 import cats.effect.IO
+import cats.implicits.catsSyntaxOptionId
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContext._
@@ -13,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.jsonld.RemoteContextRef.StaticCon
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources.{evaluate, next}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceEvent._
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{IncorrectRev, ResourceIsDeprecated, ResourceNotFound, RevisionNotFound}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{IncorrectRev, ResourceIsDeprecated, ResourceIsNotDeprecated, ResourceNotFound, RevisionNotFound, UnexpectedResourceSchema}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{ResourceCommand, ResourceEvent, ResourceState}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
@@ -171,16 +172,38 @@ class ResourcesSpec extends CatsEffectSpec with CirceLiteral with ValidateResour
         }
       }
 
+      "create a new event from a UndeprecateResource command" in {
+        val deprecatedState = ResourceGen.currentState(myId, projectRef, source, jsonld, deprecated = true)
+        val undeprecateCmd  = UndeprecateResource(myId, projectRef, None, 1, subject)
+        eval(deprecatedState.some, undeprecateCmd).accepted shouldEqual
+          ResourceUndeprecated(myId, projectRef, types, 2, epoch, subject)
+      }
+
       "reject with IncorrectRev" in {
         val current = ResourceGen.currentState(myId, projectRef, source, jsonld)
         val list    = List(
           current -> UpdateResource(myId, projectRef, None, source, jsonld, 2, caller, None),
           current -> TagResource(myId, projectRef, None, 1, UserTag.unsafe("tag"), 2, subject),
           current -> DeleteResourceTag(myId, projectRef, None, UserTag.unsafe("tag"), 2, subject),
-          current -> DeprecateResource(myId, projectRef, None, 2, subject)
+          current -> DeprecateResource(myId, projectRef, None, 2, subject),
+          current -> UndeprecateResource(myId, projectRef, None, 2, subject)
         )
         forAll(list) { case (state, cmd) =>
           eval(Some(state), cmd).rejected shouldEqual IncorrectRev(provided = 2, expected = 1)
+        }
+      }
+
+      "reject with UnexpectedResourceSchema" in {
+        val currentSchema = Latest(schema1)
+        val otherSchema   = Latest(schemas.resources).some
+        val current       = ResourceGen.currentState(myId, projectRef, source, jsonld, currentSchema, rev = 2)
+        val commands      = List(
+          UndeprecateResource(myId, projectRef, otherSchema, 2, subject),
+          DeprecateResource(myId, projectRef, otherSchema, 2, subject)
+        )
+
+        forAll(commands) { cmd =>
+          eval(current.some, cmd).rejectedWith[UnexpectedResourceSchema]
         }
       }
 
@@ -188,7 +211,8 @@ class ResourcesSpec extends CatsEffectSpec with CirceLiteral with ValidateResour
         val list = List(
           None -> UpdateResource(myId, projectRef, None, source, jsonld, 1, caller, None),
           None -> TagResource(myId, projectRef, None, 1, UserTag.unsafe("myTag"), 1, subject),
-          None -> DeprecateResource(myId, projectRef, None, 1, subject)
+          None -> DeprecateResource(myId, projectRef, None, 1, subject),
+          None -> UndeprecateResource(myId, projectRef, None, 1, subject)
         )
         forAll(list) { case (state, cmd) =>
           eval(state, cmd).rejectedWith[ResourceNotFound]
@@ -204,6 +228,12 @@ class ResourcesSpec extends CatsEffectSpec with CirceLiteral with ValidateResour
         forAll(list) { case (state, cmd) =>
           eval(Some(state), cmd).rejectedWith[ResourceIsDeprecated]
         }
+      }
+
+      "reject with ResourceIsNotDeprecated" in {
+        val activeState    = ResourceGen.currentState(myId, projectRef, source, jsonld)
+        val undeprecateCmd = UndeprecateResource(myId, projectRef, None, 1, subject)
+        eval(activeState.some, undeprecateCmd).rejectedWith[ResourceIsNotDeprecated]
       }
 
       "reject with RevisionNotFound" in {
@@ -339,6 +369,15 @@ class ResourcesSpec extends CatsEffectSpec with CirceLiteral with ValidateResour
 
         next(Some(current), ResourceDeprecated(myId, projectRef, types, 2, time2, subject)).value shouldEqual
           current.copy(rev = 2, deprecated = true, updatedAt = time2, updatedBy = subject)
+      }
+
+      "create new ResourceUndeprecated state" in {
+        val resourceUndeprecatedEvent = ResourceUndeprecated(myId, projectRef, types, 2, time2, subject)
+        val deprecatedState           = current.copy(deprecated = true)
+
+        next(None, resourceUndeprecatedEvent) shouldEqual None
+        next(deprecatedState.some, resourceUndeprecatedEvent).value shouldEqual
+          deprecatedState.copy(rev = 2, deprecated = false, updatedAt = time2, updatedBy = subject)
       }
     }
   }

@@ -25,93 +25,17 @@ class ResourceSerializationSuite extends SerializationSuite with ResourceInstanc
   val subject: Subject = User("username", realm)
   val tag: UserTag     = UserTag.unsafe("mytag")
 
-  private val created        =
-    ResourceCreated(
-      myId,
-      projectRef,
-      Revision(schemas.resources, 1),
-      projectRef,
-      types,
-      source,
-      compacted,
-      expanded,
-      remoteContextRefs,
-      1,
-      instant,
-      subject,
-      None
-    )
+  // format: off
+  private val created        = ResourceCreated(myId, projectRef, Revision(schemas.resources, 1), projectRef, types, source, compacted, expanded, remoteContextRefs, 1, instant, subject, None)
   private val createdWithTag = created.copy(tag = Some(tag))
-  private val updated        =
-    ResourceUpdated(
-      myId,
-      projectRef,
-      Revision(schemas.resources, 1),
-      projectRef,
-      types,
-      source,
-      compacted,
-      expanded,
-      remoteContextRefs,
-      2,
-      instant,
-      subject,
-      Some(tag)
-    )
-  private val refreshed      = ResourceRefreshed(
-    myId,
-    projectRef,
-    Revision(schemas.resources, 1),
-    projectRef,
-    types,
-    compacted,
-    expanded,
-    remoteContextRefs,
-    2,
-    instant,
-    subject
-  )
-  private val tagged         =
-    ResourceTagAdded(
-      myId,
-      projectRef,
-      types,
-      1,
-      UserTag.unsafe("mytag"),
-      3,
-      instant,
-      subject
-    )
-  private val deprecated     =
-    ResourceDeprecated(
-      myId,
-      projectRef,
-      types,
-      4,
-      instant,
-      subject
-    )
-  private val tagDeleted     =
-    ResourceTagDeleted(
-      myId,
-      projectRef,
-      types,
-      tag,
-      5,
-      instant,
-      subject
-    )
-  private val schemaUpdated  =
-    ResourceSchemaUpdated(
-      myId,
-      projectRef,
-      Revision(schemas.resources, 1),
-      projectRef,
-      types,
-      6,
-      instant,
-      subject
-    )
+  private val updated        = ResourceUpdated(myId, projectRef, Revision(schemas.resources, 1), projectRef, types, source, compacted, expanded, remoteContextRefs, 2, instant, subject, Some(tag))
+  private val refreshed      = ResourceRefreshed(myId, projectRef, Revision(schemas.resources, 1), projectRef, types, compacted, expanded, remoteContextRefs, 2, instant, subject)
+  private val tagged         = ResourceTagAdded(myId, projectRef, types, 1, UserTag.unsafe("mytag"), 3, instant, subject)
+  private val deprecated     = ResourceDeprecated(myId, projectRef, types, 4, instant, subject)
+  private val undeprecated   = ResourceUndeprecated(myId, projectRef, types, 5, instant, subject)
+  private val tagDeleted     = ResourceTagDeleted(myId, projectRef, types, tag, 5, instant, subject)
+  private val schemaUpdated  = ResourceSchemaUpdated(myId, projectRef, Revision(schemas.resources, 1), projectRef, types, 6, instant, subject)
+  // format: on
 
   private val resourcesMapping = List(
     (created, loadEvents("resources", "resource-created.json"), Created),
@@ -120,6 +44,7 @@ class ResourceSerializationSuite extends SerializationSuite with ResourceInstanc
     (refreshed, loadEvents("resources", "resource-refreshed.json"), Refreshed),
     (tagged, loadEvents("resources", "resource-tagged.json"), Tagged),
     (deprecated, loadEvents("resources", "resource-deprecated.json"), Deprecated),
+    (undeprecated, loadEvents("resources", "resource-undeprecated.json"), Undeprecated),
     (tagDeleted, loadEvents("resources", "resource-tag-deleted.json"), TagDeleted),
     (schemaUpdated, loadEvents("resources", "resource-schema-updated.json"), Updated)
   )

@@ -177,6 +177,13 @@ object ResourceRejection {
   final case class ResourceIsDeprecated(id: Iri) extends ResourceRejection(s"Resource '$id' is deprecated.")
 
   /**
+    * Rejection returned when attempting to undeprecate a resource that is not deprecated
+    * @param id
+    *   the resource identifier
+    */
+  final case class ResourceIsNotDeprecated(id: Iri) extends ResourceRejection(s"Resource '$id' is not deprecated.")
+
+  /**
     * Rejection returned when a subject intends to perform an operation on the current resource, but either provided an
     * incorrect revision or a concurrent update won over this attempt.
     *

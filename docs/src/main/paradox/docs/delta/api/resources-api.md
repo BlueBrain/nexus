@@ -239,6 +239,26 @@ Request
 Response
 :   @@snip [deprecated.json](assets/resources/deprecated.json)
 
+## Undeprecate
+
+Unlocks a previously deprecated resource. Further operations can then be performed. The resource will again be found when listing/querying.
+
+Undeprecating a resource is considered to be an update as well.
+
+```
+PUT /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}/undeprecate?rev={previous_rev}
+```
+
+... where `{previous_rev}` is the last known revision number for the resource.
+
+**Example**
+
+Request
+:   @@snip [undeprecate.sh](assets/resources/undeprecate.sh)
+
+Response
+:   @@snip [undeprecated.json](assets/resources/undeprecated.json)
+
 ## Change schema
 
 This operation allows to only change the schema of a resource without providing any payload.
