@@ -279,7 +279,7 @@ object ScopedEventLog {
 
           {
             for {
-              init     <- PartitionInit(event.project, xas.cache).toCatsIO
+              init     <- PartitionInit(event.project, xas.cache)
               tagQuery <- saveTag(event, newState)
               res      <- queries(tagQuery, init)
                             .attemptSomeSqlState { case sqlstate.class23.UNIQUE_VIOLATION =>

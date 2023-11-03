@@ -56,9 +56,12 @@ object ViewsStore {
       for {
         res              <- fetchValue(id, project).flatMap(asView)
         singleOrMultiple <- IO.fromEither(res).widen[View].onErrorHandleWith { iri =>
-                              EntityDependencyStore.decodeRecursiveDependencies[Iri, Value](project, iri, xas).toUIO.flatMap {
-                                _.traverseFilter(embeddedView(project, iri, _)).map(AggregateView(_))
-                              }
+                              EntityDependencyStore
+                                .decodeRecursiveDependencies[Iri, Value](project, iri, xas)
+                                .toUIO
+                                .flatMap {
+                                  _.traverseFilter(embeddedView(project, iri, _)).map(AggregateView(_))
+                                }
                             }
       } yield singleOrMultiple
 

@@ -120,7 +120,9 @@ class EntityDependencyStoreSuite extends CatsEffectSuite with Doobie.Fixture {
   }
 
   test("Fetch latest state values for direct dependencies of id1") {
-    EntityDependencyStore.decodeDirectDependencies(proj, id1, xas).assertEquals(List(state2, state3), noTaggedStatesClue)
+    EntityDependencyStore
+      .decodeDirectDependencies(proj, id1, xas)
+      .assertEquals(List(state2, state3), noTaggedStatesClue)
   }
 
   test("Fetch all dependencies for id1") {

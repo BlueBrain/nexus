@@ -1,16 +1,16 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
-import ch.epfl.bluebrain.nexus.delta.kernel.cache.KeyValueStore
+import ch.epfl.bluebrain.nexus.delta.kernel.cache.LocalCache
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.BioSuite
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import doobie.implicits.toSqlInterpolator
 
-class PartitionInitSuite extends BioSuite {
+class PartitionInitSuite extends CatsEffectSuite {
 
   test("If the projectRef is not cached, we should obtain PartitionInit.Execute") {
     val projectRef = ProjectRef.unsafe("org", "project")
     for {
-      cache <- KeyValueStore[String, Unit]()
+      cache <- LocalCache[String, Unit]()
       init  <- PartitionInit(projectRef, cache)
       _      = assertEquals(init, Execute(projectRef))
     } yield ()
@@ -19,7 +19,7 @@ class PartitionInitSuite extends BioSuite {
   test("If the projectRef is cached, we should obtain PartitionInit.Noop") {
     val projectRef = ProjectRef.unsafe("org", "project2")
     for {
-      cache <- KeyValueStore[String, Unit]()
+      cache <- LocalCache[String, Unit]()
       init  <- PartitionInit(projectRef, cache)
       _      = assertEquals(init, Execute(projectRef))
       _     <- init.updateCache(cache)
@@ -30,7 +30,7 @@ class PartitionInitSuite extends BioSuite {
 
   test("Noop should not do anything") {
     for {
-      cache                  <- KeyValueStore[String, Unit]()
+      cache                  <- LocalCache[String, Unit]()
       partitionsBeforeUpdate <- cache.entries
       _                      <- Noop.updateCache(cache)
       partitionsAfterUpdate  <- cache.entries
@@ -42,13 +42,13 @@ class PartitionInitSuite extends BioSuite {
     val projectRef  = ProjectRef.unsafe("org", "project")
     val expectedKey = "9628a1046de38de7b6014110a178ea9e"
     for {
-      cache          <- KeyValueStore[String, Unit]()
-      _              <- cache.entries.assert(Map.empty)
+      cache          <- LocalCache[String, Unit]()
+      _              <- cache.entries.assertEquals(Map.empty[String, Unit])
       _              <- Execute(projectRef).updateCache(cache)
       updatedEntries <- cache.entries.map(_.keys.mkString(", "))
       _              <- cache
                           .containsKey(expectedKey)
-                          .assert(true, s"We expected '$expectedKey' in cache, we only got '$updatedEntries'.")
+                          .assertEquals(true, s"We expected '$expectedKey' in cache, we only got '$updatedEntries'.")
     } yield ()
   }
 
