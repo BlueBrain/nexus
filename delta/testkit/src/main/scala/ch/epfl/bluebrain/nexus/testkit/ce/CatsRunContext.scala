@@ -6,7 +6,7 @@ import scala.concurrent.ExecutionContext
 
 trait CatsRunContext {
 
-  implicit val contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
-  implicit val timer: Timer[IO]               = IO.timer(ExecutionContext.global)
+  implicit lazy val contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
+  implicit lazy val timer: Timer[IO]               = IO.timer(ExecutionContext.global)
 
 }

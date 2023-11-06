@@ -3,10 +3,10 @@ package ch.epfl.bluebrain.nexus.testkit
 import io.circe.{parser, Json, JsonObject}
 
 trait CirceLiteral {
-  implicit final def circeLiteralSyntax(sc: StringContext): CirceLiterelOps = new CirceLiterelOps(sc)
+  implicit final def circeLiteralSyntax(sc: StringContext): CirceLiteralOps = new CirceLiteralOps(sc)
 }
 
-final class CirceLiterelOps(private val sc: StringContext) extends AnyVal {
+final class CirceLiteralOps(private val sc: StringContext) extends AnyVal {
   def json(args: Any*): Json =
     parser.parse(sc.s(args: _*)) match {
       case Right(value) => value

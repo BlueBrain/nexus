@@ -89,11 +89,15 @@ class ElasticSearchIndexingRoutesSpec extends ElasticSearchViewsRoutesFixtures w
       (_, _, _) => UIO.unit,
       "prefix",
       5,
-      xas
+      xas,
+      defaultMapping,
+      defaultSettings
     ),
     eventLogConfig,
     "prefix",
-    xas
+    xas,
+    defaultMapping,
+    defaultSettings
   ).accepted
 
   private lazy val viewsQuery = new DummyElasticSearchViewsQuery(views)

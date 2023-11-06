@@ -7,14 +7,15 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchC
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientSetup
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import ch.epfl.bluebrain.nexus.testkit.bio.BioRunContext
+import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchContainer
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.ResourceFixture.TaskFixture
 import ch.epfl.bluebrain.nexus.testkit.mu.bio.ResourceFixture
+import ch.epfl.bluebrain.nexus.testkit.mu.bio.ResourceFixture.TaskFixture
 import monix.bio.Task
 import monix.execution.Scheduler
 import munit.Suite
 
-object ElasticSearchClientSetup extends CirceLiteral {
+object ElasticSearchClientSetup extends CirceLiteral with CatsRunContext with Fixtures {
 
   private val template = jobj"""{
                                  "index_patterns" : ["*"],
@@ -35,7 +36,12 @@ object ElasticSearchClientSetup extends CirceLiteral {
     } yield {
       implicit val as: ActorSystem                           = actorSystem
       implicit val credentials: Option[BasicHttpCredentials] = ElasticSearchContainer.credentials
-      new ElasticSearchClient(httpClient, s"http://${container.getHost}:${container.getMappedPort(9200)}", 2000)
+      new ElasticSearchClient(
+        httpClient,
+        s"http://${container.getHost}:${container.getMappedPort(9200)}",
+        2000,
+        emptyResults
+      )
     }
   }.evalTap { client =>
     client.createIndexTemplate("test_template", template)

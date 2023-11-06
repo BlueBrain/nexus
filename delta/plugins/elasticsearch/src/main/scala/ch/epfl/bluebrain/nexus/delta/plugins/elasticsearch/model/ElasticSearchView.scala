@@ -271,7 +271,7 @@ object ElasticSearchView {
 
   type Shift = ResourceShift[ElasticSearchViewState, ElasticSearchView, Metadata]
 
-  def shift(views: ElasticSearchViews, defaultMapping: JsonObject, defaultSettings: JsonObject)(implicit
+  def shift(views: ElasticSearchViews, defaultMapping: DefaultMapping, defaultSettings: DefaultSettings)(implicit
       baseUri: BaseUri
   ): Shift =
     ResourceShift.withMetadata[ElasticSearchViewState, ElasticSearchView, Metadata](
