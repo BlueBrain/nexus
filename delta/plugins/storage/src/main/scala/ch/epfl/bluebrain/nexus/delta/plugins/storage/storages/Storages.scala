@@ -276,7 +276,6 @@ final class Storages private (
   private def fetchDefaults(project: ProjectRef): Stream[IO, StorageResource] =
     log
       .currentStates(Scope.Project(project), _.toResource)
-      .translate(taskToIoK)
       .filter(_.value.default)
 
   /**
@@ -328,7 +327,9 @@ final class Storages private (
   }
 
   private def eval(cmd: StorageCommand): IO[StorageResource] =
-    log.evaluate(cmd.project, cmd.id, cmd).toCatsIO.map(_._2.toResource)
+    log.evaluate(cmd.project, cmd.id, cmd).map { case (_, state) =>
+      state.toResource
+    }
 }
 
 object Storages {

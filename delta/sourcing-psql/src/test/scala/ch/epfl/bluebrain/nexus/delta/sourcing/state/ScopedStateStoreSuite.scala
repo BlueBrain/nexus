@@ -1,35 +1,29 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.state
 
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.error.ThrowableValue
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestState.{PullRequestActive, PullRequestClosed}
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.{entityType, PullRequestState}
-import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.{Latest, UserTag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Envelope, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore.StateNotFound.{TagNotFound, UnknownState}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{EntityCheck, PullRequest, Scope}
-import ch.epfl.bluebrain.nexus.delta.sourcing.postgres.Doobie
-import ch.epfl.bluebrain.nexus.testkit.ce.CatsRunContext
-import ch.epfl.bluebrain.nexus.testkit.mu.bio.BioSuite
-import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsStreamAssertions
+import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import doobie.implicits._
 import munit.AnyFixture
 
 import java.time.Instant
 import scala.concurrent.duration._
 
-class ScopedStateStoreSuite
-    extends BioSuite
-    with CatsRunContext
-    with CatsStreamAssertions
-    with Doobie.Fixture
-    with Doobie.Assertions {
+class ScopedStateStoreSuite extends CatsEffectSuite with Doobie.Fixture with Doobie.Assertions {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 
@@ -70,22 +64,22 @@ class ScopedStateStoreSuite
   private val envelopeUpdated1 = Envelope(PullRequest.entityType, id1, 2, updatedState1, Instant.EPOCH, Offset.at(7L))
 
   private def assertCount(expected: Int) =
-    sql"select count(*) from scoped_states".query[Int].unique.transact(xas.read).assert(expected)
+    sql"select count(*) from scoped_states".query[Int].unique.transact(xas.readCE).assertEquals(expected)
 
   test("Save state 1, state 2 and state 3 successfully") {
     for {
-      _ <- List(state1, state2, state3, state4).traverse(store.unsafeSave).transact(xas.write)
+      _ <- List(state1, state2, state3, state4).traverse(store.unsafeSave).transact(xas.writeCE)
       _ <- assertCount(4)
     } yield ()
   }
 
   test("get state 1") {
-    store.get(project1, id1).assert(state1)
+    store.get(project1, id1).assertEquals(state1)
   }
 
   test("Save state 1 and state 3 with user tag successfully") {
     for {
-      _ <- List(state1, state3).traverse(store.unsafeSave(_, customTag)).transact(xas.write)
+      _ <- List(state1, state3).traverse(store.unsafeSave(_, customTag)).transact(xas.writeCE)
       _ <- assertCount(6)
     } yield ()
   }
@@ -124,9 +118,9 @@ class ScopedStateStoreSuite
 
   test("Update state 1 successfully") {
     for {
-      _ <- store.unsafeSave(updatedState1).transact(xas.write)
+      _ <- store.unsafeSave(updatedState1).transact(xas.writeCE)
       _ <- assertCount(6)
-      _ <- store.get(project1, id1).assert(updatedState1)
+      _ <- store.get(project1, id1).assertEquals(updatedState1)
     } yield ()
   }
 
@@ -136,9 +130,9 @@ class ScopedStateStoreSuite
 
   test("Delete tagged state 3 successfully") {
     for {
-      _ <- store.delete(project2, id1, customTag).transact(xas.write)
+      _ <- store.delete(project2, id1, customTag).transact(xas.writeCE)
       _ <- assertCount(5)
-      _ <- store.get(project2, id1, customTag).error(TagNotFound)
+      _ <- store.get(project2, id1, customTag).intercept(TagNotFound)
     } yield ()
   }
 
@@ -148,26 +142,28 @@ class ScopedStateStoreSuite
 
   test("Check that the given ids does exist") {
     EntityCheck
-      .raiseMissingOrDeprecated[Iri, Set[(ProjectRef, Iri)]](
+      .raiseMissingOrDeprecated[Iri, Nothing](
         entityType,
         Set(project1 -> id2, project2 -> id1),
-        identity,
+        _ => fail("Should not be called"),
         xas
       )
-      .assert(())
+      .assertEquals(())
   }
+
+  case class EntityCheckError(value: Set[(ProjectRef, Iri)]) extends ThrowableValue
 
   test("Check that the non existing ids are returned") {
     val unknowns: Set[(ProjectRef, Iri)] =
       Set(project1 -> id1, project1 -> (nxv + "xxx"), ProjectRef.unsafe("xxx", "xxx") -> id4)
     EntityCheck
-      .raiseMissingOrDeprecated[Iri, Set[(ProjectRef, Iri)]](
+      .raiseMissingOrDeprecated[Iri, EntityCheckError](
         entityType,
         Set(project1 -> id1, project1 -> id2) ++ unknowns,
-        identity,
+        value => EntityCheckError(value),
         xas
       )
-      .error(unknowns)
+      .assertError[EntityCheckError](_.value == unknowns)
   }
 
   test("Get the entity type for id1 in project 1") {
@@ -202,9 +198,9 @@ class ScopedStateStoreSuite
 
   test("Delete state 2 successfully") {
     for {
-      _ <- store.delete(project1, id2, Latest).transact(xas.write)
+      _ <- store.delete(project1, id2, Latest).transact(xas.writeCE)
       _ <- assertCount(4)
-      _ <- store.get(project1, id2).error(UnknownState)
+      _ <- store.get(project1, id2).intercept(UnknownState)
     } yield ()
   }
 

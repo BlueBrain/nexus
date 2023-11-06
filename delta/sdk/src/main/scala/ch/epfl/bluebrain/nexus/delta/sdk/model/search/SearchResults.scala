@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.search
 import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.Uri.Query
 import cats.Functor
+import cats.effect.IO
 import cats.syntax.functor._
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
@@ -15,7 +16,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResult
 import fs2.Stream
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
-import monix.bio.{Task, UIO}
 
 /**
   * Defines the signature for a collection of search results with their metadata including pagination
@@ -113,11 +113,11 @@ object SearchResults {
     UnscoredSearchResults[A](total, results.map(UnscoredResultEntry(_)))
 
   final def apply[A](
-      stream: Stream[Task, A],
+      stream: Stream[IO, A],
       pagination: Pagination.FromPagination,
       ordering: Ordering[A]
-  ): UIO[UnscoredSearchResults[A]] =
-    stream.compile.toList.hideErrors
+  ): IO[UnscoredSearchResults[A]] =
+    stream.compile.toList
       .map { resources =>
         SearchResults(
           resources.size.toLong,

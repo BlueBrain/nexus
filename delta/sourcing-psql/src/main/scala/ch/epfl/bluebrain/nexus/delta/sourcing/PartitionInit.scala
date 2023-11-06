@@ -1,12 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
+import cats.effect.IO
 import cats.implicits._
-import Transactors.PartitionsCache
 import ch.epfl.bluebrain.nexus.delta.sourcing.PartitionInit.{createOrgPartition, createProjectPartition, projectRefHash}
+import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors.PartitionsCache
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import doobie.Fragment
 import doobie.free.connection
-import monix.bio.Task
 
 /**
   * Indicates the actions to take in order to initialize the partition of the scoped event/state tables. The main scoped
@@ -27,7 +27,7 @@ sealed trait PartitionInit {
     * @param cache
     *   Current cache to update
     */
-  def updateCache(cache: PartitionsCache): Task[Unit]
+  def updateCache(cache: PartitionsCache): IO[Unit]
 }
 
 /** Indicates that a partition should be created before inserting */
@@ -36,7 +36,7 @@ case class Execute(projectRef: ProjectRef) extends PartitionInit {
     (createOrgPartition(mainTable, projectRef) ++
       createProjectPartition(mainTable, projectRef)).update.run.void
 
-  override def updateCache(cache: PartitionsCache): Task[Unit] =
+  override def updateCache(cache: PartitionsCache): IO[Unit] =
     cache.put(projectRefHash(projectRef), ())
 }
 
@@ -46,8 +46,8 @@ case object Noop extends PartitionInit {
   override def initializePartition(mainTable: String): doobie.ConnectionIO[Unit] =
     connection.unit
 
-  override def updateCache(cache: PartitionsCache): Task[Unit] =
-    Task.unit
+  override def updateCache(cache: PartitionsCache): IO[Unit] =
+    IO.unit
 
 }
 
@@ -57,7 +57,7 @@ object PartitionInit {
     * Constructs a PartitionInit based on the given project and provided cache. If the projectRef was already in the
     * cache, Noop is returned; otherwise Execute is returned.
     */
-  def apply(projectRef: ProjectRef, cache: PartitionsCache): Task[PartitionInit] = {
+  def apply(projectRef: ProjectRef, cache: PartitionsCache): IO[PartitionInit] = {
     cache.containsKey(projectRefHash(projectRef)).map {
       case true  => Noop
       case false => Execute(projectRef)

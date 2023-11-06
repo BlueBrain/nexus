@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
+import ch.epfl.bluebrain.nexus.delta.kernel.error.ThrowableValue
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, rdfs, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
@@ -120,7 +121,7 @@ object PullRequest {
     }
   }
 
-  sealed trait PullRequestRejection extends Product with Serializable
+  sealed trait PullRequestRejection extends ThrowableValue
 
   object PullRequestRejection {
     final case object NotFound                                              extends PullRequestRejection

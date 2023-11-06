@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.{EntityDependencyStore, Serializer, Transactors}
 import io.circe.Decoder
 import monix.bio.{IO, UIO}
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 
 trait ViewsStore[Rejection] {
 
@@ -55,9 +56,12 @@ object ViewsStore {
       for {
         res              <- fetchValue(id, project).flatMap(asView)
         singleOrMultiple <- IO.fromEither(res).widen[View].onErrorHandleWith { iri =>
-                              EntityDependencyStore.decodeRecursiveDependencies[Iri, Value](project, iri, xas).flatMap {
-                                _.traverseFilter(embeddedView(project, iri, _)).map(AggregateView(_))
-                              }
+                              EntityDependencyStore
+                                .decodeRecursiveDependencies[Iri, Value](project, iri, xas)
+                                .toUIO
+                                .flatMap {
+                                  _.traverseFilter(embeddedView(project, iri, _)).map(AggregateView(_))
+                                }
                             }
       } yield singleOrMultiple
 

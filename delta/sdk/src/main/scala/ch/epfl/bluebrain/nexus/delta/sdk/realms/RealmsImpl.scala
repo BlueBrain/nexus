@@ -17,7 +17,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 
 final class RealmsImpl private (log: RealmsLog) extends Realms {
 
@@ -70,7 +69,7 @@ final class RealmsImpl private (log: RealmsLog) extends Realms {
       ordering: Ordering[RealmResource]
   ): IO[SearchResults.UnscoredSearchResults[RealmResource]] =
     SearchResults(
-      log.currentStates(_.toResource).translate(ioToTaskK).evalFilter(params.matches(_).toUIO),
+      log.currentStates(_.toResource).evalFilter(params.matches),
       pagination,
       ordering
     ).span("listRealms")

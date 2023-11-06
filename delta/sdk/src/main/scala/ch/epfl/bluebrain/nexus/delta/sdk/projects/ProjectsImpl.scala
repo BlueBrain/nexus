@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk.projects
 import cats.effect.{Clock, ContextShift, IO, Timer}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Logger
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
@@ -98,7 +97,7 @@ final class ProjectsImpl private (
     SearchResults(
       log
         .currentStates(params.organization.fold(Scope.root)(Scope.Org), _.toResource(defaultApiMappings))
-        .evalFilter(params.matches(_).toUIO),
+        .evalFilter(params.matches),
       pagination,
       ordering
     ).span("listProjects")

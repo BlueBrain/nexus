@@ -249,8 +249,8 @@ final class CompositeViews private (
       project: ProjectRef
   ): IO[CompositeViewState] = {
     for {
-      pc      <- fetchContext.onRead(project)
-      iri     <- expandIri(id.value, pc)
+      pc      <- fetchContext.onRead(project).toCatsIO
+      iri     <- expandIri(id.value, pc).toCatsIO
       notFound = ViewNotFound(iri, project)
       state   <- id match {
                    case Latest(_)        => log.stateOr(project, iri, notFound)
@@ -297,7 +297,7 @@ final class CompositeViews private (
   ): IO[UnscoredSearchResults[ViewResource]] = {
     val scope = params.project.fold[Scope](Scope.Root)(ref => Scope.Project(ref))
     SearchResults(
-      log.currentStates(scope, _.toResource).evalFilter(params.matches(_).toTask),
+      log.currentStates(scope, _.toResource).evalFilter(params.matches),
       pagination,
       ordering
     ).span("listCompositeViews")

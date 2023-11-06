@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing
 
 import cats.effect.{IO, Timer}
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration.ioToTaskK
+import ch.epfl.bluebrain.nexus.delta.kernel.Logger
 import ch.epfl.bluebrain.nexus.delta.sourcing.EvaluationError.{EvaluationFailure, EvaluationTimeout}
 import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
@@ -15,15 +15,14 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore.StateNotFound.{TagNotFound, UnknownState}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
 import ch.epfl.bluebrain.nexus.delta.sourcing.tombstone.TombstoneStore
-import com.typesafe.scalalogging.Logger
+import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import doobie._
 import doobie.implicits._
 import doobie.postgres.sqlstate
 import fs2.Stream
-import monix.bio.Cause.{Error, Termination}
-import monix.bio.{IO => BIO, Task, UIO}
 
 import scala.concurrent.duration.FiniteDuration
+import scala.reflect.ClassTag
 
 /**
   * Event log for project-scoped entities that can be controlled through commands;
@@ -34,7 +33,7 @@ import scala.concurrent.duration.FiniteDuration
   * Unsuccessful commands result in rejections returned to the caller context without any events being generated or
   * state transitions applied.
   */
-trait ScopedEventLog[Id, S <: ScopedState, Command, E <: ScopedEvent, Rejection] {
+trait ScopedEventLog[Id, S <: ScopedState, Command, E <: ScopedEvent, Rejection <: Throwable] {
 
   /**
     * Get the latest state for the entity with the given __id__ in the given project
@@ -46,7 +45,7 @@ trait ScopedEventLog[Id, S <: ScopedState, Command, E <: ScopedEvent, Rejection]
     * @param notFound
     *   if no state is found, fails with this rejection
     */
-  def stateOr[R <: Rejection](ref: ProjectRef, id: Id, notFound: => R): BIO[R, S]
+  def stateOr[R <: Rejection](ref: ProjectRef, id: Id, notFound: => R): IO[S]
 
   /**
     * Get the state for the entity with the given __id__ at the given __tag__ in the given project
@@ -61,7 +60,7 @@ trait ScopedEventLog[Id, S <: ScopedState, Command, E <: ScopedEvent, Rejection]
     * @param tagNotFound
     *   if no state is found with the provided tag, fails with this rejection
     */
-  def stateOr[R <: Rejection](ref: ProjectRef, id: Id, tag: Tag, notFound: => R, tagNotFound: => R): BIO[R, S]
+  def stateOr[R <: Rejection](ref: ProjectRef, id: Id, tag: Tag, notFound: => R, tagNotFound: => R): IO[S]
 
   /**
     * Get the state for the entity with the given __id__ at the given __revision__ in the given project
@@ -82,7 +81,7 @@ trait ScopedEventLog[Id, S <: ScopedState, Command, E <: ScopedEvent, Rejection]
       rev: Int,
       notFound: => R,
       invalidRevision: (Int, Int) => R
-  ): BIO[R, S]
+  ): IO[S]
 
   /**
     * Evaluates the argument __command__ in the context of entity identified by __id__.
@@ -96,7 +95,7 @@ trait ScopedEventLog[Id, S <: ScopedState, Command, E <: ScopedEvent, Rejection]
     *   the newly generated state and appended event if the command was evaluated successfully, or the rejection of the
     *   __command__ otherwise
     */
-  def evaluate(ref: ProjectRef, id: Id, command: Command): BIO[Rejection, (E, S)]
+  def evaluate(ref: ProjectRef, id: Id, command: Command): IO[(E, S)]
 
   /**
     * Tests the evaluation the argument __command__ in the context of entity identified by __id__, without applying any
@@ -112,7 +111,7 @@ trait ScopedEventLog[Id, S <: ScopedState, Command, E <: ScopedEvent, Rejection]
     *   the state and event that would be generated in if the command was tested for evaluation successfully, or the
     *   rejection of the __command__ in otherwise
     */
-  def dryRun(ref: ProjectRef, id: Id, command: Command): BIO[Rejection, (E, S)]
+  def dryRun(ref: ProjectRef, id: Id, command: Command): IO[(E, S)]
 
   /**
     * Allow to stream all current events within [[Envelope]] s
@@ -157,7 +156,7 @@ trait ScopedEventLog[Id, S <: ScopedState, Command, E <: ScopedEvent, Rejection]
     * @param f
     *   the function to apply on each state
     */
-  def currentStates[T](scope: Scope, offset: Offset, f: S => T): Stream[Task, T]
+  def currentStates[T](scope: Scope, offset: Offset, f: S => T): Stream[IO, T]
 
   /**
     * Allow to stream all current states from the beginning
@@ -166,7 +165,7 @@ trait ScopedEventLog[Id, S <: ScopedState, Command, E <: ScopedEvent, Rejection]
     * @param f
     *   the function to apply on each state
     */
-  def currentStates[T](scope: Scope, f: S => T): Stream[Task, T] = currentStates(scope, Offset.Start, f)
+  def currentStates[T](scope: Scope, f: S => T): Stream[IO, T] = currentStates(scope, Offset.Start, f)
 
   /**
     * Stream the state changes continuously from the provided offset.
@@ -180,11 +179,11 @@ trait ScopedEventLog[Id, S <: ScopedState, Command, E <: ScopedEvent, Rejection]
 
 object ScopedEventLog {
 
-  private val logger: Logger = Logger[ScopedEventLog.type]
+  private val logger = Logger.cats[ScopedEventLog.type]
 
   private val noop: ConnectionIO[Unit] = ().pure[ConnectionIO]
 
-  def apply[Id, S <: ScopedState, Command, E <: ScopedEvent, Rejection](
+  def apply[Id, S <: ScopedState, Command, E <: ScopedEvent, Rejection <: Throwable: ClassTag](
       definition: ScopedEntityDefinition[Id, S, Command, E, Rejection],
       config: EventLogConfig,
       xas: Transactors
@@ -201,7 +200,7 @@ object ScopedEventLog {
       xas
     )
 
-  def apply[Id, S <: ScopedState, Command, E <: ScopedEvent, Rejection](
+  def apply[Id, S <: ScopedState, Command, E <: ScopedEvent, Rejection <: Throwable: ClassTag](
       entityType: EntityType,
       eventStore: ScopedEventStore[Id, E],
       stateStore: ScopedStateStore[Id, S],
@@ -214,8 +213,8 @@ object ScopedEventLog {
   ): ScopedEventLog[Id, S, Command, E, Rejection] =
     new ScopedEventLog[Id, S, Command, E, Rejection] {
 
-      override def stateOr[R <: Rejection](ref: ProjectRef, id: Id, notFound: => R): BIO[R, S] =
-        stateStore.get(ref, id).mapError(_ => notFound)
+      override def stateOr[R <: Rejection](ref: ProjectRef, id: Id, notFound: => R): IO[S] =
+        stateStore.get(ref, id).adaptError(_ => notFound)
 
       override def stateOr[R <: Rejection](
           ref: ProjectRef,
@@ -223,9 +222,11 @@ object ScopedEventLog {
           tag: Tag,
           notFound: => R,
           tagNotFound: => R
-      ): BIO[R, S] = stateStore.get(ref, id, tag).mapError {
-        case UnknownState => notFound
-        case TagNotFound  => tagNotFound
+      ): IO[S] = {
+        stateStore.get(ref, id, tag).adaptError {
+          case UnknownState => notFound
+          case TagNotFound  => tagNotFound
+        }
       }
 
       override def stateOr[R <: Rejection](
@@ -234,22 +235,23 @@ object ScopedEventLog {
           rev: Int,
           notFound: => R,
           invalidRevision: (Int, Int) => R
-      ): BIO[R, S] =
-        stateMachine.computeState(eventStore.history(ref, id, rev)).flatMap {
-          case Some(s) if s.rev == rev => BIO.pure(s)
-          case Some(s)                 => BIO.raiseError(invalidRevision(rev, s.rev))
-          case None                    => BIO.raiseError(notFound)
+      ): IO[S] =
+        stateMachine.computeState(eventStore.history(ref, id, rev).translate(ioToTaskK)).toCatsIO.flatMap {
+          case Some(s) if s.rev == rev => IO.pure(s)
+          case Some(s)                 => IO.raiseError(invalidRevision(rev, s.rev))
+          case None                    => IO.raiseError(notFound)
         }
 
-      override def evaluate(ref: ProjectRef, id: Id, command: Command): BIO[Rejection, (E, S)] = {
+      override def evaluate(ref: ProjectRef, id: Id, command: Command): IO[(E, S)] = {
 
-        def saveTag(event: E, state: S): UIO[ConnectionIO[Unit]] =
-          tagger.tagWhen(event).fold(UIO.pure(noop)) { case (tag, rev) =>
+        def saveTag(event: E, state: S): IO[ConnectionIO[Unit]] =
+          tagger.tagWhen(event).fold(IO.pure(noop)) { case (tag, rev) =>
             if (rev == state.rev)
-              UIO.pure(stateStore.save(state, tag, Noop))
+              IO.pure(stateStore.save(state, tag, Noop))
             else
               stateMachine
-                .computeState(eventStore.history(ref, id, Some(rev)))
+                .computeState(eventStore.history(ref, id, Some(rev)).translate(ioToTaskK))
+                .toCatsIO
                 .map(_.fold(noop) { s => stateStore.save(s, tag, Noop) })
           }
 
@@ -263,7 +265,7 @@ object ScopedEventLog {
             EntityDependencyStore.delete(ref, state.id) >> EntityDependencyStore.save(ref, state.id, dependencies)
           }
 
-        def persist(event: E, original: Option[S], newState: S): BIO[Rejection, Unit] = {
+        def persist(event: E, original: Option[S], newState: S): IO[Unit] = {
 
           def queries(tagQuery: ConnectionIO[Unit], init: PartitionInit) =
             for {
@@ -283,36 +285,31 @@ object ScopedEventLog {
                             .attemptSomeSqlState { case sqlstate.class23.UNIQUE_VIOLATION =>
                               onUniqueViolation(id, command)
                             }
-                            .transact(xas.write)
+                            .transact(xas.writeCE)
               _        <- init.updateCache(xas.cache)
             } yield res
-          }.hideErrors
+          }
             .flatMap {
-              BIO.fromEither(_).tapError { _ =>
-                UIO.delay(
-                  logger.info(s"An event for the '$id' in project '$ref' already exists for rev ${event.rev}.")
-                )
+              IO.fromEither(_).onError { _ =>
+                logger.info(s"An event for the '$id' in project '$ref' already exists for rev ${event.rev}.")
               }
             }
         }
 
         for {
           originalState <- stateStore.get(ref, id).redeem(_ => None, Some(_))
-          result        <- stateMachine.evaluate(originalState, command, maxDuration)
+          result        <- stateMachine.evaluate(originalState, command, maxDuration).toCatsIO
           _             <- persist(result._1, originalState, result._2)
         } yield result
-      }.redeemCauseWith(
-        {
-          case Error(rejection)                     => BIO.raiseError(rejection)
-          case Termination(e: EvaluationTimeout[_]) => BIO.terminate(e)
-          case Termination(e)                       => BIO.terminate(EvaluationFailure(command, e))
-        },
-        r => BIO.pure(r)
-      )
+      }.adaptError {
+        case e: Rejection            => e
+        case e: EvaluationTimeout[_] => e
+        case e                       => EvaluationFailure(command, e)
+      }
 
-      override def dryRun(ref: ProjectRef, id: Id, command: Command): BIO[Rejection, (E, S)] =
+      override def dryRun(ref: ProjectRef, id: Id, command: Command): IO[(E, S)] =
         stateStore.get(ref, id).redeem(_ => None, Some(_)).flatMap { state =>
-          stateMachine.evaluate(state, command, maxDuration)
+          stateMachine.evaluate(state, command, maxDuration).toCatsIO
         }
 
       override def currentEvents(scope: Scope, offset: Offset): EnvelopeStream[E] =
@@ -324,8 +321,8 @@ object ScopedEventLog {
       override def currentStates(scope: Scope, offset: Offset): EnvelopeStream[S] =
         stateStore.currentStates(scope, offset)
 
-      override def currentStates[T](scope: Scope, offset: Offset, f: S => T): Stream[Task, T] =
-        currentStates(scope, offset).translate(ioToTaskK).map { s =>
+      override def currentStates[T](scope: Scope, offset: Offset, f: S => T): Stream[IO, T] =
+        currentStates(scope, offset).map { s =>
           f(s.value)
         }
 

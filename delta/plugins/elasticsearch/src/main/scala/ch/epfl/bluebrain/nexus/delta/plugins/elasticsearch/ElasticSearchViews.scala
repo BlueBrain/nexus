@@ -291,7 +291,7 @@ final class ElasticSearchViews private (
       case Revision(_, rev) => log.stateOr(project, iri, rev, notFound, RevisionNotFound)
       case Tag(_, tag)      => log.stateOr(project, iri, tag, notFound, TagNotFound(tag))
     }
-  }.toCatsIO
+  }
 
   /**
     * Retrieves a current IndexingElasticSearchView resource.
@@ -357,7 +357,6 @@ final class ElasticSearchViews private (
     log
       .evaluate(cmd.project, cmd.id, cmd)
       .map(_._2.toResource(defaultElasticsearchMapping, defaultElasticsearchSettings))
-      .toCatsIO
 
   private def expandWithContext(
       fetchCtx: ProjectRef => BIO[ElasticSearchViewRejection, ProjectContext],

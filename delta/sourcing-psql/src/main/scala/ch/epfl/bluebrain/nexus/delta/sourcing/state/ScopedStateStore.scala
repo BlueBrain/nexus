@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.state
 
 import cats.effect.{IO, Timer}
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.error.ThrowableValue
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.IriInstances
@@ -10,7 +11,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.{RefreshStrategy, StreamingQuery}
-import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore.StateNotFound
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore.StateNotFound.{TagNotFound, UnknownState}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Execute, PartitionInit, Scope, Serializer, Transactors}
@@ -18,7 +18,6 @@ import doobie._
 import doobie.implicits._
 import doobie.postgres.implicits._
 import io.circe.Decoder
-import monix.bio.{IO => BIO}
 
 /**
   * Allows to save/fetch [[ScopedState]] from the database
@@ -63,12 +62,12 @@ trait ScopedStateStore[Id, S <: ScopedState] {
   /**
     * Returns the latest state
     */
-  def get(ref: ProjectRef, id: Id): BIO[UnknownState, S]
+  def get(ref: ProjectRef, id: Id): IO[S]
 
   /**
     * Returns the state at the given tag
     */
-  def get(ref: ProjectRef, id: Id, tag: Tag): BIO[StateNotFound, S]
+  def get(ref: ProjectRef, id: Id, tag: Tag): IO[S]
 
   /**
     * Fetches latest states from the given type from the beginning.
@@ -175,7 +174,7 @@ trait ScopedStateStore[Id, S <: ScopedState] {
 
 object ScopedStateStore {
 
-  sealed private[sourcing] trait StateNotFound extends Product with Serializable
+  sealed private[sourcing] trait StateNotFound extends ThrowableValue
 
   private[sourcing] object StateNotFound {
     sealed trait UnknownState      extends StateNotFound
@@ -260,19 +259,18 @@ object ScopedStateStore {
         .option
         .map(_.isDefined)
 
-    override def get(ref: ProjectRef, id: Id): BIO[UnknownState, S] =
-      getValue(ref, id, Latest).transact(xas.read).hideErrors.flatMap { s =>
-        BIO.fromOption(s, UnknownState)
+    override def get(ref: ProjectRef, id: Id): IO[S] =
+      getValue(ref, id, Latest).transact(xas.readCE).flatMap { s =>
+        IO.fromOption(s)(UnknownState)
       }
 
-    override def get(ref: ProjectRef, id: Id, tag: Tag): BIO[StateNotFound, S] = {
+    override def get(ref: ProjectRef, id: Id, tag: Tag): IO[S] = {
       for {
         value  <- getValue(ref, id, tag)
         exists <- value.fold(exists(ref, id))(_ => true.pure[ConnectionIO])
       } yield value -> exists
-    }.transact(xas.read).hideErrors.flatMap { case (s, exists) =>
-      val error = if (exists) TagNotFound else UnknownState
-      BIO.fromOption(s, error)
+    }.transact(xas.readCE).flatMap { case (s, exists) =>
+      IO.fromOption(s)(if (exists) TagNotFound else UnknownState)
     }
 
     private def states(
