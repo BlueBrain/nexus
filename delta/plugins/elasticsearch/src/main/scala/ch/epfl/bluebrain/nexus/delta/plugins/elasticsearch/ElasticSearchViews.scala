@@ -35,7 +35,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import io.circe.{Json, JsonObject}
+import io.circe.Json
 import monix.bio.{IO => BIO}
 
 import java.util.UUID
@@ -47,8 +47,8 @@ final class ElasticSearchViews private (
     log: ElasticsearchLog,
     fetchContext: FetchContext[ElasticSearchViewRejection],
     sourceDecoder: ElasticSearchViewJsonLdSourceDecoder,
-    defaultElasticsearchMapping: JsonObject,
-    defaultElasticsearchSettings: JsonObject,
+    defaultElasticsearchMapping: DefaultMapping,
+    defaultElasticsearchSettings: DefaultSettings,
     prefix: String
 )(implicit uuidF: UUIDF) {
 
@@ -412,8 +412,8 @@ object ElasticSearchViews {
       eventLogConfig: EventLogConfig,
       prefix: String,
       xas: Transactors,
-      defaultMapping: JsonObject,
-      defaultSettings: JsonObject
+      defaultMapping: DefaultMapping,
+      defaultSettings: DefaultSettings
   )(implicit api: JsonLdApi, clock: Clock[IO], uuidF: UUIDF): IO[ElasticSearchViews] =
     ElasticSearchViewJsonLdSourceDecoder(uuidF, contextResolution).map(decoder =>
       new ElasticSearchViews(

@@ -49,7 +49,6 @@ val magnoliaVersion         = "1.1.6"
 val mockitoVersion          = "1.17.27"
 val monixVersion            = "3.4.1"
 val monixBioVersion         = "1.2.0"
-val mulesVersion            = "0.4.1"
 val munitVersion            = "1.0.0-M10"
 val nimbusJoseJwtVersion    = "9.37"
 val postgresJdbcVersion     = "42.6.0"
@@ -116,7 +115,6 @@ lazy val magnolia           = "com.softwaremill.magnolia1_2" %% "magnolia"      
 lazy val mockito            = "org.mockito"                  %% "mockito-scala"            % mockitoVersion
 lazy val monixBio           = "io.monix"                     %% "monix-bio"                % monixBioVersion
 lazy val munit              = "org.scalameta"                %% "munit"                    % munitVersion
-lazy val mules              = "io.chrisdavenport"            %% "mules"                    % mulesVersion
 lazy val nimbusJoseJwt      = "com.nimbusds"                  % "nimbus-jose-jwt"          % nimbusJoseJwtVersion
 lazy val pureconfig         = "com.github.pureconfig"        %% "pureconfig"               % pureconfigVersion
 lazy val pureconfigCats     = "com.github.pureconfig"        %% "pureconfig-cats"          % pureconfigVersion
@@ -215,7 +213,6 @@ lazy val kernel = project
       circeParser,
       handleBars,
       monixBio,
-      mules,
       nimbusJoseJwt,
       kamonCore,
       log4cats,

@@ -15,7 +15,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.SupervisorSetup
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.SupervisorSetup.unapply
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
 import ch.epfl.bluebrain.nexus.testkit.bio.BioRunContext
-import ch.epfl.bluebrain.nexus.testkit.elasticsearch.FilesCacheFixture
 import ch.epfl.bluebrain.nexus.testkit.mu.bio.{BIOValues, PatienceConfig}
 import ch.epfl.bluebrain.nexus.testkit.mu.ce.CatsEffectSuite
 import munit.AnyFixture
@@ -28,8 +27,7 @@ class StoragesStatisticsSuite
     with ElasticSearchClientSetup.Fixture
     with BIOValues
     with SupervisorSetup.Fixture
-    with TestHelpers
-    with FilesCacheFixture {
+    with TestHelpers {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(esClient, supervisor)
 
@@ -41,15 +39,15 @@ class StoragesStatisticsSuite
   private lazy val sink     = ElasticSearchSink.events(client, 2, 50.millis, index, Refresh.False)
   private val indexPrefix   = "delta"
   private val index         = eventMetricsIndex(indexPrefix)
-  private val files         = ElasticSearchFiles.mk(filesCache)
-  private lazy val mapping  = files.metricsMapping.accepted
-  private lazy val settings = files.metricsSettings.accepted
+  private lazy val files         = ElasticSearchFiles().unsafeRunSync()
+  private lazy val mapping  = files.metricsMapping
+  private lazy val settings = files.metricsSettings
 
   private def stats = (client: ElasticSearchClient) =>
     StoragesStatistics.apply(client, (storage, _) => IO.pure(Iri.unsafe(storage.toString)), indexPrefix)
 
   test("Run the event metrics projection") {
-    val createIndex       = client.createIndex(index, Some(mapping), Some(settings)).void
+    val createIndex       = client.createIndex(index, Some(mapping.value), Some(settings.value)).void
     val metricsProjection = EventMetricsProjection(sink, sv, _ => metricsStream, createIndex)
     metricsProjection.accepted
   }

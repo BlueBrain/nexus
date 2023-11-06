@@ -73,8 +73,8 @@ class ElasticSearchScopeInitializationSpec
             PipeStep.noConfig(DefaultLabelPredicates.ref),
             PipeStep.noConfig(SourceAsText.ref)
           )
-          v.mapping shouldEqual defaultMapping
-          v.settings shouldEqual defaultSettings
+          v.mapping shouldEqual defaultMapping.value
+          v.settings shouldEqual defaultSettings.value
           v.permission shouldEqual queryPermissions
           v.name shouldEqual Some(defaultName)
           v.description shouldEqual Some(defaultDescription)

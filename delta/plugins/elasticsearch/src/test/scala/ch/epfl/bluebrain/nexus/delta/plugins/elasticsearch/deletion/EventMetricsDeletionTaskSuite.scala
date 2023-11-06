@@ -45,7 +45,7 @@ class EventMetricsDeletionTaskSuite
 
     for {
       // Indexing and checking count
-      _ <- client.createIndex(index, Some(metricsMapping), Some(metricsSettings))
+      _ <- client.createIndex(index, Some(metricsMapping.value), Some(metricsSettings.value))
       _ <- client.bulk(operations)
       _ <- client.refresh(index)
       _ <- client.count(index.value).assert(4L)

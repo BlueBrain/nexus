@@ -4,7 +4,7 @@ import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.IndexingViewDef.{ActiveViewDef, DeprecatedViewDef}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchViewState, ElasticSearchViewValue}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{DefaultMapping, DefaultSettings, ElasticSearchViewState, ElasticSearchViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, Fixtures}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
@@ -37,8 +37,8 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
 
   implicit private val batch: BatchConfig = BatchConfig(2, 10.millis)
 
-  private val defaultEsMapping  = jobj"""{"defaultEsMapping": {}}"""
-  private val defaultEsSettings = jobj"""{"defaultEsSettings": {}}"""
+  private val defaultEsMapping  = DefaultMapping(jobj"""{"defaultEsMapping": {}}""")
+  private val defaultEsSettings = DefaultSettings(jobj"""{"defaultEsSettings": {}}""")
   private val prefix            = "prefix"
 
   private val uuid             = UUID.fromString("f8468909-a797-4b10-8b5f-000cba337bfa")
@@ -127,8 +127,8 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
           indexingDefault.pipeChain,
           indexingDefault.selectFilter,
           IndexLabel.fromView("prefix", uuid, indexingRev),
-          defaultEsMapping,
-          defaultEsSettings,
+          defaultEsMapping.value,
+          defaultEsSettings.value,
           indexingDefault.context,
           indexingRev,
           rev
@@ -162,8 +162,8 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
       Some(PipeChain(PipeRef.unsafe("xxx") -> ExpandedJsonLd.empty)),
       indexingDefault.selectFilter,
       IndexLabel.fromView("prefix", uuid, indexingRev),
-      defaultEsMapping,
-      defaultEsSettings,
+      defaultEsMapping.value,
+      defaultEsSettings.value,
       indexingDefault.context,
       indexingRev,
       rev
@@ -194,8 +194,8 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
       Some(PipeChain(FilterDeprecated())),
       indexingDefault.selectFilter,
       IndexLabel.fromView("prefix", uuid, indexingRev),
-      defaultEsMapping,
-      defaultEsSettings,
+      defaultEsMapping.value,
+      defaultEsSettings.value,
       indexingDefault.context,
       indexingRev,
       rev

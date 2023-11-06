@@ -86,7 +86,7 @@ class ElasticSearchViewsQuerySuite
     IndexingElasticSearchViewValue(
       resourceTag = None,
       pipeline = List(PipeStep.noConfig(FilterDeprecated.ref), PipeStep.noConfig(DiscardMetadata.ref)),
-      mapping = Some(defaultMapping),
+      mapping = Some(defaultMapping.value),
       settings = None,
       permission = queryPermission,
       context = None

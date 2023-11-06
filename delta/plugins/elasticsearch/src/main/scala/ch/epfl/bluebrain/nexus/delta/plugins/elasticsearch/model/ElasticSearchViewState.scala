@@ -71,7 +71,7 @@ final case class ElasticSearchViewState(
   /**
     * Maps the current state to an [[ElasticSearchView]] value.
     */
-  def asElasticSearchView(defaultMapping: JsonObject, defaultSettings: JsonObject): ElasticSearchView = value match {
+  def asElasticSearchView(defaultMapping: DefaultMapping, defaultSettings: DefaultSettings): ElasticSearchView = value match {
     case IndexingElasticSearchViewValue(
           name,
           description,
@@ -90,8 +90,8 @@ final case class ElasticSearchViewState(
         uuid = uuid,
         resourceTag = resourceTag,
         pipeline = pipeline,
-        mapping = mapping.getOrElse(defaultMapping),
-        settings = settings.getOrElse(defaultSettings),
+        mapping = mapping.getOrElse(defaultMapping.value),
+        settings = settings.getOrElse(defaultSettings.value),
         context = context,
         permission = permission,
         tags = tags,
@@ -110,8 +110,8 @@ final case class ElasticSearchViewState(
   }
 
   def toResource(
-      defaultMapping: JsonObject,
-      defaultSettings: JsonObject
+      defaultMapping: DefaultMapping,
+      defaultSettings: DefaultSettings
   ): ViewResource = {
     ResourceF(
       id = id,
