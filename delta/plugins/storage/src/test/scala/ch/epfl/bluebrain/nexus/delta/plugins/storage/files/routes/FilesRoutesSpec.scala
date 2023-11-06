@@ -227,7 +227,7 @@ class FilesRoutesSpec
           status shouldEqual StatusCodes.Created
           val attr      = attributes("fileTagged.txt", id = uuid2)
           val expected  = fileMetadata(projectRef, fileTagged, attr, s3IdRev, createdBy = s3writer, updatedBy = s3writer)
-          val userTag = UserTag.unsafe(tag)
+          val userTag   = UserTag.unsafe(tag)
           val fileByTag = files.fetch(FileId(generatedId2, userTag, projectRef)).accepted
           response.asJson shouldEqual expected
           fileByTag.value.tags.tags should contain(userTag)

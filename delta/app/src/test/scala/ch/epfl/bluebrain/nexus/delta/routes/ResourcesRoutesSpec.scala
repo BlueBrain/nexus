@@ -49,7 +49,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec with IOFromMap with CatsIOValues
 
   implicit private val callerReader: Caller =
     Caller(reader, Set(reader, Anonymous, Authenticated(realm), Group("group", realm)))
-  implicit private val callerWriter: Caller    =
+  implicit private val callerWriter: Caller =
     Caller(writer, Set(writer, Anonymous, Authenticated(realm), Group("group", realm)))
 
   private val asReader = addCredentials(OAuth2BearerToken("reader"))
