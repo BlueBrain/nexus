@@ -24,7 +24,6 @@ class FilesSpec extends BaseIntegrationSpec {
 
     "remove the deprecated file from the listing" in {
       givenAFile { id =>
-        eventually { assertFileIsInListing(id) }
         deprecateFile(id, rev = 1)
         eventually { assertFileNotInListing(id) }
       }
@@ -36,7 +35,6 @@ class FilesSpec extends BaseIntegrationSpec {
 
     "reindex the previously deprecated file" in {
       givenADeprecatedFile { id =>
-        eventually { assertFileNotInListing(id) }
         undeprecateFile(id, rev = 2)
         eventually { assertFileIsInListing(id) }
       }
@@ -70,6 +68,7 @@ class FilesSpec extends BaseIntegrationSpec {
         response.status shouldEqual StatusCodes.Created
       }
       .accepted
+    eventually { assertFileIsInListing(id) }
     assertion(id)
   }
 
@@ -83,6 +82,7 @@ class FilesSpec extends BaseIntegrationSpec {
   private def givenADeprecatedFile(assertion: String => Assertion): Assertion = {
     givenAFile { id =>
       deprecateFile(id, 1)
+      eventually { assertFileNotInListing(id) }
       assertion(id)
     }
   }
