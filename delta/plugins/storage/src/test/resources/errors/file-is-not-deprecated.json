@@ -1,5 +1,0 @@
-{
-  "@context" : "https://bluebrain.github.io/nexus/contexts/error.json",
-  "@type" : "FileIsNotDeprecated",
-  "reason" : "File '{{id}}' is not deprecated."
-}

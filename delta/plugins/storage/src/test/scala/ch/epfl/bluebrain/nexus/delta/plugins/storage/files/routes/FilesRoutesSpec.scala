@@ -40,6 +40,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers.jsonContentOf
 import ch.epfl.bluebrain.nexus.testkit.bio.IOFromMap
+import ch.epfl.bluebrain.nexus.testkit.errors.files.FileErrors.{fileAlreadyExistsError, fileIsNotDeprecatedError}
 import ch.epfl.bluebrain.nexus.testkit.scalatest.ce.CatsIOValues
 import io.circe.Json
 import org.scalatest._
@@ -240,7 +241,7 @@ class FilesRoutesSpec
       givenAFile { id =>
         Put(s"/v1/files/org/proj/$id", entity()) ~> asWriter ~> routes ~> check {
           status shouldEqual StatusCodes.Conflict
-          response.asJson shouldEqual jsonContentOf("/files/errors/already-exists.json", "id" -> (nxv + id))
+          response.asJson shouldEqual fileAlreadyExistsError(nxvBase(id))
         }
       }
     }
@@ -411,7 +412,7 @@ class FilesRoutesSpec
       givenAFile { id =>
         Put(s"/v1/files/org/proj/$id/undeprecate?rev=1") ~> asWriter ~> routes ~> check {
           status shouldEqual StatusCodes.BadRequest
-          response.asJson shouldEqual jsonContentOf("/errors/file-is-not-deprecated.json", "id" -> (nxv + id))
+          response.asJson shouldEqual fileIsNotDeprecatedError(nxvBase(id))
         }
       }
     }
@@ -664,6 +665,8 @@ class FilesRoutesSpec
       updatedBy: Subject = callerWriter.subject
   )(implicit baseUri: BaseUri): Json =
     FilesRoutesSpec.fileMetadata(project, id, attributes, storage, storageType, rev, deprecated, createdBy, updatedBy)
+
+  private def nxvBase(id: String): String = (nxv + id).toString
 
 }
 
