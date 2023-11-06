@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk.organizations
 import cats.effect.IO._
 import cats.effect.{Clock, ContextShift, IO, Timer}
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
@@ -77,8 +76,7 @@ final class OrganizationsImpl private (
     SearchResults(
       log
         .currentStates(_.toResource)
-        .translate(ioToTaskK)
-        .evalFilter(params.matches(_).toUIO),
+        .evalFilter(params.matches),
       pagination,
       ordering
     ).span("listOrganizations")

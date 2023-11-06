@@ -402,7 +402,7 @@ final class Files(
       case Revision(_, rev) => log.stateOr(id.project, iri, rev, notFound, RevisionNotFound)
       case Tag(_, tag)      => log.stateOr(id.project, iri, tag, notFound, TagNotFound(tag))
     }
-  }.toCatsIO
+  }
 
   private def createLink(
       iri: Iri,
@@ -429,9 +429,9 @@ final class Files(
       .adaptError { case e: StorageFileRejection => LinkRejection(fileId, storage.id, e) }
 
   private def eval(cmd: FileCommand): IO[FileResource]                                                           =
-    log.evaluate(cmd.project, cmd.id, cmd).map(_._2.toResource).toCatsIO
+    log.evaluate(cmd.project, cmd.id, cmd).map(_._2.toResource)
 
-  private def test(cmd: FileCommand) = log.dryRun(cmd.project, cmd.id, cmd).toCatsIO
+  private def test(cmd: FileCommand) = log.dryRun(cmd.project, cmd.id, cmd)
 
   private def fetchActiveStorage(storageIdOpt: Option[IdSegment], ref: ProjectRef, pc: ProjectContext)(implicit
       caller: Caller
@@ -551,7 +551,7 @@ final class Files(
 
   private[files] def updateAttributes(iri: Iri, project: ProjectRef): IO[Unit] =
     for {
-      f       <- log.stateOr(project, iri, FileNotFound(iri, project)).toCatsIO
+      f       <- log.stateOr(project, iri, FileNotFound(iri, project))
       storage <- storages.fetch(IdSegmentRef(f.storage), f.project).map(_.value).adaptError {
                    case e: StorageFetchRejection => WrappedStorageRejection(e)
                  }
@@ -565,7 +565,7 @@ final class Files(
       newAttr  <- fetchAttributes(storage, attr, f.id)
       mediaType = attr.mediaType orElse Some(newAttr.mediaType)
       command   = UpdateFileAttributes(f.id, f.project, mediaType, newAttr.bytes, newAttr.digest, f.rev, f.updatedBy)
-      _        <- log.evaluate(f.project, f.id, command).toCatsIO
+      _        <- log.evaluate(f.project, f.id, command)
     } yield ()
   }
 

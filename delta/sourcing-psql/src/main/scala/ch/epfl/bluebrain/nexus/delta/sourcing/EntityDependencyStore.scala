@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
+import cats.effect.IO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
@@ -9,7 +10,6 @@ import doobie._
 import doobie.implicits._
 import doobie.util.Put
 import io.circe.{Decoder, Json}
-import monix.bio.{Task, UIO}
 
 /**
   * Allows to declare dependencies between entities in the system
@@ -59,7 +59,7 @@ object EntityDependencyStore {
   /**
     * Get direct dependencies for the provided id in the given project
     */
-  def directDependencies[Id](ref: ProjectRef, id: Id, xas: Transactors)(implicit put: Put[Id]): UIO[Set[DependsOn]] =
+  def directDependencies[Id](ref: ProjectRef, id: Id, xas: Transactors)(implicit put: Put[Id]): IO[Set[DependsOn]] =
     sql"""
          | SELECT target_org, target_project, target_id
          | FROM entity_dependencies
@@ -69,13 +69,12 @@ object EntityDependencyStore {
       .query[(Label, Label, Iri)]
       .map { case (org, proj, id) => DependsOn(ProjectRef(org, proj), id) }
       .to[Set]
-      .transact(xas.read)
-      .hideErrors
+      .transact(xas.readCE)
 
   /**
     * Get direct references from other projects for the given project
     */
-  def directExternalReferences(ref: ProjectRef, xas: Transactors): UIO[Set[ReferencedBy]] =
+  def directExternalReferences(ref: ProjectRef, xas: Transactors): IO[Set[ReferencedBy]] =
     sql"""
          | SELECT org, project, id
          | FROM entity_dependencies
@@ -88,8 +87,7 @@ object EntityDependencyStore {
       .query[(Label, Label, Iri)]
       .map { case (org, proj, id) => ReferencedBy(ProjectRef(org, proj), id) }
       .to[Set]
-      .transact(xas.read)
-      .hideErrors
+      .transact(xas.readCE)
 
   private def recursiveDependencies[Id](ref: ProjectRef, id: Id)(implicit put: Put[Id]) =
     fr"""
@@ -108,7 +106,7 @@ object EntityDependencyStore {
   /**
     * Get all dependencies for the provided id in the given project
     */
-  def recursiveDependencies[Id](ref: ProjectRef, id: Id, xas: Transactors)(implicit put: Put[Id]): UIO[Set[DependsOn]] =
+  def recursiveDependencies[Id](ref: ProjectRef, id: Id, xas: Transactors)(implicit put: Put[Id]): IO[Set[DependsOn]] =
     sql"""
          | ${recursiveDependencies(ref, id)}
          | SELECT org, project, id  from recursive_dependencies
@@ -116,8 +114,7 @@ object EntityDependencyStore {
       .query[(Label, Label, Iri)]
       .map { case (org, proj, id) => DependsOn(ProjectRef(org, proj), id) }
       .to[Set]
-      .transact(xas.read)
-      .hideErrors
+      .transact(xas.readCE)
 
   /**
     * Get and decode latest state values for direct dependencies for the provided id in the given project
@@ -125,7 +122,7 @@ object EntityDependencyStore {
   def decodeDirectDependencies[Id, A](ref: ProjectRef, id: Id, xas: Transactors)(implicit
       put: Put[Id],
       decoder: Decoder[A]
-  ): UIO[List[A]] =
+  ): IO[List[A]] =
     sql"""
          | SELECT s.value
          | FROM entity_dependencies d, scoped_states s
@@ -138,11 +135,10 @@ object EntityDependencyStore {
          | AND s.id = d.target_id""".stripMargin
       .query[Json]
       .to[List]
-      .transact(xas.read)
+      .transact(xas.readCE)
       .flatMap { rows =>
-        Task.fromEither(rows.traverse(_.as[A]))
+        IO.fromEither(rows.traverse(_.as[A]))
       }
-      .hideErrors
 
   /**
     * Get and decode latest state values for all dependencies for the provided id in the given project
@@ -150,7 +146,7 @@ object EntityDependencyStore {
   def decodeRecursiveDependencies[Id, A](ref: ProjectRef, id: Id, xas: Transactors)(implicit
       put: Put[Id],
       decoder: Decoder[A]
-  ): UIO[List[A]] =
+  ): IO[List[A]] =
     sql"""
          | ${recursiveDependencies(ref, id)}
          | SELECT s.value
@@ -162,9 +158,8 @@ object EntityDependencyStore {
        """.stripMargin
       .query[Json]
       .to[List]
-      .transact(xas.read)
+      .transact(xas.readCE)
       .flatMap { rows =>
-        Task.fromEither(rows.traverse(_.as[A]))
+        IO.fromEither(rows.traverse(_.as[A]))
       }
-      .hideErrors
 }

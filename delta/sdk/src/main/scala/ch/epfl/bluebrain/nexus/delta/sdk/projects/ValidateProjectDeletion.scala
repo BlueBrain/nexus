@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk.projects
 
 import cats.effect.IO
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.kernel.effect.migration._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.{ProjectDeletionIsDisabled, ProjectIsReferenced}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityDependency.ReferencedBy
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
@@ -19,7 +18,7 @@ trait ValidateProjectDeletion {
 object ValidateProjectDeletion {
 
   def apply(xas: Transactors, enabled: Boolean): ValidateProjectDeletion =
-    apply(EntityDependencyStore.directExternalReferences(_, xas).toCatsIO, enabled)
+    apply(EntityDependencyStore.directExternalReferences(_, xas), enabled)
 
   def apply(fetchReferences: ProjectRef => IO[Set[ReferencedBy]], enabled: Boolean): ValidateProjectDeletion =
     (project: ProjectRef) =>
